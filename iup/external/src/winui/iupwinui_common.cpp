@@ -619,7 +619,7 @@ static void winuiCanvasRedraw(Ihandle* ih)
   char* rect = iupAttribGet(ih, "_IUPWINUI_UPDATERECT");
   IFn cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
   if (rect && cb && !(ih->data->inside_resize) && ih->currentwidth > 0 && ih->currentheight > 0
-      && sscanf(rect, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+      && iupStrToRect(rect, &x1, &y1, &x2, &y2))
   {
     iupAttribSet(ih, "_IUPWINUI_UPDATERECT", nullptr);
     if (x1 < 0) x1 = 0;

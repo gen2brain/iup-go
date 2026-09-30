@@ -1222,7 +1222,7 @@ extern "C" IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int*
   if (y2) *y2 = 0;
   if (!dc) return;
   char* s = iupAttribGet(dc->ih, "_IUPHAIKU_CLIP");
-  if (s) sscanf(s, "%d %d %d %d", x1, y1, x2, y2);
+  if (s) iupStrToRect(s, x1, y1, x2, y2);
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawSelectRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)

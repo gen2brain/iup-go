@@ -76,7 +76,7 @@ static void fltkTipUpdateRect()
 
   int x1, y1, x2, y2;
   char* rect = iupAttribGet(ih, "TIPRECT");
-  if (!rect || sscanf(rect, "%d %d %d %d", &x1, &y1, &x2, &y2) != 4)
+  if (!rect || !iupStrToRect(rect, &x1, &y1, &x2, &y2))
     return;
 
   int x = Fl::event_x() - widget->x();

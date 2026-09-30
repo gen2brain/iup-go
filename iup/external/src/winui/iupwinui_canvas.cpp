@@ -1349,11 +1349,11 @@ static void winuiCanvasLayoutUpdateMethod(Ihandle* ih)
 static int winuiCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 {
   int x1, y1, x2, y2;
-  if (value && !iupAttribGet(ih, "_IUP_GLCONTROLDATA") && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  if (value && !iupAttribGet(ih, "_IUP_GLCONTROLDATA") && iupStrToRect(value, &x1, &y1, &x2, &y2))
   {
     int px1, py1, px2, py2;
     char* pending = iupAttribGet(ih, "_IUPWINUI_UPDATERECT");
-    if (pending && sscanf(pending, "%d %d %d %d", &px1, &py1, &px2, &py2) == 4)
+    if (pending && iupStrToRect(pending, &px1, &py1, &px2, &py2))
     {
       if (px1 < x1) x1 = px1;
       if (py1 < y1) y1 = py1;

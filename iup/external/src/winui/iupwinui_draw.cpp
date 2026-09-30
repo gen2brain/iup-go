@@ -308,7 +308,7 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   {
     int x1, y1, x2, y2;
     char* clip = iupAttribGet(ih, "CLIPRECT");
-    if (clip && sscanf(clip, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4
+    if (clip && iupStrToRect(clip, &x1, &y1, &x2, &y2)
         && !(x1 <= 0 && y1 <= 0 && x2 >= dc->w - 1 && y2 >= dc->h - 1))
     {
       if (dc->sisIsNew)

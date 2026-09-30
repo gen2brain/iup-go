@@ -94,7 +94,7 @@ public:
           if (tiprect)
           {
             int x1, y1, x2, y2;
-            if (sscanf(tiprect, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+            if (iupStrToRect(tiprect, &x1, &y1, &x2, &y2))
             {
               QPoint local_pos = widget->mapFromGlobal(helpEvent->globalPos());
               QRect tip_rect(x1, y1, x2 - x1 + 1, y2 - y1 + 1);

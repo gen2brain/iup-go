@@ -2462,7 +2462,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
     else if (!iupStrEqualNoCase(selection, "NONE"))
     {
       int lin_start = 1, col_start = 1, lin_end = 1, col_end = 1;
-      if (sscanf(selection, "%d,%d:%d,%d", &lin_start, &col_start, &lin_end, &col_end) == 4)
+      if (iupStrToLinColRange(selection, &lin_start, &col_start, &lin_end, &col_end))
       {
         start_pos = winuiTextLinColToPos(doc, lin_start, col_start);
         end_pos = winuiTextLinColToPos(doc, lin_end, col_end);
@@ -2835,7 +2835,7 @@ static int winuiTextSetSelectionAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     int lin1 = 1, col1 = 1, lin2 = 1, col2 = 1;
-    if (sscanf(value, "%d,%d:%d,%d", &lin1, &col1, &lin2, &col2) != 4)
+    if (!iupStrToLinColRange(value, &lin1, &col1, &lin2, &col2))
       return 0;
 
     int start, end;

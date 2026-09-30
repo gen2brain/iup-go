@@ -178,7 +178,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
           if (rect)
           {
             int x1, y1, x2, y2;
-            if (sscanf(rect, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4 &&
+            if (iupStrToRect(rect, &x1, &y1, &x2, &y2) &&
                 (x < x1 || x > x2 || y < y1 || y > y2))
             {
               auto owner = winuiGetHandle<DependencyObject>(ih);

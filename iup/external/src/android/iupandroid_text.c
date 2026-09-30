@@ -771,7 +771,7 @@ static int androidTextSetSelectionAttrib(Ihandle* ih, const char* value)
   else if (ih->data->is_multiline)
   {
     int l1 = 1, c1 = 1, l2 = 1, c2 = 1;
-    if (sscanf(value, "%d,%d:%d,%d", &l1, &c1, &l2, &c2) != 4) return 0;
+    if (!iupStrToLinColRange(value, &l1, &c1, &l2, &c2)) return 0;
     if (l1 < 1 || c1 < 1 || l2 < 1 || c2 < 1) return 0;
     start = androidTextLinColToPos(ih, l1, c1);
     end   = androidTextLinColToPos(ih, l2, c2);

@@ -775,7 +775,7 @@ static int haikuCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 {
   int x1, y1, x2, y2;
   auto* view = reinterpret_cast<BView*>(ih->handle);
-  if (view && value && std::sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  if (view && value && iupStrToRect(value, &x1, &y1, &x2, &y2))
   {
     BLooper* loop = view->Looper();
     if (!loop) return 0;

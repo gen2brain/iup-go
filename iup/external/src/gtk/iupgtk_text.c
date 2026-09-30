@@ -929,7 +929,7 @@ static int gtkTextSelectionGetIter(Ihandle* ih, const char* value, GtkTextIter* 
     return 1;
   }
 
-  if (sscanf(value, "%d,%d:%d,%d", &lin_start, &col_start, &lin_end, &col_end)!=4)
+  if (!iupStrToLinColRange(value, &lin_start, &col_start, &lin_end, &col_end))
     return 0;
 
   if (lin_start<1 || col_start<1 || lin_end<1 || col_end<1)

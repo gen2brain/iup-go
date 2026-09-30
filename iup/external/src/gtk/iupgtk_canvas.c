@@ -524,7 +524,7 @@ static gboolean gtkCanvasBorderExposeEvent(GtkWidget* widget, GdkEventExpose* ev
 static int gtkCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 {
   int x1, y1, x2, y2;
-  if (value && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  if (value && iupStrToRect(value, &x1, &y1, &x2, &y2))
     gtk_widget_queue_draw_area(ih->handle, x1, y1, x2 - x1 + 1, y2 - y1 + 1);
   else
     iupdrvPostRedraw(ih);

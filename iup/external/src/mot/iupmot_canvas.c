@@ -289,7 +289,7 @@ static void motCanvasExposeCallback(Widget w, Ihandle* ih, XtPointer call_data)
 static int motCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 {
   int x1, y1, x2, y2;
-  if (value && XtWindow(ih->handle) && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  if (value && XtWindow(ih->handle) && iupStrToRect(value, &x1, &y1, &x2, &y2))
   {
     XExposeEvent evt;
 

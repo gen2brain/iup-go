@@ -239,7 +239,7 @@ static int haikuCalendarParseValue(const char* value, int* y, int* m, int* d)
     *y = today.Year(); *m = today.Month(); *d = today.Day();
     return 1;
   }
-  return sscanf(value, "%d/%d/%d", y, m, d) == 3;
+  return iupStrToDate(value, y, m, d);
 }
 
 static int haikuCalendarSetValueAttrib(Ihandle* ih, const char* value)

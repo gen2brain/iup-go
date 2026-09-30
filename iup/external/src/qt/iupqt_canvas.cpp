@@ -1151,7 +1151,7 @@ static int qtCanvasSetUpdateRectAttrib(Ihandle* ih, const char* value)
 {
   QWidget* canvas = iupqtCanvasGetWidget(ih);
   int x1, y1, x2, y2;
-  if (canvas && value && sscanf(value, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4)
+  if (canvas && value && iupStrToRect(value, &x1, &y1, &x2, &y2))
   {
     iupAttribSet(ih, "_IUPQT_UPDATERECT", "1");
     canvas->update(QRect(QPoint(x1, y1), QPoint(x2, y2)));

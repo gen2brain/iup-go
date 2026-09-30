@@ -37,7 +37,7 @@ static int androidCalendarSetValueAttrib(Ihandle* ih, const char* value)
     month = tm->tm_mon + 1;
     day = tm->tm_mday;
   }
-  else if (sscanf(value, "%d/%d/%d", &year, &month, &day) != 3
+  else if (!iupStrToDate(value, &year, &month, &day)
         && sscanf(value, "%d-%d-%d", &year, &month, &day) != 3)
     return 0;
 

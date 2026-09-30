@@ -16,6 +16,7 @@
 
 #include "iup_attrib.h"
 #include "iup_class.h"
+#include "iup_str.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
 
@@ -103,7 +104,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
   PAINTSTRUCT ps;
   RECT rect;
-  int x1, y1, x2, y2;
+  int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
   int fresh = 0;
   char* rcPaint;
 
@@ -131,7 +132,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   {
     ps.hdc = (HDC)iupAttribGet(ih, "HDC_WMPAINT");
     dc->hDC = NULL;
-    sscanf(rcPaint, "%d %d %d %d", &x1, &y1, &x2, &y2);
+    iupStrToRect(rcPaint, &x1, &y1, &x2, &y2);
     ps.rcPaint.left = x1;
     ps.rcPaint.top = y1;
     ps.rcPaint.right = x2 + 1;

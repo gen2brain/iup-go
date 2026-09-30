@@ -107,7 +107,7 @@ static int winuiCalendarSetValueAttrib(Ihandle* ih, const char* value)
   else if (value)
   {
     int year, month, day;
-    if (sscanf(value, "%d/%d/%d", &year, &month, &day) == 3)
+    if (iupStrToDate(value, &year, &month, &day))
     {
       auto dt = winuiCalendarMakeDateTime(year, month, day);
       cv.SelectedDates().Clear();

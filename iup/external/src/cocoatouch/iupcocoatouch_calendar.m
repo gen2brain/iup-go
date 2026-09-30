@@ -63,7 +63,7 @@ static NSDate* cocoaTouchCalendarParseDate(const char* value)
 	if (iupStrEqualNoCase(value, "TODAY")) return [NSDate date];
 
 	int year = 0, month = 0, day = 0;
-	if (sscanf(value, "%d/%d/%d", &year, &month, &day) != 3) return nil;
+	if (!iupStrToDate(value, &year, &month, &day)) return nil;
 
 	if (month < 1) month = 1; else if (month > 12) month = 12;
 	if (day   < 1) day   = 1; else if (day   > 31) day   = 31;
