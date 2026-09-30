@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -31,8 +32,13 @@
 #define ITERM_PTY_CHUNK 16384
 #define ITERM_PTY_MAXREAD (256*1024)
 #define ITERM_MEASURE_RUN 16
+#define ITERM_ARC_STEPS 8
 #define ITERM_DEF_FGCOLOR "229 229 229"
 #define ITERM_DEF_BGCOLOR "0 0 0"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 struct _IcontrolData
 {
@@ -125,6 +131,229 @@ static void itermCellColors(Ihandle* ih, ItermCell* cell, unsigned int* fg, unsi
 static long itermDrawColor(unsigned int rgb)
 {
   return iupDrawColor((unsigned char)(rgb >> 16), (unsigned char)(rgb >> 8), (unsigned char)rgb, 255);
+}
+
+/* U+2500..U+257F arms: up, right, down, left; 1 light, 2 heavy, 3 double; 0 = drawn by shape */
+#define ITERM_BOX(u, r, d, l) (unsigned char)(((u) << 6) | ((r) << 4) | ((d) << 2) | (l))
+static const unsigned char iterm_box_arms[128] = {
+  ITERM_BOX(0,1,0,1), ITERM_BOX(0,2,0,2), ITERM_BOX(1,0,1,0), ITERM_BOX(2,0,2,0),
+  0, 0, 0, 0, 0, 0, 0, 0,
+  ITERM_BOX(0,1,1,0), ITERM_BOX(0,2,1,0), ITERM_BOX(0,1,2,0), ITERM_BOX(0,2,2,0),
+  ITERM_BOX(0,0,1,1), ITERM_BOX(0,0,1,2), ITERM_BOX(0,0,2,1), ITERM_BOX(0,0,2,2),
+  ITERM_BOX(1,1,0,0), ITERM_BOX(1,2,0,0), ITERM_BOX(2,1,0,0), ITERM_BOX(2,2,0,0),
+  ITERM_BOX(1,0,0,1), ITERM_BOX(1,0,0,2), ITERM_BOX(2,0,0,1), ITERM_BOX(2,0,0,2),
+  ITERM_BOX(1,1,1,0), ITERM_BOX(1,2,1,0), ITERM_BOX(2,1,1,0), ITERM_BOX(1,1,2,0),
+  ITERM_BOX(2,1,2,0), ITERM_BOX(2,2,1,0), ITERM_BOX(1,2,2,0), ITERM_BOX(2,2,2,0),
+  ITERM_BOX(1,0,1,1), ITERM_BOX(1,0,1,2), ITERM_BOX(2,0,1,1), ITERM_BOX(1,0,2,1),
+  ITERM_BOX(2,0,2,1), ITERM_BOX(2,0,1,2), ITERM_BOX(1,0,2,2), ITERM_BOX(2,0,2,2),
+  ITERM_BOX(0,1,1,1), ITERM_BOX(0,1,1,2), ITERM_BOX(0,2,1,1), ITERM_BOX(0,2,1,2),
+  ITERM_BOX(0,1,2,1), ITERM_BOX(0,1,2,2), ITERM_BOX(0,2,2,1), ITERM_BOX(0,2,2,2),
+  ITERM_BOX(1,1,0,1), ITERM_BOX(1,1,0,2), ITERM_BOX(1,2,0,1), ITERM_BOX(1,2,0,2),
+  ITERM_BOX(2,1,0,1), ITERM_BOX(2,1,0,2), ITERM_BOX(2,2,0,1), ITERM_BOX(2,2,0,2),
+  ITERM_BOX(1,1,1,1), ITERM_BOX(1,1,1,2), ITERM_BOX(1,2,1,1), ITERM_BOX(1,2,1,2),
+  ITERM_BOX(2,1,1,1), ITERM_BOX(1,1,2,1), ITERM_BOX(2,1,2,1), ITERM_BOX(2,1,1,2),
+  ITERM_BOX(2,2,1,1), ITERM_BOX(1,1,2,2), ITERM_BOX(1,2,2,1), ITERM_BOX(2,2,1,2),
+  ITERM_BOX(1,2,2,2), ITERM_BOX(2,1,2,2), ITERM_BOX(2,2,2,1), ITERM_BOX(2,2,2,2),
+  0, 0, 0, 0,
+  ITERM_BOX(0,3,0,3), ITERM_BOX(3,0,3,0), ITERM_BOX(0,3,1,0), ITERM_BOX(0,1,3,0),
+  ITERM_BOX(0,3,3,0), ITERM_BOX(0,0,1,3), ITERM_BOX(0,0,3,1), ITERM_BOX(0,0,3,3),
+  ITERM_BOX(1,3,0,0), ITERM_BOX(3,1,0,0), ITERM_BOX(3,3,0,0), ITERM_BOX(1,0,0,3),
+  ITERM_BOX(3,0,0,1), ITERM_BOX(3,0,0,3), ITERM_BOX(1,3,1,0), ITERM_BOX(3,1,3,0),
+  ITERM_BOX(3,3,3,0), ITERM_BOX(1,0,1,3), ITERM_BOX(3,0,3,1), ITERM_BOX(3,0,3,3),
+  ITERM_BOX(0,3,1,3), ITERM_BOX(0,1,3,1), ITERM_BOX(0,3,3,3), ITERM_BOX(1,3,0,3),
+  ITERM_BOX(3,1,0,1), ITERM_BOX(3,3,0,3), ITERM_BOX(1,3,1,3), ITERM_BOX(3,1,3,1),
+  ITERM_BOX(3,3,3,3),
+  0, 0, 0, 0, 0, 0, 0,
+  ITERM_BOX(0,0,0,1), ITERM_BOX(1,0,0,0), ITERM_BOX(0,1,0,0), ITERM_BOX(0,0,1,0),
+  ITERM_BOX(0,0,0,2), ITERM_BOX(2,0,0,0), ITERM_BOX(0,2,0,0), ITERM_BOX(0,0,2,0),
+  ITERM_BOX(0,2,0,1), ITERM_BOX(1,0,2,0), ITERM_BOX(0,1,0,2), ITERM_BOX(2,0,1,0)
+};
+
+static int itermIsBoxChar(unsigned int cp)
+{
+  return cp >= 0x2500 && cp <= 0x259F;
+}
+
+static void itermBoxLine(IdrawCanvas* dc, int horiz, int a1, int a2, int p, int ww, long color)
+{
+  int p1 = p - ww / 2, p2 = p1 + ww - 1;
+  if (a2 < a1)
+    return;
+  if (horiz)
+    iupdrvDrawRectangle(dc, a1, p1, a2, p2, color, IUP_DRAW_FILL, 1);
+  else
+    iupdrvDrawRectangle(dc, p1, a1, p2, a2, color, IUP_DRAW_FILL, 1);
+}
+
+static void itermBoxArm(IdrawCanvas* dc, const int* arm, int i, int x, int y, int w, int h, int lw, long color)
+{
+  int horiz = (i == 1 || i == 3), pos = (i == 1 || i == 2);
+  int self = arm[i], opp = arm[(i + 2) % 4];
+  int s1 = arm[horiz ? 0 : 3], s2 = arm[horiz ? 2 : 1];
+  int c = horiz ? x + w / 2 : y + h / 2;
+  int cp = horiz ? y + h / 2 : x + w / 2;
+  int first = horiz ? x : y, last = horiz ? x + w - 1 : y + h - 1;
+  int d = lw, o, ww, k;
+
+  if (self != 3)
+  {
+    int sw = self == 2 ? 2 * lw : lw;
+    int maxw = (s1 == 2 || s2 == 2) ? 2 * lw : ((s1 == 1 || s2 == 1) ? lw : sw);
+
+    if (opp)
+      o = 0, ww = maxw;
+    else if (s1 == 3 && s2 == 3)
+      o = d, ww = lw;
+    else if (s1 == 3 || s2 == 3)
+      o = -d, ww = lw;
+    else
+      o = 0, ww = maxw;
+
+    if (pos)
+      itermBoxLine(dc, horiz, (c + o) - ww / 2, last, cp, sw, color);
+    else
+      itermBoxLine(dc, horiz, first, (c - o) - ww / 2 + ww - 1, cp, sw, color);
+    return;
+  }
+
+  for (k = 0; k < 2; k++)
+  {
+    int s = k == 0 ? s1 : s2, t = k == 0 ? s2 : s1;
+    int lp = cp + (k == 0 ? -d : d);
+
+    if (s == 3)
+      o = d, ww = lw;
+    else if (s)
+      o = 0, ww = s == 2 ? 2 * lw : lw;
+    else if (t == 3)
+      o = -d, ww = lw;
+    else
+      o = 0, ww = lw;
+
+    if (pos)
+      itermBoxLine(dc, horiz, (c + o) - ww / 2, last, lp, lw, color);
+    else
+      itermBoxLine(dc, horiz, first, (c - o) - ww / 2 + ww - 1, lp, lw, color);
+  }
+}
+
+static unsigned int itermBlendColor(unsigned int fg, unsigned int bg, int num, int den)
+{
+  unsigned int r = (((fg >> 16) & 0xFF) * num + ((bg >> 16) & 0xFF) * (den - num)) / den;
+  unsigned int g = (((fg >> 8) & 0xFF) * num + ((bg >> 8) & 0xFF) * (den - num)) / den;
+  unsigned int b = ((fg & 0xFF) * num + (bg & 0xFF) * (den - num)) / den;
+  return (r << 16) | (g << 8) | b;
+}
+
+static void itermDrawBoxChar(IdrawCanvas* dc, unsigned int cp, int x, int y, int w, int h, unsigned int fg, unsigned int bg)
+{
+  long color = itermDrawColor(fg);
+  int lw = w / 8 > 0 ? w / 8 : 1;
+  int x2 = x + w - 1, y2 = y + h - 1;
+  int cx = x + w / 2, cy = y + h / 2;
+  int i;
+
+  if (cp >= 0x2580)
+  {
+    static const unsigned char quad[10] = { 4, 8, 1, 13, 9, 7, 11, 2, 6, 14 };
+    int n;
+
+    if (cp == 0x2580)
+      iupdrvDrawRectangle(dc, x, y, x2, y + h / 2 - 1, color, IUP_DRAW_FILL, 1);
+    else if (cp <= 0x2588)
+    {
+      n = (int)(cp - 0x2580);
+      iupdrvDrawRectangle(dc, x, y2 - (h * n + 4) / 8 + 1, x2, y2, color, IUP_DRAW_FILL, 1);
+    }
+    else if (cp <= 0x258F)
+    {
+      n = 8 - (int)(cp - 0x2588);
+      iupdrvDrawRectangle(dc, x, y, x2 - (w * (8 - n) + 4) / 8, y2, color, IUP_DRAW_FILL, 1);
+    }
+    else if (cp == 0x2590)
+      iupdrvDrawRectangle(dc, x + w / 2, y, x2, y2, color, IUP_DRAW_FILL, 1);
+    else if (cp <= 0x2593)
+      iupdrvDrawRectangle(dc, x, y, x2, y2, itermDrawColor(itermBlendColor(fg, bg, (int)(cp - 0x2590), 4)), IUP_DRAW_FILL, 1);
+    else if (cp == 0x2594)
+      iupdrvDrawRectangle(dc, x, y, x2, y + (h + 4) / 8 - 1, color, IUP_DRAW_FILL, 1);
+    else if (cp == 0x2595)
+      iupdrvDrawRectangle(dc, x2 - (w + 4) / 8 + 1, y, x2, y2, color, IUP_DRAW_FILL, 1);
+    else
+    {
+      int q = quad[cp - 0x2596];
+      if (q & 1) iupdrvDrawRectangle(dc, x, y, x + w / 2 - 1, y + h / 2 - 1, color, IUP_DRAW_FILL, 1);
+      if (q & 2) iupdrvDrawRectangle(dc, x + w / 2, y, x2, y + h / 2 - 1, color, IUP_DRAW_FILL, 1);
+      if (q & 4) iupdrvDrawRectangle(dc, x, y + h / 2, x + w / 2 - 1, y2, color, IUP_DRAW_FILL, 1);
+      if (q & 8) iupdrvDrawRectangle(dc, x + w / 2, y + h / 2, x2, y2, color, IUP_DRAW_FILL, 1);
+    }
+    return;
+  }
+
+  cp -= 0x2500;
+  if (iterm_box_arms[cp])
+  {
+    int arm[4];
+    arm[0] = (iterm_box_arms[cp] >> 6) & 3;
+    arm[1] = (iterm_box_arms[cp] >> 4) & 3;
+    arm[2] = (iterm_box_arms[cp] >> 2) & 3;
+    arm[3] = iterm_box_arms[cp] & 3;
+    for (i = 0; i < 4; i++)
+    {
+      if (arm[i])
+        itermBoxArm(dc, arm, i, x, y, w, h, lw, color);
+    }
+  }
+  else if ((cp >= 0x04 && cp <= 0x0B) || (cp >= 0x4C && cp <= 0x4F))
+  {
+    int n = cp >= 0x4C ? 2 : (cp <= 0x07 ? 3 : 4);
+    int sub = cp >= 0x4C ? (int)(cp - 0x4C) : (int)(cp - (cp <= 0x07 ? 0x04 : 0x08));
+    int horiz = sub < 2, ww = (sub & 1) ? 2 * lw : lw;
+    int len = horiz ? w : h, first = horiz ? x : y;
+    int gap = len / (2 * n) > 0 ? len / (2 * n) : 1;
+    for (i = 0; i < n; i++)
+      itermBoxLine(dc, horiz, first + i * len / n + gap / 2, first + (i + 1) * len / n - (gap - gap / 2) - 1,
+                   horiz ? cy : cx, ww, color);
+  }
+  else if (cp >= 0x6D && cp <= 0x70)
+  {
+    int sx = (cp == 0x6D || cp == 0x70) ? 1 : -1;
+    int sy = (cp == 0x6D || cp == 0x6E) ? 1 : -1;
+    int lx = cx - lw / 2, ly = cy - lw / 2;
+    int r = iupMAX(lw, iupMIN(w, h) / 2);
+    int ox = sx > 0 ? lx : lx + lw, oy = sy > 0 ? ly : ly + lw;
+    int ax = ox + sx * r, ay = oy + sy * r;
+    int pts[2 * 2 * (ITERM_ARC_STEPS + 1)], n = 0;
+
+    for (i = 0; i <= ITERM_ARC_STEPS; i++)
+    {
+      double t = (M_PI / 2) * i / ITERM_ARC_STEPS;
+      pts[n++] = ax - sx * (int)floor(r * cos(t) + 0.5);
+      pts[n++] = ay - sy * (int)floor(r * sin(t) + 0.5);
+    }
+    for (i = ITERM_ARC_STEPS; i >= 0; i--)
+    {
+      double t = (M_PI / 2) * i / ITERM_ARC_STEPS;
+      pts[n++] = ax - sx * (int)floor((r - lw) * cos(t) + 0.5);
+      pts[n++] = ay - sy * (int)floor((r - lw) * sin(t) + 0.5);
+    }
+    iupdrvDrawPolygon(dc, pts, n / 2, color, IUP_DRAW_FILL, 1);
+
+    if (sx > 0)
+      iupdrvDrawRectangle(dc, ax, ly, x2, ly + lw - 1, color, IUP_DRAW_FILL, 1);
+    else
+      iupdrvDrawRectangle(dc, x, ly, ax - 1, ly + lw - 1, color, IUP_DRAW_FILL, 1);
+    if (sy > 0)
+      iupdrvDrawRectangle(dc, lx, ay, lx + lw - 1, y2, color, IUP_DRAW_FILL, 1);
+    else
+      iupdrvDrawRectangle(dc, lx, y, lx + lw - 1, ay - 1, color, IUP_DRAW_FILL, 1);
+  }
+  else
+  {
+    if (cp == 0x71 || cp == 0x73)
+      iupdrvDrawLine(dc, x2, y, x, y2, color, IUP_DRAW_STROKE, lw);
+    if (cp == 0x72 || cp == 0x73)
+      iupdrvDrawLine(dc, x, y, x2, y2, color, IUP_DRAW_STROKE, lw);
+  }
 }
 
 #define ITERM_SEL_CHAR 0
@@ -372,7 +601,9 @@ static void itermDrawCursor(Ihandle* ih, IdrawCanvas* dc)
       char text[ITERM_CELL_TEXT_MAX + 1], font[128];
       int len;
       iupdrvDrawRectangle(dc, x, y, x + w - 1, y + ih->data->ch_h - 1, color, IUP_DRAW_FILL, 1);
-      if (cell->cp)
+      if (cell->cp && !cell->combo && itermIsBoxChar(cell->cp))
+        itermDrawBoxChar(dc, cell->cp, x, y, w, ih->data->ch_h, bg, fg);
+      else if (cell->cp)
       {
         len = iupTermCellText(t, cell, text);
         text[len] = 0;
@@ -467,7 +698,17 @@ static int itermRedraw_CB(Ihandle* ih)
         iupdrvDrawRectangle(dc, x, y, x + run_cells * ih->data->ch_w - 1,
                             y + ih->data->ch_h - 1, itermDrawColor(bg), IUP_DRAW_FILL, 1);
 
-      if (has_glyph || (style & (ITERM_FL_UNDERLINE | ITERM_FL_STRIKE)))
+      if (!cell->combo && itermIsBoxChar(cell->cp))
+      {
+        itermDrawBoxChar(dc, cell->cp, x, y, run_cells * ih->data->ch_w, ih->data->ch_h, fg, bg);
+        if (style & (ITERM_FL_UNDERLINE | ITERM_FL_STRIKE))
+        {
+          itermRunFont(ih, style, font);
+          iupdrvDrawText(dc, " ", 1, x, y, run_cells * ih->data->ch_w, ih->data->ch_h,
+                         itermDrawColor(fg), font, IUP_DRAW_LEFT, 0);
+        }
+      }
+      else if (has_glyph || (style & (ITERM_FL_UNDERLINE | ITERM_FL_STRIKE)))
       {
         text[len] = 0;
         itermRunFont(ih, style, font);

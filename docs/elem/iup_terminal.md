@@ -65,6 +65,7 @@ Defaults are the xterm palette. Also changed by the OSC 4 escape sequence.
 When the configured font is not monospaced the control substitutes a monospaced family.
 Changing it, or FONTFACE, FONTSIZE and FONTSTYLE, recomputes the number of columns and lines for the same control size and generates TERMSIZE_CB.
 Bold and italic text is drawn with the corresponding style of the same font.
+Box drawing characters (U+2500 to U+257F) and block elements (U+2580 to U+259F) are drawn by the control to fill the cell, not taken from the font.
 
 **SELECTEDTEXT** (non-inheritable): the currently selected text, in UTF-8, or NULL when there is
 no selection. Lines are separated by "\n"; a line wrapped by the terminal is joined without a separator. Set to NULL to clear the selection.
