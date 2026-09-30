@@ -85,7 +85,7 @@ static bool haikuFindFamilyExact(const char* typeface, font_family out_family)
     font_family fam;
     if (get_font_family(i, &fam) == B_OK && strcasecmp(fam, typeface) == 0)
     {
-      strcpy(out_family, fam);
+      iupStrCopyN(out_family, sizeof(font_family), fam);
       return true;
     }
   }
@@ -110,7 +110,7 @@ IUP_DRV_API bool iuphaikuFindFontFamily(const char* typeface, font_family out_fa
     font_family fam;
     if (get_font_family(i, &fam) == B_OK && haikuFamilyContains(fam, typeface))
     {
-      strcpy(out_family, fam);
+      iupStrCopyN(out_family, sizeof(font_family), fam);
       return true;
     }
   }
@@ -121,17 +121,17 @@ IUP_DRV_API bool iuphaikuFindFontFamily(const char* typeface, font_family out_fa
       haikuFamilyContains(typeface, "console") || haikuFamilyContains(typeface, "courier"))
   {
     be_fixed_font->GetFamilyAndStyle(&sysfam, &sysst);
-    strcpy(out_family, sysfam);
+    iupStrCopyN(out_family, sizeof(font_family), sysfam);
     return true;
   }
   be_plain_font->GetFamilyAndStyle(&sysfam, &sysst);
-  strcpy(out_family, sysfam);
+  iupStrCopyN(out_family, sizeof(font_family), sysfam);
   return true;
 }
 
 static void haikuFindStyle(const font_family family, uint16 want_face, font_style out_style)
 {
-  strcpy(out_style, "Regular");
+  iupStrCopyN(out_style, sizeof(font_style), "Regular");
 
   if (want_face == 0)
     want_face = B_REGULAR_FACE;
@@ -146,7 +146,7 @@ static void haikuFindStyle(const font_family family, uint16 want_face, font_styl
     {
       if (face == want_face)
       {
-        strcpy(out_style, st);
+        iupStrCopyN(out_style, sizeof(font_style), st);
         return;
       }
     }
@@ -160,7 +160,7 @@ static void haikuFindStyle(const font_family family, uint16 want_face, font_styl
     {
       if ((face & want_face) == want_face)
       {
-        strcpy(out_style, st);
+        iupStrCopyN(out_style, sizeof(font_style), st);
         return;
       }
     }
@@ -171,7 +171,7 @@ static void haikuFindStyle(const font_family family, uint16 want_face, font_styl
     font_style st;
     uint32 flags = 0;
     if (get_font_style(const_cast<char*>(family), 0, &st, &flags) == B_OK)
-      strcpy(out_style, st);
+      iupStrCopyN(out_style, sizeof(font_style), st);
   }
 }
 

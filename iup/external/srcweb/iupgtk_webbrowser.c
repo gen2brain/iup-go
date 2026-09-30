@@ -2351,8 +2351,10 @@ static void gtkWebBrowserReleaseGCSignal(void)
 #ifndef _WIN32
   static int released = 0;
   const char* value = getenv("JSC_SIGNAL_FOR_GC");
-  int sig = value ? atoi(value) : SIGUSR1;
+  int sig = SIGUSR1;
   struct sigaction action;
+
+  iupStrToInt(value, &sig);
 
   if (released)
     return;

@@ -677,7 +677,8 @@ static NSData* iCocoaImageEncode(unsigned char* imgdata, int width, int height, 
     {
       const char* q = IupGetGlobal("IMAGESAVEQUALITY");
       float quality = 0.85f;
-      if (q) quality = (float)atof(q) / 100.0f;
+      if (q && iupStrToFloat(q, &quality))
+        quality /= 100.0f;
       props = @{NSImageCompressionFactor: @(quality)};
     }
 

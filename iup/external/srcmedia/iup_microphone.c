@@ -102,8 +102,7 @@ static void iMicPostError(Ihandle* ih, const char* message, int stop)
   ImicMsg msg;
   msg.type = IMIC_MSG_ERROR;
   msg.stop = stop;
-  strncpy(msg.message, message ? message : "", sizeof(msg.message) - 1);
-  msg.message[sizeof(msg.message) - 1] = 0;
+  iupStrCopyN(msg.message, sizeof(msg.message), message ? message : "");
   iMicPost(ih, &msg);
 }
 

@@ -505,8 +505,7 @@ IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, i
     char quality[16];
     const char* q = IupGetGlobal("IMAGESAVEQUALITY");
     if (!q) q = "85";
-    strncpy(quality, q, sizeof(quality) - 1);
-    quality[sizeof(quality) - 1] = 0;
+    iupStrCopyN(quality, sizeof(quality), q);
     ret = gdk_pixbuf_save(pixbuf, filename, type, &error, "quality", quality, NULL);
   }
   else
@@ -536,8 +535,7 @@ IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int w
     char quality[16];
     const char* q = IupGetGlobal("IMAGESAVEQUALITY");
     if (!q) q = "85";
-    strncpy(quality, q, sizeof(quality) - 1);
-    quality[sizeof(quality) - 1] = 0;
+    iupStrCopyN(quality, sizeof(quality), q);
     ret = gdk_pixbuf_save_to_buffer(pixbuf, &buffer, &buffer_size, type, &error, "quality", quality, NULL);
   }
   else

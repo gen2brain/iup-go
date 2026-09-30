@@ -872,7 +872,7 @@ static int haikuTextParseRange(BTextView* tv, const char* sel, bool one_based, i
 {
   if (!tv || !sel) return 0;
   int s = 0, e = 0;
-  if (sscanf(sel, "%d:%d", &s, &e) != 2) return 0;
+  if (iupStrToIntInt(sel, &s, &e, ':') != 2) return 0;
   if (one_based) { s -= 1; e -= 1; }
   s += char_offset;
   e += char_offset;
@@ -1415,7 +1415,7 @@ static void haikuTextApplyFormatTagFont(BFont& bfont, Ihandle* tag, uint32* mode
         if (iuphaikuFindFontFamily(typeface, family))
         {
           font_style style;
-          strcpy(style, "Regular");
+          iupStrCopyN(style, sizeof(style), "Regular");
           bfont.SetFamilyAndStyle(family, style);
           *mode |= B_FONT_FAMILY_AND_STYLE;
         }
@@ -1587,7 +1587,7 @@ static void haikuTextShiftLinks(Ihandle* ih, int32 from, int32 delta)
     snprintf(key, sizeof(key), "_IUPHAIKU_LINK_RANGE_%d", i);
     int s = 0, e = 0;
     const char* range = iupAttribGet(ih, key);
-    if (!range || sscanf(range, "%d:%d", &s, &e) != 2) continue;
+    if (!range || iupStrToIntInt(range, &s, &e, ':') != 2) continue;
     if (s >= from) s += delta;
     if (e >= from) e += delta;
     iupAttribSetStrf(ih, key, "%d:%d", s, e);

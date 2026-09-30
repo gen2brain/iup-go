@@ -71,8 +71,7 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
     const char* utf = (*jni_env)->GetStringUTFChars(jni_env, j_str, NULL);
     if (utf)
     {
-      strncpy(systemfont, utf, sizeof(systemfont) - 1);
-      systemfont[sizeof(systemfont) - 1] = 0;
+      iupStrCopyN(systemfont, sizeof(systemfont), utf);
       (*jni_env)->ReleaseStringUTFChars(jni_env, j_str, utf);
     }
     (*jni_env)->DeleteLocalRef(jni_env, j_str);

@@ -577,7 +577,7 @@ static int eflListSetCaretAttrib(Ihandle* ih, const char* value)
   if (!entry)
     return 0;
 
-  sscanf(value, "%d", &pos);
+  iupStrToInt(value, &pos);
   if (pos < 1) pos = 1;
   pos--;
 
@@ -624,7 +624,7 @@ static int eflListSetCaretPosAttrib(Ihandle* ih, const char* value)
   if (!entry)
     return 0;
 
-  sscanf(value, "%d", &pos);
+  iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
 
   cursor = efl_text_interactive_main_cursor_get(entry);
@@ -832,8 +832,7 @@ static char* eflListGetSelectedTextAttrib(Ihandle* ih)
 
   len = end_pos - start_pos;
   selected = malloc(len + 1);
-  strncpy(selected, full_text + start_pos, len);
-  selected[len] = '\0';
+  iupStrCopyN(selected, len + 1, full_text + start_pos);
 
   ret = iupStrReturnStr(selected);
   free(selected);
@@ -936,7 +935,7 @@ static int eflListSetScrollToAttrib(Ihandle* ih, const char* value)
   if (!entry)
     return 0;
 
-  sscanf(value, "%d", &pos);
+  iupStrToInt(value, &pos);
   if (pos < 1) pos = 1;
   pos--;
 
@@ -964,7 +963,7 @@ static int eflListSetScrollToPosAttrib(Ihandle* ih, const char* value)
   if (!entry)
     return 0;
 
-  sscanf(value, "%d", &pos);
+  iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
 
   cursor = efl_text_interactive_main_cursor_get(entry);

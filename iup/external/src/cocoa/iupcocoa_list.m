@@ -1192,7 +1192,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     for (NSUInteger i = 0; i < [replacementString length]; i++)
     {
       unichar c = [replacementString characterAtIndex:i];
-      char single_char[5];
+      char single_char[5] = "";
       int len = 0;
 
       if (c < 0x80)
@@ -1205,8 +1205,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
       {
         NSString* singleCharStr = [NSString stringWithCharacters:&c length:1];
         const char* utf8 = [singleCharStr UTF8String];
-        strncpy(single_char, utf8, 4);
-        single_char[4] = 0;
+        iupStrCopyN(single_char, sizeof(single_char), utf8);
         len = (int)strlen(single_char);
       }
 

@@ -1499,7 +1499,7 @@ static int cocoaTouchTextSetCaretAttrib(Ihandle* ih, const char* value)
 	if (ih->data->is_multiline)
 	{
 		int lin = 1, col = 1;
-		if (sscanf(value, "%d,%d", &lin, &col) < 1) return 0;
+		if (iupStrToIntInt(value, &lin, &col, ',') < 1) return 0;
 		iupdrvTextConvertLinColToPos(ih, lin, col, &pos);
 	}
 	else
@@ -1576,7 +1576,7 @@ static int cocoaTouchTextSetScrollToAttrib(Ihandle* ih, const char* value)
 	if (ih->data->is_multiline)
 	{
 		int lin = 1, col = 1;
-		if (sscanf(value, "%d,%d", &lin, &col) >= 1)
+		if (iupStrToIntInt(value, &lin, &col, ',') >= 1)
 			iupdrvTextConvertLinColToPos(ih, lin, col, &pos);
 	}
 	else

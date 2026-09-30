@@ -2068,7 +2068,7 @@ static bool qtTextParseSelectionPos(const char* selectionpos, int* start, int* e
   if (!selectionpos)
     return false;
 
-  if (sscanf(selectionpos, "%d:%d", start, end) == 2)
+  if (iupStrToIntInt(selectionpos, start, end, ':') == 2)
     return true;
 
   return false;

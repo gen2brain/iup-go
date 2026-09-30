@@ -191,16 +191,16 @@ EMSCRIPTEN_KEEPALIVE void iupwasmCanvasMultiTouch(int cid, int count, const char
   cb = (IFniIIII)IupGetCallback(ih, "MULTITOUCH_CB");
   if (!cb)
     return;
-  ids = (int*)malloc(count * sizeof(int));
-  xs = (int*)malloc(count * sizeof(int));
-  ys = (int*)malloc(count * sizeof(int));
-  states = (int*)malloc(count * sizeof(int));
+  ids = (int*)calloc(count, sizeof(int));
+  xs = (int*)calloc(count, sizeof(int));
+  ys = (int*)calloc(count, sizeof(int));
+  states = (int*)calloc(count, sizeof(int));
   for (i = 0; i < count && p && *p; i++)
   {
-    ids[i] = atoi(p); p = strchr(p, ','); if (p) p++;
-    xs[i] = atoi(p); p = strchr(p, ','); if (p) p++;
-    ys[i] = atoi(p); p = strchr(p, ','); if (p) p++;
-    states[i] = atoi(p); p = strchr(p, ';'); if (p) p++;
+    iupStrToInt(p, &ids[i]); if (p) p = strchr(p, ','); if (p) p++;
+    iupStrToInt(p, &xs[i]); if (p) p = strchr(p, ','); if (p) p++;
+    iupStrToInt(p, &ys[i]); if (p) p = strchr(p, ','); if (p) p++;
+    iupStrToInt(p, &states[i]); if (p) p = strchr(p, ';'); if (p) p++;
   }
   if (cb(ih, count, ids, xs, ys, states) == IUP_CLOSE)
     IupExitLoop();

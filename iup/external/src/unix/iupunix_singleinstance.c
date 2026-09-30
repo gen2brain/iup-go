@@ -50,7 +50,7 @@ static void iupUnixSIBuildBusName(const char* name, char* bus_name, int max_len)
   int i, j;
   int name_len = (int)strlen(name);
 
-  strncpy(bus_name, "org.iup.si.", max_len - 1);
+  iupStrCopyN(bus_name, max_len, "org.iup.si.");
   j = (int)strlen(bus_name);
 
   for (i = 0; i < name_len && j < max_len - 1; i++)

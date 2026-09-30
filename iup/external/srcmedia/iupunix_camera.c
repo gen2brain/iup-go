@@ -71,7 +71,7 @@ static int iunixCameraOpenDevice(int index, char* name, size_t name_length)
   unsigned int caps;
   int fd;
 
-  sprintf(path, "/dev/video%d", index);
+  snprintf(path, sizeof(path), "/dev/video%d", index);
   fd = open(path, O_RDWR | O_NONBLOCK);
   if (fd < 0)
     return -1;
@@ -100,8 +100,7 @@ static int iunixCameraOpenDevice(int index, char* name, size_t name_length)
 
   if (name)
   {
-    strncpy(name, (const char*)cap.card, name_length - 1);
-    name[name_length - 1] = 0;
+    iupStrCopyN(name, name_length, (const char*)cap.card);
   }
   return fd;
 }
@@ -159,7 +158,7 @@ char* iupdrvCameraGetPermission(Ihandle* ih)
 
   for (index = 0; index < IUNIX_CAMERA_MAX_DEVICES; index++)
   {
-    sprintf(path, "/dev/video%d", index);
+    snprintf(path, sizeof(path), "/dev/video%d", index);
     if (access(path, F_OK) != 0)
       continue;
     return access(path, R_OK | W_OK) == 0 ? "GRANTED" : "DENIED";

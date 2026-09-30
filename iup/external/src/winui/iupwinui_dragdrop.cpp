@@ -186,7 +186,7 @@ void winuiDragSetInProcessData(const char* type, void* data, int size)
   winuiDragDataCleanup();
   winui_drag_data = data;
   winui_drag_data_size = size;
-  strncpy(winui_drag_type, type, sizeof(winui_drag_type) - 1);
+  iupStrCopyN(winui_drag_type, sizeof(winui_drag_type), type);
   winui_drag_type[sizeof(winui_drag_type) - 1] = '\0';
 }
 
