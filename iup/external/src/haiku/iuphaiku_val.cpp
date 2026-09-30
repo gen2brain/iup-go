@@ -35,8 +35,8 @@ class IupHaikuSlider : public BSlider
 {
 public:
   IupHaikuSlider(Ihandle* ih, orientation o)
-    : BSlider(BRect(0, 0, 0, 0), "iup_val", NULL,
-              NULL, 0, kValPrecision,
+    : BSlider(BRect(0, 0, 0, 0), "iup_val", nullptr,
+              nullptr, 0, kValPrecision,
               o == B_VERTICAL ? B_VERTICAL : B_HORIZONTAL,
               B_BLOCK_THUMB),
       fIhandle(ih), fSuppress(false) {}
@@ -93,14 +93,14 @@ static int32 haikuValEncode(Ihandle* ih, double v)
   if (t < 0) t = 0;
   if (t > 1) t = 1;
   if (haikuValShouldFlip(ih)) t = 1.0 - t;
-  return (int32)(t * kValPrecision + 0.5);
+  return static_cast<int32>(t * kValPrecision + 0.5);
 }
 
 static double haikuValDecode(Ihandle* ih, int32 raw)
 {
   double vmin = ih->data->vmin;
   double vmax = ih->data->vmax;
-  double t = (double)raw / kValPrecision;
+  double t = static_cast<double>(raw) / kValPrecision;
   if (haikuValShouldFlip(ih)) t = 1.0 - t;
   return vmin + t * (vmax - vmin);
 }
@@ -124,7 +124,7 @@ static int haikuValSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (!iupStrToDouble(value, &(ih->data->val))) return 0;
   iupValCropValue(ih);
-  IupHaikuSlider* s = (IupHaikuSlider*)ih->handle;
+  auto* s = reinterpret_cast<IupHaikuSlider*>(ih->handle);
   if (s)
   {
     LooperLockGuard guard(s->Looper());
@@ -137,7 +137,7 @@ static int haikuValSetValueAttrib(Ihandle* ih, const char* value)
 
 static int haikuValSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuSlider* s = (IupHaikuSlider*)ih->handle;
+  auto* s = reinterpret_cast<IupHaikuSlider*>(ih->handle);
   if (s)
   {
     LooperLockGuard guard(s->Looper());
@@ -149,11 +149,11 @@ static int haikuValSetActiveAttrib(Ihandle* ih, const char* value)
 static int haikuValSetStepAttrib(Ihandle* ih, const char* value)
 {
   if (!iupStrToDoubleDef(value, &(ih->data->step), 0.01)) return 1;
-  IupHaikuSlider* s = (IupHaikuSlider*)ih->handle;
+  auto* s = reinterpret_cast<IupHaikuSlider*>(ih->handle);
   if (!s) return 1;
   double range = ih->data->vmax - ih->data->vmin;
   if (range <= 0) return 1;
-  int32 inc = (int32)((ih->data->step / range) * kValPrecision + 0.5);
+  auto inc = static_cast<int32>((ih->data->step / range) * kValPrecision + 0.5);
   if (inc < 1) inc = 1;
   LooperLockGuard guard(s->Looper());
   s->SetKeyIncrementValue(inc);
@@ -171,7 +171,7 @@ static hash_mark_location haikuValHashLocation(Ihandle* ih)
 
 static int haikuValSetShowTicksAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuSlider* s = (IupHaikuSlider*)ih->handle;
+  auto* s = reinterpret_cast<IupHaikuSlider*>(ih->handle);
   if (!s) return 1;
   int n = 0;
   iupStrToInt(value, &n);
@@ -190,7 +190,7 @@ static int haikuValSetShowTicksAttrib(Ihandle* ih, const char* value)
 
 static int haikuValSetTicksPosAttrib(Ihandle* ih, const char* /*value*/)
 {
-  IupHaikuSlider* s = (IupHaikuSlider*)ih->handle;
+  auto* s = reinterpret_cast<IupHaikuSlider*>(ih->handle);
   if (!s) return 1;
   LooperLockGuard guard(s->Looper());
   if (s->HashMarks() != B_HASH_MARKS_NONE)
@@ -202,8 +202,8 @@ static int haikuValMapMethod(Ihandle* ih)
 {
   orientation o = (ih->data->orientation == IVAL_VERTICAL) ? B_VERTICAL : B_HORIZONTAL;
 
-  IupHaikuSlider* slider = new IupHaikuSlider(ih, o);
-  ih->handle = (InativeHandle*)slider;
+  auto* slider = new IupHaikuSlider(ih, o);
+  ih->handle = reinterpret_cast<InativeHandle*>(slider);
 
   iuphaikuAddToParent(ih);
   iuphaikuUpdateWidgetFont(ih, slider);
@@ -226,8 +226,8 @@ static int haikuValMapMethod(Ihandle* ih)
 
 static void haikuValUnMapMethod(Ihandle* ih)
 {
-  IupHaikuSlider* s = (IupHaikuSlider*)ih->handle;
-  if (s) s->SetIhandle(NULL);
+  auto* s = reinterpret_cast<IupHaikuSlider*>(ih->handle);
+  if (s) s->SetIhandle(nullptr);
   iupdrvBaseUnMapMethod(ih);
 }
 
@@ -243,14 +243,14 @@ extern "C" IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   ic->Map = haikuValMapMethod;
   ic->UnMap = haikuValUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuValSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, haikuValSetValueAttrib, "0", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STEP", NULL, haikuValSetStepAttrib, "0.01", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PAGESTEP", NULL, NULL, "0.1", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHOWTICKS", NULL, haikuValSetShowTicksAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, haikuValSetTicksPosAttrib, IUPAF_SAMEASSYSTEM, "NORMAL", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, haikuValSetValueAttrib, "0", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "STEP", nullptr, haikuValSetStepAttrib, "0.01", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PAGESTEP", nullptr, nullptr, "0.1", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWTICKS", nullptr, haikuValSetShowTicksAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TICKSPOS", nullptr, haikuValSetTicksPosAttrib, IUPAF_SAMEASSYSTEM, "NORMAL", IUPAF_NO_INHERIT);
 }

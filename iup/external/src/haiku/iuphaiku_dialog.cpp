@@ -43,7 +43,7 @@ extern "C" {
 
 static Ihandle* haikuDialogFindChildAt(Ihandle* ih, int x, int y)
 {
-  if (!ih) return NULL;
+  if (!ih) return nullptr;
   for (Ihandle* c = ih->firstchild; c; c = c->brother)
   {
     if (x >= c->x && x < c->x + c->currentwidth &&
@@ -53,7 +53,7 @@ static Ihandle* haikuDialogFindChildAt(Ihandle* ih, int x, int y)
       return deeper ? deeper : c;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static Ihandle* haikuDialogFindDropTarget(Ihandle* dlg, int x, int y)
@@ -70,7 +70,7 @@ class IupHaikuRootView : public BView
 public:
   IupHaikuRootView(BRect frame, Ihandle* ih)
     : BView(frame, "iup_root", B_FOLLOW_ALL_SIDES, B_WILL_DRAW),
-      fBgImage(NULL), fZoom(false), fIhandle(ih), fMouseInside(false)
+      fBgImage(nullptr), fZoom(false), fIhandle(ih), fMouseInside(false)
   {
     SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
   }
@@ -135,7 +135,7 @@ public:
   filter_result Filter(BMessage* msg, BHandler** target) override
   {
     int32 mods = 0;
-    const char* bytes = NULL;
+    const char* bytes = nullptr;
     if (msg->FindInt32("modifiers", &mods) != B_OK || !(mods & B_COMMAND_KEY))
       return B_DISPATCH_MESSAGE;
     if (msg->FindString("bytes", &bytes) != B_OK || !bytes)
@@ -148,7 +148,7 @@ public:
     msg->FindInt32("raw_char", &raw_char);
     msg->FindInt32("key", &raw_key);
 
-    int code = iuphaikuKeyDecode((unsigned char)bytes[0], (int)raw_char, (int)raw_key, (unsigned)mods);
+    int code = iuphaikuKeyDecode(static_cast<unsigned char>(bytes[0]), static_cast<int>(raw_char), static_cast<int>(raw_key), static_cast<unsigned>(mods));
     if (!code) return B_DISPATCH_MESSAGE;
 
     int press = iupKeyCallKeyPressCb(ih, code, 1);
@@ -175,8 +175,8 @@ public:
                  window_feel feel, uint32 flags, Ihandle* ih)
     : BWindow(frame, title ? title : "", look, feel,
               flags | B_ASYNCHRONOUS_CONTROLS),
-      fIhandle(ih), fRootView(NULL), fSavedLook(look), fIsFullScreen(false),
-      fMoveRunner(NULL)
+      fIhandle(ih), fRootView(nullptr), fSavedLook(look), fIsFullScreen(false),
+      fMoveRunner(nullptr)
   {
     fRootView = new IupHaikuRootView(Bounds(), ih);
     AddChild(fRootView);
@@ -189,7 +189,7 @@ public:
     delete fMoveRunner;
     if (BList* list = CommonFilterList())
       for (int32 i = list->CountItems() - 1; i >= 0; --i)
-        BLooper::RemoveCommonFilter((BMessageFilter*)list->ItemAt(i));
+        BLooper::RemoveCommonFilter(static_cast<BMessageFilter*>(list->ItemAt(i)));
   }
 
   void Minimize(bool minimize) override
@@ -201,8 +201,8 @@ public:
 
     for (Ihandle* dlg = iupDlgListFirst(); dlg && count < 64; dlg = iupDlgListNext())
     {
-      if (dlg->handle && dlg->handle != (InativeHandle*)this && iupDialogGetNativeParent(dlg) == (InativeHandle*)this)
-        children[count++] = (BWindow*)dlg->handle;
+      if (dlg->handle && dlg->handle != reinterpret_cast<InativeHandle*>(this) && iupDialogGetNativeParent(dlg) == reinterpret_cast<InativeHandle*>(this))
+        children[count++] = reinterpret_cast<BWindow*>(dlg->handle);
     }
 
     for (int i = 0; i < count; i++)
@@ -232,11 +232,11 @@ public:
     if (msg && msg->what == IUPHAIKU_MOVE_SETTLED)
     {
       delete fMoveRunner;
-      fMoveRunner = NULL;
+      fMoveRunner = nullptr;
       if (fIhandle && iupObjectCheck(fIhandle))
       {
-        IFnii cb = (IFnii)IupGetCallback(fIhandle, "MOVE_CB");
-        if (cb) cb(fIhandle, (int)fLastMovePos.x, (int)fLastMovePos.y);
+        auto cb = reinterpret_cast<IFnii>(IupGetCallback(fIhandle, "MOVE_CB"));
+        if (cb) cb(fIhandle, static_cast<int>(fLastMovePos.x), static_cast<int>(fLastMovePos.y));
       }
       return;
     }
@@ -250,12 +250,12 @@ public:
     {
       BPoint pt = ConvertFromScreen(msg->DropPoint());
 
-      Ihandle* target = haikuDialogFindDropTarget(fIhandle, (int)pt.x, (int)pt.y);
-      IFnsiii cb = (IFnsiii)IupGetCallback(target, "DROPFILES_CB");
+      Ihandle* target = haikuDialogFindDropTarget(fIhandle, static_cast<int>(pt.x), static_cast<int>(pt.y));
+      auto cb = reinterpret_cast<IFnsiii>(IupGetCallback(target, "DROPFILES_CB"));
       if (cb)
       {
-        int lx = (int)pt.x - target->x;
-        int ly = (int)pt.y - target->y;
+        int lx = static_cast<int>(pt.x) - target->x;
+        int ly = static_cast<int>(pt.y) - target->y;
 
         entry_ref ref;
         int32 count = 0;
@@ -265,7 +265,7 @@ public:
           if (msg->FindRef("refs", i, &ref) != B_OK) continue;
           BPath path;
           if (BEntry(&ref).GetPath(&path) != B_OK) continue;
-          int ret = cb(target, (char*)path.Path(), count - i - 1, lx, ly);
+          int ret = cb(target, const_cast<char*>(path.Path()), count - i - 1, lx, ly);
           if (ret == IUP_IGNORE) break;
           if (ret == IUP_CLOSE) { IupExitLoop(); break; }
         }
@@ -274,8 +274,8 @@ public:
     }
     if (msg && msg->what == IUPHAIKU_MENU_ITEM_MSG)
     {
-      Ihandle* item_ih = NULL;
-      msg->FindPointer("ih", (void**)&item_ih);
+      Ihandle* item_ih = nullptr;
+      msg->FindPointer("ih", reinterpret_cast<void**>(&item_ih));
       if (item_ih && iupObjectCheck(item_ih))
       {
         /* AUTOTOGGLE: clicking the item flips VALUE before ACTION fires. */
@@ -296,18 +296,18 @@ public:
     }
     if (msg && msg->what == IUPHAIKU_MENU_RECENT_MSG)
     {
-      Ihandle* menu_ih = NULL;
+      Ihandle* menu_ih = nullptr;
       int32 index = -1;
-      msg->FindPointer("menu", (void**)&menu_ih);
+      msg->FindPointer("menu", reinterpret_cast<void**>(&menu_ih));
       msg->FindInt32("index", &index);
       iuphaikuRecentDispatch(menu_ih, index);
       return;
     }
     if (msg && msg->what == IUPHAIKU_MENU_CB_MSG)
     {
-      Ihandle* ih = NULL;
-      const char* cb_name = NULL;
-      msg->FindPointer("ih", (void**)&ih);
+      Ihandle* ih = nullptr;
+      const char* cb_name = nullptr;
+      msg->FindPointer("ih", reinterpret_cast<void**>(&ih));
       msg->FindString("cb", &cb_name);
       if (ih && cb_name && iupObjectCheck(ih))
       {
@@ -322,7 +322,7 @@ public:
     {
       int32 serial = -1;
       msg->FindInt32("serial", &serial);
-      Ihandle* ih = iuphaikuTimerFromSerial((int)serial);
+      Ihandle* ih = iuphaikuTimerFromSerial(static_cast<int>(serial));
       if (ih && iupObjectCheck(ih))
       {
         Icallback cb = IupGetCallback(ih, "ACTION_CB");
@@ -332,20 +332,20 @@ public:
     }
     if (msg && msg->what == IUPHAIKU_POST_MSG)
     {
-      Ihandle* ih = NULL;
-      const char* s = NULL;
+      Ihandle* ih = nullptr;
+      const char* s = nullptr;
       int32 i32 = 0;
       double d = 0;
-      void* p = NULL;
-      msg->FindPointer("ih", (void**)&ih);
+      void* p = nullptr;
+      msg->FindPointer("ih", reinterpret_cast<void**>(&ih));
       msg->FindString("s", &s);
       msg->FindInt32("i", &i32);
       msg->FindDouble("d", &d);
       msg->FindPointer("p", &p);
       if (ih && iupObjectCheck(ih))
       {
-        IFnsidv cb = (IFnsidv)IupGetCallback(ih, "POSTMESSAGE_CB");
-        if (cb) cb(ih, (char*)s, (int)i32, d, p);
+        auto cb = reinterpret_cast<IFnsidv>(IupGetCallback(ih, "POSTMESSAGE_CB"));
+        if (cb) cb(ih, const_cast<char*>(s), static_cast<int>(i32), d, p);
       }
       return;
     }
@@ -392,7 +392,7 @@ public:
   {
     BWindow::Zoom(origin, width, height);
     if (!fIhandle || !iupObjectCheck(fIhandle)) return;
-    iupAttribSet(fIhandle, "MAXIMIZED", iupAttribGetBoolean(fIhandle, "MAXIMIZED") ? NULL : (char*)"Yes");
+    iupAttribSet(fIhandle, "MAXIMIZED", iupAttribGetBoolean(fIhandle, "MAXIMIZED") ? nullptr : const_cast<char*>("Yes"));
   }
 
   void FrameResized(float w, float h) override
@@ -400,10 +400,10 @@ public:
     BWindow::FrameResized(w, h);
     if (!fIhandle || fIhandle->data->ignore_resize) return;
 
-    iupdrvDialogGetSize(fIhandle, NULL, &fIhandle->currentwidth, &fIhandle->currentheight);
+    iupdrvDialogGetSize(fIhandle, nullptr, &fIhandle->currentwidth, &fIhandle->currentheight);
 
-    IFnii cb = (IFnii)IupGetCallback(fIhandle, "RESIZE_CB");
-    if (!cb || cb(fIhandle, (int)(w + 1), (int)(h + 1)) != IUP_IGNORE)
+    auto cb = reinterpret_cast<IFnii>(IupGetCallback(fIhandle, "RESIZE_CB"));
+    if (!cb || cb(fIhandle, static_cast<int>(w + 1), static_cast<int>(h + 1)) != IUP_IGNORE)
     {
       fIhandle->data->ignore_resize = 1;
       IupRefresh(fIhandle);
@@ -457,7 +457,7 @@ static void haikuDialogUpdateFeel(Ihandle* ih, IupHaikuWindow* win)
 {
   window_feel feel = haikuDialogResolveFeel(ih);
   if (iupAttribGet(ih, "_IUPHAIKU_SAVED_FEEL"))
-    iupAttribSetInt(ih, "_IUPHAIKU_SAVED_FEEL", (int)feel);
+    iupAttribSetInt(ih, "_IUPHAIKU_SAVED_FEEL", static_cast<int>(feel));
   else
     win->SetFeel(feel);
 }
@@ -483,9 +483,9 @@ static int haikuDialogMapMethod(Ihandle* ih)
   window_feel feel = haikuDialogResolveFeel(ih);
   uint32 flags = haikuDialogResolveFlags(ih);
 
-  IupHaikuWindow* win = new IupHaikuWindow(BRect(0, 0, 99, 99),
+  auto* win = new IupHaikuWindow(BRect(0, 0, 99, 99),
                                            title, look, feel, flags, ih);
-  ih->handle = (InativeHandle*)win;
+  ih->handle = reinterpret_cast<InativeHandle*>(win);
 
   {
     InativeHandle* parent = iupDialogGetNativeParent(ih);
@@ -498,19 +498,19 @@ static int haikuDialogMapMethod(Ihandle* ih)
 
 static void haikuDialogUnMapMethod(Ihandle* ih)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
 
   if (ih->data->menu)
   {
     IupDestroy(ih->data->menu);
-    ih->data->menu = NULL;
+    ih->data->menu = nullptr;
   }
 
   if (win && be_app)
   {
     for (Ihandle* dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
     {
-      if (dlg != ih && dlg->handle && iupDialogGetNativeParent(dlg) == (InativeHandle*)win)
+      if (dlg != ih && dlg->handle && iupDialogGetNativeParent(dlg) == reinterpret_cast<InativeHandle*>(win))
       {
         BMessage destroy(IUPHAIKU_APP_DESTROY_DLG);
         destroy.AddPointer("ih", dlg);
@@ -521,17 +521,17 @@ static void haikuDialogUnMapMethod(Ihandle* ih)
 
   if (win && win->Lock())
   {
-    win->SetIhandle(NULL);
+    win->SetIhandle(nullptr);
     win->Quit();
   }
-  ih->handle = NULL;
+  ih->handle = nullptr;
   iuphaikuPostAppWake();
 }
 
 static void* haikuDialogGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* /*child*/)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
-  return win ? (void*)win->RootView() : NULL;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
+  return win ? reinterpret_cast<void*>(win->RootView()) : nullptr;
 }
 
 /* ih->currentwidth/height is full-window size; ResizeTo sizes the content. */
@@ -539,8 +539,8 @@ static void haikuDialogContentSize(IupHaikuWindow* win, int total_w, int total_h
 {
   BRect outer = win->DecoratorFrame();
   BRect inner = win->Frame();
-  int decor_w = (int)(outer.Width() - inner.Width() + 0.5f);
-  int decor_h = (int)(outer.Height() - inner.Height() + 0.5f);
+  int decor_w = static_cast<int>(outer.Width() - inner.Width() + 0.5f);
+  int decor_h = static_cast<int>(outer.Height() - inner.Height() + 0.5f);
   int w = total_w - decor_w;
   int h = total_h - decor_h;
   if (w < 1) w = 1;
@@ -551,7 +551,7 @@ static void haikuDialogContentSize(IupHaikuWindow* win, int total_w, int total_h
 
 static void haikuDialogLayoutUpdateMethod(Ihandle* ih)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win || ih->data->ignore_resize) return;
 
   ih->data->ignore_resize = 1;
@@ -561,7 +561,7 @@ static void haikuDialogLayoutUpdateMethod(Ihandle* ih)
     int total_h = ih->currentheight > 0 ? ih->currentheight : 1;
     int cw, ch;
     haikuDialogContentSize(win, total_w, total_h, &cw, &ch);
-    win->ResizeTo((float)(cw - 1), (float)(ch - 1));
+    win->ResizeTo(static_cast<float>(cw - 1), static_cast<float>(ch - 1));
   }
   ih->data->ignore_resize = 0;
 }
@@ -572,7 +572,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
   if (caption) *caption = 0;
   if (menu) *menu = 0;
 
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return;
 
   if (menu && ih->data && ih->data->menu)
@@ -581,25 +581,25 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
   /* IUP formula: 2*border + caption + menu, so caption excludes the top border. */
   BRect outer = win->DecoratorFrame();
   BRect inner = win->Frame();
-  int top_decor = (int)(inner.top - outer.top + 0.5f);
-  int bottom_border = (int)(outer.bottom - inner.bottom + 0.5f);
-  if (border)  *border  = (int)((outer.Width() - inner.Width()) / 2.0f + 0.5f);
+  int top_decor = static_cast<int>(inner.top - outer.top + 0.5f);
+  int bottom_border = static_cast<int>(outer.bottom - inner.bottom + 0.5f);
+  if (border)  *border  = static_cast<int>((outer.Width() - inner.Width()) / 2.0f + 0.5f);
   if (caption) *caption = top_decor - bottom_border;
 }
 
 IUP_DRV_API BView* iuphaikuDialogRootView(BWindow* win)
 {
-  IupHaikuWindow* iwin = dynamic_cast<IupHaikuWindow*>(win);
-  return iwin ? iwin->RootView() : NULL;
+  auto* iwin = dynamic_cast<IupHaikuWindow*>(win);
+  return iwin ? iwin->RootView() : nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogSetParent(Ihandle* ih, InativeHandle* native_parent)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win || !native_parent) return;
 
   LooperLockGuard guard(win);
-  win->AddToSubset((BWindow*)native_parent);
+  win->AddToSubset(reinterpret_cast<BWindow*>(native_parent));
   haikuDialogUpdateFeel(ih, win);
 }
 
@@ -608,27 +608,27 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
   if (x) *x = 0;
   if (y) *y = 0;
 
-  IupHaikuWindow* win = (IupHaikuWindow*)(handle ? handle : ih->handle);
+  auto* win = reinterpret_cast<IupHaikuWindow*>(handle ? handle : ih->handle);
   if (!win) return;
 
   /* IUP position is full-window top-left, BWindow::Frame is content. */
   BRect outer = win->DecoratorFrame();
-  if (x) *x = (int)outer.left;
-  if (y) *y = (int)outer.top;
+  if (x) *x = static_cast<int>(outer.left);
+  if (y) *y = static_cast<int>(outer.top);
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return;
 
   /* MoveTo targets content top-left; offset by decor so outer lands at (x, y). */
   LooperLockGuard guard(win);
   BRect outer = win->DecoratorFrame();
   BRect inner = win->Frame();
-  int dx = (int)(inner.left - outer.left + 0.5f);
-  int dy = (int)(inner.top  - outer.top  + 0.5f);
-  win->MoveTo((float)(x + dx), (float)(y + dy));
+  int dx = static_cast<int>(inner.left - outer.left + 0.5f);
+  int dy = static_cast<int>(inner.top  - outer.top  + 0.5f);
+  win->MoveTo(static_cast<float>(x + dx), static_cast<float>(y + dy));
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
@@ -636,24 +636,24 @@ extern "C" IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* hand
   if (w) *w = 0;
   if (h) *h = 0;
 
-  IupHaikuWindow* win = (IupHaikuWindow*)(handle ? handle : ih->handle);
+  auto* win = reinterpret_cast<IupHaikuWindow*>(handle ? handle : ih->handle);
   if (!win) return;
 
   BRect outer = win->DecoratorFrame();
-  if (w) *w = (int)(outer.Width() + 1);
-  if (h) *h = (int)(outer.Height() + 1);
+  if (w) *w = static_cast<int>(outer.Width() + 1);
+  if (h) *h = static_cast<int>(outer.Height() + 1);
 }
 
 extern "C" IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return 0;
   return win->IsHidden() ? 0 : 1;
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return;
 
   if (visible)
@@ -666,12 +666,12 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
       LooperLockGuard guard(win);
       int cw, ch;
       haikuDialogContentSize(win, total_w, total_h, &cw, &ch);
-      win->ResizeTo((float)(cw - 1), (float)(ch - 1));
+      win->ResizeTo(static_cast<float>(cw - 1), static_cast<float>(ch - 1));
 
       if (iupAttribGetBoolean(ih, "MODAL") &&
           !iupAttribGet(ih, "_IUPHAIKU_SAVED_FEEL"))
       {
-        iupAttribSetInt(ih, "_IUPHAIKU_SAVED_FEEL", (int)win->Feel());
+        iupAttribSetInt(ih, "_IUPHAIKU_SAVED_FEEL", static_cast<int>(win->Feel()));
         window_feel modal_feel = (win->Feel() == B_FLOATING_SUBSET_WINDOW_FEEL)
                                    ? B_MODAL_SUBSET_WINDOW_FEEL
                                    : B_MODAL_APP_WINDOW_FEEL;
@@ -702,9 +702,9 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
       char* saved = iupAttribGet(ih, "_IUPHAIKU_SAVED_FEEL");
       if (saved)
       {
-        window_feel f = (window_feel)iupAttribGetInt(ih, "_IUPHAIKU_SAVED_FEEL");
+        auto f = static_cast<window_feel>(iupAttribGetInt(ih, "_IUPHAIKU_SAVED_FEEL"));
         win->SetFeel(f);
-        iupAttribSet(ih, "_IUPHAIKU_SAVED_FEEL", NULL);
+        iupAttribSet(ih, "_IUPHAIKU_SAVED_FEEL", nullptr);
       }
     }
     iuphaikuPostAppWake();
@@ -713,7 +713,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 
 extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return 0;
 
   ih->data->show_state = IUP_SHOW;
@@ -750,7 +750,7 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 
 static int haikuDialogSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return 1;
   LooperLockGuard guard(win);
   win->SetTitle(value ? value : "");
@@ -759,14 +759,14 @@ static int haikuDialogSetTitleAttrib(Ihandle* ih, const char* value)
 
 static char* haikuDialogGetTitleAttrib(Ihandle* ih)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
-  if (!win) return NULL;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
+  if (!win) return nullptr;
   return iupStrReturnStr(win->Title());
 }
 
 static int haikuDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return 1;
   int w = 1, h = 1;
   iupStrToIntInt(value, &w, &h, 'x');
@@ -774,13 +774,13 @@ static int haikuDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
   LooperLockGuard guard(win);
   float minW, maxW, minH, maxH;
   win->GetSizeLimits(&minW, &maxW, &minH, &maxH);
-  win->SetSizeLimits((float)(w - 1), maxW, (float)(h - 1), maxH);
+  win->SetSizeLimits(static_cast<float>(w - 1), maxW, static_cast<float>(h - 1), maxH);
   return 1;
 }
 
 static int haikuDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return 1;
   int w = 65535, h = 65535;
   iupStrToIntInt(value, &w, &h, 'x');
@@ -788,13 +788,13 @@ static int haikuDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
   LooperLockGuard guard(win);
   float minW, maxW, minH, maxH;
   win->GetSizeLimits(&minW, &maxW, &minH, &maxH);
-  win->SetSizeLimits(minW, (float)(w - 1), minH, (float)(h - 1));
+  win->SetSizeLimits(minW, static_cast<float>(w - 1), minH, static_cast<float>(h - 1));
   return 1;
 }
 
 static int haikuDialogSetResizeAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return 1;
   iupAttribSet(ih, "RESIZE", iupStrBoolean(value) ? "YES" : "NO");
 
@@ -808,7 +808,7 @@ static int haikuDialogSetResizeAttrib(Ihandle* ih, const char* value)
 
 static int haikuDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return 1;
   iupAttribSet(ih, "HIDETITLEBAR", iupStrBoolean(value) ? "YES" : "NO");
   LooperLockGuard guard(win);
@@ -821,7 +821,7 @@ static int haikuDialogSetCustomFrameAttrib(Ihandle* ih, const char* value)
   iupAttribSet(ih, "CUSTOMFRAME", iupStrBoolean(value) ? "YES" : "NO");
   if (iupStrBoolean(value))
     iupDialogCustomFrameSimulateCheckCallbacks(ih);
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return 1;
   LooperLockGuard guard(win);
   win->SetLook(haikuDialogResolveLook(ih));
@@ -830,7 +830,7 @@ static int haikuDialogSetCustomFrameAttrib(Ihandle* ih, const char* value)
 
 static int haikuDialogSetTopMostAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   iupAttribSetStr(ih, "TOPMOST", value);
   if (!win) return 1;
   LooperLockGuard guard(win);
@@ -840,7 +840,7 @@ static int haikuDialogSetTopMostAttrib(Ihandle* ih, const char* value)
 
 static int haikuDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win || !iupStrBoolean(value)) return 0;
   LooperLockGuard guard(win);
   win->Activate(true);
@@ -849,7 +849,7 @@ static int haikuDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 
 static int haikuDialogSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return 1;
   unsigned char r, g, b;
   if (!iupStrToRGB(value, &r, &g, &b)) return 0;
@@ -863,9 +863,9 @@ static int haikuDialogSetBgColorAttrib(Ihandle* ih, const char* value)
 
 static int haikuDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return 1;
-  IupHaikuRootView* root = dynamic_cast<IupHaikuRootView*>(win->RootView());
+  auto* root = dynamic_cast<IupHaikuRootView*>(win->RootView());
   if (!root) return 0;
 
   unsigned char r, g, b;
@@ -873,13 +873,13 @@ static int haikuDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   {
     rgb_color c = { r, g, b, 255 };
     LooperLockGuard guard(win);
-    root->SetBackgroundImage(NULL, false);
+    root->SetBackgroundImage(nullptr, false);
     root->SetViewColor(c);
     root->Invalidate();
     return 1;
   }
 
-  BBitmap* bm = (BBitmap*)iupImageGetImage(value, ih, 0, NULL);
+  auto* bm = static_cast<BBitmap*>(iupImageGetImage(value, ih, 0, nullptr));
   if (!bm) return 0;
   LooperLockGuard guard(win);
   root->SetBackgroundImage(bm, iupAttribGetBoolean(ih, "BACKIMAGEZOOM") ? true : false);
@@ -889,7 +889,7 @@ static int haikuDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 static int haikuDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return 1;
   char* bg = iupAttribGet(ih, "BACKGROUND");
   if (bg) haikuDialogSetBackgroundAttrib(ih, bg);
@@ -898,7 +898,7 @@ static int haikuDialogSetBackImageZoomAttrib(Ihandle* ih, const char* value)
 
 static int haikuDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return 1;
 
   LooperLockGuard guard(win);
@@ -927,31 +927,31 @@ static int haikuDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
 
 static char* haikuDialogGetClientSizeAttrib(Ihandle* ih)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
-  if (!win) return NULL;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
+  if (!win) return nullptr;
   LooperLockGuard guard(win);
   BRect b = win->RootView()->Bounds();
-  return iupStrReturnIntInt((int)(b.Width() + 1), (int)(b.Height() + 1), 'x');
+  return iupStrReturnIntInt(static_cast<int>(b.Width() + 1), static_cast<int>(b.Height() + 1), 'x');
 }
 
 static char* haikuDialogGetMinimizedAttrib(Ihandle* ih)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
-  if (!win) return NULL;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
+  if (!win) return nullptr;
   return iupStrReturnBoolean(win->IsMinimized() ? 1 : 0);
 }
 
 static char* haikuDialogGetActiveWindowAttrib(Ihandle* ih)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
-  if (!win) return NULL;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
+  if (!win) return nullptr;
   return iupStrReturnBoolean(win->IsActive() ? 1 : 0);
 }
 
 
 static int haikuDialogSetWorkspacesAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuWindow* win = (IupHaikuWindow*)ih->handle;
+  auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
   if (!win) return 1;
 
   uint32 mask;
@@ -988,7 +988,7 @@ static void haikuDialogSetDeskbarTeamVisible(bool visible)
   {
     BMessage msg(B_SOME_APP_LAUNCHED);
     msg.AddInt32("be:team", info.team);
-    msg.AddInt32("be:flags", (int32)info.flags);
+    msg.AddInt32("be:flags", static_cast<int32>(info.flags));
     msg.AddString("be:signature", info.signature);
     msg.AddRef("be:ref", &info.ref);
     deskbar.SendMessage(&msg);
@@ -998,7 +998,7 @@ static void haikuDialogSetDeskbarTeamVisible(bool visible)
 static int haikuDialogSetIconAttrib(Ihandle* ih, const char* value)
 {
   if (!value || !be_app) return 0;
-  BBitmap* src = (BBitmap*)iupImageGetImage(value, ih, 0, NULL);
+  auto* src = static_cast<BBitmap*>(iupImageGetImage(value, ih, 0, nullptr));
   if (!src || src->InitCheck() != B_OK) return 0;
 
   app_info info;
@@ -1011,9 +1011,9 @@ static int haikuDialogSetIconAttrib(Ihandle* ih, const char* value)
     { B_LARGE_ICON, 31.0f },
     { B_MINI_ICON,  15.0f },
   };
-  for (size_t i = 0; i < sizeof(sizes)/sizeof(sizes[0]); ++i)
+  for (const auto& size : sizes)
   {
-    BBitmap scaled(BRect(0, 0, sizes[i].side, sizes[i].side),
+    BBitmap scaled(BRect(0, 0, size.side, size.side),
                    B_BITMAP_ACCEPTS_VIEWS, B_RGBA32);
     if (scaled.InitCheck() != B_OK) continue;
     BView v(scaled.Bounds(), "iup_icon", B_FOLLOW_NONE, B_WILL_DRAW);
@@ -1026,7 +1026,7 @@ static int haikuDialogSetIconAttrib(Ihandle* ih, const char* value)
       scaled.RemoveChild(&v);
       scaled.Unlock();
     }
-    finfo.SetIcon(&scaled, sizes[i].which);
+    finfo.SetIcon(&scaled, size.which);
   }
 
   /* Deskbar caches the team icon at launch; QUIT+LAUNCHED forces a re-query. */
@@ -1053,51 +1053,51 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->LayoutUpdate = haikuDialogLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = haikuDialogGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterAttribute(ic, "TITLE", haikuDialogGetTitleAttrib, haikuDialogSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, haikuDialogSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BACKGROUND", NULL, haikuDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", NULL, haikuDialogSetBackImageZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", haikuDialogGetTitleAttrib, haikuDialogSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, haikuDialogSetBgColorAttrib, "DLGBGCOLOR", nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BACKGROUND", nullptr, haikuDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", nullptr, haikuDialogSetBackImageZoomAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "RESIZE", NULL, haikuDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BORDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINBOX", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAXBOX", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MENUBOX", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOOLBOX", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, haikuDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CUSTOMFRAME", NULL, haikuDialogSetCustomFrameAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZE", nullptr, haikuDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BORDER", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINBOX", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXBOX", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MENUBOX", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOOLBOX", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDETITLEBAR", nullptr, haikuDialogSetHideTitleBarAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUSTOMFRAME", nullptr, haikuDialogSetCustomFrameAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MINSIZE", NULL, haikuDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAXSIZE", NULL, haikuDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINSIZE", nullptr, haikuDialogSetMinSizeAttrib, IUPAF_SAMEASSYSTEM, "1x1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXSIZE", nullptr, haikuDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "TOPMOST", NULL, haikuDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, haikuDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FULLSCREEN", NULL, haikuDialogSetFullScreenAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOPMOST", nullptr, haikuDialogSetTopMostAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BRINGFRONT", nullptr, haikuDialogSetBringFrontAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FULLSCREEN", nullptr, haikuDialogSetFullScreenAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "CLIENTSIZE", haikuDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLIENTOFFSET", iupBaseGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTSIZE", haikuDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIENTOFFSET", iupBaseGetClientOffsetAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MAXIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINIMIZED", haikuDialogGetMinimizedAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ACTIVEWINDOW", haikuDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXIMIZED", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINIMIZED", haikuDialogGetMinimizedAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVEWINDOW", haikuDialogGetActiveWindowAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "WORKSPACES", NULL, haikuDialogSetWorkspacesAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "WORKSPACES", nullptr, haikuDialogSetWorkspacesAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "HIDETASKBAR", NULL, haikuDialogSetHideTaskbarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDETASKBAR", nullptr, haikuDialogSetHideTaskbarAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, iuphaikuGetNativeWindowHandleName(), iuphaikuGetNativeWindowHandleAttrib, NULL, NULL, NULL, IUPAF_NO_INHERIT | IUPAF_NO_STRING);
+  iupClassRegisterAttribute(ic, iuphaikuGetNativeWindowHandleName(), iuphaikuGetNativeWindowHandleAttrib, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT | IUPAF_NO_STRING);
 
-  iupClassRegisterAttribute(ic, "ICON", NULL, haikuDialogSetIconAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ICON", nullptr, haikuDialogSetIconAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
 
   /* Not supported on Haiku - no public APIs for these. */
-  iupClassRegisterAttribute(ic, "OPACITY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "RESIZEINC", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OPACITYIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHAPEIMAGE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITY", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TASKBARBUTTON", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RESIZEINC", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPACITYIMAGE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHAPEIMAGE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SAVEUNDER", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMPOSITED", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CONTROL", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HELPBUTTON", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DIALOGHINT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }

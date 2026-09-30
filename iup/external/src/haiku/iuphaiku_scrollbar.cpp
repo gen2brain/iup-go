@@ -31,7 +31,7 @@ class IupHaikuScrollBar : public BScrollBar
 {
 public:
   IupHaikuScrollBar(Ihandle* ih, orientation o)
-    : BScrollBar(BRect(0, 0, 0, 0), "iup_scrollbar", NULL, 0.0f, 1.0f, o),
+    : BScrollBar(BRect(0, 0, 0, 0), "iup_scrollbar", nullptr, 0.0f, 1.0f, o),
       fIhandle(ih), fSuppress(false), fMouseDown(false), fIsDragging(false) {}
 
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }
@@ -71,18 +71,18 @@ public:
     double range = ih->data->vmax - ih->data->vmin;
     if (range <= 0) return;
 
-    int ipage = (int)((ih->data->pagesize / range) * ISCROLLBAR_RANGE);
+    int ipage = static_cast<int>((ih->data->pagesize / range) * ISCROLLBAR_RANGE);
     if (ipage < 1) ipage = 1;
     int imax = ISCROLLBAR_RANGE - ipage;
     if (imax < 0) imax = 0;
 
-    int ipos = (int)new_value;
+    int ipos = static_cast<int>(new_value);
     if (ih->data->inverted) ipos = imax - ipos;
     if (ipos < 0) ipos = 0;
     if (ipos > imax) ipos = imax;
 
     double old_val = ih->data->val;
-    ih->data->val = ((double)ipos / (double)ISCROLLBAR_RANGE) * range + ih->data->vmin;
+    ih->data->val = (static_cast<double>(ipos) / static_cast<double>(ISCROLLBAR_RANGE)) * range + ih->data->vmin;
     iupScrollbarCropValue(ih);
 
     double delta = ih->data->val - old_val;
@@ -110,9 +110,9 @@ public:
     Icallback sc = IupGetCallback(ih, "SCROLL_CB");
     if (sc)
     {
-      IFniff scroll_cb = (IFniff)sc;
-      float posx = horiz ? (float)ih->data->val : 0;
-      float posy = horiz ? 0 : (float)ih->data->val;
+      auto scroll_cb = reinterpret_cast<IFniff>(sc);
+      float posx = horiz ? static_cast<float>(ih->data->val) : 0;
+      float posy = horiz ? 0 : static_cast<float>(ih->data->val);
       scroll_cb(ih, op, posx, posy);
     }
 
@@ -138,45 +138,45 @@ private:
   {
     Ihandle* ih = fIhandle;
     bool horiz = ih->data->orientation == ISCROLLBAR_HORIZONTAL;
-    IFniff scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+    auto scroll_cb = reinterpret_cast<IFniff>(IupGetCallback(ih, "SCROLL_CB"));
     if (!scroll_cb) return;
     int op = horiz ? IUP_SBPOSH : IUP_SBPOSV;
-    float posx = horiz ? (float)ih->data->val : 0;
-    float posy = horiz ? 0 : (float)ih->data->val;
+    float posx = horiz ? static_cast<float>(ih->data->val) : 0;
+    float posy = horiz ? 0 : static_cast<float>(ih->data->val);
     scroll_cb(ih, op, posx, posy);
   }
 };
 
 extern "C" IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 {
-  IupHaikuScrollBar* sb = (IupHaikuScrollBar*)ih->handle;
+  auto* sb = reinterpret_cast<IupHaikuScrollBar*>(ih->handle);
   if (!sb) return;
   double range = ih->data->vmax - ih->data->vmin;
   if (range <= 0) return;
 
-  int ipage = (int)((ih->data->pagesize / range) * ISCROLLBAR_RANGE);
+  int ipage = static_cast<int>((ih->data->pagesize / range) * ISCROLLBAR_RANGE);
   if (ipage < 1) ipage = 1;
   if (ipage > ISCROLLBAR_RANGE) ipage = ISCROLLBAR_RANGE;
 
   int imax = ISCROLLBAR_RANGE - ipage;
   if (imax < 0) imax = 0;
 
-  int istep = (int)(ih->data->linestep * ISCROLLBAR_RANGE);
+  int istep = static_cast<int>(ih->data->linestep * ISCROLLBAR_RANGE);
   if (istep < 1) istep = 1;
 
-  int ipagestep = (int)(ih->data->pagestep * ISCROLLBAR_RANGE);
+  int ipagestep = static_cast<int>(ih->data->pagestep * ISCROLLBAR_RANGE);
   if (ipagestep < 1) ipagestep = 1;
 
-  int ipos = (int)(((ih->data->val - ih->data->vmin) / range) * ISCROLLBAR_RANGE);
+  int ipos = static_cast<int>(((ih->data->val - ih->data->vmin) / range) * ISCROLLBAR_RANGE);
   if (ipos < 0) ipos = 0;
   if (ipos > imax) ipos = imax;
   if (ih->data->inverted) ipos = imax - ipos;
 
   sb->SetSuppress(true);
-  sb->SetRange(0.0f, (float)imax);
-  sb->SetSteps((float)istep, (float)ipagestep);
-  sb->SetProportion((float)ipage / (float)ISCROLLBAR_RANGE);
-  sb->SetValue((float)ipos);
+  sb->SetRange(0.0f, static_cast<float>(imax));
+  sb->SetSteps(static_cast<float>(istep), static_cast<float>(ipagestep));
+  sb->SetProportion(static_cast<float>(ipage) / static_cast<float>(ISCROLLBAR_RANGE));
+  sb->SetValue(static_cast<float>(ipos));
   sb->SetSuppress(false);
 }
 
@@ -218,8 +218,8 @@ static int haikuSbMapMethod(Ihandle* ih)
 {
   orientation o = (ih->data->orientation == ISCROLLBAR_HORIZONTAL) ? B_HORIZONTAL : B_VERTICAL;
 
-  IupHaikuScrollBar* sb = new IupHaikuScrollBar(ih, o);
-  ih->handle = (InativeHandle*)sb;
+  auto* sb = new IupHaikuScrollBar(ih, o);
+  ih->handle = reinterpret_cast<InativeHandle*>(sb);
   iuphaikuAddToParent(ih);
 
   iupdrvScrollbarUpdate(ih);
@@ -228,8 +228,8 @@ static int haikuSbMapMethod(Ihandle* ih)
 
 static void haikuSbUnMapMethod(Ihandle* ih)
 {
-  IupHaikuScrollBar* sb = (IupHaikuScrollBar*)ih->handle;
-  if (sb) sb->SetIhandle(NULL);
+  auto* sb = reinterpret_cast<IupHaikuScrollBar*>(ih->handle);
+  if (sb) sb->SetIhandle(nullptr);
   iupdrvBaseUnMapMethod(ih);
 }
 
@@ -256,11 +256,11 @@ extern "C" IUP_SDK_API void iupdrvScrollbarInitClass(Iclass* ic)
   ic->UnMap = haikuSbUnMapMethod;
 
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, iupBaseSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "VALUE", iupScrollbarGetValueAttrib, haikuSbSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LINESTEP", iupScrollbarGetLineStepAttrib, haikuSbSetLineStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PAGESTEP", iupScrollbarGetPageStepAttrib, haikuSbSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PAGESIZE", iupScrollbarGetPageSizeAttrib, haikuSbSetPageSizeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LINESTEP", iupScrollbarGetLineStepAttrib, haikuSbSetLineStepAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PAGESTEP", iupScrollbarGetPageStepAttrib, haikuSbSetPageStepAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PAGESIZE", iupScrollbarGetPageSizeAttrib, haikuSbSetPageSizeAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

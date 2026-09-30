@@ -60,7 +60,7 @@ static void haikuListReorder(Ihandle* ih, int src, int drop, int is_ctrl);
 class IupHaikuDropdownItem : public BMenuItem
 {
 public:
-  IupHaikuDropdownItem(Ihandle* ih, const char* label, BMessage* msg, BBitmap* icon = NULL)
+  IupHaikuDropdownItem(Ihandle* ih, const char* label, BMessage* msg, BBitmap* icon = nullptr)
     : BMenuItem(label, msg), fIhandle(ih), fIcon(icon) {}
 
   BBitmap* Icon() const { return fIcon; }
@@ -127,7 +127,7 @@ private:
 class IupHaikuListItem : public BStringItem
 {
 public:
-  IupHaikuListItem(Ihandle* ih, int pos, const char* text, BBitmap* icon = NULL)
+  IupHaikuListItem(Ihandle* ih, int pos, const char* text, BBitmap* icon = nullptr)
     : BStringItem(text), fIhandle(ih), fPos(pos), fIcon(icon) {}
 
   BBitmap* Icon() const { return fIcon; }
@@ -142,7 +142,7 @@ public:
       const char* virt_text = iupListGetItemValueCb(fIhandle, fPos + 1);
       if (virt_text) SetText(virt_text);
       const char* virt_img = iupListGetItemImageCb(fIhandle, fPos + 1);
-      if (virt_img) fIcon = (BBitmap*)iupImageGetImage(virt_img, fIhandle, 0, NULL);
+      if (virt_img) fIcon = static_cast<BBitmap*>(iupImageGetImage(virt_img, fIhandle, 0, nullptr));
     }
 
     /* Reserve uniform icon column (maximg_w from core) so all rows align. */
@@ -226,14 +226,14 @@ public:
   explicit IupHaikuListWrap(Ihandle* ih)
     : BView(BRect(0, 0, 0, 0), "iup_list_wrap", B_FOLLOW_NONE,
             B_WILL_DRAW | B_FRAME_EVENTS),
-      fIhandle(ih), fList(NULL), fSb(NULL)
+      fIhandle(ih), fList(nullptr), fSb(nullptr)
   {
     SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
   }
 
   void Attach(IupHaikuListView* lv, BScrollBar* sb)
   {
-    fList = (BView*)lv;
+    fList = reinterpret_cast<BView*>(lv);
     fSb = sb;
     AddChild(fList);
     AddChild(fSb);
@@ -288,13 +288,13 @@ public:
     if (fIhandle && numBytes >= 1)
     {
       int32 raw_char = 0, mods = 0, raw_key = 0;
-      if (BMessage* m = Window() ? Window()->CurrentMessage() : NULL)
+      if (BMessage* m = Window() ? Window()->CurrentMessage() : nullptr)
       {
         m->FindInt32("raw_char", &raw_char);
         m->FindInt32("key", &raw_key);
         m->FindInt32("modifiers", &mods);
       }
-      int code = iuphaikuKeyDecode((int)(unsigned char)bytes[0], (int)raw_char, (int)raw_key, (unsigned)mods);
+      int code = iuphaikuKeyDecode(static_cast<int>(static_cast<unsigned char>(bytes[0])), static_cast<int>(raw_char), static_cast<int>(raw_key), static_cast<unsigned>(mods));
       if (code)
       {
         int r = (mods & B_COMMAND_KEY) ? IUP_DEFAULT : iupKeyCallKeyCb(fIhandle, code);
@@ -312,22 +312,22 @@ public:
     if (iupAttribGet(fIhandle, "_IUPHAIKU_LIST_IGNORESELECT")) return;
     if (!iupdrvIsActive(fIhandle))
     {
-      iupAttribSet(fIhandle, "_IUPHAIKU_LIST_IGNORESELECT", (char*)"1");
+      iupAttribSet(fIhandle, "_IUPHAIKU_LIST_IGNORESELECT", const_cast<char*>("1"));
       DeselectAll();
-      iupAttribSet(fIhandle, "_IUPHAIKU_LIST_IGNORESELECT", NULL);
+      iupAttribSet(fIhandle, "_IUPHAIKU_LIST_IGNORESELECT", nullptr);
       return;
     }
 
     if (fIhandle->data->is_multiple)
     {
       int n = CountItems();
-      int* sel = (int*)malloc(sizeof(int) * n);
+      int* sel = static_cast<int*>(malloc(sizeof(int) * n));
       int sel_count = 0;
       for (int i = 0; i < n; ++i)
         if (IsItemSelected(i)) sel[sel_count++] = i;
 
-      IFnsii action = (IFnsii)IupGetCallback(fIhandle, "ACTION");
-      IFns multi   = (IFns)IupGetCallback(fIhandle, "MULTISELECT_CB");
+      auto action = reinterpret_cast<IFnsii>(IupGetCallback(fIhandle, "ACTION"));
+      IFns multi   = reinterpret_cast<IFns>(IupGetCallback(fIhandle, "MULTISELECT_CB"));
       if (action || multi)
         iupListMultipleCallActionCb(fIhandle, action, multi, sel, sel_count);
       free(sel);
@@ -339,20 +339,20 @@ public:
 
       if (fIhandle->data->has_editbox && !fIhandle->data->is_dropdown)
       {
-        if (BStringItem* it = dynamic_cast<BStringItem*>(ItemAt(idx)))
+        if (auto* it = dynamic_cast<BStringItem*>(ItemAt(idx)))
         {
-          if (BTextControl* e = (BTextControl*)iupAttribGet(fIhandle, "_IUPHAIKU_LIST_EDIT"))
+          if (auto* e = reinterpret_cast<BTextControl*>(iupAttribGet(fIhandle, "_IUPHAIKU_LIST_EDIT")))
           {
             BMessage* saved = e->ModificationMessage();
-            BMessage* clone = saved ? new BMessage(*saved) : NULL;
-            e->SetModificationMessage(NULL);
+            BMessage* clone = saved ? new BMessage(*saved) : nullptr;
+            e->SetModificationMessage(nullptr);
             e->SetText(it->Text() ? it->Text() : "");
             e->SetModificationMessage(clone);
           }
         }
       }
 
-      IFnsii action = (IFnsii)IupGetCallback(fIhandle, "ACTION");
+      auto action = reinterpret_cast<IFnsii>(IupGetCallback(fIhandle, "ACTION"));
       if (action)
         iupListSingleCallActionCb(fIhandle, action, idx + 1);
     }
@@ -366,7 +366,7 @@ public:
     if (fIhandle && !iupdrvIsActive(fIhandle)) return;
     BListView::MouseDown(where);
     if (!fIhandle) return;
-    BMessage* msg = Looper() ? Looper()->CurrentMessage() : NULL;
+    BMessage* msg = Looper() ? Looper()->CurrentMessage() : nullptr;
     int32 clicks = 1, buttons = 0, mods = 0;
     if (msg) { msg->FindInt32("clicks", &clicks); msg->FindInt32("buttons", &buttons); msg->FindInt32("modifiers", &mods); }
 
@@ -374,16 +374,16 @@ public:
     if      (buttons & B_SECONDARY_MOUSE_BUTTON) btn = IUP_BUTTON3;
     else if (buttons & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    iuphaikuButtonKeySetStatus((unsigned)mods, (unsigned)buttons, 0, status, clicks == 2 ? 1 : 0);
-    IFniiiis bcb = (IFniiiis)IupGetCallback(fIhandle, "BUTTON_CB");
-    if (bcb) bcb(fIhandle, btn, 1, (int)where.x, (int)where.y, status);
+    iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, clicks == 2 ? 1 : 0);
+    auto bcb = reinterpret_cast<IFniiiis>(IupGetCallback(fIhandle, "BUTTON_CB"));
+    if (bcb) bcb(fIhandle, btn, 1, static_cast<int>(where.x), static_cast<int>(where.y), status);
 
     if (clicks >= 2)
     {
       int idx = CurrentSelection();
       if (idx >= 0)
       {
-        IFnis cb = (IFnis)IupGetCallback(fIhandle, "DBLCLICK_CB");
+        auto cb = reinterpret_cast<IFnis>(IupGetCallback(fIhandle, "DBLCLICK_CB"));
         if (cb) iupListSingleCallDblClickCb(fIhandle, cb, idx + 1);
       }
     }
@@ -394,11 +394,11 @@ public:
     BListView::MouseUp(where);
     if (!fIhandle) return;
     int32 mods = 0;
-    if (BMessage* msg = Looper() ? Looper()->CurrentMessage() : NULL) msg->FindInt32("modifiers", &mods);
+    if (BMessage* msg = Looper() ? Looper()->CurrentMessage() : nullptr) msg->FindInt32("modifiers", &mods);
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    iuphaikuButtonKeySetStatus((unsigned)mods, 0, 0, status, 0);
-    IFniiiis bcb = (IFniiiis)IupGetCallback(fIhandle, "BUTTON_CB");
-    if (bcb) bcb(fIhandle, IUP_BUTTON1, 0, (int)where.x, (int)where.y, status);
+    iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), 0, 0, status, 0);
+    auto bcb = reinterpret_cast<IFniiiis>(IupGetCallback(fIhandle, "BUTTON_CB"));
+    if (bcb) bcb(fIhandle, IUP_BUTTON1, 0, static_cast<int>(where.x), static_cast<int>(where.y), status);
   }
 
   bool InitiateDrag(BPoint where, int32 index, bool /*wasSelected*/) override
@@ -426,19 +426,19 @@ public:
     if (transit == B_INSIDE_VIEW || transit == B_ENTERED_VIEW)
     {
       int32 buttons = 0, mods = 0;
-      if (BMessage* cur = Looper() ? Looper()->CurrentMessage() : NULL) { cur->FindInt32("buttons", &buttons); cur->FindInt32("modifiers", &mods); }
+      if (BMessage* cur = Looper() ? Looper()->CurrentMessage() : nullptr) { cur->FindInt32("buttons", &buttons); cur->FindInt32("modifiers", &mods); }
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iuphaikuButtonKeySetStatus((unsigned)mods, (unsigned)buttons, 0, status, 0);
-      IFniis mcb = (IFniis)IupGetCallback(fIhandle, "MOTION_CB");
-      if (mcb) mcb(fIhandle, (int)where.x, (int)where.y, status);
+      iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, 0);
+      auto mcb = reinterpret_cast<IFniis>(IupGetCallback(fIhandle, "MOTION_CB"));
+      if (mcb) mcb(fIhandle, static_cast<int>(where.x), static_cast<int>(where.y), status);
     }
     if (!drag || !fIhandle->data->show_dragdrop) return;
     if (drag->what != IUPHAIKU_LIST_REORDER_MSG) return;
     int32 team = 0;
     drag->FindInt32("_iup_team", &team);
     if (!be_app || team != be_app->Team()) return;
-    Ihandle* origin = NULL;
-    drag->FindPointer("be:originator", (void**)&origin);
+    Ihandle* origin = nullptr;
+    drag->FindPointer("be:originator", reinterpret_cast<void**>(&origin));
     if (origin != fIhandle) return;
 
     int32 mods = 0;
@@ -446,12 +446,12 @@ public:
       if (BMessage* cur = L->CurrentMessage()) cur->FindInt32("modifiers", &mods);
     BCursorID id = (mods & B_COMMAND_KEY) ? B_CURSOR_ID_COPY : B_CURSOR_ID_MOVE;
     int last = iupAttribGetInt(fIhandle, "_IUPHAIKU_LIST_REORDER_CURSOR");
-    if (last == (int)id) return;
-    BCursor* prev = (BCursor*)iupAttribGet(fIhandle, "_IUPHAIKU_LIST_REORDER_BCURSOR");
-    BCursor* nw = new BCursor(id);
+    if (last == static_cast<int>(id)) return;
+    auto* prev = reinterpret_cast<BCursor*>(iupAttribGet(fIhandle, "_IUPHAIKU_LIST_REORDER_BCURSOR"));
+    auto* nw = new BCursor(id);
     SetViewCursor(nw, true);
-    iupAttribSetInt(fIhandle, "_IUPHAIKU_LIST_REORDER_CURSOR", (int)id);
-    iupAttribSet(fIhandle, "_IUPHAIKU_LIST_REORDER_BCURSOR", (char*)nw);
+    iupAttribSetInt(fIhandle, "_IUPHAIKU_LIST_REORDER_CURSOR", static_cast<int>(id));
+    iupAttribSet(fIhandle, "_IUPHAIKU_LIST_REORDER_BCURSOR", reinterpret_cast<char*>(nw));
     delete prev;
   }
 
@@ -461,9 +461,9 @@ public:
     {
       int32 team = 0;
       msg->FindInt32("_iup_team", &team);
-      Ihandle* src_ih = NULL;
+      Ihandle* src_ih = nullptr;
       if (be_app && team == be_app->Team())
-        msg->FindPointer("be:originator", (void**)&src_ih);
+        msg->FindPointer("be:originator", reinterpret_cast<void**>(&src_ih));
       if (src_ih == fIhandle)
       {
         int32 src_index = -1;
@@ -471,15 +471,15 @@ public:
         BPoint dropPt = ConvertFromScreen(msg->DropPoint());
         int drop_index = IndexOf(dropPt);
         int is_ctrl = 0;
-        if (iupListCallDragDropCb(fIhandle, (int)src_index, drop_index, &is_ctrl) == IUP_CONTINUE)
-          haikuListReorder(fIhandle, (int)src_index, drop_index, is_ctrl);
+        if (iupListCallDragDropCb(fIhandle, static_cast<int>(src_index), drop_index, &is_ctrl) == IUP_CONTINUE)
+          haikuListReorder(fIhandle, static_cast<int>(src_index), drop_index, is_ctrl);
 
-        if (BCursor* c = (BCursor*)iupAttribGet(fIhandle, "_IUPHAIKU_LIST_REORDER_BCURSOR"))
+        if (auto* c = reinterpret_cast<BCursor*>(iupAttribGet(fIhandle, "_IUPHAIKU_LIST_REORDER_BCURSOR")))
         {
           SetViewCursor(B_CURSOR_SYSTEM_DEFAULT, true);
           delete c;
-          iupAttribSet(fIhandle, "_IUPHAIKU_LIST_REORDER_BCURSOR", NULL);
-          iupAttribSet(fIhandle, "_IUPHAIKU_LIST_REORDER_CURSOR", NULL);
+          iupAttribSet(fIhandle, "_IUPHAIKU_LIST_REORDER_BCURSOR", nullptr);
+          iupAttribSet(fIhandle, "_IUPHAIKU_LIST_REORDER_CURSOR", nullptr);
         }
         return;
       }
@@ -504,7 +504,7 @@ void IupHaikuListWrap::RelayoutChildren()
 {
   if (!fList || !fSb) return;
 
-  IupHaikuListView* lv = dynamic_cast<IupHaikuListView*>(fList);
+  auto* lv = dynamic_cast<IupHaikuListView*>(fList);
   bool has_sb = !fIhandle || fIhandle->data->sb;
   bool autohide = fIhandle && iupAttribGetBoolean(fIhandle, "AUTOHIDE");
   float total_w = Bounds().Width();
@@ -515,7 +515,7 @@ void IupHaikuListWrap::RelayoutChildren()
   if (has_sb && autohide && lv)
   {
     float content_h = 0;
-    int n = (int)lv->CountItems();
+    int n = static_cast<int>(lv->CountItems());
     for (int i = 0; i < n; ++i)
       if (BListItem* it = lv->ItemAt(i)) content_h += it->Height();
     /* BRect::Height() is right-left (N-1 for N pixels). */
@@ -549,10 +549,10 @@ public:
     if (msg && msg->what == IUPHAIKU_LIST_DROP_MSG && fIhandle)
     {
       int pos = -1;
-      msg->FindInt32("pos", (int32*)&pos);
+      msg->FindInt32("pos", static_cast<int32*>(&pos));
       if (pos < 0) { BHandler::MessageReceived(msg); return; }
 
-      BMenuField* field = (BMenuField*)fIhandle->handle;
+      auto* field = reinterpret_cast<BMenuField*>(fIhandle->handle);
       if (!fIhandle->data->has_editbox && field)
       {
         BMenu* m = field->Menu();
@@ -564,7 +564,7 @@ public:
         }
       }
 
-      IFnsii action = (IFnsii)IupGetCallback(fIhandle, "ACTION");
+      auto action = reinterpret_cast<IFnsii>(IupGetCallback(fIhandle, "ACTION"));
       if (action) iupListSingleCallActionCb(fIhandle, action, pos + 1);
 
       Icallback vc = IupGetCallback(fIhandle, "VALUECHANGED_CB");
@@ -590,17 +590,17 @@ public:
   filter_result Filter(BMessage* msg, BHandler** target) override
   {
     if (!fIhandle || !fIhandle->handle) return B_DISPATCH_MESSAGE;
-    IFnis cb = (IFnis)IupGetCallback(fIhandle, "EDIT_CB");
+    auto cb = reinterpret_cast<IFnis>(IupGetCallback(fIhandle, "EDIT_CB"));
     if (!cb && !fIhandle->data->mask && fIhandle->data->nc <= 0) return B_DISPATCH_MESSAGE;
 
-    const char* bytes = NULL;
+    const char* bytes = nullptr;
     ssize_t byte_count = 0;
-    if (msg->FindData("bytes", B_STRING_TYPE, (const void**)&bytes, &byte_count) != B_OK || !bytes)
+    if (msg->FindData("bytes", B_STRING_TYPE, reinterpret_cast<const void**>(&bytes), &byte_count) != B_OK || !bytes)
       return B_DISPATCH_MESSAGE;
-    int char_len = (byte_count > 0 && bytes[byte_count - 1] == 0) ? (int)byte_count - 1 : (int)byte_count;
-    if (char_len == 1 && (unsigned char)bytes[0] < B_SPACE) return B_DISPATCH_MESSAGE;
+    int char_len = (byte_count > 0 && bytes[byte_count - 1] == 0) ? static_cast<int>(byte_count) - 1 : static_cast<int>(byte_count);
+    if (char_len == 1 && static_cast<unsigned char>(bytes[0]) < B_SPACE) return B_DISPATCH_MESSAGE;
 
-    BTextView* tv = (target && *target) ? dynamic_cast<BTextView*>(*target) : NULL;
+    BTextView* tv = (target && *target) ? dynamic_cast<BTextView*>(*target) : nullptr;
     if (!tv) return B_DISPATCH_MESSAGE;
     int32 sel_s = 0, sel_e = 0;
     tv->GetSelection(&sel_s, &sel_e);
@@ -613,9 +613,9 @@ public:
     if (ret == 0) return B_SKIP_MESSAGE;
     if (ret != -1 && char_len == 1)
     {
-      char rep[2] = { (char)ret, 0 };
+      char rep[2] = { static_cast<char>(ret), 0 };
       msg->ReplaceData("bytes", B_STRING_TYPE, rep, 2);
-      int8 raw = (int8)rep[0];
+      int8 raw = static_cast<int8>(rep[0]);
       if (msg->HasInt8("byte")) msg->ReplaceInt8("byte", raw); else msg->AddInt8("byte", raw);
     }
     return B_DISPATCH_MESSAGE;
@@ -629,8 +629,8 @@ class IupHaikuListEditCtrl : public BTextControl
 {
 public:
   explicit IupHaikuListEditCtrl(Ihandle* ih)
-    : BTextControl(BRect(0, 0, 0, 0), "iup_list_edit", NULL, "", NULL, B_FOLLOW_NONE),
-      fIhandle(ih), fKeyFilter(NULL) { BTextControl::SetDivider(0); }
+    : BTextControl(BRect(0, 0, 0, 0), "iup_list_edit", nullptr, "", nullptr, B_FOLLOW_NONE),
+      fIhandle(ih), fKeyFilter(nullptr) { BTextControl::SetDivider(0); }
 
   ~IupHaikuListEditCtrl() override
   {
@@ -656,8 +656,8 @@ public:
     {
       if (BTextView* tv = TextView())
       {
-        IFniii ccb = (IFniii)IupGetCallback(fIhandle, "CARET_CB");
-        if (ccb) { int32 s = 0, e = 0; tv->GetSelection(&s, &e); ccb(fIhandle, 1, (int)s + 1, (int)s); }
+        auto ccb = reinterpret_cast<IFniii>(IupGetCallback(fIhandle, "CARET_CB"));
+        if (ccb) { int32 s = 0, e = 0; tv->GetSelection(&s, &e); ccb(fIhandle, 1, static_cast<int>(s) + 1, static_cast<int>(s)); }
       }
       Icallback vc = IupGetCallback(fIhandle, "VALUECHANGED_CB");
       if (vc) { int r = vc(fIhandle); if (r == IUP_CLOSE) IupExitLoop(); }
@@ -693,8 +693,8 @@ public:
   IupHaikuListContainer(Ihandle* ih, bool dropdown)
     : BView(BRect(0, 0, 0, 0), "iup_list_container", B_FOLLOW_NONE,
             B_WILL_DRAW | B_FRAME_EVENTS),
-      fIhandle(ih), fDropdown(dropdown), fEdit(NULL), fScroll(NULL),
-      fListView(NULL), fChevron(NULL), fPopUp(NULL)
+      fIhandle(ih), fDropdown(dropdown), fEdit(nullptr), fScroll(nullptr),
+      fListView(nullptr), fChevron(nullptr), fPopUp(nullptr)
   {
     SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
   }
@@ -741,7 +741,7 @@ public:
     {
       if (!iupdrvIsActive(fIhandle)) return;
       BPoint where = fEdit->ConvertToScreen(BPoint(0, fEdit->Bounds().Height()));
-      IFni dd = (IFni)IupGetCallback(fIhandle, "DROPDOWN_CB");
+      IFni dd = reinterpret_cast<IFni>(IupGetCallback(fIhandle, "DROPDOWN_CB"));
       if (dd) dd(fIhandle, 1);
       BMenuItem* picked = fPopUp->Go(where, false, false, false);
       if (dd) dd(fIhandle, 0);
@@ -751,7 +751,7 @@ public:
         const char* label = picked->Label();
         if (label) fEdit->SetText(label);
 
-        IFnsii action = (IFnsii)IupGetCallback(fIhandle, "ACTION");
+        auto action = reinterpret_cast<IFnsii>(IupGetCallback(fIhandle, "ACTION"));
         if (action) iupListSingleCallActionCb(fIhandle, action, pos + 1);
       }
       return;
@@ -772,29 +772,29 @@ private:
 
 static IupHaikuListView* haikuListGetListView(Ihandle* ih)
 {
-  if (!ih || !ih->handle) return NULL;
-  return (IupHaikuListView*)iupAttribGet(ih, "_IUPHAIKU_LIST_INNER");
+  if (!ih || !ih->handle) return nullptr;
+  return reinterpret_cast<IupHaikuListView*>(iupAttribGet(ih, "_IUPHAIKU_LIST_INNER"));
 }
 
 static IupHaikuListEditCtrl* haikuListGetEdit(Ihandle* ih)
 {
-  if (!ih || !ih->handle || !ih->data->has_editbox) return NULL;
-  return (IupHaikuListEditCtrl*)iupAttribGet(ih, "_IUPHAIKU_LIST_EDIT");
+  if (!ih || !ih->handle || !ih->data->has_editbox) return nullptr;
+  return reinterpret_cast<IupHaikuListEditCtrl*>(iupAttribGet(ih, "_IUPHAIKU_LIST_EDIT"));
 }
 
 static BMenu* haikuListGetMenu(Ihandle* ih)
 {
-  if (!ih || !ih->handle) return NULL;
+  if (!ih || !ih->handle) return nullptr;
   if (ih->data->has_editbox && ih->data->is_dropdown)
-    return (BMenu*)iupAttribGet(ih, "_IUPHAIKU_LIST_POPUP");
+    return reinterpret_cast<BMenu*>(iupAttribGet(ih, "_IUPHAIKU_LIST_POPUP"));
   if (ih->data->is_dropdown)
-    return ((BMenuField*)ih->handle)->Menu();
-  return NULL;
+    return (reinterpret_cast<BMenuField*>(ih->handle))->Menu();
+  return nullptr;
 }
 
 static IupHaikuListDropHandler* haikuListGetDropHandler(Ihandle* ih)
 {
-  return (IupHaikuListDropHandler*)iupAttribGet(ih, "_IUPHAIKU_LIST_DROPHANDLER");
+  return reinterpret_cast<IupHaikuListDropHandler*>(iupAttribGet(ih, "_IUPHAIKU_LIST_DROPHANDLER"));
 }
 
 static int haikuListMenuSortPos(BMenu* m, const char* value)
@@ -814,7 +814,7 @@ static int haikuListViewSortPos(BListView* lv, const char* value)
   int n = lv->CountItems();
   for (int i = 0; i < n; i++)
   {
-    BStringItem* it = dynamic_cast<BStringItem*>(lv->ItemAt(i));
+    auto* it = dynamic_cast<BStringItem*>(lv->ItemAt(i));
     const char* t = it ? it->Text() : "";
     if (iupStrCompare(t ? t : "", value, 0, 1) > 0) return i;
   }
@@ -834,20 +834,20 @@ extern "C" IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 
   if (m)
   {
-    BMessage* msg = new BMessage(IUPHAIKU_LIST_DROP_MSG);
-    msg->AddInt32("pos", (int32)m->CountItems());
-    IupHaikuDropdownItem* item = new IupHaikuDropdownItem(ih, value ? value : "", msg);
+    auto* msg = new BMessage(IUPHAIKU_LIST_DROP_MSG);
+    msg->AddInt32("pos", m->CountItems());
+    auto* item = new IupHaikuDropdownItem(ih, value ? value : "", msg);
     IupHaikuListDropHandler* h = haikuListGetDropHandler(ih);
     if (h) item->SetTarget(BMessenger(h));
 
-    LooperLockGuard guard(((BView*)ih->handle)->Looper());
+    LooperLockGuard guard((reinterpret_cast<BView*>(ih->handle))->Looper());
     m->AddItem(item);
   }
   if (lv)
   {
     LooperLockGuard guard(lv->Looper());
     lv->AddItem(new IupHaikuListItem(ih, lv->CountItems(), value));
-    if (IupHaikuListWrap* w = dynamic_cast<IupHaikuListWrap*>((BView*)ih->handle)) w->RelayoutChildren();
+    if (auto* w = dynamic_cast<IupHaikuListWrap*>(reinterpret_cast<BView*>(ih->handle))) w->RelayoutChildren();
   }
 }
 
@@ -861,13 +861,13 @@ extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const cha
 
   if (m)
   {
-    BMessage* msg = new BMessage(IUPHAIKU_LIST_DROP_MSG);
+    auto* msg = new BMessage(IUPHAIKU_LIST_DROP_MSG);
     msg->AddInt32("pos", pos);
-    IupHaikuDropdownItem* item = new IupHaikuDropdownItem(ih, value ? value : "", msg);
+    auto* item = new IupHaikuDropdownItem(ih, value ? value : "", msg);
     IupHaikuListDropHandler* h = haikuListGetDropHandler(ih);
     if (h) item->SetTarget(BMessenger(h));
 
-    LooperLockGuard guard(((BView*)ih->handle)->Looper());
+    LooperLockGuard guard((reinterpret_cast<BView*>(ih->handle))->Looper());
     m->AddItem(item, pos);
     for (int32 i = pos + 1; i < m->CountItems(); ++i)
     {
@@ -880,8 +880,8 @@ extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const cha
     LooperLockGuard guard(lv->Looper());
     lv->AddItem(new IupHaikuListItem(ih, pos, value), pos);
     for (int32 i = pos + 1; i < lv->CountItems(); ++i)
-      if (IupHaikuListItem* it = dynamic_cast<IupHaikuListItem*>(lv->ItemAt(i))) it->SetPos(i);
-    if (IupHaikuListWrap* w = dynamic_cast<IupHaikuListWrap*>((BView*)ih->handle)) w->RelayoutChildren();
+      if (auto* it = dynamic_cast<IupHaikuListItem*>(lv->ItemAt(i))) it->SetPos(i);
+    if (auto* w = dynamic_cast<IupHaikuListWrap*>(reinterpret_cast<BView*>(ih->handle))) w->RelayoutChildren();
   }
 }
 
@@ -892,7 +892,7 @@ extern "C" IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 
   if (m)
   {
-    LooperLockGuard guard(((BView*)ih->handle)->Looper());
+    LooperLockGuard guard((reinterpret_cast<BView*>(ih->handle))->Looper());
     delete m->RemoveItem(pos);
     for (int32 i = pos; i < m->CountItems(); ++i)
     {
@@ -905,8 +905,8 @@ extern "C" IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
     LooperLockGuard guard(lv->Looper());
     delete lv->RemoveItem(pos);
     for (int32 i = pos; i < lv->CountItems(); ++i)
-      if (IupHaikuListItem* it = dynamic_cast<IupHaikuListItem*>(lv->ItemAt(i))) it->SetPos(i);
-    if (IupHaikuListWrap* w = dynamic_cast<IupHaikuListWrap*>((BView*)ih->handle)) w->RelayoutChildren();
+      if (auto* it = dynamic_cast<IupHaikuListItem*>(lv->ItemAt(i))) it->SetPos(i);
+    if (auto* w = dynamic_cast<IupHaikuListWrap*>(reinterpret_cast<BView*>(ih->handle))) w->RelayoutChildren();
   }
 }
 
@@ -917,14 +917,14 @@ extern "C" IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
 
   if (m)
   {
-    LooperLockGuard guard(((BView*)ih->handle)->Looper());
-    while (m->CountItems() > 0) delete m->RemoveItem((int32)0);
+    LooperLockGuard guard((reinterpret_cast<BView*>(ih->handle))->Looper());
+    while (m->CountItems() > 0) delete m->RemoveItem(static_cast<int32>(0));
   }
   if (lv)
   {
     LooperLockGuard guard(lv->Looper());
     for (int32 i = lv->CountItems() - 1; i >= 0; --i) delete lv->RemoveItem(i);
-    if (IupHaikuListWrap* w = dynamic_cast<IupHaikuListWrap*>((BView*)ih->handle)) w->RelayoutChildren();
+    if (auto* w = dynamic_cast<IupHaikuListWrap*>(reinterpret_cast<BView*>(ih->handle))) w->RelayoutChildren();
   }
 }
 
@@ -941,13 +941,13 @@ extern "C" IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
 {
   if (BMenu* m = haikuListGetMenu(ih))
   {
-    IupHaikuDropdownItem* mi = dynamic_cast<IupHaikuDropdownItem*>(m->ItemAt(id - 1));
-    return mi ? mi->Icon() : NULL;
+    auto* mi = dynamic_cast<IupHaikuDropdownItem*>(m->ItemAt(id - 1));
+    return mi ? mi->Icon() : nullptr;
   }
   IupHaikuListView* lv = haikuListGetListView(ih);
-  if (!lv) return NULL;
-  IupHaikuListItem* it = dynamic_cast<IupHaikuListItem*>(lv->ItemAt(id - 1));
-  return it ? it->Icon() : NULL;
+  if (!lv) return nullptr;
+  auto* it = dynamic_cast<IupHaikuListItem*>(lv->ItemAt(id - 1));
+  return it ? it->Icon() : nullptr;
 }
 
 extern "C" IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
@@ -955,10 +955,10 @@ extern "C" IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* h
   /* id is 0-based per the cross-driver contract. */
   if (BMenu* m = haikuListGetMenu(ih))
   {
-    LooperLockGuard guard(((BView*)ih->handle)->Looper());
-    IupHaikuDropdownItem* mi = dynamic_cast<IupHaikuDropdownItem*>(m->ItemAt(id));
+    LooperLockGuard guard((reinterpret_cast<BView*>(ih->handle))->Looper());
+    auto* mi = dynamic_cast<IupHaikuDropdownItem*>(m->ItemAt(id));
     if (!mi) return 0;
-    mi->SetIcon((BBitmap*)hImage);
+    mi->SetIcon(static_cast<BBitmap*>(hImage));
     m->InvalidateLayout();
   }
   else
@@ -966,18 +966,18 @@ extern "C" IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* h
     IupHaikuListView* lv = haikuListGetListView(ih);
     if (!lv) return 0;
     LooperLockGuard guard(lv->Looper());
-    IupHaikuListItem* it = dynamic_cast<IupHaikuListItem*>(lv->ItemAt(id));
+    auto* it = dynamic_cast<IupHaikuListItem*>(lv->ItemAt(id));
     if (!it) return 0;
-    it->SetIcon((BBitmap*)hImage);
+    it->SetIcon(static_cast<BBitmap*>(hImage));
     lv->InvalidateItem(id);
   }
 
   /* maximg_w drives DrawItem's text shift; stale on post-map icons. */
   if (hImage)
   {
-    BBitmap* bm = (BBitmap*)hImage;
-    int w = (int)(bm->Bounds().Width() + 1);
-    int h = (int)(bm->Bounds().Height() + 1);
+    auto* bm = static_cast<BBitmap*>(hImage);
+    int w = static_cast<int>(bm->Bounds().Width() + 1);
+    int h = static_cast<int>(bm->Bounds().Height() + 1);
     if (w > ih->data->maximg_w)
     {
       ih->data->maximg_w = w;
@@ -1001,23 +1001,23 @@ static char* haikuListGetIdValueAttrib(Ihandle* ih, int id)
   if (BMenu* m = haikuListGetMenu(ih))
   {
     BMenuItem* it = m->ItemAt(id - 1);
-    return it ? iupStrReturnStr(it->Label()) : NULL;
+    return it ? iupStrReturnStr(it->Label()) : nullptr;
   }
   IupHaikuListView* lv = haikuListGetListView(ih);
-  if (!lv) return NULL;
-  IupHaikuListItem* it = dynamic_cast<IupHaikuListItem*>(lv->ItemAt(id - 1));
-  return it ? iupStrReturnStr(it->Text()) : NULL;
+  if (!lv) return nullptr;
+  auto* it = dynamic_cast<IupHaikuListItem*>(lv->ItemAt(id - 1));
+  return it ? iupStrReturnStr(it->Text()) : nullptr;
 }
 
 static char* haikuListGetImageNativeHandleAttribId(Ihandle* ih, int id)
 {
-  return (char*)iupdrvListGetImageHandle(ih, id);
+  return static_cast<char*>(iupdrvListGetImageHandle(ih, id));
 }
 
 static int haikuListSetImageAttribId(Ihandle* ih, int id, const char* value)
 {
   if (!ih->data->show_image) return 0;
-  BBitmap* bm = (BBitmap*)iupImageGetImage(value, ih, 0, NULL);
+  auto* bm = static_cast<BBitmap*>(iupImageGetImage(value, ih, 0, nullptr));
   /* IupSetAttributeId is 1-based; iupdrvListSetImageHandle is 0-based. */
   iupdrvListSetImageHandle(ih, id - 1, bm);
   return 0;
@@ -1033,7 +1033,7 @@ extern "C" IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
   {
     BList batch;
     for (int i = cur; i < count; ++i)
-      batch.AddItem(new IupHaikuListItem(ih, i, NULL));
+      batch.AddItem(new IupHaikuListItem(ih, i, nullptr));
     lv->AddList(&batch);
   }
   else if (count < cur)
@@ -1046,12 +1046,12 @@ extern "C" IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
       tail.AddItem(lv->ItemAt(i));
     lv->RemoveItems(count, cur - count);
     for (int i = 0; i < tail.CountItems(); ++i)
-      delete (BListItem*)tail.ItemAtFast(i);
+      delete static_cast<BListItem*>(tail.ItemAtFast(i));
 
     BRect b = lv->Bounds();
     lv->FrameResized(b.Width(), b.Height());
   }
-  if (IupHaikuListWrap* w = dynamic_cast<IupHaikuListWrap*>((BView*)ih->handle)) w->RelayoutChildren();
+  if (auto* w = dynamic_cast<IupHaikuListWrap*>(reinterpret_cast<BView*>(ih->handle))) w->RelayoutChildren();
   lv->Invalidate();
 }
 
@@ -1060,12 +1060,12 @@ extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
   if (!ih) return;
 
   /* BStringItem needs 2x DefaultLabelSpacing (left inset + matching right margin). */
-  int label_pad = be_control_look ? (int)(2 * be_control_look->DefaultLabelSpacing() + 0.5f) : 16;
+  int label_pad = be_control_look ? static_cast<int>(2 * be_control_look->DefaultLabelSpacing() + 0.5f) : 16;
 
   if (ih->data->is_dropdown && !ih->data->has_editbox)
   {
     int char_h = 0;
-    iupdrvFontGetCharSize(ih, NULL, &char_h);
+    iupdrvFontGetCharSize(ih, nullptr, &char_h);
     if (w) *w += 24;
     if (h && *h < char_h + 10) *h = char_h + 10;
     return;
@@ -1084,7 +1084,7 @@ extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
     if (h)
     {
       int char_h = 0;
-      iupdrvFontGetCharSize(ih, NULL, &char_h);
+      iupdrvFontGetCharSize(ih, nullptr, &char_h);
       int item_h = char_h;
       iupdrvListAddItemSpace(ih, &item_h);
       *h -= item_h;
@@ -1100,11 +1100,11 @@ extern "C" IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 {
   /* ceil per font-component + 4 px matches the row height BListView uses. */
   if (!h) return;
-  BFont* bf = ih ? iuphaikuGetBFont(iupGetFontValue(ih)) : NULL;
+  BFont* bf = ih ? iuphaikuGetBFont(iupGetFontValue(ih)) : nullptr;
   if (!bf) { *h += 4; return; }
   font_height fh; bf->GetHeight(&fh);
-  int row = (int)ceilf(fh.ascent) + (int)ceilf(fh.descent) + (int)ceilf(fh.leading) + 4;
-  int line = (int)ceilf(fh.ascent + fh.descent + fh.leading);
+  int row = static_cast<int>(ceilf(fh.ascent)) + static_cast<int>(ceilf(fh.descent)) + static_cast<int>(ceilf(fh.leading)) + 4;
+  int line = static_cast<int>(ceilf(fh.ascent + fh.descent + fh.leading));
   int diff = row - line;
   *h += diff < 4 ? 4 : diff;
 }
@@ -1118,7 +1118,7 @@ static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
     if (!m) return 0;
     int pos = 0;
     if (!iupStrToInt(value, &pos)) return 0;
-    LooperLockGuard guard(((BView*)ih->handle)->Looper());
+    LooperLockGuard guard((reinterpret_cast<BView*>(ih->handle))->Looper());
     for (int32 i = 0; i < m->CountItems(); ++i)
       m->ItemAt(i)->SetMarked(i == pos - 1);
     return 0;
@@ -1150,7 +1150,7 @@ static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
   if (!ih->data->is_multiple)
   {
     int pos = 0;
-    if (!iupStrToInt(value, &pos)) { iupAttribSet(ih, "_IUPHAIKU_LIST_IGNORESELECT", NULL); return 0; }
+    if (!iupStrToInt(value, &pos)) { iupAttribSet(ih, "_IUPHAIKU_LIST_IGNORESELECT", nullptr); return 0; }
     if (pos == 0) lv->DeselectAll();
     else          lv->Select(pos - 1);
   }
@@ -1164,7 +1164,7 @@ static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
         if (value[i] == '+') lv->Select(i, true);
     }
   }
-  iupAttribSet(ih, "_IUPHAIKU_LIST_IGNORESELECT", NULL);
+  iupAttribSet(ih, "_IUPHAIKU_LIST_IGNORESELECT", nullptr);
   return 0;
 }
 
@@ -1176,7 +1176,7 @@ static int haikuListSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!ih->handle || !iupStrToRGB(value, &r, &g, &b)) return 1;
 
   rgb_color c = { r, g, b, 255 };
-  BView* container = (BView*)ih->handle;
+  auto* container = reinterpret_cast<BView*>(ih->handle);
   LooperLockGuard guard(container->Looper());
   if (lv)
   {
@@ -1203,13 +1203,13 @@ static int haikuListSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!ih->handle || !iupStrToRGB(value, &r, &g, &b)) return 1;
 
   rgb_color c = { r, g, b, 255 };
-  BView* container = (BView*)ih->handle;
+  auto* container = reinterpret_cast<BView*>(ih->handle);
   LooperLockGuard guard(container->Looper());
   if (lv)
     lv->Invalidate();
   if (edit)
   {
-    edit->TextView()->SetFontAndColor(0, edit->TextView()->TextLength(), NULL, 0, &c);
+    edit->TextView()->SetFontAndColor(0, edit->TextView()->TextLength(), nullptr, 0, &c);
     edit->Invalidate();
   }
   return 1;
@@ -1220,7 +1220,7 @@ static char* haikuListGetValueAttrib(Ihandle* ih)
   if (ih->data->is_dropdown && !ih->data->has_editbox)
   {
     BMenu* m = haikuListGetMenu(ih);
-    if (!m) return NULL;
+    if (!m) return nullptr;
     BMenuItem* it = m->FindMarked();
     if (!it) return iupStrReturnInt(0);
     return iupStrReturnInt(m->IndexOf(it) + 1);
@@ -1229,12 +1229,12 @@ static char* haikuListGetValueAttrib(Ihandle* ih)
   if (ih->data->has_editbox)
   {
     IupHaikuListEditCtrl* e = haikuListGetEdit(ih);
-    if (!e) return NULL;
+    if (!e) return nullptr;
     return iupStrReturnStr(e->Text());
   }
 
   IupHaikuListView* lv = haikuListGetListView(ih);
-  if (!lv) return NULL;
+  if (!lv) return nullptr;
   if (!ih->data->is_multiple)
     return iupStrReturnInt(lv->CurrentSelection() + 1);
 
@@ -1270,7 +1270,7 @@ static int haikuListSetActiveAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->is_dropdown && !ih->data->has_editbox && ih->handle)
   {
-    BMenuField* field = (BMenuField*)ih->handle;
+    auto* field = reinterpret_cast<BMenuField*>(ih->handle);
     LooperLockGuard guard(field->Looper());
     field->SetEnabled(active);
     if (BMenu* menu = field->Menu())
@@ -1279,7 +1279,7 @@ static int haikuListSetActiveAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->is_dropdown && ih->data->has_editbox && ih->handle)
   {
-    if (IupHaikuListContainer* cont = dynamic_cast<IupHaikuListContainer*>((BView*)ih->handle))
+    if (auto* cont = dynamic_cast<IupHaikuListContainer*>(reinterpret_cast<BView*>(ih->handle)))
     {
       LooperLockGuard guard(cont->Looper());
       cont->SetChevronEnabled(active);
@@ -1294,9 +1294,9 @@ static void haikuListReorder(Ihandle* ih, int src, int drop, int is_ctrl)
   IupHaikuListView* lv = haikuListGetListView(ih);
   if (!lv || src < 0) return;
 
-  const char* text = NULL;
+  const char* text = nullptr;
   if (BListItem* it = lv->ItemAt(src))
-    text = (dynamic_cast<IupHaikuListItem*>(it)) ? dynamic_cast<IupHaikuListItem*>(it)->Text() : NULL;
+    text = (dynamic_cast<IupHaikuListItem*>(it)) ? dynamic_cast<IupHaikuListItem*>(it)->Text() : nullptr;
   if (!text) text = "";
   char* text_copy = iupStrDup(text);
   void* img = iupdrvListGetImageHandle(ih, src + 1);
@@ -1325,7 +1325,7 @@ static int haikuListConvertXYToPos(Ihandle* ih, int x, int y)
 {
   IupHaikuListView* lv = haikuListGetListView(ih);
   if (!lv) return -1;
-  int idx = (int)lv->IndexOf(BPoint(x, y));
+  int idx = static_cast<int>(lv->IndexOf(BPoint(x, y)));
   if (idx < 0) return -1;
   return idx + 1;
 }
@@ -1348,21 +1348,21 @@ static int haikuListMapMethod(Ihandle* ih)
 {
   if (ih->data->is_dropdown && be_app)
   {
-    IupHaikuListDropHandler* h = new IupHaikuListDropHandler(ih);
+    auto* h = new IupHaikuListDropHandler(ih);
     LooperLockGuard guard(be_app);
     be_app->AddHandler(h);
-    iupAttribSet(ih, "_IUPHAIKU_LIST_DROPHANDLER", (char*)h);
+    iupAttribSet(ih, "_IUPHAIKU_LIST_DROPHANDLER", reinterpret_cast<char*>(h));
   }
 
   /* fixedSize=true so BMenuField's bar fills the field width on resize. */
   if (ih->data->is_dropdown && !ih->data->has_editbox)
   {
-    BPopUpMenu* menu = new BPopUpMenu("");
+    auto* menu = new BPopUpMenu("");
     int char_h = 0;
-    iupdrvFontGetCharSize(ih, NULL, &char_h);
+    iupdrvFontGetCharSize(ih, nullptr, &char_h);
     int field_h = char_h + 10;
-    BMenuField* field = new BMenuField(BRect(0, 0, 99, field_h - 1), "iup_list", NULL, menu, true, B_FOLLOW_NONE);
-    ih->handle = (InativeHandle*)field;
+    auto* field = new BMenuField(BRect(0, 0, 99, field_h - 1), "iup_list", nullptr, menu, true, B_FOLLOW_NONE);
+    ih->handle = reinterpret_cast<InativeHandle*>(field);
     iuphaikuAddToParent(ih);
 
     /* once attached every BView call needs the window lock, a map after Show runs on a live looper */
@@ -1377,21 +1377,21 @@ static int haikuListMapMethod(Ihandle* ih)
 
   if (ih->data->is_dropdown && ih->data->has_editbox)
   {
-    IupHaikuListContainer* cont = new IupHaikuListContainer(ih, true);
-    IupHaikuListEditCtrl* edit = new IupHaikuListEditCtrl(ih);
+    auto* cont = new IupHaikuListContainer(ih, true);
+    auto* edit = new IupHaikuListEditCtrl(ih);
 
-    BMessage* open_msg = new BMessage(IUPHAIKU_LIST_OPENMENU);
-    BButton* chevron = new BButton(BRect(0, 0, 0, 0), "iup_list_chev", "v", open_msg, B_FOLLOW_NONE);
-    BPopUpMenu* popup = new BPopUpMenu("iup_list_popup", false, false);
+    auto* open_msg = new BMessage(IUPHAIKU_LIST_OPENMENU);
+    auto* chevron = new BButton(BRect(0, 0, 0, 0), "iup_list_chev", "v", open_msg, B_FOLLOW_NONE);
+    auto* popup = new BPopUpMenu("iup_list_popup", false, false);
 
     cont->AddChild(edit);
     cont->AddChild(chevron);
     cont->SetEdit(edit);
     cont->SetChevron(chevron, popup);
 
-    ih->handle = (InativeHandle*)cont;
-    iupAttribSet(ih, "_IUPHAIKU_LIST_EDIT", (char*)edit);
-    iupAttribSet(ih, "_IUPHAIKU_LIST_POPUP", (char*)popup);
+    ih->handle = reinterpret_cast<InativeHandle*>(cont);
+    iupAttribSet(ih, "_IUPHAIKU_LIST_EDIT", reinterpret_cast<char*>(edit));
+    iupAttribSet(ih, "_IUPHAIKU_LIST_POPUP", reinterpret_cast<char*>(popup));
 
     iuphaikuAddToParent(ih);
     iuphaikuUpdateWidgetFont(ih, edit);
@@ -1407,12 +1407,12 @@ static int haikuListMapMethod(Ihandle* ih)
 
   if (!ih->data->is_dropdown && ih->data->has_editbox)
   {
-    IupHaikuListContainer* cont = new IupHaikuListContainer(ih, false);
-    IupHaikuListEditCtrl* edit = new IupHaikuListEditCtrl(ih);
+    auto* cont = new IupHaikuListContainer(ih, false);
+    auto* edit = new IupHaikuListEditCtrl(ih);
 
     list_view_type t = ih->data->is_multiple ? B_MULTIPLE_SELECTION_LIST : B_SINGLE_SELECTION_LIST;
-    IupHaikuListView* lv = new IupHaikuListView(ih, t);
-    BScrollView* sv = new BScrollView("iup_list_scroll", lv, B_FOLLOW_NONE,
+    auto* lv = new IupHaikuListView(ih, t);
+    auto* sv = new BScrollView("iup_list_scroll", lv, B_FOLLOW_NONE,
                                       B_WILL_DRAW | B_FRAME_EVENTS, false, true);
 
     cont->AddChild(edit);
@@ -1420,9 +1420,9 @@ static int haikuListMapMethod(Ihandle* ih)
     cont->SetEdit(edit);
     cont->SetScrollList(sv, lv);
 
-    ih->handle = (InativeHandle*)cont;
-    iupAttribSet(ih, "_IUPHAIKU_LIST_EDIT", (char*)edit);
-    iupAttribSet(ih, "_IUPHAIKU_LIST_INNER", (char*)lv);
+    ih->handle = reinterpret_cast<InativeHandle*>(cont);
+    iupAttribSet(ih, "_IUPHAIKU_LIST_EDIT", reinterpret_cast<char*>(edit));
+    iupAttribSet(ih, "_IUPHAIKU_LIST_INNER", reinterpret_cast<char*>(lv));
 
     iuphaikuAddToParent(ih);
     iuphaikuUpdateWidgetFont(ih, edit);
@@ -1436,12 +1436,12 @@ static int haikuListMapMethod(Ihandle* ih)
   }
 
   list_view_type t = ih->data->is_multiple ? B_MULTIPLE_SELECTION_LIST : B_SINGLE_SELECTION_LIST;
-  IupHaikuListView* lv = new IupHaikuListView(ih, t);
-  BScrollBar* sb = new BScrollBar(BRect(0, 0, 14, 0), "_vsb_", lv, 0, 1000, B_VERTICAL);
-  IupHaikuListWrap* wrap = new IupHaikuListWrap(ih);
+  auto* lv = new IupHaikuListView(ih, t);
+  auto* sb = new BScrollBar(BRect(0, 0, 14, 0), "_vsb_", lv, 0, 1000, B_VERTICAL);
+  auto* wrap = new IupHaikuListWrap(ih);
   wrap->Attach(lv, sb);
-  ih->handle = (InativeHandle*)wrap;
-  iupAttribSet(ih, "_IUPHAIKU_LIST_INNER", (char*)lv);
+  ih->handle = reinterpret_cast<InativeHandle*>(wrap);
+  iupAttribSet(ih, "_IUPHAIKU_LIST_INNER", reinterpret_cast<char*>(lv));
 
   iuphaikuAddToParent(ih);
   iuphaikuUpdateWidgetFont(ih, lv);
@@ -1451,22 +1451,22 @@ static int haikuListMapMethod(Ihandle* ih)
   if (ih->data->is_virtual && ih->data->item_count > 0)
     iupdrvListSetItemCount(ih, ih->data->item_count);
 
-  IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)haikuListConvertXYToPos);
+  IupSetCallback(ih, "_IUP_XY2POS_CB", reinterpret_cast<Icallback>(haikuListConvertXYToPos));
   return IUP_NOERROR;
 }
 
 static void haikuListUnMapMethod(Ihandle* ih)
 {
-  IupHaikuListView* lv = (IupHaikuListView*)iupAttribGet(ih, "_IUPHAIKU_LIST_INNER");
-  if (lv) lv->SetIhandle(NULL);
+  auto* lv = reinterpret_cast<IupHaikuListView*>(iupAttribGet(ih, "_IUPHAIKU_LIST_INNER"));
+  if (lv) lv->SetIhandle(nullptr);
 
-  IupHaikuListEditCtrl* e = (IupHaikuListEditCtrl*)iupAttribGet(ih, "_IUPHAIKU_LIST_EDIT");
-  if (e) e->SetIhandle(NULL);
+  auto* e = reinterpret_cast<IupHaikuListEditCtrl*>(iupAttribGet(ih, "_IUPHAIKU_LIST_EDIT"));
+  if (e) e->SetIhandle(nullptr);
 
   IupHaikuListDropHandler* h = haikuListGetDropHandler(ih);
   if (h && be_app)
   {
-    h->SetIhandle(NULL);
+    h->SetIhandle(nullptr);
     {
       LooperLockGuard guard(be_app);
       be_app->RemoveHandler(h);
@@ -1477,20 +1477,20 @@ static void haikuListUnMapMethod(Ihandle* ih)
   /* DROPDOWN+EDITBOX owns the BPopUpMenu standalone (not auto-deleted by BView). */
   if (ih->data->is_dropdown && ih->data->has_editbox)
   {
-    BPopUpMenu* popup = (BPopUpMenu*)iupAttribGet(ih, "_IUPHAIKU_LIST_POPUP");
+    auto* popup = reinterpret_cast<BPopUpMenu*>(iupAttribGet(ih, "_IUPHAIKU_LIST_POPUP"));
     delete popup;
   }
 
-  iupAttribSet(ih, "_IUPHAIKU_LIST_INNER", NULL);
-  iupAttribSet(ih, "_IUPHAIKU_LIST_EDIT", NULL);
-  iupAttribSet(ih, "_IUPHAIKU_LIST_POPUP", NULL);
-  iupAttribSet(ih, "_IUPHAIKU_LIST_DROPHANDLER", NULL);
+  iupAttribSet(ih, "_IUPHAIKU_LIST_INNER", nullptr);
+  iupAttribSet(ih, "_IUPHAIKU_LIST_EDIT", nullptr);
+  iupAttribSet(ih, "_IUPHAIKU_LIST_POPUP", nullptr);
+  iupAttribSet(ih, "_IUPHAIKU_LIST_DROPHANDLER", nullptr);
 
   /* Drop handler frees this on completion; destroy mid-drag skips that path. */
-  if (BCursor* c = (BCursor*)iupAttribGet(ih, "_IUPHAIKU_LIST_REORDER_BCURSOR"))
+  if (auto* c = reinterpret_cast<BCursor*>(iupAttribGet(ih, "_IUPHAIKU_LIST_REORDER_BCURSOR")))
   {
     delete c;
-    iupAttribSet(ih, "_IUPHAIKU_LIST_REORDER_BCURSOR", NULL);
+    iupAttribSet(ih, "_IUPHAIKU_LIST_REORDER_BCURSOR", nullptr);
   }
 
   iupdrvBaseUnMapMethod(ih);
@@ -1516,24 +1516,24 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   ic->Map = haikuListMapMethod;
   ic->UnMap = haikuListUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, haikuListSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, haikuListSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, haikuListSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, haikuListSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuListSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", haikuListGetValueAttrib, haikuListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOPITEM", NULL, haikuListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", haikuListGetValueAttrib, haikuListSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOPITEM", nullptr, haikuListSetTopItemAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VISIBLEITEMS", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, haikuListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
   /* BPopUpMenu auto-sizes to its widest item; not controllable */
-  iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPEXPAND", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   /* BMenuField has no programmatic open; a tracking BPopUpMenu has no clean dismiss */
-  iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWDROPDOWN", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "IDVALUE", haikuListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "IMAGE", NULL, haikuListSetImageAttribId, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", haikuListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "IMAGE", nullptr, haikuListSetImageAttribId, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", haikuListGetImageNativeHandleAttribId, nullptr, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

@@ -19,27 +19,27 @@ extern "C" {
 
 static void* haikuThreadFunc(void* obj)
 {
-  Ihandle* ih = (Ihandle*)obj;
+  auto* ih = static_cast<Ihandle*>(obj);
   Icallback cb = IupGetCallback(ih, "THREAD_CB");
   if (cb) cb(ih);
-  return NULL;
+  return nullptr;
 }
 
 extern "C" IUP_SDK_API void* iupdrvThreadStart(Ihandle* ih)
 {
-  pthread_t* t = (pthread_t*)malloc(sizeof(pthread_t));
-  if (!t) return NULL;
-  if (pthread_create(t, NULL, haikuThreadFunc, ih) != 0)
+  auto* t = static_cast<pthread_t*>(malloc(sizeof(pthread_t)));
+  if (!t) return nullptr;
+  if (pthread_create(t, nullptr, haikuThreadFunc, ih) != 0)
   {
     free(t);
-    return NULL;
+    return nullptr;
   }
   return t;
 }
 
 extern "C" IUP_SDK_API void iupdrvThreadJoin(void* handle)
 {
-  if (handle) pthread_join(*(pthread_t*)handle, NULL);
+  if (handle) pthread_join(*static_cast<pthread_t*>(handle), nullptr);
 }
 
 extern "C" IUP_SDK_API void iupdrvThreadYield(void)
@@ -50,12 +50,12 @@ extern "C" IUP_SDK_API void iupdrvThreadYield(void)
 extern "C" IUP_SDK_API int iupdrvThreadIsCurrent(void* handle)
 {
   if (!handle) return 0;
-  return pthread_equal(*(pthread_t*)handle, pthread_self());
+  return pthread_equal(*static_cast<pthread_t*>(handle), pthread_self());
 }
 
 extern "C" IUP_SDK_API void iupdrvThreadExit(int code)
 {
-  pthread_exit((void*)(intptr_t)code);
+  pthread_exit(reinterpret_cast<void*>(static_cast<intptr_t>(code)));
 }
 
 extern "C" IUP_SDK_API void iupdrvThreadDestroy(void* handle)
@@ -65,24 +65,24 @@ extern "C" IUP_SDK_API void iupdrvThreadDestroy(void* handle)
 
 extern "C" IUP_SDK_API void* iupdrvMutexCreate(void)
 {
-  pthread_mutex_t* m = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
-  if (m) pthread_mutex_init(m, NULL);
+  auto* m = static_cast<pthread_mutex_t*>(malloc(sizeof(pthread_mutex_t)));
+  if (m) pthread_mutex_init(m, nullptr);
   return m;
 }
 
 extern "C" IUP_SDK_API void iupdrvMutexLock(void* handle)
 {
-  if (handle) pthread_mutex_lock((pthread_mutex_t*)handle);
+  if (handle) pthread_mutex_lock(static_cast<pthread_mutex_t*>(handle));
 }
 
 extern "C" IUP_SDK_API void iupdrvMutexUnlock(void* handle)
 {
-  if (handle) pthread_mutex_unlock((pthread_mutex_t*)handle);
+  if (handle) pthread_mutex_unlock(static_cast<pthread_mutex_t*>(handle));
 }
 
 extern "C" IUP_SDK_API void iupdrvMutexDestroy(void* handle)
 {
   if (!handle) return;
-  pthread_mutex_destroy((pthread_mutex_t*)handle);
+  pthread_mutex_destroy(static_cast<pthread_mutex_t*>(handle));
   free(handle);
 }

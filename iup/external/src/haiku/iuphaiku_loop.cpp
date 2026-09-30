@@ -28,14 +28,14 @@ extern "C" {
 #include "iuphaiku_drv.h"
 
 
-static IFidle haiku_idle_cb = NULL;
+static IFidle haiku_idle_cb = nullptr;
 static int haiku_main_loop_level = 0;
 static volatile bool haiku_loop_exit_flag[10] = { false };
 
 /* Nested-level wake sem; top level uses be_app's port. */
 static sem_id haiku_wake_sem = -1;
 
-static sem_id haikuWakeSem(void)
+static sem_id haikuWakeSem()
 {
   if (haiku_wake_sem < B_OK)
     haiku_wake_sem = create_sem(0, "iup_main_wake");
@@ -43,7 +43,7 @@ static sem_id haikuWakeSem(void)
 }
 
 /* Release once per nested pump so every level rechecks its exit flag. */
-static void haikuWake(void)
+static void haikuWake()
 {
   if (haiku_wake_sem < B_OK) return;
   int n = haiku_main_loop_level - 1;
@@ -60,12 +60,12 @@ typedef struct _haikuPostNode {
   struct _haikuPostNode* next;
 } haikuPostNode;
 
-static haikuPostNode* haiku_post_head = NULL;
-static haikuPostNode* haiku_post_tail = NULL;
-static void* haiku_post_mutex = NULL;
+static haikuPostNode* haiku_post_head = nullptr;
+static haikuPostNode* haiku_post_tail = nullptr;
+static void* haiku_post_mutex = nullptr;
 static bool haiku_post_drain_pending = false;
 
-static void haikuPostKick(void)
+static void haikuPostKick()
 {
   /* Single drain msg outstanding; the looper re-arms when work remains. */
   if (be_app)
@@ -77,7 +77,7 @@ static void haikuPostKick(void)
   haikuWake();
 }
 
-static void haikuDrainPostQueue(void)
+static void haikuDrainPostQueue()
 {
   if (!haiku_post_mutex) return;
 
@@ -89,7 +89,7 @@ static void haikuDrainPostQueue(void)
     if (node)
     {
       haiku_post_head = node->next;
-      if (!haiku_post_head) haiku_post_tail = NULL;
+      if (!haiku_post_head) haiku_post_tail = nullptr;
     }
     iupdrvMutexUnlock(haiku_post_mutex);
 
@@ -97,7 +97,7 @@ static void haikuDrainPostQueue(void)
 
     if (iupObjectCheck(node->ih))
     {
-      IFnsidv cb = (IFnsidv)IupGetCallback(node->ih, "POSTMESSAGE_CB");
+      auto cb = reinterpret_cast<IFnsidv>(IupGetCallback(node->ih, "POSTMESSAGE_CB"));
       if (cb && cb(node->ih, node->s, node->i, node->d, node->p) == IUP_CLOSE)
         IupExitLoop();
     }
@@ -107,7 +107,7 @@ static void haikuDrainPostQueue(void)
   }
 
   iupdrvMutexLock(haiku_post_mutex);
-  bool more = (haiku_post_head != NULL);
+  bool more = (haiku_post_head != nullptr);
   haiku_post_drain_pending = more;
   iupdrvMutexUnlock(haiku_post_mutex);
   if (more) haikuPostKick();
@@ -119,9 +119,9 @@ extern "C" IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double
 
   /* Non-blocking fast path: cb runs on the dialog looper (recursive locks). */
   Ihandle* dlg = IupGetDialog(ih);
-  if (dlg && dlg->handle && dlg->handle != (InativeHandle*)-1)
+  if (dlg && dlg->handle && dlg->handle != reinterpret_cast<InativeHandle*>(-1))
   {
-    BWindow* win = dynamic_cast<BWindow*>((BLooper*)dlg->handle);
+    auto* win = dynamic_cast<BWindow*>(reinterpret_cast<BLooper*>(dlg->handle));
     if (win)
     {
       BMessage msg(IUPHAIKU_POST_MSG);
@@ -139,14 +139,14 @@ extern "C" IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double
   if (!haiku_post_mutex)
     haiku_post_mutex = iupdrvMutexCreate();
 
-  haikuPostNode* node = (haikuPostNode*)malloc(sizeof(haikuPostNode));
+  auto* node = static_cast<haikuPostNode*>(malloc(sizeof(haikuPostNode)));
   if (!node) return;
   node->ih = ih;
   node->s = iupStrDup(s);
   node->i = i;
   node->d = d;
   node->p = p;
-  node->next = NULL;
+  node->next = nullptr;
 
   iupdrvMutexLock(haiku_post_mutex);
   if (haiku_post_tail) haiku_post_tail->next = node;
@@ -167,7 +167,7 @@ extern "C" IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
 
 extern "C" IUP_SDK_API void* iupdrvNativeScopeBegin(void)
 {
-  return NULL;
+  return nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvNativeScopeEnd(void* scope)
@@ -177,12 +177,12 @@ extern "C" IUP_SDK_API void iupdrvNativeScopeEnd(void* scope)
 
 extern "C" IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 {
-  haiku_idle_cb = (IFidle)f;
+  haiku_idle_cb = reinterpret_cast<IFidle>(f);
   if (f) iuphaikuAppStartIdleRunner();
   else   iuphaikuAppStopIdleRunner();
 }
 
-IUP_DRV_API void iuphaikuPostAppWake(void)
+IUP_DRV_API void iuphaikuPostAppWake()
 {
   if (be_app)
   {
@@ -192,24 +192,24 @@ IUP_DRV_API void iuphaikuPostAppWake(void)
   haikuWake();
 }
 
-IUP_DRV_API void iuphaikuAppDrainPosts(void)
+IUP_DRV_API void iuphaikuAppDrainPosts()
 {
   haikuDrainPostQueue();
 }
 
-IUP_DRV_API void iuphaikuAppIdleTick(void)
+IUP_DRV_API void iuphaikuAppIdleTick()
 {
   if (!haiku_idle_cb) return;
   int ret = haiku_idle_cb();
   if (ret == IUP_CLOSE)
   {
-    haiku_idle_cb = NULL;
+    haiku_idle_cb = nullptr;
     iuphaikuAppStopIdleRunner();
     IupExitLoop();
   }
   else if (ret == IUP_IGNORE)
   {
-    haiku_idle_cb = NULL;
+    haiku_idle_cb = nullptr;
     iuphaikuAppStopIdleRunner();
   }
 }
@@ -269,8 +269,8 @@ extern "C" IUP_API int IupMainLoop(void)
   {
     /* Nested: Run() is single-shot, so spin a private pump. */
     iuphaikuModalBegin();
-    BLooper* self_looper = BLooper::LooperForThread(find_thread(NULL));
-    BWindow* self_window = dynamic_cast<BWindow*>(self_looper);
+    BLooper* self_looper = BLooper::LooperForThread(find_thread(nullptr));
+    auto* self_window = dynamic_cast<BWindow*>(self_looper);
     sem_id sem = haikuWakeSem();
     while (!haiku_loop_exit_flag[current_level])
     {
@@ -279,8 +279,8 @@ extern "C" IUP_API int IupMainLoop(void)
       if (haiku_idle_cb)
       {
         int ret = haiku_idle_cb();
-        if (ret == IUP_CLOSE) { haiku_idle_cb = NULL; break; }
-        if (ret == IUP_IGNORE) haiku_idle_cb = NULL;
+        if (ret == IUP_CLOSE) { haiku_idle_cb = nullptr; break; }
+        if (ret == IUP_IGNORE) haiku_idle_cb = nullptr;
       }
 
       /* Blocked here, so the looper can't repaint itself; drain its pending updates. */
@@ -320,8 +320,8 @@ extern "C" IUP_API int IupLoopStep(void)
   if (haiku_idle_cb)
   {
     int ret = haiku_idle_cb();
-    if (ret == IUP_CLOSE) { haiku_idle_cb = NULL; return IUP_CLOSE; }
-    if (ret == IUP_IGNORE) haiku_idle_cb = NULL;
+    if (ret == IUP_CLOSE) { haiku_idle_cb = nullptr; return IUP_CLOSE; }
+    if (ret == IUP_IGNORE) haiku_idle_cb = nullptr;
   }
   return IUP_DEFAULT;
 }
@@ -332,21 +332,21 @@ extern "C" IUP_API void IupFlush(void)
   snooze(0);
 }
 
-IUP_DRV_API void iuphaikuLoopCleanup(void)
+IUP_DRV_API void iuphaikuLoopCleanup()
 {
-  haiku_idle_cb = NULL;
+  haiku_idle_cb = nullptr;
   haiku_main_loop_level = 0;
-  for (int i = 0; i < 10; ++i) haiku_loop_exit_flag[i] = false;
+  for (auto& flag : haiku_loop_exit_flag) flag = false;
 
   if (haiku_post_mutex)
   {
     iupdrvMutexLock(haiku_post_mutex);
     haikuPostNode* n = haiku_post_head;
-    haiku_post_head = haiku_post_tail = NULL;
+    haiku_post_head = haiku_post_tail = nullptr;
     iupdrvMutexUnlock(haiku_post_mutex);
     while (n) { haikuPostNode* nx = n->next; if (n->s) free(n->s); free(n); n = nx; }
     iupdrvMutexDestroy(haiku_post_mutex);
-    haiku_post_mutex = NULL;
+    haiku_post_mutex = nullptr;
   }
 
   if (haiku_wake_sem >= B_OK) { delete_sem(haiku_wake_sem); haiku_wake_sem = -1; }
@@ -356,13 +356,13 @@ static int haiku_modal_depth = 0;
 static bigtime_t haiku_modal_start = 0;
 static bigtime_t haiku_modal_end = 0;
 
-IUP_DRV_API void iuphaikuModalBegin(void)
+IUP_DRV_API void iuphaikuModalBegin()
 {
   if (haiku_modal_depth++ == 0)
     haiku_modal_start = system_time();
 }
 
-IUP_DRV_API void iuphaikuModalEnd(void)
+IUP_DRV_API void iuphaikuModalEnd()
 {
   if (haiku_modal_depth > 0 && --haiku_modal_depth == 0)
     haiku_modal_end = system_time();

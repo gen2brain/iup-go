@@ -41,9 +41,9 @@ extern "C" {
 
 static char* haikuStrippedMnemonic(const char* title)
 {
-  if (!title) return NULL;
+  if (!title) return nullptr;
   if (!strchr(title, '&')) return iupStrDup(title);
-  return iupStrProcessMnemonic(title, NULL, 0);
+  return iupStrProcessMnemonic(title, nullptr, 0);
 }
 
 
@@ -71,22 +71,22 @@ public:
     }
 
     int img_w = 0, img_h = 0;
-    if (bm) { img_w = (int)(bm->Bounds().Width() + 1); img_h = (int)(bm->Bounds().Height() + 1); }
+    if (bm) { img_w = static_cast<int>(bm->Bounds().Width() + 1); img_h = static_cast<int>(bm->Bounds().Height() + 1); }
 
-    char* title = fIhandle ? iupAttribGet(fIhandle, "TITLE") : NULL;
+    char* title = fIhandle ? iupAttribGet(fIhandle, "TITLE") : nullptr;
     char* stripped = haikuStrippedMnemonic(title);
     const char* text = stripped ? stripped : "";
     int has_text = text && *text;
 
     int spacing = bm && has_text ? 2 : 0;
-    int text_w = has_text ? (int)ceilf(StringWidth(text)) : 0;
+    int text_w = has_text ? static_cast<int>(ceilf(StringWidth(text))) : 0;
     font_height fh; GetFontHeight(&fh);
-    int text_h = has_text ? (int)ceilf(fh.ascent + fh.descent) : 0;
+    int text_h = has_text ? static_cast<int>(ceilf(fh.ascent + fh.descent)) : 0;
 
     int total_w = img_w + spacing + text_w;
     int total_h = (img_h > text_h) ? img_h : text_h;
-    int origin_x = (int)((bounds.Width() + 1 - total_w) / 2);
-    int origin_y = (int)((bounds.Height() + 1 - total_h) / 2);
+    int origin_x = static_cast<int>((bounds.Width() + 1 - total_w) / 2);
+    int origin_y = static_cast<int>((bounds.Height() + 1 - total_h) / 2);
     if (origin_x < 0) origin_x = 0;
     if (origin_y < 0) origin_y = 0;
 
@@ -112,7 +112,7 @@ public:
     if (!fIhandle || !fEnabled) return;
     if (iupAttribGetBoolean(fIhandle, "CANFOCUS")) MakeFocus(true);
 
-    BMessage* msg = Looper() ? Looper()->CurrentMessage() : NULL;
+    BMessage* msg = Looper() ? Looper()->CurrentMessage() : nullptr;
     int32 buttons = 0, mods = 0, clicks = 1;
     if (msg)
     {
@@ -131,10 +131,10 @@ public:
     else if (buttons & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
 
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    iuphaikuButtonKeySetStatus((unsigned)mods, (unsigned)buttons, 0, status, clicks == 2 ? 1 : 0);
+    iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, clicks == 2 ? 1 : 0);
 
-    IFniiiis cb = (IFniiiis)IupGetCallback(fIhandle, "BUTTON_CB");
-    if (cb) cb(fIhandle, btn, 1, (int)where.x, (int)where.y, status);
+    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(fIhandle, "BUTTON_CB"));
+    if (cb) cb(fIhandle, btn, 1, static_cast<int>(where.x), static_cast<int>(where.y), status);
   }
 
   void MouseUp(BPoint where) override
@@ -145,19 +145,19 @@ public:
     fPressed = false;
     Invalidate();
 
-    BMessage* msg = Looper() ? Looper()->CurrentMessage() : NULL;
+    BMessage* msg = Looper() ? Looper()->CurrentMessage() : nullptr;
     int32 mods = 0;
     if (msg) msg->FindInt32("modifiers", &mods);
 
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    iuphaikuButtonKeySetStatus((unsigned)mods, 0, 0, status, 0);
+    iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), 0, 0, status, 0);
 
-    IFniiiis cb = (IFniiiis)IupGetCallback(fIhandle, "BUTTON_CB");
-    if (cb) cb(fIhandle, IUP_BUTTON1, 0, (int)where.x, (int)where.y, status);
+    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(fIhandle, "BUTTON_CB"));
+    if (cb) cb(fIhandle, IUP_BUTTON1, 0, static_cast<int>(where.x), static_cast<int>(where.y), status);
 
     if (wasPressed && fEnabled && Bounds().Contains(where))
     {
-      Icallback acb = (Icallback)IupGetCallback(fIhandle, "ACTION");
+      auto acb = static_cast<Icallback>(IupGetCallback(fIhandle, "ACTION"));
       if (acb && acb(fIhandle) == IUP_CLOSE) IupExitLoop();
     }
   }
@@ -191,9 +191,9 @@ private:
   }
 
   Ihandle* fIhandle;
-  BBitmap* fNormal = NULL;
-  BBitmap* fPress = NULL;
-  BBitmap* fInactive = NULL;
+  BBitmap* fNormal = nullptr;
+  BBitmap* fPress = nullptr;
+  BBitmap* fInactive = nullptr;
   bool fPressed;
   bool fEnabled;
 };
@@ -290,7 +290,7 @@ public:
     if (msg->what == IUPHAIKU_BUTTON_INVOKE_MSG && fIhandle)
     {
       if (Window()) Window()->UpdateIfNeeded();
-      Icallback cb = (Icallback)IupGetCallback(fIhandle, "ACTION");
+      auto cb = static_cast<Icallback>(IupGetCallback(fIhandle, "ACTION"));
       if (cb && cb(fIhandle) == IUP_CLOSE) IupExitLoop();
       return;
     }
@@ -304,7 +304,7 @@ public:
     BButton::MouseDown(where);
     if (!fIhandle) return;
 
-    BMessage* msg = Looper() ? Looper()->CurrentMessage() : NULL;
+    BMessage* msg = Looper() ? Looper()->CurrentMessage() : nullptr;
     int32 buttons = 0, mods = 0, clicks = 1;
     if (msg)
     {
@@ -319,10 +319,10 @@ public:
     else if (buttons & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
 
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    iuphaikuButtonKeySetStatus((unsigned)mods, (unsigned)buttons, 0, status, clicks == 2 ? 1 : 0);
+    iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, clicks == 2 ? 1 : 0);
 
-    IFniiiis cb = (IFniiiis)IupGetCallback(fIhandle, "BUTTON_CB");
-    if (cb) cb(fIhandle, btn, 1, (int)where.x, (int)where.y, status);
+    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(fIhandle, "BUTTON_CB"));
+    if (cb) cb(fIhandle, btn, 1, static_cast<int>(where.x), static_cast<int>(where.y), status);
   }
 
   void MouseUp(BPoint where) override
@@ -330,15 +330,15 @@ public:
     BButton::MouseUp(where);
     if (!fIhandle) return;
 
-    BMessage* msg = Looper() ? Looper()->CurrentMessage() : NULL;
+    BMessage* msg = Looper() ? Looper()->CurrentMessage() : nullptr;
     int32 mods = 0;
     if (msg) msg->FindInt32("modifiers", &mods);
 
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    iuphaikuButtonKeySetStatus((unsigned)mods, 0, 0, status, 0);
+    iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), 0, 0, status, 0);
 
-    IFniiiis cb = (IFniiiis)IupGetCallback(fIhandle, "BUTTON_CB");
-    if (cb) cb(fIhandle, IUP_BUTTON1, 0, (int)where.x, (int)where.y, status);
+    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(fIhandle, "BUTTON_CB"));
+    if (cb) cb(fIhandle, IUP_BUTTON1, 0, static_cast<int>(where.x), static_cast<int>(where.y), status);
   }
 
 private:
@@ -352,7 +352,7 @@ static int haikuButtonIsColorSwatch(Ihandle* ih)
   if (ih->data->type & IUP_BUTTON_IMAGE) return 0;
   char* title = iupAttribGet(ih, "TITLE");
   if (title && *title) return 0;
-  return iupAttribGet(ih, "BGCOLOR") != NULL;
+  return iupAttribGet(ih, "BGCOLOR") != nullptr;
 }
 
 static int haikuButtonIsChromeless(Ihandle* ih)
@@ -366,7 +366,7 @@ static int haikuButtonIsChromeless(Ihandle* ih)
 
 static void haikuImageButtonRefresh(Ihandle* ih)
 {
-  IupHaikuImageButton* btn = dynamic_cast<IupHaikuImageButton*>((BView*)ih->handle);
+  auto* btn = dynamic_cast<IupHaikuImageButton*>(reinterpret_cast<BView*>(ih->handle));
   if (!btn) return;
 
   const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
@@ -374,10 +374,10 @@ static void haikuImageButtonRefresh(Ihandle* ih)
   char* press = iupAttribGet(ih, "IMPRESS");
   char* inactive = iupAttribGet(ih, "IMINACTIVE");
 
-  BBitmap* bmImage    = image    ? (BBitmap*)iupImageGetImage(image,    ih, 0, bgcolor) : NULL;
-  BBitmap* bmPress    = press    ? (BBitmap*)iupImageGetImage(press,    ih, 0, bgcolor) : NULL;
-  BBitmap* bmInactive = inactive ? (BBitmap*)iupImageGetImage(inactive, ih, 0, bgcolor)
-                                 : (image ? (BBitmap*)iupImageGetImage(image, ih, 1, bgcolor) : NULL);
+  BBitmap* bmImage    = image    ? static_cast<BBitmap*>(iupImageGetImage(image,    ih, 0, bgcolor)) : nullptr;
+  BBitmap* bmPress    = press    ? static_cast<BBitmap*>(iupImageGetImage(press,    ih, 0, bgcolor)) : nullptr;
+  BBitmap* bmInactive = inactive ? static_cast<BBitmap*>(iupImageGetImage(inactive, ih, 0, bgcolor))
+                                 : (image ? static_cast<BBitmap*>(iupImageGetImage(image, ih, 1, bgcolor)) : nullptr);
 
   LooperLockGuard guard(btn->Looper());
   btn->SetBitmaps(bmImage, bmPress, bmInactive);
@@ -387,22 +387,22 @@ static void haikuButtonApplyImage(Ihandle* ih, const char* name, int make_inacti
 {
   if (haikuButtonIsChromeless(ih)) { haikuImageButtonRefresh(ih); return; }
 
-  BButton* button = dynamic_cast<BButton*>((BView*)ih->handle);
+  auto* button = dynamic_cast<BButton*>(reinterpret_cast<BView*>(ih->handle));
   if (!button || !name) return;
 
   const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
-  BBitmap* bm = (BBitmap*)iupImageGetImage(name, ih, make_inactive, bgcolor);
+  auto* bm = static_cast<BBitmap*>(iupImageGetImage(name, ih, make_inactive, bgcolor));
   if (!bm) return;
 
   LooperLockGuard guard(button->Looper());
-  button->SetIcon(NULL, 0);
+  button->SetIcon(nullptr, 0);
   button->SetIcon(bm, 0);
 }
 
 
 static int haikuButtonSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  BButton* button = dynamic_cast<BButton*>((BView*)ih->handle);
+  auto* button = dynamic_cast<BButton*>(reinterpret_cast<BView*>(ih->handle));
   if (!button) return 1;
 
   int mn = iupStrFindMnemonic(value);
@@ -417,13 +417,13 @@ static int haikuButtonSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int haikuButtonSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  BView* view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(ih->handle);
   if (view)
   {
     bool enable = iupStrBoolean(value) ? true : false;
     LooperLockGuard guard(view->Looper());
-    if (BButton* b = dynamic_cast<BButton*>(view)) b->SetEnabled(enable);
-    else if (IupHaikuImageButton* ib = dynamic_cast<IupHaikuImageButton*>(view)) ib->SetEnabled(enable);
+    if (auto* b = dynamic_cast<BButton*>(view)) b->SetEnabled(enable);
+    else if (auto* ib = dynamic_cast<IupHaikuImageButton*>(view)) ib->SetEnabled(enable);
   }
 
   if (ih->data->type & IUP_BUTTON_IMAGE)
@@ -493,7 +493,7 @@ static int haikuButtonSetImPressAttrib(Ihandle* ih, const char* value)
 
 static int haikuButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
 {
-  BButton* button = dynamic_cast<BButton*>((BView*)ih->handle);
+  auto* button = dynamic_cast<BButton*>(reinterpret_cast<BView*>(ih->handle));
   if (!button) return 1;
 
   LooperLockGuard guard(button->Looper());
@@ -503,7 +503,7 @@ static int haikuButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
 
 static int haikuButtonSetCanFocusAttrib(Ihandle* ih, const char* value)
 {
-  BView* view = (BView*)ih->handle;
+  auto* view = reinterpret_cast<BView*>(ih->handle);
   if (!view) return 1;
   LooperLockGuard guard(view->Looper());
   iuphaikuSetCanFocus(view, iupStrBoolean(value));
@@ -527,8 +527,8 @@ static int haikuButtonMapMethod(Ihandle* ih)
 
   if (haikuButtonIsChromeless(ih))
   {
-    IupHaikuImageButton* btn = new IupHaikuImageButton(ih);
-    ih->handle = (InativeHandle*)btn;
+    auto* btn = new IupHaikuImageButton(ih);
+    ih->handle = reinterpret_cast<InativeHandle*>(btn);
     iuphaikuAddToParent(ih);
     haikuImageButtonRefresh(ih);
   }
@@ -537,10 +537,10 @@ static int haikuButtonMapMethod(Ihandle* ih)
     char* title = iupAttribGet(ih, "TITLE");
     char* stripped = haikuStrippedMnemonic(title);
 
-    IupHaikuButton* button = new IupHaikuButton(ih, stripped ? stripped : "");
+    auto* button = new IupHaikuButton(ih, stripped ? stripped : "");
     if (stripped) free(stripped);
 
-    ih->handle = (InativeHandle*)button;
+    ih->handle = reinterpret_cast<InativeHandle*>(button);
 
     iuphaikuAddToParent(ih);
     iuphaikuUpdateWidgetFont(ih, button);
@@ -588,8 +588,8 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 
   if (has_user_padding)
   {
-    if (x) *x += (int)(left + right + 0.5f);
-    if (y) *y += (int)(top + bottom + 0.5f);
+    if (x) *x += static_cast<int>(left + right + 0.5f);
+    if (y) *y += static_cast<int>(top + bottom + 0.5f);
     return;
   }
 
@@ -602,33 +602,33 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
     chrome_w += spacing;
   if (x)
   {
-    int total = *x + (int)(chrome_w + 0.5f);
-    int minw = has_label ? (int)(spacing * 12.5f + 0.5f) : (int)(spacing + 0.5f);
+    int total = *x + static_cast<int>(chrome_w + 0.5f);
+    int minw = has_label ? static_cast<int>(spacing * 12.5f + 0.5f) : static_cast<int>(spacing + 0.5f);
     *x = total > minw ? total : minw;
   }
-  if (y) *y += (int)(top + bottom + spacing + 0.5f);
+  if (y) *y += static_cast<int>(top + bottom + spacing + 0.5f);
 }
 
 extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   ic->Map = haikuButtonMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, haikuButtonSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, haikuButtonSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, haikuButtonSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, haikuButtonSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, haikuButtonSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, haikuButtonSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", nullptr, haikuButtonSetImInactiveAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", nullptr, haikuButtonSetImPressAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, NULL, "ACENTER:ACENTER", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, NULL, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "FLAT", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "IMPRESSBORDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", nullptr, nullptr, "ACENTER:ACENTER", nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, nullptr, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FLAT", nullptr, nullptr, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMPRESSBORDER", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKUP", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED);
 
-  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, haikuButtonSetShowAsDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CANFOCUS", NULL, haikuButtonSetCanFocusAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", nullptr, haikuButtonSetShowAsDefaultAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CANFOCUS", nullptr, haikuButtonSetCanFocusAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 }

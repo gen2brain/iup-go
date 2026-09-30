@@ -36,16 +36,16 @@ static BBitmap* haikuBuildBitmap(int width, int height, int bpp, iupColor* color
                                  unsigned char bg_r, unsigned char bg_g, unsigned char bg_b, int make_inactive)
 {
   if (width <= 0 || height <= 0 || !imgdata)
-    return NULL;
+    return nullptr;
 
-  BBitmap* bm = new BBitmap(BRect(0, 0, width - 1, height - 1), 0, B_RGBA32);
+  auto* bm = new BBitmap(BRect(0, 0, width - 1, height - 1), 0, B_RGBA32);
   if (bm->InitCheck() != B_OK)
   {
     delete bm;
-    return NULL;
+    return nullptr;
   }
 
-  uint8* dst = (uint8*)bm->Bits();
+  auto* dst = static_cast<uint8*>(bm->Bits());
   int32 stride = bm->BytesPerRow();
 
   if (bpp == 8)
@@ -128,7 +128,7 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgc
   if (make_inactive && bgcolor)
     iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
 
-  unsigned char* imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
+  auto* imgdata = reinterpret_cast<unsigned char*>(iupAttribGetStr(ih, "WID"));
 
   return haikuBuildBitmap(ih->currentwidth, ih->currentheight, bpp, colors, colors_count, imgdata, bg_r, bg_g, bg_b, make_inactive);
 }
@@ -136,18 +136,18 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgc
 
 extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
-  return iupdrvImageCreateImage(ih, NULL, 0);
+  return iupdrvImageCreateImage(ih, nullptr, 0);
 }
 
 extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
-  BBitmap* bm = (BBitmap*)iupdrvImageCreateImage(ih, NULL, 0);
-  if (!bm) return NULL;
+  auto* bm = static_cast<BBitmap*>(iupdrvImageCreateImage(ih, nullptr, 0));
+  if (!bm) return nullptr;
 
   int hx = 0, hy = 0;
   iupStrToIntInt(iupAttribGet(ih, "HOTSPOT"), &hx, &hy, ':');
 
-  BCursor* cursor = new BCursor(bm, BPoint((float)hx, (float)hy));
+  auto* cursor = new BCursor(bm, BPoint(static_cast<float>(hx), static_cast<float>(hy)));
   delete bm;
   return cursor;
 }
@@ -156,14 +156,14 @@ extern "C" IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
 {
   if (!handle) return;
   if (type == IUPIMAGE_CURSOR)
-    delete (BCursor*)handle;
+    delete static_cast<BCursor*>(handle);
   else
-    delete (BBitmap*)handle;
+    delete static_cast<BBitmap*>(handle);
 }
 
 extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
-  BBitmap* bm = (BBitmap*)handle;
+  auto* bm = static_cast<BBitmap*>(handle);
   if (!bm || bm->InitCheck() != B_OK)
   {
     if (w) *w = 0;
@@ -172,8 +172,8 @@ extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int*
     return 0;
   }
   BRect b = bm->Bounds();
-  if (w) *w = (int)(b.IntegerWidth() + 1);
-  if (h) *h = (int)(b.IntegerHeight() + 1);
+  if (w) *w = b.IntegerWidth() + 1;
+  if (h) *h = b.IntegerHeight() + 1;
   if (bpp) *bpp = 32;  /* always B_RGBA32 internally */
   return 1;
 }
@@ -187,14 +187,14 @@ extern "C" IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, i
 
 extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
-  BBitmap* bm = (BBitmap*)handle;
+  auto* bm = static_cast<BBitmap*>(handle);
   if (!bm || !imgdata || bm->InitCheck() != B_OK) return;
 
   BRect b = bm->Bounds();
   int w = b.IntegerWidth() + 1;
   int h = b.IntegerHeight() + 1;
   int32 stride = bm->BytesPerRow();
-  uint8* src = (uint8*)bm->Bits();
+  auto* src = static_cast<uint8*>(bm->Bits());
 
   for (int y = 0; y < h; ++y)
   {
@@ -213,17 +213,17 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
 
 extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
-  if (!name) return NULL;
+  if (!name) return nullptr;
 
   BBitmap* bm = BTranslationUtils::GetBitmap(name);
   if (!bm)
     bm = BTranslationUtils::GetBitmapFile(name);
   if (!bm)
-    return NULL;
+    return nullptr;
 
   if (type == IUPIMAGE_CURSOR)
   {
-    BCursor* cursor = new BCursor(bm, BPoint(0, 0));
+    auto* cursor = new BCursor(bm, BPoint(0, 0));
     delete bm;
     return cursor;
   }
@@ -248,8 +248,8 @@ static int haikuTranslate(BBitmap* bm, uint32 format_id, BPositionIO* out)
 {
   BBitmapStream stream(bm);
   BTranslatorRoster* roster = BTranslatorRoster::Default();
-  status_t st = roster->Translate(&stream, NULL, NULL, out, format_id);
-  BBitmap* detached = NULL;
+  status_t st = roster->Translate(&stream, nullptr, nullptr, out, format_id);
+  BBitmap* detached = nullptr;
   stream.DetachBitmap(&detached);  /* prevent BBitmapStream from deleting bm */
   return (st == B_OK) ? 1 : 0;
 }
@@ -277,14 +277,14 @@ extern "C" IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, i
   (void)ih;
   if (!value) return 0;
 
-  BBitmap* bm = (BBitmap*)iupImageGetIcon(value);
+  auto* bm = static_cast<BBitmap*>(iupImageGetIcon(value));
   if (!bm || bm->InitCheck() != B_OK) return 0;
 
   BRect b = bm->Bounds();
   int w = b.IntegerWidth() + 1;
   int h = b.IntegerHeight() + 1;
 
-  unsigned char* dst = (unsigned char*)malloc(w * h * 4);
+  auto* dst = static_cast<unsigned char*>(malloc(w * h * 4));
   if (!dst) return 0;
 
   iupdrvImageGetData(bm, dst);
@@ -300,20 +300,20 @@ extern "C" IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* img
 {
   if (size) *size = 0;
   uint32 fid = haikuFormatId(format);
-  if (!fid) return NULL;
+  if (!fid) return nullptr;
 
   BBitmap* bm = haikuBuildBitmap(width, height, bpp, colors, colors_count, imgdata, 0, 0, 0, 0);
-  if (!bm) return NULL;
+  if (!bm) return nullptr;
 
   BMallocIO mem;
   int ok = haikuTranslate(bm, fid, &mem);
   delete bm;
-  if (!ok) return NULL;
+  if (!ok) return nullptr;
 
   size_t n = mem.BufferLength();
-  unsigned char* buf = (unsigned char*)malloc(n);
-  if (!buf) return NULL;
+  auto* buf = static_cast<unsigned char*>(malloc(n));
+  if (!buf) return nullptr;
   memcpy(buf, mem.Buffer(), n);
-  if (size) *size = (int)n;
+  if (size) *size = static_cast<int>(n);
   return buf;
 }

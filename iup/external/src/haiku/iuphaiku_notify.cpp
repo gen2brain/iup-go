@@ -25,8 +25,8 @@ extern "C" {
 
 static int haikuNotifyStubMap(Ihandle* ih)
 {
-  BView* v = new BView(BRect(0, 0, 0, 0), "iup_notify_stub", B_FOLLOW_NONE, B_WILL_DRAW);
-  ih->handle = (InativeHandle*)v;
+  auto* v = new BView(BRect(0, 0, 0, 0), "iup_notify_stub", B_FOLLOW_NONE, B_WILL_DRAW);
+  ih->handle = reinterpret_cast<InativeHandle*>(v);
   return IUP_NOERROR;
 }
 
@@ -53,11 +53,11 @@ extern "C" IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
   if (body) n.SetContent(body);
 
   const char* image = iupAttribGet(ih, "IMAGE");
-  BBitmap* bm = image ? (BBitmap*)iupImageGetImage(image, ih, 0, NULL) : NULL;
+  BBitmap* bm = image ? static_cast<BBitmap*>(iupImageGetImage(image, ih, 0, nullptr)) : nullptr;
   if (!bm)
   {
     const char* icon = iupAttribGet(ih, "ICON");
-    if (icon) bm = (BBitmap*)iupImageGetIcon(icon);
+    if (icon) bm = static_cast<BBitmap*>(iupImageGetIcon(icon));
   }
   if (bm) n.SetIcon(bm);
 
@@ -74,11 +74,11 @@ extern "C" IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
   {
     double prog = 0.0;
     char* progv = iupAttribGet(ih, "PROGRESS");
-    if (progv && iupStrToDouble(progv, &prog)) n.SetProgress((float)prog);
+    if (progv && iupStrToDouble(progv, &prog)) n.SetProgress(static_cast<float>(prog));
   }
 
   int timeout_ms = iupAttribGetInt(ih, "TIMEOUT");
-  bigtime_t timeout_us = (timeout_ms > 0) ? (bigtime_t)timeout_ms * 1000 : -1;
+  bigtime_t timeout_us = (timeout_ms > 0) ? static_cast<bigtime_t>(timeout_ms) * 1000 : -1;
   return (n.Send(timeout_us) == B_OK) ? 1 : 0;
 }
 

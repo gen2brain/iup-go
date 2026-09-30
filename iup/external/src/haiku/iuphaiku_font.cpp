@@ -41,7 +41,7 @@ typedef struct _IhaikuFont {
   int is_strikeout;
 } IhaikuFont;
 
-static Iarray* haiku_fonts = NULL;
+static Iarray* haiku_fonts = nullptr;
 
 static bool haikuFamilyContains(const char* haystack, const char* needle)
 {
@@ -73,7 +73,7 @@ static const char* haikuResolveAlias(const char* typeface)
       strcasecmp(typeface, "times") == 0 ||
       strcasecmp(typeface, "times new roman") == 0)
     return "Noto Serif";
-  return NULL;
+  return nullptr;
 }
 
 static bool haikuFindFamilyExact(const char* typeface, font_family out_family)
@@ -136,13 +136,13 @@ static void haikuFindStyle(const font_family family, uint16 want_face, font_styl
   if (want_face == 0)
     want_face = B_REGULAR_FACE;
 
-  int32 style_count = count_font_styles((char*)family);
+  int32 style_count = count_font_styles(const_cast<char*>(family));
 
   for (int32 j = 0; j < style_count; ++j)
   {
     font_style st;
     uint16 face = 0;
-    if (get_font_style((char*)family, j, &st, &face) == B_OK)
+    if (get_font_style(const_cast<char*>(family), j, &st, &face) == B_OK)
     {
       if (face == want_face)
       {
@@ -156,7 +156,7 @@ static void haikuFindStyle(const font_family family, uint16 want_face, font_styl
   {
     font_style st;
     uint16 face = 0;
-    if (get_font_style((char*)family, j, &st, &face) == B_OK)
+    if (get_font_style(const_cast<char*>(family), j, &st, &face) == B_OK)
     {
       if ((face & want_face) == want_face)
       {
@@ -170,14 +170,14 @@ static void haikuFindStyle(const font_family family, uint16 want_face, font_styl
   {
     font_style st;
     uint32 flags = 0;
-    if (get_font_style((char*)family, 0, &st, &flags) == B_OK)
+    if (get_font_style(const_cast<char*>(family), 0, &st, &flags) == B_OK)
       strcpy(out_style, st);
   }
 }
 
 static BFont* haikuBuildBFont(const char* typeface, int size, int is_bold, int is_italic, int is_underline, int is_strikeout)
 {
-  BFont* bf = new BFont(be_plain_font);
+  auto* bf = new BFont(be_plain_font);
 
   uint16 want_face = 0;
   if (is_bold) want_face |= B_BOLD_FACE;
@@ -194,7 +194,7 @@ static BFont* haikuBuildBFont(const char* typeface, int size, int is_bold, int i
 
   /* IUP size: + points, - pixels; treat |size| as points (close at 72-96 DPI). */
   if (size != 0)
-    bf->SetSize((float)(size < 0 ? -size : size));
+    bf->SetSize(static_cast<float>(size < 0 ? -size : size));
 
   uint16 face = bf->Face();
   if (is_bold)      face |= B_BOLD_FACE;
@@ -214,11 +214,11 @@ static void haikuComputeMetrics(IhaikuFont* hf)
   font_height fh;
   hf->bfont->GetHeight(&fh);
 
-  hf->ascent  = (int)ceilf(fh.ascent);
-  hf->descent = (int)ceilf(fh.descent);
-  hf->charheight = (int)ceilf(fh.ascent + fh.descent + fh.leading);
-  hf->charwidth  = (int)ceilf(hf->bfont->StringWidth("x"));
-  hf->max_width  = (int)ceilf(hf->bfont->StringWidth("W"));
+  hf->ascent  = static_cast<int>(ceilf(fh.ascent));
+  hf->descent = static_cast<int>(ceilf(fh.descent));
+  hf->charheight = static_cast<int>(ceilf(fh.ascent + fh.descent + fh.leading));
+  hf->charwidth  = static_cast<int>(ceilf(hf->bfont->StringWidth("x")));
+  hf->max_width  = static_cast<int>(ceilf(hf->bfont->StringWidth("W")));
 
   if (hf->charheight < 1) hf->charheight = 1;
   if (hf->charwidth  < 1) hf->charwidth  = 1;
@@ -228,9 +228,9 @@ static void haikuComputeMetrics(IhaikuFont* hf)
 static IhaikuFont* haikuFindFont(const char* font)
 {
   if (!haiku_fonts || !font || !*font)
-    return NULL;
+    return nullptr;
 
-  IhaikuFont* fonts = (IhaikuFont*)iupArrayGetData(haiku_fonts);
+  auto* fonts = static_cast<IhaikuFont*>(iupArrayGetData(haiku_fonts));
   int count = iupArrayCount(haiku_fonts);
   for (int i = 0; i < count; ++i)
   {
@@ -242,7 +242,7 @@ static IhaikuFont* haikuFindFont(const char* font)
   int size = 0;
   int is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
   if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
-    return NULL;
+    return nullptr;
 
   const char* mapped = iupFontGetPangoName(typeface);
   if (mapped)
@@ -250,9 +250,9 @@ static IhaikuFont* haikuFindFont(const char* font)
 
   BFont* bfont = haikuBuildBFont(typeface, size, is_bold, is_italic, is_underline, is_strikeout);
   if (!bfont)
-    return NULL;
+    return nullptr;
 
-  IhaikuFont* slot = (IhaikuFont*)iupArrayInc(haiku_fonts);
+  auto* slot = static_cast<IhaikuFont*>(iupArrayInc(haiku_fonts));
   iupStrCopyN(slot->font_str, sizeof(slot->font_str), font);
   slot->bfont = bfont;
   slot->is_underline = is_underline;
@@ -263,10 +263,10 @@ static IhaikuFont* haikuFindFont(const char* font)
 
 static IhaikuFont* haikuFontGet(Ihandle* ih)
 {
-  IhaikuFont* hf = NULL;
+  IhaikuFont* hf = nullptr;
   if (ih)
   {
-    hf = (IhaikuFont*)iupAttribGet(ih, "_IUPHAIKU_SETFONT");
+    hf = reinterpret_cast<IhaikuFont*>(iupAttribGet(ih, "_IUPHAIKU_SETFONT"));
     if (!hf)
       hf = haikuFindFont(iupGetFontValue(ih));
   }
@@ -287,15 +287,15 @@ extern "C" IUP_SDK_API void iupdrvFontFinish(void)
   if (!haiku_fonts)
     return;
 
-  IhaikuFont* fonts = (IhaikuFont*)iupArrayGetData(haiku_fonts);
+  auto* fonts = static_cast<IhaikuFont*>(iupArrayGetData(haiku_fonts));
   int count = iupArrayCount(haiku_fonts);
   for (int i = 0; i < count; ++i)
   {
     delete fonts[i].bfont;
-    fonts[i].bfont = NULL;
+    fonts[i].bfont = nullptr;
   }
   iupArrayDestroy(haiku_fonts);
-  haiku_fonts = NULL;
+  haiku_fonts = nullptr;
 }
 
 extern "C" IUP_SDK_API char* iupdrvGetSystemFont(void)
@@ -304,7 +304,7 @@ extern "C" IUP_SDK_API char* iupdrvGetSystemFont(void)
   font_family family;
   font_style style;
   be_plain_font->GetFamilyAndStyle(&family, &style);
-  int size = (int)(be_plain_font->Size() + 0.5f);
+  int size = static_cast<int>(be_plain_font->Size() + 0.5f);
   if (size <= 0) size = 10;
   snprintf(def, sizeof(def), "%s, %s %d", family, style, size);
   return def;
@@ -316,21 +316,21 @@ extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   if (!hf)
     return 0;
 
-  iupAttribSet(ih, "_IUPHAIKU_SETFONT", (char*)hf);
+  iupAttribSet(ih, "_IUPHAIKU_SETFONT", reinterpret_cast<char*>(hf));
   iupBaseUpdateAttribFromFont(ih);
 
   /* TYPEVOID handle is (void*)-1, TYPEDIALOG is BWindow*; neither takes SetFont */
   if (ih->iclass && ih->iclass->nativetype == IUP_TYPECONTROL && ih->handle)
-    iuphaikuUpdateWidgetFont(ih, (BView*)ih->handle);
+    iuphaikuUpdateWidgetFont(ih, reinterpret_cast<BView*>(ih->handle));
 
-  iupAttribSet(ih, "_IUPHAIKU_SETFONT", NULL);
+  iupAttribSet(ih, "_IUPHAIKU_SETFONT", nullptr);
   return 1;
 }
 
 IUP_DRV_API BFont* iuphaikuGetBFont(const char* value)
 {
   IhaikuFont* hf = haikuFindFont(value);
-  return hf ? hf->bfont : NULL;
+  return hf ? hf->bfont : nullptr;
 }
 
 IUP_DRV_API void iuphaikuFontApplyFace(BFont* bf, int is_bold, int is_italic, int is_underline, int is_strikeout)
@@ -365,11 +365,11 @@ IUP_DRV_API void iuphaikuUpdateWidgetFont(Ihandle* ih, BView* widget)
 
   LooperLockGuard guard(widget->Looper());
   widget->SetFont(hf->bfont);
-  iupAttribSet(ih, "_IUPHAIKU_FONT_APPLIED", (char*)hf->bfont);
+  iupAttribSet(ih, "_IUPHAIKU_FONT_APPLIED", reinterpret_cast<char*>(hf->bfont));
 
   /* BTextView/BTextControl don't re-style rendered text from BView::SetFont. */
-  if (BTextView* tv = (BTextView*)iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER"))
-    tv->SetFontAndColor(0, INT32_MAX, hf->bfont, B_FONT_FAMILY_AND_STYLE | B_FONT_SIZE | B_FONT_FACE, NULL);
+  if (auto* tv = reinterpret_cast<BTextView*>(iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER")))
+    tv->SetFontAndColor(0, INT32_MAX, hf->bfont, B_FONT_FAMILY_AND_STYLE | B_FONT_SIZE | B_FONT_FACE, nullptr);
 }
 
 extern "C" IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
@@ -392,9 +392,9 @@ extern "C" IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str
   if (!hf) return 0;
 
   const char* nl = strchr(str, '\n');
-  int len = nl ? (int)(nl - str) : (int)strlen(str);
+  int len = nl ? static_cast<int>(nl - str) : static_cast<int>(strlen(str));
   if (len <= 0) return 0;
-  return (int)(hf->bfont->StringWidth(str, len) + 0.5f);
+  return static_cast<int>(hf->bfont->StringWidth(str, len) + 0.5f);
 }
 
 static void haikuFontMeasureMultiLine(IhaikuFont* hf, const char* str, int len, int* w, int* h)
@@ -415,10 +415,10 @@ static void haikuFontMeasureMultiLine(IhaikuFont* hf, const char* str, int len, 
   {
     if (*p == '\n')
     {
-      int line_len = (int)(p - line);
+      int line_len = static_cast<int>(p - line);
       if (line_len > 0)
       {
-        int lw = (int)(hf->bfont->StringWidth(line, line_len) + 0.5f);
+        int lw = static_cast<int>(hf->bfont->StringWidth(line, line_len) + 0.5f);
         if (lw > max_w) max_w = lw;
       }
       line = p + 1;
@@ -427,10 +427,10 @@ static void haikuFontMeasureMultiLine(IhaikuFont* hf, const char* str, int len, 
   }
 
   /* last line */
-  int line_len = (int)(end - line);
+  int line_len = static_cast<int>(end - line);
   if (line_len > 0)
   {
-    int lw = (int)(hf->bfont->StringWidth(line, line_len) + 0.5f);
+    int lw = static_cast<int>(hf->bfont->StringWidth(line, line_len) + 0.5f);
     if (lw > max_w) max_w = lw;
   }
 
@@ -447,7 +447,7 @@ extern "C" IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const 
     if (h) *h = hf ? hf->charheight : 0;
     return;
   }
-  haikuFontMeasureMultiLine(hf, str, (int)strlen(str), w, h);
+  haikuFontMeasureMultiLine(hf, str, static_cast<int>(strlen(str)), w, h);
 }
 
 extern "C" IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
@@ -460,7 +460,7 @@ extern "C" IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* 
     if (h) *h = hf ? hf->charheight : 0;
     return;
   }
-  if (len < 0) len = (int)strlen(str);
+  if (len < 0) len = static_cast<int>(strlen(str));
   haikuFontMeasureMultiLine(hf, str, len, w, h);
 }
 
@@ -484,19 +484,19 @@ extern "C" IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_widt
 
 static int haikuFamilyCompare(const void* a, const void* b)
 {
-  const char* sa = *(const char* const*)a;
-  const char* sb = *(const char* const*)b;
+  const char* sa = *static_cast<const char* const*>(a);
+  const char* sb = *static_cast<const char* const*>(b);
   return strcasecmp(sa, sb);
 }
 
 extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
-  if (list) *list = NULL;
+  if (list) *list = nullptr;
   int32 family_count = count_font_families();
   if (family_count <= 0)
     return 0;
 
-  char** result = (char**)malloc(sizeof(char*) * family_count);
+  char** result = static_cast<char**>(malloc(sizeof(char*) * family_count));
   int n = 0;
   for (int32 i = 0; i < family_count; ++i)
   {

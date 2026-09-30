@@ -68,12 +68,12 @@ public:
     if (!fIhandle || !fIhandle->handle || fIhandle->data->disable_callbacks)
       return B_DISPATCH_MESSAGE;
 
-    const char* bytes = NULL;
+    const char* bytes = nullptr;
     ssize_t byte_count = 0;
-    if (msg->FindData("bytes", B_STRING_TYPE, (const void**)&bytes, &byte_count) != B_OK || !bytes)
+    if (msg->FindData("bytes", B_STRING_TYPE, reinterpret_cast<const void**>(&bytes), &byte_count) != B_OK || !bytes)
       return B_DISPATCH_MESSAGE;
 
-    BTextView* tv = NULL;
+    BTextView* tv = nullptr;
     if (target && *target) tv = dynamic_cast<BTextView*>(*target);
     if (!tv) return B_DISPATCH_MESSAGE;
 
@@ -82,7 +82,7 @@ public:
     msg->FindInt32("raw_char", &raw_char);
     msg->FindInt32("key", &raw_key);
     msg->FindInt32("modifiers", &mods);
-    int code = iuphaikuKeyDecode((unsigned char)bytes[0], (int)raw_char, (int)raw_key, (unsigned)mods);
+    int code = iuphaikuKeyDecode(static_cast<unsigned char>(bytes[0]), static_cast<int>(raw_char), static_cast<int>(raw_key), static_cast<unsigned>(mods));
     if (code)
     {
       int r = (mods & B_COMMAND_KEY) ? IUP_DEFAULT : iupKeyCallKeyCb(fIhandle, code);
@@ -90,15 +90,15 @@ public:
       if (r == IUP_IGNORE) return B_SKIP_MESSAGE;
     }
 
-    IFnis action_cb = (IFnis)IupGetCallback(fIhandle, "ACTION");
+    auto action_cb = reinterpret_cast<IFnis>(IupGetCallback(fIhandle, "ACTION"));
     if (!action_cb && !fIhandle->data->mask && fIhandle->data->nc <= 0)
       return B_DISPATCH_MESSAGE;
 
     /* "bytes" is stored null-terminated, FindData reports size+1 */
-    int char_len = (byte_count > 0 && bytes[byte_count - 1] == 0) ? (int)byte_count - 1 : (int)byte_count;
+    int char_len = (byte_count > 0 && bytes[byte_count - 1] == 0) ? static_cast<int>(byte_count) - 1 : static_cast<int>(byte_count);
 
     /* Control keys (incl. Tab/Enter for navigate/invoke) bypass the mask. */
-    if (char_len == 1 && (unsigned char)bytes[0] < B_SPACE)
+    if (char_len == 1 && static_cast<unsigned char>(bytes[0]) < B_SPACE)
       return B_DISPATCH_MESSAGE;
 
     int32 sel_s = 0, sel_e = 0;
@@ -123,7 +123,7 @@ public:
         bool changed = false;
         for (int i = 0; i < copy; i++)
         {
-          char c = (char)(to_upper ? iup_toupper(tmp[i]) : iup_tolower(tmp[i]));
+          char c = static_cast<char>(to_upper ? iup_toupper(tmp[i]) : iup_tolower(tmp[i]));
           if (c != tmp[i]) { tmp[i] = c; changed = true; }
         }
         if (changed)
@@ -131,7 +131,7 @@ public:
           msg->ReplaceData("bytes", B_STRING_TYPE, tmp, copy + 1);
           if (copy == 1)
           {
-            int8 raw = (int8)tmp[0];
+            int8 raw = static_cast<int8>(tmp[0]);
             if (msg->HasInt8("byte")) msg->ReplaceInt8("byte", raw);
             else                       msg->AddInt8("byte", raw);
           }
@@ -145,9 +145,9 @@ public:
     if (ret == 0) return B_SKIP_MESSAGE;
     if (ret != -1 && char_len == 1)
     {
-      char rep[2] = { (char)ret, 0 };
+      char rep[2] = { static_cast<char>(ret), 0 };
       msg->ReplaceData("bytes", B_STRING_TYPE, rep, 2);
-      int8 raw = (int8)rep[0];
+      int8 raw = static_cast<int8>(rep[0]);
       if (msg->HasInt8("byte")) msg->ReplaceInt8("byte", raw);
       else                           msg->AddInt8("byte", raw);
     }
@@ -161,7 +161,7 @@ private:
 
 static void haikuTextUndo(Ihandle* ih, BTextView* tv, bool want_redo)
 {
-  IFnis action_cb = (IFnis)IupGetCallback(ih, "ACTION");
+  auto action_cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "ACTION"));
   bool is_redo = false;
   char* before;
 
@@ -195,7 +195,7 @@ public:
 
   filter_result Filter(BMessage* msg, BHandler** target) override
   {
-    BTextView* tv = dynamic_cast<BTextView*>(*target);
+    auto* tv = dynamic_cast<BTextView*>(*target);
     (void)msg;
     if (!tv || !fIhandle || !fIhandle->handle || fIhandle->data->disable_callbacks)
       return B_DISPATCH_MESSAGE;
@@ -216,9 +216,9 @@ class IupHaikuTextControl : public BTextControl
 {
 public:
   explicit IupHaikuTextControl(Ihandle* ih)
-    : BTextControl(BRect(0, 0, 0, 0), "iup_text", NULL, "",
-                   NULL, B_FOLLOW_NONE),
-      fIhandle(ih), fKeyFilter(NULL), fUndoFilter(NULL), fMute(false)
+    : BTextControl(BRect(0, 0, 0, 0), "iup_text", nullptr, "",
+                   nullptr, B_FOLLOW_NONE),
+      fIhandle(ih), fKeyFilter(nullptr), fUndoFilter(nullptr), fMute(false)
   {
     BTextControl::SetDivider(0);
     /* Keep B_NAVIGABLE: SetFlags syncs it to the inner view, else Tab skips it. */
@@ -338,7 +338,7 @@ public:
   {
     if (fMute) return;
     fMute = true;
-    SetModificationMessage(NULL);
+    SetModificationMessage(nullptr);
   }
   void MuteEnd()
   {
@@ -394,9 +394,8 @@ public:
       PushState();
       SetDrawingMode(B_OP_ALPHA);
       SetBlendingMode(B_PIXEL_ALPHA, B_ALPHA_OVERLAY);
-      for (size_t i = 0; i < fBgRanges.size(); ++i)
+      for (const auto& bg : fBgRanges)
       {
-        const BgRange& bg = fBgRanges[i];
         if (bg.start >= bg.end) continue;
         BRegion reg;
         GetTextRegion(bg.start, bg.end, &reg);
@@ -416,9 +415,8 @@ public:
       PushState();
       SetDrawingMode(B_OP_ALPHA);
       SetBlendingMode(B_PIXEL_ALPHA, B_ALPHA_COMPOSITE);
-      for (size_t i = 0; i < fImageRanges.size(); ++i)
+      for (const auto& ir : fImageRanges)
       {
-        const ImageRange& ir = fImageRanges[i];
         if (!ir.bm) continue;
         float lh = 0;
         BPoint p = PointAt(ir.offset, &lh);
@@ -445,9 +443,8 @@ public:
     else
     {
       std::vector<BgRange> kept;
-      for (size_t i = 0; i < fBgRanges.size(); ++i)
+      for (const auto& r : fBgRanges)
       {
-        const BgRange& r = fBgRanges[i];
         if (r.end <= from || r.start >= to) kept.push_back(r);
       }
       fBgRanges.swap(kept);
@@ -471,9 +468,8 @@ public:
     else
     {
       std::vector<ImageRange> kept;
-      for (size_t i = 0; i < fImageRanges.size(); ++i)
+      for (const auto& r : fImageRanges)
       {
-        const ImageRange& r = fImageRanges[i];
         if (r.offset < from || r.offset >= to) kept.push_back(r);
       }
       fImageRanges.swap(kept);
@@ -483,16 +479,16 @@ public:
 
   void ShiftImageRanges(int32 from, int32 delta)
   {
-    for (size_t i = 0; i < fImageRanges.size(); ++i)
-      if (fImageRanges[i].offset >= from) fImageRanges[i].offset += delta;
+    for (auto& range : fImageRanges)
+      if (range.offset >= from) range.offset += delta;
   }
 
   void ShiftBgRanges(int32 from, int32 delta)
   {
-    for (size_t i = 0; i < fBgRanges.size(); ++i)
+    for (auto& range : fBgRanges)
     {
-      if (fBgRanges[i].start >= from) fBgRanges[i].start += delta;
-      if (fBgRanges[i].end >= from) fBgRanges[i].end += delta;
+      if (range.start >= from) range.start += delta;
+      if (range.end >= from) range.end += delta;
     }
   }
 
@@ -518,7 +514,7 @@ protected:
     }
 
     const char* filter = iupAttribGet(fIhandle, "FILTER");
-    char* filter_buf = NULL;
+    char* filter_buf = nullptr;
     if (filter && text && length > 0)
     {
       if (iupStrEqualNoCase(filter, "NUMBER"))
@@ -529,17 +525,17 @@ protected:
       else if (iupStrEqualNoCase(filter, "UPPERCASE") || iupStrEqualNoCase(filter, "LOWERCASE"))
       {
         bool to_upper = iupStrEqualNoCase(filter, "UPPERCASE");
-        filter_buf = (char*)malloc(length);
+        filter_buf = static_cast<char*>(malloc(length));
         if (filter_buf)
         {
           for (int32 i = 0; i < length; i++)
-            filter_buf[i] = (char)(to_upper ? iup_toupper(text[i]) : iup_tolower(text[i]));
+            filter_buf[i] = static_cast<char>(to_upper ? iup_toupper(text[i]) : iup_tolower(text[i]));
           text = filter_buf;
         }
       }
     }
 
-    IFnis action_cb = (IFnis)IupGetCallback(fIhandle, "ACTION");
+    auto action_cb = reinterpret_cast<IFnis>(IupGetCallback(fIhandle, "ACTION"));
     if (action_cb || fIhandle->data->mask || fIhandle->data->nc > 0)
     {
       int32 sel_s = 0, sel_e = 0;
@@ -547,19 +543,19 @@ protected:
       int start = (offset == sel_s) ? sel_s : offset;
       int end   = (offset == sel_s) ? sel_e : offset;
 
-      char* tmp = (char*)malloc(length + 1);
+      char* tmp = static_cast<char*>(malloc(length + 1));
       memcpy(tmp, text, length);
       tmp[length] = '\0';
 
       int ret = iupEditCallActionCb(fIhandle, action_cb, tmp, start, end,
-                                    (void*)fIhandle->data->mask,
+                                    reinterpret_cast<void*>(fIhandle->data->mask),
                                     fIhandle->data->nc, 0, 1);
       free(tmp);
 
       if (ret == 0) { free(filter_buf); return; }
       if (ret != -1 && length == 1)
       {
-        char rep = (char)ret;
+        char rep = static_cast<char>(ret);
         BTextView::InsertText(&rep, 1, offset, runs);
         ShiftImageRanges(offset, 1);
         fireValueChanged();
@@ -584,10 +580,10 @@ protected:
       return;
     }
 
-    IFnis action_cb = (IFnis)IupGetCallback(fIhandle, "ACTION");
+    auto action_cb = reinterpret_cast<IFnis>(IupGetCallback(fIhandle, "ACTION"));
     if (action_cb || fIhandle->data->mask)
     {
-      int ret = iupEditCallActionCb(fIhandle, action_cb, NULL,
+      int ret = iupEditCallActionCb(fIhandle, action_cb, nullptr,
                                     fromOffset, toOffset,
                                     fIhandle->data->mask,
                                     fIhandle->data->nc, 0, 1);
@@ -652,7 +648,7 @@ public:
             char* url = iupAttribGet(fIhandle, key);
             if (url)
             {
-              IFns cb = (IFns)IupGetCallback(fIhandle, "LINK_CB");
+              IFns cb = reinterpret_cast<IFns>(IupGetCallback(fIhandle, "LINK_CB"));
               if (cb)
               {
                 int ret = cb(fIhandle, url);
@@ -702,7 +698,7 @@ static void haikuTextFireCaretCb(Ihandle* ih, BTextView* tv)
   if (!ih || !tv) return;
   if (ih->data->disable_callbacks) return;
 
-  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+  auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
   if (!cb) return;
 
   int32 s = 0, e = 0;
@@ -801,15 +797,15 @@ private:
     if (IsSpinAuto())
     {
       char buf[32];
-      snprintf(buf, sizeof(buf), "%d", (int)nw);
+      snprintf(buf, sizeof(buf), "%d", static_cast<int>(nw));
       fText->MuteBegin();
       fText->SetText(buf);
       fText->MuteEnd();
     }
     if (fIhandle)
     {
-      IFni cb = (IFni)IupGetCallback(fIhandle, "SPIN_CB");
-      if (cb) cb(fIhandle, (int)nw);
+      IFni cb = reinterpret_cast<IFni>(IupGetCallback(fIhandle, "SPIN_CB"));
+      if (cb) cb(fIhandle, static_cast<int>(nw));
     }
   }
 
@@ -823,37 +819,37 @@ private:
 
 static IupHaikuSpinWrap* haikuTextGetSpinWrap(Ihandle* ih)
 {
-  if (!ih || !ih->handle || ih->data->is_multiline) return NULL;
-  return dynamic_cast<IupHaikuSpinWrap*>((BView*)ih->handle);
+  if (!ih || !ih->handle || ih->data->is_multiline) return nullptr;
+  return dynamic_cast<IupHaikuSpinWrap*>(reinterpret_cast<BView*>(ih->handle));
 }
 
 static BTextControl* haikuTextGetTextControl(Ihandle* ih)
 {
-  if (!ih || !ih->handle || ih->data->is_multiline) return NULL;
+  if (!ih || !ih->handle || ih->data->is_multiline) return nullptr;
   if (IupHaikuSpinWrap* sw = haikuTextGetSpinWrap(ih))
     return sw->TextControl();
-  return (BTextControl*)ih->handle;
+  return reinterpret_cast<BTextControl*>(ih->handle);
 }
 
 static BTextView* haikuTextGetEditor(Ihandle* ih)
 {
-  if (!ih || !ih->handle) return NULL;
+  if (!ih || !ih->handle) return nullptr;
   if (ih->data->is_multiline)
-    return (BTextView*)iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER");
+    return reinterpret_cast<BTextView*>(iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER"));
   BTextControl* tc = haikuTextGetTextControl(ih);
-  return tc ? tc->TextView() : NULL;
+  return tc ? tc->TextView() : nullptr;
 }
 
 static BLooper* haikuTextGetLooper(Ihandle* ih)
 {
-  if (!ih || !ih->handle) return NULL;
-  return ((BView*)ih->handle)->Looper();
+  if (!ih || !ih->handle) return nullptr;
+  return (reinterpret_cast<BView*>(ih->handle))->Looper();
 }
 
 static IupHaikuTextView* haikuTextGetMultilineView(Ihandle* ih)
 {
-  if (!ih || !ih->data->is_multiline) return NULL;
-  return (IupHaikuTextView*)iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER");
+  if (!ih || !ih->data->is_multiline) return nullptr;
+  return reinterpret_cast<IupHaikuTextView*>(iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER"));
 }
 
 /* BTextView offsets are byte offsets into the UTF-8 buffer; IUP positions are character indices. */
@@ -865,7 +861,7 @@ static int32 haikuTextCharToByte(BTextView* tv, int char_pos)
   int chars = 0;
   while (text[byte] && chars < char_pos)
   {
-    unsigned char c = (unsigned char)text[byte];
+    auto c = static_cast<unsigned char>(text[byte]);
     byte += (c < 0x80) ? 1 : (c < 0xE0) ? 2 : (c < 0xF0) ? 3 : 4;
     chars++;
   }
@@ -901,7 +897,7 @@ static void haikuTextSetTextSuppressed(Ihandle* ih, const char* value)
   }
   else
   {
-    if (IupHaikuTextControl* tc = dynamic_cast<IupHaikuTextControl*>(haikuTextGetTextControl(ih)))
+    if (auto* tc = dynamic_cast<IupHaikuTextControl*>(haikuTextGetTextControl(ih)))
     {
       tc->MuteBegin();
       tc->SetText(value ? value : "");
@@ -920,11 +916,11 @@ static int haikuTextSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* haikuTextGetValueAttrib(Ihandle* ih)
 {
-  if (!ih->handle) return NULL;
+  if (!ih->handle) return nullptr;
   if (ih->data->is_multiline)
   {
     BTextView* tv = haikuTextGetEditor(ih);
-    if (!tv) return NULL;
+    if (!tv) return nullptr;
     int32 len = tv->TextLength();
     char* buf = iupStrGetMemory(len + 1);
     tv->GetText(0, len, buf);
@@ -932,7 +928,7 @@ static char* haikuTextGetValueAttrib(Ihandle* ih)
     return buf;
   }
   BTextControl* tc = haikuTextGetTextControl(ih);
-  return tc ? iupStrReturnStr(tc->Text()) : NULL;
+  return tc ? iupStrReturnStr(tc->Text()) : nullptr;
 }
 
 static int haikuTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
@@ -947,23 +943,23 @@ static int haikuTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
 static char* haikuTextGetReadOnlyAttrib(Ihandle* ih)
 {
   BTextView* tv = haikuTextGetEditor(ih);
-  if (!tv) return NULL;
+  if (!tv) return nullptr;
   return iupStrReturnBoolean(!tv->IsEditable());
 }
 
 static char* haikuTextGetScrollVisibleAttrib(Ihandle* ih)
 {
-  if (!ih->data->is_multiline || !ih->handle) return (char*)"NO";
-  BScrollView* sv = (BScrollView*)ih->handle;
+  if (!ih->data->is_multiline || !ih->handle) return const_cast<char*>("NO");
+  auto* sv = reinterpret_cast<BScrollView*>(ih->handle);
   LooperLockGuard guard(haikuTextGetLooper(ih));
   BScrollBar* hb = sv->ScrollBar(B_HORIZONTAL);
   BScrollBar* vb = sv->ScrollBar(B_VERTICAL);
   int sb_h = (hb && !hb->IsHidden()) ? 1 : 0;
   int sb_v = (vb && !vb->IsHidden()) ? 1 : 0;
-  if (sb_h && sb_v) return (char*)"YES";
-  if (sb_h) return (char*)"HORIZONTAL";
-  if (sb_v) return (char*)"VERTICAL";
-  return (char*)"NO";
+  if (sb_h && sb_v) return const_cast<char*>("YES");
+  if (sb_h) return const_cast<char*>("HORIZONTAL");
+  if (sb_v) return const_cast<char*>("VERTICAL");
+  return const_cast<char*>("NO");
 }
 
 static int haikuTextSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -978,7 +974,7 @@ static int haikuTextSetBgColorAttrib(Ihandle* ih, const char* value)
   tv->SetLowColor(c);
   if (ih->data->is_multiline)
   {
-    BView* container = (BView*)ih->handle;
+    auto* container = reinterpret_cast<BView*>(ih->handle);
     container->SetViewColor(c);
     container->Invalidate();
   }
@@ -989,7 +985,7 @@ static int haikuTextSetBgColorAttrib(Ihandle* ih, const char* value)
 static int haikuTextSetFontAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->has_formatting && ih->handle &&
-      iuphaikuGetBFont(value) == (BFont*)iupAttribGet(ih, "_IUPHAIKU_FONT_APPLIED"))
+      iuphaikuGetBFont(value) == reinterpret_cast<BFont*>(iupAttribGet(ih, "_IUPHAIKU_FONT_APPLIED")))
     return 1;
   return iupdrvSetFontAttrib(ih, value);
 }
@@ -1003,7 +999,7 @@ static int haikuTextSetFgColorAttrib(Ihandle* ih, const char* value)
   rgb_color c = { r, g, b, 255 };
   LooperLockGuard guard(haikuTextGetLooper(ih));
   tv->SetHighColor(c);
-  tv->SetFontAndColor(0, tv->TextLength(), NULL, 0, &c);
+  tv->SetFontAndColor(0, tv->TextLength(), nullptr, 0, &c);
   tv->Invalidate();
   return 1;
 }
@@ -1115,37 +1111,37 @@ static int haikuTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
 static char* haikuTextGetSelectionAttrib(Ihandle* ih)
 {
   BTextView* tv = haikuTextGetEditor(ih);
-  if (!tv) return NULL;
+  if (!tv) return nullptr;
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
-  if (s == e) return NULL;
+  if (s == e) return nullptr;
   if (ih->data->is_multiline)
   {
     int lin1, col1, lin2, col2;
-    iupdrvTextConvertPosToLinCol(ih, (int)s, &lin1, &col1);
-    iupdrvTextConvertPosToLinCol(ih, (int)e, &lin2, &col2);
+    iupdrvTextConvertPosToLinCol(ih, static_cast<int>(s), &lin1, &col1);
+    iupdrvTextConvertPosToLinCol(ih, static_cast<int>(e), &lin2, &col2);
     return iupStrReturnStrf("%d,%d:%d,%d", lin1, col1, lin2, col2);
   }
-  return iupStrReturnStrf("%d:%d", (int)s + 1, (int)e + 1);
+  return iupStrReturnStrf("%d:%d", static_cast<int>(s) + 1, static_cast<int>(e) + 1);
 }
 
 static char* haikuTextGetSelectionPosAttrib(Ihandle* ih)
 {
   BTextView* tv = haikuTextGetEditor(ih);
-  if (!tv) return NULL;
+  if (!tv) return nullptr;
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
-  if (s == e) return NULL;
-  return iupStrReturnStrf("%d:%d", (int)s, (int)e);
+  if (s == e) return nullptr;
+  return iupStrReturnStrf("%d:%d", static_cast<int>(s), static_cast<int>(e));
 }
 
 static char* haikuTextGetSelectedTextAttrib(Ihandle* ih)
 {
   BTextView* tv = haikuTextGetEditor(ih);
-  if (!tv) return NULL;
+  if (!tv) return nullptr;
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
-  if (s == e) return NULL;
+  if (s == e) return nullptr;
   int len = e - s;
   char* buf = iupStrGetMemory(len + 1);
   tv->GetText(s, len, buf);
@@ -1163,7 +1159,7 @@ static int haikuTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
   tv->GetSelection(&s, &e);
   if (s == e) return 0;
   tv->Delete(s, e);
-  int vlen = (int)strlen(value);
+  int vlen = static_cast<int>(strlen(value));
   tv->Insert(s, value, vlen);
   tv->Select(s + vlen, s + vlen);
   return 0;
@@ -1186,10 +1182,10 @@ static int haikuTextSetCaretPosAttrib(Ihandle* ih, const char* value)
 static char* haikuTextGetCaretPosAttrib(Ihandle* ih)
 {
   BTextView* tv = haikuTextGetEditor(ih);
-  if (!tv) return NULL;
+  if (!tv) return nullptr;
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
-  return iupStrReturnInt((int)s);
+  return iupStrReturnInt(static_cast<int>(s));
 }
 
 static int haikuTextSetCaretAttrib(Ihandle* ih, const char* value)
@@ -1212,10 +1208,10 @@ static int haikuTextSetCaretAttrib(Ihandle* ih, const char* value)
 static char* haikuTextGetCaretAttrib(Ihandle* ih)
 {
   BTextView* tv = haikuTextGetEditor(ih);
-  if (!tv) return NULL;
+  if (!tv) return nullptr;
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
-  if (!ih->data->is_multiline) return iupStrReturnInt((int)s + 1);
+  if (!ih->data->is_multiline) return iupStrReturnInt(static_cast<int>(s) + 1);
   int lin = 1, col = 1;
   iupdrvTextConvertPosToLinCol(ih, s, &lin, &col);
   return iupStrReturnIntInt(lin, col, ',');
@@ -1232,7 +1228,7 @@ static int haikuTextSetAppendAttrib(Ihandle* ih, const char* value)
     if (!tv) return 0;
     int32 end = tv->TextLength();
     const char* prefix = (ih->data->append_newline && end > 0) ? "\n" : "";
-    char* full = (char*)malloc(strlen(prefix) + strlen(value) + 1);
+    char* full = static_cast<char*>(malloc(strlen(prefix) + strlen(value) + 1));
     strcpy(full, prefix);
     strcat(full, value);
     ih->data->disable_callbacks = 1;
@@ -1247,10 +1243,10 @@ static int haikuTextSetAppendAttrib(Ihandle* ih, const char* value)
     BTextControl* tc = haikuTextGetTextControl(ih);
     if (!tc) return 0;
     int32 len = tc->TextLength();
-    char* full = (char*)malloc(len + strlen(value) + 1);
+    char* full = static_cast<char*>(malloc(len + strlen(value) + 1));
     strcpy(full, tc->Text());
     strcat(full, value);
-    if (IupHaikuTextControl* itc = dynamic_cast<IupHaikuTextControl*>(tc))
+    if (auto* itc = dynamic_cast<IupHaikuTextControl*>(tc))
     {
       itc->MuteBegin();
       tc->SetText(full);
@@ -1271,7 +1267,7 @@ static int haikuTextSetInsertAttrib(Ihandle* ih, const char* value)
   tv->GetSelection(&s, &e);
   if (s != e) tv->Delete(s, e);
   tv->Insert(s, value, strlen(value));
-  tv->Select(s + (int32)strlen(value), s + (int32)strlen(value));
+  tv->Select(s + static_cast<int32>(strlen(value)), s + static_cast<int32>(strlen(value)));
   return 0;
 }
 
@@ -1350,7 +1346,7 @@ static int haikuTextSetCueBannerAttrib(Ihandle* ih, const char* value)
   (void)value;
   if (ih->data->is_multiline)
     return 0;
-  IupHaikuTextControl* tc = (IupHaikuTextControl*)ih->handle;
+  auto* tc = reinterpret_cast<IupHaikuTextControl*>(ih->handle);
   if (tc)
   {
     LooperLockGuard guard(haikuTextGetLooper(ih));
@@ -1369,7 +1365,7 @@ static int haikuTextSetTabSizeAttrib(Ihandle* ih, const char* value)
   LooperLockGuard guard(haikuTextGetLooper(ih));
   BFont font;
   tv->GetFont(&font);
-  tv->SetTabWidth(font.StringWidth(" ") * (float)n);
+  tv->SetTabWidth(font.StringWidth(" ") * static_cast<float>(n));
   return 1;
 }
 
@@ -1424,7 +1420,7 @@ static void haikuTextApplyFormatTagFont(BFont& bfont, Ihandle* tag, uint32* mode
           *mode |= B_FONT_FAMILY_AND_STYLE;
         }
       }
-      if (size > 0) { bfont.SetSize((float)size); *mode |= B_FONT_SIZE; }
+      if (size > 0) { bfont.SetSize(static_cast<float>(size)); *mode |= B_FONT_SIZE; }
       uint16 face = 0;
       if (bold) face |= B_BOLD_FACE;
       if (italic) face |= B_ITALIC_FACE;
@@ -1442,7 +1438,7 @@ static void haikuTextApplyFormatTagFont(BFont& bfont, Ihandle* tag, uint32* mode
     if (iuphaikuFindFontFamily(fontface, family))
     {
       font_style style;
-      bfont.GetFamilyAndStyle(NULL, &style);
+      bfont.GetFamilyAndStyle(nullptr, &style);
       bfont.SetFamilyAndStyle(family, style);
       *mode |= B_FONT_FAMILY_AND_STYLE;
     }
@@ -1454,7 +1450,7 @@ static void haikuTextApplyFormatTagFont(BFont& bfont, Ihandle* tag, uint32* mode
     int sz = 0;
     if (iupStrToInt(fontsize, &sz) && sz > 0)
     {
-      bfont.SetSize((float)sz);
+      bfont.SetSize(static_cast<float>(sz));
       *mode |= B_FONT_SIZE;
     }
   }
@@ -1471,7 +1467,7 @@ static void haikuTextApplyFormatTagFont(BFont& bfont, Ihandle* tag, uint32* mode
     else if (iupStrEqualNoCase(fontscale, "X-SMALL"))  scale = 0.69;
     else if (iupStrEqualNoCase(fontscale, "XX-SMALL")) scale = 0.58;
     else iupStrToDouble(fontscale, &scale);
-    bfont.SetSize((float)(bfont.Size() * scale));
+    bfont.SetSize(static_cast<float>(bfont.Size() * scale));
     *mode |= B_FONT_SIZE;
   }
 
@@ -1529,7 +1525,7 @@ static void haikuTextIntToRoman(int value, char* buf, int bufsize, int upper)
   {
     while (value >= vals[i])
     {
-      if ((int)strlen(buf) + (int)strlen(syms[i]) < bufsize - 1)
+      if (static_cast<int>(strlen(buf)) + static_cast<int>(strlen(syms[i])) < bufsize - 1)
         strcat(buf, syms[i]);
       value -= vals[i];
     }
@@ -1578,7 +1574,7 @@ static int haikuTextUtf8Count(const char* s, int32 bytes)
 {
   int count = 0;
   for (int32 i = 0; i < bytes; i++)
-    if (((unsigned char)s[i] & 0xC0) != 0x80) count++;
+    if ((static_cast<unsigned char>(s[i]) & 0xC0) != 0x80) count++;
   return count;
 }
 
@@ -1618,7 +1614,7 @@ static int32 haikuTextInsertPrefix(Ihandle* ih, IupHaikuTextView* tv, int32 pos,
     {
       BFont space(font);
       space.SetSize(indent / (len * ratio));
-      tv->SetFontAndColor(pos, pos + len, &space, B_FONT_SIZE, NULL);
+      tv->SetFontAndColor(pos, pos + len, &space, B_FONT_SIZE, nullptr);
     }
   }
 
@@ -1631,7 +1627,7 @@ static int32 haikuTextInsertPrefix(Ihandle* ih, IupHaikuTextView* tv, int32 pos,
 static void haikuTextApplyParagraphPrefixes(Ihandle* ih, IupHaikuTextView* tv, Ihandle* tag, int32* start, int32* end, bool batch)
 {
   const char* numbering = iupAttribGet(tag, "NUMBERING");
-  if (numbering && iupStrEqualNoCase(numbering, "NONE")) numbering = NULL;
+  if (numbering && iupStrEqualNoCase(numbering, "NONE")) numbering = nullptr;
   int indent = 0;
   char* indent_value = iupAttribGet(tag, "INDENT");
   if (indent_value) iupStrToInt(indent_value, &indent);
@@ -1658,7 +1654,7 @@ static void haikuTextApplyParagraphPrefixes(Ihandle* ih, IupHaikuTextView* tv, I
   {
     int32 pos = paragraphs[n];
     BString prefix;
-    if (numbering && haikuTextNumberingPrefix((int)n + 1, numbering, style, prefix))
+    if (numbering && haikuTextNumberingPrefix(static_cast<int>(n) + 1, numbering, style, prefix))
     {
       int32 len = haikuTextInsertPrefix(ih, tv, pos, prefix.String(), prefix.Length(), 0);
       inserted += len;
@@ -1668,15 +1664,15 @@ static void haikuTextApplyParagraphPrefixes(Ihandle* ih, IupHaikuTextView* tv, I
     if (indent > 0)
     {
       BFont font;
-      tv->GetFontAndColor(pos, &font, NULL);
+      tv->GetFontAndColor(pos, &font, nullptr);
       BFont probe(font);
       probe.SetSize(100.0f);
       float em = probe.StringWidth(" ") / 100.0f * font.Size();
-      int count = em > 0 ? (int)ceilf((float)indent / em) : 1;
+      int count = em > 0 ? static_cast<int>(ceilf(static_cast<float>(indent) / em)) : 1;
       if (count < 1) count = 1;
       BString spaces;
       spaces.Append(' ', count);
-      inserted += haikuTextInsertPrefix(ih, tv, pos, spaces.String(), count, (float)indent);
+      inserted += haikuTextInsertPrefix(ih, tv, pos, spaces.String(), count, static_cast<float>(indent));
       if (pos < *start) before_start += count;
       chars += count;
     }
@@ -1696,7 +1692,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
 
   LooperLockGuard guard(haikuTextGetLooper(ih));
 
-  bool batch = bulk || iupAttribGet(ih, "_IUPHAIKU_FORMAT_MAPPING") != NULL;
+  bool batch = bulk || iupAttribGet(ih, "_IUPHAIKU_FORMAT_MAPPING") != nullptr;
   int32 start = 0, end = 0;
   char* sel = iupAttribGet(tag, "SELECTION");
   char* sel_pos = iupAttribGet(tag, "SELECTIONPOS");
@@ -1725,29 +1721,29 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
     start = s; end = e;
   }
 
-  haikuTextApplyParagraphPrefixes(ih, (IupHaikuTextView*)tv, tag, &start, &end, batch);
+  haikuTextApplyParagraphPrefixes(ih, static_cast<IupHaikuTextView*>(tv), tag, &start, &end, batch);
 
   /* IMAGE replaces the range with a U+FFFC placeholder; BBitmap drawn over it. */
   char* image_name = iupAttribGet(tag, "IMAGE");
   if (image_name)
   {
-    BBitmap* bm = (BBitmap*)iupImageGetImage(image_name, ih, 0, NULL);
+    auto* bm = static_cast<BBitmap*>(iupImageGetImage(image_name, ih, 0, nullptr));
     if (!bm) return;
-    int img_w = (int)(bm->Bounds().Width() + 1);
-    int img_h = (int)(bm->Bounds().Height() + 1);
+    int img_w = static_cast<int>(bm->Bounds().Width() + 1);
+    int img_h = static_cast<int>(bm->Bounds().Height() + 1);
     int nw = 0, nh = 0;
     char* a = iupAttribGet(tag, "WIDTH");  if (a) iupStrToInt(a, &nw);
     a = iupAttribGet(tag, "HEIGHT");       if (a) iupStrToInt(a, &nh);
     if (nw > 0) img_w = nw;
     if (nh > 0) img_h = nh;
 
-    IupHaikuTextView* itv = (IupHaikuTextView*)tv;
+    auto* itv = static_cast<IupHaikuTextView*>(tv);
     itv->SetSuppress(true);
     if (end > start) tv->Delete(start, end);
-    static const char ph[3] = { (char)0xEF, (char)0xBF, (char)0xBC };
+    static const char ph[3] = { static_cast<char>(0xEF), static_cast<char>(0xBF), static_cast<char>(0xBC) };
     tv->Insert(start, ph, 3);
     BFont ifont(be_plain_font);
-    ifont.SetSize((float)img_h);
+    ifont.SetSize(static_cast<float>(img_h));
     rgb_color ph_color = tv->ViewColor();
     ph_color.alpha = 255;
     tv->SetFontAndColor(start, start + 3, &ifont, B_FONT_ALL, &ph_color);
@@ -1785,7 +1781,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
     snprintf(key, sizeof(key), "_IUPHAIKU_LINK_URL_%d", idx);
     iupAttribSetStr(ih, key, link_url);
     snprintf(key, sizeof(key), "_IUPHAIKU_LINK_RANGE_%d", idx);
-    iupAttribSetStrf(ih, key, "%d:%d", (int)start, (int)end);
+    iupAttribSetStrf(ih, key, "%d:%d", static_cast<int>(start), static_cast<int>(end));
     iupAttribSetInt(ih, "_IUPHAIKU_LINK_COUNT", idx + 1);
 
     uint16 face = bfont.Face();
@@ -1797,9 +1793,9 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
   }
 
   if (mode != 0)
-    tv->SetFontAndColor(start, end, &bfont, mode, NULL);
+    tv->SetFontAndColor(start, end, &bfont, mode, nullptr);
   if (color_changed)
-    tv->SetFontAndColor(start, end, NULL, 0, &color);
+    tv->SetFontAndColor(start, end, nullptr, 0, &color);
 
   char* bg = iupAttribGet(tag, "BGCOLOR");
   if (bg)
@@ -1808,7 +1804,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
     if (iupStrToRGB(bg, &r, &g, &b))
     {
       rgb_color bgcol = (rgb_color){ r, g, b, 255 };
-      ((IupHaikuTextView*)tv)->AddBgRange(start, end, bgcol);
+      (static_cast<IupHaikuTextView*>(tv))->AddBgRange(start, end, bgcol);
     }
   }
 }
@@ -1816,8 +1812,8 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
 extern "C" IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
   if (!iupAttribGet(ih, "_IUPHAIKU_FORMAT_MAPPING"))
-    iupAttribSet(ih, "_IUPHAIKU_FORMAT_OFFSET", NULL);
-  return NULL;
+    iupAttribSet(ih, "_IUPHAIKU_FORMAT_OFFSET", nullptr);
+  return nullptr;
 }
 extern "C" IUP_SDK_API void  iupdrvTextAddFormatTagStopBulk (Ihandle* /*ih*/, void* /*state*/) {}
 
@@ -1835,8 +1831,8 @@ static int haikuTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
   BFont base_font(be_plain_font);
   rgb_color base_col = iuphaikuColor(B_DOCUMENT_TEXT_COLOR);
   tv->SetFontAndColor(s, e, &base_font, B_FONT_ALL, &base_col);
-  ((IupHaikuTextView*)tv)->ClearBgRanges(s, e);
-  ((IupHaikuTextView*)tv)->ClearImageRanges(s, e);
+  (static_cast<IupHaikuTextView*>(tv))->ClearBgRanges(s, e);
+  (static_cast<IupHaikuTextView*>(tv))->ClearImageRanges(s, e);
   return 0;
 }
 
@@ -1844,13 +1840,13 @@ static int haikuTextMapMethod(Ihandle* ih)
 {
   if (ih->data->is_multiline)
   {
-    IupHaikuTextView* tv = new IupHaikuTextView(ih);
+    auto* tv = new IupHaikuTextView(ih);
     bool has_h = (ih->data->sb & IUP_SB_HORIZ) != 0;
     bool has_v = (ih->data->sb & IUP_SB_VERT) != 0;
-    BScrollView* sv = new BScrollView("iup_text_scroll", tv, B_FOLLOW_NONE,
+    auto* sv = new BScrollView("iup_text_scroll", tv, B_FOLLOW_NONE,
                                       B_WILL_DRAW | B_FRAME_EVENTS, has_h, has_v);
-    ih->handle = (InativeHandle*)sv;
-    iupAttribSet(ih, "_IUPHAIKU_TEXT_INNER", (char*)tv);
+    ih->handle = reinterpret_cast<InativeHandle*>(sv);
+    iupAttribSet(ih, "_IUPHAIKU_TEXT_INNER", reinterpret_cast<char*>(tv));
 
     iuphaikuAddToParent(ih);
 
@@ -1868,22 +1864,22 @@ static int haikuTextMapMethod(Ihandle* ih)
   }
   else
   {
-    IupHaikuTextControl* tc = new IupHaikuTextControl(ih);
+    auto* tc = new IupHaikuTextControl(ih);
     bool spin = iupAttribGetBoolean(ih, "SPIN");
     if (spin)
     {
-      IupHaikuSpinWrap* sw = new IupHaikuSpinWrap(ih, tc);
+      auto* sw = new IupHaikuSpinWrap(ih, tc);
       sw->SetMin(iupAttribGetInt(ih, "SPINMIN"));
       sw->SetMax(iupAttribGet(ih, "SPINMAX") ? iupAttribGetInt(ih, "SPINMAX") : 100);
       sw->SetStep(iupAttribGet(ih, "SPININC") ? iupAttribGetInt(ih, "SPININC") : 1);
       sw->SetWrap(iupAttribGetBoolean(ih, "SPINWRAP"));
-      ih->handle = (InativeHandle*)sw;
+      ih->handle = reinterpret_cast<InativeHandle*>(sw);
     }
     else
     {
-      ih->handle = (InativeHandle*)tc;
+      ih->handle = reinterpret_cast<InativeHandle*>(tc);
     }
-    iupAttribSet(ih, "_IUPHAIKU_TEXT_INNER", (char*)tc->TextView());
+    iupAttribSet(ih, "_IUPHAIKU_TEXT_INNER", reinterpret_cast<char*>(tc->TextView()));
 
     iuphaikuAddToParent(ih);
 
@@ -1902,21 +1898,21 @@ static int haikuTextMapMethod(Ihandle* ih)
     if (align) haikuTextSetAlignmentAttrib(ih, align);
   }
 
-  iuphaikuUpdateWidgetFont(ih, (BView*)ih->handle);
+  iuphaikuUpdateWidgetFont(ih, reinterpret_cast<BView*>(ih->handle));
 
   if (ih->data->is_multiline && ih->data->formattags)
   {
-    iupAttribSet(ih, "_IUPHAIKU_FORMAT_OFFSET", NULL);
+    iupAttribSet(ih, "_IUPHAIKU_FORMAT_OFFSET", nullptr);
     iupAttribSet(ih, "_IUPHAIKU_FORMAT_MAPPING", "1");
     iupTextUpdateFormatTags(ih);
-    iupAttribSet(ih, "_IUPHAIKU_FORMAT_MAPPING", NULL);
+    iupAttribSet(ih, "_IUPHAIKU_FORMAT_MAPPING", nullptr);
   }
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
   {
     BView* focus_view = ih->data->is_multiline
-      ? (BView*)iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER")
-      : (BView*)ih->handle;
+      ? reinterpret_cast<BView*>(iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER"))
+      : reinterpret_cast<BView*>(ih->handle);
     iuphaikuSetCanFocus(focus_view, 0);
   }
 
@@ -1927,22 +1923,22 @@ static void haikuTextUnMapMethod(Ihandle* ih)
 {
   if (ih->data->is_multiline)
   {
-    IupHaikuTextView* tv = (IupHaikuTextView*)iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER");
-    if (tv) tv->SetIhandle(NULL);
+    auto* tv = reinterpret_cast<IupHaikuTextView*>(iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER"));
+    if (tv) tv->SetIhandle(nullptr);
   }
   else
   {
     if (IupHaikuSpinWrap* sw = haikuTextGetSpinWrap(ih))
     {
-      sw->SetIhandle(NULL);
+      sw->SetIhandle(nullptr);
     }
     else
     {
-      IupHaikuTextControl* tc = (IupHaikuTextControl*)ih->handle;
-      if (tc) tc->SetIhandle(NULL);
+      auto* tc = reinterpret_cast<IupHaikuTextControl*>(ih->handle);
+      if (tc) tc->SetIhandle(nullptr);
     }
   }
-  iupAttribSet(ih, "_IUPHAIKU_TEXT_INNER", NULL);
+  iupAttribSet(ih, "_IUPHAIKU_TEXT_INNER", nullptr);
   iupdrvBaseUnMapMethod(ih);
 }
 
@@ -1952,14 +1948,14 @@ static void haikuTextProbeChrome(int* w, int* h)
   static int probe_w = -1, probe_h = -1;
   if (probe_w < 0)
   {
-    BTextControl probe(BRect(0, 0, 0, 0), "iup_probe", NULL, NULL, NULL);
+    BTextControl probe(BRect(0, 0, 0, 0), "iup_probe", nullptr, nullptr, nullptr);
     float pw = 0, ph = 0;
     probe.GetPreferredSize(&pw, &ph);
     font_height fh;
     probe.GetFontHeight(&fh);
-    int charh = (int)ceilf(fh.ascent + fh.descent + fh.leading);
+    int charh = static_cast<int>(ceilf(fh.ascent + fh.descent + fh.leading));
     if (charh < 1) charh = 1;
-    probe_h = (int)ceilf(ph) - charh;
+    probe_h = static_cast<int>(ceilf(ph)) - charh;
     if (probe_h < 10) probe_h = 10;
     probe_w = 8;
   }
@@ -1992,11 +1988,11 @@ extern "C" IUP_SDK_API void iupdrvTextAddSpin(Ihandle* /*ih*/, int* w, int /*h*/
 static char* haikuTextGetLineValueAttrib(Ihandle* ih)
 {
   BTextView* tv = haikuTextGetEditor(ih);
-  if (!tv) return NULL;
+  if (!tv) return nullptr;
   if (!ih->data->is_multiline)
   {
     BTextControl* tc = haikuTextGetTextControl(ih);
-    return tc ? iupStrReturnStr(tc->Text()) : NULL;
+    return tc ? iupStrReturnStr(tc->Text()) : nullptr;
   }
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
@@ -2018,12 +2014,12 @@ static char* haikuTextGetLineValueAttrib(Ihandle* ih)
 static char* haikuTextGetCountAttrib(Ihandle* ih)
 {
   BTextView* tv = haikuTextGetEditor(ih);
-  if (!tv) return NULL;
+  if (!tv) return nullptr;
   const char* text = tv->Text();
   int count = 0;
   if (text)
     for (const char* p = text; *p; ++p)
-      if (((unsigned char)*p & 0xC0) != 0x80)
+      if ((static_cast<unsigned char>(*p) & 0xC0) != 0x80)
         count++;
   return iupStrReturnInt(count);
 }
@@ -2032,7 +2028,7 @@ static char* haikuTextGetLineCountAttrib(Ihandle* ih)
 {
   if (!ih->data->is_multiline) return iupStrReturnInt(1);
   BTextView* tv = haikuTextGetEditor(ih);
-  if (!tv) return NULL;
+  if (!tv) return nullptr;
   return iupStrReturnInt(tv->CountLines());
 }
 
@@ -2045,8 +2041,8 @@ static int haikuTextSetPaddingAttrib(Ihandle* ih, const char* value)
     if (tv)
     {
       LooperLockGuard guard(haikuTextGetLooper(ih));
-      float pad_x = (float)(ih->data->horiz_padding + 2);
-      float pad_y = (float)(ih->data->vert_padding + 2);
+      auto pad_x = static_cast<float>(ih->data->horiz_padding + 2);
+      auto pad_y = static_cast<float>(ih->data->vert_padding + 2);
       tv->SetInsets(pad_x, pad_y, pad_x, pad_y);
     }
   }
@@ -2112,7 +2108,7 @@ static char* haikuTextGetSpinValueAttrib(Ihandle* ih)
   IupHaikuSpinWrap* sw = haikuTextGetSpinWrap(ih);
   if (sw && !sw->IsSpinAuto()) return iupStrReturnInt(sw->Value());
   BTextControl* tc = haikuTextGetTextControl(ih);
-  return tc ? iupStrReturnStr(tc->Text()) : NULL;
+  return tc ? iupStrReturnStr(tc->Text()) : nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
@@ -2147,7 +2143,7 @@ static int haikuTextByteToChar(const char* text, int32 byte_pos)
   if (!text) return 0;
   while (text[byte] && byte < byte_pos)
   {
-    unsigned char c = (unsigned char)text[byte];
+    auto c = static_cast<unsigned char>(text[byte]);
     byte += (c < 0x80) ? 1 : (c < 0xE0) ? 2 : (c < 0xF0) ? 3 : 4;
     chars++;
   }
@@ -2188,7 +2184,7 @@ static void haikuTextAddFormatRun(Ihandle* ih, Ihandle* bulk_tag, const BFont& b
   IupSetAttribute(formattag, "ITALIC", (face & B_ITALIC_FACE) ? "YES" : "NO");
   IupSetAttribute(formattag, "STRIKEOUT", (face & B_STRIKEOUT_FACE) ? "YES" : "NO");
   IupSetStrAttribute(formattag, "FONTFACE", family);
-  IupSetInt(formattag, "FONTSIZE", (int)(bfont.Size() + 0.5f));
+  IupSetInt(formattag, "FONTSIZE", static_cast<int>(bfont.Size() + 0.5f));
 
   count = iupAttribGetInt(ih, "_IUPHAIKU_LINK_COUNT");
   for (i = 0; i < count; ++i)
@@ -2235,7 +2231,7 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
 
   while (byte < length)
   {
-    unsigned char c = (unsigned char)text[byte];
+    auto c = static_cast<unsigned char>(text[byte]);
     int32 next = byte + ((c < 0x80) ? 1 : (c < 0xE0) ? 2 : (c < 0xF0) ? 3 : 4);
     BFont bfont;
 
@@ -2265,53 +2261,53 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   ic->Map = haikuTextMapMethod;
   ic->UnMap = haikuTextUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, haikuTextSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, haikuTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, haikuTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, haikuTextSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, haikuTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, haikuTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuTextSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", haikuTextGetValueAttrib, haikuTextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LINEVALUE", haikuTextGetLineValueAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COUNT", haikuTextGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LINECOUNT", haikuTextGetLineCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "READONLY", haikuTextGetReadOnlyAttrib, haikuTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", haikuTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, haikuTextSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "VALUE", haikuTextGetValueAttrib, haikuTextSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LINEVALUE", haikuTextGetLineValueAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COUNT", haikuTextGetCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LINECOUNT", haikuTextGetLineCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "READONLY", haikuTextGetReadOnlyAttrib, haikuTextSetReadOnlyAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", haikuTextGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, haikuTextSetNCAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, haikuTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "SELECTION", haikuTextGetSelectionAttrib, haikuTextSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", haikuTextGetSelectionPosAttrib, haikuTextSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", haikuTextGetSelectedTextAttrib, haikuTextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", haikuTextGetSelectionAttrib, haikuTextSetSelectionAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", haikuTextGetSelectionPosAttrib, haikuTextSetSelectionPosAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", haikuTextGetSelectedTextAttrib, haikuTextSetSelectedTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "CARET", haikuTextGetCaretAttrib, haikuTextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", haikuTextGetCaretAttrib, haikuTextSetCaretAttrib, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARETPOS", haikuTextGetCaretPosAttrib, haikuTextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "APPEND", NULL, haikuTextSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", NULL, haikuTextSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, haikuTextSetClipboardAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", nullptr, haikuTextSetAppendAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", nullptr, haikuTextSetInsertAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, haikuTextSetClipboardAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, haikuTextSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, haikuTextSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, haikuTextSetScrollToAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, haikuTextSetScrollToPosAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "WORDWRAP", NULL, haikuTextSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TABSIZE", NULL, haikuTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, haikuTextSetAlignmentAttrib, "ALEFT", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OVERWRITE", NULL, haikuTextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "WORDWRAP", nullptr, haikuTextSetWordWrapAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TABSIZE", nullptr, haikuTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", nullptr, haikuTextSetAlignmentAttrib, "ALEFT", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OVERWRITE", nullptr, haikuTextSetOverwriteAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "PASSWORD", NULL, haikuTextSetPasswordAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CUEBANNER", NULL, haikuTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PASSWORD", nullptr, haikuTextSetPasswordAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUEBANNER", nullptr, haikuTextSetCueBannerAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FILTER", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, haikuTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TABSARRAY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ADDFORMATTAG", NULL, iupTextSetAddFormatTagAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", NULL, iupTextSetAddFormatTagHandleAttrib, NULL, NULL, IUPAF_IHANDLE|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "REMOVEFORMATTING", nullptr, haikuTextSetRemoveFormattingAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATTING", iupTextGetFormattingAttrib, iupTextSetFormattingAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABSARRAY", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ADDFORMATTAG", nullptr, iupTextSetAddFormatTagAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", nullptr, iupTextSetAddFormatTagHandleAttrib, nullptr, nullptr, IUPAF_IHANDLE|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SPIN", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPINMIN", NULL, haikuTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPINMAX", NULL, haikuTextSetSpinMaxAttrib, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPININC", NULL, haikuTextSetSpinIncAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPINWRAP", NULL, haikuTextSetSpinWrapAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SPINVALUE", haikuTextGetSpinValueAttrib, haikuTextSetSpinValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPIN", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINMIN", nullptr, haikuTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINMAX", nullptr, haikuTextSetSpinMaxAttrib, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPININC", nullptr, haikuTextSetSpinIncAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINWRAP", nullptr, haikuTextSetSpinWrapAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SPINVALUE", haikuTextGetSpinValueAttrib, haikuTextSetSpinValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }

@@ -68,18 +68,18 @@ static bool haikuDnDFindCommonType(const std::vector<std::string>& srcTypes, con
 
 static BBitmap* haikuDnDLoadCursorBitmap(Ihandle* ih, const char* name)
 {
-  if (!name) return NULL;
-  BBitmap* bm = (BBitmap*)iupImageGetImage(name, ih, 0, NULL);
-  if (!bm) return NULL;
+  if (!name) return nullptr;
+  auto* bm = static_cast<BBitmap*>(iupImageGetImage(name, ih, 0, nullptr));
+  if (!bm) return nullptr;
   /* iupImageGetImage caches; copy so the drag's delete doesn't free the cache entry. */
   return new BBitmap(bm);
 }
 
 static void haikuDnDClearTracking(Ihandle* ih)
 {
-  iupAttribSet(ih, "_IUPHAIKU_DD_TRACK", NULL);
-  iupAttribSet(ih, "_IUPHAIKU_DD_X", NULL);
-  iupAttribSet(ih, "_IUPHAIKU_DD_Y", NULL);
+  iupAttribSet(ih, "_IUPHAIKU_DD_TRACK", nullptr);
+  iupAttribSet(ih, "_IUPHAIKU_DD_X", nullptr);
+  iupAttribSet(ih, "_IUPHAIKU_DD_Y", nullptr);
 }
 
 void iuphaikuDnDMouseDown(Ihandle* ih, BPoint where, unsigned int buttons)
@@ -88,8 +88,8 @@ void iuphaikuDnDMouseDown(Ihandle* ih, BPoint where, unsigned int buttons)
   if (!iupAttribGetBoolean(ih, "DRAGSOURCE")) return;
   if (!(buttons & B_PRIMARY_MOUSE_BUTTON)) return;
   iupAttribSetInt(ih, "_IUPHAIKU_DD_TRACK", 1);
-  iupAttribSetInt(ih, "_IUPHAIKU_DD_X", (int)where.x);
-  iupAttribSetInt(ih, "_IUPHAIKU_DD_Y", (int)where.y);
+  iupAttribSetInt(ih, "_IUPHAIKU_DD_X", static_cast<int>(where.x));
+  iupAttribSetInt(ih, "_IUPHAIKU_DD_Y", static_cast<int>(where.y));
 }
 
 void iuphaikuDnDMouseUp(Ihandle* ih)
@@ -100,8 +100,8 @@ void iuphaikuDnDMouseUp(Ihandle* ih)
 
 bool iuphaikuDnDInitiateDrag(Ihandle* ih, BView* view, BPoint where)
 {
-  IFnii cbBegin = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
-  if (cbBegin && cbBegin(ih, (int)where.x, (int)where.y) == IUP_IGNORE)
+  auto cbBegin = reinterpret_cast<IFnii>(IupGetCallback(ih, "DRAGBEGIN_CB"));
+  if (cbBegin && cbBegin(ih, static_cast<int>(where.x), static_cast<int>(where.y)) == IUP_IGNORE)
     return false;
 
   std::vector<std::string> types = haikuDnDParseTypes(iupAttribGet(ih, "DRAGTYPES"));
@@ -111,19 +111,19 @@ bool iuphaikuDnDInitiateDrag(Ihandle* ih, BView* view, BPoint where)
   drag.AddPointer("be:originator", ih);
   drag.AddInt32("_iup_team", be_app ? be_app->Team() : 0);
 
-  IFns cbSize = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
-  IFnsVi cbData = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
+  IFns cbSize = reinterpret_cast<IFns>(IupGetCallback(ih, "DRAGDATASIZE_CB"));
+  auto cbData = reinterpret_cast<IFnsVi>(IupGetCallback(ih, "DRAGDATA_CB"));
   if (!cbSize || !cbData) return false;
 
   bool any = false;
   for (const std::string& t : types)
   {
-    int size = cbSize(ih, (char*)t.c_str());
+    int size = cbSize(ih, const_cast<char*>(t.c_str()));
     if (size <= 0) continue;
     void* buf = malloc(size);
     if (!buf) continue;
     memset(buf, 0, size);
-    cbData(ih, (char*)t.c_str(), buf, size);
+    cbData(ih, const_cast<char*>(t.c_str()), buf, size);
     drag.AddData(t.c_str(), B_MIME_TYPE, buf, size);
     free(buf);
     any = true;
@@ -159,19 +159,19 @@ static void haikuDnDApplyDragCursor(Ihandle* ih, BView* view, const BMessage* dr
   int32 team = 0;
   drag_msg->FindInt32("_iup_team", &team);
   if (!be_app || team != be_app->Team()) return;
-  Ihandle* src_ih = NULL;
-  drag_msg->FindPointer("be:originator", (void**)&src_ih);
+  Ihandle* src_ih = nullptr;
+  drag_msg->FindPointer("be:originator", reinterpret_cast<void**>(&src_ih));
   if (!src_ih || !iupObjectCheck(src_ih)) return;
 
-  const char* name = (mods & B_COMMAND_KEY) ? iupAttribGet(src_ih, "DRAGCURSORCOPY") : NULL;
+  const char* name = (mods & B_COMMAND_KEY) ? iupAttribGet(src_ih, "DRAGCURSORCOPY") : nullptr;
   if (!name) name = iupAttribGet(src_ih, "DRAGCURSOR");
   if (!name) return;
 
   const char* last = iupAttribGet(ih, "_IUPHAIKU_DD_CURSOR_NAME");
   if (last && iupStrEqual(last, name)) return;
 
-  BCursor* prev = (BCursor*)iupAttribGet(ih, "_IUPHAIKU_DD_CURSOR");
-  bool prev_owned = iupAttribGet(ih, "_IUPHAIKU_DD_CURSOR_OWNED") != NULL;
+  auto* prev = reinterpret_cast<BCursor*>(iupAttribGet(ih, "_IUPHAIKU_DD_CURSOR"));
+  bool prev_owned = iupAttribGet(ih, "_IUPHAIKU_DD_CURSOR_OWNED") != nullptr;
 
   bool owned = false;
   BCursor* c = iuphaikuGetCursor(ih, name, &owned);
@@ -179,28 +179,28 @@ static void haikuDnDApplyDragCursor(Ihandle* ih, BView* view, const BMessage* dr
 
   view->SetViewCursor(c, true);
   iupAttribSetStr(ih, "_IUPHAIKU_DD_CURSOR_NAME", name);
-  iupAttribSet(ih, "_IUPHAIKU_DD_CURSOR", (char*)c);
-  iupAttribSet(ih, "_IUPHAIKU_DD_CURSOR_OWNED", owned ? "1" : NULL);
+  iupAttribSet(ih, "_IUPHAIKU_DD_CURSOR", reinterpret_cast<char*>(c));
+  iupAttribSet(ih, "_IUPHAIKU_DD_CURSOR_OWNED", owned ? "1" : nullptr);
   if (prev_owned) delete prev;
 }
 
 static void haikuDnDClearDragCursor(Ihandle* ih)
 {
-  BCursor* prev = (BCursor*)iupAttribGet(ih, "_IUPHAIKU_DD_CURSOR");
+  auto* prev = reinterpret_cast<BCursor*>(iupAttribGet(ih, "_IUPHAIKU_DD_CURSOR"));
   if (!prev) return;
-  bool prev_owned = iupAttribGet(ih, "_IUPHAIKU_DD_CURSOR_OWNED") != NULL;
+  bool prev_owned = iupAttribGet(ih, "_IUPHAIKU_DD_CURSOR_OWNED") != nullptr;
 
-  if (BView* view = (BView*)ih->handle)
+  if (auto* view = reinterpret_cast<BView*>(ih->handle))
   {
-    BCursor* base = (BCursor*)iupAttribGet(ih, "_IUPHAIKU_CURSOR");
+    auto* base = reinterpret_cast<BCursor*>(iupAttribGet(ih, "_IUPHAIKU_CURSOR"));
     LooperLockGuard guard(view->Looper());
     view->SetViewCursor(base ? base : B_CURSOR_SYSTEM_DEFAULT, true);
   }
 
   if (prev_owned) delete prev;
-  iupAttribSet(ih, "_IUPHAIKU_DD_CURSOR_NAME", NULL);
-  iupAttribSet(ih, "_IUPHAIKU_DD_CURSOR", NULL);
-  iupAttribSet(ih, "_IUPHAIKU_DD_CURSOR_OWNED", NULL);
+  iupAttribSet(ih, "_IUPHAIKU_DD_CURSOR_NAME", nullptr);
+  iupAttribSet(ih, "_IUPHAIKU_DD_CURSOR", nullptr);
+  iupAttribSet(ih, "_IUPHAIKU_DD_CURSOR_OWNED", nullptr);
 }
 
 bool iuphaikuDnDMouseMoved(Ihandle* ih, BView* view, BPoint where, unsigned int transit, const BMessage* drag_msg)
@@ -213,7 +213,7 @@ bool iuphaikuDnDMouseMoved(Ihandle* ih, BView* view, BPoint where, unsigned int 
   if (drag_msg && iupAttribGetBoolean(ih, "DROPTARGET"))
   {
     int32 mods = 0;
-    const BMessage* cur = view->Looper() ? view->Looper()->CurrentMessage() : NULL;
+    const BMessage* cur = view->Looper() ? view->Looper()->CurrentMessage() : nullptr;
     if (cur) cur->FindInt32("modifiers", &mods);
 
     if (transit == B_EXITED_VIEW)
@@ -221,12 +221,12 @@ bool iuphaikuDnDMouseMoved(Ihandle* ih, BView* view, BPoint where, unsigned int 
     else
       haikuDnDApplyDragCursor(ih, view, drag_msg, mods);
 
-    IFniis cbMotion = (IFniis)IupGetCallback(ih, "DROPMOTION_CB");
+    auto cbMotion = reinterpret_cast<IFniis>(IupGetCallback(ih, "DROPMOTION_CB"));
     if (cbMotion)
     {
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iuphaikuButtonKeySetStatus((unsigned)mods, 0, 0, status, 0);
-      cbMotion(ih, (int)where.x, (int)where.y, status);
+      iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), 0, 0, status, 0);
+      cbMotion(ih, static_cast<int>(where.x), static_cast<int>(where.y), status);
     }
     return true;
   }
@@ -257,11 +257,11 @@ bool iuphaikuDnDMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
 
   if (msg->what == IUPHAIKU_DD_END_REPLY)
   {
-    IFni cbEnd = (IFni)IupGetCallback(ih, "DRAGEND_CB");
+    IFni cbEnd = reinterpret_cast<IFni>(IupGetCallback(ih, "DRAGEND_CB"));
     if (cbEnd)
     {
       int action = -1;
-      msg->FindInt32("action", (int32*)&action);
+      msg->FindInt32("action", static_cast<int32*>(&action));
       cbEnd(ih, action);
     }
     return true;
@@ -275,7 +275,7 @@ bool iuphaikuDnDMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
   std::vector<std::string> srcTypes = haikuDnDParseTypes(msg->FindString("_iup_dragtypes"));
   if (srcTypes.empty())
   {
-    char* name = NULL;
+    char* name = nullptr;
     uint32 type = 0;
     int32 count = 0;
     for (int32 i = 0; msg->GetInfo(B_MIME_TYPE, i, &name, &type, &count) == B_OK; ++i)
@@ -287,7 +287,7 @@ bool iuphaikuDnDMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
   std::string common;
   if (!haikuDnDFindCommonType(srcTypes, dstTypes, &common)) return false;
 
-  const void* data = NULL;
+  const void* data = nullptr;
   ssize_t size = 0;
   if (msg->FindData(common.c_str(), B_MIME_TYPE, &data, &size) != B_OK) return false;
 
@@ -295,17 +295,17 @@ bool iuphaikuDnDMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
   if (view->Looper())
     dropPt = view->ConvertFromScreen(dropPt);
 
-  IFnsViii cbDrop = (IFnsViii)IupGetCallback(ih, "DROPDATA_CB");
+  auto cbDrop = reinterpret_cast<IFnsViii>(IupGetCallback(ih, "DROPDATA_CB"));
   if (cbDrop)
-    cbDrop(ih, (char*)common.c_str(), (void*)data, (int)size, (int)dropPt.x, (int)dropPt.y);
+    cbDrop(ih, const_cast<char*>(common.c_str()), const_cast<void*>(data), static_cast<int>(size), static_cast<int>(dropPt.x), static_cast<int>(dropPt.y));
 
   int32 mods = 0;
   msg->FindInt32("modifiers", &mods);
   int32 team = 0;
   msg->FindInt32("_iup_team", &team);
-  Ihandle* src_ih = NULL;
+  Ihandle* src_ih = nullptr;
   if (be_app && team == be_app->Team())
-    msg->FindPointer("be:originator", (void**)&src_ih);
+    msg->FindPointer("be:originator", reinterpret_cast<void**>(&src_ih));
   if (src_ih && iupObjectCheck(src_ih))
   {
     BMessage reply(IUPHAIKU_DD_END_REPLY);
@@ -321,7 +321,7 @@ bool iuphaikuHandleDropFiles(Ihandle* ih, BView* view, BMessage* msg)
   if (msg->what != B_SIMPLE_DATA && msg->what != B_REFS_RECEIVED) return false;
   if (!msg->HasRef("refs")) return false;
 
-  IFnsiii cb = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
+  auto cb = reinterpret_cast<IFnsiii>(IupGetCallback(ih, "DROPFILES_CB"));
   if (!cb) return false;
 
   BPoint pt = msg->DropPoint();
@@ -336,7 +336,7 @@ bool iuphaikuHandleDropFiles(Ihandle* ih, BView* view, BMessage* msg)
     if (msg->FindRef("refs", i, &ref) != B_OK) continue;
     BPath path;
     if (BEntry(&ref).GetPath(&path) != B_OK) continue;
-    int ret = cb(ih, (char*)path.Path(), count - i - 1, (int)pt.x, (int)pt.y);
+    int ret = cb(ih, const_cast<char*>(path.Path()), count - i - 1, static_cast<int>(pt.x), static_cast<int>(pt.y));
     if (ret == IUP_IGNORE) break;
     if (ret == IUP_CLOSE) { IupExitLoop(); break; }
   }
@@ -359,14 +359,14 @@ extern "C" IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
   iupClassRegisterCallback(ic, "DROPMOTION_CB",   "iis");
   iupClassRegisterCallback(ic, "DROPFILES_CB",    "siii");
 
-  iupClassRegisterAttribute(ic, "DRAGTYPES",      NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPTYPES",      NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGSOURCE",     NULL, haikuDnDSetDragSourceAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPTARGET",     NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGSOURCEMOVE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGCURSOR",     NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAGCURSORCOPY", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGTYPES",      nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPTYPES",      nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGSOURCE",     nullptr, haikuDnDSetDragSourceAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPTARGET",     nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGSOURCEMOVE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGCURSOR",     nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGCURSORCOPY", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "DRAGDROP",        NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPFILESTARGET", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGDROP",        nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DROPFILESTARGET", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

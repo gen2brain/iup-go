@@ -29,7 +29,7 @@ extern "C" IUP_SDK_API void iupdrvSensorStop(Ihandle* ih) { (void)ih; }
 extern "C" IUP_SDK_API char* iupdrvSensorGetPermission(Ihandle* ih)
 {
   (void)ih;
-  return (char*)"UNAVAILABLE";
+  return const_cast<char*>("UNAVAILABLE");
 }
 
 extern "C" IUP_SDK_API void iupdrvSensorDestroy(Ihandle* ih) { (void)ih; }

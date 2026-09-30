@@ -87,17 +87,17 @@ static int haikuFrameMapMethod(Ihandle* ih)
   else if (iupAttribGet(ih, "BGCOLOR"))
     iupAttribSet(ih, "_IUPFRAME_HAS_BGCOLOR", "1");
 
-  IupHaikuFrameBox* box = new IupHaikuFrameBox(ih, BRect(0, 0, 99, 99),
+  auto* box = new IupHaikuFrameBox(ih, BRect(0, 0, 99, 99),
                                                haikuFrameResolveBorder(ih));
   if (title)
     box->SetLabel(title);
 
-  IupHaikuFrameInner* inner = new IupHaikuFrameInner(ih, box->InnerFrame());
+  auto* inner = new IupHaikuFrameInner(ih, box->InnerFrame());
   inner->SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
   box->AddChild(inner);
 
-  ih->handle = (InativeHandle*)box;
-  iupAttribSet(ih, "_IUPHAIKU_FRAME_INNER", (char*)inner);
+  ih->handle = reinterpret_cast<InativeHandle*>(box);
+  iupAttribSet(ih, "_IUPHAIKU_FRAME_INNER", reinterpret_cast<char*>(inner));
 
   iuphaikuAddToParent(ih);
   iuphaikuUpdateWidgetFont(ih, box);
@@ -115,7 +115,7 @@ static int haikuFrameMapMethod(Ihandle* ih)
 static void haikuFrameUnMapMethod(Ihandle* ih)
 {
   /* BBox auto-deletes the inner BView; clear the cached pointer. */
-  iupAttribSet(ih, "_IUPHAIKU_FRAME_INNER", NULL);
+  iupAttribSet(ih, "_IUPHAIKU_FRAME_INNER", nullptr);
   iupdrvBaseUnMapMethod(ih);
 }
 
@@ -127,7 +127,7 @@ static void* haikuFrameGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle*
 static void haikuFrameUpdateInner(Ihandle* ih, BBox* box)
 {
   box->InvalidateLayout();
-  if (BView* inner = (BView*)iupAttribGet(ih, "_IUPHAIKU_FRAME_INNER"))
+  if (auto* inner = reinterpret_cast<BView*>(iupAttribGet(ih, "_IUPHAIKU_FRAME_INNER")))
   {
     BRect r = box->InnerFrame();
     inner->MoveTo(r.LeftTop());
@@ -138,7 +138,7 @@ static void haikuFrameUpdateInner(Ihandle* ih, BBox* box)
 
 static int haikuFrameSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  BBox* box = (BBox*)ih->handle;
+  BBox* box = reinterpret_cast<BBox*>(ih->handle);
   if (value)
     iupAttribSet(ih, "_IUPFRAME_HAS_TITLE", "1");
 
@@ -155,7 +155,7 @@ static int haikuFrameSetFontAttrib(Ihandle* ih, const char* value)
   if (!iupdrvSetFontAttrib(ih, value))
     return 0;
 
-  BBox* box = (BBox*)ih->handle;
+  BBox* box = reinterpret_cast<BBox*>(ih->handle);
   if (box)
   {
     LooperLockGuard guard(box->Looper());
@@ -166,7 +166,7 @@ static int haikuFrameSetFontAttrib(Ihandle* ih, const char* value)
 
 static int haikuFrameSetBorderAttrib(Ihandle* ih, const char* value)
 {
-  BBox* box = (BBox*)ih->handle;
+  BBox* box = reinterpret_cast<BBox*>(ih->handle);
   if (!box) return 1;
   LooperLockGuard guard(box->Looper());
   box->SetBorder(iupStrBoolean(value) ? B_FANCY_BORDER : B_NO_BORDER);
@@ -195,10 +195,10 @@ extern "C" IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
     return 0;
   }
 
-  BBox* box = (BBox*)ih->handle;
+  BBox* box = reinterpret_cast<BBox*>(ih->handle);
   if (box)
   {
-    if (h) *h = (int)(box->TopBorderOffset() + 0.5f);
+    if (h) *h = static_cast<int>(box->TopBorderOffset() + 0.5f);
     return 1;
   }
 
@@ -218,15 +218,15 @@ extern "C" IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
     temp.SetLabel(title);
 
   BRect inner = temp.InnerFrame();
-  if (w) *w = 100 - (int)(inner.Width() + 1);
-  if (h) *h = 100 - (int)(inner.Height() + 1);
+  if (w) *w = 100 - static_cast<int>(inner.Width() + 1);
+  if (h) *h = 100 - static_cast<int>(inner.Height() + 1);
   return 1;
 }
 
 static int haikuFrameSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  BView* inner = (BView*)iupAttribGet(ih, "_IUPHAIKU_FRAME_INNER");
-  BView* box = (BView*)ih->handle;
+  auto* inner = reinterpret_cast<BView*>(iupAttribGet(ih, "_IUPHAIKU_FRAME_INNER"));
+  auto* box = reinterpret_cast<BView*>(ih->handle);
   unsigned char r, g, b;
 
   if (!box || !inner)
@@ -265,13 +265,13 @@ extern "C" IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
   ic->UnMap = haikuFrameUnMapMethod;
   ic->GetInnerNativeContainerHandle = haikuFrameGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, haikuFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "TITLE", NULL, haikuFrameSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, haikuFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, haikuFrameSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, haikuFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "BORDER", NULL, haikuFrameSetBorderAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BORDER", nullptr, haikuFrameSetBorderAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   /* SUNKEN: no native equivalent (BBox styles are FANCY/PLAIN/NONE). */
-  iupClassRegisterAttribute(ic, "SUNKEN", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SUNKEN", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

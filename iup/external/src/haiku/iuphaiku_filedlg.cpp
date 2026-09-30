@@ -56,20 +56,20 @@ public:
       for (int32 i = 0; msg->FindRef("refs", i, &ref) == B_OK; ++i)
       {
         BPath p(&ref);
-        fPaths.push_back(BString(p.Path()));
+        fPaths.emplace_back(p.Path());
       }
       if (!fPaths.empty()) fStatus = 0;
     }
     else if (msg->what == B_SAVE_REQUESTED)
     {
       entry_ref dir_ref;
-      const char* name = NULL;
+      const char* name = nullptr;
       if (msg->FindRef("directory", &dir_ref) == B_OK &&
           msg->FindString("name", &name) == B_OK)
       {
         BPath dir(&dir_ref);
         BPath full(dir.Path(), name);
-        fPaths.push_back(BString(full.Path()));
+        fPaths.emplace_back(full.Path());
         BEntry exists(full.Path());
         fStatus = exists.Exists() ? 0 : 1;  /* 0 overwrite, 1 new file */
       }
@@ -90,7 +90,7 @@ public:
   void WaitDone()
   {
     /* Blocked here, so repaint the caller's window. */
-    BWindow* window = dynamic_cast<BWindow*>(BLooper::LooperForThread(find_thread(NULL)));
+    auto* window = dynamic_cast<BWindow*>(BLooper::LooperForThread(find_thread(nullptr)));
     iuphaikuModalBegin();
     for (;;)
     {
@@ -141,12 +141,12 @@ static void haikuFileDlgSetResult(Ihandle* ih, const std::vector<BString>& paths
     const char* rel = paths[i].String();
     if (!multipath && paths[i].Compare(dir, dir.Length()) == 0)
       rel += dir.Length();
-    iupAttribSetStrId(ih, "MULTIVALUE", (int)i + 1, rel);
+    iupAttribSetStrId(ih, "MULTIVALUE", static_cast<int>(i) + 1, rel);
 
     if (i > 0) value << "|";
     value << rel;
   }
-  iupAttribSetInt(ih, "MULTIVALUECOUNT", (int)paths.size() + 1);
+  iupAttribSetInt(ih, "MULTIVALUECOUNT", static_cast<int>(paths.size()) + 1);
   iupAttribSetStr(ih, "VALUE", value.String());
 }
 
@@ -160,7 +160,7 @@ static int haikuFileDlgPopup(Ihandle* ih, int /*x*/, int /*y*/)
   const char* directory = iupAttribGet(ih, "DIRECTORY");
   const char* file = iupAttribGet(ih, "FILE");
 
-  IupHaikuFileDlgRecv* recv = new IupHaikuFileDlgRecv();
+  auto* recv = new IupHaikuFileDlgRecv();
   recv->SetMultiple(multiple && !is_save);
   recv->Run();
 
@@ -168,14 +168,14 @@ static int haikuFileDlgPopup(Ihandle* ih, int /*x*/, int /*y*/)
 
   /* TFilePanel copies the messenger by value; stack is fine. */
   BMessenger msgr(recv);
-  BFilePanel* panel = new BFilePanel(
+  auto* panel = new BFilePanel(
       is_save ? B_SAVE_PANEL : B_OPEN_PANEL,
       &msgr,
-      NULL,                           /* directory ref - set below */
+      nullptr,                           /* directory ref - set below */
       node_flavors,
       multiple && !is_save,
-      NULL,                           /* msg (default action) */
-      NULL,                            /* RefFilter */
+      nullptr,                           /* msg (default action) */
+      nullptr,                            /* RefFilter */
       true,                             /* modal */
       true);                      /* hideWhenDone */
 
@@ -194,7 +194,7 @@ static int haikuFileDlgPopup(Ihandle* ih, int /*x*/, int /*y*/)
   if (status >= 0 && !paths.empty())
     haikuFileDlgSetResult(ih, paths, recv->IsMultiple());
   else
-    iupAttribSet(ih, "VALUE", NULL);
+    iupAttribSet(ih, "VALUE", nullptr);
 
   delete panel;
   if (recv->Lock()) recv->Quit();  /* Quit() destroys the looper */
@@ -208,6 +208,6 @@ extern "C" IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
   ic->DlgPopup = haikuFileDlgPopup;
 
   /* BFilePanel public API has no preview slot / widget insertion */
-  iupClassRegisterAttribute(ic, "SHOWPREVIEW", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PREVIEWGLCANVAS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWPREVIEW", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PREVIEWGLCANVAS", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

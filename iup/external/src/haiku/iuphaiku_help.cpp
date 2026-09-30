@@ -6,7 +6,7 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <errno.h>
+#include <cerrno>
 #include <fcntl.h>
 #include <spawn.h>
 #include <sys/stat.h>
@@ -17,8 +17,6 @@ extern "C" {
 #include "iup.h"
 #include "iup_str.h"
 }
-
-extern char** environ;
 
 static char* haikuFindExecutable(const char* filename)
 {
@@ -33,8 +31,8 @@ static char* haikuFindExecutable(const char* filename)
   while (true)
   {
     const char* end = strchr(path, ':');
-    size_t dir_len = end ? (size_t)(end - path) : strlen(path);
-    char* full = (char*)malloc(dir_len + name_len + 3);
+    size_t dir_len = end ? static_cast<size_t>(end - path) : strlen(path);
+    char* full = static_cast<char*>(malloc(dir_len + name_len + 3));
 
     if (dir_len == 0)
       strcpy(full, "./");
@@ -52,7 +50,7 @@ static char* haikuFindExecutable(const char* filename)
 
     free(full);
     if (!end)
-      return NULL;
+      return nullptr;
     path = end + 1;
   }
 }
@@ -108,12 +106,12 @@ static int haikuSpawnDetached(char** argv)
   while (n == -1 && errno == EINTR);
   close(fds[0]);
 
-  while (waitpid(pid, NULL, 0) == -1 && errno == EINTR)
+  while (waitpid(pid, nullptr, 0) == -1 && errno == EINTR)
     ;
 
   free(path);
 
-  if (n == (ssize_t)sizeof(err))
+  if (n == static_cast<ssize_t>(sizeof(err)))
     return (err == ENOENT) ? -2 : -1;
   if (n != 0)
     return -1;
@@ -123,7 +121,7 @@ static int haikuSpawnDetached(char** argv)
 static int haikuSpawnWait(char** argv)
 {
   pid_t pid;
-  int status = posix_spawnp(&pid, argv[0], NULL, NULL, argv, environ);
+  int status = posix_spawnp(&pid, argv[0], nullptr, nullptr, argv, environ);
 
   if (status != 0)
     return (status == ENOENT) ? -2 : -1;
@@ -170,8 +168,8 @@ extern "C" IUP_API int IupHelp(const char* url)
     browser = "open";
 
   char* argv[3];
-  argv[0] = (char*)browser;
-  argv[1] = url ? (char*)url : NULL;
-  argv[2] = NULL;
+  argv[0] = const_cast<char*>(browser);
+  argv[1] = url ? const_cast<char*>(url) : nullptr;
+  argv[2] = nullptr;
   return haikuSpawnDetached(argv);
 }

@@ -76,7 +76,7 @@ public:
   {
     if (fIhandle && iupObjectCheck(fIhandle))
     {
-      IGlControlData* gldata = (IGlControlData*)iupAttribGet(fIhandle, "_IUP_GLCONTROLDATA");
+      auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(fIhandle, "_IUP_GLCONTROLDATA"));
       if (gldata && gldata->bridge)
       {
         BMessage m(IUPHAIKU_GL_REDRAW_MSG);
@@ -95,7 +95,7 @@ public:
   {
     BGLView::FrameResized(new_w, new_h);
     if (!fIhandle || !iupObjectCheck(fIhandle)) return;
-    IGlControlData* gldata = (IGlControlData*)iupAttribGet(fIhandle, "_IUP_GLCONTROLDATA");
+    auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(fIhandle, "_IUP_GLCONTROLDATA"));
     if (!gldata || !gldata->bridge) return;
     BMessage m(IUPHAIKU_GL_RESIZE_MSG);
     m.AddFloat("w", new_w);
@@ -153,16 +153,16 @@ private:
 };
 
 
-static IGlControlData* s_current_gl = NULL;
+static IGlControlData* s_current_gl = nullptr;
 
 static void haikuGLReleaseLock(IGlControlData* gldata)
 {
   if (!gldata || !gldata->view) return;
   if (gldata->locker == -1) return;
-  if (gldata->locker != find_thread(NULL)) return;
+  if (gldata->locker != find_thread(nullptr)) return;
   gldata->view->UnlockGL();
   gldata->locker = -1;
-  if (s_current_gl == gldata) s_current_gl = NULL;
+  if (s_current_gl == gldata) s_current_gl = nullptr;
 }
 
 
@@ -179,7 +179,7 @@ public:
     {
       if (fIhandle && iupObjectCheck(fIhandle))
       {
-        IGlControlData* gldata = (IGlControlData*)iupAttribGet(fIhandle, "_IUP_GLCONTROLDATA");
+        auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(fIhandle, "_IUP_GLCONTROLDATA"));
         if (gldata && gldata->view)
         {
           /* Drop stale lock so ACTION's MakeCurrent rebinds to current bounds. */
@@ -197,7 +197,7 @@ public:
     {
       if (fIhandle && iupObjectCheck(fIhandle))
       {
-        IGlControlData* gldata = (IGlControlData*)iupAttribGet(fIhandle, "_IUP_GLCONTROLDATA");
+        auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(fIhandle, "_IUP_GLCONTROLDATA"));
         if (gldata && gldata->view)
         {
           haikuGLReleaseLock(gldata);
@@ -220,7 +220,7 @@ private:
 
 static int haikuGLDefaultResize_CB(Ihandle* ih, int width, int height)
 {
-  IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
+  auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(ih, "_IUP_GLCONTROLDATA"));
   if (!gldata || !gldata->view) return IUP_DEFAULT;
 
   IupGLMakeCurrent(ih);
@@ -231,13 +231,13 @@ static int haikuGLDefaultResize_CB(Ihandle* ih, int width, int height)
 static int haikuGLCanvasCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
-  IGlControlData* gldata = (IGlControlData*)malloc(sizeof(IGlControlData));
+  auto* gldata = static_cast<IGlControlData*>(malloc(sizeof(IGlControlData)));
   memset(gldata, 0, sizeof(IGlControlData));
   gldata->vsync = 1;
   gldata->locker = -1;
-  iupAttribSet(ih, "_IUP_GLCONTROLDATA", (char*)gldata);
+  iupAttribSet(ih, "_IUP_GLCONTROLDATA", reinterpret_cast<char*>(gldata));
 
-  IupSetCallback(ih, "RESIZE_CB", (Icallback)haikuGLDefaultResize_CB);
+  IupSetCallback(ih, "RESIZE_CB", reinterpret_cast<Icallback>(haikuGLDefaultResize_CB));
 
   return IUP_NOERROR;
 }
@@ -276,12 +276,12 @@ static ulong haikuGLBuildOptions(Ihandle* ih)
 
 static int haikuGLCanvasMapMethod(Ihandle* ih)
 {
-  IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
+  auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(ih, "_IUP_GLCONTROLDATA"));
 
-  iupAttribSet(ih, "ERROR", NULL);
+  iupAttribSet(ih, "ERROR", nullptr);
 
   /* Parent (canvas) Map ran first; replace its BView with a BGLView. */
-  BView* canvas_view = (BView*)ih->handle;
+  auto* canvas_view = reinterpret_cast<BView*>(ih->handle);
   if (canvas_view)
   {
     {
@@ -289,12 +289,12 @@ static int haikuGLCanvasMapMethod(Ihandle* ih)
       canvas_view->RemoveSelf();
     }
     delete canvas_view;
-    ih->handle = NULL;
+    ih->handle = nullptr;
   }
 
   ulong opts = haikuGLBuildOptions(ih);
   gldata->view = new IupHaikuGLView(ih, opts);
-  ih->handle = (InativeHandle*)gldata->view;
+  ih->handle = reinterpret_cast<InativeHandle*>(gldata->view);
 
   if (be_app)
   {
@@ -308,14 +308,14 @@ static int haikuGLCanvasMapMethod(Ihandle* ih)
   if (iupAttribGet(ih, "VSYNC"))
     gldata->vsync = iupStrBoolean(iupAttribGetStr(ih, "VSYNC")) ? 1 : 0;
 
-  iupAttribSet(ih, "CONTEXT", (char*)gldata->view);
+  iupAttribSet(ih, "CONTEXT", reinterpret_cast<char*>(gldata->view));
 
   return IUP_NOERROR;
 }
 
 static void haikuGLCanvasUnMapMethod(Ihandle* ih)
 {
-  IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
+  auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(ih, "_IUP_GLCONTROLDATA"));
   if (!gldata) return;
 
   haikuGLReleaseLock(gldata);
@@ -328,42 +328,42 @@ static void haikuGLCanvasUnMapMethod(Ihandle* ih)
       be_app->RemoveHandler(gldata->bridge);
     }
     delete gldata->bridge;
-    gldata->bridge = NULL;
+    gldata->bridge = nullptr;
   }
 
   if (gldata->view)
   {
-    gldata->view->SetIhandle(NULL);
-    gldata->view = NULL;
+    gldata->view->SetIhandle(nullptr);
+    gldata->view = nullptr;
   }
 
   {
-    BBitmap* bmp = (BBitmap*)iupAttribGet(ih, "_IUPHAIKU_GLBITMAP");
+    auto* bmp = reinterpret_cast<BBitmap*>(iupAttribGet(ih, "_IUPHAIKU_GLBITMAP"));
     if (bmp)
     {
       delete bmp;
-      iupAttribSet(ih, "_IUPHAIKU_GLBITMAP", NULL);
+      iupAttribSet(ih, "_IUPHAIKU_GLBITMAP", nullptr);
     }
   }
 
   iupdrvBaseUnMapMethod(ih);
 
-  iupAttribSet(ih, "CONTEXT", NULL);
+  iupAttribSet(ih, "CONTEXT", nullptr);
 }
 
 static void haikuGLCanvasDestroy(Ihandle* ih)
 {
-  IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
+  auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(ih, "_IUP_GLCONTROLDATA"));
   if (gldata)
   {
     free(gldata);
-    iupAttribSet(ih, "_IUP_GLCONTROLDATA", NULL);
+    iupAttribSet(ih, "_IUP_GLCONTROLDATA", nullptr);
   }
 }
 
 static int haikuGLCanvasSetVSyncAttrib(Ihandle* ih, const char* value)
 {
-  IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
+  auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(ih, "_IUP_GLCONTROLDATA"));
   if (gldata)
     gldata->vsync = iupStrBoolean(value) ? 1 : 0;
   return 1;
@@ -377,10 +377,10 @@ IUPGL_API int IupGLIsCurrent(Ihandle* ih)
   if (ih->iclass->nativetype != IUP_TYPECANVAS || !IupClassMatch(ih, "glcanvas"))
     return 0;
 
-  IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
+  auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(ih, "_IUP_GLCONTROLDATA"));
   if (!gldata || !gldata->view) return 0;
 
-  return (gldata->locker == find_thread(NULL)) ? 1 : 0;
+  return (gldata->locker == find_thread(nullptr)) ? 1 : 0;
 }
 
 IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
@@ -391,7 +391,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
   if (ih->iclass->nativetype != IUP_TYPECANVAS || !IupClassMatch(ih, "glcanvas"))
     return;
 
-  IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
+  auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(ih, "_IUP_GLCONTROLDATA"));
   if (!gldata || !gldata->view)
   {
     iupAttribSet(ih, "ERROR", "Context not available: canvas not mapped.");
@@ -401,14 +401,14 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
   if (!gldata->view->Window())
     return;
 
-  thread_id me = find_thread(NULL);
+  thread_id me = find_thread(nullptr);
 
   if (gldata->locker == me)
   {
     if (s_current_gl && s_current_gl != gldata)
       haikuGLReleaseLock(s_current_gl);
     s_current_gl = gldata;
-    iupAttribSet(ih, "ERROR", NULL);
+    iupAttribSet(ih, "ERROR", nullptr);
     return;
   }
 
@@ -425,13 +425,13 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
   gldata->locker = me;
   s_current_gl = gldata;
 
-  iupAttribSet(ih, "ERROR", NULL);
+  iupAttribSet(ih, "ERROR", nullptr);
 
   if (!IupGetGlobal("GL_VERSION"))
   {
-    const char* vendor = (const char*)glGetString(GL_VENDOR);
-    const char* renderer = (const char*)glGetString(GL_RENDERER);
-    const char* version = (const char*)glGetString(GL_VERSION);
+    const char* vendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
+    const char* renderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
+    const char* version = reinterpret_cast<const char*>(glGetString(GL_VERSION));
 
     if (vendor)   IupSetStrGlobal("GL_VENDOR", vendor);
     if (renderer) IupSetStrGlobal("GL_RENDERER", renderer);
@@ -444,28 +444,28 @@ static void haikuGLCompositeReadback(Ihandle* ih)
   int w = ih->currentwidth, h = ih->currentheight;
   if (w < 1 || h < 1) return;
 
-  BBitmap* bmp = (BBitmap*)iupAttribGet(ih, "_IUPHAIKU_GLBITMAP");
+  auto* bmp = reinterpret_cast<BBitmap*>(iupAttribGet(ih, "_IUPHAIKU_GLBITMAP"));
   int bw = iupAttribGetInt(ih, "_IUPHAIKU_GLBITMAPW");
   int bh = iupAttribGetInt(ih, "_IUPHAIKU_GLBITMAPH");
   if (!bmp || bw != w || bh != h)
   {
-    if (bmp) delete bmp;
+    delete bmp;
     bmp = new BBitmap(BRect(0, 0, w - 1, h - 1), B_RGBA32);
-    iupAttribSet(ih, "_IUPHAIKU_GLBITMAP", (char*)bmp);
+    iupAttribSet(ih, "_IUPHAIKU_GLBITMAP", reinterpret_cast<char*>(bmp));
     iupAttribSetInt(ih, "_IUPHAIKU_GLBITMAPW", w);
     iupAttribSetInt(ih, "_IUPHAIKU_GLBITMAPH", h);
   }
 
   int32 bpr = bmp->BytesPerRow();
-  uint8* bits = (uint8*)bmp->Bits();
-  uint8* row = (uint8*)malloc((size_t)w * 4);
+  auto* bits = static_cast<uint8*>(bmp->Bits());
+  auto* row = static_cast<uint8*>(malloc(static_cast<size_t>(w) * 4));
   if (!row) return;
 
   glPixelStorei(GL_PACK_ALIGNMENT, 4);
   for (int y = 0; y < h; y++)
   {
     glReadPixels(0, h - 1 - y, w, 1, GL_BGRA, GL_UNSIGNED_BYTE, row);
-    memcpy(bits + (size_t)y * bpr, row, (size_t)w * 4);
+    memcpy(bits + static_cast<size_t>(y) * bpr, row, static_cast<size_t>(w) * 4);
   }
   free(row);
 }
@@ -476,11 +476,11 @@ static void haikuGLInvalidateTransparent(Ihandle* child)
   {
     if (c->handle && iupAttribGet(c, "_IUPHAIKU_GLTRANSPARENT"))
     {
-      BView* v = (BView*)c->handle;
+      auto* v = reinterpret_cast<BView*>(c->handle);
       if (v->Window())
         v->Invalidate();
 
-      BView* inner = (BView*)iupAttribGet(c, "_IUPHAIKU_FRAME_INNER");
+      auto* inner = reinterpret_cast<BView*>(iupAttribGet(c, "_IUPHAIKU_FRAME_INNER"));
       if (inner && inner->Window())
         inner->Invalidate();
     }
@@ -497,7 +497,7 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
   if (ih->iclass->nativetype != IUP_TYPECANVAS || !IupClassMatch(ih, "glcanvas"))
     return;
 
-  IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
+  auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(ih, "_IUP_GLCONTROLDATA"));
   if (!gldata || !gldata->view || !gldata->view->Window()) return;
 
   Icallback cb = IupGetCallback(ih, "SWAPBUFFERS_CB");
@@ -538,5 +538,5 @@ extern "C" void iupGlCanvasInitClass(Iclass* ic)
   ic->Map = haikuGLCanvasMapMethod;
   ic->UnMap = haikuGLCanvasUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "VSYNC", NULL, haikuGLCanvasSetVSyncAttrib, "YES", NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VSYNC", nullptr, haikuGLCanvasSetVSyncAttrib, "YES", nullptr, IUPAF_NO_INHERIT);
 }

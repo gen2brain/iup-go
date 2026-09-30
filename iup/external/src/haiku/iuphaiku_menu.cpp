@@ -52,22 +52,22 @@ static void haikuMenuPostCallback(Ihandle* ih, const char* cb_name)
   BMessage m(IUPHAIKU_MENU_CB_MSG);
   m.AddPointer("ih", ih);
   m.AddString("cb", cb_name);
-  BMessenger((BWindow*)dlg->handle).SendMessage(&m);
+  BMessenger(reinterpret_cast<BWindow*>(dlg->handle)).SendMessage(&m);
 }
 
 static BMenu* haikuMenuParentBMenu(Ihandle* ih)
 {
   if (!ih || !ih->parent || !ih->parent->handle)
-    return NULL;
-  return (BMenu*)ih->parent->handle;
+    return nullptr;
+  return reinterpret_cast<BMenu*>(ih->parent->handle);
 }
 
 static BWindow* haikuMenuOwningWindow(Ihandle* ih)
 {
   Ihandle* dlg = IupGetDialog(ih);
   if (!dlg || !dlg->handle)
-    return NULL;
-  return (BWindow*)dlg->handle;
+    return nullptr;
+  return reinterpret_cast<BWindow*>(dlg->handle);
 }
 
 static char* haikuMenuLabel(Ihandle* ih, const char* title, char* trigger)
@@ -86,8 +86,8 @@ static char* haikuItemSplitTitle(Ihandle* ih, const char* value, char* trigger)
   if (!value) value = "";
   const char* sep = strchr(value, '\t');
   if (!sep) return haikuMenuLabel(ih, value, trigger);
-  int len = (int)(sep - value);
-  char* title = (char*)malloc(len + 1);
+  int len = static_cast<int>(sep - value);
+  char* title = static_cast<char*>(malloc(len + 1));
   memcpy(title, value, len);
   title[len] = '\0';
   char* label = haikuMenuLabel(ih, title, trigger);
@@ -124,7 +124,7 @@ static void haikuItemApplyKey(Ihandle* ih, BMenuItem* item, const char* title)
   case K_DOWN: ch = B_DOWN_ARROW; break;
   default:
     if (base > K_SP && base < 127)
-      ch = (char)iup_tolower(base);
+      ch = static_cast<char>(iup_tolower(base));
     break;
   }
 
@@ -173,7 +173,7 @@ public:
 
 IUP_DRV_API void iuphaikuMenuBarUpdateColors(Ihandle* ih)
 {
-  BMenuBar* menubar = (BMenuBar*)ih->handle;
+  auto* menubar = reinterpret_cast<BMenuBar*>(ih->handle);
   if (!menubar || !menubar->Window())
     return;
   LooperLockGuard guard(menubar->Window());
@@ -183,7 +183,7 @@ IUP_DRV_API void iuphaikuMenuBarUpdateColors(Ihandle* ih)
 class IupHaikuMenu : public BMenu
 {
 public:
-  explicit IupHaikuMenu(const char* name) : BMenu(name), fIhandle(NULL) {}
+  explicit IupHaikuMenu(const char* name) : BMenu(name), fIhandle(nullptr) {}
 
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }
 
@@ -208,10 +208,10 @@ class IupHaikuMenuItem : public BMenuItem
 {
 public:
   IupHaikuMenuItem(Ihandle* ih, const char* label, BMessage* msg)
-    : BMenuItem(label, msg), fIhandle(ih), fIcon(NULL) {}
+    : BMenuItem(label, msg), fIhandle(ih), fIcon(nullptr) {}
 
   IupHaikuMenuItem(Ihandle* ih, BMenu* submenu)
-    : BMenuItem(submenu, NULL), fIhandle(ih), fIcon(NULL) {}
+    : BMenuItem(submenu, nullptr), fIhandle(ih), fIcon(nullptr) {}
 
   void SetIcon(BBitmap* icon) { fIcon = icon; }
 
@@ -258,13 +258,13 @@ private:
 
 static BBitmap* haikuItemBitmapByName(Ihandle* ih, const char* name)
 {
-  return (name && *name) ? (BBitmap*)iupImageGetImage(name, ih, 0, NULL) : NULL;
+  return (name && *name) ? static_cast<BBitmap*>(iupImageGetImage(name, ih, 0, nullptr)) : nullptr;
 }
 
 static void haikuItemRefreshIcon(IupHaikuMenuItem* item, Ihandle* ih)
 {
   if (!item) return;
-  const char* name = NULL;
+  const char* name = nullptr;
   if (iupAttribGetBoolean(ih, "VALUE"))
     name = iupAttribGet(ih, "IMPRESS");
   if (!name)
@@ -281,10 +281,10 @@ static int haikuItemMapMethod(Ihandle* ih)
   char trigger;
   char* label = haikuItemSplitTitle(ih, iupAttribGet(ih, "TITLE"), &trigger);
 
-  BMessage* msg = new BMessage(IUPHAIKU_MENU_ITEM_MSG);
+  auto* msg = new BMessage(IUPHAIKU_MENU_ITEM_MSG);
   msg->AddPointer(kIupMenuItemField, ih);
 
-  IupHaikuMenuItem* item = new IupHaikuMenuItem(ih, label, msg);
+  auto* item = new IupHaikuMenuItem(ih, label, msg);
   free(label);
   if (trigger) item->SetTrigger(trigger);
 
@@ -304,7 +304,7 @@ static int haikuItemMapMethod(Ihandle* ih)
   haikuItemApplyKey(ih, item, iupAttribGet(ih, "TITLE"));
 
   parent->AddItem(item);
-  ih->handle = (InativeHandle*)item;
+  ih->handle = reinterpret_cast<InativeHandle*>(item);
   return IUP_NOERROR;
 }
 
@@ -312,7 +312,7 @@ static int haikuItemMapMethod(Ihandle* ih)
 
 static int haikuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  BMenuItem* item = (BMenuItem*)ih->handle;
+  auto* item = reinterpret_cast<BMenuItem*>(ih->handle);
   if (!item) return 1;
   char trigger;
   char* label = haikuItemSplitTitle(ih, value, &trigger);
@@ -325,7 +325,7 @@ static int haikuItemSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int haikuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuMenuItem* item = dynamic_cast<IupHaikuMenuItem*>((BMenuItem*)ih->handle);
+  auto* item = dynamic_cast<IupHaikuMenuItem*>(reinterpret_cast<BMenuItem*>(ih->handle));
   if (!item) return 1;
   iupAttribSetStr(ih, "VALUE", value);
   if (iupAttribGetBoolean(ih, "HIDEMARK"))
@@ -338,7 +338,7 @@ static int haikuItemSetValueAttrib(Ihandle* ih, const char* value)
 
 static int haikuItemSetImageAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuMenuItem* item = dynamic_cast<IupHaikuMenuItem*>((BMenuItem*)ih->handle);
+  auto* item = dynamic_cast<IupHaikuMenuItem*>(reinterpret_cast<BMenuItem*>(ih->handle));
   if (!item) return 1;
   iupAttribSetStr(ih, "IMAGE", value);
   haikuItemRefreshIcon(item, ih);
@@ -347,7 +347,7 @@ static int haikuItemSetImageAttrib(Ihandle* ih, const char* value)
 
 static int haikuItemSetImpressAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuMenuItem* item = dynamic_cast<IupHaikuMenuItem*>((BMenuItem*)ih->handle);
+  auto* item = dynamic_cast<IupHaikuMenuItem*>(reinterpret_cast<BMenuItem*>(ih->handle));
   if (!item) return 1;
   iupAttribSetStr(ih, "IMPRESS", value);
   haikuItemRefreshIcon(item, ih);
@@ -356,7 +356,7 @@ static int haikuItemSetImpressAttrib(Ihandle* ih, const char* value)
 
 static int haikuItemSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  BMenuItem* item = (BMenuItem*)ih->handle;
+  auto* item = reinterpret_cast<BMenuItem*>(ih->handle);
   if (item) item->SetEnabled(iupStrBoolean(value));
   return iupBaseSetActiveAttrib(ih, value);
 }
@@ -366,9 +366,9 @@ static int haikuSeparatorMapMethod(Ihandle* ih)
   BMenu* parent = haikuMenuParentBMenu(ih);
   if (!parent) return IUP_ERROR;
 
-  BSeparatorItem* sep = new BSeparatorItem();
+  auto* sep = new BSeparatorItem();
   parent->AddItem(sep);
-  ih->handle = (InativeHandle*)sep;
+  ih->handle = reinterpret_cast<InativeHandle*>(sep);
   return IUP_NOERROR;
 }
 
@@ -380,17 +380,17 @@ static int haikuSubmenuMapMethod(Ihandle* ih)
   char trigger;
   char* label = haikuMenuLabel(ih, iupAttribGet(ih, "TITLE"), &trigger);
 
-  IupHaikuMenu* submenu = new IupHaikuMenu(label);
+  auto* submenu = new IupHaikuMenu(label);
   free(label);
 
-  IupHaikuMenuItem* super = new IupHaikuMenuItem(ih, submenu);
+  auto* super = new IupHaikuMenuItem(ih, submenu);
   if (trigger) super->SetTrigger(trigger);
   char* image = iupAttribGet(ih, "IMAGE");
   if (image) super->SetIcon(haikuItemBitmapByName(ih, image));
 
   parent->AddItem(super);
-  ih->handle = (InativeHandle*)submenu;
-  iupAttribSet(ih, "_IUPHAIKU_SUBMENU_SUPER", (char*)super);
+  ih->handle = reinterpret_cast<InativeHandle*>(submenu);
+  iupAttribSet(ih, "_IUPHAIKU_SUBMENU_SUPER", reinterpret_cast<char*>(super));
 
   if (!iupAttribGetBoolean(ih, "ACTIVE"))
     submenu->SetEnabled(false);
@@ -400,7 +400,7 @@ static int haikuSubmenuMapMethod(Ihandle* ih)
 
 static int haikuSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  BMenu* m = (BMenu*)ih->handle;
+  auto* m = reinterpret_cast<BMenu*>(ih->handle);
   if (!m) return 1;
   char trigger;
   char* label = haikuMenuLabel(ih, value, &trigger);
@@ -417,14 +417,14 @@ static int haikuSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
 
 static int haikuSubmenuSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  BMenu* m = (BMenu*)ih->handle;
+  auto* m = reinterpret_cast<BMenu*>(ih->handle);
   if (m) m->SetEnabled(iupStrBoolean(value));
   return iupBaseSetActiveAttrib(ih, value);
 }
 
 static int haikuSubmenuSetImageAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuMenuItem* super = (IupHaikuMenuItem*)iupAttribGet(ih, "_IUPHAIKU_SUBMENU_SUPER");
+  auto* super = reinterpret_cast<IupHaikuMenuItem*>(iupAttribGet(ih, "_IUPHAIKU_SUBMENU_SUPER"));
   if (!super) return 1;
   super->SetIcon(haikuItemBitmapByName(ih, value));
   if (super->Menu()) super->Menu()->InvalidateLayout();
@@ -435,7 +435,7 @@ static int haikuMenuMapMethod(Ihandle* ih)
 {
   if (iupMenuIsMenuBar(ih))
   {
-    BWindow* win = (BWindow*)ih->parent->handle;
+    auto* win = reinterpret_cast<BWindow*>(ih->parent->handle);
     if (!win) return IUP_ERROR;
 
     int menu_h = iupdrvMenuGetMenuBarSize(ih);
@@ -443,18 +443,18 @@ static int haikuMenuMapMethod(Ihandle* ih)
     {
       LooperLockGuard guard(win);
       BRect b = win->Bounds();
-      menubar = new IupHaikuMenuBar(BRect(0, 0, b.Width(), (float)(menu_h - 1)));
+      menubar = new IupHaikuMenuBar(BRect(0, 0, b.Width(), static_cast<float>(menu_h - 1)));
       win->AddChild(menubar);
 
       /* B_FOLLOW_ALL_SIDES on the root view preserves menu_h top offset on resize. */
       BView* root = iuphaikuDialogRootView(win);
       if (root)
       {
-        root->MoveTo(0, (float)menu_h);
+        root->MoveTo(0, static_cast<float>(menu_h));
         root->ResizeTo(b.Width(), b.Height() - menu_h);
       }
     }
-    ih->handle = (InativeHandle*)menubar;
+    ih->handle = reinterpret_cast<InativeHandle*>(menubar);
     iupAttribSet(ih->parent, "_IUP_DIALOG_HASMENU", "1");
     return IUP_NOERROR;
   }
@@ -464,17 +464,17 @@ static int haikuMenuMapMethod(Ihandle* ih)
       ih->parent->iclass && iupStrEqual(ih->parent->iclass->name, "submenu"))
   {
     ih->handle = ih->parent->handle;
-    if (IupHaikuMenu* m = dynamic_cast<IupHaikuMenu*>((BMenu*)ih->handle))
+    if (auto* m = dynamic_cast<IupHaikuMenu*>(reinterpret_cast<BMenu*>(ih->handle)))
       m->SetIhandle(ih);
     if (iupAttribGetBoolean(ih, "RADIO"))
-      ((BMenu*)ih->handle)->SetRadioMode(true);
+      (reinterpret_cast<BMenu*>(ih->handle))->SetRadioMode(true);
     return IUP_NOERROR;
   }
 
-  BPopUpMenu* popup = new BPopUpMenu("iup_popup", false, false);
+  auto* popup = new BPopUpMenu("iup_popup", false, false);
   if (iupAttribGetBoolean(ih, "RADIO"))
     popup->SetRadioMode(true);
-  ih->handle = (InativeHandle*)popup;
+  ih->handle = reinterpret_cast<InativeHandle*>(popup);
   return IUP_NOERROR;
 }
 
@@ -482,7 +482,7 @@ static int haikuMenuSetRadioAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle) return 1;
   if (iupMenuIsMenuBar(ih)) return 0;
-  BMenu* m = (BMenu*)ih->handle;
+  auto* m = reinterpret_cast<BMenu*>(ih->handle);
   m->SetRadioMode(iupStrBoolean(value) ? true : false);
   return 1;
 }
@@ -492,13 +492,13 @@ static void haikuMenuUnMapMethod(Ihandle* ih)
   /* The aliased submenu case must NOT delete - the real owner is the parent. */
   if (ih->parent && ih->parent->handle == ih->handle)
   {
-    ih->handle = NULL;
+    ih->handle = nullptr;
     return;
   }
 
   if (iupMenuIsMenuBar(ih))
   {
-    BMenuBar* mb = (BMenuBar*)ih->handle;
+    auto* mb = reinterpret_cast<BMenuBar*>(ih->handle);
     if (mb)
     {
       BWindow* win = mb->Window();
@@ -516,36 +516,36 @@ static void haikuMenuUnMapMethod(Ihandle* ih)
       }
       delete mb;
     }
-    if (ih->parent) iupAttribSet(ih->parent, "_IUP_DIALOG_HASMENU", NULL);
-    ih->parent = NULL;
+    if (ih->parent) iupAttribSet(ih->parent, "_IUP_DIALOG_HASMENU", nullptr);
+    ih->parent = nullptr;
   }
   else
   {
-    delete (BPopUpMenu*)ih->handle;
+    delete reinterpret_cast<BPopUpMenu*>(ih->handle);
   }
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 static void haikuItemUnMapMethod(Ihandle* ih)
 {
   /* Item is owned by parent BMenu - just clear our pointer. */
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
-  BPopUpMenu* popup = (BPopUpMenu*)ih->handle;
+  auto* popup = reinterpret_cast<BPopUpMenu*>(ih->handle);
   if (!popup) return IUP_ERROR;
 
   /* autoInvoke=false: ACTION dispatches synchronously to avoid racing IupDestroy after IupPopup. */
-  BMenuItem* sel = popup->Go(BPoint((float)x, (float)y), false, false, false);
+  BMenuItem* sel = popup->Go(BPoint(static_cast<float>(x), static_cast<float>(y)), false, false, false);
   if (!sel) return IUP_NOERROR;
 
   BMessage* m = sel->Message();
   if (!m || m->what != IUPHAIKU_MENU_ITEM_MSG) return IUP_NOERROR;
 
-  Ihandle* item_ih = NULL;
-  m->FindPointer(kIupMenuItemField, (void**)&item_ih);
+  Ihandle* item_ih = nullptr;
+  m->FindPointer(kIupMenuItemField, reinterpret_cast<void**>(&item_ih));
   if (!item_ih || !iupObjectCheck(item_ih)) return IUP_NOERROR;
 
   if (iupAttribGetBoolean(item_ih, "AUTOTOGGLE"))
@@ -553,7 +553,7 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     int v = iupStrBoolean(iupAttribGet(item_ih, "VALUE"));
     IupSetAttribute(item_ih, "VALUE", v ? "OFF" : "ON");
   }
-  Icallback cb = (Icallback)IupGetCallback(item_ih, "ACTION");
+  auto cb = static_cast<Icallback>(IupGetCallback(item_ih, "ACTION"));
   if (cb && cb(item_ih) == IUP_CLOSE) IupExitLoop();
   return IUP_NOERROR;
 }
@@ -561,7 +561,7 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 extern "C" IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 {
   int ch;
-  iupdrvFontGetCharSize(ih, NULL, &ch);
+  iupdrvFontGetCharSize(ih, nullptr, &ch);
   return 4 + ch + 4;
 }
 
@@ -571,9 +571,9 @@ extern "C" IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
   ic->UnMap = haikuMenuUnMapMethod;
 
   /* Inherited by IupSubmenu / IupItem; queried by iupdrvMenuGetMenuBarSize. */
-  iupClassRegisterAttribute(ic, "FONT", NULL, NULL, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "RADIO", NULL, haikuMenuSetRadioAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RADIO", nullptr, haikuMenuSetRadioAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 }
 
 extern "C" IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
@@ -581,16 +581,16 @@ extern "C" IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
   ic->Map = haikuItemMapMethod;
   ic->UnMap = haikuItemUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "TITLE", NULL, haikuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", NULL, haikuItemSetValueAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, haikuItemSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", nullptr, haikuItemSetValueAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, haikuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, haikuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, haikuItemSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", nullptr, haikuItemSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDEMARK", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, haikuItemSetImpressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", nullptr, haikuItemSetImpressAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }
 
 extern "C" IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
@@ -604,17 +604,17 @@ extern "C" IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   ic->Map = haikuSubmenuMapMethod;
   ic->UnMap = haikuItemUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "TITLE", NULL, haikuSubmenuSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, haikuSubmenuSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuSubmenuSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, haikuSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, haikuSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, haikuSubmenuSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", nullptr, haikuSubmenuSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }
 
 extern "C" IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
 {
   iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
-  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+  iupAttribSet(menu, "_IUP_RECENT_CB", reinterpret_cast<char*>(recent_cb));
   iupAttribSetInt(menu, "_IUP_RECENT_COUNT", 0);
   return 0;
 }
@@ -622,11 +622,11 @@ extern "C" IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, I
 extern "C" IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, int count, Icallback recent_cb)
 {
   if (!menu || !menu->handle) return -1;
-  BMenu* bm = (BMenu*)menu->handle;
+  auto* bm = reinterpret_cast<BMenu*>(menu->handle);
 
   int max_recent = iupAttribGetInt(menu, "_IUP_RECENT_MAX");
   if (count > max_recent) count = max_recent;
-  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+  iupAttribSet(menu, "_IUP_RECENT_CB", reinterpret_cast<char*>(recent_cb));
 
   int prev = iupAttribGetInt(menu, "_IUP_RECENT_COUNT");
   BWindow* win = haikuMenuOwningWindow(menu);
@@ -638,25 +638,25 @@ extern "C" IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** fi
   {
     char an[32];
     snprintf(an, sizeof(an), "_IUP_RECENT_ITEM%d", i);
-    BMenuItem* item = (BMenuItem*)iupAttribGet(menu, an);
+    auto* item = reinterpret_cast<BMenuItem*>(iupAttribGet(menu, an));
     if (item) { bm->RemoveItem(item); delete item; }
-    iupAttribSet(menu, an, NULL);
+    iupAttribSet(menu, an, nullptr);
     snprintf(an, sizeof(an), "_IUP_RECENT_FILE%d", i);
-    iupAttribSet(menu, an, NULL);
+    iupAttribSet(menu, an, nullptr);
   }
 
   for (int i = 0; i < count; i++)
   {
-    BMessage* msg = new BMessage(IUPHAIKU_MENU_RECENT_MSG);
+    auto* msg = new BMessage(IUPHAIKU_MENU_RECENT_MSG);
     msg->AddPointer("menu", menu);
     msg->AddInt32("index", i);
-    BMenuItem* item = new BMenuItem(filenames[i], msg);
+    auto* item = new BMenuItem(filenames[i], msg);
     if (target.IsValid()) item->SetTarget(target);
     bm->AddItem(item);
 
     char an[32];
     snprintf(an, sizeof(an), "_IUP_RECENT_ITEM%d", i);
-    iupAttribSet(menu, an, (char*)item);
+    iupAttribSet(menu, an, reinterpret_cast<char*>(item));
     snprintf(an, sizeof(an), "_IUP_RECENT_FILE%d", i);
     iupAttribSetStr(menu, an, filenames[i]);
   }
@@ -668,8 +668,8 @@ extern "C" IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** fi
 IUP_DRV_API void iuphaikuRecentDispatch(Ihandle* menu, int index)
 {
   if (!menu || !iupObjectCheck(menu) || index < 0) return;
-  Icallback cb = (Icallback)iupAttribGet(menu, "_IUP_RECENT_CB");
-  Ihandle* config = (Ihandle*)iupAttribGet(menu, "_IUP_CONFIG");
+  auto cb = reinterpret_cast<Icallback>(iupAttribGet(menu, "_IUP_RECENT_CB"));
+  auto* config = reinterpret_cast<Ihandle*>(iupAttribGet(menu, "_IUP_CONFIG"));
   if (!cb || !config) return;
   char an[32];
   snprintf(an, sizeof(an), "_IUP_RECENT_FILE%d", index);
@@ -679,7 +679,7 @@ IUP_DRV_API void iuphaikuRecentDispatch(Ihandle* menu, int index)
   IupSetStrAttribute(config, "TITLE", filename);
   config->parent = menu;
   cb(config);
-  config->parent = NULL;
-  IupSetAttribute(config, "RECENTFILENAME", NULL);
-  IupSetAttribute(config, "TITLE", NULL);
+  config->parent = nullptr;
+  IupSetAttribute(config, "RECENTFILENAME", nullptr);
+  IupSetAttribute(config, "TITLE", nullptr);
 }

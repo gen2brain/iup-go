@@ -33,9 +33,9 @@ extern "C" {
 }
 
 
-extern "C" IUP_SDK_API int iupdrvScaleNaturalPx(int natural)
+extern "C" IUP_SDK_API int iupdrvScaleNaturalPx(int px)
 {
-  return natural;
+  return px;
 }
 
 extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
@@ -82,8 +82,8 @@ extern "C" IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
   BPoint where;
   uint32 buttons = 0;
   get_mouse(&where, &buttons);
-  if (x) *x = (int)where.x;
-  if (y) *y = (int)where.y;
+  if (x) *x = static_cast<int>(where.x);
+  if (y) *y = static_cast<int>(where.y);
 }
 
 extern "C" IUP_SDK_API void iupdrvGetKeyState(char* key)
@@ -99,7 +99,7 @@ extern "C" IUP_SDK_API void iupdrvGetKeyState(char* key)
 
 extern "C" IUP_SDK_API char* iupdrvGetSystemName(void)
 {
-  return (char*)"Haiku";
+  return const_cast<char*>("Haiku");
 }
 
 extern "C" IUP_SDK_API char* iupdrvGetSystemVersion(void)
@@ -111,7 +111,7 @@ extern "C" IUP_SDK_API char* iupdrvGetSystemVersion(void)
     snprintf(version, sizeof(version), "%s", u.release);
     return version;
   }
-  return (char*)"R1";
+  return const_cast<char*>("R1");
 }
 
 extern "C" IUP_SDK_API char* iupdrvGetComputerName(void)
@@ -119,7 +119,7 @@ extern "C" IUP_SDK_API char* iupdrvGetComputerName(void)
   static char name[256];
   if (gethostname(name, sizeof(name)) == 0)
     return name;
-  return (char*)"";
+  return const_cast<char*>("");
 }
 
 extern "C" IUP_SDK_API char* iupdrvGetUserName(void)
@@ -127,14 +127,14 @@ extern "C" IUP_SDK_API char* iupdrvGetUserName(void)
   passwd* pw = getpwuid(getuid());
   if (pw && pw->pw_name)
     return pw->pw_name;
-  return (char*)"";
+  return const_cast<char*>("");
 }
 
 extern "C" IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
 {
   static char dir[4096];
   if (getcwd(dir, sizeof(dir))) return dir;
-  return (char*)"";
+  return const_cast<char*>("");
 }
 
 extern "C" IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
@@ -184,7 +184,7 @@ extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* a
 
 extern "C" IUP_SDK_API char* iupdrvLocaleInfo(void)
 {
-  return (char*)"UTF-8";
+  return const_cast<char*>("UTF-8");
 }
 
 extern "C" IUP_SDK_API char* iupdrvExeFileName(void)
@@ -193,10 +193,10 @@ extern "C" IUP_SDK_API char* iupdrvExeFileName(void)
   BPath path;
 
   if (!be_app || be_app->GetAppInfo(&info) != B_OK)
-    return NULL;
+    return nullptr;
 
   if (path.SetTo(&info.ref) != B_OK)
-    return NULL;
+    return nullptr;
 
   return iupStrReturnStr(path.Path());
 }
@@ -207,15 +207,15 @@ extern "C" IUP_SDK_API char* iupdrvLanguageInfo(void)
   const char* language;
 
   if (BLocaleRoster::Default()->GetPreferredLanguages(&languages) != B_OK)
-    return NULL;
+    return nullptr;
   if (languages.FindString("language", 0, &language) != B_OK)
-    return NULL;
+    return nullptr;
   return iupStrLanguageTag(language);
 }
 
 extern "C" IUP_SDK_API void* iupdrvGetDisplay(void)
 {
-  return NULL;
+  return nullptr;
 }
 
 extern "C" IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
@@ -228,7 +228,7 @@ extern "C" IUP_API void IupLogV(const char* type, const char* format, va_list ar
   else if (iupStrEqualNoCase(type, "WARNING")) priority = LOG_WARNING;
   else if (iupStrEqualNoCase(type, "INFO"))    priority = LOG_INFO;
 
-  openlog(NULL, options, LOG_USER);
+  openlog(nullptr, options, LOG_USER);
   vsyslog(priority, format, arglist);
   closelog();
 }

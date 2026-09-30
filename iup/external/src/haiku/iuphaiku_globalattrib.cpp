@@ -47,14 +47,14 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     BScreen s(B_MAIN_SCREEN_ID);
     BRect f = s.Frame();
     return iupStrReturnStrf("%d %d %d %d",
-      (int)f.left, (int)f.top, (int)(f.Width() + 1), (int)(f.Height() + 1));
+      static_cast<int>(f.left), static_cast<int>(f.top), static_cast<int>(f.Width() + 1), static_cast<int>(f.Height() + 1));
   }
 
   if (iupStrEqual(name, "SCREENSIZE"))
   {
     BScreen s(B_MAIN_SCREEN_ID);
     BRect f = s.Frame();
-    return iupStrReturnStrf("%dx%d", (int)(f.Width() + 1), (int)(f.Height() + 1));
+    return iupStrReturnStrf("%dx%d", static_cast<int>(f.Width() + 1), static_cast<int>(f.Height() + 1));
   }
 
   if (iupStrEqual(name, "FULLSIZE"))
@@ -62,7 +62,7 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     /* the desktop has no taskbar reservation, BDeskbar floats over windows */
     BScreen s(B_MAIN_SCREEN_ID);
     BRect f = s.Frame();
-    return iupStrReturnStrf("%dx%d", (int)(f.Width() + 1), (int)(f.Height() + 1));
+    return iupStrReturnStrf("%dx%d", static_cast<int>(f.Width() + 1), static_cast<int>(f.Height() + 1));
   }
 
   if (iupStrEqual(name, "MONITORSINFO"))
@@ -75,7 +75,7 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     {
       BRect f = s.Frame();
       int n = snprintf(p, 64, "%d %d %d %d\n",
-        (int)f.left, (int)f.top, (int)(f.Width() + 1), (int)(f.Height() + 1));
+        static_cast<int>(f.left), static_cast<int>(f.top), static_cast<int>(f.Width() + 1), static_cast<int>(f.Height() + 1));
       if (n < 0) break;
       p += n;
       idx++;
@@ -101,7 +101,7 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     BPoint where;
     uint32 buttons = 0;
     get_mouse(&where, &buttons);
-    return iupStrReturnIntInt((int)where.x, (int)where.y, 'x');
+    return iupStrReturnIntInt(static_cast<int>(where.x), static_cast<int>(where.y), 'x');
   }
 
   if (iupStrEqual(name, "MOUSEBUTTON"))
@@ -119,8 +119,8 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   /* "CTRL" in Windows-mode keymap, "ALT" in default Haiku keymap. */
   if (iupStrEqual(name, "SHORTCUTKEY"))
   {
-    key_map* km = NULL;
-    char* buf = NULL;
+    key_map* km = nullptr;
+    char* buf = nullptr;
     get_key_map(&km, &buf);
     const char* result = "ALT";
     if (km)
@@ -130,7 +130,7 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
       free(km);
     }
     if (buf) free(buf);
-    return (char*)result;
+    return const_cast<char*>(result);
   }
 
   if (iupStrEqual(name, "TRUECOLORCANVAS"))
@@ -143,7 +143,7 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     return iupStrReturnBoolean(0);
 
   if (iupStrEqual(name, "SHOWMENUIMAGES"))
-    return (char*)"NO";
+    return const_cast<char*>("NO");
 
-  return NULL;
+  return nullptr;
 }

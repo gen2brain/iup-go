@@ -88,10 +88,10 @@ public:
   IupHaikuCalendar(Ihandle* ih)
     : BView(BRect(0, 0, 0, 0), "iup_calendar", B_FOLLOW_NONE,
             B_WILL_DRAW | B_FRAME_EVENTS),
-      fIhandle(ih), fGrid(NULL),
-      fYearLabel(NULL), fMonthLabel(NULL),
-      fMonthPrev(NULL), fMonthNext(NULL),
-      fYearPrev(NULL), fYearNext(NULL)
+      fIhandle(ih), fGrid(nullptr),
+      fYearLabel(nullptr), fMonthLabel(nullptr),
+      fMonthPrev(nullptr), fMonthNext(nullptr),
+      fYearPrev(nullptr), fYearNext(nullptr)
   {
     SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
 
@@ -197,7 +197,7 @@ public:
       UpdateHeader();
       if (fIhandle)
       {
-        Icallback cb = (Icallback)IupGetCallback(fIhandle, "VALUECHANGED_CB");
+        auto cb = static_cast<Icallback>(IupGetCallback(fIhandle, "VALUECHANGED_CB"));
         if (cb && cb(fIhandle) == IUP_CLOSE) IupExitLoop();
       }
       return;
@@ -209,7 +209,7 @@ public:
   {
     if (!fGrid) return;
     BDate d = fGrid->Date();
-    fMonthLabel->SetText(d.LongMonthName(d.Month()).String());
+    fMonthLabel->SetText(BDate::LongMonthName(d.Month()).String());
     BString y; y << d.Year();
     fYearLabel->SetText(y.String());
   }
@@ -244,7 +244,7 @@ static int haikuCalendarParseValue(const char* value, int* y, int* m, int* d)
 
 static int haikuCalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuCalendar* cal = (IupHaikuCalendar*)ih->handle;
+  auto* cal = reinterpret_cast<IupHaikuCalendar*>(ih->handle);
   if (!cal) return 0;
   int y, m, d;
   if (!haikuCalendarParseValue(value, &y, &m, &d)) return 0;
@@ -256,8 +256,8 @@ static int haikuCalendarSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* haikuCalendarGetValueAttrib(Ihandle* ih)
 {
-  IupHaikuCalendar* cal = (IupHaikuCalendar*)ih->handle;
-  if (!cal) return NULL;
+  auto* cal = reinterpret_cast<IupHaikuCalendar*>(ih->handle);
+  if (!cal) return nullptr;
   IupHaikuCalendarGrid* g = cal->Grid();
   return iupStrReturnStrf("%d/%d/%d", g->Year(), g->Month(), g->Day());
 }
@@ -270,8 +270,8 @@ static char* haikuCalendarGetTodayAttrib(Ihandle* /*ih*/)
 
 static char* haikuCalendarGetWeekDayAttrib(Ihandle* ih)
 {
-  IupHaikuCalendar* cal = (IupHaikuCalendar*)ih->handle;
-  if (!cal) return NULL;
+  auto* cal = reinterpret_cast<IupHaikuCalendar*>(ih->handle);
+  if (!cal) return nullptr;
   IupHaikuCalendarGrid* g = cal->Grid();
   /* IUP weekday: 1=Sun..7=Sat; BDate::DayOfWeek: 1=Mon..7=Sun */
   BDate d(g->Year(), g->Month(), g->Day());
@@ -282,7 +282,7 @@ static char* haikuCalendarGetWeekDayAttrib(Ihandle* ih)
 
 static int haikuCalendarSetWeekNumbersAttrib(Ihandle* ih, const char* value)
 {
-  IupHaikuCalendar* cal = (IupHaikuCalendar*)ih->handle;
+  auto* cal = reinterpret_cast<IupHaikuCalendar*>(ih->handle);
   if (!cal) return 1;
   LooperLockGuard guard(cal->Looper());
   cal->Grid()->SetWeekNumberHeaderVisible(iupStrBoolean(value) ? true : false);
@@ -291,7 +291,7 @@ static int haikuCalendarSetWeekNumbersAttrib(Ihandle* ih, const char* value)
 
 static void haikuCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* /*children_expand*/)
 {
-  IupHaikuCalendar* cal = (IupHaikuCalendar*)ih->handle;
+  auto* cal = reinterpret_cast<IupHaikuCalendar*>(ih->handle);
   if (cal)
   {
     LooperLockGuard guard(cal->Looper());
@@ -305,8 +305,8 @@ static void haikuCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, i
     float year_w  = ceilf(be_plain_font->StringWidth("9999") + 8.0f);
     float min_nav_w = 4 * nav_h + month_w + year_w + 6 * IupHaikuCalendar::kGap;
 
-    *w = (int)ceilf(iupMAX(gw, min_nav_w) + 2 * IupHaikuCalendar::kPad);
-    *h = (int)ceilf(gh + nav_h + IupHaikuCalendar::kGap + 2 * IupHaikuCalendar::kPad);
+    *w = static_cast<int>(ceilf(iupMAX(gw, min_nav_w) + 2 * IupHaikuCalendar::kPad));
+    *h = static_cast<int>(ceilf(gh + nav_h + IupHaikuCalendar::kGap + 2 * IupHaikuCalendar::kPad));
     return;
   }
   int cw, ch;
@@ -317,8 +317,8 @@ static void haikuCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, i
 
 static int haikuCalendarMapMethod(Ihandle* ih)
 {
-  IupHaikuCalendar* cal = new IupHaikuCalendar(ih);
-  ih->handle = (InativeHandle*)cal;
+  auto* cal = new IupHaikuCalendar(ih);
+  ih->handle = reinterpret_cast<InativeHandle*>(cal);
   iuphaikuAddToParent(ih);
   iuphaikuUpdateWidgetFont(ih, cal);
 
@@ -338,16 +338,16 @@ static int haikuCalendarMapMethod(Ihandle* ih)
 
 static void haikuCalendarUnMapMethod(Ihandle* ih)
 {
-  IupHaikuCalendar* cal = (IupHaikuCalendar*)ih->handle;
-  if (cal) cal->SetIhandle(NULL);
+  auto* cal = reinterpret_cast<IupHaikuCalendar*>(ih->handle);
+  if (cal) cal->SetIhandle(nullptr);
   iupdrvBaseUnMapMethod(ih);
 }
 
 extern "C" Iclass* iupCalendarNewClass(void)
 {
-  Iclass* ic = iupClassNew(NULL);
-  ic->name = (char*)"calendar";
-  ic->format = NULL;
+  Iclass* ic = iupClassNew(nullptr);
+  ic->name = const_cast<char*>("calendar");
+  ic->format = nullptr;
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
@@ -364,11 +364,11 @@ extern "C" Iclass* iupCalendarNewClass(void)
   iupBaseRegisterCommonAttrib(ic);
   iupBaseRegisterVisualAttrib(ic);
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "VALUE", haikuCalendarGetValueAttrib, haikuCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TODAY", haikuCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "WEEKDAY", haikuCalendarGetWeekDayAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "WEEKNUMBERS", NULL, haikuCalendarSetWeekNumbersAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "VALUE", haikuCalendarGetValueAttrib, haikuCalendarSetValueAttrib, nullptr, "TODAY", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TODAY", haikuCalendarGetTodayAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "WEEKDAY", haikuCalendarGetWeekDayAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "WEEKNUMBERS", nullptr, haikuCalendarSetWeekNumbersAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
   return ic;
 }

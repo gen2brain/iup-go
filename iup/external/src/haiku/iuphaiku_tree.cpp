@@ -48,7 +48,7 @@ class IupHaikuTreeItem : public BListItem
 public:
   IupHaikuTreeItem(uint32 level, int kind, const char* title)
     : BListItem(level, true), fKind(kind), fTitle(title ? title : ""),
-      fImage(NULL), fImageExpanded(NULL),
+      fImage(nullptr), fImageExpanded(nullptr),
       fHasFgColor(false), fHasBgColor(false), fHasFont(false), fFont(*be_plain_font),
       fShowToggle(0), fToggleValue(0), fToggleVisible(true), fFocused(false)
   {
@@ -227,7 +227,7 @@ public:
     if (Border() != B_NO_BORDER) avail.InsetBy(1, 1);
 
     float content_h = 0, content_w = 0;
-    if (BOutlineListView* olv = dynamic_cast<BOutlineListView*>(t))
+    if (auto* olv = dynamic_cast<BOutlineListView*>(t))
     {
       /* BListView::ItemAt / CountItems return the visible-only flat list. */
       int n = olv->CountItems();
@@ -236,7 +236,7 @@ public:
         BListItem* it = olv->ItemAt(i);
         if (!it) continue;
         content_h += it->Height();
-        IupHaikuTreeItem* tit = dynamic_cast<IupHaikuTreeItem*>(it);
+        auto* tit = dynamic_cast<IupHaikuTreeItem*>(it);
         if (tit)
         {
           float w = tit->DrawWidth(t);
@@ -307,7 +307,7 @@ class IupHaikuTreeView : public BOutlineListView
 public:
   IupHaikuTreeView(Ihandle* ih)
     : BOutlineListView(BRect(0, 0, 0, 0), "iup_tree", B_SINGLE_SELECTION_LIST),
-      fIhandle(ih), fEditor(NULL) {}
+      fIhandle(ih), fEditor(nullptr) {}
 
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }
   Ihandle* GetIhandle() const { return fIhandle; }
@@ -326,7 +326,7 @@ public:
     float heightOffset = itemRect.Height() / 2 - latchHeight / 2;
     return BRect(0, 0, latchWidth, latchHeight)
              .OffsetBySelf(itemRect.left, itemRect.top)
-             .OffsetBySelf((float)(level * indent), heightOffset);
+             .OffsetBySelf(static_cast<float>(level * indent), heightOffset);
   }
 
   void SelectionChanged() override
@@ -336,9 +336,9 @@ public:
     if (iupAttribGet(fIhandle, "_IUPTREE_IGNORE_SELECTION_CB")) return;
     if (!iupdrvIsActive(fIhandle))
     {
-      iupAttribSet(fIhandle, "_IUPTREE_IGNORE_SELECTION_CB", (char*)"1");
+      iupAttribSet(fIhandle, "_IUPTREE_IGNORE_SELECTION_CB", const_cast<char*>("1"));
       DeselectAll();
-      iupAttribSet(fIhandle, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
+      iupAttribSet(fIhandle, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
       return;
     }
 
@@ -346,12 +346,12 @@ public:
     if (idx < 0) return;
     BListItem* item = ItemAt(idx);
     if (!item) return;
-    int id = iupTreeFindNodeId(fIhandle, (InodeHandle*)item);
+    int id = iupTreeFindNodeId(fIhandle, reinterpret_cast<InodeHandle*>(item));
     if (id < 0) return;
 
     haikuTreeSetFocus(fIhandle, id);
 
-    IFnii cb = (IFnii)IupGetCallback(fIhandle, "SELECTION_CB");
+    auto cb = reinterpret_cast<IFnii>(IupGetCallback(fIhandle, "SELECTION_CB"));
     if (cb) cb(fIhandle, id, 1);
   }
 
@@ -364,19 +364,19 @@ protected:
       return;
     }
 
-    int id = iupTreeFindNodeId(fIhandle, (InodeHandle*)super);
+    int id = iupTreeFindNodeId(fIhandle, reinterpret_cast<InodeHandle*>(super));
     Icallback cbgen = expand
                         ? IupGetCallback(fIhandle, "BRANCHOPEN_CB")
                         : IupGetCallback(fIhandle, "BRANCHCLOSE_CB");
     if (cbgen && id >= 0)
     {
-      IFni cb = (IFni)cbgen;
+      IFni cb = reinterpret_cast<IFni>(cbgen);
       if (cb(fIhandle, id) == IUP_IGNORE) return;
     }
 
     BOutlineListView::ExpandOrCollapse(super, expand);
 
-    IupHaikuTreeItem* it = dynamic_cast<IupHaikuTreeItem*>(super);
+    auto* it = dynamic_cast<IupHaikuTreeItem*>(super);
     if (it) InvalidateItem(IndexOf(super));
   }
 
@@ -399,7 +399,7 @@ public:
   {
     if (!fIhandle) { BOutlineListView::MouseDown(where); return; }
 
-    BMessage* msg = Looper() ? Looper()->CurrentMessage() : NULL;
+    BMessage* msg = Looper() ? Looper()->CurrentMessage() : nullptr;
     int32 buttons = 0, clicks = 1;
     if (msg)
     {
@@ -411,8 +411,8 @@ public:
     if (idx >= 0)
     {
       BListItem* item = ItemAt(idx);
-      IupHaikuTreeItem* tit = dynamic_cast<IupHaikuTreeItem*>(item);
-      int id = item ? iupTreeFindNodeId(fIhandle, (InodeHandle*)item) : -1;
+      auto* tit = dynamic_cast<IupHaikuTreeItem*>(item);
+      int id = item ? iupTreeFindNodeId(fIhandle, reinterpret_cast<InodeHandle*>(item)) : -1;
 
       if (tit && tit->ShowToggle() && tit->ToggleVisible() && id >= 0
           && !(buttons & B_SECONDARY_MOUSE_BUTTON) && tit->ToggleBox().Contains(where))
@@ -420,7 +420,7 @@ public:
         int newval = (tit->ToggleValue() == 1) ? 0 : 1;
         tit->SetToggleValue(newval);
         InvalidateItem(idx);
-        IFnii cb = (IFnii)IupGetCallback(fIhandle, "TOGGLEVALUE_CB");
+        auto cb = reinterpret_cast<IFnii>(IupGetCallback(fIhandle, "TOGGLEVALUE_CB"));
         if (cb) cb(fIhandle, id, newval);
         if (iupAttribGetBoolean(fIhandle, "MARKWHENTOGGLE"))
           Select(idx, false);
@@ -431,7 +431,7 @@ public:
       {
         if (id >= 0)
         {
-          IFni cb = (IFni)IupGetCallback(fIhandle, "RIGHTCLICK_CB");
+          IFni cb = reinterpret_cast<IFni>(IupGetCallback(fIhandle, "RIGHTCLICK_CB"));
           if (cb) cb(fIhandle, id);
         }
         /* If the callback popped a rename editor, don't steal its focus. */
@@ -442,7 +442,7 @@ public:
       if (clicks >= 2 && tit && id >= 0)
       {
         const char* cb_name = (tit->Kind() == ITREE_LEAF) ? "EXECUTELEAF_CB" : "EXECUTEBRANCH_CB";
-        IFni cb = (IFni)IupGetCallback(fIhandle, cb_name);
+        IFni cb = reinterpret_cast<IFni>(IupGetCallback(fIhandle, cb_name));
         if (cb) cb(fIhandle, id);
       }
     }
@@ -462,19 +462,19 @@ public:
   {
     if (fIhandle && fIhandle->data->show_rename && numBytes == 1)
     {
-      BMessage* msg = Looper() ? Looper()->CurrentMessage() : NULL;
+      BMessage* msg = Looper() ? Looper()->CurrentMessage() : nullptr;
       int32 raw = 0;
       if (msg) msg->FindInt32("raw_char", &raw);
-      if ((unsigned char)bytes[0] == B_FUNCTION_KEY && raw == B_F2_KEY)
+      if (static_cast<unsigned char>(bytes[0]) == B_FUNCTION_KEY && raw == B_F2_KEY)
       {
         int32 sel = CurrentSelection(0);
         if (sel >= 0)
         {
           BListItem* item = ItemAt(sel);
-          int id = item ? iupTreeFindNodeId(fIhandle, (InodeHandle*)item) : -1;
+          int id = item ? iupTreeFindNodeId(fIhandle, reinterpret_cast<InodeHandle*>(item)) : -1;
           if (id >= 0)
           {
-            IFni cb = (IFni)IupGetCallback(fIhandle, "SHOWRENAME_CB");
+            IFni cb = reinterpret_cast<IFni>(IupGetCallback(fIhandle, "SHOWRENAME_CB"));
             int ret = cb ? cb(fIhandle, id) : IUP_DEFAULT;
             if (ret != IUP_IGNORE) StartRename(id);
           }
@@ -531,8 +531,7 @@ void IupHaikuTreeView::StartRename(int id)
   /* RENAME_CB inside EndRename may have destroyed the tree, freeing `this`. */
   if (!iupObjectCheck(ih)) return;
 
-  IupHaikuTreeItem* item = (IupHaikuTreeItem*)
-    (id < ih->data->node_count ? ih->data->node_cache[id].node_handle : NULL);
+  auto* item = reinterpret_cast<IupHaikuTreeItem*>(id < ih->data->node_count ? ih->data->node_cache[id].node_handle : nullptr);
   if (!item) return;
 
   int32 idx = IndexOf(item);
@@ -560,14 +559,14 @@ void IupHaikuTreeView::EndRename(bool apply)
               ih->data->node_cache[id].node_handle;
   if (save)
   {
-    IFnis cb = (IFnis)IupGetCallback(ih, "RENAME_CB");
-    if (cb && cb(ih, id, (char*)text.String()) == IUP_IGNORE) save = false;
+    auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "RENAME_CB"));
+    if (cb && cb(ih, id, const_cast<char*>(text.String())) == IUP_IGNORE) save = false;
     /* Callback may have destroyed the tree or removed nodes; re-lookup item below. */
     if (!iupObjectCheck(ih)) return;
   }
 
   IupHaikuTreeItem* item = (ih && id < ih->data->node_count)
-    ? (IupHaikuTreeItem*)ih->data->node_cache[id].node_handle : NULL;
+    ? reinterpret_cast<IupHaikuTreeItem*>(ih->data->node_cache[id].node_handle) : nullptr;
   if (save && item)
   {
     item->SetTitle(text.String());
@@ -576,19 +575,19 @@ void IupHaikuTreeView::EndRename(bool apply)
 
   fEditor->RemoveSelf();
   delete fEditor;
-  fEditor = NULL;
+  fEditor = nullptr;
   MakeFocus(true);
 }
 
 static IupHaikuTreeView* haikuTreeGetView(Ihandle* ih)
 {
-  if (!ih || !ih->handle) return NULL;
-  return (IupHaikuTreeView*)iupAttribGet(ih, "_IUPHAIKU_TREE_INNER");
+  if (!ih || !ih->handle) return nullptr;
+  return reinterpret_cast<IupHaikuTreeView*>(iupAttribGet(ih, "_IUPHAIKU_TREE_INNER"));
 }
 
 static int haikuTreeExtraItemHeight(BView* owner)
 {
-  IupHaikuTreeView* tv = dynamic_cast<IupHaikuTreeView*>(owner);
+  auto* tv = dynamic_cast<IupHaikuTreeView*>(owner);
   if (!tv) return 0;
   Ihandle* ih = tv->GetIhandle();
   return ih ? 2 * ih->data->spacing : 0;
@@ -598,7 +597,7 @@ static char* haikuTreeGetIndentationAttrib(Ihandle* ih)
 {
   int indent = iupAttribGetInt(ih, "INDENTATION");
   if (indent <= 0)
-    indent = (int)be_control_look->DefaultItemSpacing();
+    indent = static_cast<int>(be_control_look->DefaultItemSpacing());
   return iupStrReturnInt(indent);
 }
 
@@ -632,7 +631,7 @@ static int haikuTreeSetSpacingAttrib(Ihandle* ih, const char* value)
 
 static IupHaikuTreeItem* haikuTreeGetItem(Ihandle* ih, int id)
 {
-  return (IupHaikuTreeItem*)iupTreeGetNode(ih, id);
+  return reinterpret_cast<IupHaikuTreeItem*>(iupTreeGetNode(ih, id));
 }
 
 static void haikuTreeSetFocus(Ihandle* ih, int id)
@@ -643,14 +642,14 @@ static void haikuTreeSetFocus(Ihandle* ih, int id)
 
   if (!tv) return;
 
-  if (old_id != id && old_id >= 0 && (it = haikuTreeGetItem(ih, old_id)) != NULL)
+  if (old_id != id && old_id >= 0 && (it = haikuTreeGetItem(ih, old_id)) != nullptr)
   {
     it->SetFocused(false);
     int idx = tv->IndexOf(it);
     if (idx >= 0) tv->InvalidateItem(idx);
   }
   iupAttribSetInt(ih, "_IUPHAIKU_FOCUS_ID", id);
-  if (id >= 0 && (it = haikuTreeGetItem(ih, id)) != NULL)
+  if (id >= 0 && (it = haikuTreeGetItem(ih, id)) != nullptr)
   {
     it->SetFocused(true);
     int idx = tv->IndexOf(it);
@@ -661,7 +660,7 @@ static void haikuTreeSetFocus(Ihandle* ih, int id)
 static int haikuTreeGetIdFromItem(Ihandle* ih, BListItem* item)
 {
   if (!item) return -1;
-  return iupTreeFindNodeId(ih, (InodeHandle*)item);
+  return iupTreeFindNodeId(ih, reinterpret_cast<InodeHandle*>(item));
 }
 
 static int haikuTreeChildCountRec(IupHaikuTreeView* tv, BListItem* it)
@@ -699,11 +698,11 @@ static void haikuTreeRemoveAndDeleteAll(IupHaikuTreeView* tv)
   for (int i = 0; i < n; ++i)
   {
     BListItem* it = tv->FullListItemAt(i);
-    if (it && tv->Superitem(it) == NULL) roots.AddItem(it);
+    if (it && tv->Superitem(it) == nullptr) roots.AddItem(it);
   }
   for (int i = roots.CountItems() - 1; i >= 0; --i)
   {
-    BListItem* it = (BListItem*)roots.ItemAt(i);
+    auto* it = static_cast<BListItem*>(roots.ItemAt(i));
     tv->RemoveItem(it);
     delete it;
   }
@@ -711,19 +710,19 @@ static void haikuTreeRemoveAndDeleteAll(IupHaikuTreeView* tv)
 
 static BBitmap* haikuTreeBitmapByName(Ihandle* ih, const char* name)
 {
-  if (!name) return NULL;
-  return (BBitmap*)iupImageGetImage(name, ih, 0, NULL);
+  if (!name) return nullptr;
+  return static_cast<BBitmap*>(iupImageGetImage(name, ih, 0, nullptr));
 }
 
 /* Pulled once from the MIME database, then cached for the process lifetime. */
 static BBitmap* haikuTreeSystemMimeIcon(const char* mime)
 {
-  BBitmap* bm = new BBitmap(BRect(0, 0, B_MINI_ICON - 1, B_MINI_ICON - 1), B_RGBA32);
+  auto* bm = new BBitmap(BRect(0, 0, B_MINI_ICON - 1, B_MINI_ICON - 1), B_RGBA32);
   BMimeType type(mime);
   if (type.InitCheck() != B_OK || type.GetIcon(bm, B_MINI_ICON) != B_OK)
   {
     delete bm;
-    return NULL;
+    return nullptr;
   }
   return bm;
 }
@@ -745,7 +744,7 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
   IupHaikuTreeView* tv = haikuTreeGetView(ih);
   if (!tv) return;
 
-  IupHaikuTreeItem* prev = NULL;
+  IupHaikuTreeItem* prev = nullptr;
   int kindPrev = -1;
 
   if (id == IUP_INVALID_ID && ih->data->node_count != 0)
@@ -759,7 +758,7 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
 
   LooperLockGuard guard(tv->Looper());
 
-  IupHaikuTreeItem* it = NULL;
+  IupHaikuTreeItem* it = nullptr;
   if (prev)
   {
     if (add && kindPrev == ITREE_BRANCH)
@@ -785,26 +784,26 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
   {
     it->SetExpanded(ih->data->add_expanded ? true : false);
     if (ih->data->add_expanded && ih->data->def_image_expanded)
-      it->SetImageExpanded((BBitmap*)ih->data->def_image_expanded);
+      it->SetImageExpanded(static_cast<BBitmap*>(ih->data->def_image_expanded));
     if (ih->data->def_image_collapsed)
-      it->SetImage((BBitmap*)ih->data->def_image_collapsed);
+      it->SetImage(static_cast<BBitmap*>(ih->data->def_image_collapsed));
   }
   else if (ih->data->def_image_leaf)
   {
-    it->SetImage((BBitmap*)ih->data->def_image_leaf);
+    it->SetImage(static_cast<BBitmap*>(ih->data->def_image_leaf));
   }
 
-  iupTreeAddToCache(ih, add, kindPrev, (InodeHandle*)prev, (InodeHandle*)it);
+  iupTreeAddToCache(ih, add, kindPrev, reinterpret_cast<InodeHandle*>(prev), reinterpret_cast<InodeHandle*>(it));
 
   if (ih->data->node_count == 1 && ih->data->mark_mode == ITREE_MARK_SINGLE)
   {
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
     tv->Select(tv->IndexOf(it), false);
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
+    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
   }
 
   tv->Invalidate();
-  if (IupHaikuTreeScrollView* sv = dynamic_cast<IupHaikuTreeScrollView*>((BScrollView*)ih->handle))
+  if (auto* sv = dynamic_cast<IupHaikuTreeScrollView*>(reinterpret_cast<BScrollView*>(ih->handle)))
     sv->RelayoutChildren();
 }
 
@@ -813,7 +812,7 @@ extern "C" IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
   int focus_id = iupAttribGetInt(ih, "_IUPHAIKU_FOCUS_ID");
   if (focus_id >= 0 && focus_id < ih->data->node_count)
     return ih->data->node_cache[focus_id].node_handle;
-  return (ih->data->node_count > 0) ? ih->data->node_cache[0].node_handle : NULL;
+  return (ih->data->node_count > 0) ? ih->data->node_cache[0].node_handle : nullptr;
 }
 
 extern "C" IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* node_handle)
@@ -821,7 +820,7 @@ extern "C" IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, InodeHandle* n
   IupHaikuTreeView* tv = haikuTreeGetView(ih);
   if (!tv || !node_handle) return 0;
   LooperLockGuard guard(tv->Looper());
-  return haikuTreeChildCountRec(tv, (BListItem*)node_handle);
+  return haikuTreeChildCountRec(tv, reinterpret_cast<BListItem*>(node_handle));
 }
 
 extern "C" IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle* ih)
@@ -843,7 +842,7 @@ extern "C" IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int* w, int* h)
 
 static IupHaikuTreeItem* haikuTreeCopyItem(IupHaikuTreeView* dst_tv, IupHaikuTreeItem* src, uint32 level, int flat_pos)
 {
-  IupHaikuTreeItem* nw = new IupHaikuTreeItem(level, src->Kind(), src->Title());
+  auto* nw = new IupHaikuTreeItem(level, src->Kind(), src->Title());
   nw->SetImage(src->Image());
   nw->SetImageExpanded(src->ImageExpanded());
   if (src->HasFgColor()) nw->SetFgColor(src->FgColor());
@@ -859,7 +858,7 @@ static void haikuTreeCopyChildren(IupHaikuTreeView* src_tv, IupHaikuTreeView* ds
   int n = src_tv->CountItemsUnder(src_parent, true);
   for (int i = 0; i < n; ++i)
   {
-    IupHaikuTreeItem* src_child = (IupHaikuTreeItem*)src_tv->ItemUnderAt(src_parent, true, i);
+    auto* src_child = static_cast<IupHaikuTreeItem*>(src_tv->ItemUnderAt(src_parent, true, i));
     if (!src_child) continue;
     int flat = dst_tv->FullListIndexOf(dst_parent) + 1
              + haikuTreeChildCountRec(dst_tv, dst_parent);
@@ -874,14 +873,14 @@ extern "C" IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* ds
   IupHaikuTreeView* dst_tv = haikuTreeGetView(dst);
   if (!src_tv || !dst_tv) return;
 
-  IupHaikuTreeItem* src_item = (IupHaikuTreeItem*)itemSrc;
-  IupHaikuTreeItem* dst_item = (IupHaikuTreeItem*)itemDst;
+  auto* src_item = reinterpret_cast<IupHaikuTreeItem*>(itemSrc);
+  auto* dst_item = reinterpret_cast<IupHaikuTreeItem*>(itemDst);
   if (!src_item || !dst_item) return;
 
   LooperLockGuard guard(dst_tv->Looper());
 
   int kind_dst = dst_item->Kind();
-  IupHaikuTreeItem* nw = NULL;
+  IupHaikuTreeItem* nw = nullptr;
 
   if (kind_dst == ITREE_BRANCH && dst_item->IsExpanded())
   {
@@ -900,7 +899,7 @@ extern "C" IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* ds
 
   std::map<void*, void*> udata;
   for (int i = 0; i < old_count; i++)
-    udata[(void*)dst->data->node_cache[i].node_handle] = dst->data->node_cache[i].userdata;
+    udata[reinterpret_cast<void*>(dst->data->node_cache[i].node_handle)] = dst->data->node_cache[i].userdata;
 
   dst->data->node_count = dst_tv->FullListCountItems();
   iupTreeIncCacheMem(dst);
@@ -908,9 +907,9 @@ extern "C" IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* ds
   for (int i = 0; i < dst->data->node_count; i++)
   {
     BListItem* it = dst_tv->FullListItemAt(i);
-    dst->data->node_cache[i].node_handle = (InodeHandle*)it;
-    std::map<void*, void*>::iterator f = udata.find((void*)it);
-    dst->data->node_cache[i].userdata = (f != udata.end()) ? f->second : NULL;
+    dst->data->node_cache[i].node_handle = reinterpret_cast<InodeHandle*>(it);
+    auto f = udata.find(reinterpret_cast<void*>(it));
+    dst->data->node_cache[i].userdata = (f != udata.end()) ? f->second : nullptr;
   }
 
   iupAttribSetInt(dst, "LASTADDNODE", dst_tv->FullListIndexOf(nw));
@@ -918,7 +917,7 @@ extern "C" IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* ds
 
 static int haikuTreeSetImageLeafAttrib(Ihandle* ih, const char* value)
 {
-  void* bm = iupImageGetImage(value, ih, 0, NULL);
+  void* bm = iupImageGetImage(value, ih, 0, nullptr);
   if (!bm && iupStrEqualNoCase(value, "IMGLEAF")) bm = haikuTreeStockLeafIcon();
   ih->data->def_image_leaf = bm;
   return 1;
@@ -926,7 +925,7 @@ static int haikuTreeSetImageLeafAttrib(Ihandle* ih, const char* value)
 
 static int haikuTreeSetImageBranchCollapsedAttrib(Ihandle* ih, const char* value)
 {
-  void* bm = iupImageGetImage(value, ih, 0, NULL);
+  void* bm = iupImageGetImage(value, ih, 0, nullptr);
   if (!bm && iupStrEqualNoCase(value, "IMGCOLLAPSED")) bm = haikuTreeStockFolderIcon();
   ih->data->def_image_collapsed = bm;
   return 1;
@@ -934,7 +933,7 @@ static int haikuTreeSetImageBranchCollapsedAttrib(Ihandle* ih, const char* value
 
 static int haikuTreeSetImageBranchExpandedAttrib(Ihandle* ih, const char* value)
 {
-  void* bm = iupImageGetImage(value, ih, 0, NULL);
+  void* bm = iupImageGetImage(value, ih, 0, nullptr);
   if (!bm && iupStrEqualNoCase(value, "IMGEXPANDED")) bm = haikuTreeStockFolderIcon();
   ih->data->def_image_expanded = bm;
   return 1;
@@ -948,17 +947,17 @@ static int haikuTreeConvertXYToPos(Ihandle* ih, int x, int y)
   if (idx < 0) return -1;
   BListItem* it = tv->ItemAt(idx);
   if (!it) return -1;
-  return iupTreeFindNodeId(ih, (InodeHandle*)it);
+  return iupTreeFindNodeId(ih, reinterpret_cast<InodeHandle*>(it));
 }
 
 static int haikuTreeMapMethod(Ihandle* ih)
 {
-  IupHaikuTreeView* tv = new IupHaikuTreeView(ih);
+  auto* tv = new IupHaikuTreeView(ih);
 
   BScrollView* sv = new IupHaikuTreeScrollView("iup_tree_scroll", tv, B_FOLLOW_NONE,
                                                0, true, true, B_FANCY_BORDER);
-  ih->handle = (InativeHandle*)sv;
-  iupAttribSet(ih, "_IUPHAIKU_TREE_INNER", (char*)tv);
+  ih->handle = reinterpret_cast<InativeHandle*>(sv);
+  iupAttribSet(ih, "_IUPHAIKU_TREE_INNER", reinterpret_cast<char*>(tv));
 
   iuphaikuAddToParent(ih);
 
@@ -971,7 +970,7 @@ static int haikuTreeMapMethod(Ihandle* ih)
   if (iupAttribGetInt(ih, "ADDROOT"))
     iupdrvTreeAddNode(ih, -1, ITREE_BRANCH, "", 0);
 
-  IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)haikuTreeConvertXYToPos);
+  IupSetCallback(ih, "_IUP_XY2POS_CB", reinterpret_cast<Icallback>(haikuTreeConvertXYToPos));
   return IUP_NOERROR;
 }
 
@@ -981,10 +980,10 @@ static void haikuTreeUnMapMethod(Ihandle* ih)
   if (tv)
   {
     LooperLockGuard guard(tv->Looper());
-    tv->SetIhandle(NULL);
+    tv->SetIhandle(nullptr);
     haikuTreeRemoveAndDeleteAll(tv);
   }
-  iupAttribSet(ih, "_IUPHAIKU_TREE_INNER", NULL);
+  iupAttribSet(ih, "_IUPHAIKU_TREE_INNER", nullptr);
   iupdrvBaseUnMapMethod(ih);
   ih->data->node_count = 0;
 }
@@ -1018,7 +1017,7 @@ static int haikuTreeSetFgColorAttrib(Ihandle* ih, const char* value)
 static char* haikuTreeGetTitleAttrib(Ihandle* ih, int id)
 {
   IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
-  if (!it) return NULL;
+  if (!it) return nullptr;
   return iupStrReturnStr(it->Title());
 }
 
@@ -1036,24 +1035,24 @@ static int haikuTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
 static char* haikuTreeGetKindAttrib(Ihandle* ih, int id)
 {
   IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
-  if (!it) return NULL;
-  return (char*)(it->Kind() == ITREE_BRANCH ? "BRANCH" : "LEAF");
+  if (!it) return nullptr;
+  return const_cast<char*>(it->Kind() == ITREE_BRANCH ? "BRANCH" : "LEAF");
 }
 
 static char* haikuTreeGetDepthAttrib(Ihandle* ih, int id)
 {
   IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
-  if (!it) return NULL;
-  return iupStrReturnInt((int)it->OutlineLevel());
+  if (!it) return nullptr;
+  return iupStrReturnInt(static_cast<int>(it->OutlineLevel()));
 }
 
 static char* haikuTreeGetParentAttrib(Ihandle* ih, int id)
 {
   IupHaikuTreeView* tv = haikuTreeGetView(ih);
   IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
-  if (!tv || !it) return NULL;
+  if (!tv || !it) return nullptr;
   BListItem* p = tv->Superitem(it);
-  if (!p) return NULL;
+  if (!p) return nullptr;
   return iupStrReturnInt(haikuTreeGetIdFromItem(ih, p));
 }
 
@@ -1061,7 +1060,7 @@ static char* haikuTreeGetChildCountAttrib(Ihandle* ih, int id)
 {
   IupHaikuTreeView* tv = haikuTreeGetView(ih);
   IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
-  if (!tv || !it) return NULL;
+  if (!tv || !it) return nullptr;
   return iupStrReturnInt(tv->CountItemsUnder(it, true));
 }
 
@@ -1079,8 +1078,8 @@ static int haikuTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
 static char* haikuTreeGetStateAttrib(Ihandle* ih, int id)
 {
   IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
-  if (!it || it->Kind() != ITREE_BRANCH) return NULL;
-  return (char*)(it->IsExpanded() ? "EXPANDED" : "COLLAPSED");
+  if (!it || it->Kind() != ITREE_BRANCH) return nullptr;
+  return const_cast<char*>(it->IsExpanded() ? "EXPANDED" : "COLLAPSED");
 }
 
 static int haikuTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
@@ -1099,11 +1098,11 @@ static int haikuTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
 static char* haikuTreeGetToggleValueAttrib(Ihandle* ih, int id)
 {
   IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
-  if (!ih->data->show_toggle || !it) return NULL;
+  if (!ih->data->show_toggle || !it) return nullptr;
   int v = it->ToggleValue();
-  if (v == 1) return (char*)"ON";
-  if (v == -1) return (char*)"NOTDEF";
-  return (char*)"OFF";
+  if (v == 1) return const_cast<char*>("ON");
+  if (v == -1) return const_cast<char*>("NOTDEF");
+  return const_cast<char*>("OFF");
 }
 
 static int haikuTreeSetToggleValueAttrib(Ihandle* ih, int id, const char* value)
@@ -1122,8 +1121,8 @@ static int haikuTreeSetToggleValueAttrib(Ihandle* ih, int id, const char* value)
 static char* haikuTreeGetToggleVisibleAttrib(Ihandle* ih, int id)
 {
   IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
-  if (!it) return NULL;
-  return (char*)(it->ToggleVisible() ? "YES" : "NO");
+  if (!it) return nullptr;
+  return const_cast<char*>(it->ToggleVisible() ? "YES" : "NO");
 }
 
 static int haikuTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* value)
@@ -1166,7 +1165,7 @@ static int haikuTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
   if (!tv || !value || ih->data->mark_mode != ITREE_MARK_MULTIPLE) return 0;
   LooperLockGuard guard(tv->Looper());
   iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
-  int len = (int)strlen(value);
+  int len = static_cast<int>(strlen(value));
   for (int i = 0; i < ih->data->node_count && i < len; i++)
   {
     IupHaikuTreeItem* it = haikuTreeGetItem(ih, i);
@@ -1175,7 +1174,7 @@ static int haikuTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
     if (value[i] == '+') tv->Select(idx, true);
     else                 tv->Deselect(idx);
   }
-  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
   return 0;
 }
 
@@ -1223,8 +1222,8 @@ static int haikuTreeSetMarkAttrib(Ihandle* ih, const char* value)
   {
     int start = iupAttribGetInt(ih, "_IUPTREE_MARKSTART");
     int cur = tv->CurrentSelection(0);
-    IupHaikuTreeItem* cit = cur >= 0 ? dynamic_cast<IupHaikuTreeItem*>(tv->ItemAt(cur)) : NULL;
-    haikuTreeSelectRange(tv, ih, start, cit ? iupTreeFindNodeId(ih, (InodeHandle*)cit) : start);
+    IupHaikuTreeItem* cit = cur >= 0 ? dynamic_cast<IupHaikuTreeItem*>(tv->ItemAt(cur)) : nullptr;
+    haikuTreeSelectRange(tv, ih, start, cit ? iupTreeFindNodeId(ih, reinterpret_cast<InodeHandle*>(cit)) : start);
   }
   else if (iupStrEqualPartial(value, "INVERT")) /* INVERTid, after INVERTALL */
   {
@@ -1241,7 +1240,7 @@ static int haikuTreeSetMarkAttrib(Ihandle* ih, const char* value)
       haikuTreeSelectRange(tv, ih, id1, id2);
   }
 
-  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
   return 0;
 }
 
@@ -1277,7 +1276,7 @@ static int haikuTreeSetMarkedAttrib(Ihandle* ih, int id, const char* value)
   int idx = tv->IndexOf(it);
   if (iupStrBoolean(value)) tv->Select(idx, true);
   else                       tv->Deselect(idx);
-  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
   return 0;
 }
 
@@ -1285,14 +1284,14 @@ static char* haikuTreeGetMarkedAttrib(Ihandle* ih, int id)
 {
   IupHaikuTreeView* tv = haikuTreeGetView(ih);
   IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
-  if (!tv || !it) return NULL;
+  if (!tv || !it) return nullptr;
   return iupStrReturnBoolean(it->IsSelected() ? 1 : 0);
 }
 
 static int haikuTreeIsAncestor(IupHaikuTreeView* tv, IupHaikuTreeItem* item, IupHaikuTreeItem* ancestor)
 {
   for (BListItem* p = tv->Superitem(item); p; p = tv->Superitem(p))
-    if ((IupHaikuTreeItem*)p == ancestor)
+    if (static_cast<IupHaikuTreeItem*>(p) == ancestor)
       return 1;
   return 0;
 }
@@ -1303,11 +1302,11 @@ static int haikuTreeSetCopyNodeAttrib(Ihandle* ih, int id, const char* value)
   if (!tv) return 0;
 
   IupHaikuTreeItem* src = haikuTreeGetItem(ih, id);
-  IupHaikuTreeItem* dst = (IupHaikuTreeItem*)iupTreeGetNodeFromString(ih, value);
+  auto* dst = reinterpret_cast<IupHaikuTreeItem*>(iupTreeGetNodeFromString(ih, value));
   if (!src || !dst || src == dst || haikuTreeIsAncestor(tv, dst, src))
     return 0;
 
-  iupdrvTreeDragDropCopyNode(ih, ih, (InodeHandle*)src, (InodeHandle*)dst);
+  iupdrvTreeDragDropCopyNode(ih, ih, reinterpret_cast<InodeHandle*>(src), reinterpret_cast<InodeHandle*>(dst));
   return 0;
 }
 
@@ -1317,7 +1316,7 @@ static int haikuTreeSetMoveNodeAttrib(Ihandle* ih, int id, const char* value)
   if (!tv) return 0;
 
   IupHaikuTreeItem* src = haikuTreeGetItem(ih, id);
-  IupHaikuTreeItem* dst = (IupHaikuTreeItem*)iupTreeGetNodeFromString(ih, value);
+  auto* dst = reinterpret_cast<IupHaikuTreeItem*>(iupTreeGetNodeFromString(ih, value));
   if (!src || !dst || src == dst || haikuTreeIsAncestor(tv, dst, src))
     return 0;
 
@@ -1328,26 +1327,26 @@ static int haikuTreeSetMoveNodeAttrib(Ihandle* ih, int id, const char* value)
   /* userdata by item, so it follows the moved objects (a move preserves userdata) */
   std::map<void*, void*> udata;
   for (int i = 0; i < ih->data->node_count; i++)
-    udata[(void*)ih->data->node_cache[i].node_handle] = ih->data->node_cache[i].userdata;
+    udata[reinterpret_cast<void*>(ih->data->node_cache[i].node_handle)] = ih->data->node_cache[i].userdata;
 
   /* a subtree is contiguous in the full list */
   std::vector<IupHaikuTreeItem*> items(count);
   std::vector<uint32> levels(count);
   for (int k = 0; k < count; k++)
   {
-    items[k] = (IupHaikuTreeItem*)tv->FullListItemAt(id + k);
+    items[k] = static_cast<IupHaikuTreeItem*>(tv->FullListItemAt(id + k));
     levels[k] = items[k]->OutlineLevel();
   }
 
   bool as_child = (dst->Kind() == ITREE_BRANCH && dst->IsExpanded());
-  int delta = (int)(as_child ? dst->OutlineLevel() + 1 : dst->OutlineLevel()) - (int)levels[0];
+  int delta = static_cast<int>(as_child ? dst->OutlineLevel() + 1 : dst->OutlineLevel()) - static_cast<int>(levels[0]);
 
   /* detach bottom-up: each item is a leaf when removed, so nothing is deleted */
   for (int k = count - 1; k >= 0; k--)
     tv->RemoveItem(items[k]);
 
   for (int k = 0; k < count; k++)
-    items[k]->SetOutlineLevel((uint32)((int)levels[k] + delta));
+    items[k]->SetOutlineLevel(static_cast<uint32>(static_cast<int>(levels[k]) + delta));
 
   int dst_idx = tv->FullListIndexOf(dst);
   int ins = as_child ? dst_idx + 1 : dst_idx + 1 + haikuTreeChildCountRec(tv, dst);
@@ -1358,8 +1357,8 @@ static int haikuTreeSetMoveNodeAttrib(Ihandle* ih, int id, const char* value)
   for (int i = 0; i < ih->data->node_count; i++)
   {
     BListItem* it = tv->FullListItemAt(i);
-    ih->data->node_cache[i].node_handle = (InodeHandle*)it;
-    ih->data->node_cache[i].userdata = udata[(void*)it];
+    ih->data->node_cache[i].node_handle = reinterpret_cast<InodeHandle*>(it);
+    ih->data->node_cache[i].userdata = udata[reinterpret_cast<void*>(it)];
   }
 
   tv->Invalidate();
@@ -1388,8 +1387,8 @@ static int haikuTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       BListItem* fi = tv->FullListItemAt(i);
       if (fi && fi->IsSelected())
       {
-        int sub = 1 + iupdrvTreeTotalChildCount(ih, (InodeHandle*)fi);
-        int fid = iupTreeFindNodeId(ih, (InodeHandle*)fi);
+        int sub = 1 + iupdrvTreeTotalChildCount(ih, reinterpret_cast<InodeHandle*>(fi));
+        int fid = iupTreeFindNodeId(ih, reinterpret_cast<InodeHandle*>(fi));
         haikuTreeRemoveAndDeleteSubtree(tv, fi);
         if (fid >= 0) iupTreeDelFromCache(ih, fid, sub);
       }
@@ -1432,7 +1431,7 @@ static int haikuTreeSetExpandAllAttrib(Ihandle* ih, const char* value)
   int n = tv->FullListCountItems();
   for (int i = 0; i < n; ++i)
   {
-    IupHaikuTreeItem* it = (IupHaikuTreeItem*)tv->FullListItemAt(i);
+    auto* it = static_cast<IupHaikuTreeItem*>(tv->FullListItemAt(i));
     if (it && it->Kind() == ITREE_BRANCH)
     {
       if (expand) tv->Expand(it);
@@ -1505,7 +1504,7 @@ static int haikuTreeSetValueAttrib(Ihandle* ih, const char* value)
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
     int idx = tv->IndexOf(item);
     if (idx >= 0) tv->Select(idx, false);
-    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
+    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
   }
 
   haikuTreeSetFocus(ih, haikuTreeGetIdFromItem(ih, item));
@@ -1530,7 +1529,7 @@ static int haikuTreeSetRenameAttrib(Ihandle* ih, const char* /*value*/)
   int32 idx = tv->CurrentSelection(0);
   if (idx < 0) return 0;
   BListItem* item = tv->ItemAt(idx);
-  int id = item ? iupTreeFindNodeId(ih, (InodeHandle*)item) : -1;
+  int id = item ? iupTreeFindNodeId(ih, reinterpret_cast<InodeHandle*>(item)) : -1;
   if (id >= 0) tv->StartRename(id);
   return 0;
 }
@@ -1541,46 +1540,46 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   ic->UnMap = haikuTreeUnMapMethod;
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, haikuTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, haikuTreeSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, haikuTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, haikuTreeSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "COUNT", haikuTreeGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOPITEM", NULL, haikuTreeSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "EXPANDALL", NULL, haikuTreeSetExpandAllAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INDENTATION", haikuTreeGetIndentationAttrib, haikuTreeSetIndentationAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "COUNT", haikuTreeGetCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOPITEM", nullptr, haikuTreeSetTopItemAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "EXPANDALL", nullptr, haikuTreeSetExpandAllAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INDENTATION", haikuTreeGetIndentationAttrib, haikuTreeSetIndentationAttrib, nullptr, nullptr, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "SPACING", iupTreeGetSpacingAttrib, haikuTreeSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
   /* Images */
-  iupClassRegisterAttribute(ic, "IMAGELEAF", NULL, haikuTreeSetImageLeafAttrib, IUPAF_SAMEASSYSTEM, "IMGLEAF", IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGEBRANCHCOLLAPSED", NULL, haikuTreeSetImageBranchCollapsedAttrib, IUPAF_SAMEASSYSTEM, "IMGCOLLAPSED", IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGEBRANCHEXPANDED", NULL, haikuTreeSetImageBranchExpandedAttrib, IUPAF_SAMEASSYSTEM, "IMGEXPANDED", IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGELEAF", nullptr, haikuTreeSetImageLeafAttrib, IUPAF_SAMEASSYSTEM, "IMGLEAF", IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGEBRANCHCOLLAPSED", nullptr, haikuTreeSetImageBranchCollapsedAttrib, IUPAF_SAMEASSYSTEM, "IMGCOLLAPSED", IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGEBRANCHEXPANDED", nullptr, haikuTreeSetImageBranchExpandedAttrib, IUPAF_SAMEASSYSTEM, "IMGEXPANDED", IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "STATE", haikuTreeGetStateAttrib, haikuTreeSetStateAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "DEPTH", haikuTreeGetDepthAttrib, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "KIND", haikuTreeGetKindAttrib, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "PARENT", haikuTreeGetParentAttrib, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "CHILDCOUNT", haikuTreeGetChildCountAttrib, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "DEPTH", haikuTreeGetDepthAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "KIND", haikuTreeGetKindAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "PARENT", haikuTreeGetParentAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "CHILDCOUNT", haikuTreeGetChildCountAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TITLE", haikuTreeGetTitleAttrib, haikuTreeSetTitleAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "COLOR", NULL, haikuTreeSetColorAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "IMAGE", NULL, haikuTreeSetImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "IMAGEEXPANDED", NULL, haikuTreeSetImageExpandedAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "COLOR", nullptr, haikuTreeSetColorAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "IMAGE", nullptr, haikuTreeSetImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "IMAGEEXPANDED", nullptr, haikuTreeSetImageExpandedAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "MARKED", haikuTreeGetMarkedAttrib, haikuTreeSetMarkedAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ROOTCOUNT", haikuTreeGetRootCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARK", NULL, haikuTreeSetMarkAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARKSTART", NULL, haikuTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STARTING", NULL, haikuTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARKEDNODES", haikuTreeGetMarkedNodesAttrib, haikuTreeSetMarkedNodesAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ROOTCOUNT", haikuTreeGetRootCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARK", nullptr, haikuTreeSetMarkAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKSTART", nullptr, haikuTreeSetMarkStartAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "STARTING", nullptr, haikuTreeSetMarkStartAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKEDNODES", haikuTreeGetMarkedNodesAttrib, haikuTreeSetMarkedNodesAttrib, nullptr, nullptr, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TOGGLEVALUE", haikuTreeGetToggleValueAttrib, haikuTreeSetToggleValueAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", haikuTreeGetToggleVisibleAttrib, haikuTreeSetToggleVisibleAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", haikuTreeGetValueAttrib, haikuTreeSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", haikuTreeGetValueAttrib, haikuTreeSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ADDROOT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "DELNODE", NULL, haikuTreeSetDelNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "COPYNODE", NULL, haikuTreeSetCopyNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "MOVENODE", NULL, haikuTreeSetMoveNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ADDROOT", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "DELNODE", nullptr, haikuTreeSetDelNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "COPYNODE", nullptr, haikuTreeSetCopyNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "MOVENODE", nullptr, haikuTreeSetMoveNodeAttrib, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "RUBBERBAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "RENAME", NULL, haikuTreeSetRenameAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RUBBERBAND", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDELINES", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RENAME", nullptr, haikuTreeSetRenameAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 }

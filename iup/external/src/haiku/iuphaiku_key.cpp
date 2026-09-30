@@ -54,9 +54,9 @@ static const HaikuKeyEntry kSpecialKeys[] = {
 
 static int haikuLookupSpecial(uint8 b)
 {
-  for (size_t i = 0; i < sizeof(kSpecialKeys)/sizeof(kSpecialKeys[0]); ++i)
-    if (kSpecialKeys[i].haiku_byte == b)
-      return kSpecialKeys[i].iup_code;
+  for (const auto& special : kSpecialKeys)
+    if (special.haiku_byte == b)
+      return special.iup_code;
   return 0;
 }
 
@@ -88,18 +88,18 @@ static const HaikuKeyPadEntry kKeyPadKeys[] = {
 
 static int haikuLookupKeyPad(int key, uint8 b)
 {
-  for (size_t i = 0; i < sizeof(kKeyPadKeys)/sizeof(kKeyPadKeys[0]); ++i)
+  for (const auto& keypad : kKeyPadKeys)
   {
-    if (kKeyPadKeys[i].scancode != (uint8)key)
+    if (keypad.scancode != static_cast<uint8>(key))
       continue;
 
-    if (!kKeyPadKeys[i].iup_numlock_code)
-      return kKeyPadKeys[i].iup_code;
+    if (!keypad.iup_numlock_code)
+      return keypad.iup_code;
 
     if (key == 0x65)
       return (b == ',')? K_KP_SEP: (b == '.')? K_KP_DECIMAL: K_KP_DEL;
 
-    return (b >= '0' && b <= '9')? kKeyPadKeys[i].iup_numlock_code: kKeyPadKeys[i].iup_code;
+    return (b >= '0' && b <= '9')? keypad.iup_numlock_code: keypad.iup_code;
   }
 
   return 0;
@@ -109,9 +109,9 @@ IUP_DRV_API int iuphaikuKeyPadScanCode(int code, int* byte_val)
 {
   int base = iup_XkeyBase(code);
 
-  for (size_t i = 0; i < sizeof(kKeyPadKeys)/sizeof(kKeyPadKeys[0]); ++i)
+  for (const auto& keypad : kKeyPadKeys)
   {
-    if (kKeyPadKeys[i].iup_code != base && kKeyPadKeys[i].iup_numlock_code != base)
+    if (keypad.iup_code != base && keypad.iup_numlock_code != base)
       continue;
 
     if (byte_val)
@@ -141,7 +141,7 @@ IUP_DRV_API int iuphaikuKeyPadScanCode(int code, int* byte_val)
       }
     }
 
-    return kKeyPadKeys[i].scancode;
+    return keypad.scancode;
   }
 
   return 0;
@@ -159,9 +159,9 @@ static int haikuApplyModifiers(int code, unsigned int modifiers)
 
 IUP_DRV_API int iuphaikuKeyDecode(int byte, int raw_char, int key, unsigned int modifiers)
 {
-  int code = haikuLookupKeyPad(key, (uint8)(byte & 0xFF));
-  uint8 b = (uint8)(byte & 0xFF);
-  uint8 raw = (uint8)(raw_char & 0xFF);
+  int code = haikuLookupKeyPad(key, static_cast<uint8>(byte & 0xFF));
+  auto b = static_cast<uint8>(byte & 0xFF);
+  auto raw = static_cast<uint8>(raw_char & 0xFF);
 
   if (code)
     return haikuApplyModifiers(code, modifiers);
@@ -209,20 +209,20 @@ IUP_DRV_API void iuphaikuButtonKeySetStatus(unsigned int modifiers, unsigned int
   if (doubleclick) iupKEY_SETDOUBLE(status);
 }
 
-extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
+extern "C" IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int* keyval, unsigned int* state)
 {
   if (keyval) *keyval = 0;
   if (state)  *state = 0;
   if (!keyval || !state) return;
 
-  int base = iup_XkeyBase(code);
+  int base = iup_XkeyBase(key);
 
   uint8 native = 0;
-  for (size_t i = 0; i < sizeof(kSpecialKeys)/sizeof(kSpecialKeys[0]); ++i)
+  for (const auto& special : kSpecialKeys)
   {
-    if (kSpecialKeys[i].iup_code == base)
+    if (special.iup_code == base)
     {
-      native = kSpecialKeys[i].haiku_byte;
+      native = special.haiku_byte;
       break;
     }
   }
@@ -230,12 +230,12 @@ extern "C" IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsi
   if (!native)
   {
     if (base >= 0x20 && base < 0x7f)
-      native = (uint8)base;
+      native = static_cast<uint8>(base);
   }
   *keyval = native;
 
-  if (iup_isShiftXkey(code)) *state |= B_SHIFT_KEY;
-  if (iup_isCtrlXkey(code))  *state |= B_COMMAND_KEY;
-  if (iup_isAltXkey(code))   *state |= B_CONTROL_KEY;
-  if (iup_isSysXkey(code))   *state |= B_OPTION_KEY;
+  if (iup_isShiftXkey(key)) *state |= B_SHIFT_KEY;
+  if (iup_isCtrlXkey(key))  *state |= B_COMMAND_KEY;
+  if (iup_isAltXkey(key))   *state |= B_CONTROL_KEY;
+  if (iup_isSysXkey(key))   *state |= B_OPTION_KEY;
 }
