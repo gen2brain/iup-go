@@ -320,6 +320,11 @@ public class IupAndroidCanvas extends IupAndroidFixed
         applyDrawTransform();
     }
 
+    boolean drawTransformKeepsRects()
+    {
+        return userMatrix.rectStaysRect();
+    }
+
     void applyDrawTransform()
     {
         if (backCanvas == null) return;
