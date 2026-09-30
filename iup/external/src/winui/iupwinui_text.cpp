@@ -2265,7 +2265,7 @@ static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITex
     char* face = iupGetFontFaceAttrib(ih);
     if (face)
     {
-      strncpy(defaultFontFace, face, sizeof(defaultFontFace) - 1);
+      iupStrCopyN(defaultFontFace, sizeof(defaultFontFace), face);
       defaultFontFace[sizeof(defaultFontFace) - 1] = '\0';
     }
   }

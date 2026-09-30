@@ -92,8 +92,7 @@ void iupCameraError(Ihandle* ih, const char* message)
 {
   IcameraMsg msg;
   msg.type = ICAMERA_MSG_ERROR;
-  strncpy(msg.message, message ? message : "", sizeof(msg.message) - 1);
-  msg.message[sizeof(msg.message) - 1] = 0;
+  iupStrCopyN(msg.message, sizeof(msg.message), message ? message : "");
   iCameraPost(ih, &msg);
 }
 
@@ -412,7 +411,7 @@ static int iCameraCreateMethod(Ihandle* ih, void** params)
   free(ih->data);
   ih->data = iupALLOCCTRLDATA();
   ih->data->mutex = iupdrvMutexCreate();
-  sprintf(ih->data->image_name, "_IUP_CAMERA_%p", (void*)ih);
+  snprintf(ih->data->image_name, sizeof(ih->data->image_name), "_IUP_CAMERA_%p", (void*)ih);
 
   IupSetCallback(ih, "ACTION", (Icallback)iCameraRedraw);
   IupSetCallback(ih, "POSTMESSAGE_CB", (Icallback)iCameraPostMessage);

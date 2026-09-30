@@ -854,7 +854,8 @@ static int iWinImageSaveToStream(unsigned char* imgdata, int width, int height, 
     VARIANT varValue;
     const char* q = IupGetGlobal("IMAGESAVEQUALITY");
     float quality = 0.85f;
-    if (q) quality = (float)atof(q) / 100.0f;
+    if (q && iupStrToFloat(q, &quality))
+      quality /= 100.0f;
 
     option.pstrName = L"ImageQuality";
     VariantInit(&varValue);

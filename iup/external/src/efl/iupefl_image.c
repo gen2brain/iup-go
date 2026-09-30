@@ -560,7 +560,9 @@ IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, i
   if (iupStrEqualNoCase(format, "JPEG"))
   {
     const char* q = IupGetGlobal("IMAGESAVEQUALITY");
-    info.quality = q ? (unsigned int)atoi(q) : 85;
+    int quality = 85;
+    iupStrToInt(q, &quality);
+    info.quality = (unsigned int)quality;
   }
   else if (iupStrEqualNoCase(format, "PNG"))
     info.compression = 6;
@@ -602,7 +604,9 @@ IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int w
   if (iupStrEqualNoCase(format, "JPEG"))
   {
     const char* q = IupGetGlobal("IMAGESAVEQUALITY");
-    info.quality = q ? (unsigned int)atoi(q) : 85;
+    int quality = 85;
+    iupStrToInt(q, &quality);
+    info.quality = (unsigned int)quality;
   }
   else if (iupStrEqualNoCase(format, "PNG"))
     info.compression = 6;

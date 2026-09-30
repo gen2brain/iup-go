@@ -431,7 +431,8 @@ IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, i
   if (java_bitmap == NULL) return 0;
 
   const char* q = IupGetGlobal("IMAGESAVEQUALITY");
-  int quality = q ? atoi(q) : 85;
+  int quality = 85;
+  iupStrToInt(q, &quality);
 
   jclass java_class = IUPJNI_FindClass(IupImageHelper, jni_env, "io/github/gen2brain/iupgo/IupImageHelper");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupImageHelper_saveBitmap, jni_env, java_class, "saveBitmap", "(Landroid/graphics/Bitmap;Ljava/lang/String;Ljava/lang/String;I)Z");
@@ -457,7 +458,8 @@ IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int w
   if (java_bitmap == NULL) return NULL;
 
   const char* q = IupGetGlobal("IMAGESAVEQUALITY");
-  int quality = q ? atoi(q) : 85;
+  int quality = 85;
+  iupStrToInt(q, &quality);
 
   jclass java_class = IUPJNI_FindClass(IupImageHelper, jni_env, "io/github/gen2brain/iupgo/IupImageHelper");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupImageHelper_saveBitmapToBuffer, jni_env, java_class, "saveBitmapToBuffer", "(Landroid/graphics/Bitmap;Ljava/lang/String;I)[B");

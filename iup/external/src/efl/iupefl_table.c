@@ -569,7 +569,7 @@ static void eflTableApplyCellText(Ihandle* ih, Evas_Object* txt, int lin, int co
     if (p)
     {
       int len = (int)(p - font);
-      if (len > 0 && len < 100) { strncpy(font_family, font, len); font_family[len] = 0; }
+      if (len > 0 && len < 100) iupStrCopyN(font_family, len + 1, font);
       p++;
       while (*p)
       {

@@ -741,7 +741,7 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
     return;
   selpos = iupAttribGet(formattag, "SELECTIONPOS");
   sel = iupAttribGet(formattag, "SELECTION");
-  if (selpos && sscanf(selpos, "%d:%d", &p1, &p2) == 2)
+  if (iupStrToIntInt(selpos, &p1, &p2, ':') == 2)
     use_pos = 1;
   else if (!sel || sscanf(sel, "%d,%d:%d,%d", &l1, &c1, &l2, &c2) != 4)
     return;

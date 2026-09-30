@@ -173,9 +173,7 @@ static void gtk4ScrollbarValueChanged(GtkAdjustment* adjustment, Ihandle* ih)
       char* opstr = iupAttribGet(ih, "_IUPGTK4_SB_OP");
       int op;
 
-      if (opstr)
-        op = atoi(opstr);
-      else
+      if (!iupStrToInt(opstr, &op))
         op = (ih->data->orientation == ISCROLLBAR_HORIZONTAL) ? IUP_SBPOSH : IUP_SBPOSV;
 
       if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)

@@ -137,7 +137,7 @@ static IwinuiFont* winuiFindFont(const char* font, float dpi)
   textFormat->SetWordWrapping(DWRITE_WORD_WRAPPING_NO_WRAP);
 
   IwinuiFont newfont = {};
-  strncpy(newfont.font, font, sizeof(newfont.font) - 1);
+  iupStrCopyN(newfont.font, sizeof(newfont.font), font);
   newfont.dpi = dpi;
   newfont.textFormat = textFormat;
   newfont.fontSize = fontSize;

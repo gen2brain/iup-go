@@ -218,7 +218,7 @@ static void eflApplyGlobalFontOverlays(const char* font)
   else if (is_italic)
     snprintf(efl_font, sizeof(efl_font), "%s:style=Italic", typeface);
   else
-    strncpy(efl_font, typeface, sizeof(efl_font) - 1);
+    iupStrCopyN(efl_font, sizeof(efl_font), typeface);
 
   /* the default button, check and frame have no text_class, their fonts are hardcoded */
 

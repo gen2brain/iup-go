@@ -64,8 +64,7 @@ static void portalBuildRequestPath(const char* unique_name, const char* token, c
     return;
   }
 
-  strncpy(sender, unique_name + 1, sizeof(sender) - 1);
-  sender[sizeof(sender) - 1] = 0;
+  iupStrCopyN(sender, sizeof(sender), unique_name + 1);
 
   for (i = 0; sender[i]; i++)
   {

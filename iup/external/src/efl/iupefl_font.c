@@ -89,8 +89,7 @@ static void eflFontParse(const char* value, char* family, int* size, int* is_bol
     int len = (int)(p - value);
     if (len > 0 && len < 100)
     {
-      strncpy(family, value, len);
-      family[len] = 0;
+      iupStrCopyN(family, len + 1, value);
     }
     p++;
 
@@ -563,7 +562,7 @@ IUP_DRV_API void iupeflBuildTextStyle(Ihandle* ih, char* style, int style_size)
   if (font)
   {
     if (font->font_name[0])
-      strncpy(font_family, font->font_name, sizeof(font_family) - 1);
+      iupStrCopyN(font_family, sizeof(font_family), font->font_name);
     font_size = font->size > 0 ? font->size : 12;
 
     if (font->is_bold && font->is_italic)

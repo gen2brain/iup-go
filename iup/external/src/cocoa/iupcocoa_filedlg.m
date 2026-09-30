@@ -499,7 +499,7 @@ static int cocoaFileDlgPopup(Ihandle* ih, int x, int y)
   {
     char* cur = iupdrvGetCurrentDirectory();
     if (cur)
-      strncpy(saved_dir, cur, sizeof(saved_dir) - 1);
+      iupStrCopyN(saved_dir, sizeof(saved_dir), cur);
   }
 
   NSInteger response = [file_panel runModal];

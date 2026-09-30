@@ -315,14 +315,16 @@ IUP_DRV_API NSAttributedString* iupCocoaTouchParseMarkup(const char* raw, UIFont
 					}
 					if (cocoaTouchMarkupSpanAttr(tag_buf, "font_size", buf, sizeof(buf)) || cocoaTouchMarkupSpanAttr(tag_buf, "size", buf, sizeof(buf)))
 					{
-						double s = atof(buf);
+						double s = 0;
+						iupStrToDouble(buf, &s);
 						/* Pango font_size: 1024ths of a point if >= 1024, raw points otherwise */
 						if (s >= 1024.0) s /= 1024.0;
 						if (s > 0) st->size = (CGFloat)s;
 					}
 					if (cocoaTouchMarkupSpanAttr(tag_buf, "font_weight", buf, sizeof(buf)) || cocoaTouchMarkupSpanAttr(tag_buf, "weight", buf, sizeof(buf)))
 					{
-						if (iupStrEqualNoCase(buf, "bold") || iupStrEqualNoCase(buf, "heavy") || iupStrEqualNoCase(buf, "ultrabold") || atoi(buf) >= 600)
+						int weight = 0;
+						if (iupStrEqualNoCase(buf, "bold") || iupStrEqualNoCase(buf, "heavy") || iupStrEqualNoCase(buf, "ultrabold") || (iupStrToInt(buf, &weight) && weight >= 600))
 							st->traits |= UIFontDescriptorTraitBold;
 					}
 					if (cocoaTouchMarkupSpanAttr(tag_buf, "font_style", buf, sizeof(buf)) || cocoaTouchMarkupSpanAttr(tag_buf, "style", buf, sizeof(buf)))
@@ -332,7 +334,7 @@ IUP_DRV_API NSAttributedString* iupCocoaTouchParseMarkup(const char* raw, UIFont
 					}
 					if (cocoaTouchMarkupSpanAttr(tag_buf, "underline", buf, sizeof(buf)) && !iupStrEqualNoCase(buf, "none"))
 						st->underline = 1;
-					if (cocoaTouchMarkupSpanAttr(tag_buf, "strikethrough", buf, sizeof(buf)) && (iupStrEqualNoCase(buf, "true") || iupStrEqualNoCase(buf, "yes") || atoi(buf) == 1))
+					if (cocoaTouchMarkupSpanAttr(tag_buf, "strikethrough", buf, sizeof(buf)) && (iupStrEqualNoCase(buf, "true") || iupStrBoolean(buf)))
 						st->strikeout = 1;
 				}
 				else if (iupStrEqualNoCase(tag_buf, "big"))    st->size_factor *= 1.2;

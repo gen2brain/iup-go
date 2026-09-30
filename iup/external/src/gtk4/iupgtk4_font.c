@@ -272,7 +272,7 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
 
   if (font_name)
   {
-    strncpy(str, font_name, sizeof(str) - 1);
+    iupStrCopyN(str, sizeof(str), font_name);
     str[sizeof(str) - 1] = '\0';
     g_free(font_name);
   }

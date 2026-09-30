@@ -1260,8 +1260,7 @@ static int cocoaSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
   {
       int len = tab_pos - value;
       title_part = (char*)malloc(len + 1);
-      strncpy(title_part, value, len);
-      title_part[len] = '\0';
+      iupStrCopyN(title_part, len + 1, value);
   }
   else
   {
