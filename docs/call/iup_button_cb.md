@@ -62,6 +62,7 @@ Between press and release all mouse events are redirected only to this control, 
 So the BUTTON_CB callback when released and the MOTION_CB callback can be called with coordinates outside the element rectangle.
 
 In iOS and Android a touch is IUP_BUTTON1, and a long press on an IupCanvas also reports IUP_BUTTON3, pressed then released, with the button 3 flag in **status**, before the touch is released.
+On an IupCanvas that can scroll, a one-finger drag scrolls it without calling BUTTON_CB, and a tap reports IUP_BUTTON1 pressed and released when the touch ends.
 
 ### Affects
 
