@@ -15,7 +15,8 @@ The '\n' character usually is accepted for line change (except for menus).
 The "&" character can be used to define a MNEMONIC, use "&&" to show the "&" character instead of defining a mnemonic.
 
 If a mnemonic is defined, the character relative to it is underlined and Alt+key activates the control.
-Supported in Win32, WinUI, GTK, GTK 4, Qt, FLTK, EFL and Motif.
+Supported in Win32, WinUI, GTK, GTK 4, Qt, QML, FLTK, EFL and Motif.
+In QML the character is underlined only while the Alt key is held.
 In Haiku the shortcut is activated with Command+key (the physical Alt key on the default keymap), but the character is not underlined.
 On iOS the character is underlined and an external keyboard with an Alt key activates the control.
 On macOS and Android the "&" is stripped from the displayed text and no shortcut is registered.

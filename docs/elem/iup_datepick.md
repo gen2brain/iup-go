@@ -2,7 +2,7 @@
 
 Creates a date editing interface element, which can displays a calendar for selecting a date.
 
-In Windows, Qt, Android, iOS and WebAssembly it is a native element. In GTK, GTK 4, WinUI, macOS, EFL, FLTK, Motif and Haiku it is a custom element built with IUP controls.
+In Windows, Qt, Android, iOS and WebAssembly it is a native element. In GTK, GTK 4, WinUI, macOS, EFL, FLTK, Motif, Haiku and QML it is a custom element built with IUP controls.
 
 ### Creation
 

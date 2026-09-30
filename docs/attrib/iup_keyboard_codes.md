@@ -170,7 +170,7 @@ To obtain a key code for a generic combination you can start with the base key f
 |     Num Lock | K_NUM           |
 |    Caps Lock | K_CAPS          |
 
-K_CLEAR is reported in Win32, WinUI and macOS. K_HELP is reported in macOS, iOS, Qt and FLTK.
+K_CLEAR is reported in Win32, WinUI and macOS. K_HELP is reported in macOS, iOS, Qt, QML and FLTK.
 
 The numeric keypad has its own codes, so its keys can be distinguished from the main keyboard.
 When Num Lock is off the navigation codes are reported, when it is on the digit codes are reported.

@@ -5,7 +5,7 @@ It inherits from [IupCanvas](../elem/iup_canvas.md).
 
 **Windows:** The implementation uses WGL (Win32 OpenGL) for all backends (Win32, WinUI, GTK3, GTK4, Qt, FLTK).
 
-**Linux/Unix:** GTK3, GTK4, Qt, EFL, and FLTK use EGL with native window integration. Both X11 and Wayland display servers are supported. Motif and GTK2 use GLX (X11 OpenGL extension).
+**Linux/Unix:** GTK3, GTK4, Qt, QML, EFL, and FLTK use EGL with native window integration. Both X11 and Wayland display servers are supported. Motif and GTK2 use GLX (X11 OpenGL extension).
 
 **macOS:** The implementation uses NSOpenGLContext (Cocoa OpenGL) for all backends (Cocoa, GTK3, Qt, FLTK).
 
@@ -20,7 +20,7 @@ The "iupgl.h" file must also be included in the source code.
 The program must be linked to the GL library (iupgl) and the OpenGL library. In Go it needs the `gl` build tag.
 
 To link with the OpenGL libraries in Windows, add: opengl32.lib.
-In Linux/Unix with EGL (GTK3, GTK4, Qt, EFL, FLTK), add: -lEGL -lGL.
+In Linux/Unix with EGL (GTK3, GTK4, Qt, QML, EFL, FLTK), add: -lEGL -lGL.
 In Linux/Unix with GLX (Motif, GTK2), add: -lGL.
 In macOS add: -framework OpenGL.
 On Haiku, add: -lGL.

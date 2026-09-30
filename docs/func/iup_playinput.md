@@ -28,11 +28,11 @@ Screen size differences can exist, but if different themes are used, then mouse 
 
 ### Driver Support
 
-| Driver                          | Playback |
-|---------------------------------|----------|
-| Win32, WinUI, GTK, Motif        | Yes      |
-| Cocoa, Qt, FLTK, Android, Haiku | Yes      |
-| GTK4, EFL, Cocoa Touch          | No       |
+| Driver                               | Playback |
+|--------------------------------------|----------|
+| Win32, WinUI, GTK, Motif             | Yes      |
+| Cocoa, Qt, QML, FLTK, Android, Haiku | Yes      |
+| GTK4, EFL, Cocoa Touch               | No       |
 
 ### See Also
 

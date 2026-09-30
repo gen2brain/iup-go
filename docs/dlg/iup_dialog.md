@@ -165,7 +165,7 @@ Default: NORMAL. After **IupShow**/**IupPopup** the attribute is set back to "NO
 FULL is similar to FULLSCREEN, but only the dialog client area covers the screen area, menu and decorations will be there but out of the screen.
 In UNIX there is a chance that the placement won't work correctly, that depends on the Window Manager.
 In WebAssembly FULL and MAXIMIZED both fill the browser viewport, and MINIMIZED has no effect.
-The SHOWNOACTIVATE attribute can be set to YES to prevent the window from being activated [Win32, WinUI, Qt and Cocoa].
+The SHOWNOACTIVATE attribute can be set to YES to prevent the window from being activated [Win32, WinUI, Qt, QML and Cocoa].
 The SHOWMINIMIZENEXT attribute can be set to YES to activate the next top-level window in the Z order when minimizing [Win32 and WinUI].
 
 **RESIZE** (creation-only): Allows interactively changing the dialog’s size. Default: YES.
@@ -174,7 +174,7 @@ In Motif the decorations are controlled by the Window Manager and may not be pos
 
 **RESIZEINC**: Size step for the interactive resize, in raster units (pixels). The dialog size changes in multiples of these values, counted from MINSIZE. Default: NULL.
 Not supported in Haiku, Android, iOS and WebAssembly.
-In GTK 4, Qt and FLTK it requires X11.
+In GTK 4, Qt, QML and FLTK it requires X11.
 In macOS the steps are counted from the current size.
 
 [SHRINK](../attrib/iup_shrink.md): Allows changing the elements’ distribution when the dialog is smaller than the minimum size.
@@ -202,7 +202,7 @@ See the Custom Frame notes below.
 Not supported in Motif.
 
 **DIALOGHINT** (creation-only): if enabled, set the window type hint to a dialog hint.
-Supported in GTK, GTK 4, Qt, macOS, and EFL.
+Supported in GTK, GTK 4, Qt, QML, macOS, and EFL.
 
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
@@ -227,7 +227,7 @@ Not supported in FLTK and Haiku.
 
 **OPACITYIMAGE**: sets an RGBA image as the dialog background so it is possible to create a non rectangle window with transparency, but it can not have children.
 Used usually for splash screens. It must be set before map so the native window would be properly initialized when mapped.
-In GTK and Qt requires a running compositor.
+In GTK, Qt and QML requires a running compositor.
 Not supported in GTK4, Motif, WinUI, FLTK, iOS, Android, Haiku and WebAssembly.
 
 **SHAPEIMAGE**: sets an RGBA image as the dialog shape, so it is possible to create a non rectangle window with children.
@@ -236,7 +236,7 @@ The pixels colors will be ignored, only the alpha channel is used.
 Not supported in GTK4, Motif, iOS, Android, Haiku and WebAssembly.
 
 **TOOLBOX** (creation-only): makes the dialog look like a toolbox with a smaller title bar. Default: NO.
-Supported in Win32, WinUI, Qt and Haiku.
+Supported in Win32, WinUI, Qt, QML and Haiku.
 In Win32 and WinUI it is only valid if the PARENTDIALOG or NATIVEPARENT attribute is also defined.
 
 **TOPMOST**: puts the dialog always in front of all other dialogs in all applications.
@@ -254,10 +254,10 @@ Its default value is YES if the dialog has a parent dialog.
 Largely a no-op on modern composited window systems (DWM on Windows, KWin/Mutter on Linux); other drivers do not expose an equivalent primitive.
 
 **XWINDOW** [UNIX Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
-Available in Motif, GTK, GTK 4, Qt, FLTK and EFL on X11.
+Available in Motif, GTK, GTK 4, Qt, QML, FLTK and EFL on X11.
 
 **WL_SURFACE** [UNIX Only] (non-inheritable, read-only): Returns the Wayland surface handle.
-Available in GTK, GTK 4, Qt, FLTK and EFL on Wayland.
+Available in GTK, GTK 4, Qt, QML, FLTK and EFL on Wayland.
 
 **NSVIEW** [macOS Only] (non-inheritable, read-only): Returns the Cocoa NSView handle.
 Available in the Cocoa, GTK, GTK 4, Qt and FLTK drivers on macOS.
@@ -315,7 +315,7 @@ Possible values: NORMAL, PAUSED, ERROR, INDETERMINATE, NOPROGRESS. Default: NORM
 If set to HIDE force the application button to be hidden from the taskbar.
 In Win32 and WinUI HIDE also hides the system menu, the maximize and minimize buttons.
 In GTK, GTK 4, Qt, Motif, EFL and FLTK it requires X11; in Qt it needs Qt 6.2 or newer.
-Not supported in macOS, Haiku, Android, iOS and WebAssembly.
+Not supported in macOS, Haiku, Android, iOS, WebAssembly and QML.
 
 #### Exclusive [Haiku Only]
 
@@ -382,7 +382,7 @@ It is called after the common callbacks GETFOCUS_CB and KILL_FOCUS_CB.
 The coordinates are the same as the [SCREENPOSITION](../attrib/iup_screenposition.md) attribute.
 Not supported in Android and iOS.
 On X11 it may be called several times during a move, depending on the window manager.
-On Wayland it is not called when the dialog is moved; Qt and EFL call it when the dialog is shown, with 0,0 or the position passed to [IupShowXY](../func/iup_showxy.md).
+On Wayland it is not called when the dialog is moved; Qt, QML and EFL call it when the dialog is shown, with 0,0 or the position passed to [IupShowXY](../func/iup_showxy.md).
 
     int function(Ihandle *ih, int x, int y);
 
@@ -434,6 +434,7 @@ The underlying native widget per driver:
 - **Cocoa**: NSWindow.
 - **Cocoa Touch**: UIViewController hosted by the main UIWindow.
 - **Qt**: QMainWindow.
+- **QML**: QQuickWindow.
 - **FLTK**: Fl_Double_Window.
 - **EFL**: Efl_Ui_Win.
 - **Android**: Activity.

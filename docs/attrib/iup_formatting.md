@@ -74,7 +74,7 @@ In FLTK and Haiku it is inserted as leading spaces that become part of VALUE.
 Not supported in iOS, FLTK, Haiku, Android and WebAssembly. INDENTOFFSET is also not supported in EFL.
 
 **LINESPACING**: the distance between lines of the same paragraph.
-The values SINGLE, ONEHALF and DOUBLE are also accepted in Win32, WinUI, Qt, macOS and WebAssembly.
+The values SINGLE, ONEHALF and DOUBLE are also accepted in Win32, WinUI, Qt, QML, macOS and WebAssembly.
 Not supported in FLTK and Haiku.
 
 **NUMBERING**: Can be BULLET (bullet symbol), ARABIC (arabic numbers - 1,2,3...), LCLETTER (lower case letters - a,b,c...), UCLETTER (upper case letters - A,B,C...), LCROMAN (lower case Roman numerals - i,ii,iii...), UCROMAN (upper case Roman numerals - I,II,III...) and NONE.

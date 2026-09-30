@@ -42,7 +42,7 @@ When it is a key description and the item is in the menu bar of a dialog, pressi
 A key description is zero or more of "Ctrl+", "Shift+", "Alt+" and "Sys+" followed by a letter, a digit, a printable character, F1 to F20, Esc, Tab, Space, Enter, Backspace, Del, Ins, Home, End, PgUp, PgDn, Left, Right, Up or Down.
 A letter, digit or printable character without a modifier is not a key description.
 Any other text is only shown. In a popup menu the shortcut is only shown.
-In Qt and FLTK a key the focused text control edits with stays with the text control.
+In Qt, QML and FLTK a key the focused text control edits with stays with the text control.
 In Cocoa and Haiku, Ctrl and Sys are shown and bound as the Command key, and text that is not a key description is not shown.
 In Haiku, F1 to F20 are not bound and not shown.
 Not bound in Android and iOS. Not shown in EFL.

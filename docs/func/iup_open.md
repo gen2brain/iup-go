@@ -34,6 +34,9 @@ In **macOS**, an NSAutoreleasePool is created, the NSApplication shared instance
 In **Qt**, a QApplication is created (or an existing instance is reused if one was already created by the application).
 Returns IUP_ERROR if a QApplication cannot be obtained.
 
+In **QML**, a QGuiApplication is created, or an existing one is reused.
+Returns IUP_ERROR if a QGuiApplication cannot be obtained.
+
 In **EFL**, elm_init is called with argc/argv.
 
 In **FLTK**, Fl::visual(FL_DOUBLE|FL_RGB), Fl::args, fl_open_display and Fl::lock are called.

@@ -14,6 +14,7 @@ The dialog can be shown with the IupPopup function only.
 **BUTTONDEFAULT**: Number of the default button.
 Can be "1", "2" or "3". "2" is valid only for "RETRYCANCEL", "OKCANCEL" and "YESNO" button configurations. "3" is valid only for "YESNOCANCEL".
 Default: "1".
+Not supported in QML.
 
 **BUTTONRESPONSE**: Number of the pressed button. Can be "1", "2" or "3". Default: "1".
 
@@ -27,7 +28,7 @@ Default: "OK". Additionally, the "Help" button is displayed if the HELP_CB callb
 **DIALOGTYPE**: Type of dialog defines which icon will be displayed beside the message text.
 Can have values: "MESSAGE" (No Icon), "ERROR" (Stop-sign), "WARNING" (Exclamation-point), "QUESTION" (Question-mark) or "INFORMATION" (Letter "i").
 Default: "MESSAGE".
-The icon is not displayed in GTK 4.
+The icon is not displayed in GTK 4 and QML.
 
 [PARENTDIALOG](../attrib/iup_parentdialog.md) (creation-only): Name of a dialog to be used as parent.
 This dialog will always be in front of the parent dialog.
@@ -64,6 +65,7 @@ The underlying native widget per driver:
 - **Cocoa**: NSAlert.
 - **Cocoa Touch**: custom UIView.
 - **Qt**: QMessageBox.
+- **QML**: MessageDialog.
 - **FLTK**: fl_message / fl_choice_n.
 - **EFL**: custom dialog window (efl_ui_win).
 - **Android**: MaterialAlertDialogBuilder.

@@ -38,7 +38,7 @@ It uses a wider character size than the one used for the SIZE attribute, so stri
 
 **SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
-Supported in Windows, WinUI, Qt, macOS and WebAssembly.
+Supported in Windows, WinUI, Qt, QML, macOS and WebAssembly.
 
 **SPACING**: vertical internal padding for each node.
 Notice that the distance between each node will be actually 2x the spacing.
@@ -132,7 +132,7 @@ Actually changes the **TITLEFONTid** attribute.
 Can be "YES", "3STATE" or "NO". Default: "NO".
 Not supported in Motif and FLTK.
 
-**EMPTYAS3STATE** (non-inheritable) [Win32 and Qt Only]: when SHOWTOGGLE=YES, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with the image of the 3state toggle.
+**EMPTYAS3STATE** (non-inheritable) [Win32, Qt and QML Only]: when SHOWTOGGLE=YES, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with the image of the 3state toggle.
 Can be YES or NO. Default: NO.
 
 **TOGGLEVALUEid** (non-inheritable): defines the toggle state. Values can be "ON" or "OFF".
@@ -214,7 +214,7 @@ The value must be the node identifier. Default: 0 (first node).
 Works only if the node has a toggle. Default: NO.
 
 **RUBBERBAND** (non-inheritable): allows selecting several nodes with a rubber band when MARKMODE=MULTIPLE. Can be YES or NO. Default: YES.
-Supported in GTK, GTK 4 and Qt. In GTK it works only when SHOWDRAGDROP=NO.
+Supported in GTK, GTK 4, Qt and QML. In GTK it works only when SHOWDRAGDROP=NO.
 
 ### Hierarchy  (non-inheritable)
 
@@ -294,6 +294,7 @@ Default: "NO". Works only if MARKMODE=SINGLE.
 
 **DRAGDROPTREE** (non-inheritable): prepare the [Drag & Drop](../attrib/iup_dragdrop.md) callbacks to support drag and drop of nodes between trees (IupTree only), in the same IUP application.
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes still need to be set in order to activate the drag & drop support, so the application can control if this tree is a source and/or target.
+A drag does not start when there is no node under the pointer.
 Default: NO.
 
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.

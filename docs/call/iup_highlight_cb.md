@@ -13,3 +13,4 @@ Callback triggered every time the user selects an **IupMenuItem** or **IupSubmen
 [IupMenuItem](../elem/iup_menuitem.md), [IupSubmenu](../elem/iup_submenu.md)
 
 Not fired in GTK 4, WinUI, FLTK, EFL, Android and iOS.
+In QML it is fired for an IupSubmenu when the submenu opens.

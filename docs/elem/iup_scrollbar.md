@@ -42,6 +42,7 @@ Default is "0.1".
 It is not the size of the increment.
 The increment size is "pagestep*(max-min)", so it must be 0<pagestep<1.
 Default is "0.1".
+In QML a click on the trough moves the handle to the pointer instead of a page step.
 
 [RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): The initial size depends on the orientation.
 For horizontal, the default width is 100 pixels and the height is the system scrollbar size.

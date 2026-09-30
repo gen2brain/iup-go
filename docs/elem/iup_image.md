@@ -59,7 +59,7 @@ Images created with **IupImage** returns 1, with **IupImageRGB** returns 3 and w
 If not defined the global attribute [IMAGESDPI](../attrib/iup_globals.md#imagesdpi) will be used.
 
 **FLAT_ALPHA**: when set to YES, the alpha channel of an RGBA image is flattened against BGCOLOR when the native image is created, instead of relying on system composition. Default: NO.
-Honored in Win32, Qt, FLTK and macOS. The Win32 IupMenuItem, IupSubmenu, IupTabs, IupTree and IupToggle controls set it to YES by default on their images.
+Honored in Win32, Qt, QML, FLTK and macOS. The Win32 IupMenuItem, IupSubmenu, IupTabs, IupTree and IupToggle controls set it to YES by default on their images.
 
 **HEIGHT** (read-only): Image height in pixels.
 
@@ -106,6 +106,7 @@ The underlying native image type per driver:
 - **Cocoa**: NSImage.
 - **Cocoa Touch**: UIImage.
 - **Qt**: QPixmap.
+- **QML**: QPixmap.
 - **FLTK**: Fl_RGB_Image.
 - **EFL**: Evas_Object.
 - **Android**: android.graphics.Bitmap.

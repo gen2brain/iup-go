@@ -39,10 +39,10 @@ Not supported in FLTK.
 Used by the FORMATDATA attribute processing.
 
 **HTML**: copy or paste HTML formatted text to or from the clipboard. If set to NULL clears the clipboard data.
-Only supported in Qt.
+Only supported in Qt and QML.
 
 **HTMLAVAILABLE** (read-only): informs if there is HTML formatted text available at the clipboard.
-Only supported in Qt.
+Only supported in Qt and QML.
 
 **IMAGE** (write-only): name of an image to copy to the clipboard.
 If set to NULL clears the clipboard data.
@@ -56,7 +56,7 @@ In GTK 4 is a **GdkTexture***.
 In Motif is a **Pixmap**.
 In macOS is an **NSImage***.
 In iOS is a **UIImage***.
-In Qt is a **QPixmap***.
+In Qt and QML is a **QPixmap***.
 In FLTK is a **Fl_RGB_Image***.
 In EFL is an **Evas_Object*** of an image.
 In Haiku is a **BBitmap***.
@@ -70,23 +70,23 @@ Not supported in WebAssembly.
 When set the FORMATDATASIZE attribute must be set before with the data size.
 When retrieved FORMATDATASIZE will be set and available after data is retrieved.
 If set to NULL clears the clipboard data.
-Supported in macOS, iOS and Qt.
+Supported in macOS, iOS, Qt and QML.
 
 **PDFAVAILABLE** (read-only): informs if there is PDF vector image data available at the clipboard.
-Supported in macOS, iOS and Qt.
+Supported in macOS, iOS, Qt and QML.
 
 **SAVEEMF** (write-only) [Windows Only]: saves the EMF from the clipboard to the given filename.
 Available in Win32 and WinUI.
 
 **SAVENATIVEVECTORIMAGE** (write-only): saves the PDF vector image from the clipboard to the given filename.
-Supported in macOS, iOS and Qt.
+Supported in macOS, iOS, Qt and QML.
 
 **SAVEWMF** (write-only) [Windows Only]: saves the WMF from the clipboard to the given filename.
 Available in Win32 and WinUI.
 
 **SELECTION**: selects the buffer used by the other attributes. Can be CLIPBOARD or PRIMARY. Default: CLIPBOARD.
 PRIMARY is the X11 primary selection, pasted with the middle mouse button.
-Supported in GTK, GTK 4, Qt, Motif, FLTK and EFL.
+Supported in GTK, GTK 4, Qt, QML, Motif, FLTK and EFL.
 In FLTK affects only TEXT and TEXTAVAILABLE, and only in X11.
 
 **TEXT**: copy or paste text to or from the clipboard. If set to NULL clears the clipboard data.

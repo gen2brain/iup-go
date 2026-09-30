@@ -34,7 +34,7 @@ Returns the IUP's copyright.
 
 Informs the current driver being used.
 
-Available drivers: "Win32", "WinUI", "GTK", "GTK4", "Motif", "Qt", "FLTK", "EFL", "Cocoa", "CocoaTouch", "Android" and "Haiku".
+Available drivers: "Win32", "WinUI", "GTK", "GTK4", "Motif", "Qt", "QML", "FLTK", "EFL", "Cocoa", "CocoaTouch", "Android", "Haiku" and "WASM".
 
 ### APPID
 
@@ -43,8 +43,8 @@ In GTK/Wayland, it maps to the XDG desktop file ID.
 On Haiku, it becomes the `BApplication` MIME signature.
 Also used by [IupConfig](../func/iup_config.md) as a last fallback when neither APP_NAME nor APPNAME is set.
 On X11 it is the WM_CLASS instance name, and on Wayland the application id.
-Can be set once. Used by the desktop environment in GTK, GTK 4, Qt, FLTK, EFL, Motif and Haiku; only stored in the other drivers.
-When not set, GTK, GTK 4, Qt, FLTK, EFL and Motif use the executable name.
+Can be set once. Used by the desktop environment in GTK, GTK 4, Qt, QML, FLTK, EFL, Motif and Haiku; only stored in the other drivers.
+When not set, GTK, GTK 4, Qt, QML, FLTK, EFL and Motif use the executable name.
 On Android it is read-only and reflects the app's manifest application id.
 On iOS, it is read-only and reflects `CFBundleIdentifier` from the app's Info.plist.
 
@@ -54,7 +54,7 @@ Application name used by the system.
 In Windows, it is used for the taskbar and tray. In macOS, it is used for the dock.
 Also used by [IupConfig](../func/iup_config.md) as a fallback when APP_NAME is not set (APPNAME is checked first, then APPID).
 On X11 it is the WM_CLASS class name, except in GTK 4, which always uses the instance name, and in FLTK, which uses the capitalized instance name.
-Used by the system in Win32, WinUI, macOS, Qt, GTK, EFL and Motif; only stored in the other drivers.
+Used by the system in Win32, WinUI, macOS, Qt, QML, GTK, EFL and Motif; only stored in the other drivers.
 On Android it is read-only and reflects the app's manifest label.
 On iOS, it is read-only and reflects `CFBundleDisplayName` (or `CFBundleName` if not set) from the app's Info.plist.
 
@@ -90,7 +90,7 @@ Not supported in iOS.
 ### UTF8AUTOCONVERT
 
 The inverse of UTF8MODE. Default: YES.
-Supported in GTK, GTK 4, Qt, FLTK, WinUI, macOS, iOS, Haiku and WebAssembly.
+Supported in GTK, GTK 4, Qt, QML, FLTK, WinUI, macOS, iOS, Haiku and WebAssembly.
 
 ### UTF8MODE_FILE [Win32 and Motif Only]
 
@@ -142,7 +142,7 @@ This affects **IupCanvas**, **IupList**, **IupText** and **IupTree**.
 ### SHOWMENUIMAGES
 
 Force the display of images in menus. Default: YES.
-Supported in GTK, GTK 4, Qt, EFL and WinUI.
+Supported in GTK, GTK 4, Qt, QML, EFL and WinUI.
 
 ### OVERLAYSCROLLBAR [GTK, GTK 4 Only]
 
@@ -197,7 +197,7 @@ The first dialog that has a COPYDATA_CB callback will receive the command line o
 When consulted returns NULL if inside the second instance.
 So usually in the application initialization after **IupOpen**, set SINGLEINSTANCE and then consult its value, if NULL abort the second instance by calling **IupClose** and returning from *main*.
 
-In Windows (Win32 and WinUI) uses a named mutex for detection and WM_COPYDATA for communication. In Linux/Unix (GTK, GTK4, Qt, Motif, FLTK, EFL) uses D-Bus session bus name ownership. In macOS uses CFMessagePort. In Haiku uses a named-port rendezvous.
+In Windows (Win32 and WinUI) uses a named mutex for detection and WM_COPYDATA for communication. In Linux/Unix (GTK, GTK4, Qt, QML, Motif, FLTK, EFL) uses D-Bus session bus name ownership. In macOS uses CFMessagePort. In Haiku uses a named-port rendezvous.
 On Android single instance is enforced by the Activity launchMode in the manifest, so the SINGLEINSTANCE attribute and COPYDATA_CB are not implemented. Not supported in iOS and WebAssembly.
 
 ## System Mouse and Keyboard
@@ -365,7 +365,7 @@ On Android it is the APK path, on iOS the bundle executable. Not available in We
 ### ARGV0 (read-only)
 
 The program path as received in argv[0].
-Supported in GTK, GTK 4, Qt, Motif, EFL, FLTK, WinUI and Haiku.
+Supported in GTK, GTK 4, Qt, QML, Motif, EFL, FLTK, WinUI and Haiku.
 
 ### HELPAPP
 
@@ -375,7 +375,7 @@ Supported in GTK, GTK 4, Motif, EFL, FLTK and Haiku.
 ### SANDBOX (read-only)
 
 Returns "FLATPAK", "SNAP" or "APPIMAGE" when the application runs inside one of those, NULL otherwise.
-Supported in GTK, GTK 4, Motif, Qt, EFL and FLTK.
+Supported in GTK, GTK 4, Motif, Qt, QML, EFL and FLTK.
 
 ### CACHEDIR, DATADIR, CONFIGDIR, TMPDIR (read-only)
 
@@ -388,7 +388,7 @@ CACHEDIR is clearable storage; DATADIR is persistent; CONFIGDIR holds settings; 
 |------------------------------|--------------------------|---------------------------------|-----------------------------|---------------------------|
 | Win32, WinUI                 | `%LOCALAPPDATA%`         | `%LOCALAPPDATA%`                | `%LOCALAPPDATA%`            | `GetTempPathA`            |
 | GTK, GTK 4, Motif, EFL, FLTK | `$XDG_CACHE_HOME`        | `$XDG_DATA_HOME`                | `$XDG_CONFIG_HOME`          | `$TMPDIR`, else `/tmp`    |
-| Qt                           | `GenericCacheLocation`   | `GenericDataLocation`           | `GenericConfigLocation`     | `TempLocation`            |
+| Qt, QML                      | `GenericCacheLocation`   | `GenericDataLocation`           | `GenericConfigLocation`     | `TempLocation`            |
 | Cocoa                        | `~/Library/Caches`       | `~/Library/Application Support` | same as DATADIR             | `NSTemporaryDirectory()`  |
 | Cocoa Touch                  | `Library/Caches`         | `Library/Application Support`   | same as DATADIR             | `NSTemporaryDirectory()`  |
 | Android                      | `Context.getCacheDir()`  | `Context.getFilesDir()`         | same as DATADIR             | `Context.getCacheDir()`   |
@@ -413,12 +413,12 @@ Available only after the first call to [IupGLMakeCurrent](../ctrl/iup_glcanvas.m
 ### XSERVERVENDOR (read-only) [X11 Only]
 
 X-Windows Server Vendor string.
-Available in GTK, GTK 4, Qt, FLTK, EFL and Motif.
+Available in GTK, GTK 4, Qt, QML, FLTK, EFL and Motif.
 
 ### XVENDORRELEASE (read-only) [X11 Only]
 
 X-Windows Server Vendor release number.
-Available in GTK, GTK 4, Qt, FLTK, EFL and Motif.
+Available in GTK, GTK 4, Qt, QML, FLTK, EFL and Motif.
 
 ## Toolkit Versions and Themes
 
@@ -448,25 +448,26 @@ Returns the version of the run time Motif.
 
 Returns the number of the Motif Version if full form, e.x: 2.2.3 = "2203".
 
-### QTVERSION (read-only) [Qt Only]
+### QTVERSION (read-only) [Qt and QML Only]
 
 Returns the run time version of the Qt toolkit.
 
-### QTDEVVERSION (read-only) [Qt Only]
+### QTDEVVERSION (read-only) [Qt and QML Only]
 
 Returns the development version of the Qt toolkit.
 This is the version at the time the IUP library was compiled.
 
-### QTBUILDTYPE (read-only) [Qt Only]
+### QTBUILDTYPE (read-only) [Qt and QML Only]
 
 Returns "Debug" or "Release", the build type of the Qt toolkit.
 
-### QTSTYLE [Qt Only]
+### QTSTYLE [Qt and QML Only]
 
 Sets the Qt widget style. Can be set before or after creating dialogs.
 Value is any key from `QStyleFactory::keys()`, e.g. `"Fusion"` or an
 installed style plugin. Unknown values are ignored.
 Can also be set via the environment variable `QT_STYLE_OVERRIDE`.
+In QML the value is a Qt Quick Controls style name, default `"Fusion"`, set only before the first control is created.
 
 When read, returns the name of the active style.
 
@@ -610,12 +611,12 @@ Also available in GTK and GTK 4.
 ### XDISPLAY (read-only) [X11 Only]
 
 Returns the X-Windows Display.
-Available in GTK, GTK 4, Qt, FLTK, EFL and Motif.
+Available in GTK, GTK 4, Qt, QML, FLTK, EFL and Motif.
 
 ### XSCREEN (read-only) [X11 Only]
 
 Returns the X-Windows Screen.
-Available in GTK, GTK 4, Qt, FLTK, EFL and Motif.
+Available in GTK, GTK 4, Qt, QML, FLTK, EFL and Motif.
 
 ### WL_DISPLAY (read-only) [Wayland Only]
 
