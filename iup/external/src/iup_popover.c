@@ -147,7 +147,7 @@ static void iPopoverGetMonitorBounds(int px, int py, int* bx, int* by, int* bw, 
   while (info)
   {
     int x, y, w, h;
-    if (sscanf(info, "%d %d %d %d", &x, &y, &w, &h) != 4)
+    if (!iupStrToRect(info, &x, &y, &w, &h))
       break;
     if (px >= x && px < x + w && py >= y && py < y + h)
     {

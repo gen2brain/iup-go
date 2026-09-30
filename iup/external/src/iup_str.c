@@ -1073,6 +1073,51 @@ IUP_SDK_API int iupStrToStrStr(const char* str, char* str1, int str1_size, char*
   }
 }
 
+static int iStrToIntList(const char* str, int* values, int count, const char* seps)
+{
+  int i;
+  if (!str) return 0;
+  for (i = 0; i < count; i++)
+  {
+    char* endptr;
+    long val;
+    if (i > 0 && seps[i - 1] != ' ')
+    {
+      if (*str != seps[i - 1]) return 0;
+      str++;
+    }
+    val = strtol(str, &endptr, 10);
+    if (endptr == str || val < INT_MIN || val > INT_MAX) return 0;
+    values[i] = (int)val;
+    str = endptr;
+  }
+  return 1;
+}
+
+IUP_SDK_API int iupStrToRect(const char* str, int* x1, int* y1, int* x2, int* y2)
+{
+  int v[4];
+  if (!iStrToIntList(str, v, 4, "   ")) return 0;
+  *x1 = v[0]; *y1 = v[1]; *x2 = v[2]; *y2 = v[3];
+  return 1;
+}
+
+IUP_SDK_API int iupStrToLinColRange(const char* str, int* lin1, int* col1, int* lin2, int* col2)
+{
+  int v[4];
+  if (!iStrToIntList(str, v, 4, ",:,")) return 0;
+  *lin1 = v[0]; *col1 = v[1]; *lin2 = v[2]; *col2 = v[3];
+  return 1;
+}
+
+IUP_SDK_API int iupStrToDate(const char* str, int* year, int* month, int* day)
+{
+  int v[3];
+  if (!iStrToIntList(str, v, 3, "//")) return 0;
+  *year = v[0]; *month = v[1]; *day = v[2];
+  return 1;
+}
+
 IUP_SDK_API char* iupStrFileGetPath(const char* filename)
 {
   if (!filename)
