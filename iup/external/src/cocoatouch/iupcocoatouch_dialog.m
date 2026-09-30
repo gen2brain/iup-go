@@ -27,6 +27,7 @@
 
 
 static const void* IUPCOCOATOUCH_DIALOG_DELEGATE_KEY = @"IUPCOCOATOUCH_DIALOG_DELEGATE";
+static const void* IUPCOCOATOUCH_DIALOG_NAV_KEY = @"IUPCOCOATOUCH_DIALOG_NAV";
 
 @interface IupCocoaTouchDialogDelegate : NSObject <UIAdaptivePresentationControllerDelegate>
 @property(nonatomic, assign) Ihandle* ihandle;
@@ -75,12 +76,14 @@ static IupViewController* cocoaTouchDialogVC(Ihandle* ih)
 	return [h isKindOfClass:[IupViewController class]] ? (IupViewController*)h : nil;
 }
 
-/* show_state gate so a double iupDialogHide early-returns on the second pass */
 static int cocoaTouchDialogIsVisible(Ihandle* ih)
 {
-	if (!ih || !ih->handle) return 0;
-	if (ih->data && ih->data->show_state == IUP_HIDE) return 0;
-	return 1;
+	IupViewController* vc = cocoaTouchDialogVC(ih);
+	if (!vc) return 0;
+	UIViewController* presenter = vc.navigationController ?: vc;
+	if (presenter.isBeingDismissed) return 0;
+	if (presenter.presentingViewController || presenter.view.window) return 1;
+	return [iupCocoaTouchFindCurrentWindow() rootViewController] == presenter;
 }
 
 IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
@@ -121,17 +124,60 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w,
 	}
 }
 
+static void cocoaTouchDialogPrepareSheet(UINavigationController* nav, id<UIAdaptivePresentationControllerDelegate> delegate)
+{
+	nav.presentationController.delegate = delegate;
+	if (nav.modalPresentationStyle == UIModalPresentationPageSheet &&
+	    [nav.sheetPresentationController respondsToSelector:@selector(setPrefersScrollingExpandsWhenScrolledToEdge:)])
+	{
+		nav.sheetPresentationController.prefersScrollingExpandsWhenScrolledToEdge = NO;
+	}
+}
+
+static void cocoaTouchDialogShowNav(UIViewController* vc, UINavigationController* nav)
+{
+	if (nav.view.window || nav.presentingViewController) return;
+	UIWindow* window = iupCocoaTouchFindCurrentWindow();
+	if (!window) return;
+	UIViewController* root = [window rootViewController];
+	if (root == nil || iupCocoaTouchIsLaunchPlaceholder(root))
+	{
+		[window setRootViewController:nav];
+		return;
+	}
+	cocoaTouchDialogPrepareSheet(nav, objc_getAssociatedObject(vc, IUPCOCOATOUCH_DIALOG_DELEGATE_KEY));
+	UIViewController* top = iupCocoaTouchFindTopPresentedViewController();
+	[(top ?: root) presentViewController:nav animated:YES completion:nil];
+}
+
 /* visible=0 dismisses + pumps until the animation completes, so a deferred Destroy doesn't race UIKit */
 static void cocoaTouchDialogSetVisible(Ihandle* ih, int visible)
 {
-	if (visible || !ih || !ih->handle) return;
-	if (iupAttribGet(ih, "_IUPCOCOA_SHEET_GONE")) return;
+	if (!ih || !ih->handle) return;
 
 	IupViewController* vc = cocoaTouchDialogVC(ih);
 	if (!vc) return;
+
+	if (visible)
+	{
+		UINavigationController* nav = objc_getAssociatedObject(vc, IUPCOCOATOUCH_DIALOG_NAV_KEY);
+		if (!nav) return;
+		iupAttribSet(ih, "_IUPCOCOA_SHEET_GONE", NULL);
+		cocoaTouchDialogShowNav(vc, nav);
+		return;
+	}
+
+	if (iupAttribGet(ih, "_IUPCOCOA_SHEET_GONE")) return;
+
 	UIViewController* presenter = vc.navigationController ?: vc;
 
-	if (presenter.presentingViewController == nil) return;
+	if (presenter.presentingViewController == nil)
+	{
+		UIWindow* window = presenter.view.window;
+		if (window && [window rootViewController] == presenter)
+			[window setRootViewController:iupCocoaTouchNewLaunchPlaceholder()];
+		return;
+	}
 
 	if (presenter.isBeingDismissed) return;
 
@@ -558,6 +604,7 @@ static int cocoaTouchDialogMapMethod(Ihandle* ih)
 	/* always wrap in a UINavigationController so MENU/DRAWER setters have a nav bar to target */
 	UINavigationController* nav = [[UINavigationController alloc] initWithRootViewController:vc];
 	[nav setNavigationBarHidden:fullscreen animated:NO];
+	objc_setAssociatedObject(vc, IUPCOCOATOUCH_DIALOG_NAV_KEY, nav, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
 	/* default close buttons fill the slots MENU/DRAWER don't claim; setters overwrite when applied */
 	if (presenting && !fullscreen)
@@ -582,12 +629,7 @@ static int cocoaTouchDialogMapMethod(Ihandle* ih)
 
 	UIModalPresentationStyle style = (fullscreen || !presenting) ? UIModalPresentationFullScreen : UIModalPresentationPageSheet;
 	[nav setModalPresentationStyle:style];
-	nav.presentationController.delegate = delegate;
-	if (style == UIModalPresentationPageSheet &&
-	    [nav.sheetPresentationController respondsToSelector:@selector(setPrefersScrollingExpandsWhenScrolledToEdge:)])
-	{
-		nav.sheetPresentationController.prefersScrollingExpandsWhenScrolledToEdge = NO;
-	}
+	cocoaTouchDialogPrepareSheet(nav, delegate);
 
 	if (!presenting)
 	{
@@ -634,6 +676,10 @@ static void cocoaTouchDialogUnMapMethod(Ihandle* ih)
 		{
 			[presenter dismissViewControllerAnimated:NO completion:nil];
 		}
+		else if (presenter.view.window && [presenter.view.window rootViewController] == presenter)
+			[presenter.view.window setRootViewController:iupCocoaTouchNewLaunchPlaceholder()];
+
+		objc_setAssociatedObject(vc, IUPCOCOATOUCH_DIALOG_NAV_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 	}
 	[(id)vc release];
 	ih->handle = NULL;

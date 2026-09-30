@@ -48,6 +48,7 @@ IUP_DRV_API UIViewController* iupCocoaTouchFindCurrentRootViewController(void);
 IUP_DRV_API UIViewController* iupCocoaTouchFindTopPresentedViewController(void);
 
 IUP_DRV_API bool iupCocoaTouchIsLaunchPlaceholder(UIViewController* vc);
+IUP_DRV_API UIViewController* iupCocoaTouchNewLaunchPlaceholder(void);
 
 /* client-area Fixed of a mapped Dialog, nil otherwise */
 IUP_DRV_API IupCocoaTouchFixed* iupCocoaTouchDialogGetClientArea(Ihandle* dialog_ih);

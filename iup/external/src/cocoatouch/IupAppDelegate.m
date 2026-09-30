@@ -112,8 +112,14 @@ bool iupCocoaTouchIsLaunchPlaceholder(UIViewController* vc)
 	return vc != nil && [vc isKindOfClass:[IupLaunchViewController class]];
 }
 
+UIViewController* iupCocoaTouchNewLaunchPlaceholder(void)
+{
+	return [[[IupLaunchViewController alloc] init] autorelease];
+}
+
 
 static UIWindow* s_window = nil;
+static BOOL s_entry_called = NO;
 
 @interface IupSceneDelegate : UIResponder <UIWindowSceneDelegate>
 @property(strong, nonatomic) UIWindow* window;
@@ -137,15 +143,24 @@ static UIWindow* s_window = nil;
 
 	s_window = [[IupWindow alloc] initWithWindowScene:window_scene];
 
-	IupLaunchViewController* view_controller = [[[IupLaunchViewController alloc] init] autorelease];
-	[s_window setRootViewController:view_controller];
+	[s_window setRootViewController:iupCocoaTouchNewLaunchPlaceholder()];
 
 	[self setWindow:s_window];
+	[s_window makeKeyAndVisible];
+}
 
+- (void)sceneDidBecomeActive:(UIScene*)scene
+{
+	if (s_entry_called)
+		return;
+	s_entry_called = YES;
+	[self performSelector:@selector(callEntry) withObject:nil afterDelay:0];
+}
+
+- (void)callEntry
+{
 	iupLoopCallEntryCb();
 	iupCocoaTouchMarkEntryFinished();
-
-	[s_window makeKeyAndVisible];
 }
 
 @end

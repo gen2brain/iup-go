@@ -150,26 +150,29 @@ static UIPopoverArrowDirection cocoaTouchPopoverArrowDirection(int position)
 	}
 }
 
-static CGRect cocoaTouchPopoverSourceRect(int position, CGRect bounds)
+static int cocoaTouchPopoverIsCorner(int position)
 {
-	/* corner-bias variants narrow the anchor edge so the arrow pins to a corner */
+	return position != IUP_POPOVER_BOTTOM && position != IUP_POPOVER_TOP &&
+	       position != IUP_POPOVER_LEFT && position != IUP_POPOVER_RIGHT;
+}
+
+static CGRect cocoaTouchPopoverSourceRect(int position, CGRect bounds, CGSize size)
+{
+	CGFloat W = bounds.size.width, H = bounds.size.height, w = size.width, h = size.height;
+	CGFloat cx, cy;
 	switch (position)
 	{
-		case IUP_POPOVER_BOTTOMLEFT:
-		case IUP_POPOVER_TOPLEFT:
-			return CGRectMake(0, 0, 1, bounds.size.height);
-		case IUP_POPOVER_BOTTOMRIGHT:
-		case IUP_POPOVER_TOPRIGHT:
-			return CGRectMake(bounds.size.width - 1, 0, 1, bounds.size.height);
-		case IUP_POPOVER_LEFTTOP:
-		case IUP_POPOVER_RIGHTTOP:
-			return CGRectMake(0, 0, bounds.size.width, 1);
-		case IUP_POPOVER_LEFTBOTTOM:
-		case IUP_POPOVER_RIGHTBOTTOM:
-			return CGRectMake(0, bounds.size.height - 1, bounds.size.width, 1);
-		default:
-			return bounds;
+		case IUP_POPOVER_BOTTOMLEFT:  cx = w / 2;     cy = H + h / 2; break;
+		case IUP_POPOVER_BOTTOMRIGHT: cx = W - w / 2; cy = H + h / 2; break;
+		case IUP_POPOVER_TOPLEFT:     cx = w / 2;     cy = -h / 2;    break;
+		case IUP_POPOVER_TOPRIGHT:    cx = W - w / 2; cy = -h / 2;    break;
+		case IUP_POPOVER_LEFTTOP:     cx = -w / 2;    cy = h / 2;     break;
+		case IUP_POPOVER_LEFTBOTTOM:  cx = -w / 2;    cy = H - h / 2; break;
+		case IUP_POPOVER_RIGHTTOP:    cx = W + w / 2; cy = h / 2;     break;
+		case IUP_POPOVER_RIGHTBOTTOM: cx = W + w / 2; cy = H - h / 2; break;
+		default: return bounds;
 	}
+	return CGRectMake(cx, cy, 0, 0);
 }
 
 static int cocoaTouchPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
@@ -201,11 +204,11 @@ static int cocoaTouchPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 		if (ppc)
 		{
 			ppc.sourceView = anchor_view;
-			CGRect source_rect = cocoaTouchPopoverSourceRect(position, [anchor_view bounds]);
+			CGRect source_rect = cocoaTouchPopoverSourceRect(position, [anchor_view bounds], vc.preferredContentSize);
 			source_rect.origin.x += iupAttribGetInt(ih, "OFFSETX");
 			source_rect.origin.y += iupAttribGetInt(ih, "OFFSETY");
 			ppc.sourceRect = source_rect;
-			ppc.permittedArrowDirections = cocoaTouchPopoverArrowDirection(position);
+			ppc.permittedArrowDirections = cocoaTouchPopoverIsCorner(position) ? 0 : cocoaTouchPopoverArrowDirection(position);
 			ppc.passthroughViews = @[anchor_view];
 			ppc.backgroundColor = [UIColor systemBackgroundColor];
 			IupCocoaTouchPopoverDelegate* delegate = objc_getAssociatedObject(vc, IUPCOCOATOUCH_POPOVER_DELEGATE_KEY);

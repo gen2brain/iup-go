@@ -41,6 +41,19 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 
 @implementation IupCocoaTouchTextField
 
+- (instancetype)initWithFrame:(CGRect)frame
+{
+	self = [super initWithFrame:frame];
+	if (self)
+	{
+		self.autocapitalizationType = UITextAutocapitalizationTypeNone;
+		self.autocorrectionType = UITextAutocorrectionTypeNo;
+		self.smartQuotesType = UITextSmartQuotesTypeNo;
+		self.smartDashesType = UITextSmartDashesTypeNo;
+	}
+	return self;
+}
+
 - (NSArray<UIKeyCommand*>*)keyCommands
 {
 	return iupCocoaTouchKeyCommands();
@@ -84,6 +97,19 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 @end
 
 @implementation IupCocoaTouchTextView
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+	self = [super initWithFrame:frame];
+	if (self)
+	{
+		self.autocapitalizationType = UITextAutocapitalizationTypeNone;
+		self.autocorrectionType = UITextAutocorrectionTypeNo;
+		self.smartQuotesType = UITextSmartQuotesTypeNo;
+		self.smartDashesType = UITextSmartDashesTypeNo;
+	}
+	return self;
+}
 
 - (NSArray<UIKeyCommand*>*)keyCommands
 {
@@ -892,7 +918,11 @@ static NSString* cocoaTouchTextValidateEdit(Ihandle* ih, NSString* current, NSRa
 	{
 		NSString* proposed = [current stringByReplacingCharactersInRange:range withString:filtered];
 		if (!iupMaskCheck(ih->data->mask, [proposed UTF8String]))
+		{
+			IFns fail_cb = (IFns)IupGetCallback(ih, "MASKFAIL_CB");
+			if (fail_cb) fail_cb(ih, (char*)[proposed UTF8String]);
 			return nil;
+		}
 	}
 	return filtered;
 }
@@ -1770,6 +1800,9 @@ static int cocoaTouchTextMapMethod(Ihandle* ih)
 
 	ih->handle = view;
 	iupCocoaTouchAddToParent(ih);
+
+	if (ih->data->is_multiline && iupAttribGetBoolean(ih, "BORDER"))
+		cocoaTouchTextSetBorderAttrib(ih, "YES");
 
 	if (ih->data->formattags) iupTextUpdateFormatTags(ih);
 
