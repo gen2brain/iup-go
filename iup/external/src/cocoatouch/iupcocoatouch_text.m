@@ -95,6 +95,7 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 @property(nonatomic, assign) Ihandle* ihandle;
 @property(nonatomic, assign) BOOL unwrapped;
 @property(nonatomic, assign) CGFloat contentWidth;
+@property(nonatomic, retain) UIColor* defaultColor;
 @end
 
 @implementation IupCocoaTouchTextView
@@ -109,6 +110,7 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 		self.smartQuotesType = UITextSmartQuotesTypeNo;
 		self.smartDashesType = UITextSmartDashesTypeNo;
 		_contentWidth = -1;
+		_defaultColor = [[UIColor labelColor] retain];
 		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(textStorageEdited:)
 		                                             name:NSTextStorageDidProcessEditingNotification object:self.textStorage];
 	}
@@ -118,6 +120,7 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 - (void)dealloc
 {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
+	[_defaultColor release];
 	[super dealloc];
 }
 
@@ -970,7 +973,7 @@ static int cocoaTouchTextSetRemoveFormattingAttrib(Ihandle* ih, const char* valu
 	if (!tv) return 0;
 
 	UIFont* base_font = tv.font ? tv.font : [UIFont systemFontOfSize:[UIFont systemFontSize]];
-	UIColor* base_color = tv.textColor ? tv.textColor : [UIColor labelColor];
+	UIColor* base_color = ((IupCocoaTouchTextView*)tv).defaultColor;
 	NSDictionary* attrs = @{
 		NSFontAttributeName: base_font,
 		NSForegroundColorAttributeName: base_color
@@ -1302,15 +1305,35 @@ static int cocoaTouchTextSetBgColorAttrib(Ihandle* ih, const char* value)
 	return 1;
 }
 
+/* runs without a color of their own follow the default; format tag colors stay */
+static void cocoaTouchTextViewSetDefaultColor(IupCocoaTouchTextView* v, UIColor* color)
+{
+	UIColor* old = v.defaultColor;
+	NSTextStorage* ts = v.textStorage;
+	[ts beginEditing];
+	[ts enumerateAttribute:NSForegroundColorAttributeName inRange:NSMakeRange(0, ts.length) options:0
+	            usingBlock:^(id fg, NSRange range, BOOL* stop) {
+		(void)stop;
+		if (!fg || [fg isEqual:old])
+			[ts addAttribute:NSForegroundColorAttributeName value:color range:range];
+	}];
+	[ts endEditing];
+	NSMutableDictionary* attrs = [[v.typingAttributes mutableCopy] autorelease];
+	attrs[NSForegroundColorAttributeName] = color;
+	v.typingAttributes = attrs;
+	v.defaultColor = color;
+}
+
 static int cocoaTouchTextSetFgColorAttrib(Ihandle* ih, const char* value)
 {
 	UIColor* color = iupCocoaTouchToNativeColor(value);
 	if (!color) return 0;
+	if (iupStrEqualNoCase(value, IupGetGlobal("TXTFGCOLOR"))) color = [UIColor labelColor];
 
 	UITextField* field = cocoaTouchTextField(ih);
 	if (field) [field setTextColor:color];
 	UITextView* view = cocoaTouchTextView(ih);
-	if (view) [view setTextColor:color];
+	if (view) cocoaTouchTextViewSetDefaultColor((IupCocoaTouchTextView*)view, color);
 	return 1;
 }
 
