@@ -200,12 +200,20 @@ static UIButtonConfiguration* cocoaTouchButtonMakeConfig(Ihandle* ih)
 	                     cocoaTouchButtonAttrib(ih, "IMPRESS") &&
 	                     !iupAttribGetBoolean(ih, "IMPRESSBORDER");
 	const char* style  = cocoaTouchButtonAttrib(ih, "BUTTONSTYLE");
+	BOOL outlined      = style && iupStrEqualNoCase(style, "OUTLINED");
+
+	UIColor* bg_color = nil;
+	const char* bg = cocoaTouchButtonAttrib(ih, "BGCOLOR");
+	if (bg && !iupStrEqualNoCase(bg, IupGetGlobal("DLGBGCOLOR")))
+		bg_color = iupCocoaTouchToNativeColor(bg);
 
 	UIButtonConfiguration* cfg;
-	if (style)
+	if (bg_color)
+		cfg = [UIButtonConfiguration filledButtonConfiguration];
+	else if (style)
 	{
 		if      (iupStrEqualNoCase(style, "TONAL"))    cfg = [UIButtonConfiguration tintedButtonConfiguration];
-		else if (iupStrEqualNoCase(style, "OUTLINED")) cfg = [UIButtonConfiguration borderedButtonConfiguration];
+		else if (outlined)                             cfg = [UIButtonConfiguration plainButtonConfiguration];
 		else if (iupStrEqualNoCase(style, "ELEVATED")) cfg = [UIButtonConfiguration grayButtonConfiguration];
 		else if (iupStrEqualNoCase(style, "TEXT"))     cfg = [UIButtonConfiguration plainButtonConfiguration];
 		else                                           cfg = [UIButtonConfiguration filledButtonConfiguration];
@@ -216,6 +224,14 @@ static UIButtonConfiguration* cocoaTouchButtonMakeConfig(Ihandle* ih)
 		cfg = [UIButtonConfiguration plainButtonConfiguration];
 	else
 		cfg = [UIButtonConfiguration tintedButtonConfiguration];
+
+	if (outlined)
+	{
+		cfg.background.strokeColor = [UIColor systemGray3Color];
+		cfg.background.strokeWidth = 1.0;
+	}
+	if (bg_color)
+		cfg.baseBackgroundColor = bg_color;
 
 	const char* corner = cocoaTouchButtonAttrib(ih, "CORNERSTYLE");
 	if      (iupStrEqualNoCase(corner, "SMALL"))   cfg.cornerStyle = UIButtonConfigurationCornerStyleSmall;
@@ -252,13 +268,6 @@ static UIButtonConfiguration* cocoaTouchButtonMakeConfig(Ihandle* ih)
 		UIColor* c = iupCocoaTouchToNativeColor(fg);
 		if (c) cfg.baseForegroundColor = c;
 	}
-	const char* bg = cocoaTouchButtonAttrib(ih, "BGCOLOR");
-	if (bg && !iupStrEqualNoCase(bg, IupGetGlobal("DLGBGCOLOR")))
-	{
-		UIColor* c = iupCocoaTouchToNativeColor(bg);
-		if (c) cfg.baseBackgroundColor = c;
-	}
-
 	return cfg;
 }
 
@@ -533,7 +542,7 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, cocoaTouchButtonSetShowAsDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttribute(ic, "FLAT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "BUTTONSTYLE", NULL, cocoaTouchButtonSetButtonStyleAttrib, IUPAF_SAMEASSYSTEM, "FILLED", IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "BUTTONSTYLE", NULL, cocoaTouchButtonSetButtonStyleAttrib, IUPAF_SAMEASSYSTEM, "TONAL", IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "CORNERSTYLE", NULL, cocoaTouchButtonSetCornerStyleAttrib, NULL, NULL, IUPAF_NO_INHERIT|IUPAF_NO_DEFAULTVALUE);
 	iupClassRegisterAttribute(ic, "CANFOCUS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 

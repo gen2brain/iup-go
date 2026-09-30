@@ -210,7 +210,6 @@ static int cocoaTouchPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 			ppc.sourceRect = source_rect;
 			ppc.permittedArrowDirections = cocoaTouchPopoverIsCorner(position) ? 0 : cocoaTouchPopoverArrowDirection(position);
 			ppc.passthroughViews = @[anchor_view];
-			ppc.backgroundColor = [UIColor systemBackgroundColor];
 			IupCocoaTouchPopoverDelegate* delegate = objc_getAssociatedObject(vc, IUPCOCOATOUCH_POPOVER_DELEGATE_KEY);
 			ppc.delegate = delegate;
 		}
