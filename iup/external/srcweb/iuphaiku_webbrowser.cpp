@@ -120,15 +120,15 @@ static void iuphaikuWebBrowserInit()
 
 static void haikuWebBrowserBindView(Ihandle* ih, BWebView* view)
 {
-  ih->handle = (InativeHandle*)view;
+  ih->handle = reinterpret_cast<InativeHandle*>(view);
 
-  IupHaikuWebHandler* handler = new IupHaikuWebHandler(ih);
+  auto* handler = new IupHaikuWebHandler(ih);
   BWindow* win = view->Window();
   {
     LooperLockGuard guard(win);
     if (win) win->AddHandler(handler);
   }
-  iupAttribSet(ih, "_IUPWEB_HANDLER", (char*)handler);
+  iupAttribSet(ih, "_IUPWEB_HANDLER", reinterpret_cast<char*>(handler));
   view->WebPage()->SetListener(BMessenger(handler));
 
   iupAttribSet(ih, "_IUPWEB_READY", "1");
@@ -137,21 +137,21 @@ static void haikuWebBrowserBindView(Ihandle* ih, BWebView* view)
 
 static IupHaikuWebHandler* haikuWebBrowserHandler(Ihandle* ih)
 {
-  return (IupHaikuWebHandler*)iupAttribGet(ih, "_IUPWEB_HANDLER");
+  return reinterpret_cast<IupHaikuWebHandler*>(iupAttribGet(ih, "_IUPWEB_HANDLER"));
 }
 
 static BWebView* haikuWebBrowserView(Ihandle* ih)
 {
-  if (!iupAttribGet(ih, "_IUPWEB_READY")) return NULL;
-  return (BWebView*)ih->handle;
+  if (!iupAttribGet(ih, "_IUPWEB_READY")) return nullptr;
+  return reinterpret_cast<BWebView*>(ih->handle);
 }
 
 static BWebFrame* haikuWebBrowserFrame(Ihandle* ih)
 {
   BWebView* view = haikuWebBrowserView(ih);
-  if (!view) return NULL;
+  if (!view) return nullptr;
   BWebPage* page = view->WebPage();
-  if (!page) return NULL;
+  if (!page) return nullptr;
   return page->MainFrame();
 }
 
@@ -164,32 +164,32 @@ public:
   {
     if (msg->what != IUPHAIKU_JS_EXEC_MSG) { BHandler::MessageReceived(msg); return; }
 
-    void* page_ptr = NULL;
-    const char* script = NULL;
+    void* page_ptr = nullptr;
+    const char* script = nullptr;
     msg->FindPointer("page", &page_ptr);
     msg->FindString("script", &script);
 
     BMessage reply(IUPHAIKU_JS_EXEC_MSG);
 
-    BWebPage* page = (BWebPage*)page_ptr;
-    BWebFrame* frame = page ? page->MainFrame() : NULL;
-    JSGlobalContextRef ctx = frame ? frame->GlobalContext() : NULL;
+    auto* page = static_cast<BWebPage*>(page_ptr);
+    BWebFrame* frame = page ? page->MainFrame() : nullptr;
+    JSGlobalContextRef ctx = frame ? frame->GlobalContext() : nullptr;
 
     if (ctx && script)
     {
       JSStringRef js_script = JSStringCreateWithUTF8CString(script);
-      JSValueRef exception = NULL;
-      JSValueRef result = JSEvaluateScript(ctx, js_script, NULL, NULL, 1, &exception);
+      JSValueRef exception = nullptr;
+      JSValueRef result = JSEvaluateScript(ctx, js_script, nullptr, nullptr, 1, &exception);
       JSStringRelease(js_script);
 
       if (!exception && result
           && !JSValueIsUndefined(ctx, result) && !JSValueIsNull(ctx, result))
       {
-        JSStringRef str_ref = JSValueToStringCopy(ctx, result, NULL);
+        JSStringRef str_ref = JSValueToStringCopy(ctx, result, nullptr);
         if (str_ref)
         {
           size_t maxlen = JSStringGetMaximumUTF8CStringSize(str_ref);
-          char* buf = (char*)malloc(maxlen);
+          char* buf = static_cast<char*>(malloc(maxlen));
           if (buf)
           {
             JSStringGetUTF8CString(str_ref, buf, maxlen);
@@ -206,28 +206,28 @@ public:
 
 static BMessenger haikuWebBrowserJSExecMessenger(Ihandle* ih, BWebPage* page)
 {
-  IupHaikuJSExecHandler* handler = (IupHaikuJSExecHandler*)iupAttribGet(ih, "_IUPWEB_JSHANDLER");
+  auto* handler = reinterpret_cast<IupHaikuJSExecHandler*>(iupAttribGet(ih, "_IUPWEB_JSHANDLER"));
 
   if (!handler)
   {
-    BHandler* page_handler = reinterpret_cast<BHandler*>(page);
+    auto* page_handler = reinterpret_cast<BHandler*>(page);
     BLooper* page_looper = page_handler->Looper();
-    if (!page_looper) return BMessenger();
+    if (!page_looper) return {};
 
     handler = new IupHaikuJSExecHandler();
     {
       LooperLockGuard guard(page_looper);
       page_looper->AddHandler(handler);
     }
-    iupAttribSet(ih, "_IUPWEB_JSHANDLER", (char*)handler);
+    iupAttribSet(ih, "_IUPWEB_JSHANDLER", reinterpret_cast<char*>(handler));
   }
 
-  return BMessenger(handler);
+  return {handler};
 }
 
 static void haikuWebBrowserDestroyJSExecHandler(Ihandle* ih)
 {
-  IupHaikuJSExecHandler* handler = (IupHaikuJSExecHandler*)iupAttribGet(ih, "_IUPWEB_JSHANDLER");
+  auto* handler = reinterpret_cast<IupHaikuJSExecHandler*>(iupAttribGet(ih, "_IUPWEB_JSHANDLER"));
   if (!handler) return;
 
   BLooper* looper = handler->Looper();
@@ -237,19 +237,19 @@ static void haikuWebBrowserDestroyJSExecHandler(Ihandle* ih)
     looper->RemoveHandler(handler);
   }
   delete handler;
-  iupAttribSet(ih, "_IUPWEB_JSHANDLER", NULL);
+  iupAttribSet(ih, "_IUPWEB_JSHANDLER", nullptr);
 }
 
 static char* haikuWebBrowserRunJSSync(Ihandle* ih, const char* script)
 {
   BWebView* view = haikuWebBrowserView(ih);
-  if (!view || !script) return NULL;
+  if (!view || !script) return nullptr;
 
   BWebPage* page = view->WebPage();
-  if (!page) return NULL;
+  if (!page) return nullptr;
 
   BMessenger msgr = haikuWebBrowserJSExecMessenger(ih, page);
-  if (!msgr.IsValid()) return NULL;
+  if (!msgr.IsValid()) return nullptr;
 
   BMessage msg(IUPHAIKU_JS_EXEC_MSG);
   msg.AddPointer("page", page);
@@ -258,8 +258,8 @@ static char* haikuWebBrowserRunJSSync(Ihandle* ih, const char* script)
 
   /* the page thread needs this looper to reach the view, and we are about to
      block it */
-  BLooper* self_looper = BLooper::LooperForThread(find_thread(NULL));
-  BWindow* self_window = dynamic_cast<BWindow*>(self_looper);
+  BLooper* self_looper = BLooper::LooperForThread(find_thread(nullptr));
+  auto* self_window = dynamic_cast<BWindow*>(self_looper);
   int relock = 0;
 
   if (self_window) self_window->UpdateIfNeeded();
@@ -269,10 +269,10 @@ static char* haikuWebBrowserRunJSSync(Ihandle* ih, const char* script)
 
   while (relock--) self_looper->Lock();
 
-  if (sent != B_OK) return NULL;
+  if (sent != B_OK) return nullptr;
 
-  const char* result = NULL;
-  if (reply.FindString("result", &result) != B_OK || !result) return NULL;
+  const char* result = nullptr;
+  if (reply.FindString("result", &result) != B_OK || !result) return nullptr;
   return iupStrReturnStr(result);
 }
 
@@ -298,12 +298,12 @@ static void haikuWebBrowserJSEscape(BString& out, const char* s)
   out << '"';
   for (const char* p = s; *p; ++p)
   {
-    unsigned char c = (unsigned char)*p;
+    auto c = static_cast<unsigned char>(*p);
 
-    if (c == 0xE2 && (unsigned char)*(p+1) == 0x80 &&
-        ((unsigned char)*(p+2) == 0xA8 || (unsigned char)*(p+2) == 0xA9))
+    if (c == 0xE2 && static_cast<unsigned char>(*(p+1)) == 0x80 &&
+        (static_cast<unsigned char>(*(p+2)) == 0xA8 || static_cast<unsigned char>(*(p+2)) == 0xA9))
     {
-      out << (((unsigned char)*(p+2) == 0xA8) ? "\\u2028" : "\\u2029");
+      out << ((static_cast<unsigned char>(*(p+2)) == 0xA8) ? "\\u2028" : "\\u2029");
       p += 2;
       continue;
     }
@@ -335,7 +335,7 @@ static void haikuWebBrowserJSEscape(BString& out, const char* s)
 
 static char* haikuWebBrowserJSQueryCommand(Ihandle* ih, const char* fn, const char* command)
 {
-  if (!command) return NULL;
+  if (!command) return nullptr;
   BString js;
   js << "document." << fn << "(";
   haikuWebBrowserJSEscape(js, command);
@@ -379,8 +379,8 @@ void IupHaikuWebHandler::MessageReceived(BMessage* msg)
       msg->FindString("url", &url);
       if (!iupAttribGet(fIhandle, "_IUPWEB_IGNORE_NAVIGATE"))
       {
-        IFns cb = (IFns)IupGetCallback(fIhandle, "NAVIGATE_CB");
-        if (cb) cb(fIhandle, (char*)url.String());
+        IFns cb = reinterpret_cast<IFns>(IupGetCallback(fIhandle, "NAVIGATE_CB"));
+        if (cb) cb(fIhandle, const_cast<char*>(url.String()));
       }
       break;
     }
@@ -389,8 +389,8 @@ void IupHaikuWebHandler::MessageReceived(BMessage* msg)
       fStatus = IUP_WEB_LOAD_FAILED;
       BString url;
       msg->FindString("url", &url);
-      IFns cb = (IFns)IupGetCallback(fIhandle, "ERROR_CB");
-      if (cb) cb(fIhandle, (char*)url.String());
+      IFns cb = reinterpret_cast<IFns>(IupGetCallback(fIhandle, "ERROR_CB"));
+      if (cb) cb(fIhandle, const_cast<char*>(url.String()));
       break;
     }
     case LOAD_FINISHED:
@@ -400,16 +400,16 @@ void IupHaikuWebHandler::MessageReceived(BMessage* msg)
       msg->FindString("url", &url);
       if (iupAttribGet(fIhandle, "_IUPWEB_EDITABLE"))
         haikuWebBrowserRunJSAsync(fIhandle, "document.body.contentEditable = 'true';");
-      IFns cb = (IFns)IupGetCallback(fIhandle, "COMPLETED_CB");
-      if (cb) cb(fIhandle, (char*)url.String());
+      IFns cb = reinterpret_cast<IFns>(IupGetCallback(fIhandle, "COMPLETED_CB"));
+      if (cb) cb(fIhandle, const_cast<char*>(url.String()));
       break;
     }
     case NEW_WINDOW_REQUESTED:
     {
       BString url;
       msg->FindString("url", &url);
-      IFns cb = (IFns)IupGetCallback(fIhandle, "NEWWINDOW_CB");
-      if (cb) cb(fIhandle, (char*)url.String());
+      IFns cb = reinterpret_cast<IFns>(IupGetCallback(fIhandle, "NEWWINDOW_CB"));
+      if (cb) cb(fIhandle, const_cast<char*>(url.String()));
       break;
     }
     case UPDATE_NAVIGATION_INTERFACE:
@@ -433,7 +433,7 @@ static int haikuWebBrowserSetValueAttrib(Ihandle* ih, const char* value)
   BWebView* view = haikuWebBrowserView(ih);
   if (!view) return 1;
 
-  iupAttribSet(ih, "_IUPWEB_DIRTY", NULL);
+  iupAttribSet(ih, "_IUPWEB_DIRTY", nullptr);
 
   BString url(value);
   if (!iupStrEqualPartial(value, "http://") && !iupStrEqualPartial(value, "https://")
@@ -448,17 +448,17 @@ static int haikuWebBrowserSetValueAttrib(Ihandle* ih, const char* value)
   LooperLockGuard guard(view->Looper());
   iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", "1");
   view->LoadURL(url.String());
-  iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", NULL);
+  iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", nullptr);
   return 0;
 }
 
 static char* haikuWebBrowserGetValueAttrib(Ihandle* ih)
 {
   BWebView* view = haikuWebBrowserView(ih);
-  if (!view) return NULL;
+  if (!view) return nullptr;
   LooperLockGuard guard(view->Looper());
   BString url = view->MainFrameURL();
-  if (url.Length() == 0) return NULL;
+  if (url.Length() == 0) return nullptr;
   return iupStrReturnStr(url.String());
 }
 
@@ -468,14 +468,14 @@ static void haikuWebBrowserBase64Encode(BString& out, const char* in, size_t len
   size_t i = 0;
   while (i + 3 <= len)
   {
-    unsigned a = (unsigned char)in[i], b = (unsigned char)in[i + 1], c = (unsigned char)in[i + 2];
+    unsigned a = static_cast<unsigned char>(in[i]), b = static_cast<unsigned char>(in[i + 1]), c = static_cast<unsigned char>(in[i + 2]);
     out << kTable[a >> 2] << kTable[((a & 3) << 4) | (b >> 4)]
         << kTable[((b & 15) << 2) | (c >> 6)] << kTable[c & 63];
     i += 3;
   }
   if (i < len)
   {
-    unsigned a = (unsigned char)in[i], b = (i + 1 < len) ? (unsigned char)in[i + 1] : 0;
+    unsigned a = static_cast<unsigned char>(in[i]), b = (i + 1 < len) ? static_cast<unsigned char>(in[i + 1]) : 0;
     out << kTable[a >> 2] << kTable[((a & 3) << 4) | (b >> 4)];
     out << ((i + 1 < len) ? kTable[(b & 15) << 2] : '=');
     out << '=';
@@ -492,22 +492,22 @@ static int haikuWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
   haikuWebBrowserBase64Encode(url, value, strlen(value));
 
   LooperLockGuard guard(view->Looper());
-  iupAttribSet(ih, "_IUPWEB_DIRTY", NULL);
+  iupAttribSet(ih, "_IUPWEB_DIRTY", nullptr);
   iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", "1");
   view->LoadURL(url.String());
-  iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", NULL);
+  iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", nullptr);
   return 0;
 }
 
 static char* haikuWebBrowserGetHTMLAttrib(Ihandle* ih)
 {
   BWebFrame* frame = haikuWebBrowserFrame(ih);
-  if (!frame) return NULL;
+  if (!frame) return nullptr;
 
   BWebView* view = haikuWebBrowserView(ih);
   LooperLockGuard guard(view->Looper());
   BString markup = frame->AsMarkup();
-  if (markup.Length() == 0) return NULL;
+  if (markup.Length() == 0) return nullptr;
   return iupStrReturnStr(markup.String());
 }
 
@@ -579,14 +579,14 @@ static char* haikuWebBrowserGetCanGoForwardAttrib(Ihandle* ih)
 static char* haikuWebBrowserGetStatusAttrib(Ihandle* ih)
 {
   IupHaikuWebHandler* h = haikuWebBrowserHandler(ih);
-  if (!h) return (char*)"COMPLETED";
+  if (!h) return const_cast<char*>("COMPLETED");
   switch (h->Status())
   {
-    case IUP_WEB_LOAD_LOADING:   return (char*)"LOADING";
-    case IUP_WEB_LOAD_FAILED:    return (char*)"FAILED";
-    case IUP_WEB_LOAD_COMPLETED: return (char*)"COMPLETED";
+    case IUP_WEB_LOAD_LOADING:   return const_cast<char*>("LOADING");
+    case IUP_WEB_LOAD_FAILED:    return const_cast<char*>("FAILED");
+    case IUP_WEB_LOAD_COMPLETED: return const_cast<char*>("COMPLETED");
   }
-  return (char*)"COMPLETED";
+  return const_cast<char*>("COMPLETED");
 }
 
 static int haikuWebBrowserSetZoomAttrib(Ihandle* ih, const char* value)
@@ -693,14 +693,14 @@ static int haikuWebBrowserSetRedoAttrib(Ihandle* ih, const char* value)
 static int haikuWebBrowserSetSelectAllAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  haikuWebBrowserJSExecCommand(ih, "selectAll", NULL);
+  haikuWebBrowserJSExecCommand(ih, "selectAll", nullptr);
   return 0;
 }
 
 static int haikuWebBrowserSetEditableAttrib(Ihandle* ih, const char* value)
 {
   bool editable = iupStrBoolean(value);
-  iupAttribSet(ih, "_IUPWEB_EDITABLE", editable ? "1" : NULL);
+  iupAttribSet(ih, "_IUPWEB_EDITABLE", editable ? "1" : nullptr);
 
   if (!haikuWebBrowserView(ih)) return 1;
 
@@ -712,13 +712,13 @@ static int haikuWebBrowserSetEditableAttrib(Ihandle* ih, const char* value)
 
 static char* haikuWebBrowserGetEditableAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean(iupAttribGet(ih, "_IUPWEB_EDITABLE") != NULL);
+  return iupStrReturnBoolean(iupAttribGet(ih, "_IUPWEB_EDITABLE") != nullptr);
 }
 
 static int haikuWebBrowserSetNewAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  iupAttribSet(ih, "_IUPWEB_DIRTY", NULL);
+  iupAttribSet(ih, "_IUPWEB_DIRTY", nullptr);
   haikuWebBrowserSetHTMLAttrib(ih, "<html><body></body></html>");
   haikuWebBrowserSetEditableAttrib(ih, "Yes");
   return 0;
@@ -729,7 +729,7 @@ static int haikuWebBrowserSetOpenFileAttrib(Ihandle* ih, const char* value)
   if (!value) return 0;
   char* url = iupStrFileMakeURL(value);
   if (!url) return 0;
-  iupAttribSet(ih, "_IUPWEB_DIRTY", NULL);
+  iupAttribSet(ih, "_IUPWEB_DIRTY", nullptr);
   haikuWebBrowserSetValueAttrib(ih, url);
   free(url);
   return 0;
@@ -749,7 +749,7 @@ static int haikuWebBrowserSetSaveFileAttrib(Ihandle* ih, const char* value)
 
 static int haikuWebBrowserSetExecCommandAttrib(Ihandle* ih, const char* value)
 {
-  if (value) haikuWebBrowserJSExecCommand(ih, value, NULL);
+  if (value) haikuWebBrowserJSExecCommand(ih, value, nullptr);
   return 0;
 }
 
@@ -872,7 +872,7 @@ static int haikuWebBrowserSetInnerTextAttrib(Ihandle* ih, const char* value)
 static char* haikuWebBrowserGetInnerTextAttrib(Ihandle* ih)
 {
   char* elem = iupAttribGet(ih, "ELEMENT_ID");
-  if (!elem) return NULL;
+  if (!elem) return nullptr;
   BString js("(function(){var e=document.getElementById(");
   haikuWebBrowserJSEscape(js, elem);
   js << "); return e ? e.innerText : null;})()";
@@ -899,7 +899,7 @@ static char* haikuWebBrowserGetAttributeAttrib(Ihandle* ih)
 {
   char* elem = iupAttribGet(ih, "ELEMENT_ID");
   char* name = iupAttribGet(ih, "ATTRIBUTE_NAME");
-  if (!elem || !name) return NULL;
+  if (!elem || !name) return nullptr;
   BString js("(function(){var e=document.getElementById(");
   haikuWebBrowserJSEscape(js, elem);
   js << "); return e ? e.getAttribute(";
@@ -910,7 +910,7 @@ static char* haikuWebBrowserGetAttributeAttrib(Ihandle* ih)
 
 static int haikuWebBrowserSetJavascriptAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSet(ih, "_IUPWEB_JS_RESULT", NULL);
+  iupAttribSet(ih, "_IUPWEB_JS_RESULT", nullptr);
   if (!value) return 0;
   char* result = haikuWebBrowserRunJSSync(ih, value);
   if (result) iupAttribSetStr(ih, "_IUPWEB_JS_RESULT", result);
@@ -924,7 +924,7 @@ static char* haikuWebBrowserGetJavascriptAttrib(Ihandle* ih)
 
 static char* haikuWebBrowserGetDirtyAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean(iupAttribGet(ih, "_IUPWEB_DIRTY") != NULL);
+  return iupStrReturnBoolean(iupAttribGet(ih, "_IUPWEB_DIRTY") != nullptr);
 }
 
 static void haikuWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
@@ -951,12 +951,12 @@ public:
 
     iuphaikuWebBrowserInit();
 
-    Ihandle* ih = NULL;
-    msg->FindPointer("ih", (void**)&ih);
+    Ihandle* ih = nullptr;
+    msg->FindPointer("ih", reinterpret_cast<void**>(&ih));
     if (!ih || !iupObjectCheck(ih)) return;
     if (iupAttribGet(ih, "_IUPWEB_HANDLER")) return;
 
-    BView* placeholder = (BView*)ih->handle;
+    auto* placeholder = reinterpret_cast<BView*>(ih->handle);
     if (!placeholder) return;
     BView* parent = placeholder->Parent();
     if (!parent) return;
@@ -966,9 +966,9 @@ public:
     BRect frame = placeholder->Frame();
     parent->RemoveChild(placeholder);
     delete placeholder;
-    ih->handle = NULL;
+    ih->handle = nullptr;
 
-    BWebView* view = new(std::nothrow) BWebView("iup_webview", NULL);
+    auto* view = new(std::nothrow) BWebView("iup_webview", nullptr);
     if (!view) return;
     view->SetResizingMode(B_FOLLOW_NONE);
     view->SetAutoHidePointer(false);
@@ -980,7 +980,7 @@ public:
   }
 };
 
-static IupHaikuWebDispatcher* sDispatcher = NULL;
+static IupHaikuWebDispatcher* sDispatcher = nullptr;
 
 static BMessenger haikuWebBrowserDispatcher()
 {
@@ -990,14 +990,14 @@ static BMessenger haikuWebBrowserDispatcher()
     LooperLockGuard guard(be_app);
     be_app->AddHandler(sDispatcher);
   }
-  return BMessenger(sDispatcher);
+  return {sDispatcher};
 }
 
 static int haikuWebBrowserMapMethod(Ihandle* ih)
 {
-  BView* placeholder = new BView(BRect(0, 0, 0, 0), "iup_web_placeholder", B_FOLLOW_NONE, B_WILL_DRAW);
+  auto* placeholder = new BView(BRect(0, 0, 0, 0), "iup_web_placeholder", B_FOLLOW_NONE, B_WILL_DRAW);
   placeholder->SetViewUIColor(B_PANEL_BACKGROUND_COLOR);
-  ih->handle = (InativeHandle*)placeholder;
+  ih->handle = reinterpret_cast<InativeHandle*>(placeholder);
   iuphaikuAddToParent(ih);
 
   BMessage msg(IUPHAIKU_WEB_MAP_MSG);
@@ -1015,11 +1015,11 @@ static void haikuWebBrowserUnMapMethod(Ihandle* ih)
 
   if (handler)
   {
-    BWebView* view = (BWebView*)ih->handle;
-    BWindow* win = view ? view->Window() : NULL;
+    auto* view = reinterpret_cast<BWebView*>(ih->handle);
+    BWindow* win = view ? view->Window() : nullptr;
     {
       LooperLockGuard guard(win);
-      handler->SetIhandle(NULL);
+      handler->SetIhandle(nullptr);
       if (view) view->WebPage()->SetListener(BMessenger());
       if (view) view->Shutdown();
     }
@@ -1030,8 +1030,8 @@ static void haikuWebBrowserUnMapMethod(Ihandle* ih)
       looper->RemoveHandler(handler);
     }
     delete handler;
-    iupAttribSet(ih, "_IUPWEB_HANDLER", NULL);
-    ih->handle = NULL;
+    iupAttribSet(ih, "_IUPWEB_HANDLER", nullptr);
+    ih->handle = nullptr;
     return;
   }
 
@@ -1049,17 +1049,17 @@ static int haikuWebBrowserCreateMethod(Ihandle* ih, void** params)
 
 Iclass* iupWebBrowserNewClass()
 {
-  Iclass* ic = iupClassNew(NULL);
+  Iclass* ic = iupClassNew(nullptr);
 
   ic->name = "webbrowser";
   ic->cons = "WebBrowser";
-  ic->format = NULL;
+  ic->format = nullptr;
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
   ic->has_attrib_id = 1;
 
-  ic->New = NULL;
+  ic->New = nullptr;
   ic->Create = haikuWebBrowserCreateMethod;
   ic->Map = haikuWebBrowserMapMethod;
   ic->UnMap = haikuWebBrowserUnMapMethod;
@@ -1075,63 +1075,63 @@ Iclass* iupWebBrowserNewClass()
   iupBaseRegisterCommonAttrib(ic);
   iupBaseRegisterVisualAttrib(ic);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", haikuWebBrowserGetValueAttrib, haikuWebBrowserSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKFORWARD", NULL, haikuWebBrowserSetBackForwardAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "GOBACK", NULL, haikuWebBrowserSetGoBackAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "GOFORWARD", NULL, haikuWebBrowserSetGoForwardAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STOP", NULL, haikuWebBrowserSetStopAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "RELOAD", NULL, haikuWebBrowserSetReloadAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HTML", haikuWebBrowserGetHTMLAttrib, haikuWebBrowserSetHTMLAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STATUS", haikuWebBrowserGetStatusAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ZOOM", haikuWebBrowserGetZoomAttrib, haikuWebBrowserSetZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CANGOBACK", haikuWebBrowserGetCanGoBackAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CANGOFORWARD", haikuWebBrowserGetCanGoForwardAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FIND", NULL, haikuWebBrowserSetFindAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", haikuWebBrowserGetValueAttrib, haikuWebBrowserSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKFORWARD", nullptr, haikuWebBrowserSetBackForwardAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GOBACK", nullptr, haikuWebBrowserSetGoBackAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GOFORWARD", nullptr, haikuWebBrowserSetGoForwardAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "STOP", nullptr, haikuWebBrowserSetStopAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RELOAD", nullptr, haikuWebBrowserSetReloadAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HTML", haikuWebBrowserGetHTMLAttrib, haikuWebBrowserSetHTMLAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "STATUS", haikuWebBrowserGetStatusAttrib, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ZOOM", haikuWebBrowserGetZoomAttrib, haikuWebBrowserSetZoomAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CANGOBACK", haikuWebBrowserGetCanGoBackAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CANGOFORWARD", haikuWebBrowserGetCanGoForwardAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FIND", nullptr, haikuWebBrowserSetFindAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "EDITABLE", haikuWebBrowserGetEditableAttrib, haikuWebBrowserSetEditableAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "NEW", NULL, haikuWebBrowserSetNewAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OPENFILE", NULL, haikuWebBrowserSetOpenFileAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SAVEFILE", NULL, haikuWebBrowserSetSaveFileAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "UNDO", NULL, haikuWebBrowserSetUndoAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "REDO", NULL, haikuWebBrowserSetRedoAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COPY", NULL, haikuWebBrowserSetCopyAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CUT", NULL, haikuWebBrowserSetCutAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PASTE", haikuWebBrowserGetPasteAttrib, haikuWebBrowserSetPasteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTALL", NULL, haikuWebBrowserSetSelectAllAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "EXECCOMMAND", NULL, haikuWebBrowserSetExecCommandAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERTIMAGE", NULL, haikuWebBrowserSetInsertImageAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERTIMAGEFILE", NULL, haikuWebBrowserSetInsertImageAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CREATELINK", NULL, haikuWebBrowserSetCreateLinkAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERTTEXT", NULL, haikuWebBrowserSetInsertTextAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERTHTML", NULL, haikuWebBrowserSetInsertHtmlAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "EDITABLE", haikuWebBrowserGetEditableAttrib, haikuWebBrowserSetEditableAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "NEW", nullptr, haikuWebBrowserSetNewAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPENFILE", nullptr, haikuWebBrowserSetOpenFileAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SAVEFILE", nullptr, haikuWebBrowserSetSaveFileAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "UNDO", nullptr, haikuWebBrowserSetUndoAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "REDO", nullptr, haikuWebBrowserSetRedoAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COPY", nullptr, haikuWebBrowserSetCopyAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUT", nullptr, haikuWebBrowserSetCutAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PASTE", haikuWebBrowserGetPasteAttrib, haikuWebBrowserSetPasteAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTALL", nullptr, haikuWebBrowserSetSelectAllAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "EXECCOMMAND", nullptr, haikuWebBrowserSetExecCommandAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERTIMAGE", nullptr, haikuWebBrowserSetInsertImageAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERTIMAGEFILE", nullptr, haikuWebBrowserSetInsertImageAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CREATELINK", nullptr, haikuWebBrowserSetCreateLinkAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERTTEXT", nullptr, haikuWebBrowserSetInsertTextAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERTHTML", nullptr, haikuWebBrowserSetInsertHtmlAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "FONTNAME", haikuWebBrowserGetFontNameAttrib, haikuWebBrowserSetFontNameAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FONTSIZE", haikuWebBrowserGetFontSizeAttrib, haikuWebBrowserSetFontSizeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMATBLOCK", haikuWebBrowserGetFormatBlockAttrib, haikuWebBrowserSetFormatBlockAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORECOLOR", haikuWebBrowserGetForeColorAttrib, haikuWebBrowserSetForeColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKCOLOR", haikuWebBrowserGetBackColorAttrib, haikuWebBrowserSetBackColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FONTNAME", haikuWebBrowserGetFontNameAttrib, haikuWebBrowserSetFontNameAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FONTSIZE", haikuWebBrowserGetFontSizeAttrib, haikuWebBrowserSetFontSizeAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATBLOCK", haikuWebBrowserGetFormatBlockAttrib, haikuWebBrowserSetFormatBlockAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORECOLOR", haikuWebBrowserGetForeColorAttrib, haikuWebBrowserSetForeColorAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKCOLOR", haikuWebBrowserGetBackColorAttrib, haikuWebBrowserSetBackColorAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "COMMAND", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COMMANDSTATE", haikuWebBrowserGetCommandStateAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COMMANDENABLED", haikuWebBrowserGetCommandEnabledAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COMMANDVALUE", haikuWebBrowserGetCommandValueAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMMAND", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMMANDSTATE", haikuWebBrowserGetCommandStateAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMMANDENABLED", haikuWebBrowserGetCommandEnabledAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMMANDVALUE", haikuWebBrowserGetCommandValueAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ELEMENT_ID", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INNERTEXT", haikuWebBrowserGetInnerTextAttrib, haikuWebBrowserSetInnerTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ATTRIBUTE_NAME", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ATTRIBUTE", haikuWebBrowserGetAttributeAttrib, haikuWebBrowserSetAttributeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "JAVASCRIPT", haikuWebBrowserGetJavascriptAttrib, haikuWebBrowserSetJavascriptAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ELEMENT_ID", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INNERTEXT", haikuWebBrowserGetInnerTextAttrib, haikuWebBrowserSetInnerTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ATTRIBUTE_NAME", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ATTRIBUTE", haikuWebBrowserGetAttributeAttrib, haikuWebBrowserSetAttributeAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "JAVASCRIPT", haikuWebBrowserGetJavascriptAttrib, haikuWebBrowserSetJavascriptAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "DIRTY", haikuWebBrowserGetDirtyAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DIRTY", haikuWebBrowserGetDirtyAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "PRINT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PRINTPREVIEW", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKCOUNT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORWARDCOUNT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "ITEMHISTORY", NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COMMANDTEXT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PRINT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PRINTPREVIEW", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKCOUNT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORWARDCOUNT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "ITEMHISTORY", nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMMANDTEXT", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_READONLY | IUPAF_NO_INHERIT);
 
   return ic;
 }
