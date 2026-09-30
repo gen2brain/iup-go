@@ -389,9 +389,16 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
 
 
 @interface IupCocoaTextView : NSTextView
+@property(nonatomic, retain) NSColor* defaultColor;
 @end
 
 @implementation IupCocoaTextView
+
+- (void)dealloc
+{
+  [_defaultColor release];
+  [super dealloc];
+}
 
 - (BOOL)acceptsFirstResponder
 {
@@ -1556,7 +1563,7 @@ static int cocoaTextSetValueAttrib(Ihandle* ih, const char* value)
 
         if (![attributes objectForKey:NSForegroundColorAttributeName])
         {
-          NSColor* fg_color = cocoaTextColorFromStr(iupAttribGet(ih, "FGCOLOR"));
+          NSColor* fg_color = [(IupCocoaTextView*)text_view defaultColor];
           [attributes setObject:(fg_color ? fg_color : [NSColor textColor]) forKey:NSForegroundColorAttributeName];
         }
 
@@ -1751,26 +1758,39 @@ static int cocoaTextSetFgColorAttrib(Ihandle* ih, const char* value)
   {
     case IUPCOCOATEXTSUBTYPE_VIEW:
       {
-        NSTextView* text_view = cocoaTextGetTextView(ih);
+        IupCocoaTextView* text_view = (IupCocoaTextView*)cocoaTextGetTextView(ih);
         NSTextStorage* text_storage = [text_view textStorage];
-        NSRange full_range = NSMakeRange(0, [text_storage length]);
+        NSUInteger length = [text_storage length];
+        NSUInteger index = 0;
+        NSColor* old_color = [text_view defaultColor];
+        NSMutableDictionary* typing;
+
+        NSColor* the_color = cocoaTextColorFromStr(value);
+        if (!the_color || iupStrEqualNoCase(value, IupGetGlobal("TXTFGCOLOR")))
+          the_color = [NSColor textColor];
 
         NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
         [undo_manager beginUndoGrouping];
+
+        /* runs without a color of their own follow the default; format tag colors stay */
         [text_storage beginEditing];
-
-        NSColor* the_color = cocoaTextColorFromStr(value);
-        if (!the_color)
-          the_color = [NSColor textColor];
-
-        [text_view setTextColor:the_color];
-
-        if ([text_storage length] > 0)
+        while (index < length)
         {
-          [text_storage addAttribute:NSForegroundColorAttributeName value:the_color range:full_range];
+          NSRange run;
+          id fg = [text_storage attribute:NSForegroundColorAttributeName atIndex:index
+                    longestEffectiveRange:&run inRange:NSMakeRange(index, length - index)];
+          if (!fg || [fg isEqual:old_color])
+            [text_storage addAttribute:NSForegroundColorAttributeName value:the_color range:run];
+          index = NSMaxRange(run);
         }
-
         [text_storage endEditing];
+
+        typing = [[text_view typingAttributes] mutableCopy];
+        [typing setObject:the_color forKey:NSForegroundColorAttributeName];
+        [text_view setTypingAttributes:typing];
+        [typing release];
+        [text_view setDefaultColor:the_color];
+
         [text_view didChangeText];
         [undo_manager endUndoGrouping];
 
@@ -5327,6 +5347,7 @@ static int cocoaTextMapMethod(Ihandle* ih)
     }
 
     [text_view setTextColor:[NSColor textColor]];
+    [(IupCocoaTextView*)text_view setDefaultColor:[NSColor textColor]];
     [text_view setBackgroundColor:[NSColor textBackgroundColor]];
 
     root_view = scroll_view;
