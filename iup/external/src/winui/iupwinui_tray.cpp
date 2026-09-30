@@ -53,7 +53,7 @@ static void winuiTrayGetMenuPosition(HWND hwnd, int* x, int* y)
 
   if (!winuiTrayGetIconRect(hwnd, &icon_rect))
   {
-    IupGetIntInt(NULL, "CURSORPOS", x, y);
+    IupGetIntInt(nullptr, "CURSORPOS", x, y);
     return;
   }
 
@@ -97,7 +97,7 @@ static LRESULT CALLBACK winuiTrayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
 {
   if (msg == WM_USER + IUPWINUI_TRAY_NOTIFICATION)
   {
-    Ihandle* ih = (Ihandle*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    auto* ih = reinterpret_cast<Ihandle*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
     if (ih)
     {
       int dclick = 0;
@@ -119,7 +119,7 @@ static LRESULT CALLBACK winuiTrayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
 
       if (button != 0)
       {
-        IFniii cb = (IFniii)IupGetCallback(ih, "TRAYCLICK_CB");
+        auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "TRAYCLICK_CB"));
         int ret = IUP_DEFAULT;
 
         if (cb)
@@ -130,7 +130,7 @@ static LRESULT CALLBACK winuiTrayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
 
         if (button == 3 && pressed && ret != IUP_IGNORE)
         {
-          Ihandle* menu = (Ihandle*)iupAttribGet(ih, "_IUPWINUI_TRAYMENU");
+          auto* menu = reinterpret_cast<Ihandle*>(iupAttribGet(ih, "_IUPWINUI_TRAYMENU"));
           if (menu)
           {
             int x, y;
@@ -184,8 +184,8 @@ static void winuiTrayMessage(HWND hwnd, Ihandle* ih, DWORD dwMessage, HICON hIco
           MultiByteToWideChar(CP_UTF8, 0, title, -1, tnd.szInfoTitle, 64);
           tnd.szInfoTitle[63] = L'\0';
         }
-        tnd.dwInfoFlags = (DWORD)IupGetInt(ih, "TIPBALLOONTITLEICON");
-        tnd.uTimeout = (UINT)IupGetInt(ih, "TIPDELAY");
+        tnd.dwInfoFlags = static_cast<DWORD>(IupGetInt(ih, "TIPBALLOONTITLEICON"));
+        tnd.uTimeout = static_cast<UINT>(IupGetInt(ih, "TIPDELAY"));
       }
       else
       {
@@ -201,12 +201,12 @@ static void winuiTrayMessage(HWND hwnd, Ihandle* ih, DWORD dwMessage, HICON hIco
 
 static IupWinUITray* winuiGetTray(Ihandle* ih, int create)
 {
-  IupWinUITray* tray = (IupWinUITray*)iupAttribGet(ih, "_IUPWINUI_TRAY");
+  auto* tray = reinterpret_cast<IupWinUITray*>(iupAttribGet(ih, "_IUPWINUI_TRAY"));
 
   if (!tray && create)
   {
     static ATOM wc_atom = 0;
-    HINSTANCE hInstance = GetModuleHandle(NULL);
+    HINSTANCE hInstance = GetModuleHandle(nullptr);
 
     if (wc_atom == 0)
     {
@@ -218,21 +218,21 @@ static IupWinUITray* winuiGetTray(Ihandle* ih, int create)
       wc_atom = RegisterClassW(&wc);
     }
 
-    tray = (IupWinUITray*)calloc(1, sizeof(IupWinUITray));
+    tray = static_cast<IupWinUITray*>(calloc(1, sizeof(IupWinUITray)));
     tray->ih = ih;
     tray->visible = 0;
 
-    tray->hwnd = CreateWindowW(L"IupWinUITrayWindow", L"", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL);
+    tray->hwnd = CreateWindowW(L"IupWinUITrayWindow", L"", 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr, hInstance, nullptr);
 
     if (tray->hwnd)
     {
-      SetWindowLongPtr(tray->hwnd, GWLP_USERDATA, (LONG_PTR)ih);
-      iupAttribSet(ih, "_IUPWINUI_TRAY", (char*)tray);
+      SetWindowLongPtr(tray->hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(ih));
+      iupAttribSet(ih, "_IUPWINUI_TRAY", reinterpret_cast<char*>(tray));
     }
     else
     {
       free(tray);
-      return NULL;
+      return nullptr;
     }
   }
 
@@ -249,7 +249,7 @@ extern "C" IUP_SDK_API int iupdrvTraySetVisible(Ihandle* ih, int visible)
   {
     if (!visible)
     {
-      winuiTrayMessage(tray->hwnd, ih, NIM_DELETE, NULL, NULL);
+      winuiTrayMessage(tray->hwnd, ih, NIM_DELETE, nullptr, nullptr);
       tray->visible = 0;
     }
   }
@@ -257,24 +257,24 @@ extern "C" IUP_SDK_API int iupdrvTraySetVisible(Ihandle* ih, int visible)
   {
     if (visible)
     {
-      HICON hIcon = NULL;
+      HICON hIcon = nullptr;
       char* image;
       char* tip;
 
-      winuiTrayMessage(tray->hwnd, ih, NIM_ADD, NULL, NULL);
+      winuiTrayMessage(tray->hwnd, ih, NIM_ADD, nullptr, nullptr);
       tray->visible = 1;
 
       image = iupAttribGet(ih, "_IUPWINUI_TRAYIMAGE");
       if (image)
       {
-        hIcon = (HICON)iupImageGetIcon(image);
+        hIcon = static_cast<HICON>(iupImageGetIcon(image));
         if (hIcon)
-          winuiTrayMessage(tray->hwnd, ih, NIM_MODIFY, hIcon, NULL);
+          winuiTrayMessage(tray->hwnd, ih, NIM_MODIFY, hIcon, nullptr);
       }
 
       tip = iupAttribGet(ih, "_IUPWINUI_TRAYTIP");
       if (tip)
-        winuiTrayMessage(tray->hwnd, ih, NIM_MODIFY, NULL, tip);
+        winuiTrayMessage(tray->hwnd, ih, NIM_MODIFY, nullptr, tip);
     }
   }
 
@@ -290,47 +290,47 @@ extern "C" IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value)
   if (!tray || !tray->visible)
     return 0;
 
-  winuiTrayMessage(tray->hwnd, ih, NIM_MODIFY, NULL, value);
+  winuiTrayMessage(tray->hwnd, ih, NIM_MODIFY, nullptr, value);
   return 1;
 }
 
 extern "C" IUP_SDK_API int iupdrvTraySetImage(Ihandle* ih, const char* value)
 {
   IupWinUITray* tray = winuiGetTray(ih, 1);
-  HICON hIcon = NULL;
+  HICON hIcon = nullptr;
 
   iupAttribSetStr(ih, "_IUPWINUI_TRAYIMAGE", value);
 
   if (!tray || !tray->visible)
     return 0;
 
-  hIcon = (HICON)iupImageGetIcon(value);
+  hIcon = static_cast<HICON>(iupImageGetIcon(value));
   if (hIcon)
-    winuiTrayMessage(tray->hwnd, ih, NIM_MODIFY, hIcon, NULL);
+    winuiTrayMessage(tray->hwnd, ih, NIM_MODIFY, hIcon, nullptr);
 
   return 1;
 }
 
 extern "C" IUP_SDK_API int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
 {
-  iupAttribSet(ih, "_IUPWINUI_TRAYMENU", (char*)menu);
+  iupAttribSet(ih, "_IUPWINUI_TRAYMENU", reinterpret_cast<char*>(menu));
   return 1;
 }
 
 extern "C" IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih)
 {
-  IupWinUITray* tray = (IupWinUITray*)iupAttribGet(ih, "_IUPWINUI_TRAY");
+  auto* tray = reinterpret_cast<IupWinUITray*>(iupAttribGet(ih, "_IUPWINUI_TRAY"));
 
   if (tray)
   {
     if (tray->visible)
-      winuiTrayMessage(tray->hwnd, ih, NIM_DELETE, NULL, NULL);
+      winuiTrayMessage(tray->hwnd, ih, NIM_DELETE, nullptr, nullptr);
 
     if (tray->hwnd)
       DestroyWindow(tray->hwnd);
 
     free(tray);
-    iupAttribSet(ih, "_IUPWINUI_TRAY", NULL);
+    iupAttribSet(ih, "_IUPWINUI_TRAY", nullptr);
   }
 }
 
@@ -341,8 +341,8 @@ extern "C" IUP_SDK_API int iupdrvTrayIsAvailable(void)
 
 extern "C" IUP_SDK_API void iupdrvTrayInitClass(Iclass* ic)
 {
-  iupClassRegisterAttribute(ic, "TIPBALLOON", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TIPBALLOONTITLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TIPBALLOONTITLEICON", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TIPDELAY", NULL, NULL, IUPAF_SAMEASSYSTEM, "10000", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPBALLOON", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPBALLOONTITLE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPBALLOONTITLEICON", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TIPDELAY", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "10000", IUPAF_NO_INHERIT);
 }

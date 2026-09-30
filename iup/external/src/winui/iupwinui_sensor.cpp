@@ -40,7 +40,7 @@ static void winuiSensorPostReading(Ihandle* ih, double x, double y, double z, Da
   msg.x = x;
   msg.y = y;
   msg.z = z;
-  msg.timestamp = (long long)winrt::clock::to_time_t(timestamp) * 1000;
+  msg.timestamp = static_cast<long long>(winrt::clock::to_time_t(timestamp)) * 1000;
   iupSensorPost(ih, &msg);
 }
 
@@ -55,11 +55,11 @@ static void winuiSensorPostError(Ihandle* ih, const char* text)
 
 static IupWinUISensor* winuiSensorGet(Ihandle* ih, int create)
 {
-  IupWinUISensor* sensor = (IupWinUISensor*)iupAttribGet(ih, IUPWINUI_SENSOR_KEY);
+  auto* sensor = reinterpret_cast<IupWinUISensor*>(iupAttribGet(ih, IUPWINUI_SENSOR_KEY));
   if (!sensor && create)
   {
     sensor = new IupWinUISensor();
-    iupAttribSet(ih, IUPWINUI_SENSOR_KEY, (char*)sensor);
+    iupAttribSet(ih, IUPWINUI_SENSOR_KEY, reinterpret_cast<char*>(sensor));
   }
   return sensor;
 }
@@ -102,7 +102,7 @@ extern "C" IUP_SDK_API int iupdrvSensorStart(Ihandle* ih)
 {
   IupWinUISensor* sensor = winuiSensorGet(ih, 1);
   int type = iupSensorGetType(ih);
-  uint32_t interval = (uint32_t)iupAttribGetInt(ih, "INTERVAL");
+  auto interval = static_cast<uint32_t>(iupAttribGetInt(ih, "INTERVAL"));
 
   try
   {
@@ -193,7 +193,7 @@ extern "C" IUP_SDK_API void iupdrvSensorStop(Ihandle* ih)
 
 extern "C" IUP_SDK_API char* iupdrvSensorGetPermission(Ihandle* ih)
 {
-  return iupdrvSensorIsAvailable(iupSensorGetType(ih))? (char*)"GRANTED": (char*)"UNAVAILABLE";
+  return iupdrvSensorIsAvailable(iupSensorGetType(ih))? const_cast<char*>("GRANTED"): const_cast<char*>("UNAVAILABLE");
 }
 
 extern "C" IUP_SDK_API void iupdrvSensorDestroy(Ihandle* ih)
@@ -203,7 +203,7 @@ extern "C" IUP_SDK_API void iupdrvSensorDestroy(Ihandle* ih)
     return;
   iupdrvSensorStop(ih);
   delete sensor;
-  iupAttribSet(ih, IUPWINUI_SENSOR_KEY, NULL);
+  iupAttribSet(ih, IUPWINUI_SENSOR_KEY, nullptr);
 }
 
 extern "C" IUP_SDK_API void iupdrvSensorInitClass(Iclass* ic)

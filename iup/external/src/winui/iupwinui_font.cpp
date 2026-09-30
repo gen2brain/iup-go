@@ -38,7 +38,7 @@ struct IwinuiFont
 };
 
 static std::deque<IwinuiFont> winui_fonts;
-IDWriteFactory* winui_dwrite_factory = NULL;
+IDWriteFactory* winui_dwrite_factory = nullptr;
 float winui_screen_dpi = 96.0f;
 
 #define iupWINUI_PIXEL2PT(_px, _dpi) ((_px) * 72.0f / (_dpi))
@@ -52,10 +52,10 @@ static void winuiDWriteMeasureText(IDWriteTextFormat* format, const wchar_t* tex
     return;
   }
 
-  IDWriteTextLayout* layout = NULL;
+  IDWriteTextLayout* layout = nullptr;
   HRESULT hr;
   if (gdi)
-    hr = winui_dwrite_factory->CreateGdiCompatibleTextLayout(text, len, format, 100000.0f, 100000.0f, 1.0f, NULL, FALSE, &layout);
+    hr = winui_dwrite_factory->CreateGdiCompatibleTextLayout(text, len, format, 100000.0f, 100000.0f, 1.0f, nullptr, FALSE, &layout);
   else
     hr = winui_dwrite_factory->CreateTextLayout(text, len, format, 100000.0f, 100000.0f, &layout);
 
@@ -86,14 +86,14 @@ static IwinuiFont* winuiFindFont(const char* font, float dpi)
   int is_underline = 0;
   int is_strikeout = 0;
 
-  for (size_t i = 0; i < winui_fonts.size(); i++)
+  for (auto& winui_font : winui_fonts)
   {
-    if (winui_fonts[i].dpi == dpi && iupStrEqualNoCase(font, winui_fonts[i].font))
-      return &winui_fonts[i];
+    if (winui_font.dpi == dpi && iupStrEqualNoCase(font, winui_font.font))
+      return &winui_font;
   }
 
   if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
-    return NULL;
+    return nullptr;
 
   const char* mapped_name = iupFontGetWinName(typeface);
   if (mapped_name)
@@ -101,14 +101,14 @@ static IwinuiFont* winuiFindFont(const char* font, float dpi)
 
   float fontSize;
   if (size < 0)
-    fontSize = (float)(-size);
+    fontSize = static_cast<float>(-size);
   else
-    fontSize = iupWINUI_PT2PIXEL((float)size, dpi);
+    fontSize = iupWINUI_PT2PIXEL(static_cast<float>(size), dpi);
 
   if (fontSize <= 0)
-    return NULL;
+    return nullptr;
 
-  int wlen = MultiByteToWideChar(CP_UTF8, 0, typeface, -1, NULL, 0);
+  int wlen = MultiByteToWideChar(CP_UTF8, 0, typeface, -1, nullptr, 0);
   std::wstring wtypeface(wlen - 1, L'\0');
   MultiByteToWideChar(CP_UTF8, 0, typeface, -1, &wtypeface[0], wlen);
 
@@ -119,10 +119,10 @@ static IwinuiFont* winuiFindFont(const char* font, float dpi)
   if (GetUserDefaultLocaleName(localeName, LOCALE_NAME_MAX_LENGTH) == 0)
     wcscpy(localeName, L"en-US");
 
-  IDWriteTextFormat* textFormat = NULL;
+  IDWriteTextFormat* textFormat = nullptr;
   HRESULT hr = winui_dwrite_factory->CreateTextFormat(
     wtypeface.c_str(),
-    NULL,
+    nullptr,
     weight,
     style,
     DWRITE_FONT_STRETCH_NORMAL,
@@ -131,7 +131,7 @@ static IwinuiFont* winuiFindFont(const char* font, float dpi)
     &textFormat);
 
   if (FAILED(hr) || !textFormat)
-    return NULL;
+    return nullptr;
 
   /* Disable word wrapping, IUP measures text line by line */
   textFormat->SetWordWrapping(DWRITE_WORD_WRAPPING_NO_WRAP);
@@ -144,14 +144,14 @@ static IwinuiFont* winuiFindFont(const char* font, float dpi)
 
   float charW, charH;
   winuiDWriteMeasureText(textFormat, L"abcdefghijklmnopqrstuvwxyz", 26, 0, &charW, &charH);
-  newfont.charwidth = (int)ceil(charW / 26.0f);
-  newfont.charheight = (int)ceil(charH);
+  newfont.charwidth = static_cast<int>(ceil(charW / 26.0f));
+  newfont.charheight = static_cast<int>(ceil(charH));
   newfont.charheight_f = charH;
 
   winuiDWriteMeasureText(textFormat, L"abcdefghijklmnopqrstuvwxyz", 26, 1, &charW, &charH);
-  newfont.drawcharheight = (int)ceil(charH);
+  newfont.drawcharheight = static_cast<int>(ceil(charH));
 
-  IDWriteFontCollection* fontCollection = NULL;
+  IDWriteFontCollection* fontCollection = nullptr;
   winui_dwrite_factory->GetSystemFontCollection(&fontCollection, FALSE);
   if (fontCollection)
   {
@@ -160,19 +160,19 @@ static IwinuiFont* winuiFindFont(const char* font, float dpi)
     fontCollection->FindFamilyName(wtypeface.c_str(), &index, &exists);
     if (exists)
     {
-      IDWriteFontFamily* fontFamily = NULL;
+      IDWriteFontFamily* fontFamily = nullptr;
       fontCollection->GetFontFamily(index, &fontFamily);
       if (fontFamily)
       {
-        IDWriteFont* dwFont = NULL;
+        IDWriteFont* dwFont = nullptr;
         fontFamily->GetFirstMatchingFont(weight, DWRITE_FONT_STRETCH_NORMAL, style, &dwFont);
         if (dwFont)
         {
           DWRITE_FONT_METRICS fontMetrics;
           dwFont->GetMetrics(&fontMetrics);
-          float scale = fontSize / (float)fontMetrics.designUnitsPerEm;
-          newfont.ascent = (int)ceil(fontMetrics.ascent * scale);
-          newfont.descent = (int)ceil(fontMetrics.descent * scale);
+          float scale = fontSize / static_cast<float>(fontMetrics.designUnitsPerEm);
+          newfont.ascent = static_cast<int>(ceil(fontMetrics.ascent * scale));
+          newfont.descent = static_cast<int>(ceil(fontMetrics.descent * scale));
           dwFont->Release();
         }
         fontFamily->Release();
@@ -182,7 +182,7 @@ static IwinuiFont* winuiFindFont(const char* font, float dpi)
   }
 
   if (newfont.ascent == 0)
-    newfont.ascent = (int)(newfont.charheight * 0.8f);
+    newfont.ascent = static_cast<int>(newfont.charheight * 0.8f);
   if (newfont.descent == 0)
     newfont.descent = newfont.charheight - newfont.ascent;
 
@@ -192,7 +192,7 @@ static IwinuiFont* winuiFindFont(const char* font, float dpi)
 
 static IwinuiFont* winuiFontGet(Ihandle* ih)
 {
-  float dpi = (float)iupwinuiGetDpi(ih);
+  auto dpi = static_cast<float>(iupwinuiGetDpi(ih));
   IwinuiFont* winfont = winuiFindFont(iupGetFontValue(ih), dpi);
   if (!winfont)
     winfont = winuiFindFont(IupGetGlobal("DEFAULTFONT"), dpi);
@@ -214,10 +214,10 @@ extern "C" IUP_SDK_API char* iupdrvGetSystemFont(void)
     int is_bold = (lf->lfWeight == FW_NORMAL) ? 0 : 1;
     int is_italic = lf->lfItalic;
     int height_pixels = lf->lfHeight;
-    int size = (int)iupWINUI_PIXEL2PT((float)(-height_pixels), winui_screen_dpi);
+    int size = static_cast<int>(iupWINUI_PIXEL2PT(static_cast<float>(-height_pixels), winui_screen_dpi));
 
     char facename[64];
-    WideCharToMultiByte(CP_UTF8, 0, lf->lfFaceName, -1, facename, sizeof(facename), NULL, NULL);
+    WideCharToMultiByte(CP_UTF8, 0, lf->lfFaceName, -1, facename, sizeof(facename), nullptr, nullptr);
 
     snprintf(str, sizeof(str), "%s, %s%s%d", facename,
             is_bold ? "Bold " : "",
@@ -240,16 +240,16 @@ extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   if (!value || !value[0])
     value = "Segoe UI, 9";
 
-  IwinuiFont* winfont = winuiFindFont(value, (float)iupwinuiGetDpi(ih));
+  IwinuiFont* winfont = winuiFindFont(value, static_cast<float>(iupwinuiGetDpi(ih)));
   if (!winfont)
     return 0;
 
-  iupAttribSet(ih, "_IUP_WINUIFONT", (char*)winfont);
+  iupAttribSet(ih, "_IUP_WINUIFONT", reinterpret_cast<char*>(winfont));
   iupBaseUpdateAttribFromFont(ih);
 
   if (ih->handle && ih->iclass->nativetype == IUP_TYPECONTROL && !winuiHandleIsHWND(ih))
   {
-    winrt::Microsoft::UI::Xaml::Controls::Control control = winuiGetHandle<winrt::Microsoft::UI::Xaml::Controls::Control>(ih);
+    auto control = winuiGetHandle<winrt::Microsoft::UI::Xaml::Controls::Control>(ih);
     if (control)
       iupwinuiUpdateControlFont(ih, control);
   }
@@ -283,16 +283,16 @@ extern "C" IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str
     return 0;
 
   const char* line_end = strchr(str, '\n');
-  int len = line_end ? (int)(line_end - str) : (int)strlen(str);
+  int len = line_end ? static_cast<int>(line_end - str) : static_cast<int>(strlen(str));
 
-  int wlen = MultiByteToWideChar(CP_UTF8, 0, str, len, NULL, 0);
+  int wlen = MultiByteToWideChar(CP_UTF8, 0, str, len, nullptr, 0);
   std::wstring wstr(wlen, L'\0');
   MultiByteToWideChar(CP_UTF8, 0, str, len, &wstr[0], wlen);
 
   float width;
-  winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, 0, &width, NULL);
+  winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, 0, &width, nullptr);
 
-  return (int)ceil(width);
+  return static_cast<int>(ceil(width));
 }
 
 extern "C" IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
@@ -327,18 +327,18 @@ extern "C" IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const 
     while (*curstr)
     {
       const char* nextstr = strchr(curstr, '\n');
-      int l_len = nextstr ? (int)(nextstr - curstr) : (int)strlen(curstr);
+      int l_len = nextstr ? static_cast<int>(nextstr - curstr) : static_cast<int>(strlen(curstr));
 
       if (l_len > 0)
       {
-        int wlen = MultiByteToWideChar(CP_UTF8, 0, curstr, l_len, NULL, 0);
+        int wlen = MultiByteToWideChar(CP_UTF8, 0, curstr, l_len, nullptr, 0);
         std::wstring wstr(wlen, L'\0');
         MultiByteToWideChar(CP_UTF8, 0, curstr, l_len, &wstr[0], wlen);
 
         float width;
-        winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, 0, &width, NULL);
-        if ((int)ceil(width) > max_w)
-          max_w = (int)ceil(width);
+        winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, 0, &width, nullptr);
+        if (static_cast<int>(ceil(width)) > max_w)
+          max_w = static_cast<int>(ceil(width));
       }
 
       if (nextstr)
@@ -363,7 +363,7 @@ extern "C" IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* 
     winfont = winuiFindFont("Segoe UI, 9", winui_screen_dpi);
     if (!winfont)
     {
-      if (w) *w = str ? (int)strlen(str) * 8 : 0;
+      if (w) *w = str ? static_cast<int>(strlen(str)) * 8 : 0;
       if (h) *h = 16;
       return;
     }
@@ -376,26 +376,26 @@ extern "C" IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* 
     return;
   }
 
-  int actual_len = (len < 0) ? (int)strlen(str) : len;
+  int actual_len = (len < 0) ? static_cast<int>(strlen(str)) : len;
   const char* end = str + actual_len;
   const char* curstr = str;
   int max_w = 0, line_count = 1;
 
   while (curstr < end)
   {
-    const char* nextstr = (const char*)memchr(curstr, '\n', end - curstr);
-    int l_len = nextstr ? (int)(nextstr - curstr) : (int)(end - curstr);
+    const char* nextstr = static_cast<const char*>(memchr(curstr, '\n', end - curstr));
+    int l_len = nextstr ? static_cast<int>(nextstr - curstr) : static_cast<int>(end - curstr);
 
     if (l_len > 0)
     {
-      int wlen = MultiByteToWideChar(CP_UTF8, 0, curstr, l_len, NULL, 0);
+      int wlen = MultiByteToWideChar(CP_UTF8, 0, curstr, l_len, nullptr, 0);
       std::wstring wstr(wlen, L'\0');
       MultiByteToWideChar(CP_UTF8, 0, curstr, l_len, &wstr[0], wlen);
 
       float width;
-      winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, 1, &width, NULL);
-      if ((int)ceil(width) > max_w)
-        max_w = (int)ceil(width);
+      winuiDWriteMeasureText(winfont->textFormat, wstr.c_str(), wlen, 1, &width, nullptr);
+      if (static_cast<int>(ceil(width)) > max_w)
+        max_w = static_cast<int>(ceil(width));
     }
 
     if (!nextstr || nextstr + 1 >= end)
@@ -445,12 +445,12 @@ IUP_DRV_API float iupwinuiFontGetMultilineLineHeightF(Ihandle* ih)
 
 struct WinUIFontProps
 {
-  float fontSize;
+  float fontSize{0};
   std::wstring typeface;
-  bool isBold;
-  bool isItalic;
-  bool isUnderline;
-  bool isStrikeout;
+  bool isBold{false};
+  bool isItalic{false};
+  bool isUnderline{false};
+  bool isStrikeout{false};
 };
 
 static bool winuiGetFontProps(Ihandle* ih, WinUIFontProps* props)
@@ -476,7 +476,7 @@ static bool winuiGetFontProps(Ihandle* ih, WinUIFontProps* props)
   if (mapped_name)
     iupStrCopyN(typeface, sizeof(typeface), mapped_name);
 
-  int wlen = MultiByteToWideChar(CP_UTF8, 0, typeface, -1, NULL, 0);
+  int wlen = MultiByteToWideChar(CP_UTF8, 0, typeface, -1, nullptr, 0);
   props->typeface.assign(wlen - 1, L'\0');
   MultiByteToWideChar(CP_UTF8, 0, typeface, -1, &props->typeface[0], wlen);
 
@@ -496,7 +496,7 @@ IUP_DRV_API void iupwinuiUpdateControlFont(Ihandle* ih, winrt::Microsoft::UI::Xa
   if (!winuiGetFontProps(ih, &props))
     return;
 
-  control.FontSize((double)props.fontSize / iupwinuiGetScale(ih));
+  control.FontSize(static_cast<double>(props.fontSize) / iupwinuiGetScale(ih));
   control.FontFamily(winrt::Microsoft::UI::Xaml::Media::FontFamily(props.typeface.c_str()));
 
   if (props.isBold)
@@ -526,12 +526,12 @@ IUP_DRV_API void iupwinuiUpdateTextBlockFontStr(winrt::Microsoft::UI::Xaml::Cont
 
   float fontSize;
   if (size < 0)
-    fontSize = (float)(-size);
+    fontSize = static_cast<float>(-size);
   else
-    fontSize = iupWINUI_PT2PIXEL((float)size, (float)iupwinuiGetDpi(ih));
+    fontSize = iupWINUI_PT2PIXEL(static_cast<float>(size), static_cast<float>(iupwinuiGetDpi(ih)));
 
   if (fontSize > 0)
-    textBlock.FontSize((double)fontSize / iupwinuiGetScale(ih));
+    textBlock.FontSize(static_cast<double>(fontSize) / iupwinuiGetScale(ih));
 
   textBlock.FontFamily(winrt::Microsoft::UI::Xaml::Media::FontFamily(iupwinuiStringToHString(typeface)));
 
@@ -562,7 +562,7 @@ IUP_DRV_API void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::
   if (!winuiGetFontProps(ih, &props))
     return;
 
-  textBlock.FontSize((double)props.fontSize / iupwinuiGetScale(ih));
+  textBlock.FontSize(static_cast<double>(props.fontSize) / iupwinuiGetScale(ih));
   textBlock.FontFamily(winrt::Microsoft::UI::Xaml::Media::FontFamily(props.typeface.c_str()));
 
   if (props.isBold)
@@ -585,26 +585,26 @@ IUP_DRV_API void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::
 
 static int winuiFontFamilyCompare(const void* a, const void* b)
 {
-  return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
+  return iupStrCompare(*static_cast<const char* const*>(a), *static_cast<const char* const*>(b), 0, 1);
 }
 
 extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
-  IDWriteFontCollection* collection = NULL;
+  IDWriteFontCollection* collection = nullptr;
   UINT32 i, family_count;
   int count = 0;
   char** temp;
 
   if (!winui_dwrite_factory)
   {
-    *list = NULL;
+    *list = nullptr;
     return 0;
   }
 
   winui_dwrite_factory->GetSystemFontCollection(&collection, FALSE);
   if (!collection)
   {
-    *list = NULL;
+    *list = nullptr;
     return 0;
   }
 
@@ -612,20 +612,20 @@ extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
   if (family_count == 0)
   {
     collection->Release();
-    *list = NULL;
+    *list = nullptr;
     return 0;
   }
 
-  temp = (char**)malloc(family_count * sizeof(char*));
+  temp = static_cast<char**>(malloc(family_count * sizeof(char*)));
 
   for (i = 0; i < family_count; i++)
   {
-    IDWriteFontFamily* family = NULL;
+    IDWriteFontFamily* family = nullptr;
     collection->GetFontFamily(i, &family);
     if (!family)
       continue;
 
-    IDWriteLocalizedStrings* names = NULL;
+    IDWriteLocalizedStrings* names = nullptr;
     family->GetFamilyNames(&names);
     if (names)
     {
@@ -639,11 +639,11 @@ extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
       names->GetStringLength(idx, &len);
       if (len > 0)
       {
-        wchar_t* wname = (wchar_t*)malloc((len + 1) * sizeof(wchar_t));
+        auto* wname = static_cast<wchar_t*>(malloc((len + 1) * sizeof(wchar_t)));
         names->GetString(idx, wname, len + 1);
 
         char name[256];
-        int utf8_len = WideCharToMultiByte(CP_UTF8, 0, wname, -1, name, sizeof(name), NULL, NULL);
+        int utf8_len = WideCharToMultiByte(CP_UTF8, 0, wname, -1, name, sizeof(name), nullptr, nullptr);
         free(wname);
 
         if (utf8_len > 0)
@@ -662,11 +662,11 @@ extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
   if (count == 0)
   {
     free(temp);
-    *list = NULL;
+    *list = nullptr;
     return 0;
   }
 
-  *list = (char**)realloc(temp, count * sizeof(char*));
+  *list = static_cast<char**>(realloc(temp, count * sizeof(char*)));
   qsort(*list, count, sizeof(char*), winuiFontFamilyCompare);
 
   return count;
@@ -680,25 +680,25 @@ extern "C" IUP_SDK_API void iupdrvFontInit(void)
     reinterpret_cast<IUnknown**>(&winui_dwrite_factory));
 
   if (FAILED(hr))
-    winui_dwrite_factory = NULL;
+    winui_dwrite_factory = nullptr;
 
-  HDC hdc = GetDC(NULL);
-  winui_screen_dpi = (float)GetDeviceCaps(hdc, LOGPIXELSY);
-  ReleaseDC(NULL, hdc);
+  HDC hdc = GetDC(nullptr);
+  winui_screen_dpi = static_cast<float>(GetDeviceCaps(hdc, LOGPIXELSY));
+  ReleaseDC(nullptr, hdc);
 }
 
 extern "C" IUP_SDK_API void iupdrvFontFinish(void)
 {
-  for (size_t i = 0; i < winui_fonts.size(); i++)
+  for (auto& winui_font : winui_fonts)
   {
-    if (winui_fonts[i].textFormat)
-      winui_fonts[i].textFormat->Release();
+    if (winui_font.textFormat)
+      winui_font.textFormat->Release();
   }
   winui_fonts.clear();
 
   if (winui_dwrite_factory)
   {
     winui_dwrite_factory->Release();
-    winui_dwrite_factory = NULL;
+    winui_dwrite_factory = nullptr;
   }
 }

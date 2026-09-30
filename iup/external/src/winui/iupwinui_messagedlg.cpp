@@ -32,7 +32,7 @@ static LRESULT CALLBACK winuiMsgDlgHostWndProc(HWND hwnd, UINT msg, WPARAM wPara
 {
   if (msg == WM_SETFOCUS)
   {
-    HWND island = (HWND)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    HWND island = reinterpret_cast<HWND>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
     if (island)
       SetFocus(island);
     return 0;
@@ -40,7 +40,7 @@ static LRESULT CALLBACK winuiMsgDlgHostWndProc(HWND hwnd, UINT msg, WPARAM wPara
   return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-static void winuiMsgDlgRegisterHostClass(void)
+static void winuiMsgDlgRegisterHostClass()
 {
   static bool registered = false;
   if (registered)
@@ -49,8 +49,8 @@ static void winuiMsgDlgRegisterHostClass(void)
   WNDCLASSEXW wc = {};
   wc.cbSize = sizeof(WNDCLASSEXW);
   wc.lpfnWndProc = winuiMsgDlgHostWndProc;
-  wc.hInstance = GetModuleHandle(NULL);
-  wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+  wc.hInstance = GetModuleHandle(nullptr);
+  wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
   wc.lpszClassName = WINUI_MSGDLG_HOST_CLASS;
   RegisterClassExW(&wc);
   registered = true;
@@ -60,7 +60,7 @@ static Ihandle* winuiMsgDlgFindParent(Ihandle* ih)
 {
   Ihandle* parent = IupGetAttributeHandle(ih, "PARENTDIALOG");
   if (!parent)
-    parent = IupGetGlobal("PARENTDIALOG") ? IupGetHandle(IupGetGlobal("PARENTDIALOG")) : NULL;
+    parent = IupGetGlobal("PARENTDIALOG") ? IupGetHandle(IupGetGlobal("PARENTDIALOG")) : nullptr;
 
   if (!parent || !parent->handle)
   {
@@ -70,7 +70,7 @@ static Ihandle* winuiMsgDlgFindParent(Ihandle* ih)
       parent = iupwinuiDialogFromHwnd(GetWindow(active, GW_OWNER));
   }
 
-  return (parent && parent->handle) ? parent : NULL;
+  return (parent && parent->handle) ? parent : nullptr;
 }
 
 static XamlRoot winuiMsgDlgGetParentXamlRoot(Ihandle* parent)
@@ -78,7 +78,7 @@ static XamlRoot winuiMsgDlgGetParentXamlRoot(Ihandle* parent)
   if (!parent)
     return nullptr;
 
-  IupWinUIDialogAux* parentAux = winuiGetAux<IupWinUIDialogAux>(parent, IUPWINUI_DIALOG_AUX);
+  auto* parentAux = winuiGetAux<IupWinUIDialogAux>(parent, IUPWINUI_DIALOG_AUX);
   if (parentAux && parentAux->rootPanel)
     return parentAux->rootPanel.XamlRoot();
 
@@ -183,7 +183,7 @@ static void winuiMsgDlgRunMessageLoop(bool& dialogCompleted)
   MSG msg;
   while (!dialogCompleted)
   {
-    BOOL ret = GetMessage(&msg, NULL, 0, 0);
+    BOOL ret = GetMessage(&msg, nullptr, 0, 0);
     if (ret == 0 || ret == -1)
       break;
 
@@ -202,7 +202,7 @@ static int winuiMsgDlgShowOnParent(Ihandle* ih, Ihandle* parent)
   if (!xamlRoot)
     return IUP_ERROR;
 
-  HWND parentHwnd = (HWND)parent->handle;
+  HWND parentHwnd = reinterpret_cast<HWND>(parent->handle);
 
   iupAttribSet(parent, "_IUPWINUI_CONTENT_DIALOG_ACTIVE", "1");
 
@@ -224,7 +224,7 @@ static int winuiMsgDlgShowOnParent(Ihandle* ih, Ihandle* parent)
 
   iupwinuiProcessPendingMessages();
 
-  IupWinUIDialogAux* parentAux = winuiGetAux<IupWinUIDialogAux>(parent, IUPWINUI_DIALOG_AUX);
+  auto* parentAux = winuiGetAux<IupWinUIDialogAux>(parent, IUPWINUI_DIALOG_AUX);
   if (parentAux && parentAux->islandHwnd)
     SetFocus(parentAux->islandHwnd);
 
@@ -232,7 +232,7 @@ static int winuiMsgDlgShowOnParent(Ihandle* ih, Ihandle* parent)
 
   winuiMsgDlgSetResult(ih, dialogResult);
 
-  iupAttribSet(parent, "_IUPWINUI_CONTENT_DIALOG_ACTIVE", NULL);
+  iupAttribSet(parent, "_IUPWINUI_CONTENT_DIALOG_ACTIVE", nullptr);
 
   return IUP_NOERROR;
 }
@@ -252,7 +252,7 @@ static int winuiMsgDlgShowStandalone(Ihandle* ih, HWND ownerHwnd)
     L"",
     WS_POPUP,
     0, 0, screenW, screenH,
-    ownerHwnd, NULL, GetModuleHandle(NULL), NULL
+    ownerHwnd, nullptr, GetModuleHandle(nullptr), nullptr
   );
 
   if (!tempHwnd)
@@ -270,7 +270,7 @@ static int winuiMsgDlgShowStandalone(Ihandle* ih, HWND ownerHwnd)
     if (islandHwnd)
     {
       SetWindowLong(islandHwnd, GWL_STYLE, WS_TABSTOP | WS_CHILD | WS_VISIBLE);
-      SetWindowLongPtr(tempHwnd, GWLP_USERDATA, (LONG_PTR)islandHwnd);
+      SetWindowLongPtr(tempHwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(islandHwnd));
     }
 
     RectInt32 islandRect = {0, 0, screenW, screenH};
@@ -319,7 +319,7 @@ static int winuiMsgDlgShowStandalone(Ihandle* ih, HWND ownerHwnd)
   iupwinuiProcessPendingMessages();
 
   {
-    HWND islandHwnd = (HWND)GetWindowLongPtr(tempHwnd, GWLP_USERDATA);
+    HWND islandHwnd = reinterpret_cast<HWND>(GetWindowLongPtr(tempHwnd, GWLP_USERDATA));
     if (islandHwnd)
       SetFocus(islandHwnd);
   }
@@ -347,7 +347,7 @@ static int winuiMessageDlgPopup(Ihandle* ih, int x, int y)
   (void)y;
 
   Ihandle* parent = winuiMsgDlgFindParent(ih);
-  HWND ownerHwnd = parent ? (HWND)parent->handle : NULL;
+  HWND ownerHwnd = parent ? reinterpret_cast<HWND>(parent->handle) : nullptr;
 
   if (parent)
     iupAttribSet(parent, "_IUPWINUI_CONTENT_DIALOG_ACTIVE", "1");
@@ -355,7 +355,7 @@ static int winuiMessageDlgPopup(Ihandle* ih, int x, int y)
   int ret = winuiMsgDlgShowStandalone(ih, ownerHwnd);
 
   if (parent)
-    iupAttribSet(parent, "_IUPWINUI_CONTENT_DIALOG_ACTIVE", NULL);
+    iupAttribSet(parent, "_IUPWINUI_CONTENT_DIALOG_ACTIVE", nullptr);
 
   return ret;
 }
@@ -373,6 +373,6 @@ extern "C" IUP_SDK_API void iupdrvMessageDlgInitClass(Iclass* ic)
 {
   ic->DlgPopup = winuiMessageDlgPopup;
 
-  iupClassRegisterAttribute(ic, "AUTOMODAL", winuiMessageDlgGetAutoModalAttrib, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED|IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DIALOGTYPE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AUTOMODAL", winuiMessageDlgGetAutoModalAttrib, nullptr, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED|IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DIALOGTYPE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

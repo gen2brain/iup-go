@@ -55,7 +55,7 @@ static int winuiTreeFindNodeId(Ihandle* ih, TreeViewNode const& node)
   if (!node)
     return -1;
 
-  return iupTreeFindNodeId(ih, (InodeHandle*)winrt::get_abi(node));
+  return iupTreeFindNodeId(ih, static_cast<InodeHandle*>(winrt::get_abi(node)));
 }
 
 static void winuiTreeReleaseCacheNodes(Ihandle* ih, int id, int count)
@@ -167,7 +167,7 @@ static void winuiTreeApplyItemTemplate(Ihandle* ih, TreeView const& treeView)
   TextBlock tempTb;
   iupwinuiUpdateTextBlockFont(ih, tempTb);
 
-  int fontSize = (int)tempTb.FontSize();
+  int fontSize = static_cast<int>(tempTb.FontSize());
   hstring fontFamily = tempTb.FontFamily().Source();
   bool isBold = tempTb.FontWeight().Weight >= FontWeights::Bold().Weight;
   bool isItalic = tempTb.FontStyle() == winrt::Windows::UI::Text::FontStyle::Italic;
@@ -298,7 +298,7 @@ static void winuiTreeExpandingHandler(Ihandle* ih, TreeViewNode const& node)
   if (id < 0)
     return;
 
-  IFni cb = (IFni)IupGetCallback(ih, "BRANCHOPEN_CB");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "BRANCHOPEN_CB"));
   if (cb)
   {
     int ret = cb(ih, id);
@@ -312,7 +312,7 @@ static void winuiTreeExpandingHandler(Ihandle* ih, TreeViewNode const& node)
   char* expanded_img = iupAttribGetId(ih, "_IUPWINUI_TREE_IMGEXP", id);
   if (expanded_img)
   {
-    void* imghandle = iupImageGetImage(expanded_img, ih, 0, NULL);
+    void* imghandle = iupImageGetImage(expanded_img, ih, 0, nullptr);
     if (imghandle)
       winuiTreeSetNodeImage(ih, node, imghandle);
   }
@@ -326,7 +326,7 @@ static void winuiTreeCollapsedHandler(Ihandle* ih, TreeViewNode const& node)
   if (id < 0)
     return;
 
-  IFni cb = (IFni)IupGetCallback(ih, "BRANCHCLOSE_CB");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "BRANCHCLOSE_CB"));
   if (cb)
     cb(ih, id);
 
@@ -347,13 +347,13 @@ static void winuiTreeItemInvokedHandler(Ihandle* ih, TreeViewNode const& node)
 
   if (isBranch)
   {
-    IFni cb = (IFni)IupGetCallback(ih, "EXECUTEBRANCH_CB");
+    IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "EXECUTEBRANCH_CB"));
     if (cb)
       cb(ih, id);
   }
   else
   {
-    IFni cb = (IFni)IupGetCallback(ih, "EXECUTELEAF_CB");
+    IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "EXECUTELEAF_CB"));
     if (cb)
       cb(ih, id);
   }
@@ -368,7 +368,7 @@ static void winuiTreeStoreSelection(IupWinUITreeAux* aux, TreeView const& treeVi
 
 static void winuiTreeSyncCurrent(Ihandle* ih, TreeView const& treeView)
 {
-  IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+  auto* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
   if (!aux)
     return;
 
@@ -380,7 +380,7 @@ static void winuiTreeSyncCurrent(Ihandle* ih, TreeView const& treeView)
 
 static void winuiTreeSelectionChangedHandler(Ihandle* ih)
 {
-  IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+  auto* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
   if (!aux)
     return;
 
@@ -429,19 +429,19 @@ static void winuiTreeSelectionChangedHandler(Ihandle* ih)
     winuiTreeSetFocus(ih, aux->currentId);
   }
 
-  IFnii cb = (IFnii)IupGetCallback(ih, "SELECTION_CB");
-  IFnIi multi_cb = NULL;
-  IFnIi multi_un_cb = NULL;
+  auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "SELECTION_CB"));
+  IFnIi multi_cb = nullptr;
+  IFnIi multi_un_cb = nullptr;
   if (ih->data->mark_mode == ITREE_MARK_MULTIPLE)
   {
-    multi_cb = (IFnIi)IupGetCallback(ih, "MULTISELECTION_CB");
-    multi_un_cb = (IFnIi)IupGetCallback(ih, "MULTIUNSELECTION_CB");
+    multi_cb = reinterpret_cast<IFnIi>(IupGetCallback(ih, "MULTISELECTION_CB"));
+    multi_un_cb = reinterpret_cast<IFnIi>(IupGetCallback(ih, "MULTIUNSELECTION_CB"));
   }
 
   if (!removed.empty())
   {
     if (multi_un_cb)
-      multi_un_cb(ih, removed.data(), (int)removed.size());
+      multi_un_cb(ih, removed.data(), static_cast<int>(removed.size()));
     else if (cb)
     {
       for (int id : removed)
@@ -452,7 +452,7 @@ static void winuiTreeSelectionChangedHandler(Ihandle* ih)
   if (!added.empty())
   {
     if (multi_cb)
-      multi_cb(ih, added.data(), (int)added.size());
+      multi_cb(ih, added.data(), static_cast<int>(added.size()));
     else if (cb)
     {
       for (int id : added)
@@ -463,7 +463,7 @@ static void winuiTreeSelectionChangedHandler(Ihandle* ih)
 
 static void winuiTreeClickMark(Ihandle* ih, TreeViewNode const& node)
 {
-  IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+  auto* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
   TreeView treeView = winuiTreeGetTreeView(ih);
   if (!aux || !treeView || !node)
     return;
@@ -529,7 +529,7 @@ static char* winuiTreeGetDepthAttrib(Ihandle* ih, int id)
 {
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (!node)
-    return NULL;
+    return nullptr;
 
   /* RootNodes() are children of an implicit hidden root (its Parent() is null); do not count it */
   int depth = 0;
@@ -547,15 +547,15 @@ static char* winuiTreeGetParentAttrib(Ihandle* ih, int id)
 {
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (!node)
-    return NULL;
+    return nullptr;
 
   TreeViewNode parent = node.Parent();
   if (!parent)
-    return NULL;
+    return nullptr;
 
   int parentId = winuiTreeFindNodeId(ih, parent);
   if (parentId < 0)
-    return NULL;
+    return nullptr;
 
   return iupStrReturnInt(parentId);
 }
@@ -564,20 +564,20 @@ static char* winuiTreeGetNextAttrib(Ihandle* ih, int id)
 {
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (!node)
-    return NULL;
+    return nullptr;
 
   auto siblings = winuiTreeGetSiblings(ih, node);
   uint32_t index;
   if (!siblings.IndexOf(node, index))
-    return NULL;
+    return nullptr;
 
   if (index + 1 >= siblings.Size())
-    return NULL;
+    return nullptr;
 
   TreeViewNode next = siblings.GetAt(index + 1);
   int nextId = winuiTreeFindNodeId(ih, next);
   if (nextId < 0)
-    return NULL;
+    return nullptr;
 
   return iupStrReturnInt(nextId);
 }
@@ -586,20 +586,20 @@ static char* winuiTreeGetPreviousAttrib(Ihandle* ih, int id)
 {
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (!node)
-    return NULL;
+    return nullptr;
 
   auto siblings = winuiTreeGetSiblings(ih, node);
   uint32_t index;
   if (!siblings.IndexOf(node, index))
-    return NULL;
+    return nullptr;
 
   if (index == 0)
-    return NULL;
+    return nullptr;
 
   TreeViewNode prev = siblings.GetAt(index - 1);
   int prevId = winuiTreeFindNodeId(ih, prev);
   if (prevId < 0)
-    return NULL;
+    return nullptr;
 
   return iupStrReturnInt(prevId);
 }
@@ -608,16 +608,16 @@ static char* winuiTreeGetFirstAttrib(Ihandle* ih, int id)
 {
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (!node)
-    return NULL;
+    return nullptr;
 
   auto siblings = winuiTreeGetSiblings(ih, node);
   if (siblings.Size() == 0)
-    return NULL;
+    return nullptr;
 
   TreeViewNode first = siblings.GetAt(0);
   int firstId = winuiTreeFindNodeId(ih, first);
   if (firstId < 0)
-    return NULL;
+    return nullptr;
 
   return iupStrReturnInt(firstId);
 }
@@ -626,16 +626,16 @@ static char* winuiTreeGetLastAttrib(Ihandle* ih, int id)
 {
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (!node)
-    return NULL;
+    return nullptr;
 
   auto siblings = winuiTreeGetSiblings(ih, node);
   if (siblings.Size() == 0)
-    return NULL;
+    return nullptr;
 
   TreeViewNode last = siblings.GetAt(siblings.Size() - 1);
   int lastId = winuiTreeFindNodeId(ih, last);
   if (lastId < 0)
-    return NULL;
+    return nullptr;
 
   return iupStrReturnInt(lastId);
 }
@@ -644,9 +644,9 @@ static char* winuiTreeGetRootCountAttrib(Ihandle* ih)
 {
   TreeView treeView = winuiTreeGetTreeView(ih);
   if (!treeView)
-    return NULL;
+    return nullptr;
 
-  return iupStrReturnInt((int)treeView.RootNodes().Size());
+  return iupStrReturnInt(static_cast<int>(treeView.RootNodes().Size()));
 }
 
 /****************************************************************************
@@ -773,7 +773,7 @@ static void winuiTreeSetNodeAutomationName(Ihandle* ih, TreeViewNode const& node
 
 static void winuiTreeMarkAutomationNames(Ihandle* ih)
 {
-  IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+  auto* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
   if (aux)
     aux->namesDirty = true;
 }
@@ -804,7 +804,7 @@ static char* winuiTreeGetNodeFont(TreeViewNode const& node)
 {
   auto ps = node ? node.Content().try_as<Windows::Foundation::Collections::PropertySet>() : nullptr;
   if (!ps || !ps.HasKey(L"NodeFont"))
-    return NULL;
+    return nullptr;
 
   return iupwinuiHStringToString(unbox_value<hstring>(ps.Lookup(L"NodeFont")));
 }
@@ -1028,7 +1028,7 @@ static int winuiTreeSetValueAttrib(Ihandle* ih, const char* value)
 
   std::vector<TreeViewNode> flat;
   winuiTreeBuildFlat(treeView.RootNodes(), flat);
-  int n = (int)flat.size();
+  int n = static_cast<int>(flat.size());
   if (n == 0)
     return 0;
 
@@ -1070,7 +1070,7 @@ static int winuiTreeSetValueAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->mark_mode == ITREE_MARK_SINGLE)
   {
-    IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+    auto* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
     if (aux)
       aux->ignoreChange = true;
     treeView.SelectedNodes().Clear();
@@ -1093,8 +1093,8 @@ static char* winuiTreeGetValueAttrib(Ihandle* ih)
     return iupStrReturnInt(focus_id);
 
   if (ih->data->node_count > 0)
-    return (char*)"0";
-  return (char*)"-1";
+    return const_cast<char*>("0");
+  return const_cast<char*>("-1");
 }
 
 static int winuiTreeSetTitleAttrib(Ihandle* ih, int id, const char* value)
@@ -1128,7 +1128,7 @@ static char* winuiTreeGetTitleAttrib(Ihandle* ih, int id)
     if (ps && ps.HasKey(L"Title"))
       return iupwinuiHStringToString(unbox_value<hstring>(ps.Lookup(L"Title")));
   }
-  return NULL;
+  return nullptr;
 }
 
 static int winuiTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
@@ -1150,11 +1150,11 @@ static char* winuiTreeGetStateAttrib(Ihandle* ih, int id)
   if (node && (node.HasChildren() || node.HasUnrealizedChildren()))
   {
     if (node.IsExpanded())
-      return (char*)"EXPANDED";
+      return const_cast<char*>("EXPANDED");
     else
-      return (char*)"COLLAPSED";
+      return const_cast<char*>("COLLAPSED");
   }
-  return NULL;
+  return nullptr;
 }
 
 static char* winuiTreeGetKindAttrib(Ihandle* ih, int id)
@@ -1163,19 +1163,19 @@ static char* winuiTreeGetKindAttrib(Ihandle* ih, int id)
   if (node)
   {
     if (node.HasChildren() || node.HasUnrealizedChildren())
-      return (char*)"BRANCH";
+      return const_cast<char*>("BRANCH");
     else
-      return (char*)"LEAF";
+      return const_cast<char*>("LEAF");
   }
-  return NULL;
+  return nullptr;
 }
 
 static char* winuiTreeGetChildCountAttrib(Ihandle* ih, int id)
 {
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (node)
-    return iupStrReturnInt((int)node.Children().Size());
-  return NULL;
+    return iupStrReturnInt(static_cast<int>(node.Children().Size()));
+  return nullptr;
 }
 
 static int winuiTreeSetMarkedAttrib(Ihandle* ih, int id, const char* value)
@@ -1188,7 +1188,7 @@ static int winuiTreeSetMarkedAttrib(Ihandle* ih, int id, const char* value)
   if (!node)
     return 0;
 
-  IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+  auto* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
   if (aux)
     aux->ignoreChange = true;
 
@@ -1216,17 +1216,17 @@ static char* winuiTreeGetMarkedAttrib(Ihandle* ih, int id)
 {
   TreeView treeView = winuiTreeGetTreeView(ih);
   if (!treeView)
-    return NULL;
+    return nullptr;
 
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (!node)
-    return NULL;
+    return nullptr;
 
   uint32_t index;
   if (treeView.SelectedNodes().IndexOf(node, index))
-    return (char*)"YES";
+    return const_cast<char*>("YES");
   else
-    return (char*)"NO";
+    return const_cast<char*>("NO");
 }
 
 static int winuiTreeSetMarkStartAttrib(Ihandle* ih, const char* value)
@@ -1285,7 +1285,7 @@ static int winuiTreeSetMarkAttrib(Ihandle* ih, const char* value)
   if (!treeView)
     return 0;
 
-  IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+  auto* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
   if (aux)
     aux->ignoreChange = true;
 
@@ -1354,7 +1354,7 @@ static char* winuiTreeGetMarkedNodesAttrib(Ihandle* ih)
 {
   TreeView treeView = winuiTreeGetTreeView(ih);
   if (!treeView)
-    return NULL;
+    return nullptr;
 
   int count = ih->data->node_count;
   char* str = iupStrGetMemory(count + 1);
@@ -1386,12 +1386,12 @@ static int winuiTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
   if (!treeView)
     return 0;
 
-  IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+  auto* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
   if (aux)
     aux->ignoreChange = true;
 
   int count = ih->data->node_count;
-  int len = (int)strlen(value);
+  int len = static_cast<int>(strlen(value));
 
   for (int i = 0; i < count && i < len; i++)
   {
@@ -1429,7 +1429,7 @@ static int winuiTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     TreeViewNode node = winuiTreeGetNode(ih, id);
     if (node)
     {
-      int childCount = iupdrvTreeTotalChildCount(ih, (InodeHandle*)winrt::get_abi(node));
+      int childCount = iupdrvTreeTotalChildCount(ih, static_cast<InodeHandle*>(winrt::get_abi(node)));
       node.Children().Clear();
       node.HasUnrealizedChildren(true);
       if (childCount > 0)
@@ -1452,7 +1452,7 @@ static int winuiTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       int nodeId = winuiTreeFindNodeId(ih, node);
       if (nodeId >= 0)
       {
-        int count = iupdrvTreeTotalChildCount(ih, (InodeHandle*)winrt::get_abi(node)) + 1;
+        int count = iupdrvTreeTotalChildCount(ih, static_cast<InodeHandle*>(winrt::get_abi(node))) + 1;
 
         TreeViewNode parent = node.Parent();
         if (parent)
@@ -1484,7 +1484,7 @@ static int winuiTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (node)
   {
-    int count = iupdrvTreeTotalChildCount(ih, (InodeHandle*)winrt::get_abi(node)) + 1;
+    int count = iupdrvTreeTotalChildCount(ih, static_cast<InodeHandle*>(winrt::get_abi(node))) + 1;
 
     TreeViewNode parent = node.Parent();
     if (parent)
@@ -1549,7 +1549,7 @@ static void winuiTreeFinishRenameEditing(Ihandle* ih, TextBox const& editBox, bo
     hstring newText = editBox.Text();
     char* newTitle = iupwinuiHStringToString(newText);
 
-    IFnis cbRename = (IFnis)IupGetCallback(ih, "RENAME_CB");
+    auto cbRename = reinterpret_cast<IFnis>(IupGetCallback(ih, "RENAME_CB"));
     if (cbRename)
     {
       if (cbRename(ih, id, newTitle) != IUP_IGNORE)
@@ -1559,14 +1559,14 @@ static void winuiTreeFinishRenameEditing(Ihandle* ih, TextBox const& editBox, bo
       IupSetAttributeId(ih, "TITLE", id, newTitle);
   }
 
-  void* tbPtr = (void*)iupAttribGet(ih, "_IUPWINUI_TREE_RENAME_TEXTBLOCK");
+  void* tbPtr = reinterpret_cast<void*>(iupAttribGet(ih, "_IUPWINUI_TREE_RENAME_TEXTBLOCK"));
   if (tbPtr)
   {
     TextBlock titleBlock{nullptr};
     winrt::copy_from_abi(titleBlock, tbPtr);
     if (titleBlock)
       titleBlock.Visibility(Visibility::Visible);
-    iupAttribSet(ih, "_IUPWINUI_TREE_RENAME_TEXTBLOCK", NULL);
+    iupAttribSet(ih, "_IUPWINUI_TREE_RENAME_TEXTBLOCK", nullptr);
   }
 
   auto parent = Media::VisualTreeHelper::GetParent(editBox);
@@ -1581,7 +1581,7 @@ static void winuiTreeFinishRenameEditing(Ihandle* ih, TextBox const& editBox, bo
     }
   }
 
-  iupAttribSet(ih, "_IUPWINUI_TREE_RENAME_ID", NULL);
+  iupAttribSet(ih, "_IUPWINUI_TREE_RENAME_ID", nullptr);
 
   TreeView treeView = winuiTreeGetTreeView(ih);
   if (treeView)
@@ -1613,7 +1613,7 @@ static int winuiTreeSetRenameAttrib(Ihandle* ih, const char* value)
   if (!tvi)
     return 0;
 
-  IFni cbShow = (IFni)IupGetCallback(ih, "SHOWRENAME_CB");
+  IFni cbShow = reinterpret_cast<IFni>(IupGetCallback(ih, "SHOWRENAME_CB"));
   if (cbShow && cbShow(ih, id) == IUP_IGNORE)
     return 0;
 
@@ -1633,7 +1633,7 @@ static int winuiTreeSetRenameAttrib(Ihandle* ih, const char* value)
 
   void* tbPtr = nullptr;
   winrt::copy_to_abi(titleBlock, tbPtr);
-  iupAttribSet(ih, "_IUPWINUI_TREE_RENAME_TEXTBLOCK", (char*)tbPtr);
+  iupAttribSet(ih, "_IUPWINUI_TREE_RENAME_TEXTBLOCK", static_cast<char*>(tbPtr));
 
   TextBox editBox;
   editBox.Text(iupwinuiStringToHString(currentTitle ? currentTitle : ""));
@@ -1678,7 +1678,7 @@ static int winuiTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
 
   if (value)
   {
-    void* imghandle = iupImageGetImage(value, ih, 0, NULL);
+    void* imghandle = iupImageGetImage(value, ih, 0, nullptr);
     if (imghandle)
       winuiTreeSetNodeImage(ih, node, imghandle);
   }
@@ -1706,7 +1706,7 @@ static int winuiTreeSetImageExpandedAttrib(Ihandle* ih, int id, const char* valu
 
   if (node.IsExpanded() && value)
   {
-    void* imghandle = iupImageGetImage(value, ih, 0, NULL);
+    void* imghandle = iupImageGetImage(value, ih, 0, nullptr);
     if (imghandle)
       winuiTreeSetNodeImage(ih, node, imghandle);
   }
@@ -1716,21 +1716,21 @@ static int winuiTreeSetImageExpandedAttrib(Ihandle* ih, int id, const char* valu
 
 static int winuiTreeSetImageLeafAttrib(Ihandle* ih, const char* value)
 {
-  ih->data->def_image_leaf = iupImageGetImage(value, ih, 0, NULL);
+  ih->data->def_image_leaf = iupImageGetImage(value, ih, 0, nullptr);
   winuiTreeUpdateImages(ih, ITREE_UPDATEIMAGE_LEAF);
   return 1;
 }
 
 static int winuiTreeSetImageBranchCollapsedAttrib(Ihandle* ih, const char* value)
 {
-  ih->data->def_image_collapsed = iupImageGetImage(value, ih, 0, NULL);
+  ih->data->def_image_collapsed = iupImageGetImage(value, ih, 0, nullptr);
   winuiTreeUpdateImages(ih, ITREE_UPDATEIMAGE_COLLAPSED);
   return 1;
 }
 
 static int winuiTreeSetImageBranchExpandedAttrib(Ihandle* ih, const char* value)
 {
-  ih->data->def_image_expanded = iupImageGetImage(value, ih, 0, NULL);
+  ih->data->def_image_expanded = iupImageGetImage(value, ih, 0, nullptr);
   winuiTreeUpdateImages(ih, ITREE_UPDATEIMAGE_EXPANDED);
   return 1;
 }
@@ -1792,15 +1792,15 @@ static char* winuiTreeGetColorAttrib(Ihandle* ih, int id)
 {
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (!node)
-    return NULL;
+    return nullptr;
 
   auto ps = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
   if (!ps || !ps.HasKey(L"Color"))
-    return NULL;
+    return nullptr;
 
   auto brush = ps.Lookup(L"Color").try_as<Media::SolidColorBrush>();
   if (!brush)
-    return NULL;
+    return nullptr;
 
   auto color = brush.Color();
   return iupStrReturnRGB(color.R, color.G, color.B);
@@ -1836,15 +1836,15 @@ static int winuiTreeSetToggleValueAttrib(Ihandle* ih, int id, const char* value)
 static char* winuiTreeGetToggleValueAttrib(Ihandle* ih, int id)
 {
   if (!ih->data->show_toggle)
-    return NULL;
+    return nullptr;
 
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (!node)
-    return NULL;
+    return nullptr;
 
   auto ps = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
   if (!ps || !ps.HasKey(L"ToggleChecked"))
-    return NULL;
+    return nullptr;
 
   auto val = ps.Lookup(L"ToggleChecked");
   if (!val)
@@ -1875,22 +1875,22 @@ static int winuiTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* valu
 static char* winuiTreeGetToggleVisibleAttrib(Ihandle* ih, int id)
 {
   if (!ih->data->show_toggle)
-    return NULL;
+    return nullptr;
 
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (!node)
-    return NULL;
+    return nullptr;
 
   auto ps = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
   if (!ps || !ps.HasKey(L"ToggleVisible"))
-    return (char*)"YES";
+    return const_cast<char*>("YES");
 
   auto val = ps.Lookup(L"ToggleVisible");
   auto ref = val.try_as<Windows::Foundation::IReference<Visibility>>();
   if (ref && ref.Value() == Visibility::Collapsed)
-    return (char*)"NO";
+    return const_cast<char*>("NO");
 
-  return (char*)"YES";
+  return const_cast<char*>("YES");
 }
 
 /****************************************************************************
@@ -1957,7 +1957,7 @@ static char* winuiTreeGetIndentationAttrib(Ihandle* ih)
   if (value)
     return value;
 
-  return iupStrReturnInt((int)(16 * iupwinuiGetScale(ih) + 0.5));
+  return iupStrReturnInt(static_cast<int>(16 * iupwinuiGetScale(ih) + 0.5));
 }
 
 static void winuiTreeUpdateSpacingResources(Ihandle* ih, TreeView treeView)
@@ -1998,7 +1998,7 @@ static int winuiTreeSetFontAttrib(Ihandle* ih, const char* value)
   if (!iupdrvSetFontAttrib(ih, value))
     return 0;
 
-  TreeView treeView = winuiGetHandle<TreeView>(ih);
+  auto treeView = winuiGetHandle<TreeView>(ih);
   if (treeView)
     winuiTreeApplyItemTemplate(ih, treeView);
 
@@ -2012,7 +2012,7 @@ static int winuiTreeConvertXYToPos(Ihandle* ih, int x, int y)
     return -1;
 
   double scale = iupwinuiGetScale(ih);
-  Point pt = treeView.TransformToVisual(nullptr).TransformPoint(Point{(float)(x / scale), (float)(y / scale)});
+  Point pt = treeView.TransformToVisual(nullptr).TransformPoint(Point{static_cast<float>(x / scale), static_cast<float>(y / scale)});
   auto elements = Media::VisualTreeHelper::FindElementsInHostCoordinates(pt, treeView);
 
   for (auto const& elem : elements)
@@ -2164,7 +2164,7 @@ static unsigned char winui_img_paper[ITREE_IMG_WIDTH * ITREE_IMG_HEIGHT * 4] =
 #undef GL
 #undef GT
 
-static void winuiTreeInitializeImages(void)
+static void winuiTreeInitializeImages()
 {
   if (IupGetHandle("IMGLEAF_WINUI"))
     return;
@@ -2191,21 +2191,21 @@ static void winuiTreeInitDefaultImages(Ihandle* ih)
 
   img_name = iupAttribGetStr(ih, "IMAGELEAF");
   if (img_name && !iupStrEqualNoCase(img_name, "IMGLEAF"))
-    ih->data->def_image_leaf = iupImageGetImage(img_name, ih, 0, NULL);
+    ih->data->def_image_leaf = iupImageGetImage(img_name, ih, 0, nullptr);
   else
-    ih->data->def_image_leaf = iupImageGetImage("IMGLEAF_WINUI", ih, 0, NULL);
+    ih->data->def_image_leaf = iupImageGetImage("IMGLEAF_WINUI", ih, 0, nullptr);
 
   img_name = iupAttribGetStr(ih, "IMAGEBRANCHCOLLAPSED");
   if (img_name && !iupStrEqualNoCase(img_name, "IMGCOLLAPSED"))
-    ih->data->def_image_collapsed = iupImageGetImage(img_name, ih, 0, NULL);
+    ih->data->def_image_collapsed = iupImageGetImage(img_name, ih, 0, nullptr);
   else
-    ih->data->def_image_collapsed = iupImageGetImage("IMGCOLLAPSED_WINUI", ih, 0, NULL);
+    ih->data->def_image_collapsed = iupImageGetImage("IMGCOLLAPSED_WINUI", ih, 0, nullptr);
 
   img_name = iupAttribGetStr(ih, "IMAGEBRANCHEXPANDED");
   if (img_name && !iupStrEqualNoCase(img_name, "IMGEXPANDED"))
-    ih->data->def_image_expanded = iupImageGetImage(img_name, ih, 0, NULL);
+    ih->data->def_image_expanded = iupImageGetImage(img_name, ih, 0, nullptr);
   else
-    ih->data->def_image_expanded = iupImageGetImage("IMGEXPANDED_WINUI", ih, 0, NULL);
+    ih->data->def_image_expanded = iupImageGetImage("IMGEXPANDED_WINUI", ih, 0, nullptr);
 }
 
 /****************************************************************************
@@ -2214,7 +2214,7 @@ static void winuiTreeInitDefaultImages(Ihandle* ih)
 
 static int winuiTreeMapMethod(Ihandle* ih)
 {
-  IupWinUITreeAux* aux = new IupWinUITreeAux();
+  auto* aux = new IupWinUITreeAux();
 
   TreeView treeView;
   treeView.HorizontalAlignment(HorizontalAlignment::Left);
@@ -2240,7 +2240,7 @@ static int winuiTreeMapMethod(Ihandle* ih)
   });
 
   aux->layoutUpdatedToken = treeView.LayoutUpdated([ih](IInspectable const&, IInspectable const&) {
-    IupWinUITreeAux* a = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+    auto* a = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
     if (!a)
       return;
 
@@ -2264,7 +2264,7 @@ static int winuiTreeMapMethod(Ihandle* ih)
   });
 
   aux->selectionChangedToken = treeView.SelectionChanged([ih](TreeView const&, TreeViewSelectionChangedEventArgs const&) {
-    IupWinUITreeAux* sel_aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+    auto* sel_aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
     if (!sel_aux || sel_aux->ignoreChange)
       return;
 
@@ -2297,7 +2297,7 @@ static int winuiTreeMapMethod(Ihandle* ih)
             int id = winuiTreeFindNodeId(ih, node);
             if (id >= 0)
             {
-              IupWinUITreeAux* a = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+              auto* a = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
               if (a) a->ignoreChange = true;
               tv.SelectedNodes().Clear();
               tv.SelectedNodes().Append(node);
@@ -2307,7 +2307,7 @@ static int winuiTreeMapMethod(Ihandle* ih)
                 winuiTreeStoreSelection(a, tv);
               }
 
-              IFni cb = (IFni)IupGetCallback(ih, "RIGHTCLICK_CB");
+              IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "RIGHTCLICK_CB"));
               if (cb)
                 cb(ih, id);
             }
@@ -2321,17 +2321,17 @@ static int winuiTreeMapMethod(Ihandle* ih)
   });
 
   aux->keyDownToken = treeView.KeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-    int code = iupwinuiKeyDecode((int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0);
+    int code = iupwinuiKeyDecode(static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0);
     if (code)
     {
       if (code == K_F2 && ih->data->show_rename)
       {
-        winuiTreeSetRenameAttrib(ih, NULL);
+        winuiTreeSetRenameAttrib(ih, nullptr);
         args.Handled(true);
         return;
       }
 
-      int ret = iupwinuiKeyIsDispatched((int)args.Key())? IUP_DEFAULT: iupKeyCallKeyCb(ih, code);
+      int ret = iupwinuiKeyIsDispatched(static_cast<int>(args.Key()))? IUP_DEFAULT: iupKeyCallKeyCb(ih, code);
       if (ret == IUP_CLOSE)
       {
         IupExitLoop();
@@ -2365,7 +2365,7 @@ static int winuiTreeMapMethod(Ihandle* ih)
         {
           int id = winuiTreeFindNodeId(ih, node);
           if (id >= 0)
-            winuiTreeSetRenameAttrib(ih, NULL);
+            winuiTreeSetRenameAttrib(ih, nullptr);
         }
         break;
       }
@@ -2386,7 +2386,7 @@ static int winuiTreeMapMethod(Ihandle* ih)
 
   winuiStoreHandle(ih, treeView);
 
-  IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)winuiTreeConvertXYToPos);
+  IupSetCallback(ih, "_IUP_XY2POS_CB", reinterpret_cast<Icallback>(winuiTreeConvertXYToPos));
 
   winuiTreeInitDefaultImages(ih);
 
@@ -2417,7 +2417,7 @@ static int winuiTreeMapMethod(Ihandle* ih)
 
 static void winuiTreeUnMapMethod(Ihandle* ih)
 {
-  IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+  auto* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
 
   if (ih->handle && aux)
   {
@@ -2431,10 +2431,10 @@ static void winuiTreeUnMapMethod(Ihandle* ih)
 
       event_token* token;
       winuiDropTargetRemoveHandlers(ih, treeView);
-      token = (event_token*)iupAttribGet(ih, "_IUPWINUI_DRAGOVER_TOKEN");
-      if (token) { treeView.DragOver(*token); delete token; iupAttribSet(ih, "_IUPWINUI_DRAGOVER_TOKEN", NULL); }
-      token = (event_token*)iupAttribGet(ih, "_IUPWINUI_DROP_TOKEN");
-      if (token) { treeView.Drop(*token); delete token; iupAttribSet(ih, "_IUPWINUI_DROP_TOKEN", NULL); }
+      token = reinterpret_cast<event_token*>(iupAttribGet(ih, "_IUPWINUI_DRAGOVER_TOKEN"));
+      if (token) { treeView.DragOver(*token); delete token; iupAttribSet(ih, "_IUPWINUI_DRAGOVER_TOKEN", nullptr); }
+      token = reinterpret_cast<event_token*>(iupAttribGet(ih, "_IUPWINUI_DROP_TOKEN"));
+      if (token) { treeView.Drop(*token); delete token; iupAttribSet(ih, "_IUPWINUI_DROP_TOKEN", nullptr); }
 
       if (aux->containerContentChangingToken)
       {
@@ -2465,13 +2465,13 @@ static void winuiTreeUnMapMethod(Ihandle* ih)
         treeView.LostFocus(aux->lostFocusToken);
     }
 
-    void* tbPtr = (void*)iupAttribGet(ih, "_IUPWINUI_TREE_RENAME_TEXTBLOCK");
+    void* tbPtr = reinterpret_cast<void*>(iupAttribGet(ih, "_IUPWINUI_TREE_RENAME_TEXTBLOCK"));
     if (tbPtr)
     {
       IInspectable release{nullptr};
       winrt::attach_abi(release, tbPtr);
-      iupAttribSet(ih, "_IUPWINUI_TREE_RENAME_TEXTBLOCK", NULL);
-      iupAttribSet(ih, "_IUPWINUI_TREE_RENAME_ID", NULL);
+      iupAttribSet(ih, "_IUPWINUI_TREE_RENAME_TEXTBLOCK", nullptr);
+      iupAttribSet(ih, "_IUPWINUI_TREE_RENAME_ID", nullptr);
     }
 
     winuiTreeReleaseCacheNodes(ih, 0, ih->data->node_count);
@@ -2481,7 +2481,7 @@ static void winuiTreeUnMapMethod(Ihandle* ih)
   }
 
   winuiFreeAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 /****************************************************************************
@@ -2558,9 +2558,9 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
   winrt::copy_to_abi(newNode, nodePtr);
 
   if (prevNode)
-    iupTreeAddToCache(ih, add, kindPrev, (InodeHandle*)winrt::get_abi(prevNode), (InodeHandle*)nodePtr);
+    iupTreeAddToCache(ih, add, kindPrev, static_cast<InodeHandle*>(winrt::get_abi(prevNode)), static_cast<InodeHandle*>(nodePtr));
   else
-    iupTreeAddToCache(ih, 0, 0, NULL, (InodeHandle*)nodePtr);
+    iupTreeAddToCache(ih, 0, 0, nullptr, static_cast<InodeHandle*>(nodePtr));
 
   winuiTreeMarkAutomationNames(ih);
   winuiTreeSyncCurrent(ih, treeView);
@@ -2575,7 +2575,7 @@ extern "C" IUP_SDK_API InodeHandle* iupdrvTreeGetFocusNode(Ihandle* ih)
   if (ih->data->node_count > 0)
     return ih->data->node_cache[0].node_handle;
 
-  return NULL;
+  return nullptr;
 }
 
 static int winuiTreeCountChildrenRec(TreeViewNode const& node)
@@ -2632,7 +2632,7 @@ static void winuiTreeChildRebuildCacheRec(Ihandle* ih, TreeViewNode const& node,
 
     void* ptr = nullptr;
     winrt::copy_to_abi(child, ptr);
-    ih->data->node_cache[*id].node_handle = (InodeHandle*)ptr;
+    ih->data->node_cache[*id].node_handle = static_cast<InodeHandle*>(ptr);
 
     winuiTreeChildRebuildCacheRec(ih, child, id);
   }
@@ -2642,7 +2642,7 @@ static void winuiTreeRebuildNodeCache(Ihandle* ih, int id, TreeViewNode const& n
 {
   void* ptr = nullptr;
   winrt::copy_to_abi(node, ptr);
-  ih->data->node_cache[id].node_handle = (InodeHandle*)ptr;
+  ih->data->node_cache[id].node_handle = static_cast<InodeHandle*>(ptr);
   winuiTreeChildRebuildCacheRec(ih, node, &id);
 }
 
@@ -2794,7 +2794,7 @@ static int winuiTreeCopyMoveNode(Ihandle* ih, int id_src, int id_dst, int is_cop
   {
     if (dstIsBranch)
     {
-      int child_count = iupdrvTreeTotalChildCount(ih, (InodeHandle*)winrt::get_abi(dstNode));
+      int child_count = iupdrvTreeTotalChildCount(ih, static_cast<InodeHandle*>(winrt::get_abi(dstNode)));
       id_new += child_count;
     }
 
@@ -2891,7 +2891,7 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
   if (!treeView)
     return 1;
 
-  IupWinUITreeAux* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+  auto* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
   if (!aux)
     return 1;
 
@@ -2938,14 +2938,14 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
       if (!node)
         return;
 
-      int id = iupTreeFindNodeId(ih, (InodeHandle*)winrt::get_abi(node));
+      int id = iupTreeFindNodeId(ih, static_cast<InodeHandle*>(winrt::get_abi(node)));
       if (id < 0)
         return;
 
       uint32_t index;
       if (!tv.SelectedNodes().IndexOf(node, index))
       {
-        IupWinUITreeAux* treeAux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+        auto* treeAux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
         if (treeAux)
           treeAux->ignoreChange = true;
         tv.SelectedNodes().Clear();
@@ -2956,7 +2956,7 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
       }
       winuiTreeSetFocus(ih, id);
 
-      IFnii dragbegin_cb = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
+      auto dragbegin_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "DRAGBEGIN_CB"));
       if (dragbegin_cb)
       {
         int x, y;
@@ -2971,8 +2971,8 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
 
       iupAttribSetInt(ih, "_IUP_TREE_SOURCEID", id);
 
-      IFns datasize_cb = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
-      IFnsVi dragdata_cb = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
+      IFns datasize_cb = reinterpret_cast<IFns>(IupGetCallback(ih, "DRAGDATASIZE_CB"));
+      auto dragdata_cb = reinterpret_cast<IFnsVi>(IupGetCallback(ih, "DRAGDATA_CB"));
 
       if (datasize_cb && dragdata_cb)
       {
@@ -2995,7 +2995,7 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
     });
 
     aux->dragItemsCompletedToken = treeView.DragItemsCompleted([ih](TreeView const&, TreeViewDragItemsCompletedEventArgs const& e) {
-      IFni dragend_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
+      IFni dragend_cb = reinterpret_cast<IFni>(IupGetCallback(ih, "DRAGEND_CB"));
       if (dragend_cb)
       {
         int del = -1;
@@ -3023,9 +3023,9 @@ static int winuiTreeSetDragSourceAttrib(Ihandle* ih, const char* value)
 extern "C" IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int* w, int* h)
 {
   double scale = iupwinuiGetScale(ih);
-  int border = (int)ceil(4 * scale);
+  int border = static_cast<int>(ceil(4 * scale));
   int sb = iupdrvGetScrollbarSize();
-  int indent_icon = (int)ceil(44 * scale);  /* expander glyph + 1 indent step */
+  int indent_icon = static_cast<int>(ceil(44 * scale));  /* expander glyph + 1 indent step */
 
   *w += border + sb + indent_icon;
   *h += border;
@@ -3038,61 +3038,61 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   ic->Map = winuiTreeMapMethod;
   ic->UnMap = winuiTreeUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, winuiTreeSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, winuiTreeSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "VALUE", winuiTreeGetValueAttrib, winuiTreeSetValueAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", winuiTreeGetValueAttrib, winuiTreeSetValueAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "TITLE", winuiTreeGetTitleAttrib, winuiTreeSetTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "STATE", winuiTreeGetStateAttrib, winuiTreeSetStateAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "KIND", winuiTreeGetKindAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "CHILDCOUNT", winuiTreeGetChildCountAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "KIND", winuiTreeGetKindAttrib, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "CHILDCOUNT", winuiTreeGetChildCountAttrib, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "MARKED", winuiTreeGetMarkedAttrib, winuiTreeSetMarkedAttrib, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttributeId(ic, "DEPTH", winuiTreeGetDepthAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "PARENT", winuiTreeGetParentAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "NEXT", winuiTreeGetNextAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "PREVIOUS", winuiTreeGetPreviousAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "FIRST", winuiTreeGetFirstAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "LAST", winuiTreeGetLastAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ROOTCOUNT", winuiTreeGetRootCountAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "DEPTH", winuiTreeGetDepthAttrib, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "PARENT", winuiTreeGetParentAttrib, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "NEXT", winuiTreeGetNextAttrib, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "PREVIOUS", winuiTreeGetPreviousAttrib, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "FIRST", winuiTreeGetFirstAttrib, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "LAST", winuiTreeGetLastAttrib, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ROOTCOUNT", winuiTreeGetRootCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "EXPANDALL", NULL, winuiTreeSetExpandAllAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TOPITEM", NULL, winuiTreeSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "EXPANDALL", nullptr, winuiTreeSetExpandAllAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOPITEM", nullptr, winuiTreeSetTopItemAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MARK", NULL, winuiTreeSetMarkAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STARTING", NULL, winuiTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARKSTART", NULL, winuiTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARKEDNODES", winuiTreeGetMarkedNodesAttrib, winuiTreeSetMarkedNodesAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARKWHENTOGGLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARK", nullptr, winuiTreeSetMarkAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "STARTING", nullptr, winuiTreeSetMarkStartAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKSTART", nullptr, winuiTreeSetMarkStartAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKEDNODES", winuiTreeGetMarkedNodesAttrib, winuiTreeSetMarkedNodesAttrib, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKWHENTOGGLE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttributeId(ic, "DELNODE", NULL, winuiTreeSetDelNodeAttrib, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "RENAME", NULL, winuiTreeSetRenameAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "DELNODE", nullptr, winuiTreeSetDelNodeAttrib, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RENAME", nullptr, winuiTreeSetRenameAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttributeId(ic, "IMAGE", NULL, winuiTreeSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "IMAGEEXPANDED", NULL, winuiTreeSetImageExpandedAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "IMAGE", nullptr, winuiTreeSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "IMAGEEXPANDED", nullptr, winuiTreeSetImageExpandedAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "IMAGELEAF", NULL, winuiTreeSetImageLeafAttrib, IUPAF_SAMEASSYSTEM, "IMGLEAF", IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGEBRANCHCOLLAPSED", NULL, winuiTreeSetImageBranchCollapsedAttrib, IUPAF_SAMEASSYSTEM, "IMGCOLLAPSED", IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGEBRANCHEXPANDED", NULL, winuiTreeSetImageBranchExpandedAttrib, IUPAF_SAMEASSYSTEM, "IMGEXPANDED", IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGELEAF", nullptr, winuiTreeSetImageLeafAttrib, IUPAF_SAMEASSYSTEM, "IMGLEAF", IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGEBRANCHCOLLAPSED", nullptr, winuiTreeSetImageBranchCollapsedAttrib, IUPAF_SAMEASSYSTEM, "IMGCOLLAPSED", IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGEBRANCHEXPANDED", nullptr, winuiTreeSetImageBranchExpandedAttrib, IUPAF_SAMEASSYSTEM, "IMGEXPANDED", IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "COLOR", winuiTreeGetColorAttrib, winuiTreeSetColorAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TITLEFONT", winuiTreeGetTitleFontAttrib, winuiTreeSetTitleFontAttrib, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_NO_SAVE);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiTreeSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, winuiTreeSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_NO_SAVE);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, winuiTreeSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttributeId(ic, "TOGGLEVALUE", winuiTreeGetToggleValueAttrib, winuiTreeSetToggleValueAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", winuiTreeGetToggleVisibleAttrib, winuiTreeSetToggleVisibleAttrib, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttributeId(ic, "MOVENODE", NULL, winuiTreeSetMoveNodeAttrib, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "COPYNODE", NULL, winuiTreeSetCopyNodeAttrib, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "MOVENODE", nullptr, winuiTreeSetMoveNodeAttrib, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "COPYNODE", nullptr, winuiTreeSetCopyNodeAttrib, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "INDENTATION", winuiTreeGetIndentationAttrib, winuiTreeSetIndentationAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "INDENTATION", winuiTreeGetIndentationAttrib, winuiTreeSetIndentationAttrib, nullptr, nullptr, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "SPACING", iupTreeGetSpacingAttrib, winuiTreeSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "DRAGSOURCE", NULL, winuiTreeSetDragSourceAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAGSOURCE", nullptr, winuiTreeSetDragSourceAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "EMPTYAS3STATE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", winuiTreeGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDELINES", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "EMPTYAS3STATE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", winuiTreeGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDELINES", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

@@ -36,7 +36,7 @@ static int winuiProgressBarSetOrientationAttrib(Ihandle* ih, const char* value)
   if (iupStrEqualNoCase(value, "VERTICAL"))
     iupAttribSet(ih, "_IUPWINUI_PB_VERTICAL", "1");
   else
-    iupAttribSet(ih, "_IUPWINUI_PB_VERTICAL", NULL);
+    iupAttribSet(ih, "_IUPWINUI_PB_VERTICAL", nullptr);
 
   iupdrvProgressBarGetMinSize(ih, &min_w, &min_h);
 
@@ -59,7 +59,7 @@ static int winuiProgressBarSetValueAttrib(Ihandle* ih, const char* value)
 
   if (!ih->data->marquee)
   {
-    ProgressBar pb = winuiGetHandle<ProgressBar>(ih);
+    auto pb = winuiGetHandle<ProgressBar>(ih);
     if (pb)
     {
       double range = ih->data->vmax - ih->data->vmin;
@@ -77,7 +77,7 @@ static int winuiProgressBarSetMarqueeAttrib(Ihandle* ih, const char* value)
 {
   ih->data->marquee = iupStrBoolean(value);
 
-  ProgressBar pb = winuiGetHandle<ProgressBar>(ih);
+  auto pb = winuiGetHandle<ProgressBar>(ih);
   if (pb)
     pb.IsIndeterminate(ih->data->marquee ? true : false);
   return 1;
@@ -118,7 +118,7 @@ static void winuiProgressBarLayoutUpdateMethod(Ihandle* ih)
   if (!ih || !ih->handle)
     return;
 
-  ProgressBar pb = winuiGetHandle<ProgressBar>(ih);
+  auto pb = winuiGetHandle<ProgressBar>(ih);
   if (!pb)
     return;
 
@@ -149,7 +149,7 @@ static void winuiProgressBarUnMapMethod(Ihandle* ih)
     iupwinuiRemoveFromParent(ih);
     winuiReleaseHandle<ProgressBar>(ih);
   }
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
@@ -172,11 +172,11 @@ extern "C" IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
   ic->UnMap = winuiProgressBarUnMapMethod;
   ic->LayoutUpdate = winuiProgressBarLayoutUpdateMethod;
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, iupdrvBaseSetFgColorAttrib, nullptr, nullptr, IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", iProgressBarGetValueAttrib, winuiProgressBarSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ORIENTATION", NULL, winuiProgressBarSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARQUEE", NULL, winuiProgressBarSetMarqueeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DASHED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", iProgressBarGetValueAttrib, winuiProgressBarSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ORIENTATION", nullptr, winuiProgressBarSetOrientationAttrib, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARQUEE", nullptr, winuiProgressBarSetMarqueeAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DASHED", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

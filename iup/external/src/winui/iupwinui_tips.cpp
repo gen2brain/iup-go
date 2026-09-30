@@ -62,13 +62,13 @@ static ToolTip winuiTipCreateStyled(Ihandle* ih, const char* text)
       tb.FontFamily(FontFamily(wtypeface));
 
       if (size < 0)
-        tb.FontSize((double)(-size));
+        tb.FontSize(static_cast<double>(-size));
       else
       {
-        HDC hdc = GetDC(NULL);
-        double dpi = (double)GetDeviceCaps(hdc, LOGPIXELSY);
-        ReleaseDC(NULL, hdc);
-        tb.FontSize((double)size * dpi / 72.0);
+        HDC hdc = GetDC(nullptr);
+        auto dpi = static_cast<double>(GetDeviceCaps(hdc, LOGPIXELSY));
+        ReleaseDC(nullptr, hdc);
+        tb.FontSize(static_cast<double>(size) * dpi / 72.0);
       }
 
       tb.FontWeight(is_bold ?
@@ -103,7 +103,7 @@ static ToolTip winuiTipGetToolTip(Ihandle* ih)
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
     return nullptr;
 
-  DependencyObject elem = winuiGetHandle<DependencyObject>(ih);
+  auto elem = winuiGetHandle<DependencyObject>(ih);
   if (!elem)
     return nullptr;
 
@@ -131,7 +131,7 @@ IUP_DRV_API void iupwinuiTipsDestroy(Ihandle* ih)
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
     return;
 
-  DependencyObject elem = winuiGetHandle<DependencyObject>(ih);
+  auto elem = winuiGetHandle<DependencyObject>(ih);
   if (elem)
   {
     winuiTipClose(elem);
@@ -144,7 +144,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
     return 0;
 
-  DependencyObject elem = winuiGetHandle<DependencyObject>(ih);
+  auto elem = winuiGetHandle<DependencyObject>(ih);
   if (!elem)
     return 0;
 
@@ -158,7 +158,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
                       iupAttribGet(ih, "TIPRECT") ||
                       iupAttribGetBoolean(ih, "TIPMARKUP");
 
-    IFnii tips_cb = (IFnii)IupGetCallback(ih, "TIPS_CB");
+    auto tips_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "TIPS_CB"));
 
     if (need_styled || tips_cb)
     {
@@ -181,21 +181,21 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
             if (sscanf(rect, "%d %d %d %d", &x1, &y1, &x2, &y2) == 4 &&
                 (x < x1 || x > x2 || y < y1 || y > y2))
             {
-              DependencyObject owner = winuiGetHandle<DependencyObject>(ih);
+              auto owner = winuiGetHandle<DependencyObject>(ih);
               if (owner)
                 winuiTipClose(owner);
               return;
             }
           }
 
-          IFnii cb = (IFnii)IupGetCallback(ih, "TIPS_CB");
+          auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "TIPS_CB"));
           if (cb)
             cb(ih, x, y);
 
           const char* tip_text = iupAttribGet(ih, "TIP");
           if (tip_text)
           {
-            DependencyObject elem2 = winuiGetHandle<DependencyObject>(ih);
+            auto elem2 = winuiGetHandle<DependencyObject>(ih);
             if (elem2)
             {
               IInspectable obj = ToolTipService::GetToolTip(elem2);
@@ -243,7 +243,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char
   if (!ih || !ih->handle || winuiHandleIsHWND(ih))
     return 0;
 
-  DependencyObject elem = winuiGetHandle<DependencyObject>(ih);
+  auto elem = winuiGetHandle<DependencyObject>(ih);
   if (!elem)
     return 0;
 
@@ -272,7 +272,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char
     POINT pt;
     pt.x = sx;
     pt.y = sy;
-    ScreenToClient((HWND)dialog->handle, &pt);
+    ScreenToClient(reinterpret_cast<HWND>(dialog->handle), &pt);
 
     UIElement uiElem = elem.try_as<UIElement>();
     if (uiElem)
@@ -280,8 +280,8 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char
       auto transform = uiElem.TransformToVisual(nullptr);
       auto origin = transform.TransformPoint({0, 0});
 
-      float cx = (float)pt.x - origin.X;
-      float cy = (float)pt.y - origin.Y;
+      float cx = static_cast<float>(pt.x) - origin.X;
+      float cy = static_cast<float>(pt.y) - origin.Y;
 
       tt.PlacementRect(Windows::Foundation::Rect{cx, cy, 1.0f, 1.0f});
       tt.Placement(Controls::Primitives::PlacementMode::Bottom);
@@ -303,5 +303,5 @@ extern "C" IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
   if (tt)
     return iupStrReturnBoolean(tt.IsOpen() ? 1 : 0);
 
-  return NULL;
+  return nullptr;
 }

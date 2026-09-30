@@ -39,7 +39,7 @@ static int winui_button_struct_y = 8;
 
 static void winuiButtonClickHandler(Ihandle* ih)
 {
-  IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+  IFn cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
   if (cb)
   {
     int ret = cb(ih);
@@ -50,7 +50,7 @@ static void winuiButtonClickHandler(Ihandle* ih)
 
 static int winuiButtonSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  Button btn = winuiGetHandle<Button>(ih);
+  auto btn = winuiGetHandle<Button>(ih);
   if (btn)
   {
     Border border = btn.Content().try_as<Border>();
@@ -69,7 +69,7 @@ static int winuiButtonSetTitleAttrib(Ihandle* ih, const char* value)
           iupwinuiSetMnemonicText(tb, value, &c);
           if (c)
           {
-            wchar_t wc = (wchar_t)c;
+            auto wc = static_cast<wchar_t>(c);
             btn.AccessKey(hstring(&wc, 1));
           }
         }
@@ -86,7 +86,7 @@ static char* winuiButtonGetTitleAttrib(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "MARKUP"))
     return iupAttribGet(ih, "TITLE");
 
-  Button btn = winuiGetHandle<Button>(ih);
+  auto btn = winuiGetHandle<Button>(ih);
   if (btn)
   {
     Border border = btn.Content().try_as<Border>();
@@ -97,7 +97,7 @@ static char* winuiButtonGetTitleAttrib(Ihandle* ih)
         return iupwinuiHStringToString(iupwinuiTextBlockText(tb));
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static void winuiButtonSetImageTextContent(Ihandle* ih, Button btn, Border border, Image image, const char* title)
@@ -138,7 +138,7 @@ static void winuiButtonSetImageTextContent(Ihandle* ih, Button btn, Border borde
     border.Child(sp);
     if (c)
     {
-      wchar_t wc = (wchar_t)c;
+      auto wc = static_cast<wchar_t>(c);
       btn.AccessKey(hstring(&wc, 1));
     }
   }
@@ -152,11 +152,11 @@ static void winuiButtonSetImageTextContent(Ihandle* ih, Button btn, Border borde
 
 static void winuiButtonSetImage(Ihandle* ih, const char* name, int make_inactive)
 {
-  Button btn = winuiGetHandle<Button>(ih);
+  auto btn = winuiGetHandle<Button>(ih);
   if (!btn || !name)
     return;
 
-  void* imghandle = iupImageGetImage(name, ih, make_inactive, NULL);
+  void* imghandle = iupImageGetImage(name, ih, make_inactive, nullptr);
   WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
   if (!bitmap)
     return;
@@ -266,7 +266,7 @@ static int winuiButtonSetImPressAttrib(Ihandle* ih, const char* value)
 
 static TextBlock winuiButtonGetTextBlock(Ihandle* ih)
 {
-  Button btn = winuiGetHandle<Button>(ih);
+  auto btn = winuiGetHandle<Button>(ih);
   if (!btn)
     return nullptr;
 
@@ -302,7 +302,7 @@ static int winuiButtonSetBgColorAttrib(Ihandle* ih, const char* value)
   if (has_content && !iupAttribGet(ih, "BGCOLOR") && ih->parent &&
       iupStrEqualNoCase(value, IupGetAttribute(ih->parent, "BGCOLOR")))
   {
-    Button btn = winuiGetHandle<Button>(ih);
+    auto btn = winuiGetHandle<Button>(ih);
     if (btn)
       btn.ClearValue(Control::BackgroundProperty());
     return 1;
@@ -327,7 +327,7 @@ static int winuiButtonSetFgColorAttrib(Ihandle* ih, const char* value)
   color.B = b;
   SolidColorBrush brush(color);
 
-  Button btn = winuiGetHandle<Button>(ih);
+  auto btn = winuiGetHandle<Button>(ih);
   if (btn)
   {
     btn.Foreground(brush);
@@ -375,7 +375,7 @@ static int winuiButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    Button btn = winuiGetHandle<Button>(ih);
+    auto btn = winuiGetHandle<Button>(ih);
     if (btn)
     {
       HorizontalAlignment halign = HorizontalAlignment::Center;
@@ -461,7 +461,7 @@ static int winuiButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
 {
   if (ih->handle)
   {
-    Button btn = winuiGetHandle<Button>(ih);
+    auto btn = winuiGetHandle<Button>(ih);
     if (btn)
       winuiButtonApplyShowAsDefault(btn, iupStrBoolean(value));
   }
@@ -506,7 +506,7 @@ static int winuiButtonMapMethod(Ihandle* ih)
 
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
-    void* imghandle = iupImageGetImage(image, ih, 0, NULL);
+    void* imghandle = iupImageGetImage(image, ih, 0, nullptr);
     WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
     if (bitmap)
     {
@@ -524,14 +524,14 @@ static int winuiButtonMapMethod(Ihandle* ih)
     contentBorder.Child(tb);
     if (c)
     {
-      wchar_t wc = (wchar_t)c;
+      auto wc = static_cast<wchar_t>(c);
       btn.AccessKey(hstring(&wc, 1));
     }
   }
 
   btn.Content(contentBorder);
 
-  IupWinUIButtonAux* aux = new IupWinUIButtonAux();
+  auto* aux = new IupWinUIButtonAux();
   aux->clickToken = btn.Click([ih](IInspectable const&, RoutedEventArgs const&) {
     Microsoft::UI::Dispatching::DispatcherQueue dq = Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread();
     if (dq)
@@ -557,10 +557,10 @@ static int winuiButtonMapMethod(Ihandle* ih)
   }
 
   aux->buttonPressedToken = contentBorder.PointerPressed([ih](IInspectable const&, Input::PointerRoutedEventArgs const& args) {
-    IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
     if (cb)
     {
-      Button b = winuiGetHandle<Button>(ih);
+      auto b = winuiGetHandle<Button>(ih);
       auto point = args.GetCurrentPoint(b);
       auto props = point.Properties();
       int button = iupwinuiGetPointerButton(props);
@@ -577,10 +577,10 @@ static int winuiButtonMapMethod(Ihandle* ih)
   });
 
   aux->buttonReleasedToken = btn.PointerReleased([ih](IInspectable const&, Input::PointerRoutedEventArgs const& args) {
-    IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
     if (cb)
     {
-      Button b = winuiGetHandle<Button>(ih);
+      auto b = winuiGetHandle<Button>(ih);
       auto point = args.GetCurrentPoint(b);
       auto props = point.Properties();
       int button = iupwinuiGetPointerReleasedButton(props);
@@ -597,10 +597,10 @@ static int winuiButtonMapMethod(Ihandle* ih)
   });
 
   aux->buttonCaptureLostToken = btn.PointerCaptureLost([ih](IInspectable const&, Input::PointerRoutedEventArgs const& args) {
-    IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
     if (cb)
     {
-      Button b = winuiGetHandle<Button>(ih);
+      auto b = winuiGetHandle<Button>(ih);
       auto point = args.GetCurrentPoint(b);
       auto props = point.Properties();
       int button = iupwinuiGetPointerReleasedButton(props);
@@ -617,7 +617,7 @@ static int winuiButtonMapMethod(Ihandle* ih)
   });
 
   aux->keyDownToken = btn.PreviewKeyDown([ih](IInspectable const&, Input::KeyRoutedEventArgs const& args) {
-    if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
+    if (!iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
       args.Handled(true);
   });
 
@@ -642,7 +642,7 @@ static int winuiButtonMapMethod(Ihandle* ih)
 
   if (iupAttribGetBoolean(ih, "SHOWASDEFAULT"))
   {
-    Button stored_btn = winuiGetHandle<Button>(ih);
+    auto stored_btn = winuiGetHandle<Button>(ih);
     if (stored_btn)
       winuiButtonApplyShowAsDefault(stored_btn, 1);
   }
@@ -652,11 +652,11 @@ static int winuiButtonMapMethod(Ihandle* ih)
 
 static void winuiButtonUnMapMethod(Ihandle* ih)
 {
-  IupWinUIButtonAux* aux = winuiGetAux<IupWinUIButtonAux>(ih, IUPWINUI_BUTTON_AUX);
+  auto* aux = winuiGetAux<IupWinUIButtonAux>(ih, IUPWINUI_BUTTON_AUX);
 
   if (ih->handle && aux)
   {
-    Button btn = winuiGetHandle<Button>(ih);
+    auto btn = winuiGetHandle<Button>(ih);
     if (btn)
     {
       if (aux->clickToken)
@@ -687,29 +687,29 @@ static void winuiButtonUnMapMethod(Ihandle* ih)
   }
 
   winuiFreeAux<IupWinUIButtonAux>(ih, IUPWINUI_BUTTON_AUX);
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   double scale = iupwinuiGetScale(ih);
-  int border_size = (int)ceil(4 * scale);
-  int padding_x = (int)ceil(winui_button_padding_x * scale);
-  int padding_y = (int)ceil(winui_button_padding_y * scale);
-  int struct_x = (int)ceil(winui_button_struct_x * scale);
-  int struct_y = (int)ceil(winui_button_struct_y * scale);
+  int border_size = static_cast<int>(ceil(4 * scale));
+  int padding_x = static_cast<int>(ceil(winui_button_padding_x * scale));
+  int padding_y = static_cast<int>(ceil(winui_button_padding_y * scale));
+  int struct_x = static_cast<int>(ceil(winui_button_struct_x * scale));
+  int struct_y = static_cast<int>(ceil(winui_button_struct_y * scale));
 
   if (ih)
   {
     char* image = iupAttribGet(ih, "IMAGE");
     char* title = iupAttribGet(ih, "TITLE");
     char* bgcolor = iupAttribGet(ih, "BGCOLOR");
-    int has_image = (image != NULL);
-    int has_text = (title != NULL && *title != 0);
+    int has_image = (image != nullptr);
+    int has_text = (title != nullptr && *title != 0);
     int has_user_padding = (ih->data->horiz_padding > 0 || ih->data->vert_padding > 0);
     int has_user_size = (ih->userwidth > 0 || ih->userheight > 0);
 
-    if (!has_image && !has_text && bgcolor != NULL)
+    if (!has_image && !has_text && bgcolor != nullptr)
     {
       int charwidth, charheight;
       iupdrvFontGetCharSize(ih, &charwidth, &charheight);
@@ -749,19 +749,19 @@ extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   ic->UnMap = winuiButtonUnMapMethod;
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiButtonSetFgColorAttrib, "DLGFGCOLOR", NULL, IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "ACTIVE", nullptr, winuiButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, winuiButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, winuiButtonSetFgColorAttrib, "DLGFGCOLOR", nullptr, IUPAF_NOT_MAPPED);
 
   /* Special */
-  iupClassRegisterAttribute(ic, "TITLE", winuiButtonGetTitleAttrib, winuiButtonSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", winuiButtonGetTitleAttrib, winuiButtonSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupButton only */
-  iupClassRegisterAttribute(ic, "ALIGNMENT", winuiButtonGetAlignmentAttrib, winuiButtonSetAlignmentAttrib, "ACENTER:ACENTER", NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, winuiButtonSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, winuiButtonSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, winuiButtonSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", winuiButtonGetAlignmentAttrib, winuiButtonSetAlignmentAttrib, "ACENTER:ACENTER", nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, winuiButtonSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", nullptr, winuiButtonSetImInactiveAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", nullptr, winuiButtonSetImPressAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, winuiButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", NULL, winuiButtonSetShowAsDefaultAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKUP", nullptr, nullptr, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SHOWASDEFAULT", nullptr, winuiButtonSetShowAsDefaultAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

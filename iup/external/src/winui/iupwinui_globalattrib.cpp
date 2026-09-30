@@ -24,8 +24,8 @@ extern "C" {
 #include "iupwinui_drv.h"
 
 static int winui_monitor_index = 0;
-static HHOOK winui_OldGetMessageHook = NULL;
-static HHOOK winui_LowLevelMouseHook = NULL;
+static HHOOK winui_OldGetMessageHook = nullptr;
+static HHOOK winui_LowLevelMouseHook = nullptr;
 
 static void winuiBuildMouseStatus(char* status)
 {
@@ -49,19 +49,19 @@ static LRESULT CALLBACK winuiHookLowLevelMouseProc(int nCode, WPARAM wp, LPARAM 
   static int last_click_button = 0;
 
   if (nCode != HC_ACTION)
-    return CallNextHookEx(NULL, nCode, wp, lp);
+    return CallNextHookEx(nullptr, nCode, wp, lp);
 
-  MSLLHOOKSTRUCT* m = (MSLLHOOKSTRUCT*)lp;
+  auto* m = reinterpret_cast<MSLLHOOKSTRUCT*>(lp);
 
   if (m->flags & LLMHF_INJECTED)
-    return CallNextHookEx(NULL, nCode, wp, lp);
+    return CallNextHookEx(nullptr, nCode, wp, lp);
 
   HWND under = WindowFromPoint(m->pt);
   DWORD owner_pid = 0;
   if (under)
     GetWindowThreadProcessId(under, &owner_pid);
   if (owner_pid != GetCurrentProcessId())
-    return CallNextHookEx(NULL, nCode, wp, lp);
+    return CallNextHookEx(nullptr, nCode, wp, lp);
 
   char status[IUPKEY_STATUS_SIZE];
   winuiBuildMouseStatus(status);
@@ -70,9 +70,9 @@ static LRESULT CALLBACK winuiHookLowLevelMouseProc(int nCode, WPARAM wp, LPARAM 
   {
   case WM_MOUSEMOVE:
     {
-      IFiis cb = (IFiis)IupGetFunction("GLOBALMOTION_CB");
+      auto cb = reinterpret_cast<IFiis>(IupGetFunction("GLOBALMOTION_CB"));
       if (cb)
-        cb((int)m->pt.x, (int)m->pt.y, status);
+        cb(static_cast<int>(m->pt.x), static_cast<int>(m->pt.y), status);
       break;
     }
   case WM_LBUTTONDOWN: case WM_LBUTTONUP:
@@ -80,7 +80,7 @@ static LRESULT CALLBACK winuiHookLowLevelMouseProc(int nCode, WPARAM wp, LPARAM 
   case WM_MBUTTONDOWN: case WM_MBUTTONUP:
   case WM_XBUTTONDOWN: case WM_XBUTTONUP:
     {
-      IFiiiis cb = (IFiiiis)IupGetFunction("GLOBALBUTTON_CB");
+      auto cb = reinterpret_cast<IFiiiis>(IupGetFunction("GLOBALBUTTON_CB"));
       if (!cb) break;
 
       int button = 0, pressed = 0;
@@ -106,39 +106,39 @@ static LRESULT CALLBACK winuiHookLowLevelMouseProc(int nCode, WPARAM wp, LPARAM 
         int dbl_dx = GetSystemMetrics(SM_CXDOUBLECLK);
         int dbl_dy = GetSystemMetrics(SM_CYDOUBLECLK);
         if (last_click_button == button && (now - last_click_time) <= dbl_time &&
-            abs((int)m->pt.x - last_click_x) <= dbl_dx && abs((int)m->pt.y - last_click_y) <= dbl_dy)
+            abs(static_cast<int>(m->pt.x) - last_click_x) <= dbl_dx && abs(static_cast<int>(m->pt.y) - last_click_y) <= dbl_dy)
         {
           iupKEY_SETDOUBLE(status);
         }
         last_click_time = now;
-        last_click_x = (int)m->pt.x;
-        last_click_y = (int)m->pt.y;
+        last_click_x = static_cast<int>(m->pt.x);
+        last_click_y = static_cast<int>(m->pt.y);
         last_click_button = button;
       }
 
-      cb(button, pressed, (int)m->pt.x, (int)m->pt.y, status);
+      cb(button, pressed, static_cast<int>(m->pt.x), static_cast<int>(m->pt.y), status);
       last_button = button;
       last_pressed = pressed;
       break;
     }
   case WM_MOUSEWHEEL:
     {
-      IFfiis cb = (IFfiis)IupGetFunction("GLOBALWHEEL_CB");
+      auto cb = reinterpret_cast<IFfiis>(IupGetFunction("GLOBALWHEEL_CB"));
       if (cb)
       {
-        short delta = (short)HIWORD(m->mouseData);
-        cb((float)delta / 120.0f, (int)m->pt.x, (int)m->pt.y, status);
+        auto delta = static_cast<short>(HIWORD(m->mouseData));
+        cb(static_cast<float>(delta) / 120.0f, static_cast<int>(m->pt.x), static_cast<int>(m->pt.y), status);
       }
       break;
     }
   }
 
-  return CallNextHookEx(NULL, nCode, wp, lp);
+  return CallNextHookEx(nullptr, nCode, wp, lp);
 }
 
 static LRESULT CALLBACK winuiHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM gm_lp)
 {
-  MSG* gm_msg = (MSG*)gm_lp;
+  MSG* gm_msg = reinterpret_cast<MSG*>(gm_lp);
   UINT msg = gm_msg->message;
   WPARAM wp = gm_msg->wParam;
   LPARAM lp = gm_msg->lParam;
@@ -154,12 +154,12 @@ static LRESULT CALLBACK winuiHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM 
   {
   case WM_MOUSEWHEEL:
     {
-      IFfiis cb = (IFfiis)IupGetFunction("GLOBALWHEEL_CB");
+      auto cb = reinterpret_cast<IFfiis>(IupGetFunction("GLOBALWHEEL_CB"));
       if (cb)
       {
-        short delta = (short)HIWORD(wp);
+        auto delta = static_cast<short>(HIWORD(wp));
         iupwinuiButtonKeySetStatus(LOWORD(wp), 0, status, 0);
-        cb((float)delta / 120.0f, GET_X_LPARAM(lp), GET_Y_LPARAM(lp), status);
+        cb(static_cast<float>(delta) / 120.0f, GET_X_LPARAM(lp), GET_Y_LPARAM(lp), status);
       }
       break;
     }
@@ -173,7 +173,7 @@ static LRESULT CALLBACK winuiHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM 
   case WM_XBUTTONDOWN:
     {
       int doubleclick = 0, button = 0;
-      IFiiiis cb = (IFiiiis)IupGetFunction("GLOBALBUTTON_CB");
+      auto cb = reinterpret_cast<IFiiiis>(IupGetFunction("GLOBALBUTTON_CB"));
       if (!cb) break;
 
       if (msg == WM_LBUTTONDBLCLK || msg == WM_MBUTTONDBLCLK ||
@@ -200,7 +200,7 @@ static LRESULT CALLBACK winuiHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM 
   case WM_XBUTTONUP:
     {
       int button = 0;
-      IFiiiis cb = (IFiiiis)IupGetFunction("GLOBALBUTTON_CB");
+      auto cb = reinterpret_cast<IFiiiis>(IupGetFunction("GLOBALBUTTON_CB"));
       if (!cb) break;
 
       iupwinuiButtonKeySetStatus(LOWORD(wp), 0, status, 0);
@@ -219,7 +219,7 @@ static LRESULT CALLBACK winuiHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM 
     }
   case WM_MOUSEMOVE:
     {
-      IFiis cb = (IFiis)IupGetFunction("GLOBALMOTION_CB");
+      auto cb = reinterpret_cast<IFiis>(IupGetFunction("GLOBALMOTION_CB"));
       if (cb)
       {
         iupwinuiButtonKeySetStatus(LOWORD(wp), 0, status, 0);
@@ -232,11 +232,11 @@ static LRESULT CALLBACK winuiHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM 
   case WM_KEYUP:
   case WM_SYSKEYUP:
     {
-      IFii cb = (IFii)IupGetFunction("GLOBALKEYPRESS_CB");
+      IFii cb = reinterpret_cast<IFii>(IupGetFunction("GLOBALKEYPRESS_CB"));
       if (cb)
       {
         int pressed = (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) ? 1 : 0;
-        int code = iupwinuiKeyDecode((int)wp, (lp & 0x01000000)? 1: 0);
+        int code = iupwinuiKeyDecode(static_cast<int>(wp), (lp & 0x01000000)? 1: 0);
         if (code != 0) cb(code, pressed);
       }
       break;
@@ -250,7 +250,7 @@ static LRESULT CALLBACK winuiHookGetMessageProc(int hcode, WPARAM gm_wp, LPARAM 
 
 static BOOL CALLBACK winuiMonitorInfoEnum(HMONITOR handle, HDC handle_dc, LPRECT rect, LPARAM data)
 {
-  RECT* monitors_rect = (RECT*)data;
+  RECT* monitors_rect = reinterpret_cast<RECT*>(data);
   monitors_rect[winui_monitor_index] = *rect;
   winui_monitor_index++;
   (void)handle_dc;
@@ -289,21 +289,21 @@ extern "C" IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
     if (iupStrBoolean(value))
     {
       if (!winui_OldGetMessageHook)
-        winui_OldGetMessageHook = SetWindowsHookEx(WH_GETMESSAGE, winuiHookGetMessageProc,NULL, GetCurrentThreadId());
+        winui_OldGetMessageHook = SetWindowsHookEx(WH_GETMESSAGE, winuiHookGetMessageProc,nullptr, GetCurrentThreadId());
       if (!winui_LowLevelMouseHook)
-        winui_LowLevelMouseHook = SetWindowsHookEx(WH_MOUSE_LL, winuiHookLowLevelMouseProc, GetModuleHandle(NULL), 0);
+        winui_LowLevelMouseHook = SetWindowsHookEx(WH_MOUSE_LL, winuiHookLowLevelMouseProc, GetModuleHandle(nullptr), 0);
     }
     else
     {
       if (winui_OldGetMessageHook)
       {
         UnhookWindowsHookEx(winui_OldGetMessageHook);
-        winui_OldGetMessageHook = NULL;
+        winui_OldGetMessageHook = nullptr;
       }
       if (winui_LowLevelMouseHook)
       {
         UnhookWindowsHookEx(winui_LowLevelMouseHook);
-        winui_LowLevelMouseHook = NULL;
+        winui_LowLevelMouseHook = nullptr;
       }
     }
     return 1;
@@ -338,17 +338,17 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   {
     int i;
     int monitors_count = GetSystemMetrics(SM_CMONITORS);
-    RECT* monitors_rect = (RECT*)malloc(monitors_count * sizeof(RECT));
+    RECT* monitors_rect = static_cast<RECT*>(malloc(monitors_count * sizeof(RECT)));
     char* str = iupStrGetMemory(monitors_count * 50);
     char* pstr = str;
 
     winui_monitor_index = 0;
-    EnumDisplayMonitors(NULL, NULL, winuiMonitorInfoEnum, (LPARAM)monitors_rect);
+    EnumDisplayMonitors(nullptr, nullptr, winuiMonitorInfoEnum, reinterpret_cast<LPARAM>(monitors_rect));
 
     for (i = 0; i < monitors_count; i++)
-      pstr += snprintf(pstr, (monitors_count * 50) - (int)(pstr - str), "%d %d %d %d\n", (int)monitors_rect[i].left, (int)monitors_rect[i].top,
-                      (int)(monitors_rect[i].right - monitors_rect[i].left),
-                      (int)(monitors_rect[i].bottom - monitors_rect[i].top));
+      pstr += snprintf(pstr, (monitors_count * 50) - static_cast<int>(pstr - str), "%d %d %d %d\n", static_cast<int>(monitors_rect[i].left), static_cast<int>(monitors_rect[i].top),
+                      static_cast<int>(monitors_rect[i].right - monitors_rect[i].left),
+                      static_cast<int>(monitors_rect[i].bottom - monitors_rect[i].top));
 
     free(monitors_rect);
     return str;
@@ -383,9 +383,9 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     DWORD error = GetLastError();
     if (error)
     {
-      LPWSTR lpMsgBuf = NULL;
+      LPWSTR lpMsgBuf = nullptr;
       FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                     NULL, error, 0, (LPWSTR)&lpMsgBuf, 0, NULL);
+                     nullptr, error, 0, reinterpret_cast<LPWSTR>(&lpMsgBuf), 0, nullptr);
       if (lpMsgBuf)
       {
         winrt::hstring hs(lpMsgBuf);
@@ -393,8 +393,8 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
         LocalFree(lpMsgBuf);
         return str;
       }
-      return (char*)"Unknown Error";
+      return const_cast<char*>("Unknown Error");
     }
   }
-  return NULL;
+  return nullptr;
 }

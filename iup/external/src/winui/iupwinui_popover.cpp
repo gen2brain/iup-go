@@ -48,7 +48,7 @@ static FlyoutPlacementMode winuiPopoverGetPlacement(Ihandle* ih)
 
 static void winuiPopoverCallShowCB(Ihandle* ih, int state)
 {
-  IFni cb = (IFni)IupGetCallback(ih, "SHOW_CB");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "SHOW_CB"));
   if (cb)
   {
     if (cb(ih, state) == IUP_CLOSE)
@@ -60,7 +60,7 @@ static int winuiPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
-    Ihandle* anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
+    auto* anchor = reinterpret_cast<Ihandle*>(iupAttribGet(ih, "_IUP_POPOVER_ANCHOR"));
     if (!anchor || !anchor->handle)
       return 0;
 
@@ -70,11 +70,11 @@ static int winuiPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
         return 0;
     }
 
-    IupWinUIPopoverAux* aux = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
+    auto* aux = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
     if (!aux || !aux->flyout)
       return 0;
 
-    FrameworkElement anchorElem = winuiGetHandle<FrameworkElement>(anchor);
+    auto anchorElem = winuiGetHandle<FrameworkElement>(anchor);
     if (!anchorElem)
       return 0;
 
@@ -92,7 +92,7 @@ static int winuiPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       Ihandle* dialog = IupGetDialog(anchor);
       if (dialog)
       {
-        IupWinUIDialogAux* dlgAux = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
+        auto* dlgAux = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
         if (dlgAux && dlgAux->rootPanel)
           aux->flyout.OverlayInputPassThroughElement(dlgAux->rootPanel);
       }
@@ -160,7 +160,7 @@ static int winuiPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
         FlyoutShowOptions options;
         double scale = iupwinuiGetScale(ih);
         options.Placement(winuiPopoverGetPlacement(ih));
-        options.Position(Point((float)(px + offsetx / scale), (float)(py + offsety / scale)));
+        options.Position(Point(static_cast<float>(px + offsetx / scale), static_cast<float>(py + offsety / scale)));
         aux->flyout.ShowAt(anchorElem, options);
       }
       else
@@ -172,7 +172,7 @@ static int winuiPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    IupWinUIPopoverAux* aux = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
+    auto* aux = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
     if (aux && aux->isVisible)
     {
       aux->programmaticClose = true;
@@ -188,7 +188,7 @@ static int winuiPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
 static char* winuiPopoverGetVisibleAttrib(Ihandle* ih)
 {
-  IupWinUIPopoverAux* aux = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
+  auto* aux = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
   if (aux)
     return iupStrReturnBoolean(aux->isVisible);
   return iupStrReturnBoolean(0);
@@ -196,7 +196,7 @@ static char* winuiPopoverGetVisibleAttrib(Ihandle* ih)
 
 static int winuiPopoverMapMethod(Ihandle* ih)
 {
-  IupWinUIPopoverAux* aux = new IupWinUIPopoverAux();
+  auto* aux = new IupWinUIPopoverAux();
 
   aux->flyout = Flyout();
   aux->innerCanvas = Canvas();
@@ -207,7 +207,7 @@ static int winuiPopoverMapMethod(Ihandle* ih)
   aux->flyout.ShouldConstrainToRootBounds(false);
 
   aux->closedToken = aux->flyout.Closed([ih](IInspectable const&, IInspectable const&) {
-    IupWinUIPopoverAux* a = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
+    auto* a = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
     if (a && a->isVisible)
     {
       a->isVisible = false;
@@ -216,7 +216,7 @@ static int winuiPopoverMapMethod(Ihandle* ih)
   });
 
   aux->closingToken = aux->flyout.Closing([ih](FlyoutBase const&, FlyoutBaseClosingEventArgs const& args) {
-    IupWinUIPopoverAux* a = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
+    auto* a = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
     if (a && a->programmaticClose)
       return;
     if (!iupAttribGetBoolean(ih, "AUTOHIDE"))
@@ -231,7 +231,7 @@ static int winuiPopoverMapMethod(Ihandle* ih)
 
 static void winuiPopoverUnMapMethod(Ihandle* ih)
 {
-  IupWinUIPopoverAux* aux = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
+  auto* aux = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
 
   if (aux)
   {
@@ -250,12 +250,12 @@ static void winuiPopoverUnMapMethod(Ihandle* ih)
   }
 
   winuiFreeAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 static void winuiPopoverLayoutUpdateMethod(Ihandle* ih)
 {
-  IupWinUIPopoverAux* aux = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
+  auto* aux = winuiGetAux<IupWinUIPopoverAux>(ih, IUPWINUI_POPOVER_AUX);
   if (!aux || !aux->innerCanvas)
     return;
 
@@ -283,6 +283,6 @@ extern "C" IUP_SDK_API void iupdrvPopoverInitClass(Iclass* ic)
   ic->LayoutUpdate = winuiPopoverLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = winuiPopoverGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterAttribute(ic, "VISIBLE", winuiPopoverGetVisibleAttrib, winuiPopoverSetVisibleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VISIBLE", winuiPopoverGetVisibleAttrib, winuiPopoverSetVisibleAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
 }

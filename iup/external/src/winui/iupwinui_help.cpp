@@ -23,7 +23,7 @@ extern "C" int IupExecute(const char* filename, const char* parameters)
   if (!filename)
     return -1;
 
-  err = (INT_PTR)ShellExecuteA(GetDesktopWindow(), "open", filename, parameters, NULL, SW_SHOWNORMAL);
+  err = reinterpret_cast<INT_PTR>(ShellExecuteA(GetDesktopWindow(), "open", filename, parameters, nullptr, SW_SHOWNORMAL));
   if (err <= 32)
   {
     switch (err)
@@ -57,7 +57,7 @@ extern "C" int IupExecuteWait(const char* filename, const char* parameters)
 
   if (!ShellExecuteExA(&info))
   {
-    INT_PTR err = (INT_PTR)info.hInstApp;
+    auto err = reinterpret_cast<INT_PTR>(info.hInstApp);
     switch (err)
     {
     case SE_ERR_FNF:
@@ -76,7 +76,7 @@ extern "C" int IupExecuteWait(const char* filename, const char* parameters)
 
 extern "C" int IupHelp(const char* url)
 {
-  return IupExecute(url, NULL);
+  return IupExecute(url, nullptr);
 }
 
 extern "C" void IupLogV(const char* type, const char* format, va_list arglist)

@@ -94,7 +94,7 @@ IUP_DRV_API void iupwinuiApplyMarkupToTextBlock(TextBlock textBlock, const char*
 
     if (mr->font_size)
     {
-      run.FontSize((double)mr->font_size);
+      run.FontSize(static_cast<double>(mr->font_size));
     }
     else if (mr->big || mr->small_size)
     {
@@ -111,7 +111,7 @@ IUP_DRV_API void iupwinuiApplyMarkupToTextBlock(TextBlock textBlock, const char*
     }
     else if (mr->font_weight)
     {
-      run.FontWeight(Windows::UI::Text::FontWeight{(uint16_t)mr->font_weight});
+      run.FontWeight(Windows::UI::Text::FontWeight{static_cast<uint16_t>(mr->font_weight)});
     }
 
     if (mr->italic || mr->font_style == 1)
@@ -168,8 +168,8 @@ IUP_DRV_API void iupwinuiMeasureMarkupText(Ihandle* ih, const char* markup, int*
 
   double scale = iupwinuiGetScale(ih);
   Size ds = tb.DesiredSize();
-  if (w) *w = (int)ceil(ds.Width * scale);
-  if (h) *h = (int)ceil(ds.Height * scale);
+  if (w) *w = static_cast<int>(ceil(ds.Width * scale));
+  if (h) *h = static_cast<int>(ceil(ds.Height * scale));
 }
 
 static int winuiLabelSetTitleAttrib(Ihandle* ih, const char* value)
@@ -184,7 +184,7 @@ static int winuiLabelSetTitleAttrib(Ihandle* ih, const char* value)
         iupwinuiApplyMarkupToTextBlock(textBlock, value);
       }
       else
-        iupwinuiSetMnemonicText(textBlock, value, NULL);
+        iupwinuiSetMnemonicText(textBlock, value, nullptr);
     }
   }
   return 1;
@@ -201,7 +201,7 @@ static char* winuiLabelGetTitleAttrib(Ihandle* ih)
     if (textBlock)
       return iupwinuiHStringToString(iupwinuiTextBlockText(textBlock));
   }
-  return NULL;
+  return nullptr;
 }
 
 static int winuiLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
@@ -240,7 +240,7 @@ static int winuiLabelSetImageAttrib(Ihandle* ih, const char* value)
     if (image && value)
     {
       int make_inactive = !iupdrvIsActive(ih);
-      void* imghandle = iupImageGetImage(value, ih, make_inactive, NULL);
+      void* imghandle = iupImageGetImage(value, ih, make_inactive, nullptr);
       WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
       if (bitmap)
         winuiImageSetSource(ih, image, bitmap);
@@ -264,7 +264,7 @@ static int winuiLabelSetActiveAttrib(Ihandle* ih, const char* value)
           Image image = winuiLabelGetImage(ih);
           if (image)
           {
-            void* imghandle = iupImageGetImage(name, ih, 1, NULL);
+            void* imghandle = iupImageGetImage(name, ih, 1, nullptr);
             WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
             if (bitmap)
               winuiImageSetSource(ih, image, bitmap);
@@ -276,7 +276,7 @@ static int winuiLabelSetActiveAttrib(Ihandle* ih, const char* value)
         Image image = winuiLabelGetImage(ih);
         if (image)
         {
-          void* imghandle = iupImageGetImage(name, ih, 0, NULL);
+          void* imghandle = iupImageGetImage(name, ih, 0, nullptr);
           WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
           if (bitmap)
             winuiImageSetSource(ih, image, bitmap);
@@ -291,7 +291,7 @@ static int winuiLabelSetActiveAttrib(Ihandle* ih, const char* value)
         Image image = winuiLabelGetImage(ih);
         if (image)
         {
-          void* imghandle = iupImageGetImage(name, ih, 0, NULL);
+          void* imghandle = iupImageGetImage(name, ih, 0, nullptr);
           WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
           if (bitmap)
             winuiImageSetSource(ih, image, bitmap);
@@ -363,7 +363,7 @@ static int winuiLabelMapMethod(Ihandle* ih)
 
     Image image = Image();
 
-    void* imghandle = iupImageGetImage(imagename, ih, 0, NULL);
+    void* imghandle = iupImageGetImage(imagename, ih, 0, nullptr);
     WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
     if (bitmap)
       winuiImageSetSource(ih, image, bitmap);
@@ -372,7 +372,7 @@ static int winuiLabelMapMethod(Ihandle* ih)
 
     void* innerPtr = nullptr;
     winrt::copy_to_abi(image, innerPtr);
-    iupAttribSet(ih, IUPWINUI_LABEL_INNER, (char*)innerPtr);
+    iupAttribSet(ih, IUPWINUI_LABEL_INNER, static_cast<char*>(innerPtr));
   }
   else
   {
@@ -383,23 +383,23 @@ static int winuiLabelMapMethod(Ihandle* ih)
 
     const char* title = iupAttribGet(ih, "TITLE");
     if (title)
-      iupwinuiSetMnemonicText(textBlock, title, NULL);
+      iupwinuiSetMnemonicText(textBlock, title, nullptr);
 
     border.Child(textBlock);
 
     void* innerPtr = nullptr;
     winrt::copy_to_abi(textBlock, innerPtr);
-    iupAttribSet(ih, IUPWINUI_LABEL_INNER, (char*)innerPtr);
+    iupAttribSet(ih, IUPWINUI_LABEL_INNER, static_cast<char*>(innerPtr));
   }
 
   if (ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
   {
     border.Background(SolidColorBrush(Microsoft::UI::Colors::Transparent()));
 
-    IupWinUILabelAux* aux = new IupWinUILabelAux();
+    auto* aux = new IupWinUILabelAux();
 
     aux->pointerPressedToken = border.PointerPressed([ih](IInspectable const&, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& args) {
-      IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+      auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
       if (cb)
       {
         auto point = args.GetCurrentPoint(winuiGetHandle<Border>(ih));
@@ -418,7 +418,7 @@ static int winuiLabelMapMethod(Ihandle* ih)
     });
 
     aux->pointerReleasedToken = border.PointerReleased([ih](IInspectable const&, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& args) {
-      IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+      auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
       if (cb)
       {
         auto point = args.GetCurrentPoint(winuiGetHandle<Border>(ih));
@@ -482,11 +482,11 @@ static int winuiLabelMapMethod(Ihandle* ih)
 
 static void winuiLabelUnMapMethod(Ihandle* ih)
 {
-  IupWinUILabelAux* aux = winuiGetAux<IupWinUILabelAux>(ih, IUPWINUI_LABEL_AUX);
+  auto* aux = winuiGetAux<IupWinUILabelAux>(ih, IUPWINUI_LABEL_AUX);
 
   if (ih->handle && aux)
   {
-    Border border = winuiGetHandle<Border>(ih);
+    auto border = winuiGetHandle<Border>(ih);
     if (border)
     {
       if (aux->pointerPressedToken)
@@ -503,7 +503,7 @@ static void winuiLabelUnMapMethod(Ihandle* ih)
   winuiFreeAux<IupWinUILabelAux>(ih, IUPWINUI_LABEL_AUX);
 
   {
-    void* ptr = (void*)iupAttribGet(ih, IUPWINUI_LABEL_INNER);
+    void* ptr = reinterpret_cast<void*>(iupAttribGet(ih, IUPWINUI_LABEL_INNER));
     if (ptr) { IInspectable obj{nullptr}; winrt::attach_abi(obj, ptr); }
     iupAttribSet(ih, IUPWINUI_LABEL_INNER, nullptr);
   }
@@ -514,7 +514,7 @@ static void winuiLabelUnMapMethod(Ihandle* ih)
     winuiReleaseHandle<Border>(ih);
   }
 
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 static int winuiLabelSetFgColorAttrib(Ihandle* ih, const char* value)
@@ -545,7 +545,7 @@ static int winuiLabelSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  Border border = winuiGetHandle<Border>(ih);
+  auto border = winuiGetHandle<Border>(ih);
   if (border)
   {
     Color color;
@@ -624,19 +624,19 @@ extern "C" IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
   ic->Map = winuiLabelMapMethod;
   ic->UnMap = winuiLabelUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiLabelSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACTIVE", nullptr, winuiLabelSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", iupBaseNativeParentGetBgColorAttrib, winuiLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiLabelSetFgColorAttrib, "DLGFGCOLOR", NULL, IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, winuiLabelSetFgColorAttrib, "DLGFGCOLOR", nullptr, IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "TITLE", winuiLabelGetTitleAttrib, winuiLabelSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, winuiLabelSetAlignmentAttrib, "ALEFT:ACENTER", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, winuiLabelSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PADDING", iupLabelGetPaddingAttrib, NULL, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "FONT", NULL, winuiLabelSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "TITLE", winuiLabelGetTitleAttrib, winuiLabelSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", nullptr, winuiLabelSetAlignmentAttrib, "ALEFT:ACENTER", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, winuiLabelSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", nullptr, nullptr, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PADDING", iupLabelGetPaddingAttrib, nullptr, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, winuiLabelSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "WORDWRAP", NULL, winuiLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "SELECTABLE", NULL, winuiLabelSetSelectableAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, winuiLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "WORDWRAP", nullptr, winuiLabelSetWordWrapAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SELECTABLE", nullptr, winuiLabelSetSelectableAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_DEFAULT|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ELLIPSIS", nullptr, winuiLabelSetEllipsisAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "MARKUP", nullptr, nullptr, nullptr, nullptr, IUPAF_DEFAULT);
 }

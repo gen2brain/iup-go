@@ -38,7 +38,7 @@ using namespace Windows::Foundation;
 
 static int winuiCanvasIsGLCanvas(Ihandle* ih)
 {
-  return iupAttribGet(ih, "_IUP_GLCONTROLDATA") != NULL && !IupClassMatch(ih, "glbackgroundbox");
+  return iupAttribGet(ih, "_IUP_GLCONTROLDATA") != nullptr && !IupClassMatch(ih, "glbackgroundbox");
 }
 
 /***********************************************************************************
@@ -50,7 +50,7 @@ static int winuiCanvasIsGLCanvas(Ihandle* ih)
 
 static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-  Ihandle* ih = (Ihandle*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+  auto* ih = reinterpret_cast<Ihandle*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
   if (!ih)
     return DefWindowProc(hwnd, msg, wParam, lParam);
 
@@ -60,7 +60,7 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
   {
     int w = LOWORD(lParam);
     int h = HIWORD(lParam);
-    IFnii resize_cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
+    auto resize_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RESIZE_CB"));
     if (resize_cb && !ih->data->inside_resize)
     {
       ih->data->inside_resize = 1;
@@ -74,16 +74,16 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
   case WM_MBUTTONDOWN:
   case WM_RBUTTONDOWN:
   {
-    IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
     if (cb)
     {
       int button = IUP_BUTTON1;
       if (msg == WM_MBUTTONDOWN) button = IUP_BUTTON2;
       else if (msg == WM_RBUTTONDOWN) button = IUP_BUTTON3;
-      int x = (short)LOWORD(lParam);
-      int y = (short)HIWORD(lParam);
+      int x = static_cast<short>(LOWORD(lParam));
+      int y = static_cast<short>(HIWORD(lParam));
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupwinuiButtonKeySetStatus((int)wParam, button, status, 0);
+      iupwinuiButtonKeySetStatus(static_cast<int>(wParam), button, status, 0);
       int ret = cb(ih, button, 1, x, y, status);
       if (ret == IUP_CLOSE)
         IupExitLoop();
@@ -97,16 +97,16 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
   case WM_MBUTTONUP:
   case WM_RBUTTONUP:
   {
-    IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
     if (cb)
     {
       int button = IUP_BUTTON1;
       if (msg == WM_MBUTTONUP) button = IUP_BUTTON2;
       else if (msg == WM_RBUTTONUP) button = IUP_BUTTON3;
-      int x = (short)LOWORD(lParam);
-      int y = (short)HIWORD(lParam);
+      int x = static_cast<short>(LOWORD(lParam));
+      int y = static_cast<short>(HIWORD(lParam));
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupwinuiButtonKeySetStatus((int)wParam, button, status, 0);
+      iupwinuiButtonKeySetStatus(static_cast<int>(wParam), button, status, 0);
       int ret = cb(ih, button, 0, x, y, status);
       if (ret == IUP_CLOSE)
         IupExitLoop();
@@ -118,13 +118,13 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
 
   case WM_MOUSEMOVE:
   {
-    IFniis cb = (IFniis)IupGetCallback(ih, "MOTION_CB");
+    auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "MOTION_CB"));
     if (cb)
     {
-      int x = (short)LOWORD(lParam);
-      int y = (short)HIWORD(lParam);
+      int x = static_cast<short>(LOWORD(lParam));
+      int y = static_cast<short>(HIWORD(lParam));
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupwinuiButtonKeySetStatus((int)wParam, 0, status, 0);
+      iupwinuiButtonKeySetStatus(static_cast<int>(wParam), 0, status, 0);
       cb(ih, x, y, status);
     }
     break;
@@ -132,17 +132,17 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
 
   case WM_MOUSEWHEEL:
   {
-    IFnfiis cb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
+    auto cb = reinterpret_cast<IFnfiis>(IupGetCallback(ih, "WHEEL_CB"));
     if (cb)
     {
       int delta = GET_WHEEL_DELTA_WPARAM(wParam);
       POINT pt;
-      pt.x = (short)LOWORD(lParam);
-      pt.y = (short)HIWORD(lParam);
+      pt.x = static_cast<short>(LOWORD(lParam));
+      pt.y = static_cast<short>(HIWORD(lParam));
       ScreenToClient(hwnd, &pt);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(GET_KEYSTATE_WPARAM(wParam), 0, status, 0);
-      cb(ih, (float)delta / 120.0f, pt.x, pt.y, status);
+      cb(ih, static_cast<float>(delta) / 120.0f, pt.x, pt.y, status);
     }
     break;
   }
@@ -150,8 +150,8 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
   case WM_KEYDOWN:
   case WM_SYSKEYDOWN:
   {
-    int code = iupwinuiKeyDecode((int)wParam, (lParam & 0x01000000)? 1: 0);
-    if (code && !iupwinuiKeyIsDispatched((int)wParam))
+    int code = iupwinuiKeyDecode(static_cast<int>(wParam), (lParam & 0x01000000)? 1: 0);
+    if (code && !iupwinuiKeyIsDispatched(static_cast<int>(wParam)))
     {
       int ret = iupKeyCallKeyCb(ih, code);
       if (ret == IUP_CLOSE)
@@ -177,7 +177,7 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
   case WM_KEYUP:
   case WM_SYSKEYUP:
   {
-    int code = iupwinuiKeyDecode((int)wParam, (lParam & 0x01000000)? 1: 0);
+    int code = iupwinuiKeyDecode(static_cast<int>(wParam), (lParam & 0x01000000)? 1: 0);
     if (code)
     {
       int ret = iupKeyCallKeyPressCb(ih, code, 0);
@@ -194,7 +194,7 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
 
   case WM_SETFOCUS:
   {
-    IFni cb = (IFni)IupGetCallback(ih, "FOCUS_CB");
+    IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "FOCUS_CB"));
     if (cb)
       cb(ih, 1);
     break;
@@ -202,7 +202,7 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
 
   case WM_KILLFOCUS:
   {
-    IFni cb = (IFni)IupGetCallback(ih, "FOCUS_CB");
+    IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "FOCUS_CB"));
     if (cb)
       cb(ih, 0);
     break;
@@ -210,7 +210,7 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
 
   case WM_PAINT:
   {
-    IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+    IFn cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
     if (cb && !(ih->data->inside_resize))
     {
       PAINTSTRUCT ps;
@@ -231,19 +231,19 @@ static LRESULT CALLBACK winuiGLCanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam,
   return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-static void winuiGLCanvasRegisterClass(void)
+static void winuiGLCanvasRegisterClass()
 {
   static bool registered = false;
   if (registered)
     return;
 
   WNDCLASS wc = {};
-  wc.hInstance = GetModuleHandle(NULL);
+  wc.hInstance = GetModuleHandle(nullptr);
   wc.lpszClassName = TEXT("IupWinUIGLCanvas");
   wc.lpfnWndProc = winuiGLCanvasWndProc;
-  wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+  wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
   wc.style = CS_DBLCLKS | CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-  wc.hbrBackground = NULL;
+  wc.hbrBackground = nullptr;
   RegisterClass(&wc);
   registered = true;
 }
@@ -256,25 +256,25 @@ static int winuiGLCanvasMapMethod(Ihandle* ih)
   if (!dialog || !dialog->handle)
     return IUP_ERROR;
 
-  HWND dialogHwnd = (HWND)dialog->handle;
+  HWND dialogHwnd = reinterpret_cast<HWND>(dialog->handle);
 
   DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS;
   if (iupAttribGetBoolean(ih, "CANFOCUS"))
     dwStyle |= WS_TABSTOP;
 
   HWND glHwnd = CreateWindowExW(
-    0, TEXT("IupWinUIGLCanvas"), NULL,
+    0, TEXT("IupWinUIGLCanvas"), nullptr,
     dwStyle,
     0, 0, 100, 100,
-    dialogHwnd, NULL, GetModuleHandle(NULL), NULL);
+    dialogHwnd, nullptr, GetModuleHandle(nullptr), nullptr);
 
   if (!glHwnd)
     return IUP_ERROR;
 
-  SetWindowLongPtr(glHwnd, GWLP_USERDATA, (LONG_PTR)ih);
+  SetWindowLongPtr(glHwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(ih));
 
-  iupAttribSet(ih, "HWND", (char*)glHwnd);
-  ih->handle = (InativeHandle*)glHwnd;
+  iupAttribSet(ih, "HWND", reinterpret_cast<char*>(glHwnd));
+  ih->handle = reinterpret_cast<InativeHandle*>(glHwnd);
 
   iupwinuiBringWindowToForeground(dialogHwnd);
 
@@ -285,14 +285,14 @@ static void winuiGLCanvasUnMapMethod(Ihandle* ih)
 {
   iupwinuiHwndHostRemove(ih);
 
-  HWND glHwnd = (HWND)iupAttribGet(ih, "HWND");
+  HWND glHwnd = reinterpret_cast<HWND>(iupAttribGet(ih, "HWND"));
   if (glHwnd)
   {
     SetWindowLongPtr(glHwnd, GWLP_USERDATA, 0);
     DestroyWindow(glHwnd);
   }
-  iupAttribSet(ih, "HWND", NULL);
-  ih->handle = NULL;
+  iupAttribSet(ih, "HWND", nullptr);
+  ih->handle = nullptr;
 }
 
 static void winuiGLCanvasLayoutUpdateMethod(Ihandle* ih)
@@ -302,7 +302,7 @@ static void winuiGLCanvasLayoutUpdateMethod(Ihandle* ih)
 
 static void winuiCanvasGLComposite(Ihandle* ih, const unsigned char* bgra, int w, int h)
 {
-  IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+  auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
   if (!aux || !aux->displayImage)
     return;
 
@@ -313,7 +313,7 @@ static void winuiCanvasGLComposite(Ihandle* ih, const unsigned char* bgra, int w
     aux->displayImage.Source(bitmap);
   }
 
-  memcpy(bitmap.PixelBuffer().data(), bgra, (size_t)w * h * 4);
+  memcpy(bitmap.PixelBuffer().data(), bgra, static_cast<size_t>(w) * h * 4);
   bitmap.Invalidate();
 }
 
@@ -323,9 +323,9 @@ static void winuiCanvasGLComposite(Ihandle* ih, const unsigned char* bgra, int w
 
 static void winuiCanvasCallScrollCallback(Ihandle* ih, int op)
 {
-  IFniff scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+  auto scroll_cb = reinterpret_cast<IFniff>(IupGetCallback(ih, "SCROLL_CB"));
   if (scroll_cb)
-    scroll_cb(ih, op, (float)ih->data->posx, (float)ih->data->posy);
+    scroll_cb(ih, op, static_cast<float>(ih->data->posx), static_cast<float>(ih->data->posy));
   else
     iupwinuiCanvasCallAction(ih);
 }
@@ -345,7 +345,7 @@ static int winuiScrollEventTypeToIup(ScrollEventType type, int is_vert)
 
 static void winuiCanvasProcessHorScroll(Ihandle* ih, double newValue, int op)
 {
-  IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+  auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
   if (!aux || !aux->sbHoriz)
     return;
 
@@ -354,9 +354,9 @@ static void winuiCanvasProcessHorScroll(Ihandle* ih, double newValue, int op)
   double dx = iupAttribGetDouble(ih, "DX");
   int iposx, ipagex;
 
-  iupCanvasCalcScrollIntPos(xmin, xmax, dx, 0, IUP_SB_MIN, IUP_SB_MAX, &ipagex, NULL);
+  iupCanvasCalcScrollIntPos(xmin, xmax, dx, 0, IUP_SB_MIN, IUP_SB_MAX, &ipagex, nullptr);
 
-  iposx = (int)newValue;
+  iposx = static_cast<int>(newValue);
   double posx;
   iupCanvasCalcScrollRealPos(xmin, xmax, &posx, IUP_SB_MIN, IUP_SB_MAX, ipagex, &iposx);
   ih->data->posx = posx;
@@ -366,7 +366,7 @@ static void winuiCanvasProcessHorScroll(Ihandle* ih, double newValue, int op)
 
 static void winuiCanvasProcessVerScroll(Ihandle* ih, double newValue, int op)
 {
-  IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+  auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
   if (!aux || !aux->sbVert)
     return;
 
@@ -375,9 +375,9 @@ static void winuiCanvasProcessVerScroll(Ihandle* ih, double newValue, int op)
   double dy = iupAttribGetDouble(ih, "DY");
   int iposy, ipagey;
 
-  iupCanvasCalcScrollIntPos(ymin, ymax, dy, 0, IUP_SB_MIN, IUP_SB_MAX, &ipagey, NULL);
+  iupCanvasCalcScrollIntPos(ymin, ymax, dy, 0, IUP_SB_MIN, IUP_SB_MAX, &ipagey, nullptr);
 
-  iposy = (int)newValue;
+  iposy = static_cast<int>(newValue);
   double posy;
   iupCanvasCalcScrollRealPos(ymin, ymax, &posy, IUP_SB_MIN, IUP_SB_MAX, ipagey, &iposy);
   ih->data->posy = posy;
@@ -388,7 +388,7 @@ static void winuiCanvasProcessVerScroll(Ihandle* ih, double newValue, int op)
 static int winuiCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
-  Canvas canvas = winuiGetHandle<Canvas>(ih);
+  auto canvas = winuiGetHandle<Canvas>(ih);
   if (canvas && !IupGetCallback(ih, "ACTION") && iupStrToRGB(value, &r, &g, &b))
   {
     Windows::UI::Color color;
@@ -407,7 +407,7 @@ static void winuiCanvasGetContentSize(Ihandle* ih, int* w, int* h)
   *w = ih->currentwidth;
   *h = ih->currentheight;
 
-  IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+  auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
   if (aux)
   {
     if (aux->sbVert && aux->sbVert.Visibility() == Visibility::Visible)
@@ -419,17 +419,17 @@ static void winuiCanvasGetContentSize(Ihandle* ih, int* w, int* h)
 
 static char* winuiCanvasGetScrollVisibleAttrib(Ihandle* ih)
 {
-  IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+  auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
   if (!aux)
-    return (char*)"NO";
+    return const_cast<char*>("NO");
 
   int sb_h = (aux->sbHoriz && aux->sbHoriz.Visibility() == Visibility::Visible) ? 1 : 0;
   int sb_v = (aux->sbVert && aux->sbVert.Visibility() == Visibility::Visible) ? 1 : 0;
 
-  if (sb_h && sb_v) return (char*)"YES";
-  if (sb_h) return (char*)"HORIZONTAL";
-  if (sb_v) return (char*)"VERTICAL";
-  return (char*)"NO";
+  if (sb_h && sb_v) return const_cast<char*>("YES");
+  if (sb_h) return const_cast<char*>("HORIZONTAL");
+  if (sb_v) return const_cast<char*>("VERTICAL");
+  return const_cast<char*>("NO");
 }
 
 static char* winuiCanvasGetDrawSizeAttrib(Ihandle* ih)
@@ -438,12 +438,12 @@ static char* winuiCanvasGetDrawSizeAttrib(Ihandle* ih)
   winuiCanvasGetContentSize(ih, &w, &h);
   if (w > 0 && h > 0)
     return iupStrReturnIntInt(w, h, 'x');
-  return NULL;
+  return nullptr;
 }
 
 static void winuiCanvasUpdateChildLayout(Ihandle* ih)
 {
-  IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+  auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
   if (!aux)
     return;
 
@@ -491,7 +491,7 @@ static int winuiCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
   {
-    IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+    auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
     if (!aux || !aux->sbHoriz)
       return 1;
 
@@ -502,7 +502,7 @@ static int winuiCanvasSetDXAttrib(Ihandle* ih, const char* value)
     if (!iupStrToDoubleDef(value, &dx, 0.1))
       return 1;
 
-    iupAttribSet(ih, "SB_RESIZE", NULL);
+    iupAttribSet(ih, "SB_RESIZE", nullptr);
 
     xmin = iupAttribGetDouble(ih, "XMIN");
     xmax = iupAttribGetDouble(ih, "XMAX");
@@ -521,7 +521,7 @@ static int winuiCanvasSetDXAttrib(Ihandle* ih, const char* value)
       linex = iupAttribGetDouble(ih, "LINEX");
 
     int ilinex;
-    iupCanvasCalcScrollIntPos(xmin, xmax, linex, 0, IUP_SB_MIN, IUP_SB_MAX, &ilinex, NULL);
+    iupCanvasCalcScrollIntPos(xmin, xmax, linex, 0, IUP_SB_MIN, IUP_SB_MAX, &ilinex, nullptr);
 
     if (dx >= (xmax - xmin))
     {
@@ -570,7 +570,7 @@ static int winuiCanvasSetDYAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_VERT)
   {
-    IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+    auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
     if (!aux || !aux->sbVert)
       return 1;
 
@@ -581,7 +581,7 @@ static int winuiCanvasSetDYAttrib(Ihandle* ih, const char* value)
     if (!iupStrToDoubleDef(value, &dy, 0.1))
       return 1;
 
-    iupAttribSet(ih, "SB_RESIZE", NULL);
+    iupAttribSet(ih, "SB_RESIZE", nullptr);
 
     ymin = iupAttribGetDouble(ih, "YMIN");
     ymax = iupAttribGetDouble(ih, "YMAX");
@@ -600,7 +600,7 @@ static int winuiCanvasSetDYAttrib(Ihandle* ih, const char* value)
       liney = iupAttribGetDouble(ih, "LINEY");
 
     int iliney;
-    iupCanvasCalcScrollIntPos(ymin, ymax, liney, 0, IUP_SB_MIN, IUP_SB_MAX, &iliney, NULL);
+    iupCanvasCalcScrollIntPos(ymin, ymax, liney, 0, IUP_SB_MIN, IUP_SB_MAX, &iliney, nullptr);
 
     if (dy >= (ymax - ymin))
     {
@@ -649,7 +649,7 @@ static int winuiCanvasSetPosXAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_HORIZ)
   {
-    IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+    auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
     if (!aux || !aux->sbHoriz)
       return 1;
 
@@ -682,7 +682,7 @@ static int winuiCanvasSetPosYAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->sb & IUP_SB_VERT)
   {
-    IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+    auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
     if (!aux || !aux->sbVert)
       return 1;
 
@@ -741,7 +741,7 @@ static void winuiScrollBarForceVisible(ScrollBar sb)
 
 static void winuiCanvasFireGesture(Ihandle* ih, int gesture, int state, Point const& pos, double v1, double v2)
 {
-  IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
+  auto cb = reinterpret_cast<IFniiiidd>(IupGetCallback(ih, "GESTURE_CB"));
   if (cb)
   {
     int x, y;
@@ -764,7 +764,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   if (winuiCanvasIsGLCanvas(ih))
     return winuiGLCanvasMapMethod(ih);
 
-  IupWinUICanvasAux* aux = new IupWinUICanvasAux();
+  auto* aux = new IupWinUICanvasAux();
 
   Canvas canvas;
   canvas.HorizontalAlignment(HorizontalAlignment::Left);
@@ -783,15 +783,15 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   if (iupAttribGet(ih, "_IUP_GLCONTROLDATA"))
   {
     Ihandle* dialog = IupGetDialog(ih);
-    HWND glHwnd = NULL;
+    HWND glHwnd = nullptr;
 
     winuiGLCanvasRegisterClass();
     if (dialog && dialog->handle)
-      glHwnd = CreateWindowExW(0, TEXT("IupWinUIGLCanvas"), NULL, WS_CHILD | WS_CLIPSIBLINGS,
-                               0, 0, 1, 1, (HWND)dialog->handle, NULL, GetModuleHandle(NULL), NULL);
+      glHwnd = CreateWindowExW(0, TEXT("IupWinUIGLCanvas"), nullptr, WS_CHILD | WS_CLIPSIBLINGS,
+                               0, 0, 1, 1, reinterpret_cast<HWND>(dialog->handle), nullptr, GetModuleHandle(nullptr), nullptr);
 
-    iupAttribSet(ih, "HWND", (char*)glHwnd);
-    iupAttribSet(ih, "_IUPGL_COMPOSITE_CB", (char*)winuiCanvasGLComposite);
+    iupAttribSet(ih, "HWND", reinterpret_cast<char*>(glHwnd));
+    iupAttribSet(ih, "_IUPGL_COMPOSITE_CB", reinterpret_cast<char*>(winuiCanvasGLComposite));
   }
 
   ih->data->sb = iupBaseGetScrollbar(ih);
@@ -823,12 +823,12 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   }
 
   aux->pointerPressedToken = canvas.PointerPressed([ih](IInspectable const&, PointerRoutedEventArgs const& args) {
-    Canvas c = winuiGetHandle<Canvas>(ih);
+    auto c = winuiGetHandle<Canvas>(ih);
     /* a drag source must not capture the pointer, it prevents the drop from completing */
     if (c && !iupAttribGetBoolean(ih, "DRAGSOURCE"))
       c.CapturePointer(args.Pointer());
 
-    IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
     if (cb)
     {
       auto point = args.GetCurrentPoint(c);
@@ -852,7 +852,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     if (iupAttribGetBoolean(ih, "CANFOCUS"))
     {
       Ihandle* dlg = IupGetDialog(ih);
-      if (dlg && (HWND)dlg->handle == GetActiveWindow())
+      if (dlg && reinterpret_cast<HWND>(dlg->handle) == GetActiveWindow())
       {
         if (c)
           c.Focus(FocusState::Pointer);
@@ -863,8 +863,8 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     if (iupAttribGetBoolean(ih, "DRAGSOURCE"))
     {
       auto hostPt = args.GetCurrentPoint(nullptr);
-      iupAttribSetInt(ih, "_IUPWINUI_DRAGX", (int)hostPt.Position().X);
-      iupAttribSetInt(ih, "_IUPWINUI_DRAGY", (int)hostPt.Position().Y);
+      iupAttribSetInt(ih, "_IUPWINUI_DRAGX", static_cast<int>(hostPt.Position().X));
+      iupAttribSetInt(ih, "_IUPWINUI_DRAGY", static_cast<int>(hostPt.Position().Y));
       iupAttribSet(ih, "_IUPWINUI_DRAGPRESSED", "1");
     }
 
@@ -872,20 +872,20 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   });
 
   aux->pointerReleasedToken = canvas.PointerReleased([ih](IInspectable const&, PointerRoutedEventArgs const& args) {
-    Canvas c = winuiGetHandle<Canvas>(ih);
+    auto c = winuiGetHandle<Canvas>(ih);
     if (c)
       c.ReleasePointerCapture(args.Pointer());
 
-    iupAttribSet(ih, "_IUPWINUI_DRAGPRESSED", NULL);
+    iupAttribSet(ih, "_IUPWINUI_DRAGPRESSED", nullptr);
 
     Ihandle* dlg = IupGetDialog(ih);
-    if (dlg && dlg->handle && !IsWindowEnabled((HWND)dlg->handle))
+    if (dlg && dlg->handle && !IsWindowEnabled(reinterpret_cast<HWND>(dlg->handle)))
     {
       args.Handled(true);
       return;
     }
 
-    IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
     if (cb)
     {
       auto point = args.GetCurrentPoint(c);
@@ -909,10 +909,10 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   });
 
   aux->pointerMovedToken = canvas.PointerMoved([ih](IInspectable const&, PointerRoutedEventArgs const& args) {
-    IFniis cb = (IFniis)IupGetCallback(ih, "MOTION_CB");
+    auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "MOTION_CB"));
     if (cb)
     {
-      Canvas c = winuiGetHandle<Canvas>(ih);
+      auto c = winuiGetHandle<Canvas>(ih);
       auto point = args.GetCurrentPoint(c);
       auto props = point.Properties();
       int x, y;
@@ -928,13 +928,13 @@ static int winuiCanvasMapMethod(Ihandle* ih)
 
     if (iupAttribGet(ih, "_IUPWINUI_DRAGPRESSED"))
     {
-      Canvas c = winuiGetHandle<Canvas>(ih);
+      auto c = winuiGetHandle<Canvas>(ih);
       auto hostPt = args.GetCurrentPoint(nullptr);
       float dx = hostPt.Position().X - iupAttribGetInt(ih, "_IUPWINUI_DRAGX");
       float dy = hostPt.Position().Y - iupAttribGetInt(ih, "_IUPWINUI_DRAGY");
       if (c && dx * dx + dy * dy > 16)
       {
-        iupAttribSet(ih, "_IUPWINUI_DRAGPRESSED", NULL);
+        iupAttribSet(ih, "_IUPWINUI_DRAGPRESSED", nullptr);
         c.StartDragAsync(args.GetCurrentPoint(c));
       }
     }
@@ -959,14 +959,14 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     auto props = point.Properties();
     int delta = props.MouseWheelDelta();
 
-    IFnfiis cb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
+    auto cb = reinterpret_cast<IFnfiis>(IupGetCallback(ih, "WHEEL_CB"));
     if (cb)
     {
       int x, y;
       iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), 0, status, 0);
-      cb(ih, (float)delta / 120.0f, x, y, status);
+      cb(ih, static_cast<float>(delta) / 120.0f, x, y, status);
     }
     else
     {
@@ -974,14 +974,14 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       {
         double posy = ih->data->posy;
         double dy = iupAttribGetDouble(ih, "DY");
-        posy -= ((double)delta / 120.0) * dy / 10.0;
+        posy -= (static_cast<double>(delta) / 120.0) * dy / 10.0;
         IupSetDouble(ih, "POSY", posy);
 
-        IFniff scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+        auto scroll_cb = reinterpret_cast<IFniff>(IupGetCallback(ih, "SCROLL_CB"));
         if (scroll_cb)
         {
           int op = delta > 0 ? IUP_SBUP : IUP_SBDN;
-          scroll_cb(ih, op, (float)ih->data->posx, (float)ih->data->posy);
+          scroll_cb(ih, op, static_cast<float>(ih->data->posx), static_cast<float>(ih->data->posy));
         }
       }
     }
@@ -992,7 +992,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   aux->charReceivedToken = canvas.CharacterReceived([ih](IInspectable const&, winrt::Microsoft::UI::Xaml::Input::CharacterReceivedRoutedEventArgs const& args) {
     char utf8[8];
     int len;
-    unsigned int cp = (unsigned int)args.Character();
+    auto cp = static_cast<unsigned int>(args.Character());
 
     if (!IupGetCallback(ih, "TEXTINPUT_CB"))
       return;
@@ -1003,14 +1003,14 @@ static int winuiCanvasMapMethod(Ihandle* ih)
 
     if (cp >= 0xD800 && cp <= 0xDBFF)
     {
-      iupAttribSetInt(ih, "_IUPWINUI_HIGHSURROGATE", (int)cp);
+      iupAttribSetInt(ih, "_IUPWINUI_HIGHSURROGATE", static_cast<int>(cp));
       args.Handled(true);
       return;
     }
     if (cp >= 0xDC00 && cp <= 0xDFFF)
     {
-      unsigned int high = (unsigned int)iupAttribGetInt(ih, "_IUPWINUI_HIGHSURROGATE");
-      iupAttribSet(ih, "_IUPWINUI_HIGHSURROGATE", NULL);
+      auto high = static_cast<unsigned int>(iupAttribGetInt(ih, "_IUPWINUI_HIGHSURROGATE"));
+      iupAttribSet(ih, "_IUPWINUI_HIGHSURROGATE", nullptr);
       if (high < 0xD800 || high > 0xDBFF)
         return;
       cp = 0x10000 + ((high - 0xD800) << 10) + (cp - 0xDC00);
@@ -1018,28 +1018,28 @@ static int winuiCanvasMapMethod(Ihandle* ih)
 
     if (cp < 0x80)
     {
-      utf8[0] = (char)cp;
+      utf8[0] = static_cast<char>(cp);
       len = 1;
     }
     else if (cp < 0x800)
     {
-      utf8[0] = (char)(0xC0 | (cp >> 6));
-      utf8[1] = (char)(0x80 | (cp & 0x3F));
+      utf8[0] = static_cast<char>(0xC0 | (cp >> 6));
+      utf8[1] = static_cast<char>(0x80 | (cp & 0x3F));
       len = 2;
     }
     else if (cp < 0x10000)
     {
-      utf8[0] = (char)(0xE0 | (cp >> 12));
-      utf8[1] = (char)(0x80 | ((cp >> 6) & 0x3F));
-      utf8[2] = (char)(0x80 | (cp & 0x3F));
+      utf8[0] = static_cast<char>(0xE0 | (cp >> 12));
+      utf8[1] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+      utf8[2] = static_cast<char>(0x80 | (cp & 0x3F));
       len = 3;
     }
     else
     {
-      utf8[0] = (char)(0xF0 | (cp >> 18));
-      utf8[1] = (char)(0x80 | ((cp >> 12) & 0x3F));
-      utf8[2] = (char)(0x80 | ((cp >> 6) & 0x3F));
-      utf8[3] = (char)(0x80 | (cp & 0x3F));
+      utf8[0] = static_cast<char>(0xF0 | (cp >> 18));
+      utf8[1] = static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
+      utf8[2] = static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+      utf8[3] = static_cast<char>(0x80 | (cp & 0x3F));
       len = 4;
     }
     utf8[len] = 0;
@@ -1049,14 +1049,14 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   });
 
   aux->keyDownToken = canvas.KeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-    int code = iupwinuiKeyDecode((int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0);
+    int code = iupwinuiKeyDecode(static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0);
     int is_keypad = iup_isKeyPadXkey(code);
 
-    iupAttribSet(ih, "_IUPWINUI_KEYPAD", is_keypad? "1": NULL);
+    iupAttribSet(ih, "_IUPWINUI_KEYPAD", is_keypad? "1": nullptr);
 
     if (IupGetCallback(ih, "TEXTINPUT_CB"))
     {
-      int vk = (int)args.Key();
+      int vk = static_cast<int>(args.Key());
       int has_ctrl = GetKeyState(VK_CONTROL) & 0x8000;
       int has_alt = GetKeyState(VK_MENU) & 0x8000;
       if (has_alt && !has_ctrl)
@@ -1066,13 +1066,13 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       }
       else if (!(has_ctrl && !has_alt) && !is_keypad)
       {
-        UINT ch = MapVirtualKeyA((UINT)vk, MAPVK_VK_TO_CHAR);
+        UINT ch = MapVirtualKeyA(static_cast<UINT>(vk), MAPVK_VK_TO_CHAR);
         if ((ch & 0xFFFF) >= 0x20)
           return;
       }
     }
 
-    if (code && !iupwinuiKeyIsDispatched((int)args.Key()))
+    if (code && !iupwinuiKeyIsDispatched(static_cast<int>(args.Key())))
     {
       int ret = iupKeyCallKeyCb(ih, code);
       if (ret == IUP_CLOSE)
@@ -1103,7 +1103,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   });
 
   aux->keyUpToken = canvas.KeyUp([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-    int code = iupwinuiKeyDecode((int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0);
+    int code = iupwinuiKeyDecode(static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0);
     if (code)
     {
       int ret = iupKeyCallKeyPressCb(ih, code, 0);
@@ -1133,7 +1133,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     int w, h;
     winuiCanvasGetContentSize(ih, &w, &h);
 
-    IFnii resize_cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
+    auto resize_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RESIZE_CB"));
     if (resize_cb && !ih->data->inside_resize)
     {
       ih->data->inside_resize = 1;
@@ -1176,13 +1176,13 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   });
 
   aux->tappedToken = canvas.Tapped([ih](IInspectable const&, TappedRoutedEventArgs const& args) {
-    Canvas c = winuiGetHandle<Canvas>(ih);
+    auto c = winuiGetHandle<Canvas>(ih);
     auto p = args.GetPosition(c);
     winuiCanvasFireGesture(ih, IUP_GESTURE_TAP, IUP_GESTURE_END, p, 1, 0);
   });
 
   aux->doubleTappedToken = canvas.DoubleTapped([ih](IInspectable const&, DoubleTappedRoutedEventArgs const& args) {
-    Canvas c = winuiGetHandle<Canvas>(ih);
+    auto c = winuiGetHandle<Canvas>(ih);
     auto p = args.GetPosition(c);
     winuiCanvasFireGesture(ih, IUP_GESTURE_TAP, IUP_GESTURE_END, p, 2, 0);
   });
@@ -1190,7 +1190,7 @@ static int winuiCanvasMapMethod(Ihandle* ih)
   aux->holdingToken = canvas.Holding([ih](IInspectable const&, HoldingRoutedEventArgs const& args) {
     if (args.HoldingState() != HoldingState::Started)
       return;
-    Canvas c = winuiGetHandle<Canvas>(ih);
+    auto c = winuiGetHandle<Canvas>(ih);
     auto p = args.GetPosition(c);
     winuiCanvasFireGesture(ih, IUP_GESTURE_LONGPRESS, IUP_GESTURE_END, p, 0, 0);
   });
@@ -1208,8 +1208,8 @@ static int winuiCanvasMapMethod(Ihandle* ih)
 
   winuiCanvasSetBgColorAttrib(ih, IupGetAttribute(ih, "BGCOLOR"));
 
-  winuiCanvasSetDXAttrib(ih, NULL);
-  winuiCanvasSetDYAttrib(ih, NULL);
+  winuiCanvasSetDXAttrib(ih, nullptr);
+  winuiCanvasSetDYAttrib(ih, nullptr);
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
@@ -1225,19 +1225,19 @@ static void winuiCanvasUnMapMethod(Ihandle* ih)
     return;
   }
 
-  IupWinUICanvasAux* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+  auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
 
   {
-    HWND glHwnd = (HWND)iupAttribGet(ih, "HWND");
+    HWND glHwnd = reinterpret_cast<HWND>(iupAttribGet(ih, "HWND"));
     if (glHwnd)
       DestroyWindow(glHwnd);
-    iupAttribSet(ih, "HWND", NULL);
-    iupAttribSet(ih, "_IUPGL_COMPOSITE_CB", NULL);
+    iupAttribSet(ih, "HWND", nullptr);
+    iupAttribSet(ih, "_IUPGL_COMPOSITE_CB", nullptr);
   }
 
   if (ih->handle && aux)
   {
-    Canvas canvas = winuiGetHandle<Canvas>(ih);
+    auto canvas = winuiGetHandle<Canvas>(ih);
     if (canvas)
     {
       if (aux->pointerPressedToken)
@@ -1288,18 +1288,18 @@ static void winuiCanvasUnMapMethod(Ihandle* ih)
   }
 
   {
-    ID2D1Bitmap1* buffer = (ID2D1Bitmap1*)iupAttribGet(ih, "_IUPWINUI_CANVAS_BUFFER");
+    auto* buffer = reinterpret_cast<ID2D1Bitmap1*>(iupAttribGet(ih, "_IUPWINUI_CANVAS_BUFFER"));
     if (buffer)
     {
       buffer->Release();
-      iupAttribSet(ih, "_IUPWINUI_CANVAS_BUFFER", NULL);
+      iupAttribSet(ih, "_IUPWINUI_CANVAS_BUFFER", nullptr);
     }
   }
 
   if (aux)
     *aux->alive = false;
   winuiFreeAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 static void winuiCanvasLayoutUpdateMethod(Ihandle* ih)
@@ -1310,20 +1310,20 @@ static void winuiCanvasLayoutUpdateMethod(Ihandle* ih)
     return;
   }
 
-  Canvas canvas = winuiGetHandle<Canvas>(ih);
+  auto canvas = winuiGetHandle<Canvas>(ih);
   if (!canvas)
     return;
 
   double scale = iupwinuiGetScale(ih);
   double dw = canvas.Width(), dh = canvas.Height();
-  int old_w = std::isnan(dw) ? 0 : (int)(dw * scale + 0.5);
-  int old_h = std::isnan(dh) ? 0 : (int)(dh * scale + 0.5);
+  int old_w = std::isnan(dw) ? 0 : static_cast<int>(dw * scale + 0.5);
+  int old_h = std::isnan(dh) ? 0 : static_cast<int>(dh * scale + 0.5);
 
   iupdrvBaseLayoutUpdateMethod(ih);
   winuiCanvasUpdateChildLayout(ih);
 
   RectangleGeometry clip;
-  clip.Rect({ 0, 0, (float)(ih->currentwidth / scale), (float)(ih->currentheight / scale) });
+  clip.Rect({ 0, 0, static_cast<float>(ih->currentwidth / scale), static_cast<float>(ih->currentheight / scale) });
   canvas.Clip(clip);
 
   int new_w = ih->currentwidth;
@@ -1334,7 +1334,7 @@ static void winuiCanvasLayoutUpdateMethod(Ihandle* ih)
     int content_w, content_h;
     winuiCanvasGetContentSize(ih, &content_w, &content_h);
 
-    IFnii resize_cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
+    auto resize_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RESIZE_CB"));
     if (resize_cb && !ih->data->inside_resize)
     {
       ih->data->inside_resize = 1;
@@ -1376,20 +1376,20 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 
   iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, winuiCanvasSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "DRAWSIZE", winuiCanvasGetDrawSizeAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "UPDATERECT", NULL, winuiCanvasSetUpdateRectAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAWSIZE", winuiCanvasGetDrawSizeAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "UPDATERECT", nullptr, winuiCanvasSetUpdateRectAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "DX", NULL, winuiCanvasSetDXAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DY", NULL, winuiCanvasSetDYAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, winuiCanvasSetPosXAttrib, "0", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, winuiCanvasSetPosYAttrib, "0", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "XAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "YAUTOHIDE", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DX", nullptr, winuiCanvasSetDXAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DY", nullptr, winuiCanvasSetDYAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, winuiCanvasSetPosXAttrib, "0", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, winuiCanvasSetPosYAttrib, "0", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "XAUTOHIDE", nullptr, nullptr, "YES", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "YAUTOHIDE", nullptr, nullptr, "YES", nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "DRAWANTIALIAS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DRAWANTIALIAS", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, "YES", NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", winuiCanvasGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKINGSTORE", nullptr, nullptr, "YES", nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLVISIBLE", winuiCanvasGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

@@ -39,7 +39,7 @@ using namespace Windows::Foundation;
 
 static void winuiTabsReleaseChildAttrib(Ihandle* child, const char* attr_name)
 {
-  void* ptr = (void*)iupAttribGet(child, attr_name);
+  void* ptr = reinterpret_cast<void*>(iupAttribGet(child, attr_name));
   if (ptr)
   {
     IInspectable obj{nullptr};
@@ -73,7 +73,7 @@ static void winuiTabsSelectionChanged(Ihandle* ih, IInspectable const& sender, S
   (void)sender;
   (void)args;
 
-  IupWinUITabsAux* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);
+  auto* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);
   if (!aux || aux->ignoreChange)
     return;
 
@@ -90,11 +90,11 @@ static void winuiTabsSelectionChanged(Ihandle* ih, IInspectable const& sender, S
   Ihandle* newChild = IupGetChild(ih, newIndex);
   Ihandle* oldChild = IupGetChild(ih, oldIndex);
 
-  IFnnn cb = (IFnnn)IupGetCallback(ih, "TABCHANGE_CB");
+  auto cb = reinterpret_cast<IFnnn>(IupGetCallback(ih, "TABCHANGE_CB"));
   if (cb)
     cb(ih, newChild, oldChild);
 
-  IFnii cb2 = (IFnii)IupGetCallback(ih, "TABCHANGEPOS_CB");
+  auto cb2 = reinterpret_cast<IFnii>(IupGetCallback(ih, "TABCHANGEPOS_CB"));
   if (cb2)
     cb2(ih, newIndex, oldIndex);
 
@@ -103,7 +103,7 @@ static void winuiTabsSelectionChanged(Ihandle* ih, IInspectable const& sender, S
 
 static Controls::Image winuiTabsGetTabImage(Ihandle* child)
 {
-  void* ptr = (void*)iupAttribGet(child, IUPWINUI_TABIMAGE_NATIVE);
+  void* ptr = reinterpret_cast<void*>(iupAttribGet(child, IUPWINUI_TABIMAGE_NATIVE));
   if (!ptr)
     return nullptr;
 
@@ -114,7 +114,7 @@ static Controls::Image winuiTabsGetTabImage(Ihandle* child)
 
 static TextBlock winuiTabsGetTabLabel(Ihandle* child)
 {
-  void* ptr = (void*)iupAttribGet(child, IUPWINUI_TABLABEL_NATIVE);
+  void* ptr = reinterpret_cast<void*>(iupAttribGet(child, IUPWINUI_TABLABEL_NATIVE));
   if (!ptr)
     return nullptr;
 
@@ -135,13 +135,13 @@ static void winuiTabsSetItemIcon(Ihandle* child, const char* tabimage, Ihandle* 
     return;
   }
 
-  void* imghandle = iupImageGetImage(tabimage, ih, 0, NULL);
+  void* imghandle = iupImageGetImage(tabimage, ih, 0, nullptr);
   WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
   if (!bitmap)
     return;
 
   int raw_w = 0, raw_h = 0;
-  iupdrvImageGetInfo(imghandle, &raw_w, &raw_h, NULL);
+  iupdrvImageGetInfo(imghandle, &raw_w, &raw_h, nullptr);
   int dst_w = raw_w, dst_h = raw_h;
   iupTabsScaleImageSize(ih, raw_w, raw_h, &dst_w, &dst_h);
 
@@ -155,7 +155,7 @@ static void winuiTabsSetItemIcon(Ihandle* child, const char* tabimage, Ihandle* 
 
 static TabViewItem winuiTabsGetTabViewItem(Ihandle* child)
 {
-  void* ptr = (void*)iupAttribGet(child, IUPWINUI_TABITEMNATIVE);
+  void* ptr = reinterpret_cast<void*>(iupAttribGet(child, IUPWINUI_TABITEMNATIVE));
   if (!ptr)
     return nullptr;
 
@@ -170,7 +170,7 @@ static int winuiTabsGetItemPos(TabView const& tabView, TabViewItem const& item)
   for (uint32_t i = 0; i < count; i++)
   {
     if (tabView.TabItems().GetAt(i).try_as<TabViewItem>() == item)
-      return (int)i;
+      return static_cast<int>(i);
   }
   return -1;
 }
@@ -183,7 +183,7 @@ static void winuiTabsRevokeRightTapped(Ihandle* child)
 
   TabViewItem item = winuiTabsGetTabViewItem(child);
   if (item)
-    item.RightTapped(event_token{ (int64_t)std::strtoll(tok, nullptr, 10) });
+    item.RightTapped(event_token{ static_cast<int64_t>(std::strtoll(tok, nullptr, 10)) });
 
   iupAttribSet(child, IUPWINUI_TABRIGHTTOKEN, nullptr);
 }
@@ -216,7 +216,7 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
   TabView tabView = winuiTabsGetTabView(ih);
   if (!tabView)
   {
-    iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
+    iupAttribSet(ih, "_IUPTABS_REORDERING", nullptr);
     return;
   }
 
@@ -261,11 +261,11 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   void* imgPtr = nullptr;
   winrt::copy_to_abi(tabImage, imgPtr);
-  iupAttribSet(child, IUPWINUI_TABIMAGE_NATIVE, (char*)imgPtr);
+  iupAttribSet(child, IUPWINUI_TABIMAGE_NATIVE, static_cast<char*>(imgPtr));
 
   void* lblPtr = nullptr;
   winrt::copy_to_abi(tabLabel, lblPtr);
-  iupAttribSet(child, IUPWINUI_TABLABEL_NATIVE, (char*)lblPtr);
+  iupAttribSet(child, IUPWINUI_TABLABEL_NATIVE, static_cast<char*>(lblPtr));
 
   char* tabimage = iupAttribGetId(ih, "TABIMAGE", pos);
   if (!tabimage) tabimage = iupAttribGet(child, "TABIMAGE");
@@ -284,11 +284,11 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   void* canvasPtr = nullptr;
   winrt::copy_to_abi(contentCanvas, canvasPtr);
-  iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)canvasPtr);
+  iupAttribSet(child, "_IUPTAB_CONTAINER", static_cast<char*>(canvasPtr));
 
   void* itemPtr = nullptr;
   winrt::copy_to_abi(item, itemPtr);
-  iupAttribSet(child, IUPWINUI_TABITEMNATIVE, (char*)itemPtr);
+  iupAttribSet(child, IUPWINUI_TABITEMNATIVE, static_cast<char*>(itemPtr));
 
   iupAttribSetHandleName(child);
 
@@ -304,11 +304,11 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     int tappedPos = winuiTabsGetItemPos(tv, tappedItem);
     if (tappedPos < 0)
       return;
-    IFni cb = (IFni)IupGetCallback(ih, "RIGHTCLICK_CB");
+    IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "RIGHTCLICK_CB"));
     if (cb)
       cb(ih, tappedPos);
   });
-  iupAttribSetStrf(child, IUPWINUI_TABRIGHTTOKEN, "%lld", (long long)rightToken.value);
+  iupAttribSetStrf(child, IUPWINUI_TABRIGHTTOKEN, "%lld", static_cast<long long>(rightToken.value));
 
   {
     int pos = IupGetChildPos(ih, child);
@@ -317,7 +317,7 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
       ToolTipService::SetToolTip(item, box_value(winrt::hstring(iupwinuiStringToHString(tabtip))));
   }
 
-  iupAttribSet(ih, "_IUPTABS_REORDERING", NULL);
+  iupAttribSet(ih, "_IUPTABS_REORDERING", nullptr);
 }
 
 static int winuiTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
@@ -350,7 +350,7 @@ static void winuiTabsCloseRequested(Ihandle* ih, TabView const& sender, TabViewT
     return;
 
   int ret = IUP_DEFAULT;
-  IFni cb = (IFni)IupGetCallback(ih, "TABCLOSE_CB");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "TABCLOSE_CB"));
   if (cb)
     ret = cb(ih, pos);
 
@@ -380,7 +380,7 @@ static int winuiTabsMapMethod(Ihandle* ih)
   tabView.CanReorderTabs(false);
   tabView.KeyboardAccelerators().Clear();
 
-  IupWinUITabsAux* aux = new IupWinUITabsAux();
+  auto* aux = new IupWinUITabsAux();
 
   aux->selectionChangedToken = tabView.SelectionChanged([ih](IInspectable const& sender, SelectionChangedEventArgs const& args) {
     winuiTabsSelectionChanged(ih, sender, args);
@@ -397,7 +397,7 @@ static int winuiTabsMapMethod(Ihandle* ih)
     auto change = args.CollectionChange();
     if (change == Windows::Foundation::Collections::CollectionChange::ItemRemoved)
     {
-      iupAttribSetInt(ih, "_IUPTABS_REORDER_FROM", (int)args.Index());
+      iupAttribSetInt(ih, "_IUPTABS_REORDER_FROM", static_cast<int>(args.Index()));
     }
     else if (change == Windows::Foundation::Collections::CollectionChange::ItemInserted)
     {
@@ -405,12 +405,12 @@ static int winuiTabsMapMethod(Ihandle* ih)
       if (from_str)
       {
         int from = iupAttribGetInt(ih, "_IUPTABS_REORDER_FROM");
-        int to = (int)args.Index();
-        iupAttribSet(ih, "_IUPTABS_REORDER_FROM", NULL);
+        int to = static_cast<int>(args.Index());
+        iupAttribSet(ih, "_IUPTABS_REORDER_FROM", nullptr);
 
         if (from != to)
         {
-          IFnii cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+          auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "REORDER_CB"));
           if (cb)
             cb(ih, from, to);
         }
@@ -432,7 +432,7 @@ static int winuiTabsMapMethod(Ihandle* ih)
     }
     if (!forTabs)
       return;
-    if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
+    if (!iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
       args.Handled(true);
   });
 
@@ -450,17 +450,17 @@ static int winuiTabsMapMethod(Ihandle* ih)
   if (ih->firstchild)
   {
     Ihandle* child;
-    Ihandle* current_child = (Ihandle*)iupAttribGet(ih, "_IUPTABS_VALUE_HANDLE");
+    auto* current_child = reinterpret_cast<Ihandle*>(iupAttribGet(ih, "_IUPTABS_VALUE_HANDLE"));
 
     for (child = ih->firstchild; child; child = child->brother)
       winuiTabsChildAddedMethod(ih, child);
 
     if (current_child)
     {
-      IupSetAttribute(ih, "VALUE_HANDLE", (char*)current_child);
+      IupSetAttribute(ih, "VALUE_HANDLE", reinterpret_cast<char*>(current_child));
 
       /* current value is now given by the native system */
-      iupAttribSet(ih, "_IUPTABS_VALUE_HANDLE", NULL);
+      iupAttribSet(ih, "_IUPTABS_VALUE_HANDLE", nullptr);
     }
 
     if (!current_child)
@@ -482,7 +482,7 @@ static void winuiTabsUnMapMethod(Ihandle* ih)
     winuiTabsReleaseChildAttrib(child, IUPWINUI_TABLABEL_NATIVE);
   }
 
-  IupWinUITabsAux* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);
+  auto* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);
   if (aux)
   {
     TabView tabView = winuiTabsGetTabView(ih);
@@ -521,12 +521,12 @@ static void winuiTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
   iupTabsCheckCurrentTab(ih, pos, 1);
 
-  IupWinUITabsAux* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);
+  auto* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);
   if (aux) aux->ignoreChange = 1;
 
   winuiTabsRevokeRightTapped(child);
 
-  if (pos >= 0 && (uint32_t)pos < tabView.TabItems().Size())
+  if (pos >= 0 && static_cast<uint32_t>(pos) < tabView.TabItems().Size())
     tabView.TabItems().RemoveAt(pos);
 
   if (aux) aux->ignoreChange = 0;
@@ -615,7 +615,7 @@ extern "C" IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
   if (!tabView)
     return;
 
-  IupWinUITabsAux* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);
+  auto* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);
   if (aux)
     aux->ignoreChange = 1;
 
@@ -663,11 +663,11 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
 
   if (tab_image)
   {
-    void* img = iupImageGetImage(tab_image, ih, 0, NULL);
+    void* img = iupImageGetImage(tab_image, ih, 0, nullptr);
     if (img)
     {
       int img_w = 0, img_h = 0;
-      iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+      iupdrvImageGetInfo(img, &img_w, &img_h, nullptr);
       iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
       w += img_w;
       if (img_h > h) h = img_h;
@@ -676,11 +676,11 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
 
   double scale = iupwinuiGetScale(ih);
 
-  w += (int)ceil(24 * scale);
-  h += (int)ceil(10 * scale);
+  w += static_cast<int>(ceil(24 * scale));
+  h += static_cast<int>(ceil(10 * scale));
 
-  if (w < (int)ceil(90 * scale)) w = (int)ceil(90 * scale);
-  if (h < (int)ceil(32 * scale)) h = (int)ceil(32 * scale);
+  if (w < static_cast<int>(ceil(90 * scale))) w = static_cast<int>(ceil(90 * scale));
+  if (h < static_cast<int>(ceil(32 * scale))) h = static_cast<int>(ceil(32 * scale));
 
   *tab_width = w;
   *tab_height = h;
@@ -755,19 +755,19 @@ extern "C" IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterCallback(ic, "TABCLOSE_CB", "i");
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, winuiTabsSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
   /* IupTabs only */
   iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, winuiTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TABTIP", NULL, winuiTabsSetTabTipAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, winuiTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABTIP", nullptr, winuiTabsSetTabTipAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABIMAGE", nullptr, winuiTabsSetTabImageAttrib, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, winuiTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, winuiTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHOWCLOSE", NULL, winuiTabsSetShowCloseAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, winuiTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHOWCLOSE", nullptr, winuiTabsSetShowCloseAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALLOWREORDER", nullptr, winuiTabsSetAllowReorderAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "TABTYPE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TABORIENTATION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MULTILINE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABTYPE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABORIENTATION", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MULTILINE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

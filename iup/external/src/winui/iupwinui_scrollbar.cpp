@@ -52,11 +52,11 @@ static void winuiScrollbarApplyRange(Ihandle* ih, ScrollBar sb)
 
 extern "C" IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 {
-  ScrollBar sb = winuiGetHandle<ScrollBar>(ih);
+  auto sb = winuiGetHandle<ScrollBar>(ih);
   if (!sb)
     return;
 
-  IupWinUIScrollbarAux* aux = winuiGetAux<IupWinUIScrollbarAux>(ih, IUPWINUI_SCROLLBAR_AUX);
+  auto* aux = winuiGetAux<IupWinUIScrollbarAux>(ih, IUPWINUI_SCROLLBAR_AUX);
   if (aux) aux->ignore_changed = true;
   winuiScrollbarApplyRange(ih, sb);
   if (aux) aux->ignore_changed = false;
@@ -64,13 +64,13 @@ extern "C" IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 
 static void winuiScrollbarUpdateValue(Ihandle* ih, ScrollEventType scrollType)
 {
-  IupWinUIScrollbarAux* aux = winuiGetAux<IupWinUIScrollbarAux>(ih, IUPWINUI_SCROLLBAR_AUX);
+  auto* aux = winuiGetAux<IupWinUIScrollbarAux>(ih, IUPWINUI_SCROLLBAR_AUX);
   if (!aux || aux->ignore_changed)
     return;
 
   double old_val = ih->data->val;
 
-  ScrollBar sb = winuiGetHandle<ScrollBar>(ih);
+  auto sb = winuiGetHandle<ScrollBar>(ih);
   if (!sb)
     return;
 
@@ -105,19 +105,19 @@ static void winuiScrollbarUpdateValue(Ihandle* ih, ScrollEventType scrollType)
     }
   }
 
-  IFniff scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+  auto scroll_cb = reinterpret_cast<IFniff>(IupGetCallback(ih, "SCROLL_CB"));
   if (scroll_cb)
   {
     float posx = 0, posy = 0;
     if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
-      posx = (float)ih->data->val;
+      posx = static_cast<float>(ih->data->val);
     else
-      posy = (float)ih->data->val;
+      posy = static_cast<float>(ih->data->val);
 
     scroll_cb(ih, op, posx, posy);
   }
 
-  IFn valuechanged_cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  IFn valuechanged_cb = static_cast<IFn>(IupGetCallback(ih, "VALUECHANGED_CB"));
   if (valuechanged_cb)
   {
     if (ih->data->val != old_val)
@@ -132,10 +132,10 @@ static int winuiScrollbarSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->val)))
   {
-    ScrollBar sb = winuiGetHandle<ScrollBar>(ih);
+    auto sb = winuiGetHandle<ScrollBar>(ih);
     if (sb)
     {
-      IupWinUIScrollbarAux* aux = winuiGetAux<IupWinUIScrollbarAux>(ih, IUPWINUI_SCROLLBAR_AUX);
+      auto* aux = winuiGetAux<IupWinUIScrollbarAux>(ih, IUPWINUI_SCROLLBAR_AUX);
 
       iupScrollbarCropValue(ih);
 
@@ -151,7 +151,7 @@ static int winuiScrollbarSetLineStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->linestep), 0.01))
   {
-    ScrollBar sb = winuiGetHandle<ScrollBar>(ih);
+    auto sb = winuiGetHandle<ScrollBar>(ih);
     if (sb)
       sb.SmallChange(ih->data->linestep * (ih->data->vmax - ih->data->vmin));
   }
@@ -162,7 +162,7 @@ static int winuiScrollbarSetPageStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->pagestep), 0.1))
   {
-    ScrollBar sb = winuiGetHandle<ScrollBar>(ih);
+    auto sb = winuiGetHandle<ScrollBar>(ih);
     if (sb)
       sb.LargeChange(ih->data->pagestep * (ih->data->vmax - ih->data->vmin));
   }
@@ -173,7 +173,7 @@ static int winuiScrollbarSetPageSizeAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->pagesize), 0.1))
   {
-    ScrollBar sb = winuiGetHandle<ScrollBar>(ih);
+    auto sb = winuiGetHandle<ScrollBar>(ih);
     if (sb)
     {
       iupScrollbarCropValue(ih);
@@ -218,7 +218,7 @@ static void winuiScrollbarForceVisible(ScrollBar sb)
 
 static int winuiScrollbarMapMethod(Ihandle* ih)
 {
-  IupWinUIScrollbarAux* aux = new IupWinUIScrollbarAux();
+  auto* aux = new IupWinUIScrollbarAux();
 
   ScrollBar sb = ScrollBar();
   sb.HorizontalAlignment(HorizontalAlignment::Left);
@@ -251,11 +251,11 @@ static int winuiScrollbarMapMethod(Ihandle* ih)
 
 static void winuiScrollbarUnMapMethod(Ihandle* ih)
 {
-  IupWinUIScrollbarAux* aux = winuiGetAux<IupWinUIScrollbarAux>(ih, IUPWINUI_SCROLLBAR_AUX);
+  auto* aux = winuiGetAux<IupWinUIScrollbarAux>(ih, IUPWINUI_SCROLLBAR_AUX);
 
   if (ih->handle && aux)
   {
-    ScrollBar sb = winuiGetHandle<ScrollBar>(ih);
+    auto sb = winuiGetHandle<ScrollBar>(ih);
     if (sb)
     {
       if (aux->scrollToken)
@@ -270,7 +270,7 @@ static void winuiScrollbarUnMapMethod(Ihandle* ih)
   }
 
   winuiFreeAux<IupWinUIScrollbarAux>(ih, IUPWINUI_SCROLLBAR_AUX);
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
@@ -293,7 +293,7 @@ extern "C" IUP_SDK_API void iupdrvScrollbarInitClass(Iclass* ic)
   ic->UnMap = winuiScrollbarUnMapMethod;
 
   iupClassRegisterAttribute(ic, "VALUE", iupScrollbarGetValueAttrib, winuiScrollbarSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LINESTEP", iupScrollbarGetLineStepAttrib, winuiScrollbarSetLineStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PAGESTEP", iupScrollbarGetPageStepAttrib, winuiScrollbarSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PAGESIZE", iupScrollbarGetPageSizeAttrib, winuiScrollbarSetPageSizeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LINESTEP", iupScrollbarGetLineStepAttrib, winuiScrollbarSetLineStepAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PAGESTEP", iupScrollbarGetPageStepAttrib, winuiScrollbarSetPageStepAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PAGESIZE", iupScrollbarGetPageSizeAttrib, winuiScrollbarSetPageSizeAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

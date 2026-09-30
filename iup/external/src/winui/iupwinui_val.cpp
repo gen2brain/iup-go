@@ -44,13 +44,13 @@ struct IupWinUIValAux
 
 static void winuiValUpdateValue(Ihandle* ih)
 {
-  IupWinUIValAux* aux = winuiGetAux<IupWinUIValAux>(ih, IUPWINUI_VAL_AUX);
+  auto* aux = winuiGetAux<IupWinUIValAux>(ih, IUPWINUI_VAL_AUX);
   if (!aux || aux->ignore_changed)
     return;
 
   double old_val = ih->data->val;
 
-  Slider slider = winuiGetHandle<Slider>(ih);
+  auto slider = winuiGetHandle<Slider>(ih);
   if (!slider)
     return;
 
@@ -59,7 +59,7 @@ static void winuiValUpdateValue(Ihandle* ih)
   ih->data->val = (sliderVal / WINUI_VAL_MAX) * (ih->data->vmax - ih->data->vmin) + ih->data->vmin;
   iupValCropValue(ih);
 
-  IFn cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  IFn cb = static_cast<IFn>(IupGetCallback(ih, "VALUECHANGED_CB"));
   if (cb)
   {
     if (ih->data->val == old_val)
@@ -74,10 +74,10 @@ static int winuiValSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->val)))
   {
-    Slider slider = winuiGetHandle<Slider>(ih);
+    auto slider = winuiGetHandle<Slider>(ih);
     if (slider)
     {
-      IupWinUIValAux* aux = winuiGetAux<IupWinUIValAux>(ih, IUPWINUI_VAL_AUX);
+      auto* aux = winuiGetAux<IupWinUIValAux>(ih, IUPWINUI_VAL_AUX);
       double sliderVal;
 
       iupValCropValue(ih);
@@ -99,7 +99,7 @@ static int winuiValSetStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->step), 0.01))
   {
-    Slider slider = winuiGetHandle<Slider>(ih);
+    auto slider = winuiGetHandle<Slider>(ih);
     if (slider)
     {
       double stepFreq = ih->data->step * WINUI_VAL_MAX;
@@ -114,7 +114,7 @@ static int winuiValSetPageStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->pagestep), 0.1))
   {
-    Slider slider = winuiGetHandle<Slider>(ih);
+    auto slider = winuiGetHandle<Slider>(ih);
     if (slider)
     {
       double largeChange = ih->data->pagestep * WINUI_VAL_MAX;
@@ -130,12 +130,12 @@ static int winuiValSetShowTicksAttrib(Ihandle* ih, const char* value)
   iupStrToInt(value, &ticks);
   ih->data->show_ticks = ticks;
 
-  Slider slider = winuiGetHandle<Slider>(ih);
+  auto slider = winuiGetHandle<Slider>(ih);
   if (slider)
   {
     if (ticks > 1)
     {
-      double freq = WINUI_VAL_MAX / (double)(ticks - 1);
+      double freq = WINUI_VAL_MAX / static_cast<double>(ticks - 1);
       slider.TickFrequency(freq);
       if (slider.TickPlacement() == Primitives::TickPlacement::None)
         slider.TickPlacement(Primitives::TickPlacement::BottomRight);
@@ -151,7 +151,7 @@ static int winuiValSetShowTicksAttrib(Ihandle* ih, const char* value)
 
 static int winuiValSetTicksPosAttrib(Ihandle* ih, const char* value)
 {
-  Slider slider = winuiGetHandle<Slider>(ih);
+  auto slider = winuiGetHandle<Slider>(ih);
   if (!slider)
     return 1;
 
@@ -169,7 +169,7 @@ static int winuiValSetInvertedAttrib(Ihandle* ih, const char* value)
 {
   ih->data->inverted = iupStrBoolean(value);
 
-  Slider slider = winuiGetHandle<Slider>(ih);
+  auto slider = winuiGetHandle<Slider>(ih);
   if (slider)
   {
     int reverse = (ih->data->orientation == IVAL_VERTICAL && !ih->data->inverted) ||
@@ -181,7 +181,7 @@ static int winuiValSetInvertedAttrib(Ihandle* ih, const char* value)
 
 static int winuiValMapMethod(Ihandle* ih)
 {
-  IupWinUIValAux* aux = new IupWinUIValAux();
+  auto* aux = new IupWinUIValAux();
 
   Slider slider = Slider();
   slider.HorizontalAlignment(HorizontalAlignment::Left);
@@ -213,7 +213,7 @@ static int winuiValMapMethod(Ihandle* ih)
   });
 
   aux->keyDownToken = slider.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
-    if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
+    if (!iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
       args.Handled(true);
   });
 
@@ -236,11 +236,11 @@ static int winuiValMapMethod(Ihandle* ih)
 
 static void winuiValUnMapMethod(Ihandle* ih)
 {
-  IupWinUIValAux* aux = winuiGetAux<IupWinUIValAux>(ih, IUPWINUI_VAL_AUX);
+  auto* aux = winuiGetAux<IupWinUIValAux>(ih, IUPWINUI_VAL_AUX);
 
   if (ih->handle && aux)
   {
-    Slider slider = winuiGetHandle<Slider>(ih);
+    auto slider = winuiGetHandle<Slider>(ih);
     if (slider)
     {
       if (aux->valueChangedToken)
@@ -257,7 +257,7 @@ static void winuiValUnMapMethod(Ihandle* ih)
   }
 
   winuiFreeAux<IupWinUIValAux>(ih, IUPWINUI_VAL_AUX);
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
@@ -280,12 +280,12 @@ extern "C" IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   ic->UnMap = winuiValUnMapMethod;
 
   iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, winuiValSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INVERTED", NULL, winuiValSetInvertedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, winuiValSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, winuiValSetStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INVERTED", nullptr, winuiValSetInvertedAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, winuiValSetPageStepAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, winuiValSetStepAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, winuiValSetTicksPosAttrib, "NORMAL", NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TICKSPOS", nullptr, winuiValSetTicksPosAttrib, "NORMAL", nullptr, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, winuiValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 }

@@ -44,14 +44,14 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgc
   int height = ih->currentheight;
   int bpp = iupAttribGetInt(ih, "BPP");
   int channels = iupAttribGetInt(ih, "CHANNELS");
-  unsigned char* imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
+  auto* imgdata = reinterpret_cast<unsigned char*>(iupAttribGetStr(ih, "WID"));
   unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
   iupColor colors[256];
   int colors_count = 0;
   int has_alpha = 0;
 
   if (!imgdata)
-    return NULL;
+    return nullptr;
 
   if (bgcolor)
     iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
@@ -143,13 +143,13 @@ static HICON winuiImageCreateCursorIcon(Ihandle* ih, int is_cursor)
   int height = ih->currentheight;
   int bpp = iupAttribGetInt(ih, "BPP");
   int channels = iupAttribGetInt(ih, "CHANNELS");
-  unsigned char* imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
+  auto* imgdata = reinterpret_cast<unsigned char*>(iupAttribGetStr(ih, "WID"));
   iupColor colors[256];
   int colors_count = 0;
   int has_alpha = 0;
 
   if (!imgdata)
-    return NULL;
+    return nullptr;
 
   if (bpp == 8)
     has_alpha = iupImageInitColorTable(ih, colors, &colors_count);
@@ -169,13 +169,13 @@ static HICON winuiImageCreateCursorIcon(Ihandle* ih, int is_cursor)
   bi.bV5BlueMask = 0x000000FF;
   bi.bV5AlphaMask = 0xFF000000;
 
-  uint8_t* pixels = NULL;
-  HDC hdc = GetDC(NULL);
-  HBITMAP hBitmap = CreateDIBSection(hdc, (BITMAPINFO*)&bi, DIB_RGB_COLORS, (void**)&pixels, NULL, 0);
-  ReleaseDC(NULL, hdc);
+  uint8_t* pixels = nullptr;
+  HDC hdc = GetDC(nullptr);
+  HBITMAP hBitmap = CreateDIBSection(hdc, reinterpret_cast<BITMAPINFO*>(&bi), DIB_RGB_COLORS, reinterpret_cast<void**>(&pixels), nullptr, 0);
+  ReleaseDC(nullptr, hdc);
 
   if (!hBitmap)
-    return NULL;
+    return nullptr;
 
   if (bpp == 8)
   {
@@ -219,11 +219,11 @@ static HICON winuiImageCreateCursorIcon(Ihandle* ih, int is_cursor)
     }
   }
 
-  HBITMAP hMask = CreateBitmap(width, height, 1, 1, NULL);
+  HBITMAP hMask = CreateBitmap(width, height, 1, 1, nullptr);
   if (!hMask)
   {
     DeleteObject(hBitmap);
-    return NULL;
+    return nullptr;
   }
 
   ICONINFO iconinfo;
@@ -255,12 +255,12 @@ static HICON winuiImageCreateCursorIcon(Ihandle* ih, int is_cursor)
 
 extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
-  return (void*)winuiImageCreateCursorIcon(ih, 0);
+  return reinterpret_cast<void*>(winuiImageCreateCursorIcon(ih, 0));
 }
 
 extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
-  return (void*)winuiImageCreateCursorIcon(ih, 1);
+  return reinterpret_cast<void*>(winuiImageCreateCursorIcon(ih, 1));
 }
 
 static void* winuiLoadImageFile(const char* name)
@@ -268,18 +268,18 @@ static void* winuiLoadImageFile(const char* name)
   std::wstring wname = iupwinuiStringToWString(name);
 
   HANDLE hFile = CreateFileW(wname.c_str(), GENERIC_READ, FILE_SHARE_READ,
-                             NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+                             nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
   if (hFile == INVALID_HANDLE_VALUE)
     return nullptr;
 
-  DWORD fileSize = GetFileSize(hFile, NULL);
+  DWORD fileSize = GetFileSize(hFile, nullptr);
   if (fileSize == INVALID_FILE_SIZE || fileSize == 0)
   {
     CloseHandle(hFile);
     return nullptr;
   }
 
-  uint8_t* fileData = (uint8_t*)malloc(fileSize);
+  auto* fileData = static_cast<uint8_t*>(malloc(fileSize));
   if (!fileData)
   {
     CloseHandle(hFile);
@@ -287,7 +287,7 @@ static void* winuiLoadImageFile(const char* name)
   }
 
   DWORD bytesRead;
-  BOOL readOk = ReadFile(hFile, fileData, fileSize, &bytesRead, NULL);
+  BOOL readOk = ReadFile(hFile, fileData, fileSize, &bytesRead, nullptr);
   CloseHandle(hFile);
 
   if (!readOk || bytesRead != fileSize)
@@ -336,7 +336,7 @@ static void* winuiLoadImageFile(const char* name)
 
   WriteableBitmap bitmap(width, height);
   IBuffer pixelBuffer = bitmap.PixelBuffer();
-  memcpy(pixelBuffer.data(), pixelArray.data(), (size_t)width * height * 4);
+  memcpy(pixelBuffer.data(), pixelArray.data(), static_cast<size_t>(width) * height * 4);
   bitmap.Invalidate();
 
   winrt::copy_to_abi(bitmap, handle);
@@ -351,10 +351,10 @@ extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 
   HANDLE hImage;
 
-  hImage = LoadImageA(GetModuleHandle(NULL), name, type == IUPIMAGE_ICON ? IMAGE_ICON : IMAGE_CURSOR, 0, 0, 0);
+  hImage = LoadImageA(GetModuleHandle(nullptr), name, type == IUPIMAGE_ICON ? IMAGE_ICON : IMAGE_CURSOR, 0, 0, 0);
 
   if (!hImage)
-    hImage = LoadImageA(NULL, name, type == IUPIMAGE_ICON ? IMAGE_ICON : IMAGE_CURSOR, 0, 0, LR_LOADFROMFILE);
+    hImage = LoadImageA(nullptr, name, type == IUPIMAGE_ICON ? IMAGE_ICON : IMAGE_CURSOR, 0, 0, LR_LOADFROMFILE);
 
   return hImage;
 }
@@ -375,7 +375,7 @@ void winuiImageSetPixelSize(Ihandle* ih, Microsoft::UI::Xaml::Controls::Image co
   img.Width(w / scale);
   img.Height(h / scale);
   img.Stretch(Microsoft::UI::Xaml::Media::Stretch::Fill);
-  img.Tag(box_value(Size((float)w, (float)h)));
+  img.Tag(box_value(Size(static_cast<float>(w), static_cast<float>(h))));
 }
 
 void winuiImageUpdateScale(Microsoft::UI::Xaml::DependencyObject const& root, double scale)
@@ -421,29 +421,29 @@ extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int*
   return 1;
 }
 
-static IWICImagingFactory* iWinUIGetWicFactory(void)
+static IWICImagingFactory* iWinUIGetWicFactory()
 {
-  static IWICImagingFactory* factory = NULL;
+  static IWICImagingFactory* factory = nullptr;
   if (!factory)
   {
-    CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
+    CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
   }
   return factory;
 }
 
 static int winuiImageReadDib(void* handle, int* w, int* h, unsigned char* imgdata)
 {
-  BITMAPINFOHEADER* bmih = (BITMAPINFOHEADER*)GlobalLock((HGLOBAL)handle);
+  auto* bmih = static_cast<BITMAPINFOHEADER*>(GlobalLock(static_cast<HGLOBAL>(handle)));
   if (!bmih)
     return 0;
-  if ((void*)bmih == handle)
+  if (reinterpret_cast<void*>(bmih) == handle)
   {
-    GlobalUnlock((HGLOBAL)handle);
+    GlobalUnlock(static_cast<HGLOBAL>(handle));
     return 0;
   }
 
   IWICImagingFactory* factory = iWinUIGetWicFactory();
-  SIZE_T dib_size = GlobalSize((HGLOBAL)handle);
+  SIZE_T dib_size = GlobalSize(static_cast<HGLOBAL>(handle));
   DWORD colors = bmih->biClrUsed;
   if (!colors && bmih->biBitCount <= 8)
     colors = 1 << bmih->biBitCount;
@@ -451,20 +451,20 @@ static int winuiImageReadDib(void* handle, int* w, int* h, unsigned char* imgdat
 
   BITMAPFILEHEADER bf = {};
   bf.bfType = 0x4D42;
-  bf.bfSize = (DWORD)(sizeof(BITMAPFILEHEADER) + dib_size);
-  bf.bfOffBits = (DWORD)(sizeof(BITMAPFILEHEADER) + bmih->biSize + masks + colors * sizeof(RGBQUAD));
+  bf.bfSize = static_cast<DWORD>(sizeof(BITMAPFILEHEADER) + dib_size);
+  bf.bfOffBits = static_cast<DWORD>(sizeof(BITMAPFILEHEADER) + bmih->biSize + masks + colors * sizeof(RGBQUAD));
 
-  BYTE* file = (BYTE*)malloc(bf.bfSize);
+  BYTE* file = static_cast<BYTE*>(malloc(bf.bfSize));
   int ret = 0;
   if (factory && file && dib_size >= sizeof(BITMAPINFOHEADER))
   {
     memcpy(file, &bf, sizeof(BITMAPFILEHEADER));
     memcpy(file + sizeof(BITMAPFILEHEADER), bmih, dib_size);
 
-    IWICStream* stream = NULL;
-    IWICBitmapDecoder* decoder = NULL;
-    IWICBitmapFrameDecode* frame = NULL;
-    IWICBitmapSource* source = NULL;
+    IWICStream* stream = nullptr;
+    IWICBitmapDecoder* decoder = nullptr;
+    IWICBitmapFrameDecode* frame = nullptr;
+    IWICBitmapSource* source = nullptr;
     UINT width = 0, height = 0;
 
     if (SUCCEEDED(factory->CreateStream(&stream)) &&
@@ -474,16 +474,16 @@ static int winuiImageReadDib(void* handle, int* w, int* h, unsigned char* imgdat
         SUCCEEDED(WICConvertBitmapSource(GUID_WICPixelFormat32bppBGRA, frame, &source)) &&
         SUCCEEDED(source->GetSize(&width, &height)))
     {
-      if (w) *w = (int)width;
-      if (h) *h = (int)height;
+      if (w) *w = static_cast<int>(width);
+      if (h) *h = static_cast<int>(height);
       ret = 1;
 
       if (imgdata)
       {
         UINT stride = width * 4;
-        if (SUCCEEDED(source->CopyPixels(NULL, stride, stride * height, imgdata)))
+        if (SUCCEEDED(source->CopyPixels(nullptr, stride, stride * height, imgdata)))
         {
-          size_t count = (size_t)width * height;
+          size_t count = static_cast<size_t>(width) * height;
           for (size_t i = 0; i < count; i++)
           {
             unsigned char b = imgdata[i * 4];
@@ -501,7 +501,7 @@ static int winuiImageReadDib(void* handle, int* w, int* h, unsigned char* imgdat
   }
 
   free(file);
-  GlobalUnlock((HGLOBAL)handle);
+  GlobalUnlock(static_cast<HGLOBAL>(handle));
   return ret;
 }
 
@@ -510,7 +510,7 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
   if (!handle || !imgdata)
     return;
 
-  if (winuiImageReadDib(handle, NULL, NULL, imgdata))
+  if (winuiImageReadDib(handle, nullptr, nullptr, imgdata))
     return;
 
   WriteableBitmap bitmap = winuiGetBitmapFromHandle(handle);
@@ -545,10 +545,10 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
         if (b > 255) b = 255;
       }
 
-      line_data[0] = (unsigned char)r;
-      line_data[1] = (unsigned char)g;
-      line_data[2] = (unsigned char)b;
-      line_data[3] = (unsigned char)a;
+      line_data[0] = static_cast<unsigned char>(r);
+      line_data[1] = static_cast<unsigned char>(g);
+      line_data[2] = static_cast<unsigned char>(b);
+      line_data[3] = static_cast<unsigned char>(a);
       line_data += 4;
     }
   }
@@ -559,7 +559,7 @@ extern "C" IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, i
 {
   (void)colors;
   if (colors_count) *colors_count = 0;
-  if (winuiImageReadDib(handle, w, h, NULL))
+  if (winuiImageReadDib(handle, w, h, nullptr))
   {
     if (bpp) *bpp = 32;
     return 1;
@@ -575,10 +575,10 @@ extern "C" IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
   switch (type)
   {
   case IUPIMAGE_ICON:
-    DestroyIcon((HICON)handle);
+    DestroyIcon(static_cast<HICON>(handle));
     break;
   case IUPIMAGE_CURSOR:
-    DestroyCursor((HCURSOR)handle);
+    DestroyCursor(static_cast<HCURSOR>(handle));
     break;
   default:
   {
@@ -594,15 +594,15 @@ static const GUID* iWinUIImageGetContainerFormat(const char* format)
   if (iupStrEqualNoCase(format, "PNG"))  return &GUID_ContainerFormatPng;
   if (iupStrEqualNoCase(format, "JPEG")) return &GUID_ContainerFormatJpeg;
   if (iupStrEqualNoCase(format, "BMP"))  return &GUID_ContainerFormatBmp;
-  return NULL;
+  return nullptr;
 }
 
 static unsigned char* iWinUIImageExpandPalette(unsigned char* imgdata, int width, int height, iupColor* colors, int colors_count)
 {
-  size_t count = (size_t)width * height;
+  size_t count = static_cast<size_t>(width) * height;
   int i;
-  unsigned char* rgba = (unsigned char*)malloc(count * 4);
-  if (!rgba) return NULL;
+  auto* rgba = static_cast<unsigned char*>(malloc(count * 4));
+  if (!rgba) return nullptr;
 
   (void)colors_count;
 
@@ -621,13 +621,13 @@ static unsigned char* iWinUIImageExpandPalette(unsigned char* imgdata, int width
 static int iWinUIImageSaveToStream(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, IStream* stream)
 {
   IWICImagingFactory* factory = iWinUIGetWicFactory();
-  IWICBitmapEncoder* encoder = NULL;
-  IWICBitmapFrameEncode* frame = NULL;
-  IPropertyBag2* props = NULL;
+  IWICBitmapEncoder* encoder = nullptr;
+  IWICBitmapFrameEncode* frame = nullptr;
+  IPropertyBag2* props = nullptr;
   const GUID* container;
   HRESULT hr;
   unsigned char* data = imgdata;
-  unsigned char* pixbuf = NULL;
+  unsigned char* pixbuf = nullptr;
   int channels, dst_channels, stride, i;
   int is_jpeg = iupStrEqualNoCase(format, "JPEG");
   WICPixelFormatGUID pixelFormat;
@@ -653,7 +653,7 @@ static int iWinUIImageSaveToStream(unsigned char* imgdata, int width, int height
   else
     pixelFormat = GUID_WICPixelFormat32bppBGRA;
 
-  pixbuf = (unsigned char*)malloc((size_t)width * height * dst_channels);
+  pixbuf = static_cast<unsigned char*>(malloc(static_cast<size_t>(width) * height * dst_channels));
   if (!pixbuf)
   {
     if (data != imgdata) free(data);
@@ -671,7 +671,7 @@ static int iWinUIImageSaveToStream(unsigned char* imgdata, int width, int height
 
   if (data != imgdata) free(data);
 
-  hr = factory->CreateEncoder(*container, NULL, &encoder);
+  hr = factory->CreateEncoder(*container, nullptr, &encoder);
   if (FAILED(hr)) { free(pixbuf); return 0; }
 
   hr = encoder->Initialize(stream, WICBitmapEncoderNoCache);
@@ -686,7 +686,8 @@ static int iWinUIImageSaveToStream(unsigned char* imgdata, int width, int height
     VARIANT varValue;
     const char* q = IupGetGlobal("IMAGESAVEQUALITY");
     float quality = 0.85f;
-    if (q) quality = (float)atof(q) / 100.0f;
+    if (q && iupStrToFloat(q, &quality))
+      quality /= 100.0f;
 
     option.pstrName = const_cast<LPOLESTR>(L"ImageQuality");
     VariantInit(&varValue);
@@ -723,7 +724,7 @@ cleanup:
 
 extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
 {
-  IStream* stream = NULL;
+  IStream* stream = nullptr;
   HGLOBAL hGlobal;
   STATSTG stat;
   HANDLE hFile;
@@ -733,7 +734,7 @@ extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, in
   DWORD written;
   wchar_t wfilename[4096];
 
-  hr = CreateStreamOnHGlobal(NULL, FALSE, &stream);
+  hr = CreateStreamOnHGlobal(nullptr, FALSE, &stream);
   if (FAILED(hr)) return 0;
 
   ret = iWinUIImageSaveToStream(imgdata, width, height, bpp, colors, colors_count, format, stream);
@@ -759,7 +760,7 @@ extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, in
   }
 
   MultiByteToWideChar(CP_UTF8, 0, filename, -1, wfilename, 4096);
-  hFile = CreateFileW(wfilename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  hFile = CreateFileW(wfilename, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
   if (hFile == INVALID_HANDLE_VALUE)
   {
     stream->Release();
@@ -768,7 +769,7 @@ extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, in
   }
 
   pData = GlobalLock(hGlobal);
-  WriteFile(hFile, pData, stat.cbSize.LowPart, &written, NULL);
+  WriteFile(hFile, pData, stat.cbSize.LowPart, &written, nullptr);
   GlobalUnlock(hGlobal);
   CloseHandle(hFile);
 
@@ -779,27 +780,27 @@ extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, in
 
 extern "C" IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
 {
-  IStream* stream = NULL;
+  IStream* stream = nullptr;
   HRESULT hr;
   HGLOBAL hGlobal;
   STATSTG stat;
   unsigned char* result;
   void* pData;
 
-  hr = CreateStreamOnHGlobal(NULL, FALSE, &stream);
-  if (FAILED(hr)) return NULL;
+  hr = CreateStreamOnHGlobal(nullptr, FALSE, &stream);
+  if (FAILED(hr)) return nullptr;
 
   if (!iWinUIImageSaveToStream(imgdata, width, height, bpp, colors, colors_count, format, stream))
   {
     stream->Release();
-    return NULL;
+    return nullptr;
   }
 
   hr = GetHGlobalFromStream(stream, &hGlobal);
   if (FAILED(hr))
   {
     stream->Release();
-    return NULL;
+    return nullptr;
   }
 
   hr = stream->Stat(&stat, STATFLAG_NONAME);
@@ -807,16 +808,16 @@ extern "C" IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* img
   {
     stream->Release();
     GlobalFree(hGlobal);
-    return NULL;
+    return nullptr;
   }
 
-  *size = (int)stat.cbSize.LowPart;
-  result = (unsigned char*)malloc(*size);
+  *size = static_cast<int>(stat.cbSize.LowPart);
+  result = static_cast<unsigned char*>(malloc(*size));
   if (!result)
   {
     stream->Release();
     GlobalFree(hGlobal);
-    return NULL;
+    return nullptr;
   }
 
   pData = GlobalLock(hGlobal);
@@ -845,7 +846,7 @@ extern "C" IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, i
   if (!image)
     return 0;
 
-  imgdata = (unsigned char*)iupAttribGet(image, "WID");
+  imgdata = reinterpret_cast<unsigned char*>(iupAttribGet(image, "WID"));
   if (!imgdata)
     return 0;
 
@@ -857,7 +858,7 @@ extern "C" IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, i
   if (w <= 0 || h <= 0)
     return 0;
 
-  dst = (unsigned char*)malloc((size_t)w * h * 4);
+  dst = static_cast<unsigned char*>(malloc(static_cast<size_t>(w) * h * 4));
   if (!dst)
     return 0;
 

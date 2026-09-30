@@ -54,7 +54,7 @@ static void winuiTimerProc(IupWinUITimer* timer_data)
   {
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - timer_data->startTime).count();
-    iupAttribSetInt(ih, "ELAPSEDTIME", (int)elapsed);
+    iupAttribSetInt(ih, "ELAPSEDTIME", static_cast<int>(elapsed));
 
     timer_data->in_tick = true;
     int ret = cb(ih);
@@ -91,7 +91,7 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
     winrt::copy_from_abi(dq_obj, dq_ptr);
     DispatcherQueue dq = dq_obj.as<DispatcherQueue>();
 
-    IupWinUITimer* timer_data = new IupWinUITimer();
+    auto* timer_data = new IupWinUITimer();
     if (!timer_data)
       return;
 
@@ -108,7 +108,7 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
     timer_data->timer.Start();
 
     ih->serial = 1;
-    iupAttribSet(ih, IUPWINUI_TIMER_DATA, (char*)timer_data);
+    iupAttribSet(ih, IUPWINUI_TIMER_DATA, reinterpret_cast<char*>(timer_data));
     winui_running_timers.insert(ih);
   }
 }
@@ -119,7 +119,7 @@ extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 
   if (ih->serial > 0)
   {
-    IupWinUITimer* timer_data = (IupWinUITimer*)iupAttribGet(ih, IUPWINUI_TIMER_DATA);
+    auto* timer_data = reinterpret_cast<IupWinUITimer*>(iupAttribGet(ih, IUPWINUI_TIMER_DATA));
 
     if (timer_data)
     {

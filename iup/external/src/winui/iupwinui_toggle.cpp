@@ -42,7 +42,7 @@ static void winuiToggleCallAction(Ihandle* ih, int checked, bool valuechanged = 
   if (iupAttribGet(ih, "_IUPWINUI_IGNORE_TOGGLE"))
     return;
 
-  IFni cb = (IFni)IupGetCallback(ih, "ACTION");
+  IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "ACTION"));
   if (cb)
   {
     int ret = cb(ih, checked);
@@ -56,7 +56,7 @@ static void winuiToggleCallAction(Ihandle* ih, int checked, bool valuechanged = 
 
 static int winuiToggleGetChecked(Ihandle* ih)
 {
-  IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
+  auto* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
   if (!aux)
     return 0;
 
@@ -64,14 +64,14 @@ static int winuiToggleGetChecked(Ihandle* ih)
   {
   case IUPWINUI_TOGGLE_TOGGLESWITCH:
     {
-      ToggleSwitch ts = winuiGetHandle<ToggleSwitch>(ih);
+      auto ts = winuiGetHandle<ToggleSwitch>(ih);
       if (ts)
         return ts.IsOn() ? 1 : 0;
     }
     break;
   case IUPWINUI_TOGGLE_TOGGLEBUTTON:
     {
-      ToggleButton tb = winuiGetHandle<ToggleButton>(ih);
+      auto tb = winuiGetHandle<ToggleButton>(ih);
       if (tb)
       {
         auto isChecked = tb.IsChecked();
@@ -82,7 +82,7 @@ static int winuiToggleGetChecked(Ihandle* ih)
     break;
   case IUPWINUI_TOGGLE_RADIOBUTTON:
     {
-      RadioButton rb = winuiGetHandle<RadioButton>(ih);
+      auto rb = winuiGetHandle<RadioButton>(ih);
       if (rb)
         return rb.IsChecked() ? 1 : 0;
     }
@@ -90,7 +90,7 @@ static int winuiToggleGetChecked(Ihandle* ih)
   case IUPWINUI_TOGGLE_CHECKBOX:
   default:
     {
-      CheckBox cb = winuiGetHandle<CheckBox>(ih);
+      auto cb = winuiGetHandle<CheckBox>(ih);
       if (cb)
       {
         auto isChecked = cb.IsChecked();
@@ -108,7 +108,7 @@ static int winuiToggleGetChecked(Ihandle* ih)
 
 static int winuiToggleSetValueAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
+  auto* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
   if (!aux)
     return 0;
 
@@ -120,21 +120,21 @@ static int winuiToggleSetValueAttrib(Ihandle* ih, const char* value)
   {
   case IUPWINUI_TOGGLE_TOGGLESWITCH:
     {
-      ToggleSwitch ts = winuiGetHandle<ToggleSwitch>(ih);
+      auto ts = winuiGetHandle<ToggleSwitch>(ih);
       if (ts)
         ts.IsOn(checked);
     }
     break;
   case IUPWINUI_TOGGLE_TOGGLEBUTTON:
     {
-      ToggleButton tb = winuiGetHandle<ToggleButton>(ih);
+      auto tb = winuiGetHandle<ToggleButton>(ih);
       if (tb)
         tb.IsChecked(checked);
     }
     break;
   case IUPWINUI_TOGGLE_RADIOBUTTON:
     {
-      RadioButton rb = winuiGetHandle<RadioButton>(ih);
+      auto rb = winuiGetHandle<RadioButton>(ih);
       if (rb)
         rb.IsChecked(checked);
     }
@@ -142,7 +142,7 @@ static int winuiToggleSetValueAttrib(Ihandle* ih, const char* value)
   case IUPWINUI_TOGGLE_CHECKBOX:
   default:
     {
-      CheckBox cb = winuiGetHandle<CheckBox>(ih);
+      auto cb = winuiGetHandle<CheckBox>(ih);
       if (cb)
       {
         if (iupStrEqualNoCase(value, "NOTDEF") && cb.IsThreeState())
@@ -154,7 +154,7 @@ static int winuiToggleSetValueAttrib(Ihandle* ih, const char* value)
     break;
   }
 
-  iupAttribSet(ih, "_IUPWINUI_IGNORE_TOGGLE", NULL);
+  iupAttribSet(ih, "_IUPWINUI_IGNORE_TOGGLE", nullptr);
 
   return 0;
 }
@@ -163,8 +163,8 @@ static char* winuiToggleGetValueAttrib(Ihandle* ih)
 {
   int check = winuiToggleGetChecked(ih);
   if (check < 0)
-    return (char*)"NOTDEF";
-  return check ? (char*)"ON" : (char*)"OFF";
+    return const_cast<char*>("NOTDEF");
+  return check ? const_cast<char*>("ON") : const_cast<char*>("OFF");
 }
 
 static int winuiToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
@@ -175,7 +175,7 @@ static int winuiToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
   char value1[30], value2[30];
   iupStrToStrStr(value, value1, sizeof(value1), value2, sizeof(value2), ':');
 
-  Control ctrl = winuiGetHandle<Control>(ih);
+  auto ctrl = winuiGetHandle<Control>(ih);
   if (ctrl)
   {
     HorizontalAlignment halign = HorizontalAlignment::Center;
@@ -198,11 +198,11 @@ static int winuiToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
 
 static int winuiToggleSetRightButtonAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
+  auto* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
   if (!aux || aux->controlType != IUPWINUI_TOGGLE_CHECKBOX)
     return 0;
 
-  CheckBox cb = winuiGetHandle<CheckBox>(ih);
+  auto cb = winuiGetHandle<CheckBox>(ih);
   if (cb)
     cb.FlowDirection(iupStrBoolean(value) ? FlowDirection::RightToLeft : FlowDirection::LeftToRight);
 
@@ -218,18 +218,18 @@ static void winuiToggleSetImageTextContent(Ihandle* ih, ToggleButton tb, Image i
 
 static void winuiToggleSetImageContent(Ihandle* ih, const char* name, int make_inactive)
 {
-  IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
+  auto* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
   if (!aux || !name)
     return;
 
   if (aux->controlType != IUPWINUI_TOGGLE_TOGGLEBUTTON)
     return;
 
-  ToggleButton tb = winuiGetHandle<ToggleButton>(ih);
+  auto tb = winuiGetHandle<ToggleButton>(ih);
   if (!tb)
     return;
 
-  void* imghandle = iupImageGetImage(name, ih, make_inactive, NULL);
+  void* imghandle = iupImageGetImage(name, ih, make_inactive, nullptr);
   WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
   if (!bitmap)
     return;
@@ -246,13 +246,13 @@ static IInspectable winuiToggleMakeContent(Ihandle* ih, const char* value)
   if (iupAttribGetBoolean(ih, "MARKUP"))
     iupwinuiApplyMarkupToTextBlock(tb, value);
   else
-    iupwinuiSetMnemonicText(tb, value, NULL);
+    iupwinuiSetMnemonicText(tb, value, nullptr);
   return tb;
 }
 
 static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
+  auto* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
   if (!aux)
     return 1;
 
@@ -276,7 +276,7 @@ static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
       }
       else
       {
-        ToggleButton tb = winuiGetHandle<ToggleButton>(ih);
+        auto tb = winuiGetHandle<ToggleButton>(ih);
         if (tb)
           tb.Content(content);
       }
@@ -284,7 +284,7 @@ static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
     break;
   case IUPWINUI_TOGGLE_RADIOBUTTON:
     {
-      RadioButton rb = winuiGetHandle<RadioButton>(ih);
+      auto rb = winuiGetHandle<RadioButton>(ih);
       if (rb)
         rb.Content(content);
     }
@@ -292,7 +292,7 @@ static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
   case IUPWINUI_TOGGLE_CHECKBOX:
   default:
     {
-      CheckBox cb = winuiGetHandle<CheckBox>(ih);
+      auto cb = winuiGetHandle<CheckBox>(ih);
       if (cb)
       {
         cb.Content(content);
@@ -309,9 +309,9 @@ static char* winuiToggleGetTitleAttrib(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "MARKUP"))
     return iupAttribGet(ih, "TITLE");
 
-  IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
+  auto* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
   if (!aux)
-    return NULL;
+    return nullptr;
 
   if (aux->controlType == IUPWINUI_TOGGLE_TOGGLESWITCH)
     return iupAttribGet(ih, "TITLE");
@@ -322,14 +322,14 @@ static char* winuiToggleGetTitleAttrib(Ihandle* ih)
   {
   case IUPWINUI_TOGGLE_TOGGLEBUTTON:
     {
-      ToggleButton tb = winuiGetHandle<ToggleButton>(ih);
+      auto tb = winuiGetHandle<ToggleButton>(ih);
       if (tb)
         content = tb.Content();
     }
     break;
   case IUPWINUI_TOGGLE_RADIOBUTTON:
     {
-      RadioButton rb = winuiGetHandle<RadioButton>(ih);
+      auto rb = winuiGetHandle<RadioButton>(ih);
       if (rb)
         content = rb.Content();
     }
@@ -337,7 +337,7 @@ static char* winuiToggleGetTitleAttrib(Ihandle* ih)
   case IUPWINUI_TOGGLE_CHECKBOX:
   default:
     {
-      CheckBox cb = winuiGetHandle<CheckBox>(ih);
+      auto cb = winuiGetHandle<CheckBox>(ih);
       if (cb)
         content = cb.Content();
     }
@@ -351,7 +351,7 @@ static char* winuiToggleGetTitleAttrib(Ihandle* ih)
       return iupwinuiHStringToString(iupwinuiTextBlockText(tb));
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static int winuiToggleSetActiveAttrib(Ihandle* ih, const char* value)
@@ -395,7 +395,7 @@ static int winuiToggleSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
+  auto* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
   if (!aux)
     return 0;
 
@@ -410,7 +410,7 @@ static int winuiToggleSetFgColorAttrib(Ihandle* ih, const char* value)
   {
   case IUPWINUI_TOGGLE_CHECKBOX:
     {
-      CheckBox cb = winuiGetHandle<CheckBox>(ih);
+      auto cb = winuiGetHandle<CheckBox>(ih);
       if (cb)
       {
         cb.Foreground(brush);
@@ -428,7 +428,7 @@ static int winuiToggleSetFgColorAttrib(Ihandle* ih, const char* value)
     break;
   case IUPWINUI_TOGGLE_RADIOBUTTON:
     {
-      RadioButton rb = winuiGetHandle<RadioButton>(ih);
+      auto rb = winuiGetHandle<RadioButton>(ih);
       if (rb)
       {
         rb.Foreground(brush);
@@ -504,7 +504,7 @@ static int winuiToggleSetPaddingAttrib(Ihandle* ih, const char* value)
 
 static int winuiToggleMapMethod(Ihandle* ih)
 {
-  IupWinUIToggleAux* aux = new IupWinUIToggleAux();
+  auto* aux = new IupWinUIToggleAux();
 
   const char* title = iupAttribGet(ih, "TITLE");
   const char* image = iupAttribGet(ih, "IMAGE");
@@ -535,13 +535,13 @@ static int winuiToggleMapMethod(Ihandle* ih)
     ts.Resources().Insert(box_value(L"ToggleSwitchPostContentMargin"), box_value(5.0));
 
     aux->toggledToken = ts.Toggled([ih](IInspectable const&, RoutedEventArgs const&) {
-      ToggleSwitch t = winuiGetHandle<ToggleSwitch>(ih);
+      auto t = winuiGetHandle<ToggleSwitch>(ih);
       if (t)
         winuiToggleCallAction(ih, t.IsOn() ? 1 : 0);
     });
 
     aux->keyDownToken = ts.PreviewKeyDown([ih](IInspectable const&, Input::KeyRoutedEventArgs const& args) {
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
+      if (!iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
@@ -575,7 +575,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
 
     if (image)
     {
-      void* imghandle = iupImageGetImage(image, ih, 0, NULL);
+      void* imghandle = iupImageGetImage(image, ih, 0, nullptr);
       WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
       if (bitmap)
       {
@@ -587,7 +587,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
     }
 
     aux->clickToken = tb.Click([ih](IInspectable const&, RoutedEventArgs const&) {
-      ToggleButton t = winuiGetHandle<ToggleButton>(ih);
+      auto t = winuiGetHandle<ToggleButton>(ih);
       if (t)
       {
         auto isChecked = t.IsChecked();
@@ -598,7 +598,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
           Ihandle* radio = iupRadioFindToggleParent(ih);
           if (radio)
           {
-            Ihandle* last_ih = (Ihandle*)iupAttribGet(radio, "_IUPWINUI_RADIO_ACTIVE");
+            auto* last_ih = reinterpret_cast<Ihandle*>(iupAttribGet(radio, "_IUPWINUI_RADIO_ACTIVE"));
             if (last_ih && last_ih != ih && iupObjectCheck(last_ih))
             {
               winuiToggleSetValueAttrib(last_ih, "OFF");
@@ -606,7 +606,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
                 winuiToggleCallAction(last_ih, 0, false);
             }
 
-            iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", (char*)ih);
+            iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", reinterpret_cast<char*>(ih));
           }
         }
 
@@ -627,7 +627,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
     });
 
     aux->keyDownToken = tb.PreviewKeyDown([ih](IInspectable const&, Input::KeyRoutedEventArgs const& args) {
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
+      if (!iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
@@ -636,9 +636,9 @@ static int winuiToggleMapMethod(Ihandle* ih)
       if (!iupAttribGet(radio, "_IUPWINUI_LASTTOGGLE"))
       {
         tb.IsChecked(true);
-        iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", (char*)ih);
+        iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", reinterpret_cast<char*>(ih));
       }
-      iupAttribSet(radio, "_IUPWINUI_LASTTOGGLE", (char*)ih);
+      iupAttribSet(radio, "_IUPWINUI_LASTTOGGLE", reinterpret_cast<char*>(ih));
 
       if (!iupAttribGetHandleName(ih))
         iupAttribSetHandleName(ih);
@@ -661,7 +661,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
     rb.MinHeight(0);
 
     char groupName[50];
-    snprintf(groupName, sizeof(groupName), "radio_%p", (void*)radio);
+    snprintf(groupName, sizeof(groupName), "radio_%p", reinterpret_cast<void*>(radio));
     rb.GroupName(iupwinuiStringToHString(groupName));
 
     if (title)
@@ -670,14 +670,14 @@ static int winuiToggleMapMethod(Ihandle* ih)
     aux->checkedToken = rb.Checked([ih, radio](IInspectable const&, RoutedEventArgs const&) {
       if (radio)
       {
-        Ihandle* last_ih = (Ihandle*)iupAttribGet(radio, "_IUPWINUI_RADIO_ACTIVE");
+        auto* last_ih = reinterpret_cast<Ihandle*>(iupAttribGet(radio, "_IUPWINUI_RADIO_ACTIVE"));
         if (last_ih && last_ih != ih && iupObjectCheck(last_ih) && last_ih->data->type == IUP_TOGGLE_IMAGE)
         {
           winuiToggleSetValueAttrib(last_ih, "OFF");
           winuiToggleCallAction(last_ih, 0, false);
         }
 
-        iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", (char*)ih);
+        iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", reinterpret_cast<char*>(ih));
       }
       winuiToggleCallAction(ih, 1);
     });
@@ -687,16 +687,16 @@ static int winuiToggleMapMethod(Ihandle* ih)
     });
 
     aux->keyDownToken = rb.PreviewKeyDown([ih](IInspectable const&, Input::KeyRoutedEventArgs const& args) {
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
+      if (!iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
     if (!iupAttribGet(radio, "_IUPWINUI_LASTTOGGLE"))
     {
       iupAttribSet(ih, "VALUE", "ON");
-      iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", (char*)ih);
+      iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", reinterpret_cast<char*>(ih));
     }
-    iupAttribSet(radio, "_IUPWINUI_LASTTOGGLE", (char*)ih);
+    iupAttribSet(radio, "_IUPWINUI_LASTTOGGLE", reinterpret_cast<char*>(ih));
 
     if (!iupAttribGetHandleName(ih))
       iupAttribSetHandleName(ih);
@@ -737,7 +737,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
     }
 
     aux->keyDownToken = cb.PreviewKeyDown([ih](IInspectable const&, Input::KeyRoutedEventArgs const& args) {
-      if (!iupwinuiKeyEvent(ih, (int)args.Key(), args.KeyStatus().IsExtendedKey? 1: 0, 1))
+      if (!iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
         args.Handled(true);
     });
 
@@ -748,7 +748,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
     winuiStoreHandle(ih, cb);
   }
 
-  FrameworkElement fe = winuiGetHandle<FrameworkElement>(ih);
+  auto fe = winuiGetHandle<FrameworkElement>(ih);
   if (fe)
   {
     aux->gotFocusToken = fe.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
@@ -765,11 +765,11 @@ static int winuiToggleMapMethod(Ihandle* ih)
 
 static void winuiToggleUnMapMethod(Ihandle* ih)
 {
-  IupWinUIToggleAux* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
+  auto* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
 
   if (ih->handle && aux)
   {
-    FrameworkElement fe = winuiGetHandle<FrameworkElement>(ih);
+    auto fe = winuiGetHandle<FrameworkElement>(ih);
     if (fe)
     {
       if (aux->gotFocusToken)
@@ -784,7 +784,7 @@ static void winuiToggleUnMapMethod(Ihandle* ih)
     {
     case IUPWINUI_TOGGLE_TOGGLESWITCH:
       {
-        ToggleSwitch ts = winuiGetHandle<ToggleSwitch>(ih);
+        auto ts = winuiGetHandle<ToggleSwitch>(ih);
         if (ts)
         {
           if (aux->toggledToken)
@@ -797,7 +797,7 @@ static void winuiToggleUnMapMethod(Ihandle* ih)
       break;
     case IUPWINUI_TOGGLE_TOGGLEBUTTON:
       {
-        ToggleButton tb = winuiGetHandle<ToggleButton>(ih);
+        auto tb = winuiGetHandle<ToggleButton>(ih);
         if (tb)
         {
           if (aux->clickToken)
@@ -810,7 +810,7 @@ static void winuiToggleUnMapMethod(Ihandle* ih)
       break;
     case IUPWINUI_TOGGLE_RADIOBUTTON:
       {
-        RadioButton rb = winuiGetHandle<RadioButton>(ih);
+        auto rb = winuiGetHandle<RadioButton>(ih);
         if (rb)
         {
           if (aux->checkedToken)
@@ -826,7 +826,7 @@ static void winuiToggleUnMapMethod(Ihandle* ih)
     case IUPWINUI_TOGGLE_CHECKBOX:
     default:
       {
-        CheckBox cb = winuiGetHandle<CheckBox>(ih);
+        auto cb = winuiGetHandle<CheckBox>(ih);
         if (cb)
         {
           if (aux->checkedToken)
@@ -845,12 +845,12 @@ static void winuiToggleUnMapMethod(Ihandle* ih)
   }
 
   winuiFreeAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
-  int border_size = (int)ceil(4 * iupwinuiGetScale(ih));
+  int border_size = static_cast<int>(ceil(4 * iupwinuiGetScale(ih)));
   *x += border_size;
   *y += border_size;
 }
@@ -858,22 +858,22 @@ extern "C" IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
   double scale = iupwinuiGetScale(ih);
-  int min_h = (int)ceil(32 * scale);
+  int min_h = static_cast<int>(ceil(32 * scale));
 
-  *x += (int)ceil(20 * scale);
+  *x += static_cast<int>(ceil(20 * scale));
   if (*y < min_h)
     *y = min_h;
 
   if (str && str[0])
-    *x += (int)ceil(8 * scale);
+    *x += static_cast<int>(ceil(8 * scale));
 }
 
 extern "C" IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
   double scale = iupwinuiGetScale(ih);
-  int min_h = (int)ceil(30 * scale);
+  int min_h = static_cast<int>(ceil(30 * scale));
 
-  *x += (int)ceil(44 * scale);
+  *x += static_cast<int>(ceil(44 * scale));
   if (*y < min_h)
     *y = min_h;
 
@@ -887,21 +887,21 @@ extern "C" IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
   ic->UnMap = winuiToggleUnMapMethod;
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winuiToggleSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, winuiToggleSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
   /* Special */
-  iupClassRegisterAttribute(ic, "TITLE", winuiToggleGetTitleAttrib, winuiToggleSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", winuiToggleGetTitleAttrib, winuiToggleSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   /* IupToggle only */
-  iupClassRegisterAttribute(ic, "VALUE", winuiToggleGetValueAttrib, winuiToggleSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiToggleSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, winuiToggleSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, winuiToggleSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, winuiToggleSetImPressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", winuiToggleGetValueAttrib, winuiToggleSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVE", nullptr, winuiToggleSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, winuiToggleSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", nullptr, winuiToggleSetImInactiveAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", nullptr, winuiToggleSetImPressAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupToggleGetPaddingAttrib, winuiToggleSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "RIGHTBUTTON", NULL, winuiToggleSetRightButtonAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, winuiToggleSetAlignmentAttrib, "ACENTER:ACENTER", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "RIGHTBUTTON", nullptr, winuiToggleSetRightButtonAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", nullptr, winuiToggleSetAlignmentAttrib, "ACENTER:ACENTER", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKUP", nullptr, nullptr, nullptr, nullptr, IUPAF_DEFAULT);
 }

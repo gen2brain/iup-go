@@ -45,9 +45,9 @@ static double winuiMenuGetIupFontSize(Ihandle* ih)
     return 14.0;
 
   if (size < 0)
-    return (double)(-size) / iupwinuiGetScale(ih);
+    return static_cast<double>(-size) / iupwinuiGetScale(ih);
 
-  return (double)size * 96.0 / 72.0;
+  return static_cast<double>(size) * 96.0 / 72.0;
 }
 
 static bool winuiMenuItemIsCheckable(Ihandle* ih)
@@ -68,8 +68,8 @@ static bool winuiMenuItemIsCheckable(Ihandle* ih)
 static hstring winuiMenuGetTitle(Ihandle* ih, const char* raw, wchar_t* accessKey, hstring* accelText)
 {
   char c = 0;
-  char* title = raw? iupMenuProcessTitle(ih, raw): NULL;
-  const char* tab = title? strchr(title, '\t'): NULL;
+  char* title = raw? iupMenuProcessTitle(ih, raw): nullptr;
+  const char* tab = title? strchr(title, '\t'): nullptr;
   hstring result;
 
   if (tab)
@@ -90,7 +90,7 @@ static hstring winuiMenuGetTitle(Ihandle* ih, const char* raw, wchar_t* accessKe
   }
 
   if (accessKey)
-    *accessKey = c ? (wchar_t)c : 0;
+    *accessKey = c ? static_cast<wchar_t>(c) : 0;
 
   if (title != raw)
     free(title);
@@ -112,7 +112,7 @@ static const char* winuiMenuItemPickImageName(Ihandle* ih)
 
 static void winuiMenuItemApplyIcon(Ihandle* ih, const char* name)
 {
-  IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
+  auto* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
   if (!aux)
     return;
 
@@ -120,7 +120,7 @@ static void winuiMenuItemApplyIcon(Ihandle* ih, const char* name)
 
   if (name)
   {
-    void* imghandle = iupImageGetImage(name, ih, 0, NULL);
+    void* imghandle = iupImageGetImage(name, ih, 0, nullptr);
     WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
     if (bitmap)
     {
@@ -132,13 +132,13 @@ static void winuiMenuItemApplyIcon(Ihandle* ih, const char* name)
 
   if (aux->isCheckable)
   {
-    ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
+    auto item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
     if (item)
       item.Icon(icon);
   }
   else
   {
-    MenuFlyoutItem item = winuiGetHandle<MenuFlyoutItem>(ih);
+    auto item = winuiGetHandle<MenuFlyoutItem>(ih);
     if (item)
       item.Icon(icon);
   }
@@ -151,12 +151,12 @@ static void winuiMenuItemUpdateIcon(Ihandle* ih)
 
 static void winuiMenuItemClickHandler(Ihandle* ih)
 {
-  IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
+  auto* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
   bool is_radio = ih->parent && iupAttribGetBoolean(ih->parent, "RADIO");
 
   if (aux && aux->isCheckable && !is_radio)
   {
-    ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
+    auto item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
     if (item)
     {
       if (iupAttribGetBoolean(ih, "AUTOTOGGLE"))
@@ -176,17 +176,17 @@ static void winuiMenuItemClickHandler(Ihandle* ih)
       if (!sib->iclass || !iupStrEqual(sib->iclass->name, "menuitem"))
         continue;
       iupAttribSet(sib, "VALUE", sib == ih ? "ON" : "OFF");
-      IupWinUIItemAux* sib_aux = winuiGetAux<IupWinUIItemAux>(sib, IUPWINUI_ITEM_AUX);
+      auto* sib_aux = winuiGetAux<IupWinUIItemAux>(sib, IUPWINUI_ITEM_AUX);
       if (sib_aux && sib_aux->isCheckable)
       {
-        ToggleMenuFlyoutItem sib_item = winuiGetHandle<ToggleMenuFlyoutItem>(sib);
+        auto sib_item = winuiGetHandle<ToggleMenuFlyoutItem>(sib);
         if (sib_item)
           sib_item.IsChecked(sib == ih);
       }
     }
   }
 
-  IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+  IFn cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
   if (cb)
   {
     int ret = cb(ih);
@@ -196,7 +196,7 @@ static void winuiMenuItemClickHandler(Ihandle* ih)
 }
 
 static int winui_menu_popup_level = 0;
-static Ihandle* winui_menu_popup_item = NULL;
+static Ihandle* winui_menu_popup_item = nullptr;
 
 static void winuiMenuItemClick(Ihandle* ih)
 {
@@ -209,7 +209,7 @@ static void winuiMenuItemClick(Ihandle* ih)
 IUP_DRV_API int iupwinuiMenuActivateAccel(Ihandle* ih_dialog, int code)
 {
   Ihandle* menu = IupGetAttributeHandle(ih_dialog, "MENU");
-  Ihandle* item = menu ? iupMenuFindAccel(menu, code) : NULL;
+  Ihandle* item = menu ? iupMenuFindAccel(menu, code) : nullptr;
   if (!item)
     return 0;
   winuiMenuItemClickHandler(item);
@@ -224,22 +224,22 @@ winrt::Windows::Foundation::Collections::IVector<MenuFlyoutItemBase> winuiMenuGe
     Ihandle* grandparent = submenu->parent;
     if (grandparent && iupMenuIsMenuBar(grandparent))
     {
-      MenuBarItem barItem = winuiGetHandle<MenuBarItem>(submenu);
+      auto barItem = winuiGetHandle<MenuBarItem>(submenu);
       if (barItem)
         return barItem.Items();
     }
     else
     {
-      MenuFlyoutSubItem subItem = winuiGetHandle<MenuFlyoutSubItem>(submenu);
+      auto subItem = winuiGetHandle<MenuFlyoutSubItem>(submenu);
       if (subItem)
         return subItem.Items();
     }
   }
 
-  IupWinUIMenuAux* menuAux = winuiGetAux<IupWinUIMenuAux>(menu, IUPWINUI_MENU_AUX);
+  auto* menuAux = winuiGetAux<IupWinUIMenuAux>(menu, IUPWINUI_MENU_AUX);
   if (menuAux && !menuAux->isMenuBar)
   {
-    MenuFlyout flyout = winuiGetHandle<MenuFlyout>(menu);
+    auto flyout = winuiGetHandle<MenuFlyout>(menu);
     if (flyout)
       return flyout.Items();
   }
@@ -254,10 +254,10 @@ static void winuiMenuItemAddToParent(Ihandle* ih, T item)
   if (!parent || !IupClassMatch(parent, "menu"))
     return;
 
-  IupWinUIMenuAux* menuAux = winuiGetAux<IupWinUIMenuAux>(parent, IUPWINUI_MENU_AUX);
+  auto* menuAux = winuiGetAux<IupWinUIMenuAux>(parent, IUPWINUI_MENU_AUX);
   if (menuAux && menuAux->isMenuBar)
   {
-    MenuBar menuBar = winuiGetHandle<MenuBar>(parent);
+    auto menuBar = winuiGetHandle<MenuBar>(parent);
     if (menuBar)
     {
       MenuBarItem barItem;
@@ -275,7 +275,7 @@ static void winuiMenuItemAddToParent(Ihandle* ih, T item)
 
 static int winuiMenuMapMethod(Ihandle* ih)
 {
-  IupWinUIMenuAux* aux = new IupWinUIMenuAux();
+  auto* aux = new IupWinUIMenuAux();
   winuiSetAux(ih, IUPWINUI_MENU_AUX, aux);
 
   if (iupMenuIsMenuBar(ih))
@@ -304,7 +304,7 @@ static int winuiMenuMapMethod(Ihandle* ih)
     Ihandle* dialog = ih->parent;
     if (dialog && dialog->handle)
     {
-      MenuBar storedMenuBar = winuiGetHandle<MenuBar>(ih);
+      auto storedMenuBar = winuiGetHandle<MenuBar>(ih);
       winuiDialogSetMenuBar(dialog, storedMenuBar);
     }
   }
@@ -320,7 +320,7 @@ static int winuiMenuMapMethod(Ihandle* ih)
 
 static void winuiMenuUnMapMethod(Ihandle* ih)
 {
-  IupWinUIMenuAux* aux = winuiGetAux<IupWinUIMenuAux>(ih, IUPWINUI_MENU_AUX);
+  auto* aux = winuiGetAux<IupWinUIMenuAux>(ih, IUPWINUI_MENU_AUX);
 
   if (aux && aux->isMenuBar)
   {
@@ -343,7 +343,7 @@ static int winuiMenuItemMapMethod(Ihandle* ih)
   if (!parent)
     return IUP_ERROR;
 
-  IupWinUIItemAux* aux = new IupWinUIItemAux();
+  auto* aux = new IupWinUIItemAux();
   winuiSetAux(ih, IUPWINUI_ITEM_AUX, aux);
 
   const char* title = iupAttribGet(ih, "TITLE");
@@ -405,20 +405,20 @@ static int winuiMenuItemMapMethod(Ihandle* ih)
 
 static void winuiMenuItemUnMapMethod(Ihandle* ih)
 {
-  IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
+  auto* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
 
   if (ih->handle && aux)
   {
     if (aux->isCheckable)
     {
-      ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
+      auto item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
       if (item && aux->clickToken)
         item.Click(aux->clickToken);
       winuiReleaseHandle<ToggleMenuFlyoutItem>(ih);
     }
     else
     {
-      MenuFlyoutItem item = winuiGetHandle<MenuFlyoutItem>(ih);
+      auto item = winuiGetHandle<MenuFlyoutItem>(ih);
       if (item && aux->clickToken)
         item.Click(aux->clickToken);
       winuiReleaseHandle<MenuFlyoutItem>(ih);
@@ -436,7 +436,7 @@ static int winuiSubmenuMapMethod(Ihandle* ih)
 
   const char* title = iupAttribGet(ih, "TITLE");
   wchar_t accessKey = 0;
-  hstring text = winuiMenuGetTitle(ih, title, &accessKey, NULL);
+  hstring text = winuiMenuGetTitle(ih, title, &accessKey, nullptr);
 
   if (iupMenuIsMenuBar(parent))
   {
@@ -450,7 +450,7 @@ static int winuiSubmenuMapMethod(Ihandle* ih)
     if (active && !iupStrBoolean(active))
       barItem.IsEnabled(false);
 
-    MenuBar menuBar = winuiGetHandle<MenuBar>(parent);
+    auto menuBar = winuiGetHandle<MenuBar>(parent);
     if (menuBar)
       menuBar.Items().Append(barItem);
 
@@ -511,7 +511,7 @@ static void winuiMenuSeparatorUnMapMethod(Ihandle* ih)
 
 static int winuiMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
+  auto* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
   if (!aux)
     return 0;
 
@@ -521,7 +521,7 @@ static int winuiMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
 
   if (aux->isCheckable)
   {
-    ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
+    auto item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
     if (item)
     {
       item.Text(text);
@@ -532,7 +532,7 @@ static int winuiMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    MenuFlyoutItem item = winuiGetHandle<MenuFlyoutItem>(ih);
+    auto item = winuiGetHandle<MenuFlyoutItem>(ih);
     if (item)
     {
       item.Text(text);
@@ -568,7 +568,7 @@ static int winuiMenuItemSetTitleImageAttrib(Ihandle* ih, const char* value)
 
 static int winuiMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
+  auto* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
   if (!aux)
     return 1;
 
@@ -576,7 +576,7 @@ static int winuiMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 
   if (aux->isCheckable)
   {
-    ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
+    auto item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
     if (item)
       item.IsChecked(iupStrBoolean(value));
   }
@@ -589,19 +589,19 @@ static int winuiMenuItemSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* winuiMenuItemGetValueAttrib(Ihandle* ih)
 {
-  IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
+  auto* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
   if (aux && aux->isCheckable)
   {
-    ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
+    auto item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
     if (item)
-      return item.IsChecked() ? (char*)"ON" : (char*)"OFF";
+      return item.IsChecked() ? const_cast<char*>("ON") : const_cast<char*>("OFF");
   }
-  return NULL;
+  return nullptr;
 }
 
 static int winuiMenuItemSetActiveAttrib(Ihandle* ih, const char* value)
 {
-  IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
+  auto* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
   if (!aux)
     return 0;
 
@@ -609,13 +609,13 @@ static int winuiMenuItemSetActiveAttrib(Ihandle* ih, const char* value)
 
   if (aux->isCheckable)
   {
-    ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
+    auto item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
     if (item)
       item.IsEnabled(enabled);
   }
   else
   {
-    MenuFlyoutItem item = winuiGetHandle<MenuFlyoutItem>(ih);
+    auto item = winuiGetHandle<MenuFlyoutItem>(ih);
     if (item)
       item.IsEnabled(enabled);
   }
@@ -629,14 +629,14 @@ static int winuiSubmenuSetImageAttrib(Ihandle* ih, const char* value)
   if (parent && iupMenuIsMenuBar(parent))
     return 1;  /* MenuBarItem has no Icon property */
 
-  MenuFlyoutSubItem subItem = winuiGetHandle<MenuFlyoutSubItem>(ih);
+  auto subItem = winuiGetHandle<MenuFlyoutSubItem>(ih);
   if (!subItem)
     return 1;
 
   IconElement icon{nullptr};
   if (value)
   {
-    void* imghandle = iupImageGetImage(value, ih, 0, NULL);
+    void* imghandle = iupImageGetImage(value, ih, 0, nullptr);
     WriteableBitmap bitmap = winuiGetBitmapFromHandle(imghandle);
     if (bitmap)
     {
@@ -654,11 +654,11 @@ static int winuiSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
   Ihandle* parent = ih->parent;
 
   wchar_t accessKey = 0;
-  hstring text = winuiMenuGetTitle(ih, value, &accessKey, NULL);
+  hstring text = winuiMenuGetTitle(ih, value, &accessKey, nullptr);
 
   if (parent && iupMenuIsMenuBar(parent))
   {
-    MenuBarItem barItem = winuiGetHandle<MenuBarItem>(ih);
+    auto barItem = winuiGetHandle<MenuBarItem>(ih);
     if (barItem)
     {
       barItem.Title(text);
@@ -668,7 +668,7 @@ static int winuiSubmenuSetTitleAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    MenuFlyoutSubItem subItem = winuiGetHandle<MenuFlyoutSubItem>(ih);
+    auto subItem = winuiGetHandle<MenuFlyoutSubItem>(ih);
     if (subItem)
     {
       subItem.Text(text);
@@ -687,13 +687,13 @@ static int winuiSubmenuSetActiveAttrib(Ihandle* ih, const char* value)
 
   if (parent && iupMenuIsMenuBar(parent))
   {
-    MenuBarItem barItem = winuiGetHandle<MenuBarItem>(ih);
+    auto barItem = winuiGetHandle<MenuBarItem>(ih);
     if (barItem)
       barItem.IsEnabled(enabled);
   }
   else
   {
-    MenuFlyoutSubItem subItem = winuiGetHandle<MenuFlyoutSubItem>(ih);
+    auto subItem = winuiGetHandle<MenuFlyoutSubItem>(ih);
     if (subItem)
       subItem.IsEnabled(enabled);
   }
@@ -703,11 +703,11 @@ static int winuiSubmenuSetActiveAttrib(Ihandle* ih, const char* value)
 
 extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 {
-  MenuFlyout flyout = winuiGetHandle<MenuFlyout>(ih);
+  auto flyout = winuiGetHandle<MenuFlyout>(ih);
   if (!flyout)
     return IUP_ERROR;
 
-  Ihandle* dialog = NULL;
+  Ihandle* dialog = nullptr;
   HWND hWndActive = GetActiveWindow();
 
   if (hWndActive)
@@ -715,7 +715,7 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     Ihandle* dlg = iupDlgListFirst();
     while (dlg)
     {
-      if (dlg->handle == (InativeHandle*)hWndActive)
+      if (dlg->handle == reinterpret_cast<InativeHandle*>(hWndActive))
       {
         dialog = dlg;
         break;
@@ -732,7 +732,7 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
       if (dlg->handle)
       {
         dialog = dlg;
-        hWndActive = (HWND)dlg->handle;
+        hWndActive = reinterpret_cast<HWND>(dlg->handle);
         break;
       }
       dlg = iupDlgListNext();
@@ -742,7 +742,7 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   if (!dialog)
     return IUP_ERROR;
 
-  IupWinUIDialogAux* dlgAux = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
+  auto* dlgAux = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
   if (!dlgAux || !dlgAux->contentCanvas)
     return IUP_ERROR;
 
@@ -755,7 +755,7 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     GetWindowRect(hWndActive, &savedRect);
     savedExStyle = GetWindowLongPtr(hWndActive, GWL_EXSTYLE);
     SetWindowLongPtr(hWndActive, GWL_EXSTYLE, (savedExStyle | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW);
-    SetWindowPos(hWndActive, NULL, -32000, -32000, 0, 0,
+    SetWindowPos(hWndActive, nullptr, -32000, -32000, 0, 0,
                  SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     ShowWindow(hWndActive, SW_SHOWNA);
   }
@@ -781,7 +781,7 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   MSG msg;
   while (!menuClosed)
   {
-    BOOL ret = GetMessage(&msg, NULL, 0, 0);
+    BOOL ret = GetMessage(&msg, nullptr, 0, 0);
     if (ret == 0 || ret == -1)
       break;
 
@@ -797,15 +797,15 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   winui_menu_popup_level--;
 
   Ihandle* clicked = winui_menu_popup_item;
-  winui_menu_popup_item = NULL;
+  winui_menu_popup_item = nullptr;
 
   if (wasHidden)
   {
     SetWindowLongPtr(hWndActive, GWL_EXSTYLE, savedExStyle);
-    SetWindowPos(hWndActive, NULL, savedRect.left, savedRect.top, 0, 0,
+    SetWindowPos(hWndActive, nullptr, savedRect.left, savedRect.top, 0, 0,
                  SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
-    IupWinUIDialogAux* da = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
+    auto* da = winuiGetAux<IupWinUIDialogAux>(dialog, IUPWINUI_DIALOG_AUX);
     if (!da || !da->isVisible)
       ShowWindow(hWndActive, SW_HIDE);
   }
@@ -818,7 +818,7 @@ extern "C" IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 
 extern "C" IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 {
-  MenuBar menuBar = winuiGetHandle<MenuBar>(ih);
+  auto menuBar = winuiGetHandle<MenuBar>(ih);
   if (!menuBar)
     return 0;
 
@@ -826,15 +826,15 @@ extern "C" IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 
   double height = menuBar.ActualHeight();
   if (height > 0)
-    return (int)(height * scale + 0.5);
+    return static_cast<int>(height * scale + 0.5);
 
   menuBar.Measure(Size{100000.0f, 100000.0f});
   height = menuBar.DesiredSize().Height;
   if (height > 0)
-    return (int)(height * scale + 0.5);
+    return static_cast<int>(height * scale + 0.5);
 
   int ch;
-  iupdrvFontGetCharSize(ih, NULL, &ch);
+  iupdrvFontGetCharSize(ih, nullptr, &ch);
   return 4 + ch + 4;
 }
 
@@ -844,10 +844,10 @@ static int winuiMenuSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupWinUIMenuAux* aux = winuiGetAux<IupWinUIMenuAux>(ih, IUPWINUI_MENU_AUX);
+  auto* aux = winuiGetAux<IupWinUIMenuAux>(ih, IUPWINUI_MENU_AUX);
   if (aux && aux->isMenuBar)
   {
-    MenuBar menuBar = winuiGetHandle<MenuBar>(ih);
+    auto menuBar = winuiGetHandle<MenuBar>(ih);
     if (menuBar)
     {
       Windows::UI::Color color;
@@ -867,15 +867,15 @@ extern "C" IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
   ic->Map = winuiMenuMapMethod;
   ic->UnMap = winuiMenuUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, NULL, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, winuiMenuSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "MENUBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, winuiMenuSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "MENUBGCOLOR", IUPAF_DEFAULT);
 }
 
 static int winuiMenuItemSetFontAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
 
-  IupWinUIItemAux* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
+  auto* aux = winuiGetAux<IupWinUIItemAux>(ih, IUPWINUI_ITEM_AUX);
   if (!aux)
     return 1;
 
@@ -883,13 +883,13 @@ static int winuiMenuItemSetFontAttrib(Ihandle* ih, const char* value)
 
   if (aux->isCheckable)
   {
-    ToggleMenuFlyoutItem item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
+    auto item = winuiGetHandle<ToggleMenuFlyoutItem>(ih);
     if (item)
       item.FontSize(fontSize);
   }
   else
   {
-    MenuFlyoutItem item = winuiGetHandle<MenuFlyoutItem>(ih);
+    auto item = winuiGetHandle<MenuFlyoutItem>(ih);
     if (item)
       item.FontSize(fontSize);
   }
@@ -902,16 +902,16 @@ extern "C" IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
   ic->Map = winuiMenuItemMapMethod;
   ic->UnMap = winuiMenuItemUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, winuiMenuItemSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "MENUBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, winuiMenuItemSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "MENUBGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "TITLE", NULL, winuiMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", winuiMenuItemGetValueAttrib, winuiMenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, winuiMenuItemSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMPRESS", NULL, winuiMenuItemSetImpressAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, winuiMenuItemSetTitleImageAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HIDEMARK", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, winuiMenuItemSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", winuiMenuItemGetValueAttrib, winuiMenuItemSetValueAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVE", nullptr, winuiMenuItemSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, winuiMenuItemSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMPRESS", nullptr, winuiMenuItemSetImpressAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TITLEIMAGE", nullptr, winuiMenuItemSetTitleImageAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HIDEMARK", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 }
 
 static int winuiSubmenuSetFontAttrib(Ihandle* ih, const char* value)
@@ -923,13 +923,13 @@ static int winuiSubmenuSetFontAttrib(Ihandle* ih, const char* value)
 
   if (parent && iupMenuIsMenuBar(parent))
   {
-    MenuBarItem barItem = winuiGetHandle<MenuBarItem>(ih);
+    auto barItem = winuiGetHandle<MenuBarItem>(ih);
     if (barItem)
       barItem.FontSize(fontSize);
   }
   else
   {
-    MenuFlyoutSubItem subItem = winuiGetHandle<MenuFlyoutSubItem>(ih);
+    auto subItem = winuiGetHandle<MenuFlyoutSubItem>(ih);
     if (subItem)
       subItem.FontSize(fontSize);
   }
@@ -942,12 +942,12 @@ extern "C" IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
   ic->Map = winuiSubmenuMapMethod;
   ic->UnMap = winuiSubmenuUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, winuiSubmenuSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "MENUBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, winuiSubmenuSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "MENUBGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "TITLE", NULL, winuiSubmenuSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, winuiSubmenuSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ACTIVE", NULL, winuiSubmenuSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TITLE", nullptr, winuiSubmenuSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, winuiSubmenuSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVE", nullptr, winuiSubmenuSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 }
 
 extern "C" IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
@@ -962,8 +962,8 @@ extern "C" IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
 
 static void winuiRecentItemActivate(Ihandle* menu, int index)
 {
-  Icallback recent_cb = (Icallback)iupAttribGet(menu, "_IUP_RECENT_CB");
-  Ihandle* config = (Ihandle*)iupAttribGet(menu, "_IUP_CONFIG");
+  auto recent_cb = reinterpret_cast<Icallback>(iupAttribGet(menu, "_IUP_RECENT_CB"));
+  auto* config = reinterpret_cast<Ihandle*>(iupAttribGet(menu, "_IUP_CONFIG"));
 
   if (!recent_cb || !config)
     return;
@@ -981,16 +981,16 @@ static void winuiRecentItemActivate(Ihandle* menu, int index)
     if (recent_cb(config) == IUP_CLOSE)
       IupExitLoop();
 
-    config->parent = NULL;
-    IupSetAttribute(config, "RECENTFILENAME", NULL);
-    IupSetAttribute(config, "TITLE", NULL);
+    config->parent = nullptr;
+    IupSetAttribute(config, "RECENTFILENAME", nullptr);
+    IupSetAttribute(config, "TITLE", nullptr);
   }
 }
 
 extern "C" IUP_SDK_API int iupdrvRecentMenuInit(Ihandle* menu, int max_recent, Icallback recent_cb)
 {
   iupAttribSetInt(menu, "_IUP_RECENT_MAX", max_recent);
-  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+  iupAttribSet(menu, "_IUP_RECENT_CB", reinterpret_cast<char*>(recent_cb));
   iupAttribSetInt(menu, "_IUP_RECENT_COUNT", 0);
   return 0;
 }
@@ -1008,7 +1008,7 @@ extern "C" IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** fi
   if (count > max_recent)
     count = max_recent;
 
-  iupAttribSet(menu, "_IUP_RECENT_CB", (char*)recent_cb);
+  iupAttribSet(menu, "_IUP_RECENT_CB", reinterpret_cast<char*>(recent_cb));
 
   auto items = winuiMenuGetItemsCollection(menu);
   if (!items)
@@ -1018,7 +1018,7 @@ extern "C" IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** fi
   {
     char attr_name[32];
     snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
-    iupAttribSet(menu, attr_name, NULL);
+    iupAttribSet(menu, attr_name, nullptr);
   }
 
   if (items.Size() > 0)

@@ -47,9 +47,9 @@ static DateTime winuiCalendarMakeDateTime(int year, int month, int day)
   SYSTEMTIME st = {0};
   FILETIME ft;
 
-  st.wYear = (WORD)year;
-  st.wMonth = (WORD)month;
-  st.wDay = (WORD)day;
+  st.wYear = static_cast<WORD>(year);
+  st.wMonth = static_cast<WORD>(month);
+  st.wDay = static_cast<WORD>(day);
   st.wHour = 12;
 
   SystemTimeToFileTime(&st, &ft);
@@ -57,7 +57,7 @@ static DateTime winuiCalendarMakeDateTime(int year, int month, int day)
   uli.LowPart = ft.dwLowDateTime;
   uli.HighPart = ft.dwHighDateTime;
 
-  return DateTime{TimeSpan{(int64_t)uli.QuadPart}};
+  return DateTime{TimeSpan{static_cast<int64_t>(uli.QuadPart)}};
 }
 
 static void winuiCalendarGetDate(DateTime dt, int* year, int* month, int* day)
@@ -65,7 +65,7 @@ static void winuiCalendarGetDate(DateTime dt, int* year, int* month, int* day)
   auto ticks = dt.time_since_epoch().count();
 
   ULARGE_INTEGER uli;
-  uli.QuadPart = (ULONGLONG)ticks;
+  uli.QuadPart = static_cast<ULONGLONG>(ticks);
 
   FILETIME ft;
   ft.dwLowDateTime = uli.LowPart;
@@ -81,7 +81,7 @@ static void winuiCalendarGetDate(DateTime dt, int* year, int* month, int* day)
 
 static void winuiCalendarCallValueChanged(Ihandle* ih)
 {
-  IFn cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  IFn cb = static_cast<IFn>(IupGetCallback(ih, "VALUECHANGED_CB"));
   if (cb)
   {
     if (cb(ih) == IUP_CLOSE)
@@ -91,8 +91,8 @@ static void winuiCalendarCallValueChanged(Ihandle* ih)
 
 static int winuiCalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
-  CalendarView cv = winuiGetHandle<CalendarView>(ih);
-  IupWinUICalendarAux* aux = winuiGetAux<IupWinUICalendarAux>(ih, IUPWINUI_CALENDAR_AUX);
+  auto cv = winuiGetHandle<CalendarView>(ih);
+  auto* aux = winuiGetAux<IupWinUICalendarAux>(ih, IUPWINUI_CALENDAR_AUX);
   if (!cv || !aux)
     return 0;
 
@@ -122,7 +122,7 @@ static int winuiCalendarSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* winuiCalendarGetValueAttrib(Ihandle* ih)
 {
-  CalendarView cv = winuiGetHandle<CalendarView>(ih);
+  auto cv = winuiGetHandle<CalendarView>(ih);
   if (cv && cv.SelectedDates().Size() > 0)
   {
     auto dt = cv.SelectedDates().GetAt(0);
@@ -130,7 +130,7 @@ static char* winuiCalendarGetValueAttrib(Ihandle* ih)
     winuiCalendarGetDate(dt, &year, &month, &day);
     return iupStrReturnStrf("%d/%02d/%02d", year, month, day);
   }
-  return NULL;
+  return nullptr;
 }
 
 static char* winuiCalendarGetTodayAttrib(Ihandle* ih)
@@ -148,7 +148,7 @@ static void winuiCalendarInitResources(CalendarView const& cv)
 
 static int winuiCalendarMapMethod(Ihandle* ih)
 {
-  IupWinUICalendarAux* aux = new IupWinUICalendarAux();
+  auto* aux = new IupWinUICalendarAux();
 
   CalendarView cv = CalendarView();
   winuiCalendarInitResources(cv);
@@ -160,7 +160,7 @@ static int winuiCalendarMapMethod(Ihandle* ih)
   cv.SelectedDates().Append(now);
 
   aux->selectedDatesChangedToken = cv.SelectedDatesChanged([ih](CalendarView const&, CalendarViewSelectedDatesChangedEventArgs const&) {
-    IupWinUICalendarAux* a = winuiGetAux<IupWinUICalendarAux>(ih, IUPWINUI_CALENDAR_AUX);
+    auto* a = winuiGetAux<IupWinUICalendarAux>(ih, IUPWINUI_CALENDAR_AUX);
     if (a && !a->ignoreChange)
       winuiCalendarCallValueChanged(ih);
   });
@@ -179,11 +179,11 @@ static int winuiCalendarMapMethod(Ihandle* ih)
 
 static void winuiCalendarUnMapMethod(Ihandle* ih)
 {
-  IupWinUICalendarAux* aux = winuiGetAux<IupWinUICalendarAux>(ih, IUPWINUI_CALENDAR_AUX);
+  auto* aux = winuiGetAux<IupWinUICalendarAux>(ih, IUPWINUI_CALENDAR_AUX);
 
   if (ih->handle && aux)
   {
-    CalendarView cv = winuiGetHandle<CalendarView>(ih);
+    auto cv = winuiGetHandle<CalendarView>(ih);
     if (cv)
     {
       if (aux->selectedDatesChangedToken)
@@ -198,7 +198,7 @@ static void winuiCalendarUnMapMethod(Ihandle* ih)
   }
 
   winuiFreeAux<IupWinUICalendarAux>(ih, IUPWINUI_CALENDAR_AUX);
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 static void winuiCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
@@ -211,7 +211,7 @@ static void winuiCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, i
     Ihandle* dlg;
     for (dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
     {
-      IupWinUIDialogAux* dlgAux = dlg->handle ? winuiGetAux<IupWinUIDialogAux>(dlg, IUPWINUI_DIALOG_AUX) : NULL;
+      IupWinUIDialogAux* dlgAux = dlg->handle ? winuiGetAux<IupWinUIDialogAux>(dlg, IUPWINUI_DIALOG_AUX) : nullptr;
       if (dlgAux && dlgAux->rootPanel && dlgAux->rootPanel.XamlRoot())
       {
         CalendarView cv;
@@ -238,16 +238,16 @@ static void winuiCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, i
   }
 
   double scale = iupwinuiGetScale(ih);
-  *w = (int)ceil(desired.Width * scale);
-  *h = (int)ceil(desired.Height * scale);
+  *w = static_cast<int>(ceil(desired.Width * scale));
+  *h = static_cast<int>(ceil(desired.Height * scale));
 }
 
 extern "C" Iclass* iupCalendarNewClass(void)
 {
-  Iclass* ic = iupClassNew(NULL);
+  Iclass* ic = iupClassNew(nullptr);
 
-  ic->name = (char*)"calendar";
-  ic->format = NULL;
+  ic->name = const_cast<char*>("calendar");
+  ic->format = nullptr;
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
@@ -264,9 +264,9 @@ extern "C" Iclass* iupCalendarNewClass(void)
   iupBaseRegisterCommonAttrib(ic);
   iupBaseRegisterVisualAttrib(ic);
 
-  iupClassRegisterAttribute(ic, "VALUE", winuiCalendarGetValueAttrib, winuiCalendarSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TODAY", winuiCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "WEEKNUMBERS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", winuiCalendarGetValueAttrib, winuiCalendarSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TODAY", winuiCalendarGetTodayAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "WEEKNUMBERS", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   return ic;
 }

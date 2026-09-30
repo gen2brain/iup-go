@@ -37,9 +37,9 @@ typedef void (WINAPI* MddDeletePackageDependencyFunc)(PCWSTR);
 #define WINUI_ARCH PROCESSOR_ARCHITECTURE_INTEL
 #endif
 
-static PWSTR winui_dependency_id = NULL;
-static void* winui_dependency_context = NULL;
-static HMODULE winui_runtime_module = NULL;
+static PWSTR winui_dependency_id = nullptr;
+static void* winui_dependency_context = nullptr;
+static HMODULE winui_runtime_module = nullptr;
 
 extern "C" {
 #include "iup.h"
@@ -91,8 +91,8 @@ static void winuiResourceManagerRequested(IInspectable const&, ResourceManagerRe
   using namespace winrt::Microsoft::Windows::ApplicationModel::Resources;
 
   wchar_t path[MAX_PATH];
-  DWORD len = GetModuleFileNameW(NULL, path, MAX_PATH);
-  wchar_t* sep = (len > 0 && len < MAX_PATH) ? wcsrchr(path, L'\\') : NULL;
+  DWORD len = GetModuleFileNameW(nullptr, path, MAX_PATH);
+  wchar_t* sep = (len > 0 && len < MAX_PATH) ? wcsrchr(path, L'\\') : nullptr;
   if (!sep)
     return;
   wcscpy_s(sep + 1, MAX_PATH - (sep + 1 - path), L"resources.pri");
@@ -164,7 +164,7 @@ IUP_DRV_API void iupwinuiSetGlobalColors(void)
 IUP_DRV_API void* iupwinuiGetDispatcherQueue(void)
 {
   if (!winui_dispatcher_controller)
-    return NULL;
+    return nullptr;
 
   DispatcherQueue dq = winui_dispatcher_controller.DispatcherQueue();
   void* ptr = nullptr;
@@ -191,12 +191,12 @@ static void winuiFrameworkFamily(UINT32 version, wchar_t* family, size_t length)
 static int winuiAddDependency(TryCreatePackageDependencyFunc tryCreate, AddPackageDependencyFunc add, PCWSTR family)
 {
   PACKAGE_VERSION minVersion = {};
-  PWSTR id = NULL;
-  if (FAILED(tryCreate(NULL, family, minVersion, 0, 0, NULL, 0, &id)))
+  PWSTR id = nullptr;
+  if (FAILED(tryCreate(nullptr, family, minVersion, 0, 0, nullptr, 0, &id)))
     return 0;
 
-  void* context = NULL;
-  if (FAILED(add(id, 0, 0, &context, NULL)))
+  void* context = nullptr;
+  if (FAILED(add(id, 0, 0, &context, nullptr)))
   {
     HeapFree(GetProcessHeap(), 0, id);
     return 0;
@@ -208,14 +208,14 @@ static int winuiAddDependency(TryCreatePackageDependencyFunc tryCreate, AddPacka
 }
 
 /* what the bootstrap DLL does on Windows 11 24H1+ for runtime 1.7+ */
-static int iupwinuiInitDependency(void)
+static int iupwinuiInitDependency()
 {
   HMODULE kernelbase = GetModuleHandleW(L"kernelbase.dll");
   if (!kernelbase || !GetProcAddress(kernelbase, "TryCreatePackageDependency2"))
     return 0;
 
-  TryCreatePackageDependencyFunc tryCreate = (TryCreatePackageDependencyFunc)GetProcAddress(kernelbase, "TryCreatePackageDependency");
-  AddPackageDependencyFunc add = (AddPackageDependencyFunc)GetProcAddress(kernelbase, "AddPackageDependency");
+  auto tryCreate = reinterpret_cast<TryCreatePackageDependencyFunc>(GetProcAddress(kernelbase, "TryCreatePackageDependency"));
+  auto add = reinterpret_cast<AddPackageDependencyFunc>(GetProcAddress(kernelbase, "AddPackageDependency"));
   if (!tryCreate || !add)
     return 0;
 
@@ -232,14 +232,14 @@ static int iupwinuiInitDependency(void)
 static int winuiFindFrameworkPath(PCWSTR family, wchar_t* path, UINT32 path_length)
 {
   UINT32 count = 0, length = 0;
-  if (FindPackagesByPackageFamily(family, PACKAGE_FILTER_HEAD | PACKAGE_FILTER_DIRECT, &count, NULL, &length, NULL, NULL) != ERROR_INSUFFICIENT_BUFFER || count == 0)
+  if (FindPackagesByPackageFamily(family, PACKAGE_FILTER_HEAD | PACKAGE_FILTER_DIRECT, &count, nullptr, &length, nullptr, nullptr) != ERROR_INSUFFICIENT_BUFFER || count == 0)
     return 0;
 
-  PWSTR* names = (PWSTR*)malloc(count * sizeof(PWSTR));
-  wchar_t* buffer = (wchar_t*)malloc(length * sizeof(wchar_t));
-  PCWSTR best = NULL;
+  auto* names = static_cast<PWSTR*>(malloc(count * sizeof(PWSTR)));
+  auto* buffer = static_cast<wchar_t*>(malloc(length * sizeof(wchar_t)));
+  PCWSTR best = nullptr;
   UINT64 bestVersion = 0;
-  if (FindPackagesByPackageFamily(family, PACKAGE_FILTER_HEAD | PACKAGE_FILTER_DIRECT, &count, names, &length, buffer, NULL) == ERROR_SUCCESS)
+  if (FindPackagesByPackageFamily(family, PACKAGE_FILTER_HEAD | PACKAGE_FILTER_DIRECT, &count, names, &length, buffer, nullptr) == ERROR_SUCCESS)
   {
     for (UINT32 i = 0; i < count; i++)
     {
@@ -247,7 +247,7 @@ static int winuiFindFrameworkPath(PCWSTR family, wchar_t* path, UINT32 path_leng
       UINT32 idLength = sizeof(idBuffer);
       if (PackageIdFromFullName(names[i], PACKAGE_INFORMATION_BASIC, &idLength, idBuffer) != ERROR_SUCCESS)
         continue;
-      PACKAGE_ID* id = (PACKAGE_ID*)idBuffer;
+      auto* id = reinterpret_cast<PACKAGE_ID*>(idBuffer);
       if (id->processorArchitecture == WINUI_ARCH && id->version.Version > bestVersion)
       {
         bestVersion = id->version.Version;
@@ -264,8 +264,8 @@ static int winuiFindFrameworkPath(PCWSTR family, wchar_t* path, UINT32 path_leng
 
 static void winuiPathPrepend(PCWSTR dir)
 {
-  DWORD length = GetEnvironmentVariableW(L"PATH", NULL, 0);
-  wchar_t* path = (wchar_t*)malloc((wcslen(dir) + 1 + length + 1) * sizeof(wchar_t));
+  DWORD length = GetEnvironmentVariableW(L"PATH", nullptr, 0);
+  auto* path = static_cast<wchar_t*>(malloc((wcslen(dir) + 1 + length + 1) * sizeof(wchar_t)));
   wcscpy(path, dir);
   if (length)
   {
@@ -279,20 +279,20 @@ static void winuiPathPrepend(PCWSTR dir)
 /* MddAddPackageDependency prepends its own copy of the directory, so only the leading one goes */
 static void winuiPathRemove(PCWSTR dir)
 {
-  DWORD length = GetEnvironmentVariableW(L"PATH", NULL, 0);
+  DWORD length = GetEnvironmentVariableW(L"PATH", nullptr, 0);
   if (!length)
     return;
-  wchar_t* path = (wchar_t*)malloc(length * sizeof(wchar_t));
+  auto* path = static_cast<wchar_t*>(malloc(length * sizeof(wchar_t)));
   GetEnvironmentVariableW(L"PATH", path, length);
 
   size_t dir_length = wcslen(dir);
   if (_wcsnicmp(path, dir, dir_length) == 0 && (path[dir_length] == L';' || path[dir_length] == 0))
-    SetEnvironmentVariableW(L"PATH", path[dir_length] == L';' ? path + dir_length + 1 : NULL);
+    SetEnvironmentVariableW(L"PATH", path[dir_length] == L';' ? path + dir_length + 1 : nullptr);
   free(path);
 }
 
 /* the runtime's own dependency API, loaded straight from the framework package; no lifetime manager process */
-static int iupwinuiInitFramework(void)
+static int iupwinuiInitFramework()
 {
   for (int i = 0; i < WINUI_RUNTIME_VERSIONS; i++)
   {
@@ -308,9 +308,9 @@ static int iupwinuiInitFramework(void)
 
     wchar_t filename[1024];
     swprintf(filename, 1024, L"%s\\Microsoft.WindowsAppRuntime.dll", dir);
-    HMODULE runtime = LoadLibraryExW(filename, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
-    TryCreatePackageDependencyFunc tryCreate = runtime ? (TryCreatePackageDependencyFunc)GetProcAddress(runtime, "MddTryCreatePackageDependency") : NULL;
-    AddPackageDependencyFunc add = runtime ? (AddPackageDependencyFunc)GetProcAddress(runtime, "MddAddPackageDependency") : NULL;
+    HMODULE runtime = LoadLibraryExW(filename, nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+    TryCreatePackageDependencyFunc tryCreate = runtime ? reinterpret_cast<TryCreatePackageDependencyFunc>(GetProcAddress(runtime, "MddTryCreatePackageDependency")) : nullptr;
+    AddPackageDependencyFunc add = runtime ? reinterpret_cast<AddPackageDependencyFunc>(GetProcAddress(runtime, "MddAddPackageDependency")) : nullptr;
     int ok = tryCreate && add && winuiAddDependency(tryCreate, add, family);
 
     winuiPathRemove(dir);
@@ -328,48 +328,48 @@ static int iupwinuiInitFramework(void)
   return 0;
 }
 
-static void iupwinuiShutdownDependency(void)
+static void iupwinuiShutdownDependency()
 {
   HMODULE module = winui_runtime_module ? winui_runtime_module : GetModuleHandleW(L"kernelbase.dll");
   const char* remove_name = winui_runtime_module ? "MddRemovePackageDependency" : "RemovePackageDependency";
   const char* delete_name = winui_runtime_module ? "MddDeletePackageDependency" : "DeletePackageDependency";
-  RemovePackageDependencyFunc remove = module ? (RemovePackageDependencyFunc)GetProcAddress(module, remove_name) : NULL;
-  FARPROC del = module ? GetProcAddress(module, delete_name) : NULL;
+  RemovePackageDependencyFunc remove = module ? reinterpret_cast<RemovePackageDependencyFunc>(GetProcAddress(module, remove_name)) : nullptr;
+  FARPROC del = module ? GetProcAddress(module, delete_name) : nullptr;
 
   if (winui_dependency_context && remove)
     remove(winui_dependency_context);
-  winui_dependency_context = NULL;
+  winui_dependency_context = nullptr;
 
   if (winui_dependency_id)
   {
     if (del && winui_runtime_module)
-      ((MddDeletePackageDependencyFunc)del)(winui_dependency_id);
+      (reinterpret_cast<MddDeletePackageDependencyFunc>(del))(winui_dependency_id);
     else if (del)
-      ((DeletePackageDependencyFunc)del)(winui_dependency_id);
+      (reinterpret_cast<DeletePackageDependencyFunc>(del))(winui_dependency_id);
     HeapFree(GetProcessHeap(), 0, winui_dependency_id);
-    winui_dependency_id = NULL;
+    winui_dependency_id = nullptr;
   }
 
   if (winui_runtime_module)
   {
     FreeLibrary(winui_runtime_module);
-    winui_runtime_module = NULL;
+    winui_runtime_module = nullptr;
   }
 }
 
-static void winuiRuntimeMissing(void)
+static void winuiRuntimeMissing()
 {
   wchar_t caption[MAX_PATH + 64];
   wchar_t module[MAX_PATH];
-  DWORD len = GetModuleFileNameW(NULL, module, MAX_PATH);
-  wchar_t* sep = (len > 0 && len < MAX_PATH) ? wcsrchr(module, L'\\') : NULL;
+  DWORD len = GetModuleFileNameW(nullptr, module, MAX_PATH);
+  wchar_t* sep = (len > 0 && len < MAX_PATH) ? wcsrchr(module, L'\\') : nullptr;
   swprintf(caption, MAX_PATH + 64, L"%s - This application could not be started", sep ? sep + 1 : L"IUP");
 
-  if (MessageBoxW(NULL, L"The Windows App Runtime is missing.\n    Version 1.5 to 1.8 or 2.x\n\nDo you want to install the Windows App Runtime now?", caption, MB_YESNO | MB_ICONERROR) == IDYES)
-    ShellExecuteW(NULL, L"open", L"https://learn.microsoft.com/windows/apps/windows-app-sdk/downloads", NULL, NULL, SW_SHOWNORMAL);
+  if (MessageBoxW(nullptr, L"The Windows App Runtime is missing.\n    Version 1.5 to 1.8 or 2.x\n\nDo you want to install the Windows App Runtime now?", caption, MB_YESNO | MB_ICONERROR) == IDYES)
+    ShellExecuteW(nullptr, L"open", L"https://learn.microsoft.com/windows/apps/windows-app-sdk/downloads", nullptr, nullptr, SW_SHOWNORMAL);
 }
 
-static int iupwinuiInitBootstrap(void)
+static int iupwinuiInitBootstrap()
 {
   if (iupwinuiInitDependency() || iupwinuiInitFramework())
     return 1;
@@ -379,9 +379,9 @@ static int iupwinuiInitBootstrap(void)
 }
 
 typedef BOOL (__stdcall* ContentPreTranslateMessageFunc)(const MSG*);
-static ContentPreTranslateMessageFunc winui_content_pretranslate = NULL;
+static ContentPreTranslateMessageFunc winui_content_pretranslate = nullptr;
 
-static void iupwinuiFindContentPreTranslateMessage(void)
+static void iupwinuiFindContentPreTranslateMessage()
 {
   HMODULE hModule = GetModuleHandleW(L"Microsoft.UI.Windowing.Core.dll");
   if (!hModule)
@@ -389,8 +389,7 @@ static void iupwinuiFindContentPreTranslateMessage(void)
 
   if (hModule)
   {
-    winui_content_pretranslate = (ContentPreTranslateMessageFunc)
-      GetProcAddress(hModule, "ContentPreTranslateMessage");
+    winui_content_pretranslate = reinterpret_cast<ContentPreTranslateMessageFunc>(GetProcAddress(hModule, "ContentPreTranslateMessage"));
   }
 }
 
@@ -414,7 +413,7 @@ IUP_DRV_API BOOL iupwinuiContentPreTranslateMessage(const MSG* msg)
 IUP_DRV_API void iupwinuiProcessPendingMessages(void)
 {
   MSG msg;
-  while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+  while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
   {
     if (!iupwinuiContentPreTranslateMessage(&msg))
     {
@@ -503,7 +502,7 @@ extern "C" IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
   return 0;
 }
 
-IUP_DRV_API void iupwinuiDrawCleanup(void);
+IUP_DRV_API void iupwinuiDrawCleanup();
 
 extern "C" IUP_SDK_API void iupdrvClose(void)
 {
@@ -529,7 +528,7 @@ extern "C" IUP_SDK_API void iupdrvClose(void)
       winui_dispatcher_controller = nullptr;
     }
 
-    winui_content_pretranslate = NULL;
+    winui_content_pretranslate = nullptr;
 
     iupwinuiShutdownDependency();
     winui_bootstrap_initialized = false;
