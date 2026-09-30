@@ -2063,7 +2063,12 @@ static void gtk4TextParseParagraphFormat(Ihandle* formattag, GtkTextTag* tag)
       free(str);
 
       str = iupStrDupUntil((const char**)&format, ' ');
-      if (!str) break;
+      if (!str)
+      {
+        if (!format || !*format) break;
+        str = iupStrDup(format);
+        format = NULL;
+      }
 
       if (iupStrEqualNoCase(str, "RIGHT"))
         align = PANGO_TAB_RIGHT;
