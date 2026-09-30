@@ -30,7 +30,7 @@ static int fltkMessageDlgShowChoice(const char* value, const char* b0, const cha
   if (b2)
     return fl_choice_n("%s", b0, b1, b2, value);
   else
-    return fl_choice_n("%s", b0, b1, 0, value);
+    return fl_choice_n("%s", b0, b1, nullptr, value);
 }
 
 static int fltkMessageDlgPopup(Ihandle* ih, int x, int y)
@@ -98,12 +98,12 @@ static int fltkMessageDlgPopup(Ihandle* ih, int x, int y)
 
     if (buttondefault == 2)
     {
-      int r = fltkMessageDlgShowChoice(value, ok_str, cancel_str, NULL);
+      int r = fltkMessageDlgShowChoice(value, ok_str, cancel_str, nullptr);
       response = (r == 1) ? 2 : 1;
     }
     else
     {
-      int r = fltkMessageDlgShowChoice(value, cancel_str, ok_str, NULL);
+      int r = fltkMessageDlgShowChoice(value, cancel_str, ok_str, nullptr);
       response = (r == 1) ? 1 : 2;
     }
   }
@@ -114,12 +114,12 @@ static int fltkMessageDlgPopup(Ihandle* ih, int x, int y)
 
     if (buttondefault == 2)
     {
-      int r = fltkMessageDlgShowChoice(value, retry_str, cancel_str, NULL);
+      int r = fltkMessageDlgShowChoice(value, retry_str, cancel_str, nullptr);
       response = (r == 1) ? 2 : 1;
     }
     else
     {
-      int r = fltkMessageDlgShowChoice(value, cancel_str, retry_str, NULL);
+      int r = fltkMessageDlgShowChoice(value, cancel_str, retry_str, nullptr);
       response = (r == 1) ? 1 : 2;
     }
   }
@@ -127,12 +127,12 @@ static int fltkMessageDlgPopup(Ihandle* ih, int x, int y)
   {
     if (buttondefault == 2)
     {
-      int r = fltkMessageDlgShowChoice(value, yes_str, no_str, NULL);
+      int r = fltkMessageDlgShowChoice(value, yes_str, no_str, nullptr);
       response = (r == 1) ? 2 : 1;
     }
     else
     {
-      int r = fltkMessageDlgShowChoice(value, no_str, yes_str, NULL);
+      int r = fltkMessageDlgShowChoice(value, no_str, yes_str, nullptr);
       response = (r == 1) ? 1 : 2;
     }
   }

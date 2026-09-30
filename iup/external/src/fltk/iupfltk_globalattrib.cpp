@@ -48,7 +48,7 @@ static int fltkGlobalEventHandler(int event)
   case FL_PUSH:
   case FL_RELEASE:
     {
-      IFiiiis cb = (IFiiiis)IupGetFunction("GLOBALBUTTON_CB");
+      auto cb = reinterpret_cast<IFiiiis>(IupGetFunction("GLOBALBUTTON_CB"));
       if (cb)
       {
         int button = fltkGlobalButton(Fl::event_button());
@@ -64,7 +64,7 @@ static int fltkGlobalEventHandler(int event)
   case FL_MOVE:
   case FL_DRAG:
     {
-      IFiis cb = (IFiis)IupGetFunction("GLOBALMOTION_CB");
+      auto cb = reinterpret_cast<IFiis>(IupGetFunction("GLOBALMOTION_CB"));
       if (cb)
       {
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
@@ -75,19 +75,19 @@ static int fltkGlobalEventHandler(int event)
     }
   case FL_MOUSEWHEEL:
     {
-      IFfiis cb = (IFfiis)IupGetFunction("GLOBALWHEEL_CB");
+      auto cb = reinterpret_cast<IFfiis>(IupGetFunction("GLOBALWHEEL_CB"));
       if (cb)
       {
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
         iupfltkButtonKeySetStatus(Fl::event_state(), 0, status, 0);
-        cb((float)-Fl::event_dy(), Fl::event_x_root(), Fl::event_y_root(), status);
+        cb(static_cast<float>(-Fl::event_dy()), Fl::event_x_root(), Fl::event_y_root(), status);
       }
       break;
     }
   case FL_KEYDOWN:
   case FL_KEYUP:
     {
-      IFii cb = (IFii)IupGetFunction("GLOBALKEYPRESS_CB");
+      IFii cb = reinterpret_cast<IFii>(IupGetFunction("GLOBALKEYPRESS_CB"));
       if (cb)
       {
         int code = iupfltkKeyDecode();
@@ -178,11 +178,11 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     const char* s = Fl::scheme();
     if (s)
       return iupStrReturnStr(s);
-    return (char*)"none";
+    return const_cast<char*>("none");
   }
 
   if (iupStrEqual(name, "SHOWMENUIMAGES"))
-    return (char*)"NO";
+    return const_cast<char*>("NO");
 
   if (iupStrEqual(name, "TRUECOLORCANVAS"))
     return iupStrReturnBoolean(1);
@@ -213,7 +213,7 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     {
       int x, y, w, h;
       Fl::screen_xywh(x, y, w, h, i);
-      int remaining = count * 50 - (int)(pstr - str);
+      int remaining = count * 50 - static_cast<int>(pstr - str);
       if (remaining <= 0) break;
       pstr += snprintf(pstr, remaining, "%d %d %d %d\n", x, y, w, h);
     }
@@ -224,13 +224,13 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   if (iupStrEqual(name, "SANDBOX"))
   {
     if (getenv("FLATPAK_ID"))
-      return (char*)"FLATPAK";
+      return const_cast<char*>("FLATPAK");
     if (getenv("SNAP"))
-      return (char*)"SNAP";
+      return const_cast<char*>("SNAP");
     if (getenv("APPIMAGE"))
-      return (char*)"APPIMAGE";
-    return NULL;
+      return const_cast<char*>("APPIMAGE");
+    return nullptr;
   }
 
-  return NULL;
+  return nullptr;
 }

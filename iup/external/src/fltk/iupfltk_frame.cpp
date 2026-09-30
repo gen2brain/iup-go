@@ -41,13 +41,13 @@ public:
     {
       case FL_ENTER:
       {
-        IFn cb = (IFn)IupGetCallback(iup_handle, "ENTERWINDOW_CB");
+        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "ENTERWINDOW_CB"));
         if (cb) cb(iup_handle);
         break;
       }
       case FL_LEAVE:
       {
-        IFn cb = (IFn)IupGetCallback(iup_handle, "LEAVEWINDOW_CB");
+        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "LEAVEWINDOW_CB"));
         if (cb) cb(iup_handle);
         break;
       }
@@ -59,7 +59,7 @@ public:
 static int fltkFrameTitleHeight(Ihandle* ih)
 {
   int ch;
-  iupdrvFontGetCharSize(ih, NULL, &ch);
+  iupdrvFontGetCharSize(ih, nullptr, &ch);
   return ch;
 }
 
@@ -103,7 +103,7 @@ static int fltkFrameSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (iupAttribGetStr(ih, "_IUPFRAME_HAS_TITLE"))
   {
-    IupFltkFrame* frame = (IupFltkFrame*)ih->handle;
+    auto* frame = reinterpret_cast<IupFltkFrame*>(ih->handle);
     if (frame)
     {
       frame->label(value ? value : "");
@@ -117,7 +117,7 @@ static char* fltkFrameGetTitleAttrib(Ihandle* ih)
 {
   if (iupAttribGetStr(ih, "_IUPFRAME_HAS_TITLE"))
   {
-    IupFltkFrame* frame = (IupFltkFrame*)ih->handle;
+    auto* frame = reinterpret_cast<IupFltkFrame*>(ih->handle);
     if (frame)
     {
       const char* title = frame->label();
@@ -125,7 +125,7 @@ static char* fltkFrameGetTitleAttrib(Ihandle* ih)
         return iupStrReturnStr(title);
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static int fltkFrameSetBgColorAttrib(Ihandle* ih, const char* value)
@@ -138,7 +138,7 @@ static int fltkFrameSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupFltkFrame* frame = (IupFltkFrame*)ih->handle;
+  auto* frame = reinterpret_cast<IupFltkFrame*>(ih->handle);
   if (frame)
     frame->color(fl_rgb_color(r, g, b));
 
@@ -154,7 +154,7 @@ static int fltkFrameSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupFltkFrame* frame = (IupFltkFrame*)ih->handle;
+  auto* frame = reinterpret_cast<IupFltkFrame*>(ih->handle);
   if (frame)
     frame->labelcolor(fl_rgb_color(r, g, b));
 
@@ -173,7 +173,7 @@ static int fltkFrameSetSunkenAttrib(Ihandle* ih, const char* value)
 {
   if (!iupAttribGetStr(ih, "_IUPFRAME_HAS_TITLE"))
   {
-    IupFltkFrame* frame = (IupFltkFrame*)ih->handle;
+    auto* frame = reinterpret_cast<IupFltkFrame*>(ih->handle);
     if (frame)
     {
       if (iupStrBoolean(value))
@@ -189,9 +189,9 @@ static int fltkFrameSetSunkenAttrib(Ihandle* ih, const char* value)
 static void* fltkFrameGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
 {
   (void)child;
-  Fl_Group* inner = (Fl_Group*)iupAttribGet(ih, "_IUPFLTK_FRAME_INNER");
+  auto* inner = reinterpret_cast<Fl_Group*>(iupAttribGet(ih, "_IUPFLTK_FRAME_INNER"));
   if (inner)
-    return (void*)inner;
+    return reinterpret_cast<void*>(inner);
   return ih->handle;
 }
 
@@ -204,10 +204,10 @@ static int fltkFrameMapMethod(Ihandle* ih)
 
   title = iupAttribGet(ih, "TITLE");
 
-  Fl_Group::current(NULL);
+  Fl_Group::current(nullptr);
 
-  IupFltkFrame* frame = new IupFltkFrame(0, 0, 10, 10, ih);
-  ih->handle = (InativeHandle*)frame;
+  auto* frame = new IupFltkFrame(0, 0, 10, 10, ih);
+  ih->handle = reinterpret_cast<InativeHandle*>(frame);
 
   if (title)
   {
@@ -217,13 +217,13 @@ static int fltkFrameMapMethod(Ihandle* ih)
   }
 
   frame->begin();
-  Fl_Group* inner = new Fl_Group(0, 0, 10, 10);
+  auto* inner = new Fl_Group(0, 0, 10, 10);
   inner->end();
-  inner->resizable(NULL);
+  inner->resizable(nullptr);
   inner->box(FL_NO_BOX);
   frame->end();
 
-  iupAttribSet(ih, "_IUPFLTK_FRAME_INNER", (char*)inner);
+  iupAttribSet(ih, "_IUPFLTK_FRAME_INNER", reinterpret_cast<char*>(inner));
 
   iupfltkAddToParent(ih);
 
@@ -234,7 +234,7 @@ static int fltkFrameMapMethod(Ihandle* ih)
   }
 
   if (!iupAttribGet(ih, "_IUPFRAME_HAS_BGCOLOR"))
-    fltkFrameSetBgColorAttrib(ih, NULL);
+    fltkFrameSetBgColorAttrib(ih, nullptr);
 
   return IUP_NOERROR;
 }
@@ -243,7 +243,7 @@ static void fltkFrameLayoutUpdateMethod(Ihandle* ih)
 {
   iupdrvBaseLayoutUpdateMethod(ih);
 
-  IupFltkFrame* frame = (IupFltkFrame*)ih->handle;
+  auto* frame = reinterpret_cast<IupFltkFrame*>(ih->handle);
   if (!frame) return;
 
   int title_h = 0;
@@ -256,7 +256,7 @@ static void fltkFrameLayoutUpdateMethod(Ihandle* ih)
                   frame->w(), frame->h() - title_h);
   }
 
-  Fl_Group* inner = (Fl_Group*)iupAttribGet(ih, "_IUPFLTK_FRAME_INNER");
+  auto* inner = reinterpret_cast<Fl_Group*>(iupAttribGet(ih, "_IUPFLTK_FRAME_INNER"));
   if (inner)
   {
     int dx = 3, dy = 3;
@@ -277,10 +277,10 @@ extern "C" IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
   ic->LayoutUpdate = fltkFrameLayoutUpdateMethod;
   ic->GetInnerNativeContainerHandle = fltkFrameGetInnerNativeContainerHandleMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, fltkFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, fltkFrameSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, fltkFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BACKCOLOR", iupFrameGetBgColorAttrib, fltkFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, fltkFrameSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TITLE", fltkFrameGetTitleAttrib, fltkFrameSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SUNKEN", NULL, fltkFrameSetSunkenAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, fltkFrameSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TITLE", fltkFrameGetTitleAttrib, fltkFrameSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SUNKEN", nullptr, fltkFrameSetSunkenAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

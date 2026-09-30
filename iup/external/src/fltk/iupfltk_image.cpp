@@ -28,7 +28,7 @@ extern "C" {
 
 extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
-  Fl_RGB_Image* image = (Fl_RGB_Image*)handle;
+  auto* image = static_cast<Fl_RGB_Image*>(handle);
 
   if (!image || !image->data() || !image->data()[0])
     return;
@@ -36,7 +36,7 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
   int w = image->data_w();
   int h = image->data_h();
   int d = image->d();
-  const unsigned char* src = (const unsigned char*)image->data()[0];
+  const auto* src = reinterpret_cast<const unsigned char*>(image->data()[0]);
   int ld = image->ld();
   if (ld == 0) ld = w * d;
 
@@ -79,11 +79,11 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgc
 
   int channels = has_alpha ? 4 : 3;
 
-  unsigned char* data = new (std::nothrow) unsigned char[(size_t)ih->currentwidth * ih->currentheight * channels];
+  auto* data = new (std::nothrow) unsigned char[static_cast<size_t>(ih->currentwidth) * ih->currentheight * channels];
   if (!data)
-    return NULL;
+    return nullptr;
 
-  unsigned char* imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
+  auto* imgdata = reinterpret_cast<unsigned char*>(iupAttribGetStr(ih, "WID"));
 
   if (make_inactive || flat_alpha)
     iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
@@ -170,27 +170,27 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgc
     }
   }
 
-  Fl_RGB_Image* image = new Fl_RGB_Image(data, ih->currentwidth, ih->currentheight, channels);
+  auto* image = new Fl_RGB_Image(data, ih->currentwidth, ih->currentheight, channels);
   image->alloc_array = 1;
 
   if (make_inactive || (has_alpha && flat_alpha))
     iupAttribSet(ih, "_IUP_BGCOLOR_DEPEND", "1");
 
-  IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
+  IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGECREATE_CB"));
   if (cb)
-    cb(image, (char*)"Fl_RGB_Image");
+    cb(image, const_cast<char*>("Fl_RGB_Image"));
 
   return image;
 }
 
 extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
 {
-  return iupdrvImageCreateImage(ih, NULL, 0);
+  return iupdrvImageCreateImage(ih, nullptr, 0);
 }
 
 extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 {
-  return iupdrvImageCreateImage(ih, NULL, 0);
+  return iupdrvImageCreateImage(ih, nullptr, 0);
 }
 
 /****************************************************************************
@@ -200,7 +200,7 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
   if (!name)
-    return NULL;
+    return nullptr;
 
   (void)type;
 
@@ -208,9 +208,9 @@ extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 
   Fl_Shared_Image* shared = Fl_Shared_Image::get(name);
   if (!shared)
-    return NULL;
+    return nullptr;
 
-  Fl_RGB_Image* rgb = (Fl_RGB_Image*)shared;
+  auto* rgb = reinterpret_cast<Fl_RGB_Image*>(shared);
 
   int w = rgb->data_w();
   int h = rgb->data_h();
@@ -219,18 +219,18 @@ extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
   if (d < 3 || !rgb->data() || !rgb->data()[0])
   {
     shared->release();
-    return NULL;
+    return nullptr;
   }
 
-  const unsigned char* src = (const unsigned char*)rgb->data()[0];
+  const auto* src = reinterpret_cast<const unsigned char*>(rgb->data()[0]);
   int ld = rgb->ld();
   if (ld == 0) ld = w * d;
 
-  unsigned char* data = new (std::nothrow) unsigned char[(size_t)w * h * d];
+  auto* data = new (std::nothrow) unsigned char[static_cast<size_t>(w) * h * d];
   if (!data)
   {
     shared->release();
-    return NULL;
+    return nullptr;
   }
 
   for (int y = 0; y < h; y++)
@@ -238,12 +238,12 @@ extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 
   shared->release();
 
-  Fl_RGB_Image* result = new Fl_RGB_Image(data, w, h, d);
+  auto* result = new Fl_RGB_Image(data, w, h, d);
   result->alloc_array = 1;
 
-  IFvs cb = (IFvs)IupGetFunction("IMAGECREATE_CB");
+  IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGECREATE_CB"));
   if (cb)
-    cb(result, (char*)"Fl_RGB_Image");
+    cb(result, const_cast<char*>("Fl_RGB_Image"));
 
   return result;
 }
@@ -254,7 +254,7 @@ extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 
 extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
 {
-  Fl_RGB_Image* image = (Fl_RGB_Image*)handle;
+  auto* image = static_cast<Fl_RGB_Image*>(handle);
 
   if (!image)
   {
@@ -303,11 +303,11 @@ extern "C" IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
   else if (type == IUPIMAGE_ICON)
     type_str = "ICON";
 
-  IFvs cb = (IFvs)IupGetFunction("IMAGEDESTROY_CB");
+  IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGEDESTROY_CB"));
   if (cb)
-    cb(handle, (char*)type_str);
+    cb(handle, const_cast<char*>(type_str));
 
-  Fl_RGB_Image* image = (Fl_RGB_Image*)handle;
+  auto* image = static_cast<Fl_RGB_Image*>(handle);
   delete image;
 }
 
@@ -323,8 +323,8 @@ static unsigned char* fltkImageToRGB(unsigned char* imgdata, int width, int heig
   if (bpp == 8)
   {
     channels = 3;
-    data = (unsigned char*)malloc((size_t)width * height * 3);
-    if (!data) return NULL;
+    data = static_cast<unsigned char*>(malloc(static_cast<size_t>(width) * height * 3));
+    if (!data) return nullptr;
 
     for (int y = 0; y < height; y++)
     {
@@ -343,9 +343,9 @@ static unsigned char* fltkImageToRGB(unsigned char* imgdata, int width, int heig
   else
   {
     channels = (bpp == 32) ? 4 : 3;
-    data = (unsigned char*)malloc((size_t)width * height * channels);
-    if (!data) return NULL;
-    memcpy(data, imgdata, (size_t)width * height * channels);
+    data = static_cast<unsigned char*>(malloc(static_cast<size_t>(width) * height * channels));
+    if (!data) return nullptr;
+    memcpy(data, imgdata, static_cast<size_t>(width) * height * channels);
   }
 
   *out_channels = channels;
@@ -374,7 +374,7 @@ extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, in
     FILE* f = fopen(filename, "wb");
     if (!f) { free(bmp_data); return 0; }
 
-    int written = (int)fwrite(bmp_data, 1, size, f);
+    int written = static_cast<int>(fwrite(bmp_data, 1, size, f));
     fclose(f);
     free(bmp_data);
     return (written == size) ? 1 : 0;
@@ -388,30 +388,30 @@ extern "C" IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* img
   if (iupStrEqualNoCase(format, "BMP"))
     return iupImageWriteBMP(imgdata, width, height, bpp, colors, colors_count, size);
 
-  return NULL;
+  return nullptr;
 }
 
 extern "C" IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
 {
-  Fl_RGB_Image* image = NULL;
+  Fl_RGB_Image* image = nullptr;
 
   (void)ih;
 
   if (!value)
     return 0;
 
-  image = (Fl_RGB_Image*)iupImageGetIcon(value);
+  image = static_cast<Fl_RGB_Image*>(iupImageGetIcon(value));
   if (!image || !image->data() || !image->data()[0])
     return 0;
 
   int w = image->data_w();
   int h = image->data_h();
   int d = image->d();
-  const unsigned char* src = (const unsigned char*)image->data()[0];
+  const auto* src = reinterpret_cast<const unsigned char*>(image->data()[0]);
   int ld = image->ld();
   if (ld == 0) ld = w * d;
 
-  unsigned char* dst = (unsigned char*)malloc((size_t)w * h * 4);
+  auto* dst = static_cast<unsigned char*>(malloc(static_cast<size_t>(w) * h * 4));
   if (!dst)
     return 0;
 

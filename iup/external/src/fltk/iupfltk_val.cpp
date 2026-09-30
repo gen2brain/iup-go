@@ -102,7 +102,7 @@ public:
 
 static void fltkValUpdateValue(Ihandle* ih)
 {
-  IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
+  auto* slider = reinterpret_cast<IupFltkSlider*>(ih->handle);
   if (!slider)
     return;
 
@@ -112,7 +112,7 @@ static void fltkValUpdateValue(Ihandle* ih)
   ih->data->val = fval * (ih->data->vmax - ih->data->vmin) + ih->data->vmin;
   iupValCropValue(ih);
 
-  IFn cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  IFn cb = static_cast<IFn>(IupGetCallback(ih, "VALUECHANGED_CB"));
   if (cb)
   {
     if (ih->data->val == old_val)
@@ -124,7 +124,7 @@ static void fltkValUpdateValue(Ihandle* ih)
 static void fltkValCallback(Fl_Widget* w, void* data)
 {
   (void)w;
-  fltkValUpdateValue((Ihandle*)data);
+  fltkValUpdateValue(static_cast<Ihandle*>(data));
 }
 
 extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
@@ -152,7 +152,7 @@ static int fltkValSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->val)))
   {
-    IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
+    auto* slider = reinterpret_cast<IupFltkSlider*>(ih->handle);
     if (slider)
     {
       double range = ih->data->vmax - ih->data->vmin;
@@ -173,7 +173,7 @@ static int fltkValSetStepAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDoubleDef(value, &(ih->data->step), 0.01))
   {
-    IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
+    auto* slider = reinterpret_cast<IupFltkSlider*>(ih->handle);
     if (slider)
     {
       double range = ih->data->vmax - ih->data->vmin;
@@ -196,7 +196,7 @@ static int fltkValSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
+  auto* slider = reinterpret_cast<IupFltkSlider*>(ih->handle);
   if (slider)
     slider->color(fl_rgb_color(r, g, b));
 
@@ -209,7 +209,7 @@ static int fltkValSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
+  auto* slider = reinterpret_cast<IupFltkSlider*>(ih->handle);
   if (slider)
     slider->selection_color(fl_rgb_color(r, g, b));
 
@@ -231,7 +231,7 @@ static int fltkValSetShowTicksAttrib(Ihandle* ih, const char* value)
   if (n > 0 && n < 2) n = 2;
   ih->data->show_ticks = n;
 
-  IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
+  auto* slider = reinterpret_cast<IupFltkSlider*>(ih->handle);
   if (slider)
   {
     slider->show_ticks = n;
@@ -243,7 +243,7 @@ static int fltkValSetShowTicksAttrib(Ihandle* ih, const char* value)
 static int fltkValSetTicksPosAttrib(Ihandle* ih, const char* value)
 {
   int pos = fltkValTicksPosFromString(value);
-  IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
+  auto* slider = reinterpret_cast<IupFltkSlider*>(ih->handle);
   if (slider)
   {
     slider->ticks_pos = pos;
@@ -256,7 +256,7 @@ static int fltkValSetInvertedAttrib(Ihandle* ih, const char* value)
 {
   ih->data->inverted = iupStrBoolean(value);
 
-  IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
+  auto* slider = reinterpret_cast<IupFltkSlider*>(ih->handle);
   if (slider)
   {
     if (ih->data->inverted)
@@ -273,8 +273,8 @@ static int fltkValMapMethod(Ihandle* ih)
 {
   int horizontal = (ih->data->orientation == IVAL_HORIZONTAL);
 
-  IupFltkSlider* slider = new IupFltkSlider(0, 0, 10, 10, ih, horizontal);
-  ih->handle = (InativeHandle*)slider;
+  auto* slider = new IupFltkSlider(0, 0, 10, 10, ih, horizontal);
+  ih->handle = reinterpret_cast<InativeHandle*>(slider);
 
   slider->show_ticks = ih->data->show_ticks;
   slider->ticks_pos = fltkValTicksPosFromString(iupAttribGetStr(ih, "TICKSPOS"));
@@ -293,7 +293,7 @@ static int fltkValMapMethod(Ihandle* ih)
     }
   }
 
-  slider->callback(fltkValCallback, (void*)ih);
+  slider->callback(fltkValCallback, reinterpret_cast<void*>(ih));
 
   iupfltkAddToParent(ih);
 
@@ -305,11 +305,11 @@ static int fltkValMapMethod(Ihandle* ih)
 
 static void fltkValUnMapMethod(Ihandle* ih)
 {
-  IupFltkSlider* slider = (IupFltkSlider*)ih->handle;
+  auto* slider = reinterpret_cast<IupFltkSlider*>(ih->handle);
   if (slider)
   {
     delete slider;
-    ih->handle = NULL;
+    ih->handle = nullptr;
   }
 }
 
@@ -321,10 +321,10 @@ extern "C" IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VALUE", iupValGetValueAttrib, fltkValSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, fltkValSetStepAttrib, IUPAF_SAMEASSYSTEM, "0.01", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, fltkValSetPageStepAttrib, IUPAF_SAMEASSYSTEM, "0.1", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INVERTED", NULL, fltkValSetInvertedAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkValSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, fltkValSetFgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INVERTED", nullptr, fltkValSetInvertedAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, fltkValSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, fltkValSetFgColorAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, fltkValSetShowTicksAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, fltkValSetTicksPosAttrib, "NORMAL", NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TICKSPOS", nullptr, fltkValSetTicksPosAttrib, "NORMAL", nullptr, IUPAF_DEFAULT);
 }

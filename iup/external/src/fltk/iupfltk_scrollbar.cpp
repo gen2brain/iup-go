@@ -41,7 +41,7 @@ public:
 
   void pageBy(int dir)
   {
-    int step = (int)(iup_handle->data->pagestep * ISCROLLBAR_RANGE);
+    int step = static_cast<int>(iup_handle->data->pagestep * ISCROLLBAR_RANGE);
     if (step < 1) step = 1;
     value(clamp(value() + dir * step));
     do_callback();
@@ -78,8 +78,8 @@ public:
         {
           double val = (maximum() - minimum()) ? (value() - minimum()) / (maximum() - minimum()) : 0.5;
           int track = sz - 2 * arrow;
-          int ss = (int)(slider_size() * track + 0.5);
-          int sliderpos = arrow + (int)(val * (track - ss) + 0.5);
+          int ss = static_cast<int>(slider_size() * track + 0.5);
+          int sliderpos = arrow + static_cast<int>(val * (track - ss) + 0.5);
           if (pos < sliderpos)
           {
             last_op = is_horiz ? IUP_SBPGLEFT : IUP_SBPGUP;
@@ -108,7 +108,7 @@ public:
 
 extern "C" IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
 {
-  IupFltkScrollbar* sb = (IupFltkScrollbar*)ih->handle;
+  auto* sb = reinterpret_cast<IupFltkScrollbar*>(ih->handle);
   if (!sb)
     return;
 
@@ -119,30 +119,30 @@ extern "C" IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
   double fval = (ih->data->val - ih->data->vmin) / range;
   double fpage = ih->data->pagesize / range;
 
-  sb->value(fval * ISCROLLBAR_RANGE, (int)(fpage * ISCROLLBAR_RANGE),
+  sb->value(fval * ISCROLLBAR_RANGE, static_cast<int>(fpage * ISCROLLBAR_RANGE),
             0, ISCROLLBAR_RANGE);
 
-  int istep = (int)(ih->data->linestep * ISCROLLBAR_RANGE);
+  int istep = static_cast<int>(ih->data->linestep * ISCROLLBAR_RANGE);
   if (istep < 1) istep = 1;
   sb->linesize(istep);
 }
 
 static void fltkScrollbarCallback(Fl_Widget* w, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
-  IupFltkScrollbar* sb = (IupFltkScrollbar*)w;
+  auto* ih = static_cast<Ihandle*>(data);
+  auto* sb = static_cast<IupFltkScrollbar*>(w);
 
   double range = ih->data->vmax - ih->data->vmin;
   double old_val = ih->data->val;
 
   if (ISCROLLBAR_RANGE > 0)
-    ih->data->val = ((double)sb->value() / (double)ISCROLLBAR_RANGE) * range + ih->data->vmin;
+    ih->data->val = (static_cast<double>(sb->value()) / static_cast<double>(ISCROLLBAR_RANGE)) * range + ih->data->vmin;
   else
     ih->data->val = ih->data->vmin;
 
   iupScrollbarCropValue(ih);
 
-  IFniff scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+  auto scroll_cb = reinterpret_cast<IFniff>(IupGetCallback(ih, "SCROLL_CB"));
   if (scroll_cb)
   {
     int op = sb->last_op;
@@ -151,14 +151,14 @@ static void fltkScrollbarCallback(Fl_Widget* w, void* data)
 
     float posx = 0, posy = 0;
     if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)
-      posx = (float)ih->data->val;
+      posx = static_cast<float>(ih->data->val);
     else
-      posy = (float)ih->data->val;
+      posy = static_cast<float>(ih->data->val);
 
     scroll_cb(ih, op, posx, posy);
   }
 
-  IFn valuechanged_cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+  IFn valuechanged_cb = static_cast<IFn>(IupGetCallback(ih, "VALUECHANGED_CB"));
   if (valuechanged_cb)
   {
     if (ih->data->val != old_val)
@@ -218,8 +218,8 @@ static int fltkScrollbarMapMethod(Ihandle* ih)
 {
   int horizontal = (ih->data->orientation == ISCROLLBAR_HORIZONTAL);
 
-  IupFltkScrollbar* sb = new IupFltkScrollbar(0, 0, 10, 10, ih, horizontal);
-  ih->handle = (InativeHandle*)sb;
+  auto* sb = new IupFltkScrollbar(0, 0, 10, 10, ih, horizontal);
+  ih->handle = reinterpret_cast<InativeHandle*>(sb);
 
   if (ih->data->inverted)
   {
@@ -228,7 +228,7 @@ static int fltkScrollbarMapMethod(Ihandle* ih)
 
   iupdrvScrollbarUpdate(ih);
 
-  sb->callback(fltkScrollbarCallback, (void*)ih);
+  sb->callback(fltkScrollbarCallback, reinterpret_cast<void*>(ih));
 
   iupfltkAddToParent(ih);
 
@@ -240,11 +240,11 @@ static int fltkScrollbarMapMethod(Ihandle* ih)
 
 static void fltkScrollbarUnMapMethod(Ihandle* ih)
 {
-  IupFltkScrollbar* sb = (IupFltkScrollbar*)ih->handle;
+  auto* sb = reinterpret_cast<IupFltkScrollbar*>(ih->handle);
   if (sb)
   {
     delete sb;
-    ih->handle = NULL;
+    ih->handle = nullptr;
   }
 }
 
@@ -253,10 +253,10 @@ extern "C" IUP_SDK_API void iupdrvScrollbarInitClass(Iclass* ic)
   ic->Map = fltkScrollbarMapMethod;
   ic->UnMap = fltkScrollbarUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "VALUE", iupScrollbarGetValueAttrib, fltkScrollbarSetValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "LINESTEP", iupScrollbarGetLineStepAttrib, fltkScrollbarSetLineStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PAGESTEP", iupScrollbarGetPageStepAttrib, fltkScrollbarSetPageStepAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PAGESIZE", iupScrollbarGetPageSizeAttrib, fltkScrollbarSetPageSizeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "LINESTEP", iupScrollbarGetLineStepAttrib, fltkScrollbarSetLineStepAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PAGESTEP", iupScrollbarGetPageStepAttrib, fltkScrollbarSetPageStepAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PAGESIZE", iupScrollbarGetPageSizeAttrib, fltkScrollbarSetPageSizeAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 }

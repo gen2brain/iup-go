@@ -100,7 +100,7 @@ public:
   {
     box(FL_FLAT_BOX);
 
-    time_t now = time(NULL);
+    time_t now = time(nullptr);
     struct tm* t = localtime(&now);
     cur_year = t->tm_year + 1900;
     cur_month = t->tm_mon + 1;
@@ -129,13 +129,13 @@ public:
       day_name_labels[i]->labelsize(FL_NORMAL_SIZE - 1);
     }
 
-    for (int r = 0; r < 6; r++)
+    for (auto& week_label : week_labels)
     {
-      week_labels[r] = new Fl_Box(0, 0, 1, 1);
-      week_labels[r]->box(FL_FLAT_BOX);
-      week_labels[r]->labelsize(FL_NORMAL_SIZE - 2);
-      week_labels[r]->labelcolor(FL_INACTIVE_COLOR);
-      week_labels[r]->hide();
+      week_label = new Fl_Box(0, 0, 1, 1);
+      week_label->box(FL_FLAT_BOX);
+      week_label->labelsize(FL_NORMAL_SIZE - 2);
+      week_label->labelcolor(FL_INACTIVE_COLOR);
+      week_label->hide();
     }
 
     for (int r = 0; r < 6; r++)
@@ -214,7 +214,7 @@ public:
     snprintf(title_buf, sizeof(title_buf), "%s %d", month_names[cur_month - 1], cur_year);
     lbl_title->label(title_buf);
 
-    time_t now = time(NULL);
+    time_t now = time(nullptr);
     struct tm* t = localtime(&now);
     int today_y = t->tm_year + 1900;
     int today_m = t->tm_mon + 1;
@@ -455,12 +455,12 @@ public:
 
   static void prevMonthCB(Fl_Widget*, void* data)
   {
-    ((IupFltkCalendar*)data)->prevMonth();
+    (static_cast<IupFltkCalendar*>(data))->prevMonth();
   }
 
   static void nextMonthCB(Fl_Widget*, void* data)
   {
-    ((IupFltkCalendar*)data)->nextMonth();
+    (static_cast<IupFltkCalendar*>(data))->nextMonth();
   }
 };
 
@@ -482,12 +482,12 @@ static void fltkCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, in
 
 static int fltkCalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
-  IupFltkCalendar* cal = (IupFltkCalendar*)ih->handle;
+  auto* cal = reinterpret_cast<IupFltkCalendar*>(ih->handle);
   if (!cal) return 0;
 
   if (iupStrEqualNoCase(value, "TODAY"))
   {
-    time_t now = time(NULL);
+    time_t now = time(nullptr);
     struct tm* t = localtime(&now);
     cal->sel_year = t->tm_year + 1900;
     cal->sel_month = t->tm_mon + 1;
@@ -518,22 +518,22 @@ static int fltkCalendarSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* fltkCalendarGetValueAttrib(Ihandle* ih)
 {
-  IupFltkCalendar* cal = (IupFltkCalendar*)ih->handle;
-  if (!cal) return NULL;
+  auto* cal = reinterpret_cast<IupFltkCalendar*>(ih->handle);
+  if (!cal) return nullptr;
   return iupStrReturnStrf("%d/%d/%d", cal->sel_year, cal->sel_month, cal->sel_day);
 }
 
 static char* fltkCalendarGetTodayAttrib(Ihandle* ih)
 {
   (void)ih;
-  time_t now = time(NULL);
+  time_t now = time(nullptr);
   struct tm* t = localtime(&now);
   return iupStrReturnStrf("%d/%d/%d", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday);
 }
 
 static int fltkCalendarSetWeekNumbersAttrib(Ihandle* ih, const char* value)
 {
-  IupFltkCalendar* cal = (IupFltkCalendar*)ih->handle;
+  auto* cal = reinterpret_cast<IupFltkCalendar*>(ih->handle);
   if (!cal) return 0;
 
   cal->show_week_numbers = iupStrBoolean(value);
@@ -543,8 +543,8 @@ static int fltkCalendarSetWeekNumbersAttrib(Ihandle* ih, const char* value)
 
 static int fltkCalendarMapMethod(Ihandle* ih)
 {
-  IupFltkCalendar* cal = new IupFltkCalendar(0, 0, 10, 10, ih);
-  ih->handle = (InativeHandle*)cal;
+  auto* cal = new IupFltkCalendar(0, 0, 10, 10, ih);
+  ih->handle = reinterpret_cast<InativeHandle*>(cal);
 
   if (iupAttribGetBoolean(ih, "WEEKNUMBERS"))
     cal->show_week_numbers = 1;
@@ -559,20 +559,20 @@ static int fltkCalendarMapMethod(Ihandle* ih)
 
 static void fltkCalendarUnMapMethod(Ihandle* ih)
 {
-  IupFltkCalendar* cal = (IupFltkCalendar*)ih->handle;
+  auto* cal = reinterpret_cast<IupFltkCalendar*>(ih->handle);
   if (cal)
   {
     delete cal;
-    ih->handle = NULL;
+    ih->handle = nullptr;
   }
 }
 
 extern "C" Iclass* iupCalendarNewClass(void)
 {
-  Iclass* ic = iupClassNew(NULL);
+  Iclass* ic = iupClassNew(nullptr);
 
-  ic->name = (char*)"calendar";
-  ic->format = NULL;
+  ic->name = const_cast<char*>("calendar");
+  ic->format = nullptr;
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
@@ -589,9 +589,9 @@ extern "C" Iclass* iupCalendarNewClass(void)
   iupBaseRegisterCommonAttrib(ic);
   iupBaseRegisterVisualAttrib(ic);
 
-  iupClassRegisterAttribute(ic, "VALUE", fltkCalendarGetValueAttrib, fltkCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "WEEKNUMBERS", NULL, fltkCalendarSetWeekNumbersAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TODAY", fltkCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", fltkCalendarGetValueAttrib, fltkCalendarSetValueAttrib, nullptr, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "WEEKNUMBERS", nullptr, fltkCalendarSetWeekNumbersAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TODAY", fltkCalendarGetTodayAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   return ic;
 }

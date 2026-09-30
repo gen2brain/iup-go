@@ -25,9 +25,9 @@ extern "C" {
 
 static Fl_Widget* fltkTipGetWidget(Ihandle* ih)
 {
-  Fl_Widget* widget = (Fl_Widget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  auto* widget = reinterpret_cast<Fl_Widget*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
   if (!widget)
-    widget = (Fl_Widget*)ih->handle;
+    widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   return widget;
 }
 
@@ -58,7 +58,7 @@ static void fltkTipUpdateStyle(Ihandle* ih)
 
 static std::map<Fl_Widget*, Ihandle*> fltk_tip_owners;
 
-static void fltkTipUpdateRect(void)
+static void fltkTipUpdateRect()
 {
   Fl_Widget* widget = Fl::belowmouse();
   while (widget && !widget->tooltip())
@@ -66,7 +66,7 @@ static void fltkTipUpdateRect(void)
   if (!widget)
     return;
 
-  std::map<Fl_Widget*, Ihandle*>::iterator found = fltk_tip_owners.find(widget);
+  auto found = fltk_tip_owners.find(widget);
   if (found == fltk_tip_owners.end())
     return;
 
@@ -84,7 +84,7 @@ static void fltkTipUpdateRect(void)
   if (x >= x1 && x <= x2 && y >= y1 && y <= y2)
     Fl_Tooltip::enter_area(widget, x1, y1, x2 - x1 + 1, y2 - y1 + 1, widget->tooltip());
   else
-    Fl_Tooltip::enter_area(widget, 0, 0, 0, 0, NULL);
+    Fl_Tooltip::enter_area(widget, 0, 0, 0, 0, nullptr);
 }
 
 static int fltkTipDispatch(int event, Fl_Window* window)
@@ -97,7 +97,7 @@ static int fltkTipDispatch(int event, Fl_Window* window)
 
 IUP_DRV_API void iupfltkTipsRemove(Ihandle* ih)
 {
-  std::map<Fl_Widget*, Ihandle*>::iterator found = fltk_tip_owners.find(fltkTipGetWidget(ih));
+  auto found = fltk_tip_owners.find(fltkTipGetWidget(ih));
   if (found != fltk_tip_owners.end() && found->second == ih)
     fltk_tip_owners.erase(found);
 }
@@ -110,7 +110,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
 
   if (!value || value[0] == 0)
   {
-    widget->copy_tooltip(NULL);
+    widget->copy_tooltip(nullptr);
     fltk_tip_owners.erase(widget);
   }
   else
@@ -126,7 +126,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
   {
     int ms = 0;
     if (iupStrToInt(delay, &ms))
-      Fl_Tooltip::delay((float)ms / 1000.0f);
+      Fl_Tooltip::delay(static_cast<float>(ms) / 1000.0f);
   }
 
   fltkTipUpdateStyle(ih);
@@ -151,7 +151,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char
   }
   else
   {
-    Fl_Tooltip::current(NULL);
+    Fl_Tooltip::current(nullptr);
   }
 
   return 0;

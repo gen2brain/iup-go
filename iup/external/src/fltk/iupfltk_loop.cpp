@@ -24,7 +24,7 @@ extern "C" {
  * Idle Callback Management
  ****************************************************************************/
 
-static IFidle fltk_idle_cb = NULL;
+static IFidle fltk_idle_cb = nullptr;
 
 static void fltkIdleFunc(void* data)
 {
@@ -36,22 +36,22 @@ static void fltkIdleFunc(void* data)
 
     if (ret == IUP_CLOSE)
     {
-      fltk_idle_cb = NULL;
+      fltk_idle_cb = nullptr;
       IupExitLoop();
-      Fl::remove_idle(fltkIdleFunc, NULL);
+      Fl::remove_idle(fltkIdleFunc, nullptr);
       return;
     }
 
     if (ret == IUP_IGNORE)
     {
-      fltk_idle_cb = NULL;
-      Fl::remove_idle(fltkIdleFunc, NULL);
+      fltk_idle_cb = nullptr;
+      Fl::remove_idle(fltkIdleFunc, nullptr);
       return;
     }
   }
   else
   {
-    Fl::remove_idle(fltkIdleFunc, NULL);
+    Fl::remove_idle(fltkIdleFunc, nullptr);
   }
 }
 
@@ -62,7 +62,7 @@ extern "C" IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
 
 extern "C" IUP_SDK_API void* iupdrvNativeScopeBegin(void)
 {
-  return NULL;
+  return nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvNativeScopeEnd(void* scope)
@@ -72,12 +72,12 @@ extern "C" IUP_SDK_API void iupdrvNativeScopeEnd(void* scope)
 
 extern "C" IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 {
-  Fl::remove_idle(fltkIdleFunc, NULL);
+  Fl::remove_idle(fltkIdleFunc, nullptr);
 
-  fltk_idle_cb = (IFidle)f;
+  fltk_idle_cb = reinterpret_cast<IFidle>(f);
 
   if (fltk_idle_cb)
-    Fl::add_idle(fltkIdleFunc, NULL);
+    Fl::add_idle(fltkIdleFunc, nullptr);
 }
 
 /****************************************************************************
@@ -155,11 +155,11 @@ extern "C" IUP_API int IupLoopStep(void)
     int ret = fltk_idle_cb();
     if (ret == IUP_CLOSE)
     {
-      fltk_idle_cb = NULL;
+      fltk_idle_cb = nullptr;
       return IUP_CLOSE;
     }
     if (ret == IUP_IGNORE)
-      fltk_idle_cb = NULL;
+      fltk_idle_cb = nullptr;
   }
 
   return IUP_DEFAULT;
@@ -167,18 +167,18 @@ extern "C" IUP_API int IupLoopStep(void)
 
 extern "C" IUP_API void IupFlush(void)
 {
-  IFidle old_fltk_idle_cb = NULL;
+  IFidle old_fltk_idle_cb = nullptr;
   if (fltk_idle_cb)
   {
     old_fltk_idle_cb = fltk_idle_cb;
-    iupdrvSetIdleFunction(NULL);
+    iupdrvSetIdleFunction(nullptr);
   }
 
   while (Fl::ready())
     Fl::check();
 
   if (old_fltk_idle_cb)
-    iupdrvSetIdleFunction((Icallback)old_fltk_idle_cb);
+    iupdrvSetIdleFunction(reinterpret_cast<Icallback>(old_fltk_idle_cb));
 }
 
 /****************************************************************************
@@ -196,9 +196,9 @@ typedef struct _fltkPostMessageNode {
   struct _fltkPostMessageNode* next;
 } fltkPostMessageNode;
 
-static fltkPostMessageNode* fltk_post_queue_head = NULL;
-static fltkPostMessageNode* fltk_post_queue_tail = NULL;
-static void* fltk_post_queue_mutex = NULL;
+static fltkPostMessageNode* fltk_post_queue_head = nullptr;
+static fltkPostMessageNode* fltk_post_queue_tail = nullptr;
+static void* fltk_post_queue_mutex = nullptr;
 
 static void fltkPostMessageDrain(void*)
 {
@@ -215,7 +215,7 @@ static void fltkPostMessageDrain(void*)
     {
       fltk_post_queue_head = node->next;
       if (!fltk_post_queue_head)
-        fltk_post_queue_tail = NULL;
+        fltk_post_queue_tail = nullptr;
     }
     iupdrvMutexUnlock(fltk_post_queue_mutex);
 
@@ -224,7 +224,7 @@ static void fltkPostMessageDrain(void*)
 
     if (iupObjectCheck(node->ih))
     {
-      IFnsidv cb = (IFnsidv)IupGetCallback(node->ih, "POSTMESSAGE_CB");
+      auto cb = reinterpret_cast<IFnsidv>(IupGetCallback(node->ih, "POSTMESSAGE_CB"));
       if (cb)
       {
         if (cb(node->ih, node->s, node->i, node->d, node->p) == IUP_CLOSE)
@@ -239,11 +239,11 @@ static void fltkPostMessageDrain(void*)
   }
 
   iupdrvMutexLock(fltk_post_queue_mutex);
-  int has_more = (fltk_post_queue_head != NULL);
+  int has_more = (fltk_post_queue_head != nullptr);
   iupdrvMutexUnlock(fltk_post_queue_mutex);
 
   if (has_more)
-    Fl::awake(fltkPostMessageDrain, NULL);
+    Fl::awake(fltkPostMessageDrain, nullptr);
 }
 
 extern "C" IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p)
@@ -251,13 +251,13 @@ extern "C" IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double
   if (!fltk_post_queue_mutex)
     fltk_post_queue_mutex = iupdrvMutexCreate();
 
-  fltkPostMessageNode* node = (fltkPostMessageNode*)malloc(sizeof(fltkPostMessageNode));
+  auto* node = static_cast<fltkPostMessageNode*>(malloc(sizeof(fltkPostMessageNode)));
   node->ih = ih;
   node->s = iupStrDup(s);
   node->i = i;
   node->d = d;
   node->p = p;
-  node->next = NULL;
+  node->next = nullptr;
 
   iupdrvMutexLock(fltk_post_queue_mutex);
   if (fltk_post_queue_tail)
@@ -267,17 +267,17 @@ extern "C" IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double
   fltk_post_queue_tail = node;
   iupdrvMutexUnlock(fltk_post_queue_mutex);
 
-  Fl::awake(fltkPostMessageDrain, NULL);
+  Fl::awake(fltkPostMessageDrain, nullptr);
 }
 
 /****************************************************************************
  * Loop Cleanup
  ****************************************************************************/
 
-IUP_DRV_API void iupfltkLoopCleanup(void)
+IUP_DRV_API void iupfltkLoopCleanup()
 {
-  Fl::remove_idle(fltkIdleFunc, NULL);
-  fltk_idle_cb = NULL;
+  Fl::remove_idle(fltkIdleFunc, nullptr);
+  fltk_idle_cb = nullptr;
   fltk_main_loop_level = 0;
 
   if (fltk_post_queue_mutex)
@@ -291,10 +291,10 @@ IUP_DRV_API void iupfltkLoopCleanup(void)
       free(node);
       node = next;
     }
-    fltk_post_queue_head = NULL;
-    fltk_post_queue_tail = NULL;
+    fltk_post_queue_head = nullptr;
+    fltk_post_queue_tail = nullptr;
 
     iupdrvMutexDestroy(fltk_post_queue_mutex);
-    fltk_post_queue_mutex = NULL;
+    fltk_post_queue_mutex = nullptr;
   }
 }

@@ -192,11 +192,11 @@ public:
 
 static void fltkTableEndCellEdit(Ihandle* ih, int apply)
 {
-  Fl_Input* edit = (Fl_Input*)iupAttribGet(ih, "_IUPFLTK_TABLE_EDIT");
+  auto* edit = reinterpret_cast<Fl_Input*>(iupAttribGet(ih, "_IUPFLTK_TABLE_EDIT"));
   if (!edit)
     return;
 
-  iupAttribSet(ih, "_IUPFLTK_TABLE_EDIT", NULL);
+  iupAttribSet(ih, "_IUPFLTK_TABLE_EDIT", nullptr);
 
   int lin = iupAttribGetInt(ih, "_IUPFLTK_TABLE_EDIT_LIN");
   int col = iupAttribGetInt(ih, "_IUPFLTK_TABLE_EDIT_COL");
@@ -207,10 +207,10 @@ static void fltkTableEndCellEdit(Ihandle* ih, int apply)
     const char* old_text = IupGetAttributeId2(ih, "", lin, col);
     if (!old_text) old_text = "";
 
-    IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
+    auto editend_cb = reinterpret_cast<IFniisi>(IupGetCallback(ih, "EDITEND_CB"));
     if (editend_cb)
     {
-      if (editend_cb(ih, lin, col, (char*)new_text, 1) == IUP_IGNORE)
+      if (editend_cb(ih, lin, col, const_cast<char*>(new_text), 1) == IUP_IGNORE)
         apply = 0;
     }
 
@@ -218,16 +218,16 @@ static void fltkTableEndCellEdit(Ihandle* ih, int apply)
     {
       IupSetAttributeId2(ih, "", lin, col, new_text);
 
-      IFnii vcb = (IFnii)IupGetCallback(ih, "VALUECHANGED_CB");
+      auto vcb = reinterpret_cast<IFnii>(IupGetCallback(ih, "VALUECHANGED_CB"));
       if (vcb)
         vcb(ih, lin, col);
     }
   }
   else
   {
-    IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
+    auto editend_cb = reinterpret_cast<IFniisi>(IupGetCallback(ih, "EDITEND_CB"));
     if (editend_cb)
-      editend_cb(ih, lin, col, (char*)"", 0);
+      editend_cb(ih, lin, col, const_cast<char*>(""), 0);
   }
 
   Fl_Window* win = edit->window();
@@ -301,7 +301,7 @@ public:
       char* name = iupAttribGet(iup_handle, key);
       if (!name)
         name = iupTableGetCellImageCb(iup_handle, R + 1, c);
-      Fl_Image* img = name ? (Fl_Image*)iupImageGetImage(name, iup_handle, 0, NULL) : NULL;
+      Fl_Image* img = name ? static_cast<Fl_Image*>(iupImageGetImage(name, iup_handle, 0, nullptr)) : nullptr;
       if (img && img->h() + 4 > needed)
         needed = img->h() + 4;
     }
@@ -311,7 +311,7 @@ public:
 
   static void deferredFitRows(void* data)
   {
-    Ihandle* ih = (Ihandle*)data;
+    auto* ih = static_cast<Ihandle*>(data);
     if (!iupObjectCheck(ih) || !ih->handle)
       return;
     IupFltkTable* table = fltkTableGetWidget(ih);
@@ -333,7 +333,7 @@ public:
     for (int r = 0; r < rows(); r++)
     {
       if (row_selected(r))
-        stamp = stamp * 31u + (unsigned int)(r + 1);
+        stamp = stamp * 31u + static_cast<unsigned int>(r + 1);
     }
     return stamp;
   }
@@ -372,7 +372,7 @@ protected:
             fl_font(fl_font_face, fl_font_size);
 
           const char* title = "";
-          if (C >= 0 && C < (int)col_titles.size() && !col_titles[C].empty())
+          if (C >= 0 && C < static_cast<int>(col_titles.size()) && !col_titles[C].empty())
             title = col_titles[C].c_str();
 
           int arrow_space = (sort_column == C + 1) ? 14 : 0;
@@ -465,7 +465,7 @@ protected:
         const char* text = "";
         if (is_virtual)
         {
-          sIFnii value_cb = (sIFnii)IupGetCallback(iup_handle, "VALUE_CB");
+          auto value_cb = reinterpret_cast<sIFnii>(IupGetCallback(iup_handle, "VALUE_CB"));
           if (value_cb)
           {
             char* val = value_cb(iup_handle, iup_lin, iup_col);
@@ -475,7 +475,7 @@ protected:
         }
         else
         {
-          if (R >= 0 && R < (int)cells.size() && C >= 0 && C < (int)cells[R].size())
+          if (R >= 0 && R < static_cast<int>(cells.size()) && C >= 0 && C < static_cast<int>(cells[R].size()))
             text = cells[R][C].c_str();
         }
 
@@ -503,7 +503,7 @@ protected:
 
           if (iup_handle->data->show_image)
           {
-            char* image_name = NULL;
+            char* image_name = nullptr;
             char img_key[50];
             snprintf(img_key, sizeof(img_key), "_CELLIMAGE%d:%d", iup_lin, iup_col);
             image_name = iupAttribGet(iup_handle, img_key);
@@ -513,7 +513,7 @@ protected:
 
             if (image_name)
             {
-              Fl_Image* img = (Fl_Image*)iupImageGetImage(image_name, iup_handle, 0, NULL);
+              auto* img = static_cast<Fl_Image*>(iupImageGetImage(image_name, iup_handle, 0, nullptr));
               if (img)
               {
                 Fl_Image* draw_img = img;
@@ -526,7 +526,7 @@ protected:
                 else if (!iup_handle->data->fit_image && img->h() + 4 > H && !fit_pending)
                 {
                   fit_pending = 1;
-                  Fl::add_timeout(0.0, deferredFitRows, (void*)iup_handle);
+                  Fl::add_timeout(0.0, deferredFitRows, reinterpret_cast<void*>(iup_handle));
                 }
 
                 int iy = Y + (H - draw_img->h()) / 2;
@@ -553,7 +553,7 @@ protected:
             tx = cell_x + (cell_w - tw) / 2;
 
           int ty = Y + (H + fl_height() - fl_descent()) / 2;
-          fl_draw(text, (int)strlen(text), tx, ty);
+          fl_draw(text, static_cast<int>(strlen(text)), tx, ty);
         }
 
         if (show_grid)
@@ -657,7 +657,7 @@ protected:
           if (Fl::event_button() == FL_RIGHT_MOUSE)
             iupAttribSet(iup_handle, "_IUPTABLE_CELLS_KEEP", "1");
           iupTableCellsCollapse(iup_handle);
-          iupAttribSet(iup_handle, "_IUPTABLE_CELLS_KEEP", NULL);
+          iupAttribSet(iup_handle, "_IUPTABLE_CELLS_KEEP", nullptr);
 
           if (iup_handle->data->show_dragdrop)
           {
@@ -670,11 +670,11 @@ protected:
 
           if (prev_lin != R || prev_col != C)
           {
-            IFnii leave_cb = (IFnii)IupGetCallback(iup_handle, "LEAVEITEM_CB");
+            auto leave_cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "LEAVEITEM_CB"));
             if (leave_cb)
               leave_cb(iup_handle, prev_lin + 1, prev_col + 1);
 
-            IFnii enter_cb = (IFnii)IupGetCallback(iup_handle, "ENTERITEM_CB");
+            auto enter_cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "ENTERITEM_CB"));
             if (enter_cb)
               enter_cb(iup_handle, R + 1, C + 1);
 
@@ -683,33 +683,33 @@ protected:
 
           if (Fl::event_clicks() > 0)
           {
-            IFniis dblclick_cb = (IFniis)IupGetCallback(iup_handle, "DBLCLICK_CB");
+            auto dblclick_cb = reinterpret_cast<IFniis>(IupGetCallback(iup_handle, "DBLCLICK_CB"));
             if (dblclick_cb)
             {
               const char* text = "";
               if (is_virtual)
               {
-                sIFnii value_cb = (sIFnii)IupGetCallback(iup_handle, "VALUE_CB");
+                auto value_cb = reinterpret_cast<sIFnii>(IupGetCallback(iup_handle, "VALUE_CB"));
                 if (value_cb)
                 {
                   char* val = value_cb(iup_handle, R + 1, C + 1);
                   if (val) text = val;
                 }
               }
-              else if (R >= 0 && R < (int)cells.size() && C >= 0 && C < (int)cells[R].size())
+              else if (R >= 0 && R < static_cast<int>(cells.size()) && C >= 0 && C < static_cast<int>(cells[R].size()))
               {
                 text = cells[R][C].c_str();
               }
-              dblclick_cb(iup_handle, R + 1, C + 1, (char*)text);
+              dblclick_cb(iup_handle, R + 1, C + 1, const_cast<char*>(text));
             }
 
             iupAttribSetInt(iup_handle, "_IUPFLTK_TABLE_PEND_LIN", R + 1);
             iupAttribSetInt(iup_handle, "_IUPFLTK_TABLE_PEND_COL", C + 1);
-            Fl::add_timeout(0.01, fltkTableDeferredEdit, (void*)iup_handle);
+            Fl::add_timeout(0.01, fltkTableDeferredEdit, reinterpret_cast<void*>(iup_handle));
           }
           else
           {
-            IFniis click_cb = (IFniis)IupGetCallback(iup_handle, "CLICK_CB");
+            auto click_cb = reinterpret_cast<IFniis>(IupGetCallback(iup_handle, "CLICK_CB"));
             if (click_cb)
             {
               char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
@@ -729,7 +729,7 @@ protected:
                 redraw();
               }
 
-              IFnii cb = (IFnii)IupGetCallback(iup_handle, "RIGHTCLICK_CB");
+              auto cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "RIGHTCLICK_CB"));
               if (cb)
                 cb(iup_handle, R + 1, C + 1);
             }
@@ -808,7 +808,7 @@ protected:
             int iup_src = src + 1;
             int iup_tgt = tgt < src ? tgt + 1 : tgt;
 
-            IFnii reorder_cb = (IFnii)IupGetCallback(iup_handle, "REORDER_CB");
+            auto reorder_cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "REORDER_CB"));
             int ret = IUP_DEFAULT;
             if (reorder_cb)
               ret = reorder_cb(iup_handle, iup_src, iup_tgt);
@@ -854,22 +854,22 @@ protected:
       }
 
       case FL_FOCUS:
-        iupfltkFocusInOutEvent((Fl_Widget*)this, iup_handle, FL_FOCUS);
+        iupfltkFocusInOutEvent(this, iup_handle, FL_FOCUS);
         redraw();
         return 1;
 
       case FL_UNFOCUS:
-        iupfltkFocusInOutEvent((Fl_Widget*)this, iup_handle, FL_UNFOCUS);
+        iupfltkFocusInOutEvent(this, iup_handle, FL_UNFOCUS);
         redraw();
         return 1;
 
       case FL_ENTER:
       case FL_LEAVE:
-        iupfltkEnterLeaveEvent((Fl_Widget*)this, iup_handle, event);
+        iupfltkEnterLeaveEvent(this, iup_handle, event);
         break;
 
       case FL_KEYBOARD:
-        if (iupfltkKeyPressEvent((Fl_Widget*)this, iup_handle))
+        if (iupfltkKeyPressEvent(this, iup_handle))
           return 1;
 
         if ((Fl::event_key() == FL_F + 2 || Fl::event_key() == FL_Enter) &&
@@ -877,7 +877,7 @@ protected:
         {
           iupAttribSetInt(iup_handle, "_IUPFLTK_TABLE_PEND_LIN", focus_lin + 1);
           iupAttribSetInt(iup_handle, "_IUPFLTK_TABLE_PEND_COL", focus_col + 1);
-          Fl::add_timeout(0.01, fltkTableDeferredEdit, (void*)iup_handle);
+          Fl::add_timeout(0.01, fltkTableDeferredEdit, reinterpret_cast<void*>(iup_handle));
           return 1;
         }
 
@@ -923,7 +923,7 @@ protected:
 
           if (new_lin != focus_lin || new_col != focus_col)
           {
-            IFnii leave_cb = (IFnii)IupGetCallback(iup_handle, "LEAVEITEM_CB");
+            auto leave_cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "LEAVEITEM_CB"));
             if (leave_cb)
               leave_cb(iup_handle, focus_lin + 1, focus_col + 1);
 
@@ -931,7 +931,7 @@ protected:
             focus_col = new_col;
             iupTableCellsCollapse(iup_handle);
 
-            IFnii enter_cb = (IFnii)IupGetCallback(iup_handle, "ENTERITEM_CB");
+            auto enter_cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "ENTERITEM_CB"));
             if (enter_cb)
               enter_cb(iup_handle, focus_lin + 1, focus_col + 1);
 
@@ -951,7 +951,7 @@ protected:
         }
 
       case FL_KEYUP:
-        if (iupfltkKeyReleaseEvent((Fl_Widget*)this, iup_handle))
+        if (iupfltkKeyReleaseEvent(this, iup_handle))
           return 1;
         break;
 
@@ -981,14 +981,14 @@ static void fltkTableStartCellEdit(Ihandle* ih, int lin, int col)
   if (!fltkTableIsCellEditable(ih, lin, col))
     return;
 
-  IFnii editbegin_cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
+  auto editbegin_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "EDITBEGIN_CB"));
   if (editbegin_cb && editbegin_cb(ih, lin, col) == IUP_IGNORE)
     return;
 
   if (iupAttribGet(ih, "_IUPFLTK_TABLE_EDIT"))
     fltkTableEndCellEdit(ih, 1);
 
-  IupFltkTable* table = (IupFltkTable*)ih->handle;
+  auto* table = reinterpret_cast<IupFltkTable*>(ih->handle);
   if (!table) return;
 
   Fl_Window* win = table->window();
@@ -1001,25 +1001,25 @@ static void fltkTableStartCellEdit(Ihandle* ih, int lin, int col)
     return;
 
   win->begin();
-  IupFltkTableInput* edit = new IupFltkTableInput(X, Y, W, H, ih);
+  auto* edit = new IupFltkTableInput(X, Y, W, H, ih);
   win->end();
 
   const char* value = IupGetAttributeId2(ih, "", lin, col);
   edit->value(value ? value : "");
 
-  iupAttribSet(ih, "_IUPFLTK_TABLE_EDIT", (char*)edit);
+  iupAttribSet(ih, "_IUPFLTK_TABLE_EDIT", reinterpret_cast<char*>(edit));
   iupAttribSetInt(ih, "_IUPFLTK_TABLE_EDIT_LIN", lin);
   iupAttribSetInt(ih, "_IUPFLTK_TABLE_EDIT_COL", col);
 
   edit->show();
   edit->take_focus();
-  edit->insert_position(0, value ? (int)strlen(value) : 0);
+  edit->insert_position(0, value ? static_cast<int>(strlen(value)) : 0);
   edit->active = 1;
 }
 
 static void fltkTableDeferredEdit(void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
   if (!iupObjectCheck(ih)) return;
   if (!ih->handle) return;
 
@@ -1030,7 +1030,7 @@ static void fltkTableDeferredEdit(void* data)
 
 static void fltkTableDeferredAutoWidths(void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
   if (!iupObjectCheck(ih)) return;
   if (!ih->handle) return;
 
@@ -1044,7 +1044,7 @@ static void fltkTableDeferredAutoWidths(void* data)
 
 static void fltkTableSortRows(Ihandle* ih, int col, int ascending)
 {
-  IupFltkTable* table = (IupFltkTable*)ih->handle;
+  auto* table = reinterpret_cast<IupFltkTable*>(ih->handle);
   if (!table || table->is_virtual)
     return;
 
@@ -1052,7 +1052,7 @@ static void fltkTableSortRows(Ihandle* ih, int col, int ascending)
   int num_col = ih->data->num_col;
   int c = col - 1;
 
-  if (c < 0 || num_lin <= 1 || num_lin > (int)table->cells.size())
+  if (c < 0 || num_lin <= 1 || num_lin > static_cast<int>(table->cells.size()))
     return;
 
   std::vector<int> order(num_lin);
@@ -1060,8 +1060,8 @@ static void fltkTableSortRows(Ihandle* ih, int col, int ascending)
     order[i] = i + 1;
 
   std::stable_sort(order.begin(), order.end(), [table, c, ascending](int a, int b) {
-    const char* va = c < (int)table->cells[a - 1].size() ? table->cells[a - 1][c].c_str() : "";
-    const char* vb = c < (int)table->cells[b - 1].size() ? table->cells[b - 1][c].c_str() : "";
+    const char* va = c < static_cast<int>(table->cells[a - 1].size()) ? table->cells[a - 1][c].c_str() : "";
+    const char* vb = c < static_cast<int>(table->cells[b - 1].size()) ? table->cells[b - 1][c].c_str() : "";
     int cmp = iupStrCompare(va, vb, 0, 1);
     return ascending ? cmp < 0 : cmp > 0;
   });
@@ -1088,13 +1088,13 @@ static void fltkTableSortRows(Ihandle* ih, int col, int ascending)
     {
       snprintf(name, sizeof(name), "_CELLIMAGE%d:%d", l, cc);
       const char* v = iupAttribGet(ih, name);
-      has[l - 1] = v != NULL;
+      has[l - 1] = v != nullptr;
       if (v) images[l - 1] = v;
     }
     for (int l = 1; l <= num_lin; l++)
     {
       snprintf(name, sizeof(name), "_CELLIMAGE%d:%d", l, cc);
-      iupAttribSetStr(ih, name, has[order[l - 1] - 1] ? images[order[l - 1] - 1].c_str() : NULL);
+      iupAttribSetStr(ih, name, has[order[l - 1] - 1] ? images[order[l - 1] - 1].c_str() : nullptr);
     }
   }
 
@@ -1111,13 +1111,13 @@ static void fltkTableSortRows(Ihandle* ih, int col, int ascending)
 
 static void fltkTableHandleHeaderClick(Ihandle* ih, int col)
 {
-  IupFltkTable* table = (IupFltkTable*)ih->handle;
+  auto* table = reinterpret_cast<IupFltkTable*>(ih->handle);
   if (!table || !ih->data->sortable)
     return;
 
   int ascending = (table->sort_column == col) ? !table->sort_ascending : 1;
 
-  IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
+  IFni sort_cb = reinterpret_cast<IFni>(IupGetCallback(ih, "SORT_CB"));
   if (sort_cb && sort_cb(ih, col) == IUP_IGNORE)
     return;
 
@@ -1166,7 +1166,7 @@ static int fltkTableFindTargetRow(IupFltkTable* table, int my)
 
 static void fltkTableMoveRow(Ihandle* ih, int from, int to)
 {
-  IupFltkTable* table = (IupFltkTable*)ih->handle;
+  auto* table = reinterpret_cast<IupFltkTable*>(ih->handle);
   if (!table) return;
 
   int f = from - 1;
@@ -1175,7 +1175,7 @@ static void fltkTableMoveRow(Ihandle* ih, int from, int to)
   if (f < 0 || f >= num_lin || t < 0 || t >= num_lin || f == t)
     return;
 
-  if (!table->is_virtual && f < (int)table->cells.size())
+  if (!table->is_virtual && f < static_cast<int>(table->cells.size()))
   {
     std::vector<std::string> row = table->cells[f];
     table->cells.erase(table->cells.begin() + f);
@@ -1195,14 +1195,14 @@ static void fltkTableMoveRow(Ihandle* ih, int from, int to)
 
 static IupFltkTable* fltkTableGetWidget(Ihandle* ih)
 {
-  return (IupFltkTable*)ih->handle;
+  return reinterpret_cast<IupFltkTable*>(ih->handle);
 }
 
 static int fltkTableColHasExplicitWidth(Ihandle* ih, int col)
 {
   char name[50];
   int width = 0;
-  char* width_str = NULL;
+  char* width_str = nullptr;
 
   /* WIDTH/RASTERWIDTH are dropped from the hash after map, so use the map-time flag. */
   if (iupAttribGetId(ih, "_IUPFLTK_EXPLICITWIDTH", col))
@@ -1238,7 +1238,7 @@ static void fltkTableAutoColumnWidth(Ihandle* ih, IupFltkTable* table, int c)
 
     for (int r = 0; r < check_rows; r++)
     {
-      char* image_name = NULL;
+      char* image_name = nullptr;
       char img_key[50];
       snprintf(img_key, sizeof(img_key), "_CELLIMAGE%d:%d", r + 1, iup_col);
       image_name = iupAttribGet(ih, img_key);
@@ -1247,7 +1247,7 @@ static void fltkTableAutoColumnWidth(Ihandle* ih, IupFltkTable* table, int c)
       if (image_name)
       {
         int img_w = 0, img_h = 0;
-        iupImageGetInfo(image_name, &img_w, &img_h, NULL);
+        iupImageGetInfo(image_name, &img_w, &img_h, nullptr);
         if (img_h > avail_h && avail_h > 0)
           img_w = (img_w * avail_h) / img_h;
         if (img_w + 6 > image_extra)
@@ -1256,8 +1256,8 @@ static void fltkTableAutoColumnWidth(Ihandle* ih, IupFltkTable* table, int c)
     }
   }
 
-  const char* title = NULL;
-  if (c < (int)table->col_titles.size() && !table->col_titles[c].empty())
+  const char* title = nullptr;
+  if (c < static_cast<int>(table->col_titles.size()) && !table->col_titles[c].empty())
     title = table->col_titles[c].c_str();
   if (!title)
     title = iupAttribGetId(ih, "TITLE", iup_col);
@@ -1271,15 +1271,15 @@ static void fltkTableAutoColumnWidth(Ihandle* ih, IupFltkTable* table, int c)
 
   for (int r = 0; r < check_rows; r++)
   {
-    const char* text = NULL;
+    const char* text = nullptr;
 
     if (table->is_virtual)
     {
-      sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
+      auto value_cb = reinterpret_cast<sIFnii>(IupGetCallback(ih, "VALUE_CB"));
       if (value_cb)
         text = value_cb(ih, r + 1, iup_col);
     }
-    else if (r < (int)table->cells.size() && c < (int)table->cells[r].size())
+    else if (r < static_cast<int>(table->cells.size()) && c < static_cast<int>(table->cells[r].size()))
       text = table->cells[r][c].c_str();
 
     if (text && text[0])
@@ -1423,7 +1423,7 @@ static void fltkTableSetRows(IupFltkTable* table, int num_lin, int idx, int delt
 static void fltkTableSyncRowHeight(Ihandle* ih, IupFltkTable* table)
 {
   int charheight;
-  iupdrvFontGetCharSize(ih, NULL, &charheight);
+  iupdrvFontGetCharSize(ih, nullptr, &charheight);
   if (charheight == table->font_h)
     return;
 
@@ -1460,7 +1460,7 @@ static void fltkTableLayoutUpdateMethod(Ihandle* ih)
 
 static void fltkTableMoveColumn(Ihandle* ih, int src, int dst)
 {
-  IupFltkTable* table = (IupFltkTable*)ih->handle;
+  auto* table = reinterpret_cast<IupFltkTable*>(ih->handle);
   if (!table) return;
 
   int s = src - 1;
@@ -1472,10 +1472,9 @@ static void fltkTableMoveColumn(Ihandle* ih, int src, int dst)
 
   if (!table->is_virtual)
   {
-    for (int r = 0; r < (int)table->cells.size(); r++)
+    for (auto& row : table->cells)
     {
-      std::vector<std::string>& row = table->cells[r];
-      if (s < (int)row.size() && d < (int)row.size())
+      if (s < static_cast<int>(row.size()) && d < static_cast<int>(row.size()))
       {
         std::string v = row[s];
         row.erase(row.begin() + s);
@@ -1484,7 +1483,7 @@ static void fltkTableMoveColumn(Ihandle* ih, int src, int dst)
     }
   }
 
-  if (s < (int)table->col_titles.size() && d < (int)table->col_titles.size())
+  if (s < static_cast<int>(table->col_titles.size()) && d < static_cast<int>(table->col_titles.size()))
   {
     std::string t = table->col_titles[s];
     table->col_titles.erase(table->col_titles.begin() + s);
@@ -1539,15 +1538,15 @@ static int fltkTableMapMethod(Ihandle* ih)
   int num_lin = ih->data->num_lin;
   int num_col = ih->data->num_col;
 
-  IupFltkTable* table = new IupFltkTable(0, 0, 10, 10, ih);
+  auto* table = new IupFltkTable(0, 0, 10, 10, ih);
   table->end();
 
-  ih->handle = (InativeHandle*)table;
+  ih->handle = reinterpret_cast<InativeHandle*>(table);
 
   table->is_virtual = iupAttribGetBoolean(ih, "VIRTUALMODE");
 
   int charheight;
-  iupdrvFontGetCharSize(ih, NULL, &charheight);
+  iupdrvFontGetCharSize(ih, nullptr, &charheight);
   int row_height = charheight + 6;
   table->font_h = charheight;
 
@@ -1571,7 +1570,7 @@ static int fltkTableMapMethod(Ihandle* ih)
   {
     char name[50];
     int width = 0;
-    char* width_str = NULL;
+    char* width_str = nullptr;
 
     snprintf(name, sizeof(name), "RASTERWIDTH%d", c + 1);
     width_str = iupAttribGet(ih, name);
@@ -1625,7 +1624,7 @@ static void fltkTableUnMapMethod(Ihandle* ih)
 {
   IupFltkTable* table = fltkTableGetWidget(ih);
   if (table)
-    table->iup_handle = NULL;
+    table->iup_handle = nullptr;
 
   iupdrvBaseUnMapMethod(ih);
 }
@@ -1735,7 +1734,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     if (num_lin > 0 && table->auto_widths_done && !table->auto_widths_rows)
     {
       table->auto_widths_rows = 1;
-      Fl::add_timeout(0.01, fltkTableDeferredAutoWidths, (void*)ih);
+      Fl::add_timeout(0.01, fltkTableDeferredAutoWidths, reinterpret_cast<void*>(ih));
     }
   }
 }
@@ -1839,11 +1838,11 @@ extern "C" IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
   int idx = pos - 1;
   for (auto& row : table->cells)
   {
-    if (idx < (int)row.size())
+    if (idx < static_cast<int>(row.size()))
       row.erase(row.begin() + idx);
   }
 
-  if (idx < (int)table->col_titles.size())
+  if (idx < static_cast<int>(table->col_titles.size()))
     table->col_titles.erase(table->col_titles.begin() + idx);
 
   ih->data->num_col--;
@@ -1860,8 +1859,8 @@ extern "C" IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int co
   int r = lin - 1;
   int c = col - 1;
 
-  if (r < 0 || r >= (int)table->cells.size() ||
-      c < 0 || c >= (int)table->cells[r].size())
+  if (r < 0 || r >= static_cast<int>(table->cells.size()) ||
+      c < 0 || c >= static_cast<int>(table->cells[r].size()))
     return;
 
   table->cells[r][c] = value ? value : "";
@@ -1872,29 +1871,29 @@ extern "C" IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int c
 {
   IupFltkTable* table = fltkTableGetWidget(ih);
   if (!table)
-    return NULL;
+    return nullptr;
 
   if (table->is_virtual)
   {
-    sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
+    auto value_cb = reinterpret_cast<sIFnii>(IupGetCallback(ih, "VALUE_CB"));
     if (value_cb)
     {
       char* val = value_cb(ih, lin, col);
       if (val)
         return iupStrReturnStr(val);
     }
-    return NULL;
+    return nullptr;
   }
 
   int r = lin - 1;
   int c = col - 1;
 
-  if (r < 0 || r >= (int)table->cells.size() ||
-      c < 0 || c >= (int)table->cells[r].size())
-    return NULL;
+  if (r < 0 || r >= static_cast<int>(table->cells.size()) ||
+      c < 0 || c >= static_cast<int>(table->cells[r].size()))
+    return nullptr;
 
   if (table->cells[r][c].empty())
-    return NULL;
+    return nullptr;
 
   return iupStrReturnStr(table->cells[r][c].c_str());
 }
@@ -1922,7 +1921,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const c
     return;
 
   int c = col - 1;
-  if (c < 0 || c >= (int)table->col_titles.size())
+  if (c < 0 || c >= static_cast<int>(table->col_titles.size()))
     return;
 
   table->col_titles[c] = title ? title : "";
@@ -1933,14 +1932,14 @@ extern "C" IUP_SDK_API char* iupdrvTableGetColTitle(Ihandle* ih, int col)
 {
   IupFltkTable* table = fltkTableGetWidget(ih);
   if (!table)
-    return NULL;
+    return nullptr;
 
   int c = col - 1;
-  if (c < 0 || c >= (int)table->col_titles.size())
-    return NULL;
+  if (c < 0 || c >= static_cast<int>(table->col_titles.size()))
+    return nullptr;
 
   if (table->col_titles[c].empty())
-    return NULL;
+    return nullptr;
 
   return iupStrReturnStr(table->col_titles[c].c_str());
 }
@@ -2062,13 +2061,13 @@ extern "C" IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
 
   *count = 0;
   if (!table)
-    return NULL;
+    return nullptr;
 
   n = table->rows();
   if (n <= 0)
-    return NULL;
+    return nullptr;
 
-  lins = (int*)malloc(sizeof(int) * n);
+  lins = static_cast<int*>(malloc(sizeof(int) * n));
 
   for (r = 0; r < n; r++)
   {
@@ -2079,7 +2078,7 @@ extern "C" IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
   if (i == 0)
   {
     free(lins);
-    return NULL;
+    return nullptr;
   }
 
   *count = i;
@@ -2156,7 +2155,7 @@ extern "C" IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
   }
 
   int charheight;
-  iupdrvFontGetCharSize(ih, NULL, &charheight);
+  iupdrvFontGetCharSize(ih, nullptr, &charheight);
   return charheight + 6;
 }
 
@@ -2170,7 +2169,7 @@ extern "C" IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
   }
 
   int charheight;
-  iupdrvFontGetCharSize(ih, NULL, &charheight);
+  iupdrvFontGetCharSize(ih, nullptr, &charheight);
   return charheight + 8;
 }
 
@@ -2193,7 +2192,7 @@ extern "C" IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->UnMap = fltkTableUnMapMethod;
   ic->LayoutUpdate = fltkTableLayoutUpdateMethod;
 
-  iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, fltkTableSetSortableAttrib);
-  iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, fltkTableSetAllowReorderAttrib);
-  iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", NULL, fltkTableSetUserResizeAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", nullptr, fltkTableSetSortableAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", nullptr, fltkTableSetAllowReorderAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", nullptr, fltkTableSetUserResizeAttrib);
 }

@@ -51,11 +51,11 @@ extern "C" {
  * Native Container (for absolute positioning)
  ****************************************************************************/
 
-IUP_DRV_API Fl_Group* iupfltkNativeContainerNew(void)
+IUP_DRV_API Fl_Group* iupfltkNativeContainerNew()
 {
-  Fl_Group* group = new Fl_Group(0, 0, 1, 1);
+  auto* group = new Fl_Group(0, 0, 1, 1);
   group->end();
-  group->resizable(NULL);
+  group->resizable(nullptr);
   return group;
 }
 
@@ -74,46 +74,46 @@ IUP_DRV_API void iupfltkNativeContainerAdd(Fl_Group* container, Fl_Widget* widge
 
 static Fl_Group* fltkGetNativeParent(Ihandle* ih)
 {
-  return (Fl_Group*)iupChildTreeGetNativeParentHandle(ih);
+  return reinterpret_cast<Fl_Group*>(iupChildTreeGetNativeParentHandle(ih));
 }
 
 IUP_DRV_API Fl_Window* iupfltkGetParentWidget(Ihandle* ih)
 {
   InativeHandle* parent = iupDialogGetNativeParent(ih);
   if (parent)
-    return (Fl_Window*)parent;
+    return reinterpret_cast<Fl_Window*>(parent);
 
   Ihandle* ih_focus = IupGetFocus();
   if (ih_focus)
   {
     Ihandle* dlg = IupGetDialog(ih_focus);
     if (dlg && dlg->handle)
-      return (Fl_Window*)dlg->handle;
+      return reinterpret_cast<Fl_Window*>(dlg->handle);
   }
 
   Ihandle* dlg_iter = iupDlgListFirst();
   while (dlg_iter)
   {
     if (dlg_iter->handle && dlg_iter != ih && iupdrvIsVisible(dlg_iter))
-      return (Fl_Window*)dlg_iter->handle;
+      return reinterpret_cast<Fl_Window*>(dlg_iter->handle);
     dlg_iter = iupDlgListNext();
   }
 
-  return NULL;
+  return nullptr;
 }
 
 IUP_DRV_API void iupfltkAddToParent(Ihandle* ih)
 {
   Fl_Group* parent = fltkGetNativeParent(ih);
-  Fl_Widget* widget = (Fl_Widget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  auto* widget = reinterpret_cast<Fl_Widget*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
 
   if (!widget)
-    widget = (Fl_Widget*)ih->handle;
+    widget = reinterpret_cast<Fl_Widget*>(ih->handle);
 
   if (!parent || !widget)
     return;
 
-  Fl_Menu_Bar* menubar = dynamic_cast<Fl_Menu_Bar*>(widget);
+  auto* menubar = dynamic_cast<Fl_Menu_Bar*>(widget);
   if (menubar)
   {
     Fl_Group* dialog_parent = parent;
@@ -154,10 +154,10 @@ IUP_DRV_API void iupfltkSetPosSize(Fl_Widget* widget, int x, int y, int width, i
 
 extern "C" IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
-  Fl_Widget* widget = (Fl_Widget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  auto* widget = reinterpret_cast<Fl_Widget*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
 
   if (!widget)
-    widget = (Fl_Widget*)ih->handle;
+    widget = reinterpret_cast<Fl_Widget*>(ih->handle);
 
   if (!widget)
     return;
@@ -184,7 +184,7 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 
   iupfltkTipsRemove(ih);
 
-  Fl_Widget* extra_parent = (Fl_Widget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  auto* extra_parent = reinterpret_cast<Fl_Widget*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
 
   if (extra_parent)
   {
@@ -195,11 +195,11 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
       parent->remove(extra_parent);
 
     delete extra_parent;
-    iupAttribSet(ih, "_IUP_EXTRAPARENT", NULL);
+    iupAttribSet(ih, "_IUP_EXTRAPARENT", nullptr);
   }
   else if (ih->handle)
   {
-    Fl_Widget* widget = (Fl_Widget*)ih->handle;
+    auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
     widget->hide();
 
     Fl_Group* parent = widget->parent();
@@ -209,15 +209,15 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
     delete widget;
   }
 
-  ih->handle = NULL;
+  ih->handle = nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 {
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   if (widget)
   {
-    Fl_Widget* parent = (Fl_Widget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+    auto* parent = reinterpret_cast<Fl_Widget*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
     if (parent)
       parent->redraw();
     else
@@ -227,10 +227,10 @@ extern "C" IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 
 extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 {
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   if (widget)
   {
-    Fl_Widget* parent = (Fl_Widget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+    auto* parent = reinterpret_cast<Fl_Widget*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
     if (parent)
       parent->redraw();
     else
@@ -261,7 +261,7 @@ extern "C" IUP_SDK_API void iupdrvSleep(int time)
 {
   Fl_Timestamp start = Fl::now();
 
-  while (Fl::seconds_since(start) * 1000.0 < (double)time)
+  while (Fl::seconds_since(start) * 1000.0 < static_cast<double>(time))
   {
     double remaining = (time / 1000.0) - Fl::seconds_since(start);
     if (remaining <= 0) break;
@@ -276,7 +276,7 @@ extern "C" IUP_SDK_API void iupdrvSleep(int time)
 
 extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   if (!widget)
     return;
 
@@ -299,7 +299,7 @@ extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 
 extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 {
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   if (!widget)
     return;
 
@@ -379,7 +379,7 @@ static void fltkWindowSetCursor(Fl_Window* win, const char* name)
     return;
   }
 
-  Fl_RGB_Image* image = (Fl_RGB_Image*)iupImageGetCursor(name);
+  auto* image = static_cast<Fl_RGB_Image*>(iupImageGetCursor(name));
   if (image)
   {
     int hx = 0, hy = 0;
@@ -404,7 +404,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* va
   if (!ih->handle || !value)
     return 0;
 
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   Fl_Window* win = widget->as_window();
 
   if (win)
@@ -457,7 +457,7 @@ IUP_DRV_API int iupfltkMouseMoveEvent(Fl_Widget* widget, Ihandle* ih)
 {
   IFniis cb;
 
-  cb = (IFniis)IupGetCallback(ih, "MOTION_CB");
+  cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "MOTION_CB"));
   if (cb)
   {
     int x = Fl::event_x() - widget->x();
@@ -472,7 +472,7 @@ IUP_DRV_API int iupfltkMouseMoveEvent(Fl_Widget* widget, Ihandle* ih)
 
 IUP_DRV_API int iupfltkMouseButtonEvent(Fl_Widget* widget, Ihandle* ih, int event)
 {
-  IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+  auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
   if (cb)
   {
     int doubleclick = 0, ret, press = 1;
@@ -564,7 +564,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* v
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   widget->color(fl_rgb_color(r, g, b));
   widget->redraw();
 
@@ -580,7 +580,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* v
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   widget->labelcolor(fl_rgb_color(r, g, b));
   widget->redraw();
 
@@ -591,15 +591,15 @@ extern "C" IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* v
  * Visibility and Active State
  ****************************************************************************/
 
-extern "C" IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
+extern "C" IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
 {
   if (ih->iclass->nativetype == IUP_TYPEVOID || ih->iclass->nativetype == IUP_TYPEMENU)
     return;
 
-  Fl_Widget* container = (Fl_Widget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* container = reinterpret_cast<Fl_Widget*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
 
-  if (visible)
+  if (enable)
   {
     if (container) container->show();
     if (widget) widget->show();
@@ -616,7 +616,7 @@ extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
   if (ih->iclass->nativetype == IUP_TYPEVOID || ih->iclass->nativetype == IUP_TYPEMENU)
     return 1;
 
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
 
   if (!widget)
     return 0;
@@ -640,7 +640,7 @@ extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
   if (ih->iclass->nativetype == IUP_TYPEVOID || ih->iclass->nativetype == IUP_TYPEMENU)
     return 1;
 
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
   return widget ? widget->active() : 0;
 }
 
@@ -649,8 +649,8 @@ extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
   if (ih->iclass->nativetype == IUP_TYPEVOID || ih->iclass->nativetype == IUP_TYPEMENU)
     return;
 
-  Fl_Widget* container = (Fl_Widget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* container = reinterpret_cast<Fl_Widget*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
 
   if (enable)
   {
@@ -681,7 +681,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* va
 
 extern "C" IUP_SDK_API void iupdrvActivate(Ihandle* ih)
 {
-  Fl_Widget* widget = (Fl_Widget*)ih->handle;
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
 
   if (!widget)
     return;
@@ -692,10 +692,10 @@ extern "C" IUP_SDK_API void iupdrvActivate(Ihandle* ih)
 extern "C" IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 {
   Fl_Group* new_parent = fltkGetNativeParent(ih);
-  Fl_Widget* widget = (Fl_Widget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  auto* widget = reinterpret_cast<Fl_Widget*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
 
   if (!widget)
-    widget = (Fl_Widget*)ih->handle;
+    widget = reinterpret_cast<Fl_Widget*>(ih->handle);
 
   if (widget && new_parent)
   {
@@ -721,15 +721,15 @@ extern "C" IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 {
   const char* font_id_name = iupfltkGetNativeFontIdName();
   if (font_id_name)
-    iupClassRegisterAttribute(ic, font_id_name, NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT | IUPAF_NO_STRING);
+    iupClassRegisterAttribute(ic, font_id_name, nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT | IUPAF_NO_STRING);
 }
 
 extern "C" IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 {
-  iupClassRegisterAttribute(ic, "TIPMARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TIPICON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "ACCESSIBLETITLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "ACCESSIBLEDESCRIPTION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPMARKUP", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TIPICON", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACCESSIBLETITLE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ACCESSIBLEDESCRIPTION", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
 }
 
 /****************************************************************************
@@ -767,7 +767,7 @@ IUP_DRV_API int iupfltkIsUriList(const char* text)
 
     while (*text && *text != '\r' && *text != '\n')
       text++;
-    len = (int)(text - line);
+    len = static_cast<int>(text - line);
     while (*text == '\r' || *text == '\n')
       text++;
 
@@ -790,13 +790,13 @@ IUP_DRV_API int iupfltkHandleDropFiles(Ihandle* ih)
     return 0;
 
   Ihandle* cb_ih = ih;
-  IFnsiii cb = (IFnsiii)IupGetCallback(ih, "DROPFILES_CB");
+  auto cb = reinterpret_cast<IFnsiii>(IupGetCallback(ih, "DROPFILES_CB"));
   if (!cb)
   {
     Ihandle* dlg = IupGetDialog(ih);
     if (dlg)
     {
-      cb = (IFnsiii)IupGetCallback(dlg, "DROPFILES_CB");
+      cb = reinterpret_cast<IFnsiii>(IupGetCallback(dlg, "DROPFILES_CB"));
       if (cb)
         cb_ih = dlg;
     }
@@ -820,7 +820,7 @@ IUP_DRV_API int iupfltkHandleDropFiles(Ihandle* ih)
       cb(cb_ih, filename, count, x, y);
       count++;
     }
-    line = iupStrtokR(NULL, "\r\n", &saveptr);
+    line = iupStrtokR(nullptr, "\r\n", &saveptr);
   }
 
   free(buf);

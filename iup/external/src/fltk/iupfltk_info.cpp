@@ -57,7 +57,7 @@ extern "C" IUP_SDK_API double iupdrvGetScreenDpi(void)
 {
   float h, v;
   Fl::screen_dpi(h, v);
-  return (double)((h + v) / 2.0f);
+  return static_cast<double>((h + v) / 2.0f);
 }
 
 extern "C" IUP_SDK_API int iupdrvScaleNaturalPx(int px)
@@ -75,7 +75,7 @@ extern "C" IUP_SDK_API void* iupdrvGetDisplay(void)
   if (iupfltkIsX11())
     return fl_display;
 #endif
-  return NULL;
+  return nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)

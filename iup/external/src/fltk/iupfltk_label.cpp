@@ -68,19 +68,19 @@ public:
     }
 
     fl_font(labelfont(), labelsize());
-    if ((int)fl_width(full) <= W)
+    if (static_cast<int>(fl_width(full)) <= W)
     {
       draw_label(X, Y, W, H);
       return;
     }
 
-    int ellw = (int)fl_width("...");
-    int len = (int)strlen(full), fit = 0, k = 0;
+    int ellw = static_cast<int>(fl_width("..."));
+    int len = static_cast<int>(strlen(full)), fit = 0, k = 0;
     while (k < len)
     {
       int clen = fl_utf8len1(full[k]);
       if (clen < 1) clen = 1;
-      if (k + clen > len || (int)fl_width(full, k + clen) + ellw > W)
+      if (k + clen > len || static_cast<int>(fl_width(full, k + clen)) + ellw > W)
         break;
       k += clen;
       fit = k;
@@ -104,7 +104,7 @@ public:
       case FL_PUSH:
       case FL_RELEASE:
       {
-        IFniiiis cb = (IFniiiis)IupGetCallback(iup_handle, "BUTTON_CB");
+        auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(iup_handle, "BUTTON_CB"));
         if (cb)
         {
           int button = IUP_BUTTON1;
@@ -128,12 +128,12 @@ static void fltkLabelSetPixmap(Ihandle* ih, const char* name, int make_inactive)
   if (!name)
     return;
 
-  IupFltkLabel* label = (IupFltkLabel*)ih->handle;
+  auto* label = reinterpret_cast<IupFltkLabel*>(ih->handle);
   if (!label)
     return;
 
   const char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
-  Fl_Image* image = (Fl_Image*)iupImageGetImage(name, ih, make_inactive, bgcolor);
+  auto* image = static_cast<Fl_Image*>(iupImageGetImage(name, ih, make_inactive, bgcolor));
   if (image)
   {
     label->image(image);
@@ -170,7 +170,7 @@ static int fltkLabelSetTitleAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_TEXT)
   {
-    IupFltkLabel* label = (IupFltkLabel*)ih->handle;
+    auto* label = reinterpret_cast<IupFltkLabel*>(ih->handle);
     if (label)
     {
       fltkLabelSetTitle(label, value);
@@ -184,7 +184,7 @@ static char* fltkLabelGetTitleAttrib(Ihandle* ih)
 {
   if (ih->data->type == IUP_LABEL_TEXT)
   {
-    IupFltkLabel* label = (IupFltkLabel*)ih->handle;
+    auto* label = reinterpret_cast<IupFltkLabel*>(ih->handle);
     if (label)
     {
       const char* text = label->label();
@@ -192,7 +192,7 @@ static char* fltkLabelGetTitleAttrib(Ihandle* ih)
         return iupStrReturnStr(text);
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 static int fltkLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
@@ -216,7 +216,7 @@ static int fltkLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    IupFltkLabel* label = (IupFltkLabel*)ih->handle;
+    auto* label = reinterpret_cast<IupFltkLabel*>(ih->handle);
     Fl_Align align = 0;
 
     if (ih->data->horiz_alignment == IUP_ALIGN_ALEFT) align |= FL_ALIGN_LEFT;
@@ -236,8 +236,8 @@ static char* fltkLabelGetAlignmentAttrib(Ihandle* ih)
 {
   if (ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
   {
-    char* horiz_align2str[3] = {(char*)"ALEFT", (char*)"ACENTER", (char*)"ARIGHT"};
-    char* vert_align2str[3] = {(char*)"ATOP", (char*)"ACENTER", (char*)"ABOTTOM"};
+    char* horiz_align2str[3] = {const_cast<char*>("ALEFT"), const_cast<char*>("ACENTER"), const_cast<char*>("ARIGHT")};
+    char* vert_align2str[3] = {const_cast<char*>("ATOP"), const_cast<char*>("ACENTER"), const_cast<char*>("ABOTTOM")};
 
     int horiz = ih->data->horiz_alignment;
     int vert = ih->data->vert_alignment;
@@ -249,14 +249,14 @@ static char* fltkLabelGetAlignmentAttrib(Ihandle* ih)
 
     return iupStrReturnStrf("%s:%s", horiz_align2str[horiz], vert_align2str[vert]);
   }
-  return NULL;
+  return nullptr;
 }
 
 static int fltkLabelSetWordWrapAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_TEXT)
   {
-    IupFltkLabel* label = (IupFltkLabel*)ih->handle;
+    auto* label = reinterpret_cast<IupFltkLabel*>(ih->handle);
     if (label)
     {
       Fl_Align align = label->align();
@@ -275,7 +275,7 @@ static int fltkLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_TEXT)
   {
-    IupFltkLabel* label = (IupFltkLabel*)ih->handle;
+    auto* label = reinterpret_cast<IupFltkLabel*>(ih->handle);
     if (label)
     {
       label->ellipsis = iupStrBoolean(value) != 0;
@@ -292,7 +292,7 @@ static int fltkLabelSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupFltkLabel* label = (IupFltkLabel*)ih->handle;
+  auto* label = reinterpret_cast<IupFltkLabel*>(ih->handle);
   if (label)
   {
     label->color(fl_rgb_color(r, g, b));
@@ -308,7 +308,7 @@ static int fltkLabelSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  IupFltkLabel* label = (IupFltkLabel*)ih->handle;
+  auto* label = reinterpret_cast<IupFltkLabel*>(ih->handle);
   if (label)
   {
     label->labelcolor(fl_rgb_color(r, g, b));
@@ -391,7 +391,7 @@ static int fltkLabelSetPaddingAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    ((Fl_Widget*)ih->handle)->redraw();
+    (reinterpret_cast<Fl_Widget*>(ih->handle))->redraw();
     return 0;
   }
   else
@@ -419,7 +419,7 @@ static int fltkLabelMapMethod(Ihandle* ih)
       ih->data->type = IUP_LABEL_TEXT;
   }
 
-  IupFltkLabel* label = new IupFltkLabel(0, 0, 10, 10, ih);
+  auto* label = new IupFltkLabel(0, 0, 10, 10, ih);
 
   if (ih->data->type == IUP_LABEL_SEP_HORIZ)
   {
@@ -443,7 +443,7 @@ static int fltkLabelMapMethod(Ihandle* ih)
     label->box(FL_NO_BOX);
   }
 
-  ih->handle = (InativeHandle*)label;
+  ih->handle = reinterpret_cast<InativeHandle*>(label);
 
   iupfltkAddToParent(ih);
 
@@ -458,17 +458,17 @@ extern "C" IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
 {
   ic->Map = fltkLabelMapMethod;
 
-  iupClassRegisterAttribute(ic, "FONT", NULL, fltkLabelSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "FONT", nullptr, fltkLabelSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, fltkLabelSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, fltkLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FGCOLOR", NULL, fltkLabelSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "TITLE", fltkLabelGetTitleAttrib, fltkLabelSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ALIGNMENT", fltkLabelGetAlignmentAttrib, fltkLabelSetAlignmentAttrib, "ALEFT:ACENTER", NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMAGE", NULL, fltkLabelSetImageAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "IMINACTIVE", NULL, fltkLabelSetImInactiveAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, fltkLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, fltkLabelSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TITLE", fltkLabelGetTitleAttrib, fltkLabelSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALIGNMENT", fltkLabelGetAlignmentAttrib, fltkLabelSetAlignmentAttrib, "ALEFT:ACENTER", nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMAGE", nullptr, fltkLabelSetImageAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IMINACTIVE", nullptr, fltkLabelSetImInactiveAttrib, nullptr, nullptr, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupLabelGetPaddingAttrib, fltkLabelSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "WORDWRAP", NULL, fltkLabelSetWordWrapAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "ELLIPSIS", NULL, fltkLabelSetEllipsisAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "SELECTABLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MARKUP", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "WORDWRAP", nullptr, fltkLabelSetWordWrapAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "ELLIPSIS", nullptr, fltkLabelSetEllipsisAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SELECTABLE", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MARKUP", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED);
 }

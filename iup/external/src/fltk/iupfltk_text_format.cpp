@@ -43,7 +43,7 @@ typedef struct _FltkFormatData
 
 static FltkFormatData* fltkFormatGetData(Ihandle* ih)
 {
-  return (FltkFormatData*)iupAttribGet(ih, "_IUPFLTK_FORMATDATA");
+  return reinterpret_cast<FltkFormatData*>(iupAttribGet(ih, "_IUPFLTK_FORMATDATA"));
 }
 
 static char fltkFormatFindOrAddStyle(FltkFormatData* fdata,
@@ -54,7 +54,7 @@ static char fltkFormatFindOrAddStyle(FltkFormatData* fdata,
     Fl_Text_Display::Style_Table_Entry* e = &fdata->style_table[i];
     if (e->font == font && e->size == size && e->color == color &&
         e->bgcolor == bgcolor && e->attr == attr)
-      return (char)('A' + i);
+      return static_cast<char>('A' + i);
   }
 
   if (fdata->num_styles >= FLTK_MAX_STYLES)
@@ -68,12 +68,12 @@ static char fltkFormatFindOrAddStyle(FltkFormatData* fdata,
   fdata->style_table[idx].attr = attr;
   fdata->num_styles++;
 
-  return (char)('A' + idx);
+  return static_cast<char>('A' + idx);
 }
 
 static void fltkFormatStyleUpdate(int pos, int nInserted, int nDeleted, int /*nRestyled*/, const char* /*deletedText*/, void* data)
 {
-  Ihandle* ih = (Ihandle*)data;
+  auto* ih = static_cast<Ihandle*>(data);
   FltkFormatData* fdata = fltkFormatGetData(ih);
   if (!fdata || !fdata->style_buffer)
     return;
@@ -86,7 +86,7 @@ static void fltkFormatStyleUpdate(int pos, int nInserted, int nDeleted, int /*nR
 
   if (nInserted > 0)
   {
-    char* style = (char*)malloc(nInserted + 1);
+    char* style = static_cast<char*>(malloc(nInserted + 1));
     memset(style, 'A', nInserted);
     style[nInserted] = '\0';
     fdata->style_buffer->replace(pos, pos + nDeleted, style);
@@ -100,7 +100,7 @@ static void fltkFormatStyleUpdate(int pos, int nInserted, int nDeleted, int /*nR
 
 static int fltkFormatParseSelectionPos(Ihandle* ih, const char* value, int* start, int* end)
 {
-  Fl_Text_Editor* editor = (Fl_Text_Editor*)ih->handle;
+  auto* editor = reinterpret_cast<Fl_Text_Editor*>(ih->handle);
   Fl_Text_Buffer* buf = editor->buffer();
 
   if (!value || iupStrEqualNoCase(value, "NONE"))
@@ -144,7 +144,7 @@ static int fltkFormatParseSelectionPos(Ihandle* ih, const char* value, int* star
 
 static int fltkFormatParseSelection(Ihandle* ih, const char* value, int* start, int* end)
 {
-  Fl_Text_Editor* editor = (Fl_Text_Editor*)ih->handle;
+  auto* editor = reinterpret_cast<Fl_Text_Editor*>(ih->handle);
   Fl_Text_Buffer* buf = editor->buffer();
 
   if (!value || iupStrEqualNoCase(value, "NONE"))
@@ -191,15 +191,15 @@ static void fltkFormatFillStyleRange(FltkFormatData* fdata, Fl_Text_Buffer* text
     return;
 
   int len = end - start;
-  char* styles = (char*)malloc(len);
+  char* styles = static_cast<char*>(malloc(len));
 
   for (int i = 0; i < len; i++)
   {
-      unsigned char existing = (unsigned char)fdata->style_buffer->byte_at(start + i);
+      auto existing = static_cast<unsigned char>(fdata->style_buffer->byte_at(start + i));
       int esi = existing - 'A';
       if (esi >= 0 && esi < fdata->num_styles)
       {
-        Fl_Font merged = (Fl_Font)(fdata->style_table[esi].font | fdata->style_table[style_char - 'A'].font);
+        Fl_Font merged = (fdata->style_table[esi].font | fdata->style_table[style_char - 'A'].font);
         Fl_Fontsize size = fdata->style_table[style_char - 'A'].size;
         Fl_Color color = fdata->style_table[style_char - 'A'].color;
         Fl_Color bgcolor = fdata->style_table[style_char - 'A'].bgcolor;
@@ -230,7 +230,7 @@ static void fltkIntToRoman(int value, char* buf, int bufsize, int upper)
   {
     while (value >= vals[i])
     {
-      if ((int)strlen(buf) + (int)strlen(syms[i]) < bufsize - 1)
+      if (static_cast<int>(strlen(buf)) + static_cast<int>(strlen(syms[i])) < bufsize - 1)
         strcat(buf, syms[i]);
       value -= vals[i];
     }
@@ -244,7 +244,7 @@ static int fltkNumberingPrefix(int counter, const char* numbering, const char* s
   if (iupStrEqualNoCase(numbering, "BULLET"))
   {
     snprintf(buf, bufsize, "  \xe2\x80\xa2 ");
-    return (int)strlen(buf);
+    return static_cast<int>(strlen(buf));
   }
 
   if (iupStrEqualNoCase(numbering, "ARABIC"))
@@ -286,7 +286,7 @@ static int fltkNumberingPrefix(int counter, const char* numbering, const char* s
   else
     snprintf(buf, bufsize, "  %s. ", number);
 
-  return (int)strlen(buf);
+  return static_cast<int>(strlen(buf));
 }
 
 static void fltkFormatApplyNumbering(Fl_Text_Buffer* buf, int start, int end, const char* numbering, const char* style)
@@ -345,7 +345,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
   if (!fdata)
     return;
 
-  Fl_Text_Editor* editor = (Fl_Text_Editor*)ih->handle;
+  auto* editor = reinterpret_cast<Fl_Text_Editor*>(ih->handle);
   Fl_Text_Buffer* buf = editor->buffer();
 
   int start = 0, end = 0;
@@ -409,7 +409,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
 
   if (start < buf->length())
   {
-    unsigned char existing_style = (unsigned char)fdata->style_buffer->byte_at(start);
+    auto existing_style = static_cast<unsigned char>(fdata->style_buffer->byte_at(start));
     int si = existing_style - 'A';
     if (si >= 0 && si < fdata->num_styles)
     {
@@ -421,9 +421,9 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
     }
   }
 
-  int has_fontface = (iupAttribGet(formattag, "FONTFACE") != NULL);
-  int has_fontsize = (iupAttribGet(formattag, "FONTSIZE") != NULL);
-  int has_fontscale = (iupAttribGet(formattag, "FONTSCALE") != NULL);
+  int has_fontface = (iupAttribGet(formattag, "FONTFACE") != nullptr);
+  int has_fontsize = (iupAttribGet(formattag, "FONTSIZE") != nullptr);
+  int has_fontscale = (iupAttribGet(formattag, "FONTSCALE") != nullptr);
 
   if (has_fontface || has_fontsize || has_fontscale)
     size = fdata->style_table[0].size;
@@ -440,14 +440,14 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
     int is_italic = (font & FL_ITALIC) ? 1 : 0;
     int fl_font = iupfltkMapFontFace(value, is_bold, is_italic);
     if (fl_font >= 0)
-      font = (Fl_Font)fl_font;
+      font = static_cast<Fl_Font>(fl_font);
   }
 
   value = iupAttribGet(formattag, "FONTSIZE");
   if (value && iupStrToInt(value, &val))
   {
     if (val > 0)
-      size = (Fl_Fontsize)val;
+      size = static_cast<Fl_Fontsize>(val);
   }
 
   value = iupAttribGet(formattag, "FONTSCALE");
@@ -463,7 +463,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
     else if (iupStrEqualNoCase(value, "XX-SMALL")) scale = 0.58;
     else iupStrToDouble(value, &scale);
 
-    size = (Fl_Fontsize)(fdata->style_table[0].size * scale);
+    size = static_cast<Fl_Fontsize>(fdata->style_table[0].size * scale);
     if (size < 6) size = 6;
   }
 
@@ -471,9 +471,9 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
   if (value)
   {
     if (iupStrBoolean(value))
-      font = (Fl_Font)(font | FL_ITALIC);
+      font = font | FL_ITALIC;
     else
-      font = (Fl_Font)(font & ~FL_ITALIC);
+      font = font & ~FL_ITALIC;
   }
 
   value = iupAttribGet(formattag, "WEIGHT");
@@ -481,10 +481,10 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
   {
     if (iupStrEqualNoCase(value, "BOLD") || iupStrEqualNoCase(value, "SEMIBOLD") ||
         iupStrEqualNoCase(value, "EXTRABOLD") || iupStrEqualNoCase(value, "HEAVY"))
-      font = (Fl_Font)(font | FL_BOLD);
+      font = font | FL_BOLD;
     else if (iupStrEqualNoCase(value, "NORMAL") || iupStrEqualNoCase(value, "LIGHT") ||
              iupStrEqualNoCase(value, "EXTRALIGHT"))
-      font = (Fl_Font)(font & ~FL_BOLD);
+      font = font & ~FL_BOLD;
   }
 
   value = iupAttribGet(formattag, "FGCOLOR");
@@ -542,7 +542,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
 
   fltkFormatFillStyleRange(fdata, buf, start, end, style_char);
 
-  editor->highlight_data(fdata->style_buffer, fdata->style_table, fdata->num_styles, 0, NULL, NULL);
+  editor->highlight_data(fdata->style_buffer, fdata->style_table, fdata->num_styles, 0, nullptr, nullptr);
   editor->redisplay_range(start, end);
 }
 
@@ -555,7 +555,7 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
   if (!fdata || !fdata->style_buffer)
     return 0;
 
-  Fl_Text_Editor* editor = (Fl_Text_Editor*)ih->handle;
+  auto* editor = reinterpret_cast<Fl_Text_Editor*>(ih->handle);
   if (!editor || !editor->buffer())
     return 0;
 
@@ -575,7 +575,7 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
       if (((next < style_len) ? fdata->style_buffer->byte_at(next) : 'A') != style)
         break;
 
-      unsigned char c = (unsigned char)buf->byte_at(next);
+      auto c = static_cast<unsigned char>(buf->byte_at(next));
       if (c >= 0xF0) next += 4;
       else if (c >= 0xE0) next += 3;
       else if (c >= 0xC0) next += 2;
@@ -585,7 +585,7 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
     }
 
     {
-      int index = (unsigned char)style - 'A';
+      int index = static_cast<unsigned char>(style) - 'A';
       if (index < 0 || index >= fdata->num_styles)
         index = 0;
 
@@ -602,12 +602,12 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
       IupSetAttribute(formattag, "ITALIC", (entry->font & FL_ITALIC) ? "YES" : "NO");
       IupSetAttribute(formattag, "STRIKEOUT", (entry->attr & Fl_Text_Display::ATTR_STRIKE_THROUGH) ? "YES" : "NO");
 
-      face = Fl::get_font_name(entry->font, NULL);
+      face = Fl::get_font_name(entry->font, nullptr);
       if (face)
         IupSetStrAttribute(formattag, "FONTFACE", face);
 
       if (fdata->style_table[0].size > 0)
-        IupSetDouble(formattag, "FONTSCALE", (double)entry->size / (double)fdata->style_table[0].size);
+        IupSetDouble(formattag, "FONTSCALE", static_cast<double>(entry->size) / static_cast<double>(fdata->style_table[0].size));
 
       snprintf(link_attr, sizeof(link_attr), "_IUPFLTK_LINK_%c", style);
       url = iupAttribGet(ih, link_attr);
@@ -626,7 +626,7 @@ extern "C" IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
   FltkFormatData* fdata = fltkFormatGetData(ih);
   if (fdata)
     fdata->insert_offset = 0;
-  return NULL;
+  return nullptr;
 }
 
 extern "C" IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
@@ -644,7 +644,7 @@ int iupfltkFormatSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
   if (!fdata || !fdata->style_buffer)
     return 0;
 
-  Fl_Text_Editor* editor = (Fl_Text_Editor*)ih->handle;
+  auto* editor = reinterpret_cast<Fl_Text_Editor*>(ih->handle);
   Fl_Text_Buffer* buf = editor->buffer();
 
   int start = 0, end = buf->length();
@@ -665,14 +665,14 @@ const char* iupfltkFormatGetLinkAtPos(Ihandle* ih, int pos)
 {
   FltkFormatData* fdata = fltkFormatGetData(ih);
   if (!fdata || !fdata->style_buffer)
-    return NULL;
+    return nullptr;
 
   if (pos < 0 || pos >= fdata->style_buffer->length())
-    return NULL;
+    return nullptr;
 
   char style_char = fdata->style_buffer->byte_at(pos);
   if (style_char < 'A')
-    return NULL;
+    return nullptr;
 
   char link_attr[32];
   snprintf(link_attr, sizeof(link_attr), "_IUPFLTK_LINK_%c", style_char);
@@ -684,11 +684,11 @@ void iupfltkFormatInit(Ihandle* ih)
   if (!ih->data->has_formatting)
     return;
 
-  Fl_Text_Editor* editor = (Fl_Text_Editor*)ih->handle;
+  auto* editor = reinterpret_cast<Fl_Text_Editor*>(ih->handle);
   if (!editor)
     return;
 
-  FltkFormatData* fdata = (FltkFormatData*)calloc(1, sizeof(FltkFormatData));
+  auto* fdata = static_cast<FltkFormatData*>(calloc(1, sizeof(FltkFormatData)));
 
   fdata->style_buffer = new Fl_Text_Buffer();
   fdata->style_buffer->canUndo(0);
@@ -703,18 +703,18 @@ void iupfltkFormatInit(Ihandle* ih)
   int len = editor->buffer()->length();
   if (len > 0)
   {
-    char* style = (char*)malloc(len + 1);
+    char* style = static_cast<char*>(malloc(len + 1));
     memset(style, 'A', len);
     style[len] = '\0';
     fdata->style_buffer->text(style);
     free(style);
   }
 
-  editor->highlight_data(fdata->style_buffer, fdata->style_table, fdata->num_styles, 0, NULL, NULL);
+  editor->highlight_data(fdata->style_buffer, fdata->style_table, fdata->num_styles, 0, nullptr, nullptr);
 
-  editor->buffer()->add_modify_callback(fltkFormatStyleUpdate, (void*)ih);
+  editor->buffer()->add_modify_callback(fltkFormatStyleUpdate, reinterpret_cast<void*>(ih));
 
-  iupAttribSet(ih, "_IUPFLTK_FORMATDATA", (char*)fdata);
+  iupAttribSet(ih, "_IUPFLTK_FORMATDATA", reinterpret_cast<char*>(fdata));
 }
 
 void iupfltkFormatCleanup(Ihandle* ih)
@@ -723,15 +723,15 @@ void iupfltkFormatCleanup(Ihandle* ih)
   if (!fdata)
     return;
 
-  Fl_Text_Editor* editor = (Fl_Text_Editor*)ih->handle;
+  auto* editor = reinterpret_cast<Fl_Text_Editor*>(ih->handle);
   if (editor)
   {
-    editor->buffer()->remove_modify_callback(fltkFormatStyleUpdate, (void*)ih);
-    editor->highlight_data(NULL, NULL, 0, 0, NULL, NULL);
+    editor->buffer()->remove_modify_callback(fltkFormatStyleUpdate, reinterpret_cast<void*>(ih));
+    editor->highlight_data(nullptr, nullptr, 0, 0, nullptr, nullptr);
   }
 
   delete fdata->style_buffer;
   free(fdata);
 
-  iupAttribSet(ih, "_IUPFLTK_FORMATDATA", NULL);
+  iupAttribSet(ih, "_IUPFLTK_FORMATDATA", nullptr);
 }
