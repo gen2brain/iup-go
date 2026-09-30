@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
 #include <vector>
 
 #include <Bitmap.h>
@@ -358,10 +359,43 @@ private:
 };
 
 
+static void haikuTextShiftLinks(Ihandle* ih, int32 from, int32 delta)
+{
+  int count = iupAttribGetInt(ih, "_IUPHAIKU_LINK_COUNT");
+  for (int i = 0; i < count; i++)
+  {
+    char key[64];
+    snprintf(key, sizeof(key), "_IUPHAIKU_LINK_RANGE_%d", i);
+    int s = 0, e = 0;
+    const char* range = iupAttribGet(ih, key);
+    if (!range || iupStrToIntInt(range, &s, &e, ':') != 2) continue;
+    if (s >= from) s += delta;
+    if (e >= from) e += delta;
+    iupAttribSetStrf(ih, key, "%d:%d", s, e);
+  }
+}
+
+static void haikuTextCollapseLinks(Ihandle* ih, int32 from, int32 to)
+{
+  int count = iupAttribGetInt(ih, "_IUPHAIKU_LINK_COUNT");
+  for (int i = 0; i < count; i++)
+  {
+    char key[64];
+    snprintf(key, sizeof(key), "_IUPHAIKU_LINK_RANGE_%d", i);
+    int s = 0, e = 0;
+    const char* range = iupAttribGet(ih, key);
+    if (!range || iupStrToIntInt(range, &s, &e, ':') != 2) continue;
+    s = (s <= from) ? s : (s >= to ? s - (to - from) : from);
+    e = (e <= from) ? e : (e >= to ? e - (to - from) : from);
+    iupAttribSetStrf(ih, key, "%d:%d", s, e);
+  }
+}
+
 class IupHaikuTextView : public BTextView
 {
 public:
   struct BgRange { int32 start; int32 end; rgb_color color; };
+  struct FgRange { int32 start; int32 end; };
   struct ImageRange { int32 offset; BBitmap* bm; int w; int h; };
 
   explicit IupHaikuTextView(Ihandle* ih)
@@ -483,13 +517,62 @@ public:
       if (range.offset >= from) range.offset += delta;
   }
 
-  void ShiftBgRanges(int32 from, int32 delta)
+  void AddFgRange(int32 start, int32 end)
   {
+    if (start < end) fFgRanges.push_back({start, end});
+  }
+
+  void ClearFgRanges(int32 from, int32 to)
+  {
+    std::vector<FgRange> kept;
+    for (const auto& r : fFgRanges)
+    {
+      if (r.end <= from || r.start >= to) kept.push_back(r);
+    }
+    fFgRanges.swap(kept);
+  }
+
+  const std::vector<FgRange>& FgRanges() const { return fFgRanges; }
+
+  /* tag backgrounds, colors and links follow inserted and deleted text */
+  void ShiftTagRanges(int32 offset, int32 length)
+  {
+    ShiftImageRanges(offset, length);
     for (auto& range : fBgRanges)
     {
-      if (range.start >= from) range.start += delta;
-      if (range.end >= from) range.end += delta;
+      if (range.start >= offset) range.start += length;
+      if (range.end >= offset) range.end += length;
     }
+    for (auto& range : fFgRanges)
+    {
+      if (range.start >= offset) range.start += length;
+      if (range.end >= offset) range.end += length;
+    }
+    if (fIhandle) haikuTextShiftLinks(fIhandle, offset, length);
+  }
+
+  void CollapseTagRanges(int32 from, int32 to)
+  {
+    auto collapse = [from, to](int32 p) { return p <= from ? p : (p >= to ? p - (to - from) : from); };
+    ClearImageRanges(from, to);
+    ShiftImageRanges(to, from - to);
+    std::vector<BgRange> bg_kept;
+    for (auto range : fBgRanges)
+    {
+      range.start = collapse(range.start);
+      range.end = collapse(range.end);
+      if (range.start < range.end) bg_kept.push_back(range);
+    }
+    fBgRanges.swap(bg_kept);
+    std::vector<FgRange> fg_kept;
+    for (auto range : fFgRanges)
+    {
+      range.start = collapse(range.start);
+      range.end = collapse(range.end);
+      if (range.start < range.end) fg_kept.push_back(range);
+    }
+    fFgRanges.swap(fg_kept);
+    if (fIhandle) haikuTextCollapseLinks(fIhandle, from, to);
   }
 
 protected:
@@ -498,7 +581,7 @@ protected:
     if (fSuppress || !fIhandle || fIhandle->data->disable_callbacks)
     {
       BTextView::InsertText(text, length, offset, runs);
-      ShiftImageRanges(offset, length);
+      ShiftTagRanges(offset, length);
       return;
     }
 
@@ -507,9 +590,8 @@ protected:
       int32 tlen = TextLength();
       if (offset < tlen && ByteAt(offset) != '\n')
       {
-        ClearImageRanges(offset, offset + 1);
         BTextView::DeleteText(offset, offset + 1);
-        ShiftImageRanges(offset + 1, -1);
+        CollapseTagRanges(offset, offset + 1);
       }
     }
 
@@ -557,7 +639,7 @@ protected:
       {
         char rep = static_cast<char>(ret);
         BTextView::InsertText(&rep, 1, offset, runs);
-        ShiftImageRanges(offset, 1);
+        ShiftTagRanges(offset, 1);
         fireValueChanged();
         free(filter_buf);
         return;
@@ -565,7 +647,7 @@ protected:
     }
 
     BTextView::InsertText(text, length, offset, runs);
-    ShiftImageRanges(offset, length);
+    ShiftTagRanges(offset, length);
     fireValueChanged();
     free(filter_buf);
   }
@@ -574,9 +656,8 @@ protected:
   {
     if (fSuppress || !fIhandle || fIhandle->data->disable_callbacks)
     {
-      ClearImageRanges(fromOffset, toOffset);
       BTextView::DeleteText(fromOffset, toOffset);
-      ShiftImageRanges(toOffset, fromOffset - toOffset);
+      CollapseTagRanges(fromOffset, toOffset);
       return;
     }
 
@@ -590,9 +671,8 @@ protected:
       if (ret == 0) return;
     }
 
-    ClearImageRanges(fromOffset, toOffset);
     BTextView::DeleteText(fromOffset, toOffset);
-    ShiftImageRanges(toOffset, fromOffset - toOffset);
+    CollapseTagRanges(fromOffset, toOffset);
     fireValueChanged();
   }
 
@@ -689,6 +769,7 @@ private:
   bool fOverwrite;
   BCursor fLinkCursor;
   std::vector<BgRange> fBgRanges;
+  std::vector<FgRange> fFgRanges;
   std::vector<ImageRange> fImageRanges;
 };
 
@@ -990,6 +1071,14 @@ static int haikuTextSetFontAttrib(Ihandle* ih, const char* value)
   return iupdrvSetFontAttrib(ih, value);
 }
 
+static rgb_color haikuTextDefaultColor(Ihandle* ih)
+{
+  unsigned char r, g, b;
+  if (iupStrToRGB(iupAttribGet(ih, "_IUPHAIKU_DEFAULT_FGCOLOR"), &r, &g, &b))
+    return (rgb_color){ r, g, b, 255 };
+  return iuphaikuColor(B_DOCUMENT_TEXT_COLOR);
+}
+
 static int haikuTextSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   BTextView* tv = haikuTextGetEditor(ih);
@@ -999,7 +1088,27 @@ static int haikuTextSetFgColorAttrib(Ihandle* ih, const char* value)
   rgb_color c = { r, g, b, 255 };
   LooperLockGuard guard(haikuTextGetLooper(ih));
   tv->SetHighColor(c);
-  tv->SetFontAndColor(0, tv->TextLength(), nullptr, 0, &c);
+  int32 length = tv->TextLength();
+  if (ih->data->is_multiline && tv->IsStylable())
+  {
+    /* text outside the format tag colors follows the default */
+    std::vector<IupHaikuTextView::FgRange> tagged = static_cast<IupHaikuTextView*>(tv)->FgRanges();
+    std::sort(tagged.begin(), tagged.end(),
+              [](const IupHaikuTextView::FgRange& a, const IupHaikuTextView::FgRange& b) { return a.start < b.start; });
+    int32 pos = 0;
+    for (const auto& range : tagged)
+    {
+      if (range.start > pos)
+        tv->SetFontAndColor(pos, range.start, nullptr, 0, &c);
+      if (range.end > pos)
+        pos = range.end;
+    }
+    if (pos < length)
+      tv->SetFontAndColor(pos, length, nullptr, 0, &c);
+  }
+  else
+    tv->SetFontAndColor(0, length, nullptr, 0, &c);
+  iupAttribSetStr(ih, "_IUPHAIKU_DEFAULT_FGCOLOR", value);
   tv->Invalidate();
   return 1;
 }
@@ -1578,23 +1687,7 @@ static int haikuTextUtf8Count(const char* s, int32 bytes)
   return count;
 }
 
-static void haikuTextShiftLinks(Ihandle* ih, int32 from, int32 delta)
-{
-  int count = iupAttribGetInt(ih, "_IUPHAIKU_LINK_COUNT");
-  for (int i = 0; i < count; i++)
-  {
-    char key[64];
-    snprintf(key, sizeof(key), "_IUPHAIKU_LINK_RANGE_%d", i);
-    int s = 0, e = 0;
-    const char* range = iupAttribGet(ih, key);
-    if (!range || iupStrToIntInt(range, &s, &e, ':') != 2) continue;
-    if (s >= from) s += delta;
-    if (e >= from) e += delta;
-    iupAttribSetStrf(ih, key, "%d:%d", s, e);
-  }
-}
-
-static int32 haikuTextInsertPrefix(Ihandle* ih, IupHaikuTextView* tv, int32 pos, const char* text, int32 len, float indent)
+static int32 haikuTextInsertPrefix(IupHaikuTextView* tv, int32 pos, const char* text, int32 len, float indent)
 {
   BFont font;
   rgb_color color;
@@ -1618,8 +1711,6 @@ static int32 haikuTextInsertPrefix(Ihandle* ih, IupHaikuTextView* tv, int32 pos,
     }
   }
 
-  tv->ShiftBgRanges(pos, len);
-  haikuTextShiftLinks(ih, pos, len);
   return len;
 }
 
@@ -1656,7 +1747,7 @@ static void haikuTextApplyParagraphPrefixes(Ihandle* ih, IupHaikuTextView* tv, I
     BString prefix;
     if (numbering && haikuTextNumberingPrefix(static_cast<int>(n) + 1, numbering, style, prefix))
     {
-      int32 len = haikuTextInsertPrefix(ih, tv, pos, prefix.String(), prefix.Length(), 0);
+      int32 len = haikuTextInsertPrefix(tv, pos, prefix.String(), prefix.Length(), 0);
       inserted += len;
       if (pos < *start) before_start += len;
       chars += haikuTextUtf8Count(prefix.String(), len);
@@ -1672,7 +1763,7 @@ static void haikuTextApplyParagraphPrefixes(Ihandle* ih, IupHaikuTextView* tv, I
       if (count < 1) count = 1;
       BString spaces;
       spaces.Append(' ', count);
-      inserted += haikuTextInsertPrefix(ih, tv, pos, spaces.String(), count, static_cast<float>(indent));
+      inserted += haikuTextInsertPrefix(tv, pos, spaces.String(), count, static_cast<float>(indent));
       if (pos < *start) before_start += count;
       chars += count;
     }
@@ -1747,6 +1838,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
     rgb_color ph_color = tv->ViewColor();
     ph_color.alpha = 255;
     tv->SetFontAndColor(start, start + 3, &ifont, B_FONT_ALL, &ph_color);
+    itv->AddFgRange(start, start + 3);
     itv->AddImageRange(start, bm, img_w, img_h);
     itv->SetSuppress(false);
     return;
@@ -1795,7 +1887,10 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
   if (mode != 0)
     tv->SetFontAndColor(start, end, &bfont, mode, nullptr);
   if (color_changed)
+  {
     tv->SetFontAndColor(start, end, nullptr, 0, &color);
+    (static_cast<IupHaikuTextView*>(tv))->AddFgRange(start, end);
+  }
 
   char* bg = iupAttribGet(tag, "BGCOLOR");
   if (bg)
@@ -1829,9 +1924,10 @@ static int haikuTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
     tv->GetSelection(&s, &e);
 
   BFont base_font(be_plain_font);
-  rgb_color base_col = iuphaikuColor(B_DOCUMENT_TEXT_COLOR);
+  rgb_color base_col = haikuTextDefaultColor(ih);
   tv->SetFontAndColor(s, e, &base_font, B_FONT_ALL, &base_col);
   (static_cast<IupHaikuTextView*>(tv))->ClearBgRanges(s, e);
+  (static_cast<IupHaikuTextView*>(tv))->ClearFgRanges(s, e);
   (static_cast<IupHaikuTextView*>(tv))->ClearImageRanges(s, e);
   return 0;
 }
