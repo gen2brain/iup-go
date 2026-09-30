@@ -4,7 +4,6 @@ package main
 
 import (
 	"fmt"
-	"runtime"
 	"strings"
 
 	"github.com/gen2brain/iup-go/iup"
@@ -131,7 +130,7 @@ func webBrowserTest() {
 	// URL on its own row so it has full width on narrow (phone) layouts.
 	urlRow := iup.Hbox(txt)
 	var btnRow iup.Ihandle
-	if runtime.GOOS != "windows" {
+	if driver := iup.GetGlobal("DRIVER"); driver != "WASM" && driver != "Haiku" {
 		history := iup.Button("History")
 		btnRow = iup.Hbox(btBack, btForward, btLoad, btReload, btStop, history)
 		history.SetCallback("ACTION", historyCallback)

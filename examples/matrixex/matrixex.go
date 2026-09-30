@@ -4,7 +4,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/gen2brain/iup-go/iup"
@@ -139,7 +138,7 @@ func main() {
 	mat := createMatrix()
 	find := iup.Text().SetAttributes("VALUE=cat, VISIBLECOLUMNS=10")
 	dialogs := iup.List().SetAttributes("DROPDOWN=YES, 1=FIND, 2=GOTO, 3=SORT, 4=SETTINGS, 5=EXPORT_TXT, 6=EXPORT_HTML, 7=IMPORT_TXT, 8=UNDOLIST, 9=COPYCOLTO_INTERVAL, VALUE=1")
-	exportFile := filepath.Join(os.TempDir(), "matrixex.txt")
+	exportFile := filepath.Join(iup.GetGlobal("TMPDIR"), "matrixex.txt")
 
 	status_ := iup.Label("").SetAttribute("EXPAND", "HORIZONTAL")
 	status_.SetHandle("status")

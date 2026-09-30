@@ -30,12 +30,6 @@ func main() {
 	iup.ConfigDialogShow(config, mainDlg, "MainDialog")
 
 	iup.MainLoop()
-
-	// Save config on exit (CLOSE_CB already called ConfigDialogClosed)
-	iup.ConfigSave(config)
-
-	mainDlg.Destroy()
-	config.Destroy()
 }
 
 func createMainDialog() iup.Ihandle {
@@ -107,6 +101,7 @@ func createMainDialog() iup.Ihandle {
 	dlg.SetCallback("CLOSE_CB", iup.CloseFunc(func(ih iup.Ihandle) int {
 		// IupConfigDialogClosed saves position (X, Y) and size (Width, Height)
 		iup.ConfigDialogClosed(config, ih, "MainDialog")
+		iup.ConfigSave(config)
 		return iup.CLOSE
 	}))
 

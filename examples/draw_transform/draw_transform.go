@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"runtime"
 
 	"github.com/gen2brain/iup-go/iup"
 )
@@ -11,12 +10,7 @@ func init() { iup.EntryPoint(main) }
 
 const cell = 150
 
-var cols = func() int {
-	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
-		return 2
-	}
-	return 5
-}()
+var cols = 5
 
 type demo struct {
 	title string
@@ -252,6 +246,9 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
+	if phone() {
+		cols = 2
+	}
 	rows := (len(demos) + cols - 1) / cols
 	cv := iup.Canvas().SetAttributes(fmt.Sprintf("RASTERSIZE=%dx%d, BORDER=NO", cols*cell, rows*cell))
 	cv.SetCallback("ACTION", iup.ActionFunc(draw))
@@ -260,4 +257,9 @@ func main() {
 	iup.Show(dlg)
 
 	iup.MainLoop()
+}
+
+func phone() bool {
+	driver := iup.GetGlobal("DRIVER")
+	return driver == "Android" || driver == "CocoaTouch"
 }

@@ -14,7 +14,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -127,7 +126,7 @@ func main() {
 	}
 	app.status.SetAttribute("TITLE", "Local sample server ready at "+app.baseURL)
 	iup.MainLoop()
-	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
+	if phone() {
 		return
 	}
 	app.listener.Close()
@@ -239,7 +238,7 @@ func (app *workbench) build() {
 		app.tree,
 	).SetAttributes("NGAP=6, NMARGIN=8x8")
 	var center iup.Ihandle
-	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
+	if phone() {
 		collection.SetAttribute("TABTITLE", "Collection")
 		app.tabs.SetAttribute("TABTITLE", "Requests")
 		app.views = iup.Tabs(collection, app.tabs).SetAttribute("EXPAND", "YES")
@@ -361,7 +360,7 @@ func (app *workbench) showRequests() {
 
 func (tab *requestTab) build(app *workbench) {
 	tab.method = iup.List().SetAttributes("DROPDOWN=YES, VISIBLECOLUMNS=5")
-	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
+	if phone() {
 		tab.method.SetAttribute("VISIBLECOLUMNS", 3)
 	}
 	for i, method := range []string{"GET", "POST", "PUT", "PATCH", "DELETE"} {
@@ -374,13 +373,13 @@ func (tab *requestTab) build(app *workbench) {
 		tab.method.SetAttribute("VALUE", 1)
 	}
 	tab.path = iup.Text().SetAttributes("EXPAND=HORIZONTAL, VISIBLECOLUMNS=30").SetAttribute("VALUE", tab.data.Path)
-	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
+	if phone() {
 		tab.path.SetAttribute("VISIBLECOLUMNS", 14)
 	}
 	tab.params = pairTable(&tab.data.Params)
 	tab.headers = pairTable(&tab.data.Headers)
 	lines := 5
-	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
+	if phone() {
 		lines = 3
 	}
 	tab.body = iup.Text().SetAttributes(fmt.Sprintf("MULTILINE=YES, EXPAND=YES, VISIBLELINES=%d, VISIBLECOLUMNS=42, FONT=Courier", lines)).SetAttribute("VALUE", tab.data.Body)
@@ -414,7 +413,7 @@ func (tab *requestTab) build(app *workbench) {
 		tab.status.SetAttribute("TITLE", "Request canceled")
 	})
 	var toolbar iup.Ihandle
-	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
+	if phone() {
 		toolbar = iup.Vbox(
 			iup.Hbox(tab.method, tab.path).SetAttributes("NGAP=6, ALIGNMENT=ACENTER"),
 			iup.Hbox(send, cancel, iup.Fill()).SetAttributes("NGAP=6"),
@@ -426,7 +425,7 @@ func (tab *requestTab) build(app *workbench) {
 		).SetAttributes("NGAP=5")
 	}
 	content := iup.Split(requestEditors, tab.resultTabs).SetAttributes("ORIENTATION=HORIZONTAL, VALUE=590, MINMAX=210:760")
-	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
+	if phone() {
 		tab.page = iup.Vbox(toolbar, tab.status, content).SetAttributes("NGAP=7, NMARGIN=9x8, EXPAND=YES").SetAttribute("TABTITLE", tab.data.Name)
 	} else {
 		tab.page = iup.Vbox(toolbar, content, tab.status).SetAttributes("NGAP=7, NMARGIN=9x8, EXPAND=YES").SetAttribute("TABTITLE", tab.data.Name)
@@ -435,7 +434,7 @@ func (tab *requestTab) build(app *workbench) {
 
 func pairTable(values *[]entry) iup.Ihandle {
 	lines := 4
-	if runtime.GOOS == "android" || runtime.GOOS == "ios" {
+	if phone() {
 		lines = 2
 	}
 	table := iup.Table().SetAttributes(fmt.Sprintf("NUMCOL=2, VISIBLELINES=%d, EXPAND=YES, EDITABLE=YES, STRETCHLAST=YES, USERRESIZE=YES, ALTERNATECOLOR=YES", lines))
@@ -664,4 +663,9 @@ func button(title string, action func()) iup.Ihandle {
 		return iup.DEFAULT
 	}))
 	return item
+}
+
+func phone() bool {
+	driver := iup.GetGlobal("DRIVER")
+	return driver == "Android" || driver == "CocoaTouch"
 }

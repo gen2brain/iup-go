@@ -87,6 +87,9 @@ func main() {
 	}
 
 	iup.MainLoop()
+	if driver := iup.GetGlobal("DRIVER"); driver == "Android" || driver == "CocoaTouch" {
+		return
+	}
 	slideTimer.Destroy()
 }
 

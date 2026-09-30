@@ -39,7 +39,7 @@ func main() {
 	iup.SetGlobal("UTF8MODE", "YES")
 
 	root = sandbox()
-	defer os.RemoveAll(root)
+	iup.SetFunction("EXIT_CB", iup.ExitFunc(func() { os.RemoveAll(root) }))
 	current = root
 
 	makeIcons()
@@ -113,7 +113,7 @@ func buildMenu() {
 }
 
 func sandbox() string {
-	dir, err := os.MkdirTemp("", "iup-filemanager-")
+	dir, err := os.MkdirTemp(iup.GetGlobal("TMPDIR"), "iup-filemanager-")
 	if err != nil {
 		panic(err)
 	}
