@@ -23,6 +23,12 @@ IUP_DRV_API extern const void* IHANDLE_ASSOCIATED_OBJ_KEY;
 
 #ifdef __OBJC__
 
+/* horizontal scroller around a WORDWRAP=NO multiline text view; the text view scrolls vertically */
+@interface IupCocoaTouchTextScroll : UIScrollView
+@property(nonatomic, retain) UITextView* textView;
+- (void)revealRange:(NSRange)range;
+@end
+
 /* absolute-positioning client-area container; IupViewController reframes it to safe-area rect */
 @interface IupCocoaTouchFixed : UIView
 @property(nonatomic, assign) Ihandle* ihandle;
