@@ -33,8 +33,8 @@ static WCHAR* iupwinStrChar2Wide(const char* str)
 {
   if (str)
   {
-    int len = (int)strlen(str);
-    WCHAR* wstr = (WCHAR*)malloc((len + 1) * sizeof(WCHAR));
+    int len = static_cast<int>(strlen(str));
+    auto* wstr = static_cast<WCHAR*>(malloc((len + 1) * sizeof(WCHAR)));
     int wlen = MultiByteToWideChar(CP_UTF8, 0, str, len, wstr, len);
     if (wlen < 0)
       wlen = 0;
@@ -42,23 +42,23 @@ static WCHAR* iupwinStrChar2Wide(const char* str)
     return wstr;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static char* iupwinStrWide2Char(const WCHAR* wstr)
 {
   if (wstr)
   {
-    int len = (int)wcslen(wstr);
-    char* str = (char*)malloc((3 * len + 1) * sizeof(char));
-    int clen = WideCharToMultiByte(CP_UTF8, 0, wstr, len, str, 3 * len, NULL, NULL);
+    int len = static_cast<int>(wcslen(wstr));
+    char* str = static_cast<char*>(malloc((3 * len + 1) * sizeof(char)));
+    int clen = WideCharToMultiByte(CP_UTF8, 0, wstr, len, str, 3 * len, nullptr, nullptr);
     if (clen < 0)
       clen = 0;
     str[clen] = 0;
     return str;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 #ifndef __IID_DEFINED__
@@ -70,9 +70,9 @@ typedef struct _GUID IID;
 /* WebView2 Built-in Loader Implementation                                   */
 /* ========================================================================== */
 
-static HMODULE g_embeddedBrowserModule = NULL;
+static HMODULE g_embeddedBrowserModule = nullptr;
 static std::wstring g_runtimePath;
-static CreateWebViewEnvironmentWithOptionsInternalFunc g_createEnvInternalFunc = NULL;
+static CreateWebViewEnvironmentWithOptionsInternalFunc g_createEnvInternalFunc = nullptr;
 static WebView2RuntimeType g_runtimeType = WEBVIEW2_RUNTIME_TYPE_INSTALLED;
 
 static std::wstring FindLatestWebView2Version(const std::wstring& basePath)
@@ -118,8 +118,8 @@ static std::wstring FindLatestWebView2Version(const std::wstring& basePath)
           parts[partIndex] = _wtoi(versionStr.substr(start).c_str());
         }
 
-        versionNum = ((ULONGLONG)parts[0] << 48) | ((ULONGLONG)parts[1] << 32) |
-          ((ULONGLONG)parts[2] << 16) | (ULONGLONG)parts[3];
+        versionNum = (static_cast<ULONGLONG>(parts[0]) << 48) | (static_cast<ULONGLONG>(parts[1]) << 32) |
+          (static_cast<ULONGLONG>(parts[2]) << 16) | static_cast<ULONGLONG>(parts[3]);
 
         if (versionNum > latestVersionNum)
         {
@@ -178,7 +178,7 @@ static std::wstring GetWebView2UserDataFolder()
   if (GetEnvironmentVariableW(L"LOCALAPPDATA", localAppData, MAX_PATH) == 0)
     return {};
 
-  if (GetModuleFileNameW(NULL, exePath, MAX_PATH) == 0)
+  if (GetModuleFileNameW(nullptr, exePath, MAX_PATH) == 0)
     return {};
 
   std::wstring exePathStr = exePath;
@@ -204,7 +204,7 @@ STDAPI CreateCoreWebView2EnvironmentWithOptions(
     void* environmentOptions,
     ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler* environmentCreatedHandler)
 {
-  if (g_createEnvInternalFunc == NULL)
+  if (g_createEnvInternalFunc == nullptr)
     return E_FAIL;
 
   HRESULT hr = g_createEnvInternalFunc(
@@ -253,7 +253,7 @@ HRESULT IupWebView2LoaderInit(void)
     }
   }
 
-  g_embeddedBrowserModule = LoadLibraryExW(loaderDllPath.c_str(), NULL,
+  g_embeddedBrowserModule = LoadLibraryExW(loaderDllPath.c_str(), nullptr,
       LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
 
   if (!g_embeddedBrowserModule)
@@ -263,14 +263,13 @@ HRESULT IupWebView2LoaderInit(void)
     return HRESULT_FROM_WIN32(error);
   }
 
-  g_createEnvInternalFunc = (CreateWebViewEnvironmentWithOptionsInternalFunc)
-      GetProcAddress(g_embeddedBrowserModule, "CreateWebViewEnvironmentWithOptionsInternal");
+  g_createEnvInternalFunc = reinterpret_cast<CreateWebViewEnvironmentWithOptionsInternalFunc>(GetProcAddress(g_embeddedBrowserModule, "CreateWebViewEnvironmentWithOptionsInternal"));
 
   if (!g_createEnvInternalFunc)
   {
     DWORD error = GetLastError();
     FreeLibrary(g_embeddedBrowserModule);
-    g_embeddedBrowserModule = NULL;
+    g_embeddedBrowserModule = nullptr;
     IupSetGlobal("IUP_WEBBROWSER_MISSING_LIB", "EmbeddedBrowserWebView.dll (Invalid Version?)");
     return HRESULT_FROM_WIN32(error);
   }
@@ -283,10 +282,10 @@ void IupWebView2LoaderCleanup(void)
   if (g_embeddedBrowserModule)
   {
     FreeLibrary(g_embeddedBrowserModule);
-    g_embeddedBrowserModule = NULL;
+    g_embeddedBrowserModule = nullptr;
   }
 
-  g_createEnvInternalFunc = NULL;
+  g_createEnvInternalFunc = nullptr;
   g_runtimePath.clear();
 }
 
@@ -297,7 +296,7 @@ CreateCoreWebView2EnvironmentWithOptionsFunc IupWebView2LoaderGetCreateEnvironme
 
 const wchar_t* IupWebView2LoaderGetRuntimePath(void)
 {
-  return g_runtimePath.empty() ? NULL : g_runtimePath.c_str();
+  return g_runtimePath.empty() ? nullptr : g_runtimePath.c_str();
 }
 
 /* ========================================================================== */
@@ -330,7 +329,7 @@ struct _IcontrolData
 
 static LRESULT CALLBACK WebBrowserWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-  Ihandle* ih = (Ihandle*)GetProp(hwnd, TEXT("IUP_WEBBROWSER_IH"));
+  auto* ih = static_cast<Ihandle*>(GetProp(hwnd, TEXT("IUP_WEBBROWSER_IH")));
 
   if (msg == WM_SIZE)
   {
@@ -407,7 +406,7 @@ struct WinScriptResult
   int completed;
   int abandoned;
 
-  WinScriptResult() : result(NULL), completed(0), abandoned(0) {}
+  WinScriptResult() : result(nullptr), completed(0), abandoned(0) {}
 };
 
 static void winWebBrowserWaitScript(WinScriptResult* async)
@@ -417,7 +416,7 @@ static void winWebBrowserWaitScript(WinScriptResult* async)
 
   while (async->completed == 0 && loopCount < 1000)
   {
-    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+    if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
     {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
@@ -437,7 +436,7 @@ static char* winWebBrowserTakeScript(WinScriptResult* async)
   if (!async->completed)
   {
     async->abandoned = 1;
-    return NULL;
+    return nullptr;
   }
 
   result = async->result;
@@ -453,10 +452,10 @@ static std::string winWebBrowserEscapeJavaScript(const char* str)
   std::string result = "\"";
   for (const char* p = str; *p; p++)
   {
-    if ((unsigned char)*p == 0xE2 && (unsigned char)*(p+1) == 0x80 &&
-        ((unsigned char)*(p+2) == 0xA8 || (unsigned char)*(p+2) == 0xA9))
+    if (static_cast<unsigned char>(*p) == 0xE2 && static_cast<unsigned char>(*(p+1)) == 0x80 &&
+        (static_cast<unsigned char>(*(p+2)) == 0xA8 || static_cast<unsigned char>(*(p+2)) == 0xA9))
     {
-      result += ((unsigned char)*(p+2) == 0xA8) ? "\\u2028" : "\\u2029";
+      result += (static_cast<unsigned char>(*(p+2)) == 0xA8) ? "\\u2028" : "\\u2029";
       p += 2;
       continue;
     }
@@ -471,10 +470,10 @@ static std::string winWebBrowserEscapeJavaScript(const char* str)
       case '\r': result += "\\r"; break;
       case '\t': result += "\\t"; break;
       default:
-        if ((unsigned char)*p < 32)
+        if (static_cast<unsigned char>(*p) < 32)
         {
           char buf[7];
-          snprintf(buf, sizeof(buf), "\\u%04x", (unsigned char)*p);
+          snprintf(buf, sizeof(buf), "\\u%04x", static_cast<unsigned char>(*p));
           result += buf;
         }
         else
@@ -495,16 +494,16 @@ public:
 
   HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2NavigationStartingEventArgs* args) noexcept override
   {
-    iupAttribSet(ih, "_IUPWEB_FAILED", NULL);
+    iupAttribSet(ih, "_IUPWEB_FAILED", nullptr);
     ih->data->loadStatus = WEBVIEW_STATUS_LOADING;
 
     if (iupAttribGet(ih, "_IUPWEB_IGNORE_NAVIGATE"))
       return S_OK;
 
-    IFns cb = (IFns)IupGetCallback(ih, "NAVIGATE_CB");
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NAVIGATE_CB"));
     if (cb)
     {
-      LPWSTR uri = NULL;
+      LPWSTR uri = nullptr;
       args->get_Uri(&uri);
       if (uri)
       {
@@ -536,10 +535,10 @@ public:
 
   HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2NewWindowRequestedEventArgs* args) noexcept override
   {
-    IFns cb = (IFns)IupGetCallback(ih, "NEWWINDOW_CB");
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NEWWINDOW_CB"));
     if (cb)
     {
-      LPWSTR uri = NULL;
+      LPWSTR uri = nullptr;
       args->get_Uri(&uri);
       if (uri)
       {
@@ -569,7 +568,7 @@ public:
 
   HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2WebMessageReceivedEventArgs* args) noexcept override
   {
-    LPWSTR message = NULL;
+    LPWSTR message = nullptr;
     args->TryGetWebMessageAsString(&message);
 
     if (message)
@@ -580,7 +579,7 @@ public:
       }
       else if (wcscmp(message, L"update") == 0)
       {
-        IFn update_cb = (IFn)IupGetCallback(ih, "UPDATE_CB");
+        IFn update_cb = static_cast<IFn>(IupGetCallback(ih, "UPDATE_CB"));
         if (update_cb)
           update_cb(ih);
       }
@@ -627,7 +626,7 @@ public:
       return result;
     }
 
-    CreateWebViewHandler* handler = new CreateWebViewHandler(ih, hwnd, state);
+    auto* handler = new CreateWebViewHandler(ih, hwnd, state);
     HRESULT hr = env->CreateCoreWebView2Controller(hwnd, handler);
     handler->Release();
 
@@ -663,10 +662,10 @@ HRESULT NavigationCompletedHandler::Invoke(ICoreWebView2* sender, ICoreWebView2N
     iupAttribSet(ih, "_IUPWEB_FAILED", "1");
     ih->data->loadStatus = WEBVIEW_STATUS_FAILED;
 
-    IFns cb = (IFns)IupGetCallback(ih, "ERROR_CB");
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "ERROR_CB"));
     if (cb)
     {
-      LPWSTR uri = NULL;
+      LPWSTR uri = nullptr;
       sender->get_Source(&uri);
       if (uri)
       {
@@ -677,7 +676,7 @@ HRESULT NavigationCompletedHandler::Invoke(ICoreWebView2* sender, ICoreWebView2N
       }
       else
       {
-        cb(ih, (char*)"Unknown URI");
+        cb(ih, const_cast<char*>("Unknown URI"));
       }
     }
   }
@@ -687,17 +686,17 @@ HRESULT NavigationCompletedHandler::Invoke(ICoreWebView2* sender, ICoreWebView2N
 
     if (iupAttribGet(ih, "_IUPWEB_EDITABLE"))
     {
-      sender->ExecuteScript(L"document.body.contentEditable = 'true';", NULL);
+      sender->ExecuteScript(L"document.body.contentEditable = 'true';", nullptr);
     }
     else
     {
-      sender->ExecuteScript(L"document.body.contentEditable = 'false';", NULL);
+      sender->ExecuteScript(L"document.body.contentEditable = 'false';", nullptr);
     }
 
-    IFns cb = (IFns)IupGetCallback(ih, "COMPLETED_CB");
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "COMPLETED_CB"));
     if (cb)
     {
-      LPWSTR uri = NULL;
+      LPWSTR uri = nullptr;
       sender->get_Source(&uri);
       if (uri)
       {
@@ -708,14 +707,14 @@ HRESULT NavigationCompletedHandler::Invoke(ICoreWebView2* sender, ICoreWebView2N
       }
       else
       {
-        cb(ih, (char*)"Unknown URI");
+        cb(ih, const_cast<char*>("Unknown URI"));
       }
     }
   }
 
   winWebBrowserUpdateHistory(ih);
 
-  IFn update_cb = (IFn)IupGetCallback(ih, "UPDATE_CB");
+  IFn update_cb = static_cast<IFn>(IupGetCallback(ih, "UPDATE_CB"));
   if (update_cb)
     update_cb(ih);
 
@@ -747,8 +746,8 @@ HRESULT CreateWebViewHandler::Invoke(HRESULT result, ICoreWebView2Controller* co
   ih->data->webviewController = controller;
   controller->AddRef();
 
-  ICoreWebView2Controller2* controller2 = NULL;
-  HRESULT hr = controller->QueryInterface(iup_uuidof<ICoreWebView2Controller2>(), (void**)&controller2);
+  ICoreWebView2Controller2* controller2 = nullptr;
+  HRESULT hr = controller->QueryInterface(iup_uuidof<ICoreWebView2Controller2>(), reinterpret_cast<void**>(&controller2));
   if (SUCCEEDED(hr) && controller2)
   {
     controller2->put_DefaultBackgroundColor(RGB(255, 255, 255));
@@ -766,7 +765,7 @@ HRESULT CreateWebViewHandler::Invoke(HRESULT result, ICoreWebView2Controller* co
 
   ICoreWebView2* webview = ih->data->webviewWindow;
 
-  ICoreWebView2Settings* settings = NULL;
+  ICoreWebView2Settings* settings = nullptr;
   hr = webview->get_Settings(&settings);
   if (SUCCEEDED(hr) && settings)
   {
@@ -782,23 +781,23 @@ HRESULT CreateWebViewHandler::Invoke(HRESULT result, ICoreWebView2Controller* co
     settings->Release();
   }
 
-  NavigationStartingHandler* navStartHandler = new NavigationStartingHandler(ih);
+  auto* navStartHandler = new NavigationStartingHandler(ih);
   webview->add_NavigationStarting(navStartHandler, &ih->data->navigationStartingToken);
   navStartHandler->Release();
 
-  NavigationCompletedHandler* navCompletedHandler = new NavigationCompletedHandler(ih);
+  auto* navCompletedHandler = new NavigationCompletedHandler(ih);
   webview->add_NavigationCompleted(navCompletedHandler, &ih->data->navigationCompletedToken);
   navCompletedHandler->Release();
 
-  NewWindowHandler* newWindowHandler = new NewWindowHandler(ih);
+  auto* newWindowHandler = new NewWindowHandler(ih);
   webview->add_NewWindowRequested(newWindowHandler, &ih->data->newWindowRequestedToken);
   newWindowHandler->Release();
 
-  HistoryChangedHandler* historyHandler = new HistoryChangedHandler(ih);
+  auto* historyHandler = new HistoryChangedHandler(ih);
   webview->add_HistoryChanged(historyHandler, &ih->data->historyChangedToken);
   historyHandler->Release();
 
-  WebMessageReceivedHandler* messageHandler = new WebMessageReceivedHandler(ih);
+  auto* messageHandler = new WebMessageReceivedHandler(ih);
   webview->add_WebMessageReceived(messageHandler, &ih->data->webMessageReceivedToken);
   messageHandler->Release();
 
@@ -836,7 +835,7 @@ HRESULT CreateWebViewHandler::Invoke(HRESULT result, ICoreWebView2Controller* co
     L"  };"
     L"})();";
 
-  webview->AddScriptToExecuteOnDocumentCreated(updateScript, NULL);
+  webview->AddScriptToExecuteOnDocumentCreated(updateScript, nullptr);
 
   const wchar_t* scrollbarStyleScript =
     L"(function() {"
@@ -858,7 +857,7 @@ HRESULT CreateWebViewHandler::Invoke(HRESULT result, ICoreWebView2Controller* co
     L"  }"
     L"})();";
 
-  webview->AddScriptToExecuteOnDocumentCreated(scrollbarStyleScript, NULL);
+  webview->AddScriptToExecuteOnDocumentCreated(scrollbarStyleScript, nullptr);
 
   state->complete = 1;
 
@@ -870,7 +869,7 @@ static int winWebBrowserSetValueAttrib(Ihandle* ih, const char* value)
   if (!ih->data->webviewWindow || !value)
     return 0;
 
-  iupAttribSet(ih, "_IUPWEB_DIRTY", NULL);
+  iupAttribSet(ih, "_IUPWEB_DIRTY", nullptr);
   iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", "1");
 
   if (iupStrEqualPartial(value, "http://") || iupStrEqualPartial(value, "https://") ||
@@ -892,7 +891,7 @@ static int winWebBrowserSetValueAttrib(Ihandle* ih, const char* value)
     }
   }
 
-  iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", NULL);
+  iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", nullptr);
 
   return 0;
 }
@@ -900,9 +899,9 @@ static int winWebBrowserSetValueAttrib(Ihandle* ih, const char* value)
 static char* winWebBrowserGetValueAttrib(Ihandle* ih)
 {
   if (!ih->data->webviewWindow)
-    return NULL;
+    return nullptr;
 
-  LPWSTR uri = NULL;
+  LPWSTR uri = nullptr;
   ih->data->webviewWindow->get_Source(&uri);
 
   if (uri)
@@ -914,7 +913,7 @@ static char* winWebBrowserGetValueAttrib(Ihandle* ih)
     return retStr;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static int winWebBrowserSetBackForwardAttrib(Ihandle* ih, const char* value)
@@ -992,8 +991,8 @@ static int winWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
   WCHAR* whtml = iupwinStrChar2Wide(value);
   ih->data->webviewWindow->NavigateToString(whtml);
   free(whtml);
-  iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", NULL);
-  iupAttribSet(ih, "_IUPWEB_DIRTY", NULL);
+  iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", nullptr);
+  iupAttribSet(ih, "_IUPWEB_DIRTY", nullptr);
 
   return 0;
 }
@@ -1001,9 +1000,9 @@ static int winWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
 static char* winWebBrowserUnescapeJSON(const char* json_str)
 {
   size_t len = strlen(json_str);
-  char* result = (char*)malloc(len + 1);
+  char* result = static_cast<char*>(malloc(len + 1));
   if (!result)
-    return NULL;
+    return nullptr;
 
   size_t j = 0;
   for (size_t i = 0; i < len; i++)
@@ -1050,25 +1049,25 @@ static char* winWebBrowserUnescapeJSON(const char* json_str)
 
               if (code < 0x80)
               {
-                result[j++] = (char)code;
+                result[j++] = static_cast<char>(code);
               }
               else if (code < 0x800)
               {
-                result[j++] = (char)(0xC0 | (code >> 6));
-                result[j++] = (char)(0x80 | (code & 0x3F));
+                result[j++] = static_cast<char>(0xC0 | (code >> 6));
+                result[j++] = static_cast<char>(0x80 | (code & 0x3F));
               }
               else if (code < 0x10000)
               {
-                result[j++] = (char)(0xE0 | (code >> 12));
-                result[j++] = (char)(0x80 | ((code >> 6) & 0x3F));
-                result[j++] = (char)(0x80 | (code & 0x3F));
+                result[j++] = static_cast<char>(0xE0 | (code >> 12));
+                result[j++] = static_cast<char>(0x80 | ((code >> 6) & 0x3F));
+                result[j++] = static_cast<char>(0x80 | (code & 0x3F));
               }
               else
               {
-                result[j++] = (char)(0xF0 | (code >> 18));
-                result[j++] = (char)(0x80 | ((code >> 12) & 0x3F));
-                result[j++] = (char)(0x80 | ((code >> 6) & 0x3F));
-                result[j++] = (char)(0x80 | (code & 0x3F));
+                result[j++] = static_cast<char>(0xF0 | (code >> 18));
+                result[j++] = static_cast<char>(0x80 | ((code >> 12) & 0x3F));
+                result[j++] = static_cast<char>(0x80 | ((code >> 6) & 0x3F));
+                result[j++] = static_cast<char>(0x80 | (code & 0x3F));
               }
             }
           }
@@ -1090,7 +1089,7 @@ static char* winWebBrowserUnescapeJSON(const char* json_str)
 static char* winWebBrowserGetHTMLAttrib(Ihandle* ih)
 {
   if (!ih->data->webviewWindow)
-    return NULL;
+    return nullptr;
 
   const char* script = "document.documentElement.outerHTML;";
   WCHAR* wscript = iupwinStrChar2Wide(script);
@@ -1136,8 +1135,8 @@ static char* winWebBrowserGetHTMLAttrib(Ihandle* ih)
     }
   };
 
-  WinScriptResult* async = new WinScriptResult();
-  GetHTMLHandler* handler = new GetHTMLHandler(ih, async);
+  auto* async = new WinScriptResult();
+  auto* handler = new GetHTMLHandler(ih, async);
   HRESULT hr = ih->data->webviewWindow->ExecuteScript(wscript, handler);
   handler->Release();
   free(wscript);
@@ -1145,7 +1144,7 @@ static char* winWebBrowserGetHTMLAttrib(Ihandle* ih)
   if (FAILED(hr))
   {
     delete async;
-    return NULL;
+    return nullptr;
   }
 
   winWebBrowserWaitScript(async);
@@ -1158,23 +1157,23 @@ static char* winWebBrowserGetHTMLAttrib(Ihandle* ih)
     return ret;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 static char* winWebBrowserGetStatusAttrib(Ihandle* ih)
 {
   if (!ih->data->webviewWindow)
-    return (char*)"COMPLETED";
+    return const_cast<char*>("COMPLETED");
 
   switch (ih->data->loadStatus)
   {
     case WEBVIEW_STATUS_LOADING:
-      return (char*)"LOADING";
+      return const_cast<char*>("LOADING");
     case WEBVIEW_STATUS_FAILED:
-      return (char*)"FAILED";
+      return const_cast<char*>("FAILED");
     case WEBVIEW_STATUS_COMPLETED:
     default:
-      return (char*)"COMPLETED";
+      return const_cast<char*>("COMPLETED");
   }
 }
 
@@ -1186,7 +1185,7 @@ static int winWebBrowserSetZoomAttrib(Ihandle* ih, const char* value)
   int zoom = 100;
   if (iupStrToInt(value, &zoom))
   {
-    double zoomFactor = (double)zoom / 100.0;
+    double zoomFactor = static_cast<double>(zoom) / 100.0;
     ih->data->webviewController->put_ZoomFactor(zoomFactor);
   }
 
@@ -1196,12 +1195,12 @@ static int winWebBrowserSetZoomAttrib(Ihandle* ih, const char* value)
 static char* winWebBrowserGetZoomAttrib(Ihandle* ih)
 {
   if (!ih->data->webviewController)
-    return NULL;
+    return nullptr;
 
   double zoomFactor = 1.0;
   ih->data->webviewController->get_ZoomFactor(&zoomFactor);
 
-  int zoom = (int)(zoomFactor * 100);
+  int zoom = static_cast<int>(zoomFactor * 100);
   return iupStrReturnInt(zoom);
 }
 
@@ -1211,14 +1210,14 @@ static int winWebBrowserSetPrintAttrib(Ihandle* ih, const char* value)
     return 0;
 
   (void)value;
-  ih->data->webviewWindow->ExecuteScript(L"window.print();", NULL);
+  ih->data->webviewWindow->ExecuteScript(L"window.print();", nullptr);
   return 0;
 }
 
 static char* winWebBrowserGetCanGoBackAttrib(Ihandle* ih)
 {
   if (!ih->data->webviewWindow)
-    return NULL;
+    return nullptr;
 
   BOOL canGoBack = FALSE;
   ih->data->webviewWindow->get_CanGoBack(&canGoBack);
@@ -1228,7 +1227,7 @@ static char* winWebBrowserGetCanGoBackAttrib(Ihandle* ih)
 static char* winWebBrowserGetCanGoForwardAttrib(Ihandle* ih)
 {
   if (!ih->data->webviewWindow)
-    return NULL;
+    return nullptr;
 
   BOOL canGoForward = FALSE;
   ih->data->webviewWindow->get_CanGoForward(&canGoForward);
@@ -1262,7 +1261,7 @@ static char* winWebBrowserGetItemHistoryAttrib(Ihandle* ih, int id)
   (void)ih;
   (void)id;
   /* WebView2 API limitation: navigation history list is not accessible. */
-  return NULL;
+  return nullptr;
 }
 
 static void winWebBrowserExecuteJavascript(Ihandle* ih, const char* script)
@@ -1271,7 +1270,7 @@ static void winWebBrowserExecuteJavascript(Ihandle* ih, const char* script)
     return;
 
   WCHAR* wscript = iupwinStrChar2Wide(script);
-  ih->data->webviewWindow->ExecuteScript(wscript, NULL);
+  ih->data->webviewWindow->ExecuteScript(wscript, nullptr);
   free(wscript);
 }
 
@@ -1319,12 +1318,12 @@ public:
 static char* winWebBrowserRunJavaScriptSync(Ihandle* ih, const char* script)
 {
   if (!ih->data->webviewWindow || !script)
-    return NULL;
+    return nullptr;
 
-  WinScriptResult* async = new WinScriptResult();
+  auto* async = new WinScriptResult();
 
   WCHAR* wscript = iupwinStrChar2Wide(script);
-  ExecuteScriptHandler* handler = new ExecuteScriptHandler(ih, async);
+  auto* handler = new ExecuteScriptHandler(ih, async);
   HRESULT hr = ih->data->webviewWindow->ExecuteScript(wscript, handler);
   handler->Release();
   free(wscript);
@@ -1332,7 +1331,7 @@ static char* winWebBrowserRunJavaScriptSync(Ihandle* ih, const char* script)
   if (FAILED(hr))
   {
     delete async;
-    return NULL;
+    return nullptr;
   }
 
   winWebBrowserWaitScript(async);
@@ -1364,7 +1363,7 @@ static void winWebBrowserExecCommandParam(Ihandle* ih, const char* cmd, const ch
 static char* winWebBrowserQueryCommandValue(Ihandle* ih, const char* cmd)
 {
   if (!ih->data->webviewWindow || !cmd)
-    return NULL;
+    return nullptr;
 
   std::string escaped_cmd = winWebBrowserEscapeJavaScript(cmd);
   std::string script = "document.queryCommandValue(" + escaped_cmd + ");";
@@ -1374,7 +1373,7 @@ static char* winWebBrowserQueryCommandValue(Ihandle* ih, const char* cmd)
 static char* winWebBrowserQueryCommandState(Ihandle* ih, const char* cmd)
 {
   if (!ih->data->webviewWindow || !cmd)
-    return NULL;
+    return nullptr;
 
   std::string escaped_cmd = winWebBrowserEscapeJavaScript(cmd);
   std::string script = "document.queryCommandState(" + escaped_cmd + ");";
@@ -1384,7 +1383,7 @@ static char* winWebBrowserQueryCommandState(Ihandle* ih, const char* cmd)
 static char* winWebBrowserQueryCommandEnabled(Ihandle* ih, const char* cmd)
 {
   if (!ih->data->webviewWindow || !cmd)
-    return NULL;
+    return nullptr;
 
   std::string escaped_cmd = winWebBrowserEscapeJavaScript(cmd);
   std::string script = "document.queryCommandEnabled(" + escaped_cmd + ");";
@@ -1415,7 +1414,7 @@ static int winWebBrowserSetPasteAttrib(Ihandle* ih, const char* value)
 static char* winWebBrowserGetPasteAttrib(Ihandle* ih)
 {
   if (!ih->data->webviewWindow)
-    return NULL;
+    return nullptr;
 
   char* result = winWebBrowserQueryCommandEnabled(ih, "paste");
   if (result)
@@ -1461,7 +1460,7 @@ static int winWebBrowserSetNewAttrib(Ihandle* ih, const char* value)
 static char* winWebBrowserGetEditableAttrib(Ihandle* ih)
 {
   if (!ih->data->webviewWindow)
-    return NULL;
+    return nullptr;
 
   char* result = winWebBrowserRunJavaScriptSync(ih, "document.body.contentEditable == 'true';");
   if (result)
@@ -1486,7 +1485,7 @@ static int winWebBrowserSetEditableAttrib(Ihandle* ih, const char* value)
   else
   {
     winWebBrowserExecuteJavascript(ih, "document.body.contentEditable = 'false';");
-    iupAttribSet(ih, "_IUPWEB_EDITABLE", NULL);
+    iupAttribSet(ih, "_IUPWEB_EDITABLE", nullptr);
   }
   return 0;
 }
@@ -1510,10 +1509,10 @@ static int winWebBrowserSetOpenAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  char* buffer = (char*)malloc(fileSize + 1);
+  char* buffer = static_cast<char*>(malloc(fileSize + 1));
   if (buffer)
   {
-    size_t bytesRead = fread(buffer, 1, (size_t)fileSize, file);
+    size_t bytesRead = fread(buffer, 1, static_cast<size_t>(fileSize), file);
     buffer[bytesRead] = '\0';
     winWebBrowserSetHTMLAttrib(ih, buffer);
     free(buffer);
@@ -1575,14 +1574,14 @@ static int winWebBrowserSetInsertImageFileAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  unsigned char* buffer = (unsigned char*)malloc(fileSize);
+  auto* buffer = static_cast<unsigned char*>(malloc(fileSize));
   if (buffer)
   {
-    size_t bytesRead = fread(buffer, 1, (size_t)fileSize, file);
+    size_t bytesRead = fread(buffer, 1, static_cast<size_t>(fileSize), file);
 
     static const char base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     size_t base64_len = 4 * ((bytesRead + 2) / 3);
-    char* base64 = (char*)malloc(base64_len + 1);
+    char* base64 = static_cast<char*>(malloc(base64_len + 1));
 
     if (base64)
     {
@@ -1625,7 +1624,7 @@ static int winWebBrowserSetInsertImageFileAttrib(Ihandle* ih, const char* value)
       }
 
       size_t dataUrlSize = strlen(mime) + base64_len + 20;
-      char* dataUrl = (char*)malloc(dataUrlSize);
+      char* dataUrl = static_cast<char*>(malloc(dataUrlSize));
       if (dataUrl)
       {
         snprintf(dataUrl, dataUrlSize, "data:%s;base64,%s", mime, base64);
@@ -1789,7 +1788,7 @@ static char* winWebBrowserGetFontNameAttrib(Ihandle* ih)
     free(result);
     return ret;
   }
-  return NULL;
+  return nullptr;
 }
 
 static int winWebBrowserSetFontNameAttrib(Ihandle* ih, const char* value)
@@ -1808,7 +1807,7 @@ static char* winWebBrowserGetFontSizeAttrib(Ihandle* ih)
     free(result);
     return ret;
   }
-  return NULL;
+  return nullptr;
 }
 
 static int winWebBrowserSetFontSizeAttrib(Ihandle* ih, const char* value)
@@ -1827,7 +1826,7 @@ static char* winWebBrowserGetFormatBlockAttrib(Ihandle* ih)
     free(result);
     return ret;
   }
-  return NULL;
+  return nullptr;
 }
 
 static int winWebBrowserSetFormatBlockAttrib(Ihandle* ih, const char* value)
@@ -1846,7 +1845,7 @@ static char* winWebBrowserGetForeColorAttrib(Ihandle* ih)
     free(result);
     return ret;
   }
-  return NULL;
+  return nullptr;
 }
 
 static int winWebBrowserSetForeColorAttrib(Ihandle* ih, const char* value)
@@ -1870,7 +1869,7 @@ static char* winWebBrowserGetBackColorAttrib(Ihandle* ih)
     free(result);
     return ret;
   }
-  return NULL;
+  return nullptr;
 }
 
 static int winWebBrowserSetBackColorAttrib(Ihandle* ih, const char* value)
@@ -1889,7 +1888,7 @@ static char* winWebBrowserGetInnerTextAttrib(Ihandle* ih)
 {
   char* element_id = iupAttribGet(ih, "ELEMENT_ID");
   if (!element_id)
-    return NULL;
+    return nullptr;
 
   std::string escaped_id = winWebBrowserEscapeJavaScript(element_id);
   std::string script = "document.getElementById(" + escaped_id + ")?.innerText || '';";
@@ -1900,7 +1899,7 @@ static char* winWebBrowserGetInnerTextAttrib(Ihandle* ih)
     free(result);
     return ret;
   }
-  return NULL;
+  return nullptr;
 }
 
 static int winWebBrowserSetInnerTextAttrib(Ihandle* ih, const char* value)
@@ -1924,7 +1923,7 @@ static char* winWebBrowserGetJavascriptAttrib(Ihandle* ih)
 
 static int winWebBrowserSetJavascriptAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSet(ih, "_IUPWEB_JS_RESULT", NULL);
+  iupAttribSet(ih, "_IUPWEB_JS_RESULT", nullptr);
   if (!value)
     return 0;
 
@@ -1942,7 +1941,7 @@ static char* winWebBrowserGetAttributeAttrib(Ihandle* ih)
   char* element_id = iupAttribGet(ih, "ELEMENT_ID");
   char* attr_name = iupAttribGet(ih, "ATTRIBUTE_NAME");
   if (!element_id || !attr_name)
-    return NULL;
+    return nullptr;
 
   std::string escaped_id = winWebBrowserEscapeJavaScript(element_id);
   std::string escaped_attr = winWebBrowserEscapeJavaScript(attr_name);
@@ -1955,7 +1954,7 @@ static char* winWebBrowserGetAttributeAttrib(Ihandle* ih)
     free(result);
     return ret;
   }
-  return NULL;
+  return nullptr;
 }
 
 static int winWebBrowserSetAttributeAttrib(Ihandle* ih, const char* value)
@@ -1977,7 +1976,7 @@ static int winWebBrowserSetAttributeAttrib(Ihandle* ih, const char* value)
 static char* winWebBrowserGetDirtyAttrib(Ihandle* ih)
 {
   if (iupAttribGet(ih, "_IUPWEB_DIRTY"))
-    return (char*)"YES";
+    return const_cast<char*>("YES");
 
   char* result = winWebBrowserRunJavaScriptSync(ih, "window.iupGetDirtyFlag ? window.iupGetDirtyFlag() : false;");
   if (result)
@@ -1988,7 +1987,7 @@ static char* winWebBrowserGetDirtyAttrib(Ihandle* ih)
       iupAttribSet(ih, "_IUPWEB_DIRTY", "1");
     return iupStrReturnBoolean(dirty);
   }
-  return (char*)"NO";
+  return const_cast<char*>("NO");
 }
 
 static int winWebBrowserSetFindAttrib(Ihandle* ih, const char* value)
@@ -2005,14 +2004,14 @@ static int winWebBrowserSetFindAttrib(Ihandle* ih, const char* value)
 static int winWebBrowserSetPrintPreviewAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  return winWebBrowserSetPrintAttrib(ih, NULL);
+  return winWebBrowserSetPrintAttrib(ih, nullptr);
 }
 
 static int winWebBrowserMapMethod(Ihandle* ih)
 {
   if (!g_comInitialized)
   {
-    HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (SUCCEEDED(hr))
     {
       g_comInitialized = 1;
@@ -2029,9 +2028,9 @@ static int winWebBrowserMapMethod(Ihandle* ih)
 
 #ifdef IUP_USE_WINUI
   Ihandle* dialog = IupGetDialog(ih);
-  HWND parent = dialog ? (HWND)dialog->handle : NULL;
+  HWND parent = dialog ? static_cast<HWND>(dialog->handle) : nullptr;
 #else
-  HWND parent = (HWND)iupChildTreeGetNativeParentHandle(ih);
+  HWND parent = static_cast<HWND>(iupChildTreeGetNativeParentHandle(ih));
 #endif
   if (!parent)
     return IUP_ERROR;
@@ -2039,21 +2038,21 @@ static int winWebBrowserMapMethod(Ihandle* ih)
   HWND hwnd = CreateWindowEx(0, TEXT("STATIC"), TEXT(""),
                               WS_CHILD | WS_VISIBLE,
                               ih->x, ih->y, ih->currentwidth, ih->currentheight,
-                              parent, NULL, (HINSTANCE)GetModuleHandle(NULL), NULL);
+                              parent, nullptr, static_cast<HINSTANCE>(GetModuleHandle(nullptr)), nullptr);
 
   if (!hwnd)
     return IUP_ERROR;
 
   ih->handle = hwnd;
 
-  SetProp(hwnd, TEXT("IUP_WEBBROWSER_IH"), (HANDLE)ih);
-  ih->data->oldWndProc = (WNDPROC)SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)WebBrowserWndProc);
+  SetProp(hwnd, TEXT("IUP_WEBBROWSER_IH"), reinterpret_cast<HANDLE>(ih));
+  ih->data->oldWndProc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(WebBrowserWndProc)));
 
   HRESULT hr = IupWebView2LoaderInit();
   if (FAILED(hr))
   {
     DestroyWindow(hwnd);
-    ih->handle = NULL;
+    ih->handle = nullptr;
     return IUP_ERROR;
   }
 
@@ -2061,7 +2060,7 @@ static int winWebBrowserMapMethod(Ihandle* ih)
   if (!createEnvFunc)
   {
     DestroyWindow(hwnd);
-    ih->handle = NULL;
+    ih->handle = nullptr;
     return IUP_ERROR;
   }
 
@@ -2069,9 +2068,9 @@ static int winWebBrowserMapMethod(Ihandle* ih)
 
   std::wstring userDataFolder = GetWebView2UserDataFolder();
 
-  WinInitState* state = new WinInitState();
+  auto* state = new WinInitState();
 
-  CreateEnvironmentHandler* envHandler = new CreateEnvironmentHandler(ih, hwnd, state);
+  auto* envHandler = new CreateEnvironmentHandler(ih, hwnd, state);
   hr = createEnvFunc(runtimePath, userDataFolder.empty() ? nullptr : userDataFolder.c_str(), nullptr, envHandler);
   envHandler->Release();
 
@@ -2079,7 +2078,7 @@ static int winWebBrowserMapMethod(Ihandle* ih)
   {
     delete state;
     DestroyWindow(hwnd);
-    ih->handle = NULL;
+    ih->handle = nullptr;
     return IUP_ERROR;
   }
 
@@ -2087,7 +2086,7 @@ static int winWebBrowserMapMethod(Ihandle* ih)
   int loopCount = 0;
   while (state->complete == 0 && loopCount < IUPWIN_WEBVIEW_INIT_TIMEOUT)
   {
-    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+    if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
     {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
@@ -2103,7 +2102,7 @@ static int winWebBrowserMapMethod(Ihandle* ih)
   {
     state->abandoned = 1;
     DestroyWindow(hwnd);
-    ih->handle = NULL;
+    ih->handle = nullptr;
     return IUP_ERROR;
   }
 
@@ -2111,7 +2110,7 @@ static int winWebBrowserMapMethod(Ihandle* ih)
   {
     delete state;
     DestroyWindow(hwnd);
-    ih->handle = NULL;
+    ih->handle = nullptr;
     return IUP_ERROR;
   }
 
@@ -2139,26 +2138,26 @@ static void winWebBrowserUnMapMethod(Ihandle* ih)
     ih->data->webviewWindow->remove_WebMessageReceived(ih->data->webMessageReceivedToken);
 
     ih->data->webviewWindow->Release();
-    ih->data->webviewWindow = NULL;
+    ih->data->webviewWindow = nullptr;
   }
 
   if (ih->data->webviewController)
   {
     ih->data->webviewController->Close();
     ih->data->webviewController->Release();
-    ih->data->webviewController = NULL;
+    ih->data->webviewController = nullptr;
   }
 
   if (ih->handle)
   {
     if (ih->data->oldWndProc)
     {
-      SetWindowLongPtr((HWND)ih->handle, GWLP_WNDPROC, (LONG_PTR)ih->data->oldWndProc);
-      ih->data->oldWndProc = NULL;
+      SetWindowLongPtr(static_cast<HWND>(ih->handle), GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(ih->data->oldWndProc));
+      ih->data->oldWndProc = nullptr;
     }
-    RemoveProp((HWND)ih->handle, TEXT("IUP_WEBBROWSER_IH"));
-    DestroyWindow((HWND)ih->handle);
-    ih->handle = NULL;
+    RemoveProp(static_cast<HWND>(ih->handle), TEXT("IUP_WEBBROWSER_IH"));
+    DestroyWindow(static_cast<HWND>(ih->handle));
+    ih->handle = nullptr;
   }
 }
 
@@ -2180,7 +2179,7 @@ static void winWebBrowserLayoutUpdateMethod(Ihandle* ih)
   if (ih->data->webviewController && ih->handle)
   {
     RECT clientRect;
-    GetClientRect((HWND)ih->handle, &clientRect);
+    GetClientRect(static_cast<HWND>(ih->handle), &clientRect);
 
     RECT bounds;
     bounds.left = 0;
@@ -2197,10 +2196,10 @@ static int winWebBrowserCreateMethod(Ihandle* ih, void** params)
   (void)params;
 
   ih->data = iupALLOCCTRLDATA();
-  ih->data->webviewController = NULL;
-  ih->data->webviewWindow = NULL;
+  ih->data->webviewController = nullptr;
+  ih->data->webviewWindow = nullptr;
   ih->data->loadStatus = WEBVIEW_STATUS_COMPLETED;
-  ih->data->oldWndProc = NULL;
+  ih->data->oldWndProc = nullptr;
 
   IupSetAttribute(ih, "BORDER", "NO");
   IupSetAttribute(ih, "CANFOCUS", "YES");
@@ -2221,17 +2220,17 @@ static void winWebBrowserDestroyMethod(Ihandle* ih)
 
 Iclass* iupWebBrowserNewClass(void)
 {
-  Iclass* ic = iupClassNew(NULL);
+  Iclass* ic = iupClassNew(nullptr);
 
   ic->name = "webbrowser";
   ic->cons = "WebBrowser";
-  ic->format = NULL;
+  ic->format = nullptr;
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
   ic->has_attrib_id = 1;
 
-  ic->New = NULL;
+  ic->New = nullptr;
   ic->Create = winWebBrowserCreateMethod;
   ic->Destroy = winWebBrowserDestroyMethod;
   ic->Map = winWebBrowserMapMethod;
@@ -2249,64 +2248,64 @@ Iclass* iupWebBrowserNewClass(void)
 
   iupBaseRegisterVisualAttrib(ic);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", winWebBrowserGetValueAttrib, winWebBrowserSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKFORWARD", NULL, winWebBrowserSetBackForwardAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "GOBACK", NULL, winWebBrowserSetGoBackAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "GOFORWARD", NULL, winWebBrowserSetGoForwardAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STOP", NULL, winWebBrowserSetStopAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "RELOAD", NULL, winWebBrowserSetReloadAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "HTML", winWebBrowserGetHTMLAttrib, winWebBrowserSetHTMLAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STATUS", winWebBrowserGetStatusAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ZOOM", winWebBrowserGetZoomAttrib, winWebBrowserSetZoomAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PRINT", NULL, winWebBrowserSetPrintAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CANGOBACK", winWebBrowserGetCanGoBackAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CANGOFORWARD", winWebBrowserGetCanGoForwardAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", winWebBrowserGetValueAttrib, winWebBrowserSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKFORWARD", nullptr, winWebBrowserSetBackForwardAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GOBACK", nullptr, winWebBrowserSetGoBackAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GOFORWARD", nullptr, winWebBrowserSetGoForwardAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "STOP", nullptr, winWebBrowserSetStopAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RELOAD", nullptr, winWebBrowserSetReloadAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "HTML", winWebBrowserGetHTMLAttrib, winWebBrowserSetHTMLAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "STATUS", winWebBrowserGetStatusAttrib, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ZOOM", winWebBrowserGetZoomAttrib, winWebBrowserSetZoomAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PRINT", nullptr, winWebBrowserSetPrintAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CANGOBACK", winWebBrowserGetCanGoBackAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CANGOFORWARD", winWebBrowserGetCanGoForwardAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "EDITABLE", winWebBrowserGetEditableAttrib, winWebBrowserSetEditableAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "NEW", NULL, winWebBrowserSetNewAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "OPENFILE", NULL, winWebBrowserSetOpenAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SAVEFILE", NULL, winWebBrowserSetSaveAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "UNDO", NULL, winWebBrowserSetUndoAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "REDO", NULL, winWebBrowserSetRedoAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COPY", NULL, winWebBrowserSetCopyAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CUT", NULL, winWebBrowserSetCutAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PASTE", winWebBrowserGetPasteAttrib, winWebBrowserSetPasteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTALL", NULL, winWebBrowserSetSelectAllAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "EXECCOMMAND", NULL, winWebBrowserSetExecCommandAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERTIMAGE", NULL, winWebBrowserSetInsertImageAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERTIMAGEFILE", NULL, winWebBrowserSetInsertImageFileAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CREATELINK", NULL, winWebBrowserSetCreateLinkAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERTTEXT", NULL, winWebBrowserSetInsertTextAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERTHTML", NULL, winWebBrowserSetInsertHtmlAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "EDITABLE", winWebBrowserGetEditableAttrib, winWebBrowserSetEditableAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "NEW", nullptr, winWebBrowserSetNewAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "OPENFILE", nullptr, winWebBrowserSetOpenAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SAVEFILE", nullptr, winWebBrowserSetSaveAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "UNDO", nullptr, winWebBrowserSetUndoAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "REDO", nullptr, winWebBrowserSetRedoAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COPY", nullptr, winWebBrowserSetCopyAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUT", nullptr, winWebBrowserSetCutAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PASTE", winWebBrowserGetPasteAttrib, winWebBrowserSetPasteAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTALL", nullptr, winWebBrowserSetSelectAllAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "EXECCOMMAND", nullptr, winWebBrowserSetExecCommandAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERTIMAGE", nullptr, winWebBrowserSetInsertImageAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERTIMAGEFILE", nullptr, winWebBrowserSetInsertImageFileAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CREATELINK", nullptr, winWebBrowserSetCreateLinkAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERTTEXT", nullptr, winWebBrowserSetInsertTextAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERTHTML", nullptr, winWebBrowserSetInsertHtmlAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "FONTNAME", winWebBrowserGetFontNameAttrib, winWebBrowserSetFontNameAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FONTSIZE", winWebBrowserGetFontSizeAttrib, winWebBrowserSetFontSizeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMATBLOCK", winWebBrowserGetFormatBlockAttrib, winWebBrowserSetFormatBlockAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORECOLOR", winWebBrowserGetForeColorAttrib, winWebBrowserSetForeColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BACKCOLOR", winWebBrowserGetBackColorAttrib, winWebBrowserSetBackColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FONTNAME", winWebBrowserGetFontNameAttrib, winWebBrowserSetFontNameAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FONTSIZE", winWebBrowserGetFontSizeAttrib, winWebBrowserSetFontSizeAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORMATBLOCK", winWebBrowserGetFormatBlockAttrib, winWebBrowserSetFormatBlockAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORECOLOR", winWebBrowserGetForeColorAttrib, winWebBrowserSetForeColorAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKCOLOR", winWebBrowserGetBackColorAttrib, winWebBrowserSetBackColorAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "COMMAND", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COMMANDSHOWUI", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COMMANDSTATE", winWebBrowserGetCommandStateAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COMMANDENABLED", winWebBrowserGetCommandEnabledAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COMMANDTEXT", winWebBrowserGetCommandTextAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COMMANDVALUE", winWebBrowserGetCommandValueAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMMAND", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMMANDSHOWUI", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMMANDSTATE", winWebBrowserGetCommandStateAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMMANDENABLED", winWebBrowserGetCommandEnabledAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMMANDTEXT", winWebBrowserGetCommandTextAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMMANDVALUE", winWebBrowserGetCommandValueAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ELEMENT_ID", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INNERTEXT", winWebBrowserGetInnerTextAttrib, winWebBrowserSetInnerTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ATTRIBUTE_NAME", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ATTRIBUTE", winWebBrowserGetAttributeAttrib, winWebBrowserSetAttributeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "JAVASCRIPT", winWebBrowserGetJavascriptAttrib, winWebBrowserSetJavascriptAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ELEMENT_ID", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INNERTEXT", winWebBrowserGetInnerTextAttrib, winWebBrowserSetInnerTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ATTRIBUTE_NAME", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ATTRIBUTE", winWebBrowserGetAttributeAttrib, winWebBrowserSetAttributeAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "JAVASCRIPT", winWebBrowserGetJavascriptAttrib, winWebBrowserSetJavascriptAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "BACKCOUNT", winWebBrowserGetBackCountAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORWARDCOUNT", winWebBrowserGetForwardCountAttrib, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "ITEMHISTORY", winWebBrowserGetItemHistoryAttrib, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BACKCOUNT", winWebBrowserGetBackCountAttrib, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FORWARDCOUNT", winWebBrowserGetForwardCountAttrib, nullptr, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "ITEMHISTORY", winWebBrowserGetItemHistoryAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "DIRTY", winWebBrowserGetDirtyAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FIND", NULL, winWebBrowserSetFindAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PRINTPREVIEW", NULL, winWebBrowserSetPrintPreviewAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DIRTY", winWebBrowserGetDirtyAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FIND", nullptr, winWebBrowserSetFindAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PRINTPREVIEW", nullptr, winWebBrowserSetPrintPreviewAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   return ic;
 }
