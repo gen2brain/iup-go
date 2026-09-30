@@ -60,7 +60,7 @@ static void iFlatValGetHandlerSize(Ihandle* ih, int is_horizontal, int draw_w, i
   {
     *width = 0;
     *height = 0;
-    iupImageGetInfo(image, width, height, NULL);
+    iupImageGetDrawInfo(image, width, height, NULL);
   }
   else
   {
@@ -296,7 +296,7 @@ static int iFlatValRedraw_CB(Ihandle* ih)
   {
     int x, y, width = 0, height = 0, make_inactive;
     const char* draw_image = iupFlatGetImageName(ih, "IMAGE", image, ih->data->pressed, ih->data->highlighted, active, &make_inactive);
-    iupImageGetInfo(draw_image, &width, &height, NULL);
+    iupImageGetDrawInfo(draw_image, &width, &height, NULL);
 
     /* always center the image */
     x = (x2 - x1 + 1 - width) / 2;
@@ -814,7 +814,7 @@ static void iFlatValComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* c
   if (fit2backimage && bgimage)
   {
     iupAttribSet(ih, "BORDERWIDTH", "0");
-    iupImageGetInfo(bgimage, &natural_w, &natural_h, NULL);
+    iupImageGetDrawInfo(bgimage, &natural_w, &natural_h, NULL);
   }
   else
   {

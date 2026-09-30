@@ -1777,7 +1777,7 @@ static void iFlatListComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* 
 
   if (fit2backimage && back_image)
   {
-    iupImageGetInfo(back_image, w, h, NULL);
+    iupImageGetDrawInfo(back_image, w, h, NULL);
     *w += 2 * ih->data->border_width;
     *h += 2 * ih->data->border_width;
 
