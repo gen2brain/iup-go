@@ -197,12 +197,12 @@ static void iSpinLoadImages(void)
   };
 
   img = IupImage(9, 6, iupspin_up_img);
-  IupSetAttribute(img, "0", "0 0 0");
+  IupSetStrAttribute(img, "0", IupGetGlobal("DLGFGCOLOR"));
   IupSetAttribute(img, "1", "BGCOLOR");
   IupSetHandle("IupSpinUpImage", img);
 
   img = IupImage(9, 6, iupspin_down_img);
-  IupSetAttribute(img, "0", "0 0 0");
+  IupSetStrAttribute(img, "0", IupGetGlobal("DLGFGCOLOR"));
   IupSetAttribute(img, "1", "BGCOLOR");
   IupSetHandle("IupSpinDownImage", img);
 }
