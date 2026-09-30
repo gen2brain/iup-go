@@ -1,4 +1,4 @@
-//go:build ((!windows && !darwin && !motif && !qt && !gtk4 && !efl && !fltk && !gnustep && !haiku) || (gtk && (windows || darwin))) && !android && !js
+//go:build ((!windows && !darwin && !motif && !qt && !qml && !gtk4 && !efl && !fltk && !gnustep && !haiku) || (gtk && (windows || darwin))) && !android && !js
 
 package iup
 

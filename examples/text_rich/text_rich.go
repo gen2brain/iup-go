@@ -73,6 +73,7 @@ func main() {
 	// Yellow background + underline on the second part of line 5
 	formattag = iup.User()
 	iup.SetAttribute(formattag, "BGCOLOR", "255 255 0")
+	iup.SetAttribute(formattag, "FGCOLOR", "0 0 0")
 	iup.SetAttribute(formattag, "UNDERLINE", "SINGLE")
 	iup.SetAttribute(formattag, "SELECTION", "5,23:5,50")
 	iup.SetAttributeHandle(mltline, "ADDFORMATTAG", formattag)

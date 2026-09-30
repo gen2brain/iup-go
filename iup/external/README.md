@@ -3,7 +3,7 @@
 IUP is a multi-platform toolkit for building graphical user interfaces.
 It uses native interface elements for high performance and platform-consistent look and feel.
 
-This is a fork maintained as part of [IUP-Go](https://github.com/gen2brain/iup-go) with additional backends (Cocoa, WinUI, Qt, GTK4, FLTK, EFL, Android, Cocoa Touch, Haiku, WebAssembly) and features.
+This is a fork maintained as part of [IUP-Go](https://github.com/gen2brain/iup-go) with additional backends (Cocoa, WinUI, Qt, Qt Quick, GTK4, FLTK, EFL, Android, Cocoa Touch, Haiku, WebAssembly) and features.
 
 API reference documentation is available in the [docs](https://github.com/gen2brain/iup-go/tree/main/docs) directory.
 
@@ -48,6 +48,7 @@ Available presets:
 | `motif`           | Motif / X11                     |                      |
 | `qt6`             | Qt6                             |                      |
 | `qt5`             | Qt5                             |                      |
+| `qml`             | Qt Quick (QML)                  | Qt 6.8+              |
 | `fltk`            | FLTK                            |                      |
 | `efl`             | EFL / Elementary                |                      |
 | `android`         | Android (arm64-v8a)             | Requires NDK         |
@@ -62,6 +63,7 @@ Available presets:
 | `motif-full`      | Motif + all optional libs       |                      |
 | `qt6-full`        | Qt6 + all optional libs         |                      |
 | `qt5-full`        | Qt5 + all optional libs         |                      |
+| `qml-full`        | Qt Quick + all optional libs    | Qt 6.8+              |
 | `efl-full`        | EFL + all optional libs         |                      |
 | `fltk-full`       | FLTK + all optional libs        |                      |
 | `android-full`    | Android + GL + Web              | Requires NDK         |
@@ -134,6 +136,10 @@ For Web: also `qt6-webengine-dev` or `qt6-qtwebengine-devel`.
 `qtbase5-dev` or `qt5-qtbase-devel`.
 For Web: also `qtwebengine5-dev` or `qt5-qtwebengine-devel`.
 
+**Qt Quick** (QML):
+`qt6-declarative-dev` or `qt6-qtdeclarative-devel`. Requires Qt 6.8 or newer.
+For Web: also `qt6-webengine-dev` or `qt6-qtwebengine-devel`.
+
 **EFL**:
 `efl-devel` or `libefl-dev`.
 
@@ -181,7 +187,7 @@ emcc app.c build/wasm/libiup.a -Iinclude -sEMULATE_FUNCTION_POINTER_CASTS=1 -sAL
 This builds the static library only. To build and run a complete app (C or Go) in the browser, use `wasm/build-wasm.sh`; see [wasm/README.md](wasm/README.md).
 
 **OpenGL** (`IUP_BUILD_GL`):
-GTK3/GTK4/Qt/EFL/FLTK use EGL on Linux: `libegl-dev libgl-dev` or `libglvnd-devel`.
+GTK3/GTK4/Qt/Qt Quick/EFL/FLTK use EGL on Linux: `libegl-dev libgl-dev` or `libglvnd-devel`.
 Motif/GTK2 use GLX: `libgl-dev` or `libglvnd-devel`.
 Windows uses WGL, macOS uses OpenGL framework (no extra deps).
 Android uses EGL + GLES v3 from the NDK (no extra deps).
@@ -207,30 +213,6 @@ target_link_libraries(myapp PRIVATE IUP::iupctrl)
 target_link_libraries(myapp PRIVATE IUP::iupplot)
 target_link_libraries(myapp PRIVATE IUP::iupmedia)
 ```
-
-### Source Tarball
-
-To create a source distribution tarball:
-
-```bash
-cmake -B build
-cd build
-cpack --config CPackSourceConfig.cmake
-```
-
-This produces `iup-<version>.tar.gz` in the build directory.
-
-### Docs Tarball
-
-To create a tarball of the `docs/` reference documentation:
-
-```bash
-cmake -B build
-cd build
-cpack --config CPackDocsConfig.cmake
-```
-
-This produces `iup-docs-<version>.tar.gz` in the build directory.
 
 ## Libraries
 

@@ -1,0 +1,397 @@
+/** \file
+ * \brief Qt Quick System Information
+ *
+ * See Copyright Notice in "iup.h"
+ */
+
+#include <cstdio>
+#include <cstdlib>
+
+#include <QScreen>
+#include <QGuiApplication>
+#include <QCursor>
+#include <QCoreApplication>
+#include <QRect>
+#include <QString>
+#include <QSysInfo>
+#include <QDir>
+#include <QStandardPaths>
+
+#ifndef _WIN32
+#include <unistd.h>
+#include <pwd.h>
+#include <langinfo.h>
+#else
+#include <windows.h>
+#endif
+
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
+#ifdef __HAIKU__
+#include <LocaleRoster.h>
+#include <Message.h>
+#endif
+
+#include "iup.h"
+#include "iup_export.h"
+#include "iup_str.h"
+#include "iup_drvinfo.h"
+#include "iup_varg.h"
+
+#include "iupqml_drv.h"
+
+/****************************************************************************
+ * Screen Information
+ ****************************************************************************/
+
+extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
+{
+  (void)x;
+  (void)y;
+  (void)add;
+}
+
+extern "C" IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
+{
+  QScreen* screen = QGuiApplication::primaryScreen();
+
+  if (screen)
+  {
+    QRect available_geom = screen->availableGeometry();
+    *width = available_geom.width();
+    *height = available_geom.height();
+  }
+  else
+  {
+    *width = 800;
+    *height = 600;
+  }
+}
+
+extern "C" IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
+{
+  QScreen* screen = QGuiApplication::primaryScreen();
+
+  if (screen)
+  {
+    QRect geom = screen->geometry();
+    *width = geom.width();
+    *height = geom.height();
+  }
+  else
+  {
+    *width = 800;
+    *height = 600;
+  }
+}
+
+extern "C" IUP_SDK_API int iupdrvGetScreenDepth(void)
+{
+  QScreen* screen = QGuiApplication::primaryScreen();
+
+  if (screen)
+    return screen->depth();
+
+  return 24;
+}
+
+extern "C" IUP_SDK_API double iupdrvGetScreenDpi(void)
+{
+  QScreen* screen = QGuiApplication::primaryScreen();
+
+  if (screen)
+  {
+    /* IUP sizes want the logical DPI setting, not the panel's physical DPI */
+    qreal dpi_x = screen->logicalDotsPerInchX();
+    qreal dpi_y = screen->logicalDotsPerInchY();
+
+    return (dpi_x + dpi_y) / 2.0;
+  }
+
+  return 96.0;
+}
+
+extern "C" IUP_SDK_API int iupdrvScaleNaturalPx(int px)
+{
+  return px;
+}
+
+/****************************************************************************
+ * Cursor and Keyboard State
+ ****************************************************************************/
+
+extern "C" IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
+{
+  QPoint pos = QCursor::pos();
+
+  if (x) *x = pos.x();
+  if (y) *y = pos.y();
+}
+
+extern "C" IUP_SDK_API void iupdrvGetKeyState(char* key)
+{
+  Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
+
+  /* Shift */
+  if (modifiers & Qt::ShiftModifier)
+    key[0] = 'S';
+  else
+    key[0] = ' ';
+
+  if (modifiers & Qt::ControlModifier)
+    key[1] = 'C';
+  else
+    key[1] = ' ';
+
+  /* Alt */
+  if (modifiers & Qt::AltModifier)
+    key[2] = 'A';
+  else
+    key[2] = ' ';
+
+  if (modifiers & Qt::MetaModifier)
+    key[3] = 'Y';
+  else
+    key[3] = ' ';
+
+  key[4] = 0;
+}
+
+/****************************************************************************
+ * System Information
+ ****************************************************************************/
+
+extern "C" IUP_SDK_API char* iupdrvGetComputerName(void)
+{
+  QString hostname = QSysInfo::machineHostName();
+  return iupStrReturnStr(hostname.toUtf8().constData());
+}
+
+extern "C" IUP_SDK_API char* iupdrvGetUserName(void)
+{
+#ifdef _WIN32
+  QString username = qgetenv("USERNAME");
+  if (username.isEmpty())
+    username = qgetenv("USER");
+
+  return iupStrReturnStr(username.toUtf8().constData());
+#else
+  const char* username = getenv("USER");
+
+  if (!username)
+  {
+    struct passwd* pwd = getpwuid(getuid());
+    if (pwd)
+      username = pwd->pw_name;
+  }
+
+  if (username)
+    return iupStrReturnStr(username);
+
+  return iupStrReturnStr("unknown");
+#endif
+}
+
+/****************************************************************************
+ * Additional System Info
+ ****************************************************************************/
+
+extern "C" IUP_SDK_API char* iupdrvGetSystemName(void)
+{
+  QString os_name = QSysInfo::productType();
+  return iupStrReturnStr(os_name.toUtf8().constData());
+}
+
+extern "C" IUP_SDK_API char* iupdrvGetSystemVersion(void)
+{
+  QString os_version = QSysInfo::productVersion();
+  return iupStrReturnStr(os_version.toUtf8().constData());
+}
+
+/****************************************************************************
+ * Directory and File Functions
+ ****************************************************************************/
+
+extern "C" IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
+{
+  QDir current = QDir::current();
+  QByteArray path = current.absolutePath().toUtf8();
+  char* buffer = iupStrGetMemory(path.length() + 1);
+  iupStrCopyN(buffer, path.length() + 1, path.constData());
+  return buffer;
+}
+
+extern "C" IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
+{
+  return QDir::setCurrent(QString::fromUtf8(dir)) ? 1 : 0;
+}
+
+extern "C" IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system)
+{
+  if (!app_name || !app_name[0])
+  {
+    filename[0] = '\0';
+    return 0;
+  }
+
+  if (use_system)
+  {
+    char root[10240];
+    if (!iupdrvGetUserDir(root, sizeof(root), IUP_USER_DIR_CONFIG))
+    {
+      filename[0] = '\0';
+      return 0;
+    }
+    QString app_dir = QString::fromUtf8(root) + "/" + QString::fromUtf8(app_name);
+    QDir dir(app_dir);
+    if (!dir.exists())
+      dir.mkpath(".");
+
+#ifdef _WIN32
+    QString config_file = app_dir + "/config.cfg";
+#else
+    QString config_file = app_dir + "/config";
+#endif
+
+    QByteArray path_bytes = config_file.toUtf8();
+    iupStrCopyN(filename, 10240, path_bytes.constData());
+    return 1;
+  }
+
+  QString home_dir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+  if (home_dir.isEmpty())
+  {
+    filename[0] = '\0';
+    return 0;
+  }
+
+#ifdef _WIN32
+  QString config_file = home_dir + "/" + QString::fromUtf8(app_name) + ".cfg";
+#else
+  QString config_file = home_dir + "/." + QString::fromUtf8(app_name);
+#endif
+
+  QByteArray path_bytes = config_file.toUtf8();
+  iupStrCopyN(filename, 10240, path_bytes.constData());
+  return 1;
+}
+
+extern "C" IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
+{
+  if (!path || size <= 0) return 0;
+  path[0] = '\0';
+
+  QStandardPaths::StandardLocation loc;
+  switch (kind)
+  {
+    case IUP_USER_DIR_CACHE:  loc = QStandardPaths::GenericCacheLocation; break;
+    case IUP_USER_DIR_DATA:   loc = QStandardPaths::GenericDataLocation; break;
+    case IUP_USER_DIR_CONFIG: loc = QStandardPaths::GenericConfigLocation; break;
+    case IUP_USER_DIR_TEMP:   loc = QStandardPaths::TempLocation; break;
+    default: return 0;
+  }
+
+  QString root = QStandardPaths::writableLocation(loc);
+  if (root.isEmpty()) return 0;
+
+  QByteArray bytes = root.toUtf8();
+  iupStrCopyN(path, size, bytes.constData());
+  return 1;
+}
+
+/****************************************************************************
+ * Locale Information
+ ****************************************************************************/
+
+extern "C" IUP_SDK_API char* iupdrvLocaleInfo(void)
+{
+#ifndef _WIN32
+  return iupStrReturnStr(nl_langinfo(CODESET));
+#else
+  UINT codepage = GetACP();
+  if (codepage == CP_UTF8)
+    return const_cast<char*>("UTF-8");
+  return iupStrReturnStrf("CP%u", codepage);
+#endif
+}
+
+extern "C" IUP_SDK_API char* iupdrvExeFileName(void)
+{
+  QByteArray path = QCoreApplication::applicationFilePath().toUtf8();
+  if (path.isEmpty())
+    return nullptr;
+  return iupStrReturnStr(path.constData());
+}
+
+extern "C" IUP_SDK_API char* iupdrvLanguageInfo(void)
+{
+#if defined(_WIN32)
+  WCHAR wname[LOCALE_NAME_MAX_LENGTH];
+  char name[LOCALE_NAME_MAX_LENGTH];
+
+  if (!LCIDToLocaleName(MAKELCID(GetUserDefaultUILanguage(), SORT_DEFAULT), wname, LOCALE_NAME_MAX_LENGTH, 0))
+    return nullptr;
+  if (!WideCharToMultiByte(CP_UTF8, 0, wname, -1, name, sizeof(name), nullptr, nullptr))
+    return nullptr;
+  return iupStrLanguageTag(name);
+#elif defined(__APPLE__)
+  char name[64];
+  char* tag = nullptr;
+  CFArrayRef languages = CFLocaleCopyPreferredLanguages();
+
+  if (!languages)
+    return nullptr;
+  if (CFArrayGetCount(languages) > 0 &&
+      CFStringGetCString(static_cast<CFStringRef>(CFArrayGetValueAtIndex(languages, 0)), name, sizeof(name), kCFStringEncodingUTF8))
+    tag = iupStrLanguageTag(name);
+  CFRelease(languages);
+  return tag;
+#elif defined(__HAIKU__)
+  BMessage languages;
+  const char* language;
+
+  if (BLocaleRoster::Default()->GetPreferredLanguages(&languages) != B_OK)
+    return nullptr;
+  if (languages.FindString("language", 0, &language) != B_OK)
+    return nullptr;
+  return iupStrLanguageTag(language);
+#else
+  return iupStrLanguageTagFromEnv();
+#endif
+}
+
+/****************************************************************************
+ * Logging Functions
+ ****************************************************************************/
+
+extern "C" IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
+{
+  char buffer[2048];
+  vsnprintf(buffer, sizeof(buffer), format, arglist);
+
+  QtMsgType msg_type = QtDebugMsg;
+
+  if (iupStrEqualNoCase(type, "DEBUG"))
+    msg_type = QtDebugMsg;
+  else if (iupStrEqualNoCase(type, "INFO"))
+    msg_type = QtInfoMsg;
+  else if (iupStrEqualNoCase(type, "WARNING"))
+    msg_type = QtWarningMsg;
+  else if (iupStrEqualNoCase(type, "ERROR"))
+    msg_type = QtCriticalMsg;
+  else if (iupStrEqualNoCase(type, "CRITICAL") || iupStrEqualNoCase(type, "ALERT") ||
+           iupStrEqualNoCase(type, "EMERGENCY"))
+    msg_type = QtFatalMsg;
+
+  qt_message_output(msg_type, QMessageLogContext(), QString::fromUtf8(buffer));
+}
+
+extern "C" IUP_API void IupLog(const char* type, const char* format, ...)
+{
+  va_list arglist;
+  va_start(arglist, format);
+  IupLogV(type, format, arglist);
+  va_end(arglist);
+}

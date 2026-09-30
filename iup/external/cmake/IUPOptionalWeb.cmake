@@ -37,6 +37,11 @@ elseif(IUP_BACKEND MATCHES "^qt")
     list(APPEND _WEB_LIBS Qt5::WebEngineCore Qt5::WebEngineWidgets)
   endif()
 
+elseif(IUP_BACKEND STREQUAL "qml")
+  list(APPEND _WEB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupqml_webbrowser.cpp")
+  find_package(Qt6 REQUIRED COMPONENTS WebEngineQuick WebEngineCore)
+  list(APPEND _WEB_LIBS Qt6::WebEngineQuick Qt6::WebEngineCore)
+
 elseif(IUP_BACKEND STREQUAL "android")
   list(APPEND _WEB_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupandroid_webbrowser.c"
@@ -98,6 +103,8 @@ elseif(IUP_BACKEND STREQUAL "qt6")
   set(IUPWEB_PC_REQUIRES "Qt6WebEngineCore Qt6WebEngineWidgets")
 elseif(IUP_BACKEND STREQUAL "qt5")
   set(IUPWEB_PC_REQUIRES "Qt5WebEngineCore Qt5WebEngineWidgets")
+elseif(IUP_BACKEND STREQUAL "qml")
+  set(IUPWEB_PC_REQUIRES "Qt6WebEngineQuick Qt6WebEngineCore")
 elseif(IUP_BACKEND STREQUAL "haiku")
   set(IUPWEB_PC_LIBS_PRIVATE "-lWebKitLegacy -lJavaScriptCore")
 endif()

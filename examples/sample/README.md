@@ -48,6 +48,12 @@
 ### Linux Qt6 Dark
 [<img src="sample_qt6_dark.png" width="700" title="Linux Qt6 Dark" alt="Linux Qt6 Dark" />](sample_qt6_dark.png)
 
+### Linux Qt Quick
+[<img src="sample_qml.png" width="700" title="Linux Qt Quick" alt="Linux Qt Quick" />](sample_qml.png)
+
+### Linux Qt Quick Dark
+[<img src="sample_qml_dark.png" width="700" title="Linux Qt Quick Dark" alt="Linux Qt Quick Dark" />](sample_qml_dark.png)
+
 ### macOS GTK3
 [<img src="sample_gtk3_macos.png" width="700" title="macOS GTK3" alt="macOS GTK3" />](sample_gtk3_macos.png)
 

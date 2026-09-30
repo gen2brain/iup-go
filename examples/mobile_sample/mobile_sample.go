@@ -25,7 +25,7 @@ func main() {
 		iup.Hbox(buildLabels(), buildToggles()).SetAttribute("GAP", "8"),
 		buildText(),
 		iup.Hbox(buildLists(), buildTree()).SetAttribute("GAP", "8"),
-	).SetAttributes(`TABTITLE="Controls", NMARGIN=10x10, NGAP=10`)
+	).SetAttributes(`TABTITLE="Controls", NMARGIN=6x6, NGAP=6`)
 
 	tab2 := iup.Vbox(
 		buildTable(),
@@ -33,7 +33,7 @@ func main() {
 		buildDialogButtons(),
 		buildCanvas(),
 		buildClipboardNotify(),
-	).SetAttributes(`TABTITLE="Data", NMARGIN=10x10, NGAP=10`)
+	).SetAttributes(`TABTITLE="Data", NMARGIN=6x6, NGAP=6`)
 
 	dlg := iup.Dialog(
 		iup.Tabs(tab1, tab2),
@@ -189,7 +189,7 @@ func buildButtons() iup.Ihandle {
 		iup.ActionFunc(func(ih iup.Ihandle) int { setStatus("Borderless pressed"); return iup.DEFAULT }))
 
 	return iup.Frame(
-		iup.Hbox(btnText, btnImg, btnBorderless, btnImgText).SetAttributes(`ALIGNMENT=ACENTER, GAP=8, MARGIN=8x8`),
+		iup.Hbox(btnText, btnImg, btnBorderless, btnImgText).SetAttributes(`ALIGNMENT=ACENTER, GAP=8, MARGIN=4x4`),
 	).SetAttributes(`TITLE=Buttons, EXPAND=HORIZONTAL`)
 }
 
@@ -205,7 +205,7 @@ func buildLabels() iup.Ihandle {
 			iup.Label("Highlighted").SetAttributes(`BGCOLOR="255 230 150", FGCOLOR="150 60 20"`),
 			iup.Label("").SetAttribute("SEPARATOR", "HORIZONTAL"),
 			iup.Label("Separator above."),
-		).SetAttributes(`GAP=4, MARGIN=8x8`),
+		).SetAttributes(`GAP=2, MARGIN=4x4`),
 	).SetAttribute("EXPAND", "HORIZONTAL").SetAttribute("TITLE", "Labels")
 }
 
@@ -242,7 +242,7 @@ func buildToggles() iup.Ihandle {
 		iup.Vbox(
 			iup.Hbox(chk, sw).SetAttributes(`GAP=12, ALIGNMENT=ACENTER`),
 			iup.Hbox(radio, imgToggle).SetAttributes(`GAP=12, ALIGNMENT=ACENTER`),
-		).SetAttributes(`GAP=8, NMARGIN=8x8`),
+		).SetAttributes(`GAP=8, NMARGIN=4x4`),
 	).SetAttribute("TITLE", "Toggles")
 }
 
@@ -259,18 +259,18 @@ func buildText() iup.Ihandle {
 			return iup.DEFAULT
 		}))
 
-	multi := iup.Text().SetAttributes(`MULTILINE=YES, VISIBLELINES=3, EXPAND=HORIZONTAL`)
+	multi := iup.Text().SetAttributes(`MULTILINE=YES, VISIBLELINES=2, EXPAND=HORIZONTAL`)
 	multi.SetAttribute("VALUE", "Line 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6")
 
 	return iup.Frame(
-		iup.Vbox(single, pwd, spin, multi).SetAttributes(`GAP=6, MARGIN=8x8`),
+		iup.Vbox(single, pwd, spin, multi).SetAttributes(`GAP=4, MARGIN=4x4`),
 	).SetAttributes(`TITLE=Text, EXPAND=HORIZONTAL`)
 }
 
 // Lists ---------------------------------------------------------------
 
 func buildLists() iup.Ihandle {
-	simple := iup.List().SetAttributes(`1=Alpha, 2=Beta, 3=Gamma, 4=Delta, 5=Epsilon, 6=Zeta, 7=Eta, 8=Theta, VISIBLELINES=3, EXPAND=HORIZONTAL`)
+	simple := iup.List().SetAttributes(`1=Alpha, 2=Beta, 3=Gamma, 4=Delta, 5=Epsilon, 6=Zeta, 7=Eta, 8=Theta, VISIBLELINES=2, EXPAND=HORIZONTAL`)
 	simple.SetCallback("VALUECHANGED_CB",
 		iup.ValueChangedFunc(func(ih iup.Ihandle) int {
 			setStatus("List=" + ih.GetAttribute("VALUE"))
@@ -285,14 +285,14 @@ func buildLists() iup.Ihandle {
 		}))
 
 	return iup.Frame(
-		iup.Vbox(simple, drop).SetAttributes(`GAP=6, MARGIN=8x8`),
+		iup.Vbox(simple, drop).SetAttributes(`GAP=6, MARGIN=4x4`),
 	).SetAttributes(`TITLE=Lists, EXPAND=HORIZONTAL`)
 }
 
 // Tree ----------------------------------------------------------------
 
 func buildTree() iup.Ihandle {
-	tree := iup.Tree().SetAttributes(`RASTERSIZE=150x150, EXPAND=YES, ADDROOT=NO`).SetHandle("tree")
+	tree := iup.Tree().SetAttributes(`RASTERSIZE=150x, VISIBLELINES=4, EXPAND=YES, ADDROOT=NO`).SetHandle("tree")
 	tree.SetCallback("SELECTION_CB",
 		iup.SelectionFunc(func(ih iup.Ihandle, id, status int) int {
 			if status == 1 {
@@ -302,7 +302,7 @@ func buildTree() iup.Ihandle {
 		}))
 
 	return iup.Frame(
-		iup.Vbox(tree).SetAttributes(`MARGIN=8x8`),
+		iup.Vbox(tree).SetAttributes(`MARGIN=4x4`),
 	).SetAttributes(`TITLE=Tree, EXPAND=HORIZONTAL`)
 }
 
@@ -340,7 +340,7 @@ func buildTable() iup.Ihandle {
 	}))
 
 	return iup.Frame(
-		iup.Vbox(table).SetAttributes(`MARGIN=8x8`),
+		iup.Vbox(table).SetAttributes(`MARGIN=4x4`),
 	).SetAttributes(`TITLE=Table, EXPAND=HORIZONTAL`)
 }
 
@@ -361,7 +361,7 @@ func buildValProgress() iup.Ihandle {
 		iup.Vbox(
 			iup.Label("Slider:"), val,
 			iup.Label("Progress:"), progress,
-		).SetAttributes(`GAP=6, MARGIN=8x8`),
+		).SetAttributes(`GAP=6, MARGIN=4x4`),
 	).SetAttributes(`TITLE="Val + Progress", EXPAND=HORIZONTAL`)
 }
 
@@ -378,7 +378,7 @@ func buildCanvas() iup.Ihandle {
 		return iup.DEFAULT
 	}))
 	return iup.Frame(
-		iup.Vbox(canvas).SetAttributes(`MARGIN=8x8`),
+		iup.Vbox(canvas).SetAttributes(`MARGIN=4x4`),
 	).SetAttributes(`TITLE=Canvas, EXPAND=HORIZONTAL`)
 }
 
@@ -471,7 +471,7 @@ func buildDialogButtons() iup.Ihandle {
 					setStatus("Help opened")
 				}),
 			).SetAttributes(`GAP=6, ALIGNMENT=ACENTER`),
-		).SetAttributes(`GAP=6, NMARGIN=8x8, ALIGNMENT=ACENTER`),
+		).SetAttributes(`GAP=6, NMARGIN=4x4, ALIGNMENT=ACENTER`),
 	).SetAttributes(`TITLE=Dialogs, EXPAND=HORIZONTAL`)
 }
 
@@ -522,7 +522,7 @@ func buildClipboardNotify() iup.Ihandle {
 	return iup.Frame(
 		iup.Vbox(
 			entry,
-			iup.Hbox(btnCopy, btnPaste, btnNotify, btnToast).SetAttributes(`GAP=8, ALIGNMENT=ACENTER`),
-		).SetAttributes(`GAP=6, NMARGIN=8x8`),
+			iup.Hbox(btnCopy, btnPaste, btnNotify, btnToast).SetAttributes(`GAP=2, ALIGNMENT=ACENTER`),
+		).SetAttributes(`GAP=6, NMARGIN=2x4`),
 	).SetAttributes(`TITLE="Clipboard + Notify", EXPAND=HORIZONTAL`)
 }

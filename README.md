@@ -6,7 +6,7 @@
 Go library based on [IUP](https://www.tecgraf.puc-rio.br/iup/), a multi-platform toolkit for building graphical user interfaces.
 
 IUP-Go provides system native UI controls for Windows ([Win32](#win32), [WinUI](#winui)), macOS ([Cocoa](#macos)), 
-Linux/BSD ([GTK](#gtk), [Qt](#qt), [FLTK](#fltk), [EFL](#efl), [Motif](#motif), [GNUstep](#gnustep)), Haiku ([Interface Kit](#haiku)),
+Linux/BSD ([GTK](#gtk), [Qt](#qt), [Qt Quick](#qt-quick), [FLTK](#fltk), [EFL](#efl), [Motif](#motif), [GNUstep](#gnustep)), Haiku ([Interface Kit](#haiku)),
 WebAssembly ([Emscripten](#emscripten)), Android ([Android](#android)), and iOS ([Cocoa Touch](#ios)).
 
 C/C++/Obj-C source code is included and compiled together with bindings.
@@ -34,6 +34,7 @@ You can also build a binary in the [MSYS2](https://msys2.github.io/) shell.
 
 * For MSYS2, install `pacman -S mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config`.
 * You can build for Qt, with the `qt` build tag. Install deps with `pacman -S mingw-w64-x86_64-qt6-base`.
+* You can build for Qt Quick, with the `qml` build tag. Install deps with `pacman -S mingw-w64-x86_64-qt6-declarative`.
 * You can build for GTK, with the `gtk/gtk4` build tags. Install deps with `pacman -S mingw-w64-x86_64-gtk3 / -gtk4`.
 * You can build for FLTK, with the `fltk` build tag. Install deps with `pacman -S mingw-w64-x86_64-fltk`.
 
@@ -61,6 +62,7 @@ On macOS, you need Command Line Tools for Xcode (if you have `brew`, you already
 To create an `.app` bundle, see [Packaging](#packaging).
 
 * You can build for Qt, with the `qt` build tag. Install deps with `brew install qt`.
+* You can build for Qt Quick, with the `qml` build tag. Install deps with `brew install qt`.
 * You can build for GTK, with the `gtk/gtk4` build tag. Install deps with `brew install gtk+3 / gtk4`.
 * You can build for FLTK, with the `fltk` build tag. Install deps with `brew install fltk`.
 
@@ -102,11 +104,18 @@ For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
 * Debian/Ubuntu: `apt-get install qt5base-dev`
 * RedHat/Fedora: `dnf install qt5-qtbase-devel`
 
+[<img src="examples/sample/sample_qt6.png" width="700"/>](examples/sample/sample_qt6.png)
+
+###### Qt Quick
+
+* Debian/Ubuntu: `apt-get install qt6-declarative-dev`
+* RedHat/Fedora: `dnf install qt6-qtdeclarative-devel`
+
 For the `WebBrowser` control, install `qt6-webengine-dev` or `qt6-qtwebengine-devel`.
 
 For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
 
-[<img src="examples/sample/sample_qt6.png" width="700"/>](examples/sample/sample_qt6.png)
+[<img src="examples/sample/sample_qml.png" width="700"/>](examples/sample/sample_qml.png)
 
 ##### FLTK
 
@@ -161,6 +170,7 @@ This relies on the modern Objective-C stack, not the legacy GCC runtime.
 * `libs-opal` - Apple CoreGraphics-compatible drawing layer built on Cairo.
 * `libs-corebase` - CoreFoundation.
 * `gnustep-base` + `gnustep-gui` 0.32+ (earlier versions are missing APIs the driver uses).
+* `gnustep-back` with the Cairo graphics engine.
 
 Stock distro packages are currently insufficient.
 Also, several bugs in `gnustep-base`, `gnustep-gui`, `libs-opal` and `libs-corebase` must be patched.
@@ -239,6 +249,7 @@ For a one-command `.ipa`, see [Packaging](#packaging).
 * `gtk2` - build for GTK2 (Linux/BSD)
 * `qt` - build for the Qt framework
 * `qt5` - build for Qt5 version, default is Qt6 (used with `qt`)
+* `qml` - build for Qt Quick (Qt 6.8+)
 * `fltk` - build for FLTK (Fast Light Toolkit)
 * `efl` - build for EFL (Enlightenment Foundation Libraries)
 * `motif` - build for X11/Motif 2.x environment

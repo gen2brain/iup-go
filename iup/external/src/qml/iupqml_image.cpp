@@ -1,0 +1,520 @@
+/** \file
+ * \brief Image Resource - Qt Quick Implementation
+ *
+ * See Copyright Notice in "iup.h"
+ */
+
+#include <QImage>
+#include <QIcon>
+#include <QString>
+#include <QScreen>
+#include <QCursor>
+#include <QBuffer>
+#include <QByteArray>
+
+#include <cstdlib>
+#include <cstring>
+
+extern "C" {
+#include "iup.h"
+#include "iupcbs.h"
+#include "iup_object.h"
+#include "iup_attrib.h"
+#include "iup_str.h"
+#include "iup_image.h"
+}
+
+#include "iupqml_drv.h"
+
+/****************************************************************************
+ * Image Data Extraction
+ ****************************************************************************/
+
+extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
+{
+  auto* pixmap = static_cast<QPixmap*>(handle);
+
+  if (!pixmap || pixmap->isNull())
+    return;
+
+  QImage image = pixmap->toImage();
+  int w = image.width();
+  int h = image.height();
+
+  /* Match the bpp iupdrvImageGetInfo reports, so the caller's buffer fits */
+  if (!image.hasAlphaChannel() && image.depth() <= 8)
+  {
+    for (int y = 0; y < h; y++)
+    {
+      unsigned char* line_data = imgdata + y * w;
+      for (int x = 0; x < w; x++)
+        line_data[x] = static_cast<unsigned char>(image.pixelIndex(x, y));
+    }
+    return;
+  }
+
+  if (image.hasAlphaChannel())
+    image = image.convertToFormat(QImage::Format_ARGB32);
+
+  int channels = image.hasAlphaChannel() ? 4 : 3;
+  int line_size = w * channels;
+  for (int y = 0; y < h; y++)
+  {
+    unsigned char* line_data = imgdata + y * line_size;
+
+    for (int x = 0; x < w; x++)
+    {
+      QRgb pixel = image.pixel(x, y);
+      line_data[x * channels + 0] = qRed(pixel);
+      line_data[x * channels + 1] = qGreen(pixel);
+      line_data[x * channels + 2] = qBlue(pixel);
+      if (channels == 4)
+        line_data[x * channels + 3] = qAlpha(pixel);
+    }
+  }
+}
+
+/****************************************************************************
+ * Image Creation from IUP Image
+ ****************************************************************************/
+
+extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int make_inactive)
+{
+  int bpp, colors_count = 0, has_alpha = 0;
+  iupColor colors[256];
+  unsigned char bg_r = 0, bg_g = 0, bg_b = 0;
+  int flat_alpha = iupAttribGetBoolean(ih, "FLAT_ALPHA");
+
+  bpp = iupAttribGetInt(ih, "BPP");
+
+  if (bpp == 8)
+    has_alpha = iupImageInitColorTable(ih, colors, &colors_count);
+  else if (bpp == 32)
+    has_alpha = 1;
+
+  /* Always use 32-bit formats to match QRgb* scanLine casting below */
+  QImage::Format format;
+  if (has_alpha)
+    format = QImage::Format_ARGB32;
+  else
+    format = QImage::Format_RGB32;
+
+  QImage image(ih->currentwidth, ih->currentheight, format);
+
+  if (image.isNull())
+    return nullptr;
+
+  auto* imgdata = reinterpret_cast<unsigned char*>(iupAttribGetStr(ih, "WID"));
+
+  if (make_inactive || flat_alpha)
+    iupStrToRGB(bgcolor, &bg_r, &bg_g, &bg_b);
+
+  if (bpp == 8)
+  {
+    if (make_inactive)
+    {
+      for (int i = 0; i < colors_count; i++)
+      {
+        if (colors[i].a == 0)
+        {
+          colors[i].r = bg_r;
+          colors[i].g = bg_g;
+          colors[i].b = bg_b;
+          colors[i].a = 255;
+        }
+
+        iupImageColorMakeInactive(&(colors[i].r), &(colors[i].g), &(colors[i].b), bg_r, bg_g, bg_b);
+      }
+    }
+
+    for (int y = 0; y < ih->currentheight; y++)
+    {
+      QRgb* scanline = reinterpret_cast<QRgb*>(image.scanLine(y));
+      unsigned char* line_data = imgdata + y * ih->currentwidth;
+
+      for (int x = 0; x < ih->currentwidth; x++)
+      {
+        unsigned char index = line_data[x];
+        iupColor* c = &colors[index];
+
+        scanline[x] = qRgba(c->r, c->g, c->b, has_alpha ? c->a : 255);
+      }
+    }
+  }
+  else
+  {
+    int channels = (bpp == 32) ? 4 : 3;
+
+    for (int y = 0; y < ih->currentheight; y++)
+    {
+      QRgb* scanline = reinterpret_cast<QRgb*>(image.scanLine(y));
+      unsigned char* line_data = imgdata + y * ih->currentwidth * channels;
+
+      if (!make_inactive && !flat_alpha && bpp == 32)
+      {
+        for (int x = 0; x < ih->currentwidth; x++)
+        {
+          unsigned char* src = &line_data[x * 4];
+          scanline[x] = qRgba(src[0], src[1], src[2], src[3]);
+        }
+      }
+      else
+      {
+        for (int x = 0; x < ih->currentwidth; x++)
+        {
+          unsigned char r = line_data[x * channels + 0];
+          unsigned char g = line_data[x * channels + 1];
+          unsigned char b = line_data[x * channels + 2];
+          unsigned char a = (bpp == 32) ? line_data[x * channels + 3] : 255;
+
+          if (flat_alpha && has_alpha && a != 255)
+          {
+            r = iupALPHABLEND(r, bg_r, a);
+            g = iupALPHABLEND(g, bg_g, a);
+            b = iupALPHABLEND(b, bg_b, a);
+            a = 255;
+          }
+
+          if (make_inactive)
+          {
+            if (has_alpha && a != 255)
+            {
+              r = iupALPHABLEND(r, bg_r, a);
+              g = iupALPHABLEND(g, bg_g, a);
+              b = iupALPHABLEND(b, bg_b, a);
+              a = 255;
+            }
+
+            iupImageColorMakeInactive(&r, &g, &b, bg_r, bg_g, bg_b);
+          }
+
+          scanline[x] = qRgba(r, g, b, a);
+        }
+      }
+    }
+  }
+
+  auto* pixmap = new QPixmap();
+  *pixmap = QPixmap::fromImage(image);
+
+  if (make_inactive || (has_alpha && flat_alpha))
+    iupAttribSet(ih, "_IUP_BGCOLOR_DEPEND", "1");
+
+  IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGECREATE_CB"));
+  if (cb)
+    cb(pixmap, const_cast<char*>("QPixmap"));
+
+  return pixmap;
+}
+
+extern "C" IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
+{
+  return iupdrvImageCreateImage(ih, nullptr, 0);
+}
+
+extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
+{
+  auto* pixmap = static_cast<QPixmap*>(iupdrvImageCreateImage(ih, nullptr, 0));
+
+  if (!pixmap)
+    return nullptr;
+
+  int hx = 0, hy = 0;
+  iupStrToIntInt(iupAttribGet(ih, "HOTSPOT"), &hx, &hy, ':');
+
+  auto* cursor = new QCursor(*pixmap, hx, hy);
+
+  delete pixmap;
+
+  IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGECREATE_CB"));
+  if (cb)
+    cb(cursor, const_cast<char*>("CURSOR"));
+
+  return cursor;
+}
+
+/****************************************************************************
+ * Image Loading
+ ****************************************************************************/
+
+static QPixmap* qmlImageLoadStock(const char* name)
+{
+  const char* theme = nullptr;
+  int size = 16;
+
+  if (strstr(name, "IUP_MessageError"))
+    { theme = "dialog-error"; size = 32; }
+  else if (strstr(name, "IUP_MessageWarning"))
+    { theme = "dialog-warning"; size = 32; }
+  else if (strstr(name, "IUP_MessageInformation"))
+    { theme = "dialog-information"; size = 32; }
+  else if (strstr(name, "IUP_MessageQuestion"))
+    { theme = "dialog-question"; size = 32; }
+  else if (strstr(name, "IUP_FileSave"))
+    theme = "document-save";
+  else if (strstr(name, "IUP_FileOpen"))
+    theme = "document-open";
+  else if (strstr(name, "IUP_ArrowUp"))
+    theme = "go-up";
+  else if (strstr(name, "IUP_ArrowDown"))
+    theme = "go-down";
+  else if (strstr(name, "IUP_ArrowLeft"))
+    theme = "go-previous";
+  else if (strstr(name, "IUP_ArrowRight"))
+    theme = "go-next";
+
+  if (!theme)
+    return nullptr;
+
+  QIcon icon = QIcon::fromTheme(QString::fromLatin1(theme));
+  if (icon.isNull())
+    return nullptr;
+
+  QPixmap pixmap = icon.pixmap(size, size);
+  if (pixmap.isNull())
+    return nullptr;
+
+  return new QPixmap(pixmap);
+}
+
+extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
+{
+  if (!name)
+    return nullptr;
+
+  (void)type;
+
+  QPixmap* pixmap = nullptr;
+  if (name[0] == 'I' && name[1] == 'U' && name[2] == 'P' && name[3] == '_')
+    pixmap = qmlImageLoadStock(name);
+
+  if (!pixmap)
+  {
+    pixmap = new QPixmap();
+    if (!pixmap->load(QString::fromUtf8(name)))
+    {
+      delete pixmap;
+      return nullptr;
+    }
+  }
+
+  IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGECREATE_CB"));
+  if (cb)
+  {
+    const char* type_str = (type == IUPIMAGE_CURSOR) ? "CURSOR" :
+                           (type == IUPIMAGE_ICON) ? "ICON" : "QPixmap";
+    cb(pixmap, const_cast<char*>(type_str));
+  }
+
+  return pixmap;
+}
+
+/****************************************************************************
+ * Image Information
+ ****************************************************************************/
+
+extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
+{
+  auto* pixmap = static_cast<QPixmap*>(handle);
+
+  if (!pixmap || pixmap->isNull())
+  {
+    if (w) *w = 0;
+    if (h) *h = 0;
+    if (bpp) *bpp = 0;
+    return 0;
+  }
+
+  if (w) *w = pixmap->width();
+  if (h) *h = pixmap->height();
+
+  if (bpp)
+  {
+    QImage image = pixmap->toImage();
+    int depth = image.depth();
+
+    if (image.hasAlphaChannel())
+      *bpp = iupImageNormBpp(32);
+    else if (depth > 8)
+      *bpp = iupImageNormBpp(24);
+    else
+      *bpp = iupImageNormBpp(8);
+  }
+
+  return 1;
+}
+
+extern "C" IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
+{
+  (void)colors;
+  (void)colors_count;
+  return iupdrvImageGetInfo(handle, w, h, bpp);
+}
+
+/****************************************************************************
+ * Image Destruction
+ ****************************************************************************/
+
+extern "C" IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
+{
+  if (!handle)
+    return;
+
+  const char* type_str = nullptr;
+
+  if (type == IUPIMAGE_CURSOR)
+  {
+    type_str = "CURSOR";
+    auto* cursor = static_cast<QCursor*>(handle);
+
+    IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGEDESTROY_CB"));
+    if (cb)
+      cb(handle, const_cast<char*>(type_str));
+
+    delete cursor;
+  }
+  else
+  {
+    if (type == IUPIMAGE_ICON)
+      type_str = "ICON";
+    else
+      type_str = "QPixmap";
+
+    auto* pixmap = static_cast<QPixmap*>(handle);
+
+    IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGEDESTROY_CB"));
+    if (cb)
+      cb(handle, const_cast<char*>(type_str));
+
+    iupqmlImageRelease(pixmap);
+    delete pixmap;
+  }
+}
+
+static QImage iQmlImageCreate(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count)
+{
+  if (bpp == 8)
+  {
+    QImage image(width, height, QImage::Format_RGBA8888);
+    for (int y = 0; y < height; y++)
+    {
+      unsigned char* line = image.scanLine(y);
+      for (int x = 0; x < width; x++)
+      {
+        int idx = imgdata[y * width + x];
+        line[x * 4]     = colors[idx].r;
+        line[x * 4 + 1] = colors[idx].g;
+        line[x * 4 + 2] = colors[idx].b;
+        line[x * 4 + 3] = colors[idx].a;
+      }
+    }
+    (void)colors_count;
+    return image;
+  }
+  else if (bpp == 32)
+    return QImage(imgdata, width, height, width * 4, QImage::Format_RGBA8888).copy();
+  else
+    return QImage(imgdata, width, height, width * 3, QImage::Format_RGB888).copy();
+}
+
+extern "C" IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* filename, const char* format)
+{
+  QImage image = iQmlImageCreate(imgdata, width, height, bpp, colors, colors_count);
+  if (image.isNull()) return 0;
+
+  int quality = -1;
+  if (iupStrEqualNoCase(format, "JPEG"))
+  {
+    const char* q = IupGetGlobal("IMAGESAVEQUALITY");
+    if (!q || !iupStrToInt(q, &quality))
+      quality = 85;
+  }
+
+  return image.save(QString::fromUtf8(filename), format, quality) ? 1 : 0;
+}
+
+extern "C" IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int width, int height, int bpp, iupColor* colors, int colors_count, const char* format, int* size)
+{
+  QImage image = iQmlImageCreate(imgdata, width, height, bpp, colors, colors_count);
+  if (image.isNull()) return nullptr;
+
+  int quality = -1;
+  if (iupStrEqualNoCase(format, "JPEG"))
+  {
+    const char* q = IupGetGlobal("IMAGESAVEQUALITY");
+    if (!q || !iupStrToInt(q, &quality))
+      quality = 85;
+  }
+
+  QByteArray ba;
+  QBuffer buffer(&ba);
+  buffer.open(QIODevice::WriteOnly);
+
+  if (!image.save(&buffer, format, quality))
+    return nullptr;
+
+  *size = ba.size();
+  auto* result = static_cast<unsigned char*>(malloc(*size));
+  if (!result) return nullptr;
+
+  memcpy(result, ba.constData(), *size);
+  return result;
+}
+
+extern "C" IUP_SDK_API int iupdrvGetIconPixels(Ihandle* ih, const char* value, int* width, int* height, unsigned char** pixels)
+{
+  QPixmap* pixmap = nullptr;
+  QImage image;
+  int w, h;
+  unsigned char* dst;
+
+  (void)ih;
+
+  if (!value)
+    return 0;
+
+  pixmap = static_cast<QPixmap*>(iupImageGetIcon(value));
+  if (!pixmap || pixmap->isNull())
+  {
+    QPixmap file_pixmap(QString::fromUtf8(value));
+    if (file_pixmap.isNull())
+      return 0;
+
+    image = file_pixmap.toImage().convertToFormat(QImage::Format_ARGB32);
+  }
+  else
+  {
+    image = pixmap->toImage().convertToFormat(QImage::Format_ARGB32);
+  }
+
+  if (image.isNull())
+    return 0;
+
+  w = image.width();
+  h = image.height();
+
+  dst = static_cast<unsigned char*>(malloc(static_cast<size_t>(w) * h * 4));
+  if (!dst)
+    return 0;
+
+  for (int y = 0; y < h; y++)
+  {
+    const QRgb* src_line = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+    for (int x = 0; x < w; x++)
+    {
+      QRgb pixel = src_line[x];
+      int offset = (y * w + x) * 4;
+
+      dst[offset + 0] = qAlpha(pixel);
+      dst[offset + 1] = qRed(pixel);
+      dst[offset + 2] = qGreen(pixel);
+      dst[offset + 3] = qBlue(pixel);
+    }
+  }
+
+  *width = w;
+  *height = h;
+  *pixels = dst;
+
+  return 1;
+}

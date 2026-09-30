@@ -36,6 +36,7 @@ static int iGlobalsCurrentDriverBit(void)
   if (iupStrEqualNoCase(drv, "CocoaTouch")) return IUPDRV_COCOATOUCH;
   if (iupStrEqualNoCase(drv, "Haiku"))      return IUPDRV_HAIKU;
   if (iupStrEqualNoCase(drv, "WASM"))       return IUPDRV_WASM;
+  if (iupStrEqualNoCase(drv, "QML"))        return IUPDRV_QML;
   return 0;
 }
 

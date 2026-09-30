@@ -138,6 +138,7 @@ const (
 	DriverCocoaTouch = 1024
 	DriverHaiku      = 2048
 	DriverWasm       = 4096
+	DriverQML        = 8192
 )
 
 // DrawPathFill fill rules
