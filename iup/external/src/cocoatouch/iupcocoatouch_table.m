@@ -777,7 +777,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 			[reload addObject:[NSIndexPath indexPathForItem:(prev_lin - 1) * num_col + c
 			                                       inSection:IUPCOCOATOUCH_TABLE_BODY_SECTION]];
 	}
-	[cv reloadItemsAtIndexPaths:reload];
+	[cv reconfigureItemsAtIndexPaths:reload];
 
 	IFniis click_cb = (IFniis)IupGetCallback(_ihandle, "CLICK_CB");
 	if (click_cb)
@@ -842,7 +842,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 			[reload addObject:[NSIndexPath indexPathForItem:(prev_lin - 1) * num_col + c
 			                                       inSection:IUPCOCOATOUCH_TABLE_BODY_SECTION]];
 	}
-	[cv reloadItemsAtIndexPaths:reload];
+	[cv reconfigureItemsAtIndexPaths:reload];
 
 	if (prev_lin != _focusLin || prev_col != _focusCol)
 	{
@@ -869,6 +869,18 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	if (num_col <= 0) return;
 	NSInteger col = [ip item] % num_col;
 	NSInteger lin = [ip item] / num_col;
+
+	IFniis click_cb = (IFniis)IupGetCallback(_ihandle, "CLICK_CB");
+	if (click_cb)
+	{
+		char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+		iupKEY_SETBUTTON1(status);
+		iupKEY_SETDOUBLE(status);
+		int ret = click_cb(_ihandle, (int)lin + 1, (int)col + 1, status);
+		if (ret == IUP_CLOSE) IupExitLoop();
+		if (ret == IUP_IGNORE || !iupObjectCheck(_ihandle)) return;
+	}
+
 	if (![self isColEditable:col + 1]) return;
 	UICollectionViewCell* cell = [cv cellForItemAtIndexPath:ip];
 	[self beginEditAtLin:lin + 1 col:col + 1 fromView:(cell ?: cv)];
@@ -1103,7 +1115,7 @@ IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 	{
 		NSIndexPath* ip = [NSIndexPath indexPathForItem:(lin - 1) * num_col + (col - 1)
 		                                      inSection:IUPCOCOATOUCH_TABLE_BODY_SECTION];
-		[view reloadItemsAtIndexPaths:[view indexPathsForVisibleItems]];
+		[view reconfigureItemsAtIndexPaths:[view indexPathsForVisibleItems]];
 		[view selectItemAtIndexPath:ip animated:NO scrollPosition:UICollectionViewScrollPositionNone];
 		UICollectionViewLayoutAttributes* attr = [view layoutAttributesForItemAtIndexPath:ip];
 		if (attr)
@@ -1194,7 +1206,7 @@ IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
 	for (NSInteger c = (col > 0 ? col - 1 : 0); c < (col > 0 ? col : num_col); c++)
 		[reload addObject:[NSIndexPath indexPathForItem:(lin - 1) * num_col + c
 		                                       inSection:IUPCOCOATOUCH_TABLE_BODY_SECTION]];
-	[view reloadItemsAtIndexPaths:reload];
+	[view reconfigureItemsAtIndexPaths:reload];
 }
 
 IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
@@ -1613,7 +1625,7 @@ static int cocoaTouchTableSetSortableAttrib(Ihandle* ih, const char* value)
 		NSMutableArray<NSIndexPath*>* paths = [NSMutableArray array];
 		for (NSInteger c = 0; c < num_col; c++)
 			[paths addObject:[NSIndexPath indexPathForItem:c inSection:IUPCOCOATOUCH_TABLE_HEADER_SECTION]];
-		[view reloadItemsAtIndexPaths:paths];
+		[view reconfigureItemsAtIndexPaths:paths];
 	}
 	return 0;
 }

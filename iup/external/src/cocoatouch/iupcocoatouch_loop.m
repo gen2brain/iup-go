@@ -13,6 +13,8 @@
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
+#include "iup_attrib.h"
+#include "iup_dlglist.h"
 #include "iup_str.h"
 
 #include "iupcocoatouch_drv.h"
@@ -122,6 +124,17 @@ int IupMainLoopLevel(void)
 	return s_main_loop_level + s_modal_loop_level;
 }
 
+static int cocoaTouchLoopHasModalDialog(void)
+{
+	Ihandle* dlg;
+	for (dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
+	{
+		if (dlg->handle && iupAttribGetBoolean(dlg, "MODAL"))
+			return 1;
+	}
+	return 0;
+}
+
 /* three-state: UIApplicationMain on first call, IUP_OPENED inside ENTRY_POINT, or nested CFRunLoop pump */
 int IupMainLoop(void)
 {
@@ -139,7 +152,7 @@ int IupMainLoop(void)
 		}
 	}
 
-	if (!s_entry_finished)
+	if (!s_entry_finished && !cocoaTouchLoopHasModalDialog())
 		return IUP_OPENED;
 
 	s_modal_loop_level++;

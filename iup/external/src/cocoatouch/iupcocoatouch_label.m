@@ -47,6 +47,7 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 @property(nonatomic, assign) int verticalAlignment;
 /* drops a re-entrant touchesBegan during a nested-run-loop pump from BUTTON_CB */
 @property(nonatomic, assign) UITouch* activeTouch;
+@property(nonatomic, assign) BOOL noWrap;
 @end
 
 @implementation IupCocoaTouchLabelView
@@ -59,6 +60,7 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 		_textInsets = UIEdgeInsetsZero;
 		_verticalAlignment = IUP_ALIGN_ACENTER;
 		self.backgroundColor = [UIColor clearColor];
+		self.clipsToBounds = YES;
 	}
 	return self;
 }
@@ -74,7 +76,21 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 - (CGRect)textRectForBounds:(CGRect)bounds limitedToNumberOfLines:(NSInteger)numberOfLines
 {
 	CGRect inner = UIEdgeInsetsInsetRect(bounds, _textInsets);
-	CGRect tr = [super textRectForBounds:inner limitedToNumberOfLines:numberOfLines];
+	CGRect tr;
+	if (_noWrap)
+	{
+		CGRect wide = inner;
+		wide.size.width = CGFLOAT_MAX / 4;
+		tr = [super textRectForBounds:wide limitedToNumberOfLines:numberOfLines];
+		if (self.textAlignment == NSTextAlignmentRight)
+			tr.origin.x = CGRectGetMaxX(inner) - tr.size.width;
+		else if (self.textAlignment == NSTextAlignmentCenter)
+			tr.origin.x = inner.origin.x + (inner.size.width - tr.size.width) / 2.0;
+		else
+			tr.origin.x = inner.origin.x;
+	}
+	else
+		tr = [super textRectForBounds:inner limitedToNumberOfLines:numberOfLines];
 	switch (_verticalAlignment)
 	{
 		case IUP_ALIGN_ATOP:
@@ -372,6 +388,8 @@ static void cocoaTouchLabelApplyWrapMode(IupCocoaTouchLabelView* label, BOOL wor
 		[label setNumberOfLines:0];
 		[label setLineBreakMode:NSLineBreakByClipping];
 	}
+	label.noWrap = !wordwrap && !ellipsis;
+	[label setNeedsDisplay];
 }
 
 static void cocoaTouchLabelApplyPadding(Ihandle* ih)

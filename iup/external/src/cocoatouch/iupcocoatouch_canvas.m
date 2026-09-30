@@ -21,6 +21,7 @@
 #include "iup_canvas.h"
 #include "iup_focus.h"
 #include "iup_class.h"
+#include "iup_drv.h"
 
 #include "iupcocoatouch_drv.h"
 #include "iupcocoatouch_draw.h"
@@ -31,6 +32,42 @@ static BOOL cocoaTouchCanvasIsDragHandle(Ihandle* ih)
 	if (!ih) return NO;
 	return (IupGetCallback(ih, "BUTTON_CB") && IupGetCallback(ih, "MOTION_CB")) ? YES : NO;
 }
+
+static BOOL cocoaTouchCanvasCanScroll(Ihandle* ih)
+{
+	if (!ih || !ih->data) return NO;
+	if ((ih->data->sb & IUP_SB_HORIZ) && iupAttribGetDouble(ih, "DX") < iupAttribGetDouble(ih, "XMAX") - iupAttribGetDouble(ih, "XMIN"))
+		return YES;
+	if ((ih->data->sb & IUP_SB_VERT) && iupAttribGetDouble(ih, "DY") < iupAttribGetDouble(ih, "YMAX") - iupAttribGetDouble(ih, "YMIN"))
+		return YES;
+	return NO;
+}
+
+static void cocoaTouchCanvasScrollBy(Ihandle* ih, CGFloat move_x, CGFloat move_y, CGSize size)
+{
+	double posx = ih->data->posx, posy = ih->data->posy;
+
+	if ((ih->data->sb & IUP_SB_HORIZ) && move_x != 0 && size.width > 0)
+		IupSetDouble(ih, "POSX", posx - move_x * iupAttribGetDouble(ih, "DX") / size.width);
+	if ((ih->data->sb & IUP_SB_VERT) && move_y != 0 && size.height > 0)
+		IupSetDouble(ih, "POSY", posy - move_y * iupAttribGetDouble(ih, "DY") / size.height);
+
+	if (ih->data->posx == posx && ih->data->posy == posy)
+		return;
+
+	IFniff scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+	if (scroll_cb)
+	{
+		if (ih->data->posx != posx && scroll_cb(ih, IUP_SBPOSH, (float)ih->data->posx, (float)ih->data->posy) == IUP_CLOSE)
+			IupExitLoop();
+		if (iupObjectCheck(ih) && ih->data->posy != posy && scroll_cb(ih, IUP_SBPOSV, (float)ih->data->posx, (float)ih->data->posy) == IUP_CLOSE)
+			IupExitLoop();
+	}
+	else if (IupGetCallback(ih, "ACTION"))
+		iupdrvRedrawNow(ih);
+}
+
+enum { IUPCOCOATOUCH_TOUCH_IDLE, IUPCOCOATOUCH_TOUCH_PENDING, IUPCOCOATOUCH_TOUCH_SCROLL, IUPCOCOATOUCH_TOUCH_DIRECT, IUPCOCOATOUCH_TOUCH_CONSUMED };
 
 
 @interface IupCocoaTouchCanvasView : UIView <UIGestureRecognizerDelegate, UIKeyInput>
@@ -47,6 +84,10 @@ static BOOL cocoaTouchCanvasIsDragHandle(Ihandle* ih)
 @property(nonatomic, retain) UITapGestureRecognizer* doubleTapGesture;
 @property(nonatomic, retain) NSMutableArray<UISwipeGestureRecognizer*>* swipeGestures;
 @property(nonatomic, retain) NSMutableArray<UIGestureRecognizer*>* pausedAncestorPans;
+@property(nonatomic, assign) int touchState;
+@property(nonatomic, assign) UITouch* trackedTouch;
+@property(nonatomic, assign) CGPoint touchStart;
+@property(nonatomic, assign) CGPoint touchLast;
 @end
 
 /* observe touches without stealing them, so raw TOUCH/BUTTON/MOTION still fire */
@@ -172,6 +213,8 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 {
 	if (!_ihandle) return;
 	if (g.state != UIGestureRecognizerStateBegan) return;
+	if (_touchState == IUPCOCOATOUCH_TOUCH_PENDING)
+		_touchState = IUPCOCOATOUCH_TOUCH_CONSUMED;
 
 	CGPoint p = [g locationInView:self];
 	cocoaTouchFireGesture(_ihandle, IUP_GESTURE_LONGPRESS, IUP_GESTURE_END, (int)p.x, (int)p.y, 0.0, 0.0);
@@ -498,10 +541,10 @@ static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* eve
 	}
 }
 
-- (void)pauseAncestorPanGestures
+- (void)pauseAncestorPanGestures:(BOOL)scrolling
 {
 	if (_pausedAncestorPans) return;
-	if (!cocoaTouchCanvasIsDragHandle(_ihandle)) return;
+	if (!scrolling && !cocoaTouchCanvasIsDragHandle(_ihandle)) return;
 	_pausedAncestorPans = [[NSMutableArray alloc] init];
 	for (UIView* v = self.superview; v; v = v.superview)
 	{
@@ -540,11 +583,24 @@ static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* eve
 	if (_canFocus && !self.isFirstResponder && _ihandle && IupGetCallback(_ihandle, "TEXTINPUT_CB"))
 		[self becomeFirstResponder];
 
-	[self pauseAncestorPanGestures];
-
 	UITouch* t = [touches anyObject];
-	cocoaTouchCanvasFireButton(_ihandle, t, event, self, 1);
-	cocoaTouchCanvasFireMotion(_ihandle, t, event, self, 1);
+	if (_touchState == IUPCOCOATOUCH_TOUCH_IDLE)
+	{
+		_trackedTouch = t;
+		if (cocoaTouchCanvasCanScroll(_ihandle))
+		{
+			_touchState = IUPCOCOATOUCH_TOUCH_PENDING;
+			_touchStart = _touchLast = [t locationInView:self];
+			[self pauseAncestorPanGestures:YES];
+		}
+		else
+		{
+			_touchState = IUPCOCOATOUCH_TOUCH_DIRECT;
+			[self pauseAncestorPanGestures:NO];
+			cocoaTouchCanvasFireButton(_ihandle, t, event, self, 1);
+			cocoaTouchCanvasFireMotion(_ihandle, t, event, self, 1);
+		}
+	}
 	[self dispatchTouchBatch:touches phase:'D'];
 
 	IFn cb = (IFn)IupGetCallback(_ihandle, "ENTERWINDOW_CB");
@@ -554,7 +610,20 @@ static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* eve
 - (void)touchesMoved:(NSSet<UITouch*>*)touches withEvent:(UIEvent*)event
 {
 	[super touchesMoved:touches withEvent:event];
-	cocoaTouchCanvasFireMotion(_ihandle, [touches anyObject], event, self, 1);
+	if (_trackedTouch && [touches containsObject:_trackedTouch])
+	{
+		CGPoint p = [_trackedTouch locationInView:self];
+		if (_touchState == IUPCOCOATOUCH_TOUCH_PENDING && hypot(p.x - _touchStart.x, p.y - _touchStart.y) > 10)
+			_touchState = IUPCOCOATOUCH_TOUCH_SCROLL;
+		if (_touchState == IUPCOCOATOUCH_TOUCH_SCROLL && _ihandle)
+		{
+			CGPoint last = _touchLast;
+			_touchLast = p;
+			cocoaTouchCanvasScrollBy(_ihandle, p.x - last.x, p.y - last.y, self.bounds.size);
+		}
+		else if (_touchState == IUPCOCOATOUCH_TOUCH_DIRECT)
+			cocoaTouchCanvasFireMotion(_ihandle, _trackedTouch, event, self, 1);
+	}
 	[self dispatchTouchBatch:touches phase:'M'];
 }
 
@@ -562,11 +631,24 @@ static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* eve
 - (void)touchesEnded:(NSSet<UITouch*>*)touches withEvent:(UIEvent*)event
 {
 	[super touchesEnded:touches withEvent:event];
-	UITouch* t = [touches anyObject];
-	cocoaTouchCanvasFireButton(_ihandle, t, event, self, 0);
-	cocoaTouchCanvasFireMotion(_ihandle, t, event, self, 0);
+	if (_trackedTouch && [touches containsObject:_trackedTouch])
+	{
+		UITouch* t = _trackedTouch;
+		if (_touchState == IUPCOCOATOUCH_TOUCH_PENDING)
+		{
+			cocoaTouchCanvasFireButton(_ihandle, t, event, self, 1);
+			if (_ihandle) cocoaTouchCanvasFireButton(_ihandle, t, event, self, 0);
+		}
+		else if (_touchState == IUPCOCOATOUCH_TOUCH_DIRECT)
+		{
+			cocoaTouchCanvasFireButton(_ihandle, t, event, self, 0);
+			cocoaTouchCanvasFireMotion(_ihandle, t, event, self, 0);
+		}
+		_touchState = IUPCOCOATOUCH_TOUCH_IDLE;
+		_trackedTouch = nil;
+		[self resumeAncestorPanGestures];
+	}
 	[self dispatchTouchBatch:touches phase:'U'];
-	[self resumeAncestorPanGestures];
 
 	IFn cb = (IFn)IupGetCallback(_ihandle, "LEAVEWINDOW_CB");
 	if (cb && cb(_ihandle) == IUP_CLOSE) IupExitLoop();
@@ -575,10 +657,15 @@ static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* eve
 - (void)touchesCancelled:(NSSet<UITouch*>*)touches withEvent:(UIEvent*)event
 {
 	[super touchesCancelled:touches withEvent:event];
-	UITouch* t = [touches anyObject];
-	cocoaTouchCanvasFireButton(_ihandle, t, event, self, 0);
+	if (_trackedTouch && [touches containsObject:_trackedTouch])
+	{
+		if (_touchState == IUPCOCOATOUCH_TOUCH_DIRECT)
+			cocoaTouchCanvasFireButton(_ihandle, _trackedTouch, event, self, 0);
+		_touchState = IUPCOCOATOUCH_TOUCH_IDLE;
+		_trackedTouch = nil;
+		[self resumeAncestorPanGestures];
+	}
 	[self dispatchTouchBatch:touches phase:'U'];
-	[self resumeAncestorPanGestures];
 
 	IFn cb = (IFn)IupGetCallback(_ihandle, "LEAVEWINDOW_CB");
 	if (cb && cb(_ihandle) == IUP_CLOSE) IupExitLoop();
@@ -676,9 +763,6 @@ static int cocoaTouchCanvasSetPosXAttrib(Ihandle* ih, const char* value)
 	if (posx < xmin) posx = xmin;
 	if (posx > (xmax - dx)) posx = xmax - dx;
 	ih->data->posx = posx;
-
-	IFniff cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
-	if (cb) cb(ih, IUP_SBPOSH, (float)posx, (float)ih->data->posy);
 	return 1;
 }
 
@@ -693,9 +777,6 @@ static int cocoaTouchCanvasSetPosYAttrib(Ihandle* ih, const char* value)
 	if (posy < ymin) posy = ymin;
 	if (posy > (ymax - dy)) posy = ymax - dy;
 	ih->data->posy = posy;
-
-	IFniff cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
-	if (cb) cb(ih, IUP_SBPOSV, (float)ih->data->posx, (float)posy);
 	return 1;
 }
 
@@ -746,6 +827,7 @@ static int cocoaTouchCanvasMapMethod(Ihandle* ih)
 
 	ih->handle = view;
 	objc_setAssociatedObject(view, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
+	ih->data->sb = iupBaseGetScrollbar(ih);
 
 	iupCocoaTouchAddToParent(ih);
 
