@@ -870,7 +870,7 @@ IUP_SDK_API void* iupImageGetImageTint(const char* name, Ihandle* ih_parent, int
   return handle;
 }
 
-IUP_SDK_API void iupImageGetInfo(const char* name, int* w, int* h, int* bpp)
+static void iImageGetInfo(const char* name, int* w, int* h, int* bpp, int layout)
 {
   Ihandle* ih;
 
@@ -909,9 +909,19 @@ IUP_SDK_API void iupImageGetInfo(const char* name, int* w, int* h, int* bpp)
       return;
   }
 
-  if (w) *w = iupdrvScaleNaturalPx(ih->currentwidth);   /* logical -> HW */
-  if (h) *h = iupdrvScaleNaturalPx(ih->currentheight);
+  if (w) *w = layout ? iupdrvScaleNaturalPx(ih->currentwidth) : ih->currentwidth;
+  if (h) *h = layout ? iupdrvScaleNaturalPx(ih->currentheight) : ih->currentheight;
   if (bpp) *bpp = IupGetInt(ih, "BPP");
+}
+
+IUP_SDK_API void iupImageGetInfo(const char* name, int* w, int* h, int* bpp)
+{
+  iImageGetInfo(name, w, h, bpp, 1);
+}
+
+IUP_SDK_API void iupImageGetDrawInfo(const char* name, int* w, int* h, int* bpp)
+{
+  iImageGetInfo(name, w, h, bpp, 0);
 }
 
 static Ihandle* iImageGetHandleFromImage(void* handle)

@@ -1022,7 +1022,7 @@ static void iFlatToggleComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int
   int fit2backimage = iupAttribGetBoolean(ih, "FITTOBACKIMAGE");
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
   if (fit2backimage && bgimage)
-    iupImageGetInfo(bgimage, w, h, NULL);
+    iupImageGetDrawInfo(bgimage, w, h, NULL);
   else
   {
     char* imagename = iupAttribGet(ih, "IMAGE");
