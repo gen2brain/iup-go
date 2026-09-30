@@ -40,7 +40,7 @@ typedef enum _Itable_Types
 } Itable_Types;
 
 
-typedef void (*Ifunc)(void);
+typedef void (*Ifunc)();
 
 struct _Itable;
 typedef struct _Itable Itable;

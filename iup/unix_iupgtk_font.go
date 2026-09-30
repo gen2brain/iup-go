@@ -1,4 +1,4 @@
-//go:build (((aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) && !motif && !qt && !gtk4 && !efl && !fltk && !gnustep) || gtk) && !android
+//go:build (((aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) && !motif && !qt && !qml && !gtk4 && !efl && !fltk && !gnustep) || gtk) && !android
 
 package iup
 

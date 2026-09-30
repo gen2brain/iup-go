@@ -18,12 +18,14 @@
   #define IUP_EGL_USE_GTK4
 #elif defined(IUP_USE_QT)
   #define IUP_EGL_USE_QT
+#elif defined(IUP_USE_QML)
+  #define IUP_EGL_USE_QML
 #elif defined(IUP_USE_EFL)
   #define IUP_EGL_USE_EFL
 #elif defined(IUP_USE_FLTK)
   #define IUP_EGL_USE_FLTK
 #else
-  #error "No backend defined for EGL: must define IUP_USE_GTK3, IUP_USE_GTK4, IUP_USE_QT, IUP_USE_EFL, or IUP_USE_FLTK"
+  #error "No backend defined for EGL: must define IUP_USE_GTK3, IUP_USE_GTK4, IUP_USE_QT, IUP_USE_QML, IUP_USE_EFL, or IUP_USE_FLTK"
 #endif
 
 #include "iup.h"
@@ -346,6 +348,8 @@ static void eGLCopyWaylandSubsurface(struct IGlWaylandSubsurface* ws, IGlControl
   #include "iup_glcanvas_egl_gtk4.h"
 #elif defined(IUP_EGL_USE_QT)
   #include "iup_glcanvas_egl_qt.h"
+#elif defined(IUP_EGL_USE_QML)
+  #include "iup_glcanvas_egl_qml.h"
 #elif defined(IUP_EGL_USE_EFL)
   #include "iup_glcanvas_egl_efl.h"
 #elif defined(IUP_EGL_USE_FLTK)

@@ -1,0 +1,117 @@
+/** \file
+ * \brief Timer for the Qt Quick Driver
+ *
+ * See Copyright Notice in "iup.h"
+ */
+
+#include <QTimer>
+#include <QElapsedTimer>
+
+extern "C" {
+#include "iup.h"
+#include "iup_object.h"
+#include "iup_attrib.h"
+#include "iup_timer.h"
+}
+
+#include "iupqml_drv.h"
+
+
+typedef struct _IupQmlTimer
+{
+  QTimer* qtimer;
+  QElapsedTimer* elapsed_timer;
+  Ihandle* ih;
+} IupQmlTimer;
+
+/****************************************************************************
+ * Timer Callback
+ ****************************************************************************/
+
+static void qmlTimerProc(IupQmlTimer* timer_data)
+{
+  Ihandle* ih = timer_data->ih;
+  Icallback cb;
+
+  if (!iupObjectCheck(ih))   /* control could be destroyed before timer callback */
+    return;
+
+  cb = IupGetCallback(ih, "ACTION_CB");
+  if (cb)
+  {
+    qint64 elapsed = timer_data->elapsed_timer->elapsed();
+    iupAttribSetInt(ih, "ELAPSEDTIME", static_cast<int>(elapsed));
+
+    if (cb(ih) == IUP_CLOSE)
+      IupExitLoop();
+  }
+}
+
+/****************************************************************************
+ * Timer Management Functions
+ ****************************************************************************/
+
+extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
+{
+  unsigned int time_ms;
+
+  if (ih->serial > 0) /* timer already started */
+    return;
+
+  time_ms = iupAttribGetInt(ih, "TIME");
+  if (time_ms > 0)
+  {
+    auto* timer_data = new IupQmlTimer();
+
+    timer_data->ih = ih;
+    timer_data->qtimer = new QTimer();
+    timer_data->elapsed_timer = new QElapsedTimer();
+
+    timer_data->qtimer->setInterval(time_ms);
+
+    if (iupAttribGetBoolean(ih, "PRIORITY_HIGH"))
+      timer_data->qtimer->setTimerType(Qt::PreciseTimer);
+    else
+      timer_data->qtimer->setTimerType(Qt::CoarseTimer);
+
+    QObject::connect(timer_data->qtimer, &QTimer::timeout, [timer_data]() {
+      qmlTimerProc(timer_data);
+    });
+
+    timer_data->elapsed_timer->start();
+    timer_data->qtimer->start();
+
+    ih->serial = 1;
+    iupAttribSet(ih, "_IUP_QMLTIMER", reinterpret_cast<char*>(timer_data));
+  }
+}
+
+extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
+{
+  if (ih->serial > 0)
+  {
+    auto* timer_data = reinterpret_cast<IupQmlTimer*>(iupAttribGet(ih, "_IUP_QMLTIMER"));
+
+    if (timer_data)
+    {
+      if (timer_data->qtimer)
+      {
+        timer_data->qtimer->stop();
+        delete timer_data->qtimer;
+      }
+
+      delete timer_data->elapsed_timer;
+
+      delete timer_data;
+
+      iupAttribSet(ih, "_IUP_QMLTIMER", nullptr);
+    }
+
+    ih->serial = -1;
+  }
+}
+
+extern "C" IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
+{
+  (void)ic;
+}

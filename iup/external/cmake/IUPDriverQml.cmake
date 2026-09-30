@@ -1,0 +1,72 @@
+# Qt Quick (QML) driver
+
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2)
+set(_QT_LIBS Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
+
+file(GLOB _QT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/qml/iupqml_*.cpp")
+
+set(IUP_DRIVER_COMPILE_DEFINITIONS IUP_USE_QML)
+set(IUP_DRIVER_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/qml")
+set(IUP_DRIVER_LINK_LIBRARIES ${_QT_LIBS})
+
+if(UNIX AND NOT APPLE AND NOT HAIKU)
+  include(IUPUnixCommon)
+  list(APPEND _QT_SOURCES ${IUP_UNIX_COMMON_SOURCES})
+  list(APPEND _QT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/unix/iupunix_sni.c")
+  list(APPEND IUP_DRIVER_COMPILE_DEFINITIONS IUPDBUS_USE_DLOPEN IUPX11_USE_DLOPEN)
+  list(APPEND IUP_DRIVER_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/unix")
+  list(APPEND IUP_DRIVER_LINK_LIBRARIES dl m)
+elseif(HAIKU)
+  list(APPEND _QT_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/haiku/iuphaiku_notify.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/haiku/iuphaiku_tray.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/haiku/iuphaiku_singleinstance.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/haiku/iuphaiku_location.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/haiku/iuphaiku_sensor.cpp"
+  )
+  list(APPEND IUP_DRIVER_LINK_LIBRARIES be tracker)
+elseif(APPLE)
+  list(APPEND _QT_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_tray.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_notify.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_singleinstance.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_location.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_sensor.m"
+  )
+  set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_tray.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_notify.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_singleinstance.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_location.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_sensor.m"
+    PROPERTIES LANGUAGE OBJC
+  )
+  list(APPEND IUP_DRIVER_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa")
+elseif(WIN32)
+  list(APPEND _QT_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_tray.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_notify.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_singleinstance.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_location.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_sensor.c"
+  )
+  list(APPEND IUP_DRIVER_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/win")
+endif()
+
+set(IUP_DRIVER_SOURCES ${_QT_SOURCES})
+set(IUP_DRIVER_COMPILE_OPTIONS "")
+
+set(IUP_PC_REQUIRES "Qt6Core Qt6Gui Qt6Qml Qt6Quick Qt6QuickControls2")
+set(IUP_PC_LIBS_PRIVATE "-lstdc++")
+if(UNIX AND NOT APPLE AND NOT HAIKU)
+  set(IUP_PC_LIBS_PRIVATE "-lstdc++ -ldl -lm")
+elseif(HAIKU)
+  set(IUP_PC_LIBS_PRIVATE "-lstdc++ -lbe -ltracker")
+elseif(APPLE)
+  list(APPEND IUP_DRIVER_LINK_LIBRARIES
+    "-framework AppKit"
+    "-framework SystemConfiguration"
+    "-framework UserNotifications"
+    "-framework CoreLocation"
+  )
+endif()

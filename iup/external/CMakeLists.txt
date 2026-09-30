@@ -68,9 +68,9 @@ else()
 endif()
 
 set(IUP_BACKEND "${_IUP_BACKEND_DEFAULT}" CACHE STRING
-  "GUI backend: gtk3, gtk4, gtk2, win32, winui, cocoa, cocoatouch, motif, qt6, qt5, efl, fltk, android, haiku, wasm")
+  "GUI backend: gtk3, gtk4, gtk2, win32, winui, cocoa, cocoatouch, motif, qt6, qt5, qml, efl, fltk, android, haiku, wasm")
 set_property(CACHE IUP_BACKEND PROPERTY STRINGS
-  gtk3 gtk4 gtk2 win32 winui cocoa cocoatouch motif qt6 qt5 efl fltk android haiku wasm)
+  gtk3 gtk4 gtk2 win32 winui cocoa cocoatouch motif qt6 qt5 qml efl fltk android haiku wasm)
 
 option(IUP_BUILD_GL        "Build iupgl (OpenGL canvas)"     OFF)
 option(IUP_BUILD_WEB       "Build iupweb (Web browser)"      OFF)
@@ -144,6 +144,8 @@ elseif(IUP_BACKEND STREQUAL "motif")
   include(IUPDriverMotif)
 elseif(IUP_BACKEND STREQUAL "qt6" OR IUP_BACKEND STREQUAL "qt5")
   include(IUPDriverQt)
+elseif(IUP_BACKEND STREQUAL "qml")
+  include(IUPDriverQml)
 elseif(IUP_BACKEND STREQUAL "efl")
   include(IUPDriverEFL)
 elseif(IUP_BACKEND STREQUAL "fltk")
@@ -289,7 +291,7 @@ if(EMSCRIPTEN)
 endif()
 
 # Suppress false -Wodr from C _IcontrolData pattern when C++ LTO merges TUs.
-if((IUP_BACKEND MATCHES "^qt" OR IUP_BACKEND STREQUAL "fltk") AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if((IUP_BACKEND MATCHES "^qt" OR IUP_BACKEND STREQUAL "qml" OR IUP_BACKEND STREQUAL "fltk") AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_link_options(iup PUBLIC -Wno-odr)
 endif()
 

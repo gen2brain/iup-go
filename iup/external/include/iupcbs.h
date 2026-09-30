@@ -7,8 +7,8 @@
 #ifndef __IUPCBS_H 
 #define __IUPCBS_H
 
-typedef int  (*IFidle)(void);  /* idle */
-typedef void (*IFentry)(void);  /* entry */
+typedef int  (*IFidle)();  /* idle */
+typedef void (*IFentry)();  /* entry */
 
 typedef void (*IFi)(int); /* globalentermodal_cb, globalleavemodal_cb,  */
 typedef void (*IFs)(char*);  /* openurl_cb */

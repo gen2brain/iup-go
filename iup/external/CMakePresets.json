@@ -124,6 +124,14 @@
       }
     },
     {
+      "name": "qml",
+      "displayName": "Qt Quick (QML) backend",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "qml"
+      }
+    },
+    {
       "name": "qt5",
       "displayName": "Qt5 backend",
       "inherits": "default",
@@ -271,6 +279,18 @@
       "name": "motif-full",
       "displayName": "Motif with all optional libraries",
       "inherits": "motif",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
+      }
+    },
+    {
+      "name": "qml-full",
+      "displayName": "Qt Quick with all optional libraries",
+      "inherits": "qml",
       "cacheVariables": {
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",

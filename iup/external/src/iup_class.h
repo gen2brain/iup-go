@@ -86,7 +86,7 @@ struct Iclass_
   /** Method that allocates a new instance of the class. \n
    * Used by inherited classes in \ref iupClassNew.
    */
-  Iclass* (*New)(void);
+  Iclass* (*New)();
 
   /** Method that release the memory allocated by the class.
    * Called only once at \ref iupClassRelease.

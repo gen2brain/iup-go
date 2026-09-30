@@ -15,6 +15,7 @@ import (
 	_ "github.com/gen2brain/iup-go/iup/external/src/gtk4"
 	_ "github.com/gen2brain/iup-go/iup/external/src/haiku"
 	_ "github.com/gen2brain/iup-go/iup/external/src/mot"
+	_ "github.com/gen2brain/iup-go/iup/external/src/qml"
 	_ "github.com/gen2brain/iup-go/iup/external/src/qt"
 	_ "github.com/gen2brain/iup-go/iup/external/src/unix"
 	_ "github.com/gen2brain/iup-go/iup/external/src/wasm"

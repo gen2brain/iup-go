@@ -1,0 +1,554 @@
+/** \file
+ * \brief Qt Quick Driver Keyboard Mapping
+ *
+ * See Copyright Notice in "iup.h"
+ */
+
+#include <cstring>
+#include <QQuickItem>
+#include <QQuickWindow>
+#include <QPointer>
+#include <QList>
+#include <QWindow>
+
+extern "C" {
+#include "iup.h"
+#include "iupkey.h"
+#include "iup_object.h"
+#include "iup_key.h"
+#include "iup_attrib.h"
+#include "iup_str.h"
+#include "iup_drv.h"
+}
+
+#include "iupqml_drv.h"
+
+
+/****************************************************************************
+ * Mnemonic Underlines
+ ****************************************************************************/
+
+static bool qml_mnemonic_visible = false;
+
+struct IupQmlMnemonicEntry
+{
+  Ihandle* ih;
+  QPointer<QObject> handle;
+  void (*refresh)(Ihandle*);
+};
+
+static QList<IupQmlMnemonicEntry> qml_mnemonic_entries;
+
+static void qmlMnemonicVisit(QQuickItem* item)
+{
+  if (!item)
+    return;
+
+  if (strcmp(item->metaObject()->className(), "QQuickMnemonicLabel") == 0)
+    item->setProperty("mnemonicVisible", qml_mnemonic_visible);
+
+  const QList<QQuickItem*> children = item->childItems();
+  for (QQuickItem* child : children)
+    qmlMnemonicVisit(child);
+}
+
+static void qmlMnemonicSetVisible(bool visible)
+{
+  if (qml_mnemonic_visible == visible)
+    return;
+
+  qml_mnemonic_visible = visible;
+
+  const QList<QWindow*> windows = QGuiApplication::allWindows();
+  for (QWindow* window : windows)
+  {
+    auto* quick = qobject_cast<QQuickWindow*>(window);
+    if (quick)
+      qmlMnemonicVisit(quick->contentItem());
+  }
+
+  for (int i = qml_mnemonic_entries.size() - 1; i >= 0; i--)
+  {
+    IupQmlMnemonicEntry entry = qml_mnemonic_entries.at(i);
+    if (!entry.handle || !iupObjectCheck(entry.ih) || reinterpret_cast<QObject*>(entry.ih->handle) != entry.handle.data())
+    {
+      qml_mnemonic_entries.removeAt(i);
+      continue;
+    }
+    entry.refresh(entry.ih);
+  }
+}
+
+class IupQmlMnemonicFilter : public QObject
+{
+public:
+  bool eventFilter(QObject* obj, QEvent* event) override
+  {
+    (void)obj;
+    switch (event->type())
+    {
+    case QEvent::KeyPress:
+      if (static_cast<QKeyEvent*>(event)->key() == Qt::Key_Alt)
+        qmlMnemonicSetVisible(true);
+      break;
+    case QEvent::KeyRelease:
+      if (static_cast<QKeyEvent*>(event)->key() == Qt::Key_Alt)
+        qmlMnemonicSetVisible(false);
+      break;
+    case QEvent::ApplicationStateChange:
+      qmlMnemonicSetVisible(false);
+      break;
+    default:
+      break;
+    }
+    return false;
+  }
+};
+
+static void qmlMnemonicInit()
+{
+  static IupQmlMnemonicFilter* filter = nullptr;
+  if (filter || !qApp)
+    return;
+
+  filter = new IupQmlMnemonicFilter();
+  filter->setParent(qApp);
+  qApp->installEventFilter(filter);
+}
+
+IUP_DRV_API int iupqmlMnemonicVisible()
+{
+  qmlMnemonicInit();
+  return qml_mnemonic_visible ? 1 : 0;
+}
+
+IUP_DRV_API void iupqmlMnemonicUpdate(QObject* root)
+{
+  qmlMnemonicInit();
+  if (!root)
+    return;
+
+  QQuickItem* item = qobject_cast<QQuickItem*>(root);
+  if (item)
+    qmlMnemonicVisit(item);
+
+  const QList<QQuickItem*> children = root->findChildren<QQuickItem*>();
+  for (QQuickItem* child : children)
+    qmlMnemonicVisit(child);
+}
+
+IUP_DRV_API void iupqmlMnemonicRegister(Ihandle* ih, void (*refresh)(Ihandle*))
+{
+  qmlMnemonicInit();
+
+  for (const IupQmlMnemonicEntry& entry : std::as_const(qml_mnemonic_entries))
+  {
+    if (entry.ih == ih && entry.handle.data() == reinterpret_cast<QObject*>(ih->handle))
+      return;
+  }
+
+  qml_mnemonic_entries.append({ih, QPointer<QObject>(reinterpret_cast<QObject*>(ih->handle)), refresh});
+}
+
+
+/****************************************************************************
+ * Key Mapping Structures
+ ****************************************************************************/
+
+typedef struct _Iqt2iupkey
+{
+  int qtkey;
+  int iupcode;
+} Iqt2iupkey;
+
+static Iqt2iupkey keypad_remap[] = {
+  { Qt::Key_0,        K_KP_0  },
+  { Qt::Key_1,        K_KP_1  },
+  { Qt::Key_2,        K_KP_2  },
+  { Qt::Key_3,        K_KP_3  },
+  { Qt::Key_4,        K_KP_4  },
+  { Qt::Key_5,        K_KP_5  },
+  { Qt::Key_6,        K_KP_6  },
+  { Qt::Key_7,        K_KP_7  },
+  { Qt::Key_8,        K_KP_8  },
+  { Qt::Key_9,        K_KP_9  },
+  { Qt::Key_Asterisk, K_KP_MULT },
+  { Qt::Key_Plus,     K_KP_PLUS     },
+  { Qt::Key_Minus,    K_KP_MINUS    },
+  { Qt::Key_Period,   K_KP_DECIMAL   },
+  { Qt::Key_Slash,    K_KP_DIV    },
+  { Qt::Key_Comma,    K_KP_SEP    },
+  { Qt::Key_F1,       K_F1   },
+  { Qt::Key_F2,       K_F2   },
+  { Qt::Key_F3,       K_F3   },
+  { Qt::Key_F4,       K_F4   },
+  { Qt::Key_Space,    K_SP   },
+  { Qt::Key_Tab,      K_TAB  },
+  { Qt::Key_Equal,    K_KP_EQUAL},
+  { Qt::Key_Enter,    K_KP_CR   },
+  { Qt::Key_Return,   K_KP_CR   },
+  { Qt::Key_Home,     K_KP_HOME },
+  { Qt::Key_Up,       K_KP_UP   },
+  { Qt::Key_PageUp,   K_KP_PGUP },
+  { Qt::Key_Left,     K_KP_LEFT },
+  { Qt::Key_Clear,    K_KP_MIDDLE},
+  { Qt::Key_Right,    K_KP_RIGHT},
+  { Qt::Key_End,      K_KP_END  },
+  { Qt::Key_Down,     K_KP_DOWN },
+  { Qt::Key_PageDown, K_KP_PGDN },
+  { Qt::Key_Insert,   K_KP_INS  },
+  { Qt::Key_Delete,   K_KP_DEL  },
+};
+
+static Iqt2iupkey other_remap[] = {
+  { Qt::Key_Backspace,  K_BS  },
+  { Qt::Key_Tab,        K_TAB },
+  { Qt::Key_Backtab,    K_TAB },
+  { Qt::Key_Return,     K_CR  },
+  { Qt::Key_Enter,      K_CR  },
+  { Qt::Key_Escape,     K_ESC },
+  { Qt::Key_Pause,      K_PAUSE },
+  { Qt::Key_Print,      K_Print },
+  { Qt::Key_Menu,       K_Menu },
+  { Qt::Key_Help,       K_HELP },
+
+  { Qt::Key_Dead_Tilde,      K_tilde },
+  { Qt::Key_Dead_Acute,      K_acute },
+  { Qt::Key_Dead_Grave,      K_grave },
+  { Qt::Key_Dead_Circumflex, K_circum },
+  { Qt::Key_Dead_Diaeresis,  K_diaeresis },
+
+  { Qt::Key_F1,  K_F1  },
+  { Qt::Key_F2,  K_F2  },
+  { Qt::Key_F3,  K_F3  },
+  { Qt::Key_F4,  K_F4  },
+  { Qt::Key_F5,  K_F5  },
+  { Qt::Key_F6,  K_F6  },
+  { Qt::Key_F7,  K_F7  },
+  { Qt::Key_F8,  K_F8  },
+  { Qt::Key_F9,  K_F9  },
+  { Qt::Key_F10, K_F10 },
+  { Qt::Key_F11, K_F11 },
+  { Qt::Key_F12, K_F12 },
+  { Qt::Key_F13, K_F13 },
+  { Qt::Key_F14, K_F14 },
+  { Qt::Key_F15, K_F15 },
+  { Qt::Key_F16, K_F16 },
+  { Qt::Key_F17, K_F17 },
+  { Qt::Key_F18, K_F18 },
+  { Qt::Key_F19, K_F19 },
+  { Qt::Key_F20, K_F20 },
+
+  { Qt::Key_Home,     K_HOME },
+  { Qt::Key_Left,     K_LEFT },
+  { Qt::Key_Up,       K_UP   },
+  { Qt::Key_Right,    K_RIGHT},
+  { Qt::Key_Down,     K_DOWN },
+  { Qt::Key_PageUp,   K_PGUP },
+  { Qt::Key_PageDown, K_PGDN },
+  { Qt::Key_End,      K_END  },
+  { Qt::Key_Insert,   K_INS  },
+  { Qt::Key_Delete,   K_DEL  },
+  { Qt::Key_Clear,    K_MIDDLE },
+
+  { Qt::Key_NumLock,    K_NUM    },
+  { Qt::Key_ScrollLock, K_SCROLL },
+  { Qt::Key_CapsLock,   K_CAPS   },
+
+  { Qt::Key_Shift,   K_LSHIFT },
+  { Qt::Key_Control, K_LCTRL  },
+  { Qt::Key_Alt,     K_LALT   },
+  { Qt::Key_Meta,    K_LALT   },
+  { Qt::Key_AltGr,   K_RALT   },
+};
+
+/****************************************************************************
+ * Key Encoding (IUP to Qt)
+ ****************************************************************************/
+
+extern "C" IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int* keyval, unsigned int* state)
+{
+  int base = iup_XkeyBase(key);
+  int i, count;
+
+  *keyval = static_cast<unsigned int>(base);
+  *state = 0;
+
+  if (base >= K_a && base <= K_z)
+    *keyval = static_cast<unsigned int>(iup_toupper(base));
+
+  count = sizeof(other_remap) / sizeof(other_remap[0]);
+  for (i = 0; i < count; i++)
+  {
+    if (other_remap[i].iupcode == base)
+    {
+      *keyval = other_remap[i].qtkey;
+      break;
+    }
+  }
+
+  count = sizeof(keypad_remap) / sizeof(keypad_remap[0]);
+  for (i = 0; i < count; i++)
+  {
+    if (keypad_remap[i].iupcode == base && base >= K_KP_CR && base <= K_KP_EQUAL)
+    {
+      *keyval = keypad_remap[i].qtkey;
+      *state |= Qt::KeypadModifier;
+      break;
+    }
+  }
+
+  if (iup_isCtrlXkey(key))
+    *state |= Qt::ControlModifier;
+
+  if (iup_isAltXkey(key))
+    *state |= Qt::AltModifier;
+
+  if (iup_isSysXkey(key))
+    *state |= Qt::MetaModifier;
+
+  if (iup_isShiftXkey(key))
+    *state |= Qt::ShiftModifier;
+}
+
+
+/****************************************************************************
+ * Key Mapping (Qt to IUP)
+ ****************************************************************************/
+
+static int qmlKeyMap2Iup(int keyval, Qt::KeyboardModifiers modifiers)
+{
+  int code = keyval;
+
+  if (modifiers & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
+  {
+    if (keyval >= K_a && keyval <= K_z)
+      code = iup_toupper(keyval);
+    else if (keyval == K_ccedilla)
+      code = K_Ccedilla;
+  }
+
+  if (modifiers & Qt::ShiftModifier)
+  {
+    if ((keyval < K_exclam || keyval > K_tilde) ||
+        (modifiers & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)))
+      code = iup_XkeyShift(code);
+  }
+
+  if (modifiers & Qt::ControlModifier)
+    code = iup_XkeyCtrl(code);
+
+  if (modifiers & Qt::AltModifier)
+    code = iup_XkeyAlt(code);
+
+  if (modifiers & Qt::MetaModifier)
+    code = iup_XkeySys(code);
+
+  return code;
+}
+
+/****************************************************************************
+ * Key Decoding (Qt event to IUP code)
+ ****************************************************************************/
+
+IUP_DRV_API int iupqmlKeyDecode(QKeyEvent* evt)
+{
+  int key = evt->key();
+  Qt::KeyboardModifiers modifiers = evt->modifiers();
+
+  if (modifiers & Qt::KeypadModifier)
+  {
+    int count = sizeof(keypad_remap) / sizeof(keypad_remap[0]);
+    for (int i = 0; i < count; i++)
+    {
+      if (keypad_remap[i].qtkey == key)
+      {
+        key = keypad_remap[i].iupcode;
+        break;
+      }
+    }
+  }
+  else
+  {
+    int count = sizeof(other_remap) / sizeof(other_remap[0]);
+    for (int i = 0; i < count; i++)
+    {
+      if (other_remap[i].qtkey == key)
+      {
+        key = other_remap[i].iupcode;
+        break;
+      }
+    }
+  }
+
+  QString text = evt->text();
+  if (text.length() == 1 && !(modifiers & (Qt::ControlModifier | Qt::KeypadModifier)))
+  {
+    QChar ch = text[0];
+    if (ch.isPrint() && ch.unicode() < 128)
+      key = ch.unicode();
+  }
+
+  return qmlKeyMap2Iup(key, modifiers);
+}
+
+/****************************************************************************
+ * Key Event Handlers (exported to C)
+ ****************************************************************************/
+
+static int iupObjectIsNativeContainer(Ihandle* ih)
+{
+  if (ih->iclass->childtype != IUP_CHILDNONE &&
+      ih->iclass->nativetype != IUP_TYPEVOID)
+    return 1;
+  else
+    return 0;
+}
+
+/* a commit consumed by TEXTINPUT_CB suppresses the K_ANY for that key */
+static int qmlKeyTextInput(QKeyEvent* evt, Ihandle* ih)
+{
+  if (!IupGetCallback(ih, "TEXTINPUT_CB"))
+    return 0;
+  if (evt->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
+    return 0;
+  if (evt->modifiers() & Qt::KeypadModifier)
+    return 0;
+  QString text = evt->text();
+  if (text.isEmpty())
+    return 0;
+  QChar ch = text.at(0);
+  if (ch.unicode() < 0x20 || ch.unicode() == 0x7F)
+    return 0;
+  return iupKeyCallTextInputCb(ih, text.toUtf8().constData()) == IUP_IGNORE;
+}
+
+IUP_DRV_API int iupqmlKeyPressEvent(QQuickItem* item, QKeyEvent* evt, Ihandle* ih)
+{
+  int result;
+  int code;
+
+  if (qmlKeyTextInput(evt, ih))
+    return 1;
+
+  code = iupqmlKeyDecode(evt);
+  if (code == 0)
+    return 0;
+
+  /* Avoid duplicate calls if a child of a native container has focus */
+  if (iupObjectIsNativeContainer(ih) && item && item->window())
+  {
+    QQuickItem* focused = item->window()->activeFocusItem();
+    if (focused && focused != item && focused != item->window()->contentItem())
+      return 0;
+  }
+
+  result = iupKeyCallKeyCb(ih, code);
+  if (result == IUP_CLOSE)
+  {
+    IupExitLoop();
+    return 0;
+  }
+  if (result == IUP_IGNORE)
+    return 1;
+
+  /* In the previous callback the dialog could be destroyed */
+  if (iupObjectCheck(ih))
+  {
+    /* This is called only for canvas */
+    if (ih->iclass->nativetype == IUP_TYPECANVAS)
+    {
+      result = iupKeyCallKeyPressCb(ih, code, 1);
+      if (result == IUP_CLOSE)
+      {
+        IupExitLoop();
+        return 0;
+      }
+      if (result == IUP_IGNORE)
+        return 1;
+    }
+
+    if (evt->modifiers() & Qt::AltModifier)
+    {
+      int base_code = iup_XkeyBase(code);
+      if (base_code < 128 && iupKeyProcessMnemonic(ih, base_code))
+        return 1;
+    }
+
+    if (iup_XkeyBase(code) == K_TAB || code == K_UP || code == K_DOWN)
+      iupAttribSet(IupGetDialog(ih), "_IUPQML_KEYBOARD_FOCUS", "1");
+
+    if (iupKeyProcessNavigation(ih, code, evt->modifiers() & Qt::ShiftModifier))
+      return 1;
+
+    if (code == K_F1)
+    {
+      Icallback cb = IupGetCallback(ih, "HELP_CB");
+      if (cb)
+      {
+        if (cb(ih) == IUP_CLOSE)
+          IupExitLoop();
+      }
+    }
+  }
+
+  return 0;
+}
+
+IUP_DRV_API int iupqmlKeyReleaseEvent(QQuickItem* item, QKeyEvent* evt, Ihandle* ih)
+{
+  /* This is called only for canvas */
+  int result;
+  int code = iupqmlKeyDecode(evt);
+  if (code == 0)
+    return 0;
+
+  result = iupKeyCallKeyPressCb(ih, code, 0);
+  if (result == IUP_CLOSE)
+  {
+    IupExitLoop();
+    return 0;
+  }
+  if (result == IUP_IGNORE)
+    return 1;
+
+  (void)item;
+  return 0;
+}
+
+/****************************************************************************
+ * Button/Key Status String
+ ****************************************************************************/
+
+IUP_DRV_API void iupqmlButtonKeySetStatus(Qt::KeyboardModifiers modifiers, Qt::MouseButtons buttons, int button, char* status, int doubleclick)
+{
+  if (modifiers & Qt::ShiftModifier)
+    iupKEY_SETSHIFT(status);
+
+  if (modifiers & Qt::ControlModifier)
+    iupKEY_SETCONTROL(status);
+
+  if ((buttons & Qt::LeftButton) || button == 1)
+    iupKEY_SETBUTTON1(status);
+
+  if ((buttons & Qt::MiddleButton) || button == 2)
+    iupKEY_SETBUTTON2(status);
+
+  if ((buttons & Qt::RightButton) || button == 3)
+    iupKEY_SETBUTTON3(status);
+
+  if ((buttons & Qt::XButton1) || button == 4)
+    iupKEY_SETBUTTON4(status);
+
+  if ((buttons & Qt::XButton2) || button == 5)
+    iupKEY_SETBUTTON5(status);
+
+  if (modifiers & Qt::AltModifier)
+    iupKEY_SETALT(status);
+
+  if (modifiers & Qt::MetaModifier)
+    iupKEY_SETSYS(status);
+
+  if (doubleclick)
+    iupKEY_SETDOUBLE(status);
+}

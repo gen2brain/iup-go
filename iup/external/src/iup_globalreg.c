@@ -28,8 +28,9 @@
 #define CT  IUPDRV_COCOATOUCH
 #define HK  IUPDRV_HAIKU
 #define WS  IUPDRV_WASM
-#define ALL  (W|M|G|C|Q|G4|E|WU|F|A|CT|HK|WS)
-#define UNIX (M|G|C|Q|G4|E|F|HK)
+#define QM  IUPDRV_QML
+#define ALL  (W|M|G|C|Q|G4|E|WU|F|A|CT|HK|WS|QM)
+#define UNIX (M|G|C|Q|G4|E|F|HK|QM)
 #define MOB  (A|CT)
 #define R  IUPGF_READONLY
 #define P  IUPGF_POINTER
@@ -41,7 +42,7 @@ static const iGlobalRegEntry registry[] = {
   { "APPID",                  0,    ALL },
   { "APPNAME",                0,    ALL },
   { "APPSHELL",               R|P,  M|G|G4 },
-  { "ARGV0",                  0,    M|G|Q|G4|E|WU|F|HK },
+  { "ARGV0",                  0,    M|G|Q|QM|G4|E|WU|F|HK },
   { "AUTOREPEAT",             0,    M|E|F },
   { "CACHEDIR",               R,    ALL },
   { "COMCTL32VER6",           R,    W },
@@ -94,7 +95,7 @@ static const iGlobalRegEntry registry[] = {
   { "IMAGESDPI",              0,    ALL },
   { "IMAGESTOCKAUTOSCALE",    0,    ALL },
   { "IMAGESTOCKSIZE",         0,    ALL },
-  { "INPUTCALLBACKS",         0,    W|M|G|C|Q|G4|E|WU|F|A|HK },
+  { "INPUTCALLBACKS",         0,    W|M|G|C|Q|QM|G4|E|WU|F|A|HK },
   { "KEY",                    R,    ALL },
   { "KEYPRESS",               R,    ALL },
   { "KEYRELEASE",             R,    ALL },
@@ -105,19 +106,19 @@ static const iGlobalRegEntry registry[] = {
   { "MENUBGCOLOR",            0,    ALL },
   { "MENUFGCOLOR",            0,    ALL },
   { "MODKEYSTATE",            R,    ALL },
-  { "MONITORSCOUNT",          R,    W|G|C|Q|G4|E|WU|F|A|CT|HK|WS },
-  { "MONITORSINFO",           R,    W|G|C|Q|G4|E|WU|F|A|CT|HK|WS },
+  { "MONITORSCOUNT",          R,    W|G|C|Q|QM|G4|E|WU|F|A|CT|HK|WS },
+  { "MONITORSINFO",           R,    W|G|C|Q|QM|G4|E|WU|F|A|CT|HK|WS },
   { "MOTIFNUMBER",            R,    M },
   { "MOTIFVERSION",           R,    M },
   { "MOUSEBUTTON",            R,    ALL },
   { "OVERLAYSCROLLBAR",       0,    G|G4 },
   { "PARENTDIALOG",           0,    ALL },
   { "PROCESSWINDOWSGHOSTING", 0,    W },
-  { "QTBUILDTYPE",            R,    Q },
-  { "QTDEVVERSION",           R,    Q },
-  { "QTSTYLE",                0,    Q },
-  { "QTVERSION",              R,    Q },
-  { "SANDBOX",                R,    M|G|Q|G4|E|F },
+  { "QTBUILDTYPE",            R,    Q|QM },
+  { "QTDEVVERSION",           R,    Q|QM },
+  { "QTSTYLE",                0,    Q|QM },
+  { "QTVERSION",              R,    Q|QM },
+  { "SANDBOX",                R,    M|G|Q|QM|G4|E|F },
   { "SB_BGCOLOR",             0,    M|G|G4 },
   { "SCREENDEPTH",            R,    ALL },
   { "SCREENDPI",              R,    ALL },
@@ -125,7 +126,7 @@ static const iGlobalRegEntry registry[] = {
   { "SCROLLBARSIZE",          R,    ALL },
   { "SHIFTKEY",               R,    ALL },
   { "SHORTCUTKEY",            R,    HK },
-  { "SHOWMENUIMAGES",         0,    G|Q|G4|E|WU|F|HK },
+  { "SHOWMENUIMAGES",         0,    G|Q|QM|G4|E|WU|F|HK },
   { "SINGLEINSTANCE",         0,    ALL },
   { "SYSTEM",                 R,    ALL },
   { "SYSTEMLANGUAGE",         R,    ALL },
@@ -139,18 +140,18 @@ static const iGlobalRegEntry registry[] = {
   { "TXTFGCOLOR",             0,    ALL },
   { "TXTHLCOLOR",             0,    ALL },
   { "USERNAME",               R,    ALL },
-  { "UTF8AUTOCONVERT",        0,    G|C|Q|G4|WU|F|CT|HK|WS },
-  { "UTF8MODE",               0,    W|M|G|C|Q|G4|E|WU|F|A|HK|WS },
+  { "UTF8AUTOCONVERT",        0,    G|C|Q|QM|G4|WU|F|CT|HK|WS },
+  { "UTF8MODE",               0,    W|M|G|C|Q|QM|G4|E|WU|F|A|HK|WS },
   { "UTF8MODE_FILE",          0,    W|M },
   { "VERSION",                R,    ALL },
-  { "VIRTUALSCREEN",          R,    W|G|C|Q|G4|E|WU|F|A|CT|HK|WS },
+  { "VIRTUALSCREEN",          R,    W|G|C|Q|QM|G4|E|WU|F|A|CT|HK|WS },
   { "WINDOWING",              R,    ALL },
   { "WINUIVERSION",           R,    WU },
-  { "WL_DISPLAY",             R|P,  G|Q|G4|E|F },
-  { "XDISPLAY",               R|P,  M|G|G4|Q|E|F },
-  { "XSCREEN",                R|P,  M|G|G4|Q|E|F },
-  { "XSERVERVENDOR",          R,    M|G|G4|Q|E|F },
-  { "XVENDORRELEASE",         R,    M|G|G4|Q|E|F }
+  { "WL_DISPLAY",             R|P,  G|Q|QM|G4|E|F },
+  { "XDISPLAY",               R|P,  M|G|G4|Q|QM|E|F },
+  { "XSCREEN",                R|P,  M|G|G4|Q|QM|E|F },
+  { "XSERVERVENDOR",          R,    M|G|G4|Q|QM|E|F },
+  { "XVENDORRELEASE",         R,    M|G|G4|Q|QM|E|F }
 };
 
 #define REG_COUNT ((int)(sizeof(registry)/sizeof(registry[0])))
