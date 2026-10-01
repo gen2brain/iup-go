@@ -99,29 +99,47 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 @end
 
 @implementation IupCocoaTouchTextView
+{
+	NSTextStorage* _storage;
+}
 
+/* TextKit 1 stack: TextKit 2 draws a double underline on the baseline */
 - (instancetype)initWithFrame:(CGRect)frame
 {
-	self = [super initWithFrame:frame];
-	if (self)
+	NSTextStorage* storage = [[NSTextStorage alloc] init];
+	NSLayoutManager* layout = [[NSLayoutManager alloc] init];
+	layout.allowsNonContiguousLayout = YES;
+	NSTextContainer* container = [[NSTextContainer alloc] initWithSize:CGSizeMake(frame.size.width, CGFLOAT_MAX)];
+	container.widthTracksTextView = YES;
+	[layout addTextContainer:container];
+	[storage addLayoutManager:layout];
+	[layout release];
+	self = [super initWithFrame:frame textContainer:container];
+	[container release];
+	if (!self)
 	{
-		self.autocapitalizationType = UITextAutocapitalizationTypeNone;
-		self.autocorrectionType = UITextAutocorrectionTypeNo;
-		self.smartQuotesType = UITextSmartQuotesTypeNo;
-		self.smartDashesType = UITextSmartDashesTypeNo;
-		_contentWidth = -1;
-		_defaultColor = [[UIColor labelColor] retain];
-		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(textStorageEdited:)
-		                                             name:NSTextStorageDidProcessEditingNotification object:self.textStorage];
+		[storage release];
+		return nil;
 	}
+	_storage = storage;
+	self.autocapitalizationType = UITextAutocapitalizationTypeNone;
+	self.autocorrectionType = UITextAutocorrectionTypeNo;
+	self.smartQuotesType = UITextSmartQuotesTypeNo;
+	self.smartDashesType = UITextSmartDashesTypeNo;
+	_contentWidth = -1;
+	_defaultColor = [[UIColor labelColor] retain];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(textStorageEdited:)
+	                                             name:NSTextStorageDidProcessEditingNotification object:self.textStorage];
 	return self;
 }
 
 - (void)dealloc
 {
+	NSTextStorage* storage = _storage;
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
 	[_defaultColor release];
 	[super dealloc];
+	[storage release];
 }
 
 - (void)textStorageEdited:(NSNotification*)note
