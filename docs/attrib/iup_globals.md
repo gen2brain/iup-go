@@ -208,6 +208,7 @@ Controls and returns the cursor position in absolute coordinates relative to the
 The origin of the main screen is at the top-left corner, in Windows it is affected by the position of the Start Menu when it is at the top or left side of the screen.
 Accept values in the format "X**x**Y" (in C "%dx%d), example "200x200".
 In GTK and Motif also generates mouse motion messages.
+On Wayland it returns the position relative to the top-left corner of the contents of the dialog under the cursor, below the title bar.
 
 ### MOUSEBUTTON (write-only)
 

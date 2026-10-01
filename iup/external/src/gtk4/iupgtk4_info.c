@@ -10,10 +10,13 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 
+#include "iup.h"
 #include "iup_export.h"
+#include "iup_object.h"
 #include "iup_drvinfo.h"
 
 #include "iupgtk4_x11.h"
+#include "iupgtk4_drv.h"
 
 
 IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
@@ -105,7 +108,21 @@ IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
       if (surface)
       {
         double dx, dy;
+        GtkNative* native = gtk_native_get_for_surface(surface);
         gdk_surface_get_device_position(surface, device, &dx, &dy, NULL);
+        if (native)
+        {
+          double native_x, native_y;
+          graphene_point_t src_point, dest_point;
+          gtk_native_get_surface_transform(native, &native_x, &native_y);
+          src_point.x = (float)(dx - native_x);
+          src_point.y = (float)(dy - native_y);
+          if (gtk_widget_compute_point(GTK_WIDGET(native), iupgtk4NativeGetContent(native), &src_point, &dest_point))
+          {
+            dx = dest_point.x;
+            dy = dest_point.y;
+          }
+        }
         *x = (int)dx;
         *y = (int)dy;
       }

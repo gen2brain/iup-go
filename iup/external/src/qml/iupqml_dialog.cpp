@@ -216,7 +216,7 @@ protected:
   {
     QQuickWindow::moveEvent(event);
 
-    if (!ih)
+    if (!ih || QGuiApplication::platformName() == "wayland")
       return;
 
     QPoint pos = framePosition();
@@ -489,7 +489,12 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
 
   window = reinterpret_cast<QWindow*>(handle);
 
-  if (window && window->isVisible())
+  if (QGuiApplication::platformName() == "wayland")
+  {
+    if (x) *x = 0;
+    if (y) *y = 0;
+  }
+  else if (window && window->isVisible())
   {
     QPoint pos = window->framePosition();
     if (x) *x = pos.x();

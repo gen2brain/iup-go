@@ -33,6 +33,7 @@ IUP_DRV_API void iupgtk4AddToParent(Ihandle* ih);
 IUP_DRV_API const char* iupgtk4GetWidgetClassName(GtkWidget* widget);
 IUP_DRV_API void iupgtk4SetPosSize(GtkWidget* parent, GtkWidget* widget, int x, int y, int width, int height);
 IUP_DRV_API GdkSurface* iupgtk4GetSurface(GtkWidget* widget);
+IUP_DRV_API GtkWidget* iupgtk4NativeGetContent(GtkNative* native);
 IUP_DRV_API void iupgtk4SurfaceGetPointer(GdkSurface* surface, double* x, double* y, GdkModifierType* mask);
 IUP_DRV_API int iupgtk4IsVisible(GtkWidget* widget);
 IUP_DRV_API void iupgtk4ClearSizeStyleCSS(GtkWidget* widget);

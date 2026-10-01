@@ -64,6 +64,24 @@ IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
   *x = 0;
   *y = 0;
 
+  if (iupeflIsWayland())
+  {
+    Eina_List* list = ecore_evas_ecore_evas_list_get();
+    Eina_List* l;
+    Ecore_Evas* ee;
+    EINA_LIST_FOREACH(list, l, ee)
+    {
+      Evas* evas = ecore_evas_get(ee);
+      if (evas && evas_pointer_inside_get(evas))
+      {
+        evas_pointer_canvas_xy_get(evas, x, y);
+        break;
+      }
+    }
+    eina_list_free(list);
+    return;
+  }
+
   if (win)
   {
     Evas* evas = evas_object_evas_get(win);

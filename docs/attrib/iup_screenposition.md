@@ -7,7 +7,7 @@ The origin of the main screen is in the top-left corner, in Windows it is affect
 **IMPORTANT**: For the dialog, it is the position of the top-left corner of the window, **NOT the client area**.
 It is the same position used in [IupShowXY](../func/iup_showxy.md) and [IupPopup](../func/iup_popup.md).
 In GTK, if the dialog is hidden the values can be outdated.
-On Wayland clients cannot query their window's screen position, so the returned values are relative to the window, not the screen.
+On Wayland the dialog returns 0,0 and the other elements return their position relative to the top-left corner of the dialog contents, below the title bar.
 
 ### Value
 
