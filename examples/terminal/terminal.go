@@ -118,20 +118,19 @@ func main() {
 		return iup.DEFAULT
 	}))
 
-	toolbar := iup.Hbox(
-		run,
-		btn("Kill", "Terminate the running command", func(iup.Ihandle) int {
-			iup.GetHandle("terminal").SetAttribute("KILL", "YES")
-			return iup.DEFAULT
-		}),
-		sep(),
-		btn("Colors", "Write an ANSI color chart", colorsCb),
-		btn("Boxes", "Write box drawing characters", boxesCb),
-		sep(),
-		btn("Copy", "Copy the selection", func(iup.Ihandle) int {
-			iup.GetHandle("terminal").SetAttribute("COPYSELECTION", "YES")
-			return iup.DEFAULT
-		}),
+	group := func(children ...iup.Ihandle) iup.Ihandle {
+		return iup.Hbox(children...).SetAttributes("ALIGNMENT=ACENTER, GAP=3")
+	}
+	shell := group(run, btn("Kill", "Terminate the running command", func(iup.Ihandle) int {
+		iup.GetHandle("terminal").SetAttribute("KILL", "YES")
+		return iup.DEFAULT
+	}))
+	demos := group(btn("Colors", "Write an ANSI color chart", colorsCb),
+		btn("Boxes", "Write box drawing characters", boxesCb))
+	clipboard := group(btn("Copy", "Copy the selection", func(iup.Ihandle) int {
+		iup.GetHandle("terminal").SetAttribute("COPYSELECTION", "YES")
+		return iup.DEFAULT
+	}),
 		btn("Paste", "Paste the clipboard", func(iup.Ihandle) int {
 			iup.GetHandle("terminal").SetAttribute("PASTE", "YES")
 			return iup.DEFAULT
@@ -139,12 +138,16 @@ func main() {
 		btn("Clear", "Clear the screen", func(iup.Ihandle) int {
 			iup.GetHandle("terminal").SetAttribute("CLEARSCREEN", "YES")
 			return iup.DEFAULT
-		}),
-		sep(),
-		btn("A-", "Smaller font", fontCb(-1)),
-		btn("A+", "Larger font", fontCb(1)),
-		iup.Label("Cursor:"), cursor, blink,
-	).SetAttributes("ALIGNMENT=ACENTER, GAP=3")
+		}))
+	font := group(btn("A-", "Smaller font", fontCb(-1)), btn("A+", "Larger font", fontCb(1)))
+	cursorStyle := group(iup.Label("Cursor:"), cursor, blink)
+
+	var toolbar iup.Ihandle
+	if driver := iup.GetGlobal("DRIVER"); driver == "Android" || driver == "CocoaTouch" {
+		toolbar = iup.Vbox(group(shell, sep(), demos), group(clipboard, sep(), font), cursorStyle).SetAttribute("GAP", "3")
+	} else {
+		toolbar = group(shell, sep(), demos, sep(), clipboard, sep(), font, cursorStyle)
+	}
 
 	term.SetCallback("TERMSIZE_CB", iup.TerminalSizeFunc(func(ih iup.Ihandle, cols, lines int) int {
 		status(ih)
