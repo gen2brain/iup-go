@@ -93,7 +93,7 @@ public:
           int y = mouse_evt->globalPosition().y();
 
           char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-          iupqmlButtonKeySetStatus(mouse_evt->modifiers(), Qt::NoButton, 0, status, 0);
+          iupqmlButtonKeySetStatus(mouse_evt->modifiers(), mouse_evt->buttons(), 0, status, 0);
 
           cb(x, y, status);
         }

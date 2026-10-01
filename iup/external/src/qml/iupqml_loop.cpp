@@ -148,19 +148,6 @@ extern "C" IUP_API int IupMainLoop(void)
     while (!qml_loop_exit_flag[current_level] && !QCoreApplication::closingDown())
     {
       QCoreApplication::processEvents(QEventLoop::WaitForMoreEvents | QEventLoop::AllEvents);
-
-      if (qml_idle_cb)
-      {
-        int ret = qml_idle_cb();
-        if (ret == IUP_CLOSE)
-        {
-          qml_idle_cb = nullptr;
-          IupExitLoop();
-          break;
-        }
-        if (ret == IUP_IGNORE)
-          qml_idle_cb = nullptr;
-      }
     }
   }
 
@@ -194,18 +181,6 @@ extern "C" IUP_API int IupLoopStep(void)
     return IUP_DEFAULT;
 
   QCoreApplication::processEvents(QEventLoop::AllEvents);
-
-  if (qml_idle_cb)
-  {
-    int ret = qml_idle_cb();
-    if (ret == IUP_CLOSE)
-    {
-      qml_idle_cb = nullptr;
-      return IUP_CLOSE;
-    }
-    if (ret == IUP_IGNORE)
-      qml_idle_cb = nullptr;
-  }
 
   if (QCoreApplication::closingDown())
     return IUP_CLOSE;

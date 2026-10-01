@@ -1273,16 +1273,16 @@ extern "C" IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* 
 
   QImage img = qmlDrawBufferImage(buffer);
 
-  if (w > img.width())
-    w = img.width();
-  if (h > img.height())
-    h = img.height();
+  int copy_w = w < img.width() ? w : img.width();
+  int copy_h = h < img.height() ? h : img.height();
+  if (copy_w < w || copy_h < h)
+    memset(data, 0, static_cast<size_t>(w) * h * 4);
 
-  for (int y = 0; y < h; y++)
+  for (int y = 0; y < copy_h; y++)
   {
     const unsigned char* src_line = img.constScanLine(y);
-    unsigned char* dst_line = data + y * w * 4;
-    memcpy(dst_line, src_line, static_cast<size_t>(w) * 4);
+    unsigned char* dst_line = data + static_cast<size_t>(y) * w * 4;
+    memcpy(dst_line, src_line, static_cast<size_t>(copy_w) * 4);
   }
 
   return 1;

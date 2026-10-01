@@ -456,8 +456,17 @@ static void qmlListCallSelection(Ihandle* ih, int pos)
   else
   {
     IFns multi_cb = reinterpret_cast<IFns>(IupGetCallback(ih, "MULTISELECT_CB"));
-    if (multi_cb)
-      multi_cb(ih, qmlListGetValueString(ih));
+    auto cb = reinterpret_cast<IFnsii>(IupGetCallback(ih, "ACTION"));
+    IupQmlListData* data = qmlListGetData(ih);
+    if ((multi_cb || cb) && data)
+    {
+      QVector<int> selected_pos;
+      int count = data->model->count();
+      for (int i = 0; i < count && i < data->model->selected.size(); i++)
+        if (data->model->selected[i])
+          selected_pos.append(i);
+      iupListMultipleCallActionCb(ih, cb, multi_cb, selected_pos.data(), static_cast<int>(selected_pos.size()));
+    }
   }
 
   iupBaseCallValueChangedCb(ih);
@@ -929,7 +938,7 @@ static int qmlListSetValueAttrib(Ihandle* ih, const char* value)
       if (value[i] == '+')
         data->model->setSelected(i, true);
   }
-  iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
+  iupAttribSetStr(ih, "_IUPLIST_OLDVALUE", value);
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);
   return 0;
 }
@@ -1390,9 +1399,12 @@ static int qmlListMapMethod(Ihandle* ih)
         });
         iupqmlConnect(data->edit, "cursorPositionChanged()", [ih](void**) {
           IupQmlListData* d = qmlListGetData(ih);
-          auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "CARET_CB"));
+          auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
           if (cb && d && d->edit)
-            cb(ih, d->edit->property("cursorPosition").toInt() + 1, 0);
+          {
+            int pos = d->edit->property("cursorPosition").toInt();
+            cb(ih, 1, pos + 1, pos);
+          }
         });
       }
     }
@@ -1499,9 +1511,12 @@ static int qmlListMapMethod(Ihandle* ih)
         });
         iupqmlConnect(edit, "cursorPositionChanged()", [ih](void**) {
           IupQmlListData* d = qmlListGetData(ih);
-          auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "CARET_CB"));
+          auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
           if (cb && d && d->edit)
-            cb(ih, d->edit->property("cursorPosition").toInt() + 1, 0);
+          {
+            int pos = d->edit->property("cursorPosition").toInt();
+            cb(ih, 1, pos + 1, pos);
+          }
         });
       }
     }

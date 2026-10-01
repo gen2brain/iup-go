@@ -30,6 +30,11 @@ extern "C" {
  * Image Data Extraction
  ****************************************************************************/
 
+static bool qmlImageIsIndexed(const QImage& image)
+{
+  return !image.hasAlphaChannel() && image.colorCount() > 0 && image.colorCount() <= 256;
+}
+
 extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   auto* pixmap = static_cast<QPixmap*>(handle);
@@ -42,8 +47,10 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
   int h = image.height();
 
   /* Match the bpp iupdrvImageGetInfo reports, so the caller's buffer fits */
-  if (!image.hasAlphaChannel() && image.depth() <= 8)
+  if (qmlImageIsIndexed(image))
   {
+    if (image.format() != QImage::Format_Indexed8)
+      image = image.convertToFormat(QImage::Format_Indexed8);
     for (int y = 0; y < h; y++)
     {
       unsigned char* line_data = imgdata + y * w;
@@ -282,8 +289,6 @@ extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
   if (!name)
     return nullptr;
 
-  (void)type;
-
   QPixmap* pixmap = nullptr;
   if (name[0] == 'I' && name[1] == 'U' && name[2] == 'P' && name[3] == '_')
     pixmap = qmlImageLoadStock(name);
@@ -298,15 +303,22 @@ extern "C" IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
     }
   }
 
+  void* handle = pixmap;
+  if (type == IUPIMAGE_CURSOR)
+  {
+    handle = new QCursor(*pixmap);
+    delete pixmap;
+  }
+
   IFvs cb = reinterpret_cast<IFvs>(IupGetFunction("IMAGECREATE_CB"));
   if (cb)
   {
     const char* type_str = (type == IUPIMAGE_CURSOR) ? "CURSOR" :
                            (type == IUPIMAGE_ICON) ? "ICON" : "QPixmap";
-    cb(pixmap, const_cast<char*>(type_str));
+    cb(handle, const_cast<char*>(type_str));
   }
 
-  return pixmap;
+  return handle;
 }
 
 /****************************************************************************
@@ -331,14 +343,13 @@ extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int*
   if (bpp)
   {
     QImage image = pixmap->toImage();
-    int depth = image.depth();
 
     if (image.hasAlphaChannel())
       *bpp = iupImageNormBpp(32);
-    else if (depth > 8)
-      *bpp = iupImageNormBpp(24);
-    else
+    else if (qmlImageIsIndexed(image))
       *bpp = iupImageNormBpp(8);
+    else
+      *bpp = iupImageNormBpp(24);
   }
 
   return 1;
@@ -346,9 +357,30 @@ extern "C" IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int*
 
 extern "C" IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, int* bpp, iupColor* colors, int* colors_count)
 {
-  (void)colors;
-  (void)colors_count;
-  return iupdrvImageGetInfo(handle, w, h, bpp);
+  if (!iupdrvImageGetInfo(handle, w, h, bpp))
+    return 0;
+
+  if (colors_count)
+    *colors_count = 0;
+
+  if (bpp && *bpp == 8 && colors && colors_count)
+  {
+    QImage image = static_cast<QPixmap*>(handle)->toImage();
+    if (image.format() != QImage::Format_Indexed8)
+      image = image.convertToFormat(QImage::Format_Indexed8);
+
+    QVector<QRgb> table = image.colorTable();
+    int count = static_cast<int>(table.size());
+    for (int i = 0; i < count; i++)
+    {
+      colors[i].r = static_cast<unsigned char>(qRed(table[i]));
+      colors[i].g = static_cast<unsigned char>(qGreen(table[i]));
+      colors[i].b = static_cast<unsigned char>(qBlue(table[i]));
+    }
+    *colors_count = count;
+  }
+
+  return 1;
 }
 
 /****************************************************************************

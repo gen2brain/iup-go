@@ -379,11 +379,9 @@ extern "C" IUP_API void IupLogV(const char* type, const char* format, va_list ar
     msg_type = QtInfoMsg;
   else if (iupStrEqualNoCase(type, "WARNING"))
     msg_type = QtWarningMsg;
-  else if (iupStrEqualNoCase(type, "ERROR"))
+  else if (iupStrEqualNoCase(type, "ERROR") || iupStrEqualNoCase(type, "CRITICAL") ||
+           iupStrEqualNoCase(type, "ALERT") || iupStrEqualNoCase(type, "EMERGENCY"))
     msg_type = QtCriticalMsg;
-  else if (iupStrEqualNoCase(type, "CRITICAL") || iupStrEqualNoCase(type, "ALERT") ||
-           iupStrEqualNoCase(type, "EMERGENCY"))
-    msg_type = QtFatalMsg;
 
   qt_message_output(msg_type, QMessageLogContext(), QString::fromUtf8(buffer));
 }

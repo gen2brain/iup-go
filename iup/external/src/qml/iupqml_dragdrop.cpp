@@ -84,6 +84,42 @@ static void qmlDragDropGetModifiers(char* status)
   iupqmlButtonKeySetStatus(mods, Qt::NoButton, 0, status, 0);
 }
 
+static QString qmlDragDropMimeType(const QString& type)
+{
+  return QString("application/x-iup-") + type.toLower();
+}
+
+static QStringList qmlDragDropTypeList(const char* types)
+{
+  QStringList list;
+  const QStringList parts = QString::fromUtf8(types ? types : "").split(',');
+  for (const QString& part : parts)
+  {
+    QString type = part.trimmed();
+    if (!type.isEmpty())
+      list.append(type);
+  }
+  return list;
+}
+
+static QString qmlDragDropMatchType(Ihandle* ih, const QMimeData* mime)
+{
+  const QStringList types = qmlDragDropTypeList(iupAttribGetStr(ih, "DROPTYPES"));
+  for (const QString& type : types)
+  {
+    if (mime->hasFormat(qmlDragDropMimeType(type)))
+      return type;
+  }
+  return QString();
+}
+
+static bool qmlDragDropAccepts(Ihandle* ih, IupQmlDragDropData* dd_data, const QMimeData* mime)
+{
+  if (dd_data->is_target && !qmlDragDropMatchType(ih, mime).isEmpty())
+    return true;
+  return dd_data->is_files_target && mime->hasUrls();
+}
+
 class IupQmlDragDropFilter : public QObject
 {
 public:
@@ -110,11 +146,11 @@ public:
       case QEvent::DragMove:
       {
         auto* de = static_cast<QDragMoveEvent*>(event);
-        if (!dd_data->is_target && !(dd_data->is_files_target && de->mimeData()->hasUrls()))
+        if (!qmlDragDropAccepts(ih, dd_data, de->mimeData()))
           return false;
 
         auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "DROPMOTION_CB"));
-        if (cb && dd_data->is_target)
+        if (cb && dd_data->is_target && !qmlDragDropMatchType(ih, de->mimeData()).isEmpty())
         {
           QPoint p = qmlDragDropControlPos(ih, qobject_cast<QQuickItem*>(obj), de->position());
           int x = p.x();
@@ -141,7 +177,7 @@ public:
       {
         auto* drop = static_cast<QDropEvent*>(event);
         const QMimeData* mime = drop->mimeData();
-        if (!dd_data->is_target && !(dd_data->is_files_target && mime->hasUrls()))
+        if (!qmlDragDropAccepts(ih, dd_data, mime))
           return false;
 
         QPoint p = qmlDragDropControlPos(ih, qobject_cast<QQuickItem*>(obj), drop->position());
@@ -150,22 +186,18 @@ public:
         dd_data->last_x = x;
         dd_data->last_y = y;
 
-        const char* drop_types = iupAttribGetStr(ih, "DROPTYPES");
-        if (dd_data->is_target && drop_types)
+        QString type = dd_data->is_target ? qmlDragDropMatchType(ih, mime) : QString();
+        if (!type.isEmpty())
         {
-          QString mime_type = QString("application/x-iup-") + QString::fromUtf8(drop_types).toLower();
-
-          if (mime->hasFormat(mime_type))
+          auto cbDropData = reinterpret_cast<IFnsViii>(IupGetCallback(ih, "DROPDATA_CB"));
+          if (cbDropData)
           {
-            auto cbDropData = reinterpret_cast<IFnsViii>(IupGetCallback(ih, "DROPDATA_CB"));
-            if (cbDropData)
-            {
-              QByteArray data = mime->data(mime_type);
-              cbDropData(ih, const_cast<char*>(drop_types), const_cast<char*>(data.constData()), data.size(), x, y);
-              drop->acceptProposedAction();
-              return true;
-            }
+            QByteArray type_bytes = type.toUtf8();
+            QByteArray data = mime->data(qmlDragDropMimeType(type));
+            cbDropData(ih, type_bytes.data(), data.data(), static_cast<int>(data.size()), x, y);
           }
+          drop->acceptProposedAction();
+          return true;
         }
 
         if (dd_data->is_files_target && mime->hasUrls())
@@ -192,8 +224,7 @@ public:
           }
         }
 
-        drop->acceptProposedAction();
-        return true;
+        return false;
       }
 
       default:
@@ -214,26 +245,32 @@ static void qmlDragDropStartDrag(Ihandle* ih, QQuickItem* item, int start_x, int
   if (!cb || cb(ih, start_x, start_y) == IUP_IGNORE)
     return;
 
-  const char* drag_types = iupAttribGetStr(ih, "DRAGTYPES");
   IFns cbDragDataSize = reinterpret_cast<IFns>(IupGetCallback(ih, "DRAGDATASIZE_CB"));
   auto cbDragData = reinterpret_cast<IFnsVi>(IupGetCallback(ih, "DRAGDATA_CB"));
-  if (!drag_types || !cbDragDataSize || !cbDragData)
+  if (!cbDragDataSize || !cbDragData)
     return;
 
-  int size = cbDragDataSize(ih, const_cast<char*>(drag_types));
-  if (size <= 0)
+  auto* mime_data = new QMimeData();
+  const QStringList types = qmlDragDropTypeList(iupAttribGetStr(ih, "DRAGTYPES"));
+  for (const QString& type : types)
+  {
+    QByteArray type_bytes = type.toUtf8();
+    int size = cbDragDataSize(ih, type_bytes.data());
+    if (size <= 0)
+      continue;
+
+    QByteArray data(size, 0);
+    cbDragData(ih, type_bytes.data(), data.data(), size);
+    mime_data->setData(qmlDragDropMimeType(type), data);
+  }
+
+  if (mime_data->formats().isEmpty())
+  {
+    delete mime_data;
     return;
+  }
 
   auto* drag = new QDrag(item);
-  auto* mime_data = new QMimeData();
-
-  void* data = calloc(1, size);
-  cbDragData(ih, const_cast<char*>(drag_types), data, size);
-
-  QString mime_type = QString("application/x-iup-") + QString::fromUtf8(drag_types).toLower();
-  mime_data->setData(mime_type, QByteArray(static_cast<const char*>(data), size));
-  free(data);
-
   drag->setMimeData(mime_data);
 
   char* drag_cursor = iupAttribGet(ih, "DRAGCURSOR");
