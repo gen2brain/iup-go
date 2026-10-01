@@ -1316,6 +1316,16 @@ static char* iDialogGetScreenPositionAttrib(Ihandle* ih)
   return iupStrReturnIntInt(x, y, ',');
 }
 
+static int iDialogSetPlacementAttrib(Ihandle* ih, const char* value)
+{
+  if (iupStrEqualNoCase(value, "NORMAL"))
+  {
+    iupAttribSet(ih, "PLACEMENT", NULL);
+    return 0;
+  }
+  return 1;
+}
+
 static int iDialogSetMenuAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle)
@@ -1461,7 +1471,7 @@ Iclass* iupDialogNewClass(void)
   iupClassRegisterAttribute(ic, "SHRINK",       NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STARTFOCUS",   NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MODAL",        iDialogGetModalAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PLACEMENT",    NULL, NULL, "NORMAL", NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PLACEMENT",    NULL, iDialogSetPlacementAttrib, "NORMAL", NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "NOFLUSH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWNOFOCUS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
