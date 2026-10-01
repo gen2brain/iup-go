@@ -309,7 +309,7 @@ func queueTable() iup.Ihandle {
 		menu := iup.Menu(
 			menuItem("Cancel", cancelSelected),
 			menuItem("Retry", retrySelected),
-			iup.Separator(),
+			iup.MenuSeparator(),
 			menuItem("Clear finished", clearFinished),
 		)
 		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
@@ -1024,7 +1024,7 @@ func setupTray(dlg iup.Ihandle) {
 		beginQuit()
 		return iup.DEFAULT
 	}))
-	menu := iup.Menu(showItem, pauseItem, iup.Separator(), exitItem).SetHandle("transfer_tray_menu")
+	menu := iup.Menu(showItem, pauseItem, iup.MenuSeparator(), exitItem).SetHandle("transfer_tray_menu")
 	iup.Map(menu)
 	tray = iup.Tray().SetHandle("transfer_tray")
 	tray.SetAttributes("IMAGE=transfer_icon, TIP=Transfer Center, MENU=transfer_tray_menu")

@@ -102,7 +102,7 @@ func buildMenu() {
 			item("New folder", newFolder),
 			item("Rename", renameSelected),
 			item("Delete", deleteSelected),
-			iup.Separator(),
+			iup.MenuSeparator(),
 			item("Quit", func() { iup.ExitLoop() }),
 		)),
 		iup.Submenu("View", iup.Menu(
@@ -282,7 +282,7 @@ func rightClicked(ih iup.Ihandle, lin, col int) int {
 		item("Rename "+e.name, renameSelected),
 		item("Delete "+e.name, deleteSelected),
 		iup.Submenu("Move to", moveMenu(e)),
-		iup.Separator(),
+		iup.MenuSeparator(),
 		item("Copy path", func() { copyPath(filepath.Join(current, e.name)) }),
 	)
 	iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)

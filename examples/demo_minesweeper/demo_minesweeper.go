@@ -349,7 +349,7 @@ func buildMenu() iup.Ihandle {
 	return iup.Menu(
 		iup.Submenu("&Game", iup.Menu(
 			iup.MenuItem("&New\tF2").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int { newGame(cur); return iup.DEFAULT })),
-			iup.Separator(),
+			iup.MenuSeparator(),
 			iup.Submenu("&Difficulty", iup.Menu(
 				diffItem(beginner, true),
 				diffItem(intermediate, false),
@@ -360,7 +360,7 @@ func buildMenu() iup.Ihandle {
 				board.MarksEnabled = marksEnabled
 				return iup.DEFAULT
 			})),
-			iup.Separator(),
+			iup.MenuSeparator(),
 			iup.MenuItem("E&xit").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int { return iup.CLOSE })),
 		)),
 		iup.Submenu("&Help", iup.Menu(

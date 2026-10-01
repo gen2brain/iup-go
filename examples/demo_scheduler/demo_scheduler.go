@@ -259,7 +259,7 @@ func context(day, hour int) {
 			item("Edit "+picked.title, edit),
 			iup.Submenu("Kind", kindMenu()),
 			item("Duplicate", duplicate),
-			iup.Separator(),
+			iup.MenuSeparator(),
 			item("Delete", remove),
 		)
 	} else {
