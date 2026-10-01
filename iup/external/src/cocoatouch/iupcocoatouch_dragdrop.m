@@ -65,6 +65,89 @@ NSArray<NSString*>* iupCocoaTouchDragParseTypes(const char* value)
 	return out;
 }
 
+@interface IupCocoaTouchDragContext : NSObject
+@property(nonatomic, assign) Ihandle* source;
+@property(nonatomic, assign) int pending;
+@property(nonatomic, assign) BOOL ended;
+@property(nonatomic, assign) int action;
+@end
+
+@implementation IupCocoaTouchDragContext
+@end
+
+static void cocoaTouchDragCallEnd(Ihandle* ih, int action)
+{
+	if (!iupObjectCheck(ih)) return;
+	IFni end_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
+	if (end_cb && end_cb(ih, action) == IUP_CLOSE) IupExitLoop();
+}
+
+IUP_DRV_API void iupCocoaTouchDragBegin(id<UIDragSession> session, Ihandle* ih)
+{
+	IupCocoaTouchDragContext* ctx = [[IupCocoaTouchDragContext alloc] init];
+	ctx.source = ih;
+	session.localContext = ctx;
+	[ctx release];
+}
+
+/* the session ends before a drop in this app has its data, so DRAGEND waits for those drops */
+IUP_DRV_API void iupCocoaTouchDragEnd(id<UIDragSession> session, Ihandle* ih, int action)
+{
+	id local = session.localContext;
+	if ([local isKindOfClass:[IupCocoaTouchDragContext class]] && ((IupCocoaTouchDragContext*)local).pending > 0)
+	{
+		((IupCocoaTouchDragContext*)local).ended = YES;
+		((IupCocoaTouchDragContext*)local).action = action;
+		return;
+	}
+	cocoaTouchDragCallEnd(ih, action);
+}
+
+IUP_DRV_API id iupCocoaTouchDropBegin(id<UIDropSession> session)
+{
+	id local = session.localDragSession.localContext;
+	if (![local isKindOfClass:[IupCocoaTouchDragContext class]]) return nil;
+	((IupCocoaTouchDragContext*)local).pending++;
+	return local;
+}
+
+IUP_DRV_API void iupCocoaTouchDropDone(id drag_context)
+{
+	IupCocoaTouchDragContext* ctx = drag_context;
+	if (!ctx) return;
+	ctx.pending--;
+	if (ctx.pending == 0 && ctx.ended)
+	{
+		ctx.ended = NO;
+		cocoaTouchDragCallEnd(ctx.source, ctx.action);
+	}
+}
+
+/* UIKit loads drag data on a background queue; the IUP callbacks must run on the main thread */
+IUP_DRV_API void iupCocoaTouchDragLoadData(Ihandle* ih, NSString* uti, void (^completion)(NSData*, NSError*))
+{
+	dispatch_async(dispatch_get_main_queue(), ^{
+		IFns size_cb = iupObjectCheck(ih) ? (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB") : NULL;
+		IFnsVi data_cb = iupObjectCheck(ih) ? (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB") : NULL;
+		if (!size_cb || !data_cb)
+		{
+			completion(nil, nil);
+			return;
+		}
+		char type_cstr[128];
+		strlcpy(type_cstr, [uti UTF8String], sizeof(type_cstr));
+		int size = size_cb(ih, type_cstr);
+		if (size <= 0 || !iupObjectCheck(ih))
+		{
+			completion(nil, nil);
+			return;
+		}
+		NSMutableData* buf = [NSMutableData dataWithLength:(NSUInteger)size];
+		data_cb(ih, type_cstr, [buf mutableBytes], size);
+		completion(buf, nil);
+	});
+}
+
 @interface IupCocoaTouchDragSource : NSObject <UIDragInteractionDelegate>
 @property(nonatomic, assign) Ihandle* ihandle;
 @property(nonatomic, copy) NSArray<NSString*>* types;
@@ -97,34 +180,13 @@ NSArray<NSString*>* iupCocoaTouchDragParseTypes(const char* value)
 		[provider registerDataRepresentationForTypeIdentifier:uti_copy
 			visibility:NSItemProviderRepresentationVisibilityAll
 			loadHandler:^NSProgress*(void (^completion)(NSData*, NSError*)) {
-				if (!iupObjectCheck(ih))
-				{
-					completion(nil, nil);
-					return nil;
-				}
-				IFns size_cb = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
-				IFnsVi data_cb = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
-				if (!size_cb || !data_cb)
-				{
-					completion(nil, nil);
-					return nil;
-				}
-				char type_cstr[128];
-				strlcpy(type_cstr, [uti_copy UTF8String], sizeof(type_cstr));
-				int size = size_cb(ih, type_cstr);
-				if (size <= 0)
-				{
-					completion(nil, nil);
-					return nil;
-				}
-				NSMutableData* buf = [NSMutableData dataWithLength:(NSUInteger)size];
-				data_cb(ih, type_cstr, [buf mutableBytes], size);
-				completion(buf, nil);
+				iupCocoaTouchDragLoadData(ih, uti_copy, completion);
 				return nil;
 			}
 		];
 	}
 
+	iupCocoaTouchDragBegin(session, _ihandle);
 	UIDragItem* drag_item = [[[UIDragItem alloc] initWithItemProvider:provider] autorelease];
 	/* same-app drops read localObject for DRAGSOURCEMOVE */
 	if (iupAttribGetBoolean(_ihandle, "DRAGSOURCEMOVE"))
@@ -134,10 +196,8 @@ NSArray<NSString*>* iupCocoaTouchDragParseTypes(const char* value)
 
 - (void)dragInteraction:(UIDragInteraction*)interaction session:(id<UIDragSession>)session didEndWithOperation:(UIDropOperation)operation
 {
-	(void)interaction; (void)session;
+	(void)interaction;
 	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
-	IFni end_cb = (IFni)IupGetCallback(_ihandle, "DRAGEND_CB");
-	if (!end_cb) return;
 
 	int action;
 	switch (operation)
@@ -146,7 +206,7 @@ NSArray<NSString*>* iupCocoaTouchDragParseTypes(const char* value)
 		case UIDropOperationCopy:   action =  0; break;
 		default:                    action = -1; break;
 	}
-	if (end_cb(_ihandle, action) == IUP_CLOSE) IupExitLoop();
+	iupCocoaTouchDragEnd(session, _ihandle, action);
 }
 
 @end
@@ -220,12 +280,14 @@ static BOOL cocoaTouchDropSessionWantsMove(id<UIDropSession> session)
 	int drop_x = (int)pt.x;
 	int drop_y = (int)pt.y;
 	Ihandle* ih = _ihandle;
+	BOOL handled = NO;
 
 	for (int i = 0; i < total; i++)
 	{
 		UIDragItem* item = items[i];
 		NSItemProvider* provider = [item itemProvider];
 		if (![provider canLoadObjectOfClass:[NSURL class]]) continue;
+		handled = YES;
 
 		int remaining = total - i - 1;
 		[provider loadObjectOfClass:[NSURL class]
@@ -242,7 +304,7 @@ static BOOL cocoaTouchDropSessionWantsMove(id<UIDropSession> session)
 				});
 			}];
 	}
-	return YES;
+	return handled;
 }
 
 - (void)dropInteraction:(UIDropInteraction*)interaction performDrop:(id<UIDropSession>)session
@@ -268,21 +330,17 @@ static BOOL cocoaTouchDropSessionWantsMove(id<UIDropSession> session)
 		NSItemProvider* provider = [item itemProvider];
 		if (![provider hasItemConformingToTypeIdentifier:type_copy]) continue;
 
+		id drag_context = iupCocoaTouchDropBegin(session);
 		[provider loadDataRepresentationForTypeIdentifier:type_copy
 			completionHandler:^(NSData* data, NSError* error) {
-				if (error || !data) return;
-				NSUInteger dlen = [data length];
-				if (dlen > (NSUInteger)INT_MAX) return;
 				dispatch_async(dispatch_get_main_queue(), ^{
-					if (!iupObjectCheck(ih)) return;
-					char type_cstr[128];
-					strlcpy(type_cstr, [type_copy UTF8String], sizeof(type_cstr));
-					drop_cb(ih,
-					        type_cstr,
-					        (void*)[data bytes],
-					        (int)dlen,
-					        drop_x,
-					        drop_y);
+					if (!error && data && [data length] <= (NSUInteger)INT_MAX && iupObjectCheck(ih))
+					{
+						char type_cstr[128];
+						strlcpy(type_cstr, [type_copy UTF8String], sizeof(type_cstr));
+						drop_cb(ih, type_cstr, (void*)[data bytes], (int)[data length], drop_x, drop_y);
+					}
+					iupCocoaTouchDropDone(drag_context);
 				});
 			}];
 	}

@@ -461,7 +461,6 @@ static void cocoaTouchListReorder(Ihandle* ih, int drag_id, int drop_id)
 
 - (NSArray<UIDragItem*>*)tableView:(UITableView*)tableView itemsForBeginningDragSession:(id<UIDragSession>)session atIndexPath:(NSIndexPath*)indexPath
 {
-	(void)session;
 	if (!_ihandle || !iupObjectCheck(_ihandle)) return @[];
 
 	if (_reorder)
@@ -489,22 +488,13 @@ static void cocoaTouchListReorder(Ihandle* ih, int drag_id, int drop_id)
 		[provider registerDataRepresentationForTypeIdentifier:uti_copy
 			visibility:NSItemProviderRepresentationVisibilityAll
 			loadHandler:^NSProgress*(void (^completion)(NSData*, NSError*)) {
-				if (!iupObjectCheck(ih)) { completion(nil, nil); return nil; }
-				IFns size_cb = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
-				IFnsVi data_cb = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
-				if (!size_cb || !data_cb) { completion(nil, nil); return nil; }
-				char type_cstr[128];
-				strlcpy(type_cstr, [uti_copy UTF8String], sizeof(type_cstr));
-				int size = size_cb(ih, type_cstr);
-				if (size <= 0) { completion(nil, nil); return nil; }
-				NSMutableData* buf = [NSMutableData dataWithLength:(NSUInteger)size];
-				data_cb(ih, type_cstr, [buf mutableBytes], size);
-				completion(buf, nil);
+				iupCocoaTouchDragLoadData(ih, uti_copy, completion);
 				return nil;
 			}
 		];
 	}
 
+	iupCocoaTouchDragBegin(session, _ihandle);
 	UIDragItem* drag_item = [[[UIDragItem alloc] initWithItemProvider:provider] autorelease];
 	if (iupAttribGetBoolean(_ihandle, "DRAGSOURCEMOVE")) drag_item.localObject = @"MOVE";
 	return @[drag_item];
@@ -512,17 +502,9 @@ static void cocoaTouchListReorder(Ihandle* ih, int drag_id, int drop_id)
 
 - (void)tableView:(UITableView*)tableView dragSessionDidEnd:(id<UIDragSession>)session
 {
-	(void)tableView; (void)session;
+	(void)tableView;
 	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
-	Ihandle* ih = _ihandle;
-	/* Defer so DROPDATA_CB consumes _IUP_LIST_SOURCEPOS first. */
-	dispatch_async(dispatch_get_main_queue(), ^{
-		if (!iupObjectCheck(ih)) return;
-		IFni end_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
-		if (!end_cb) return;
-		int action = iupAttribGetBoolean(ih, "DRAGSOURCEMOVE") ? 1 : 0;
-		if (end_cb(ih, action) == IUP_CLOSE) IupExitLoop();
-	});
+	iupCocoaTouchDragEnd(session, _ihandle, iupAttribGetBoolean(_ihandle, "DRAGSOURCEMOVE") ? 1 : 0);
 }
 
 - (NSString*)firstMatchingUTI:(id<UIDropSession>)session
@@ -575,7 +557,8 @@ static void cocoaTouchListReorder(Ihandle* ih, int drag_id, int drop_id)
 		}
 	}
 
-	return [[[UITableViewDropProposal alloc] initWithDropOperation:op intent:UITableViewDropIntentInsertAtDestinationIndexPath] autorelease];
+	/* DROPDATA_CB inserts before the item under the drop point, so that row is the target */
+	return [[[UITableViewDropProposal alloc] initWithDropOperation:op intent:UITableViewDropIntentInsertIntoDestinationIndexPath] autorelease];
 }
 
 - (void)tableView:(UITableView*)tableView performDropWithCoordinator:(id<UITableViewDropCoordinator>)coordinator
@@ -589,8 +572,11 @@ static void cocoaTouchListReorder(Ihandle* ih, int drag_id, int drop_id)
 		NSNumber* src = marker ? marker[IUP_COCOATOUCH_LIST_REORDER_MARKER] : nil;
 		if (!src) return;
 		NSIndexPath* dst = coordinator.destinationIndexPath;
+		if (![tableView indexPathForRowAtPoint:[coordinator.session locationInView:tableView]]) dst = nil;
 		int drag_id = [src intValue];
 		int drop_id = dst ? (int)[dst row] : -1;
+		/* UIKit gives the index after the move, IUP the item to insert before */
+		if (drop_id > drag_id) drop_id = (drop_id + 1 < iupdrvListGetCount(_ihandle)) ? drop_id + 1 : -1;
 		cocoaTouchListReorder(_ihandle, drag_id, drop_id);
 		return;
 	}
@@ -603,6 +589,7 @@ static void cocoaTouchListReorder(Ihandle* ih, int drag_id, int drop_id)
 	if (!match) return;
 
 	NSIndexPath* dst = coordinator.destinationIndexPath;
+	if (![tableView indexPathForRowAtPoint:[session locationInView:tableView]]) dst = nil;
 	int drop_x, drop_y;
 	if (dst)
 	{
@@ -625,14 +612,17 @@ static void cocoaTouchListReorder(Ihandle* ih, int drag_id, int drop_id)
 		NSItemProvider* provider = drop_item.dragItem.itemProvider;
 		if (![provider hasItemConformingToTypeIdentifier:type_copy]) continue;
 
+		id drag_context = iupCocoaTouchDropBegin(session);
 		[provider loadDataRepresentationForTypeIdentifier:type_copy
 			completionHandler:^(NSData* data, NSError* error) {
-				if (error || !data) return;
 				dispatch_async(dispatch_get_main_queue(), ^{
-					if (!iupObjectCheck(ih)) return;
-					char type_cstr[128];
-					strlcpy(type_cstr, [type_copy UTF8String], sizeof(type_cstr));
-					drop_cb(ih, type_cstr, (void*)[data bytes], (int)[data length], drop_x, drop_y);
+					if (!error && data && iupObjectCheck(ih))
+					{
+						char type_cstr[128];
+						strlcpy(type_cstr, [type_copy UTF8String], sizeof(type_cstr));
+						drop_cb(ih, type_cstr, (void*)[data bytes], (int)[data length], drop_x, drop_y);
+					}
+					iupCocoaTouchDropDone(drag_context);
 				});
 			}];
 	}

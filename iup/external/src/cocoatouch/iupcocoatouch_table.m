@@ -466,6 +466,14 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	};
 	moveInArray(_cells, from0, to0);
 	moveInArray(_images, from0, to0);
+
+	NSMutableIndexSet* selected = [NSMutableIndexSet indexSet];
+	[_selectedLins enumerateIndexesUsingBlock:^(NSUInteger lin, BOOL* stop) {
+		(void)stop;
+		[selected addIndex:(NSUInteger)iupTableMoveColPos((int)lin, (int)from0 + 1, (int)to0 + 1)];
+	}];
+	[_selectedLins removeAllIndexes];
+	[_selectedLins addIndexes:selected];
 }
 
 - (void)resizeToLines:(NSInteger)num_lin cols:(NSInteger)num_col

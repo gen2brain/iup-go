@@ -1441,7 +1441,6 @@ static int cocoaTouchTreeConvertXYToPos(Ihandle* ih, int x, int y)
 
 - (NSArray<UIDragItem*>*)tableView:(UITableView*)tableView itemsForBeginningDragSession:(id<UIDragSession>)session atIndexPath:(NSIndexPath*)indexPath
 {
-	(void)session;
 	if (!_ihandle || !iupObjectCheck(_ihandle) || [_dragTypes count] == 0) return @[];
 
 	CGRect rect = [tableView rectForRowAtIndexPath:indexPath];
@@ -1460,22 +1459,13 @@ static int cocoaTouchTreeConvertXYToPos(Ihandle* ih, int x, int y)
 		[provider registerDataRepresentationForTypeIdentifier:uti_copy
 			visibility:NSItemProviderRepresentationVisibilityAll
 			loadHandler:^NSProgress*(void (^completion)(NSData*, NSError*)) {
-				if (!iupObjectCheck(ih)) { completion(nil, nil); return nil; }
-				IFns size_cb = (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB");
-				IFnsVi data_cb = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
-				if (!size_cb || !data_cb) { completion(nil, nil); return nil; }
-				char type_cstr[128];
-				strlcpy(type_cstr, [uti_copy UTF8String], sizeof(type_cstr));
-				int size = size_cb(ih, type_cstr);
-				if (size <= 0) { completion(nil, nil); return nil; }
-				NSMutableData* buf = [NSMutableData dataWithLength:(NSUInteger)size];
-				data_cb(ih, type_cstr, [buf mutableBytes], size);
-				completion(buf, nil);
+				iupCocoaTouchDragLoadData(ih, uti_copy, completion);
 				return nil;
 			}
 		];
 	}
 
+	iupCocoaTouchDragBegin(session, _ihandle);
 	UIDragItem* drag_item = [[[UIDragItem alloc] initWithItemProvider:provider] autorelease];
 	if (iupAttribGetBoolean(_ihandle, "DRAGSOURCEMOVE")) drag_item.localObject = @"MOVE";
 	return @[drag_item];
@@ -1483,17 +1473,9 @@ static int cocoaTouchTreeConvertXYToPos(Ihandle* ih, int x, int y)
 
 - (void)tableView:(UITableView*)tableView dragSessionDidEnd:(id<UIDragSession>)session
 {
-	(void)tableView; (void)session;
+	(void)tableView;
 	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
-	Ihandle* ih = _ihandle;
-	/* defer so DROPDATA_CB reads _IUP_TREE_SOURCEID first */
-	dispatch_async(dispatch_get_main_queue(), ^{
-		if (!iupObjectCheck(ih)) return;
-		IFni end_cb = (IFni)IupGetCallback(ih, "DRAGEND_CB");
-		if (!end_cb) return;
-		int action = iupAttribGetBoolean(ih, "DRAGSOURCEMOVE") ? 1 : 0;
-		if (end_cb(ih, action) == IUP_CLOSE) IupExitLoop();
-	});
+	iupCocoaTouchDragEnd(session, _ihandle, iupAttribGetBoolean(_ihandle, "DRAGSOURCEMOVE") ? 1 : 0);
 }
 
 - (NSString*)firstMatchingUTI:(id<UIDropSession>)session
@@ -1541,7 +1523,7 @@ static int cocoaTouchTreeConvertXYToPos(Ihandle* ih, int x, int y)
 		}
 	}
 
-	return [[[UITableViewDropProposal alloc] initWithDropOperation:op intent:UITableViewDropIntentInsertAtDestinationIndexPath] autorelease];
+	return [[[UITableViewDropProposal alloc] initWithDropOperation:op intent:UITableViewDropIntentInsertIntoDestinationIndexPath] autorelease];
 }
 
 - (void)tableView:(UITableView*)tableView performDropWithCoordinator:(id<UITableViewDropCoordinator>)coordinator
@@ -1554,20 +1536,16 @@ static int cocoaTouchTreeConvertXYToPos(Ihandle* ih, int x, int y)
 	NSString* match = [self firstMatchingUTI:session];
 	if (!match) return;
 
-	/* UIKit drops gap-above-N, IUP wants insert-after; anchor on row N-1 */
-	int drop_x, drop_y;
 	NSIndexPath* dst = coordinator.destinationIndexPath;
-	NSInteger anchor_row = -1;
-	if (dst) anchor_row = dst.row - 1;
-	if (anchor_row < 0)
+	CGPoint pt = [session locationInView:tableView];
+	if (![tableView indexPathForRowAtPoint:pt]) dst = nil;
+	if (dst)
 	{
-		NSInteger n = [tableView numberOfRowsInSection:0];
-		if (n <= 0) return;
-		anchor_row = 0;
+		CGRect rect = [tableView rectForRowAtIndexPath:dst];
+		pt = CGPointMake(CGRectGetMidX(rect), CGRectGetMidY(rect));
 	}
-	CGRect rect = [tableView rectForRowAtIndexPath:[NSIndexPath indexPathForRow:anchor_row inSection:0]];
-	drop_x = (int)CGRectGetMidX(rect);
-	drop_y = (int)CGRectGetMidY(rect);
+	int drop_x = (int)pt.x;
+	int drop_y = (int)pt.y;
 
 	Ihandle* ih = _ihandle;
 	NSString* type_copy = [[match copy] autorelease];
@@ -1577,14 +1555,17 @@ static int cocoaTouchTreeConvertXYToPos(Ihandle* ih, int x, int y)
 		NSItemProvider* provider = drop_item.dragItem.itemProvider;
 		if (![provider hasItemConformingToTypeIdentifier:type_copy]) continue;
 
+		id drag_context = iupCocoaTouchDropBegin(session);
 		[provider loadDataRepresentationForTypeIdentifier:type_copy
 			completionHandler:^(NSData* data, NSError* error) {
-				if (error || !data) return;
 				dispatch_async(dispatch_get_main_queue(), ^{
-					if (!iupObjectCheck(ih)) return;
-					char type_cstr[128];
-					strlcpy(type_cstr, [type_copy UTF8String], sizeof(type_cstr));
-					drop_cb(ih, type_cstr, (void*)[data bytes], (int)[data length], drop_x, drop_y);
+					if (!error && data && iupObjectCheck(ih))
+					{
+						char type_cstr[128];
+						strlcpy(type_cstr, [type_copy UTF8String], sizeof(type_cstr));
+						drop_cb(ih, type_cstr, (void*)[data bytes], (int)[data length], drop_x, drop_y);
+					}
+					iupCocoaTouchDropDone(drag_context);
 				});
 			}];
 	}
