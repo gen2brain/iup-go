@@ -173,6 +173,43 @@ static CGEventRef iupCocoaGlobalEventCallback(CGEventTapProxy proxy, CGEventType
 }
 #endif /* !GNUSTEP */
 
+#ifdef GNUSTEP
+IUP_DRV_API void iupcocoaGnustepSetPrimaryDefault(NSString* key, id value)
+{
+  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+  NSMutableDictionary* domain = [[defaults volatileDomainForName:@"GSPrimaryDomain"] mutableCopy];
+  if (!domain)
+    domain = [[NSMutableDictionary alloc] init];
+  if (value)
+    [domain setObject:value forKey:key];
+  else
+    [domain removeObjectForKey:key];
+  [defaults removeVolatileDomainForName:@"GSPrimaryDomain"];
+  [defaults setVolatileDomain:domain forName:@"GSPrimaryDomain"];
+  [domain release];
+}
+
+IUP_DRV_API int iupcocoaGnustepSetTheme(const char* name)
+{
+  if (name && name[0])
+  {
+    NSString* theme_name = [NSString stringWithUTF8String:name];
+    GSTheme* theme = [GSTheme loadThemeNamed:theme_name];
+    if (!theme)
+      return 0;
+    iupcocoaGnustepSetPrimaryDefault(@"GSTheme", theme_name);
+    [GSTheme setTheme:theme];
+  }
+  else
+  {
+    iupcocoaGnustepSetPrimaryDefault(@"GSTheme", nil);
+    NSString* user_theme = [[NSUserDefaults standardUserDefaults] stringForKey:@"GSTheme"];
+    [GSTheme setTheme:[user_theme length] ? [GSTheme loadThemeNamed:user_theme] : nil];
+  }
+  return 1;
+}
+#endif
+
 static int cocoaSetGlobal(const char* name, const char* value)
 {
   if (iupStrEqual(name, "SINGLEINSTANCE"))
@@ -275,23 +312,8 @@ static int cocoaSetGlobal(const char* name, const char* value)
 #ifdef GNUSTEP
   if (iupStrEqual(name, "GNUSTEPTHEME"))
   {
-    NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-    if (value && value[0])
-    {
-      NSString* theme_name = [NSString stringWithUTF8String:value];
-      GSTheme* theme = [GSTheme loadThemeNamed:theme_name];
-      if (theme)
-      {
-        /* persist under the GSTheme defaults key so +[GSTheme defaultsDidChange:] keeps the selection */
-        [defaults setObject:theme_name forKey:@"GSTheme"];
-        [GSTheme setTheme:theme];
-        iupcocoaSetGlobalColors();
-        return 1;
-      }
+    if (!iupcocoaGnustepSetTheme(value))
       return 0;
-    }
-    [defaults removeObjectForKey:@"GSTheme"];
-    [GSTheme setTheme:nil];
     iupcocoaSetGlobalColors();
     return 1;
   }

@@ -4497,11 +4497,14 @@ static int cocoaTreeSetShowRenameAttrib(Ihandle* ih, const char* value)
 static int cocoaTreeSetContextMenuAttrib(Ihandle* ih, const char* value)
 {
   Ihandle* menu_ih = (Ihandle*)value;
-  NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
-  iupcocoaCommonBaseSetContextMenuForWidget(ih, outline_view, menu_ih);
 
-  /* Record that the user explicitly set this attribute, even if to NULL. */
-  iupAttribSet(ih, "_IUPCOCOA_CONTEXTMENU_SET", "1");
+  if (!ih->handle)
+  {
+    iupcocoaCommonBaseSetContextMenuForWidget(ih, nil, menu_ih);
+    return 1;
+  }
+
+  iupcocoaCommonBaseSetContextMenuForWidget(ih, cocoaTreeGetOutlineView(ih), menu_ih);
 
   return 1;
 }
@@ -4657,14 +4660,7 @@ static void cocoaTreeUnMapMethod(Ihandle* ih)
 {
   id root_view = ih->handle;
 
-  {
-    Ihandle* context_menu_ih = (Ihandle*)iupcocoaCommonBaseGetContextMenuAttrib(ih);
-    if (NULL != context_menu_ih)
-    {
-      IupDestroy(context_menu_ih);
-    }
-    iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
-  }
+  iupcocoaCommonBaseDestroyContextMenu(ih);
 
   cocoaSourceDragDestroyAssociatedData(ih);
   cocoaTargetDropDestroyAssociatedData(ih);
@@ -4777,7 +4773,7 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "TIP", cocoaTreeGetTipAttrib, cocoaTreeSetTipAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "CONTEXTMENU", iupcocoaCommonBaseGetContextMenuAttrib, cocoaTreeSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CONTEXTMENU", iupcocoaCommonBaseGetContextMenuAttrib, cocoaTreeSetContextMenuAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", cocoaTreeGetActiveAttrib, cocoaTreeSetActiveAttrib);
 

@@ -5309,6 +5309,12 @@ static int cocoaTextSetContextMenuAttrib(Ihandle* ih, const char* value)
   Ihandle* menu_ih = (Ihandle*)value;
   id widget_to_attach = nil;
 
+  if (!ih->handle)
+  {
+    iupcocoaCommonBaseSetContextMenuForWidget(ih, nil, menu_ih);
+    return 1;
+  }
+
   IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
   switch (sub_type)
   {
@@ -5549,14 +5555,7 @@ static void cocoaTextUnMapMethod(Ihandle* ih)
 {
   id the_view = ih->handle;
 
-  {
-    Ihandle* context_menu_ih = (Ihandle*)iupcocoaCommonBaseGetContextMenuAttrib(ih);
-    if(NULL != context_menu_ih)
-    {
-      IupDestroy(context_menu_ih);
-    }
-    iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
-  }
+  iupcocoaCommonBaseDestroyContextMenu(ih);
 
   if (ih->data->is_multiline)
   {
@@ -5826,5 +5825,5 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", cocoaTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OVERWRITE", cocoaTextGetOverwriteAttrib, cocoaTextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "CONTEXTMENU", iupcocoaCommonBaseGetContextMenuAttrib, cocoaTextSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CONTEXTMENU", iupcocoaCommonBaseGetContextMenuAttrib, cocoaTextSetContextMenuAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 }

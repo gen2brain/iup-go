@@ -15,8 +15,6 @@
 #include "iupcocoa_drv.h"
 
 #ifdef GNUSTEP
-#import <GNUstepGUI/GSTheme.h>
-
 @interface IupGnustepApplicationDelegate : NSObject
 @end
 
@@ -173,13 +171,15 @@ static int cocoaOpen(void)
         @"NSMessageFont", @"NSPaletteFont", @"NSTitleBarFont",
         @"NSToolTipsFont", @"NSControlContentFont", @"NSMenuFont"
       ];
+      NSMutableDictionary* seeds = [NSMutableDictionary dictionary];
       for (NSString* k in regular_keys)
       {
-        [defaults setObject:@"DejaVuSans" forKey:k];
+        [seeds setObject:@"DejaVuSans" forKey:k];
       }
-      [defaults setObject:@"DejaVuSans-Bold" forKey:@"NSBoldFont"];
-      [defaults setObject:@"DejaVuSans-Bold" forKey:@"NSBoldSystemFont"];
-      [defaults setObject:@"DejaVuSansMono-Book" forKey:@"NSUserFixedPitchFont"];
+      [seeds setObject:@"DejaVuSans-Bold" forKey:@"NSBoldFont"];
+      [seeds setObject:@"DejaVuSans-Bold" forKey:@"NSBoldSystemFont"];
+      [seeds setObject:@"DejaVuSansMono-Book" forKey:@"NSUserFixedPitchFont"];
+      [defaults registerDefaults:seeds];
     }
   }
 #endif
@@ -190,15 +190,7 @@ static int cocoaOpen(void)
   {
     const char* theme_env = getenv("IUP_GNUSTEPTHEME");
     if (theme_env && theme_env[0])
-    {
-      NSString* theme_name = [NSString stringWithUTF8String:theme_env];
-      GSTheme* theme = [GSTheme loadThemeNamed:theme_name];
-      if (theme)
-      {
-        [[NSUserDefaults standardUserDefaults] setObject:theme_name forKey:@"GSTheme"];
-        [GSTheme setTheme:theme];
-      }
-    }
+      iupcocoaGnustepSetTheme(theme_env);
   }
 
   /* fontWithName:size: is silent on a miss, so verify the seeds once the backend is up */
@@ -227,25 +219,25 @@ static int cocoaOpen(void)
       for (NSString* n in mono_candidates)    { if ([NSFont fontWithName:n size:12]) { chosen_mono = n; break; } }
       if (chosen_regular)
       {
-        [defaults setObject:chosen_regular forKey:@"NSFont"];
-        [defaults setObject:chosen_regular forKey:@"NSUserFont"];
-        [defaults setObject:chosen_regular forKey:@"NSSystemFont"];
-        [defaults setObject:chosen_regular forKey:@"NSLabelFont"];
-        [defaults setObject:chosen_regular forKey:@"NSMessageFont"];
-        [defaults setObject:chosen_regular forKey:@"NSPaletteFont"];
-        [defaults setObject:chosen_regular forKey:@"NSTitleBarFont"];
-        [defaults setObject:chosen_regular forKey:@"NSToolTipsFont"];
-        [defaults setObject:chosen_regular forKey:@"NSControlContentFont"];
-        [defaults setObject:chosen_regular forKey:@"NSMenuFont"];
+        iupcocoaGnustepSetPrimaryDefault(@"NSFont", chosen_regular);
+        iupcocoaGnustepSetPrimaryDefault(@"NSUserFont", chosen_regular);
+        iupcocoaGnustepSetPrimaryDefault(@"NSSystemFont", chosen_regular);
+        iupcocoaGnustepSetPrimaryDefault(@"NSLabelFont", chosen_regular);
+        iupcocoaGnustepSetPrimaryDefault(@"NSMessageFont", chosen_regular);
+        iupcocoaGnustepSetPrimaryDefault(@"NSPaletteFont", chosen_regular);
+        iupcocoaGnustepSetPrimaryDefault(@"NSTitleBarFont", chosen_regular);
+        iupcocoaGnustepSetPrimaryDefault(@"NSToolTipsFont", chosen_regular);
+        iupcocoaGnustepSetPrimaryDefault(@"NSControlContentFont", chosen_regular);
+        iupcocoaGnustepSetPrimaryDefault(@"NSMenuFont", chosen_regular);
       }
       if (chosen_bold)
       {
-        [defaults setObject:chosen_bold forKey:@"NSBoldFont"];
-        [defaults setObject:chosen_bold forKey:@"NSBoldSystemFont"];
+        iupcocoaGnustepSetPrimaryDefault(@"NSBoldFont", chosen_bold);
+        iupcocoaGnustepSetPrimaryDefault(@"NSBoldSystemFont", chosen_bold);
       }
       if (chosen_mono)
       {
-        [defaults setObject:chosen_mono forKey:@"NSUserFixedPitchFont"];
+        iupcocoaGnustepSetPrimaryDefault(@"NSUserFixedPitchFont", chosen_mono);
       }
     }
   }

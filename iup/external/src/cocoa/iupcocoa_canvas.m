@@ -1487,12 +1487,7 @@ static void cocoaCanvasUnMapMethod(Ihandle* ih)
   cocoaTargetDropDestroyAssociatedData(ih);
   cocoaSourceDragDestroyAssociatedData(ih);
 
-  Ihandle* context_menu_ih = (Ihandle*)iupcocoaCommonBaseGetContextMenuAttrib(ih);
-  if(context_menu_ih)
-  {
-    IupDestroy(context_menu_ih);
-  }
-  iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
+  iupcocoaCommonBaseDestroyContextMenu(ih);
 
   NSBitmapImageRep* canvas_buffer = (NSBitmapImageRep*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_BUFFER");
   if (canvas_buffer)
