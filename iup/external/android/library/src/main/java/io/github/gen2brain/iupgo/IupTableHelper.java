@@ -1224,6 +1224,11 @@ public final class IupTableHelper
         t.cellFg.putAll(remapCellLin(t.cellFg, fromLin, toLin));
         t.cellImage.putAll(remapCellLin(t.cellImage, fromLin, toLin));
         t.cellFont.putAll(remapCellLin(t.cellFont, fromLin, toLin));
+
+        ArrayList<Integer> sel = new ArrayList<>(t.selectedLins);
+        t.selectedLins.clear();
+        for (int lin : sel)
+            t.selectedLins.add(remapCol(lin, fromLin, toLin));
     }
 
     static <V> HashMap<Long, V> remapCellLin(HashMap<Long, V> src, int fromLin, int toLin)
