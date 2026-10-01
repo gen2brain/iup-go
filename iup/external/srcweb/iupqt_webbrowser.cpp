@@ -621,6 +621,18 @@ static char* qtWebBrowserGetZoomAttrib(Ihandle* ih)
  * Print Attributes
  ****************************************************************************/
 
+static void qtWebBrowserPrintTo(QWebEngineView* webview, QPrinter* printer)
+{
+  QEventLoop loop;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+  QObject::connect(webview, &QWebEngineView::printFinished, &loop, &QEventLoop::quit);
+  webview->print(printer);
+#else
+  webview->page()->print(printer, [&loop](bool) { loop.quit(); });
+#endif
+  loop.exec();
+}
+
 static int qtWebBrowserSetPrintAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
@@ -632,16 +644,7 @@ static int qtWebBrowserSetPrintAttrib(Ihandle* ih, const char* value)
   QPrintDialog dialog(&printer, webview);
 
   if (dialog.exec() == QDialog::Accepted)
-  {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    webview->page()->printToPdf([](const QByteArray &) {
-    });
-#else
-    webview->page()->print(&printer, [](bool success) {
-      (void)success;
-    });
-#endif
-  }
+    qtWebBrowserPrintTo(webview, &printer);
 
   return 0;
 }
@@ -658,14 +661,7 @@ static int qtWebBrowserSetPrintPreviewAttrib(Ihandle* ih, const char* value)
 
   QObject::connect(&preview, &QPrintPreviewDialog::paintRequested,
     [webview](QPrinter* printer) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-      webview->page()->printToPdf([](const QByteArray &) {
-      });
-#else
-      webview->page()->print(printer, [](bool success) {
-        (void)success;
-      });
-#endif
+      qtWebBrowserPrintTo(webview, printer);
     });
 
   preview.exec();
