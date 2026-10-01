@@ -101,6 +101,11 @@ IUP_DRV_API void iupCocoaTouchRefreshAllThemes(void);
 
 IUP_DRV_API NSString* iupCocoaTouchDragTypeToUTI(const char* iup_type);
 IUP_DRV_API NSArray<NSString*>* iupCocoaTouchDragParseTypes(const char* csv);
+IUP_DRV_API void iupCocoaTouchDragLoadData(Ihandle* ih, NSString* uti, void (^completion)(NSData*, NSError*));
+IUP_DRV_API void iupCocoaTouchDragBegin(id<UIDragSession> session, Ihandle* ih);
+IUP_DRV_API void iupCocoaTouchDragEnd(id<UIDragSession> session, Ihandle* ih, int action);
+IUP_DRV_API id iupCocoaTouchDropBegin(id<UIDropSession> session);
+IUP_DRV_API void iupCocoaTouchDropDone(id drag_context);
 
 IUP_DRV_API void iupCocoaTouchHandleTraitFlip(void);
 
