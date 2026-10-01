@@ -152,26 +152,47 @@ static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
   }
 }
 
+static void eflDialogGetFrameOffset(Eo* win, int* left, int* top)
+{
+  *left = 0;
+  *top = 0;
+
+#ifdef HAVE_ECORE_X
+  {
+    Ecore_X_Window xwin = elm_win_xwindow_get(win);
+    if (xwin)
+      ecore_x_netwm_frame_size_get(xwin, left, NULL, top, NULL);
+  }
+#else
+  (void)win;
+#endif
+}
+
 static void eflDialogMoveCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   /* Use the event's position; a getter reads stale (fired before the move commits). */
   Eina_Position2D* pos = (Eina_Position2D*)ev->info;
   IFnii cb;
+  int left, top, x, y;
 
-  if (!iupObjectCheck(ih) || !pos)
+  if (!iupObjectCheck(ih) || !pos || iupeflIsWayland())
     return;
+
+  eflDialogGetFrameOffset((Eo*)ih->handle, &left, &top);
+  x = pos->x - left;
+  y = pos->y - top;
 
   /* EFL fires this twice per move; dedup. */
-  if (pos->x == iupAttribGetInt(ih, "_IUPEFL_OLD_X") && pos->y == iupAttribGetInt(ih, "_IUPEFL_OLD_Y"))
+  if (x == iupAttribGetInt(ih, "_IUPEFL_OLD_X") && y == iupAttribGetInt(ih, "_IUPEFL_OLD_Y"))
     return;
 
-  iupAttribSetInt(ih, "_IUPEFL_OLD_X", pos->x);
-  iupAttribSetInt(ih, "_IUPEFL_OLD_Y", pos->y);
+  iupAttribSetInt(ih, "_IUPEFL_OLD_X", x);
+  iupAttribSetInt(ih, "_IUPEFL_OLD_Y", y);
 
   cb = (IFnii)IupGetCallback(ih, "MOVE_CB");
   if (cb)
-    cb(ih, pos->x, pos->y);
+    cb(ih, x, y);
 }
 
 static void eflDialogMaximizedCallback(void* data, const Efl_Event* ev)
@@ -631,11 +652,13 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
   if (!handle)
     handle = ih->handle;
 
-  if (handle)
+  if (handle && !iupeflIsWayland())
   {
     Eina_Rect geometry = iupeflGetGeometry((Eo*)handle);
-    gx = geometry.x;
-    gy = geometry.y;
+    int left, top;
+    eflDialogGetFrameOffset((Eo*)handle, &left, &top);
+    gx = geometry.x - left;
+    gy = geometry.y - top;
   }
 
   if (x) *x = gx;

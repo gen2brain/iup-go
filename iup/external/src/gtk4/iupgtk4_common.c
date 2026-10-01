@@ -462,23 +462,65 @@ IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
   iupdrvPostRedraw(ih);
 }
 
+IUP_DRV_API GtkWidget* iupgtk4NativeGetContent(GtkNative* native)
+{
+#ifdef GDK_WINDOWING_X11
+  if (iupgtk4X11IsBackend())
+    return GTK_WIDGET(native);
+#endif
+
+  if (GTK_IS_WINDOW(native))
+  {
+    GtkWidget* child = gtk_window_get_child(GTK_WINDOW(native));
+    if (child)
+      return child;
+  }
+
+  return GTK_WIDGET(native);
+}
+
+#ifdef GDK_WINDOWING_X11
+static void gtk4NativeGetScreenOffset(GtkNative* native, double* dx, double* dy)
+{
+  *dx = 0;
+  *dy = 0;
+
+  if (iupgtk4X11IsBackend())
+  {
+    GdkSurface* surface = gtk_native_get_surface(native);
+    if (surface)
+    {
+      double native_x, native_y;
+      int win_x = 0, win_y = 0;
+      gtk_native_get_surface_transform(native, &native_x, &native_y);
+      iupgtk4X11GetWindowPosition(surface, &win_x, &win_y);
+      *dx = native_x + win_x;
+      *dy = native_y + win_y;
+    }
+  }
+}
+#endif
+
 IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
   GtkNative* native = gtk_widget_get_native(ih->handle);
   if (native)
   {
-    double native_x, native_y;
-    graphene_point_t src_point, dest_point;
+    graphene_rect_t bounds;
 
-    gtk_native_get_surface_transform(native, &native_x, &native_y);
-
-    src_point.x = (float)(*x - native_x);
-    src_point.y = (float)(*y - native_y);
-
-    if (gtk_widget_compute_point(GTK_WIDGET(native), ih->handle, &src_point, &dest_point))
+#ifdef GDK_WINDOWING_X11
     {
-      *x = (int)dest_point.x;
-      *y = (int)dest_point.y;
+      double dx, dy;
+      gtk4NativeGetScreenOffset(native, &dx, &dy);
+      *x -= (int)dx;
+      *y -= (int)dy;
+    }
+#endif
+
+    if (gtk_widget_compute_bounds(ih->handle, iupgtk4NativeGetContent(native), &bounds))
+    {
+      *x -= (int)bounds.origin.x;
+      *y -= (int)bounds.origin.y;
     }
   }
 }
@@ -488,31 +530,20 @@ IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
   GtkNative* native = gtk_widget_get_native(ih->handle);
   if (native)
   {
-    double native_x, native_y;
-    graphene_point_t src_point, dest_point;
+    graphene_rect_t bounds;
 
-    gtk_native_get_surface_transform(native, &native_x, &native_y);
-
-    src_point.x = (float)*x;
-    src_point.y = (float)*y;
-
-    if (gtk_widget_compute_point(ih->handle, GTK_WIDGET(native), &src_point, &dest_point))
+    if (gtk_widget_compute_bounds(ih->handle, iupgtk4NativeGetContent(native), &bounds))
     {
-      *x = (int)(dest_point.x + native_x);
-      *y = (int)(dest_point.y + native_y);
+      *x += (int)bounds.origin.x;
+      *y += (int)bounds.origin.y;
     }
 
 #ifdef GDK_WINDOWING_X11
-    if (iupgtk4X11IsBackend())
     {
-      GdkSurface* surface = gtk_native_get_surface(native);
-      if (surface)
-      {
-        int win_x = 0, win_y = 0;
-        iupgtk4X11GetWindowPosition(surface, &win_x, &win_y);
-        *x += win_x;
-        *y += win_y;
-      }
+      double dx, dy;
+      gtk4NativeGetScreenOffset(native, &dx, &dy);
+      *x += (int)dx;
+      *y += (int)dy;
     }
 #endif
   }

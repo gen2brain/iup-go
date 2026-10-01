@@ -236,17 +236,17 @@ protected:
   {
     QMainWindow::moveEvent(event);
 
-    if (!iup_handle)
+    if (!iup_handle || QGuiApplication::platformName() == "wayland")
       return;
+
+    QPoint pos = this->pos();
 
     auto cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "MOVE_CB"));
     if (cb)
-    {
-      cb(iup_handle, event->pos().x(), event->pos().y());
-    }
+      cb(iup_handle, pos.x(), pos.y());
 
-    iupAttribSetInt(iup_handle, "_IUPQT_OLD_X", event->pos().x());
-    iupAttribSetInt(iup_handle, "_IUPQT_OLD_Y", event->pos().y());
+    iupAttribSetInt(iup_handle, "_IUPQT_OLD_X", pos.x());
+    iupAttribSetInt(iup_handle, "_IUPQT_OLD_Y", pos.y());
   }
 
   void changeEvent(QEvent* event) override
@@ -552,7 +552,12 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
 
   widget = reinterpret_cast<QWidget*>(handle);
 
-  if (widget && widget->isVisible())
+  if (QGuiApplication::platformName() == "wayland")
+  {
+    if (x) *x = 0;
+    if (y) *y = 0;
+  }
+  else if (widget && widget->isVisible())
   {
     QPoint pos = widget->pos();
     if (x) *x = pos.x();

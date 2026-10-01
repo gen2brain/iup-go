@@ -794,23 +794,25 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
     GtkNative* native = gtk_widget_get_native(parent_widget);
     if (native)
     {
-      double native_x, native_y;
+      double native_x = 0, native_y = 0;
       int win_x = 0, win_y = 0;
-      gtk_native_get_surface_transform(native, &native_x, &native_y);
 
 #ifdef GDK_WINDOWING_X11
       if (iupgtk4X11IsBackend())
       {
         GdkSurface* surface = gtk_native_get_surface(native);
         if (surface)
+        {
+          gtk_native_get_surface_transform(native, &native_x, &native_y);
           iupgtk4X11GetWindowPosition(surface, &win_x, &win_y);
+        }
       }
 #endif
 
       graphene_point_t point_in = {x - win_x - native_x, y - win_y - native_y};
       graphene_point_t point_out;
 
-      if (gtk_widget_compute_point(GTK_WIDGET(native), parent_widget, &point_in, &point_out))
+      if (gtk_widget_compute_point(iupgtk4NativeGetContent(native), parent_widget, &point_in, &point_out))
       {
         local_x = (int)point_out.x;
         local_y = (int)point_out.y;

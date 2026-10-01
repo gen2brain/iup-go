@@ -210,13 +210,8 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
     }
 #endif
 
-    if (surface)
-    {
-      double dx, dy;
-      iupgtk4SurfaceGetPointer(surface, &dx, &dy, NULL);
-      if (x) *x = (int)dx;
-      if (y) *y = (int)dy;
-    }
+    if (x) *x = 0;
+    if (y) *y = 0;
   }
   else if (ih)
   {

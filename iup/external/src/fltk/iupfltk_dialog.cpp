@@ -396,7 +396,12 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
 
   dialog = reinterpret_cast<IupFltkDialog*>(handle);
 
-  if (dialog)
+  if (dialog && iupfltkIsWayland())
+  {
+    if (x) *x = 0;
+    if (y) *y = 0;
+  }
+  else if (dialog)
   {
     int dx, dy;
     fltkDialogGetFrameOffset(ih, &dx, &dy);
