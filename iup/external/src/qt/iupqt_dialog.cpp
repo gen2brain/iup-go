@@ -1100,6 +1100,20 @@ static int qtDialogSetIconAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int qtDialogSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
+  unsigned char r, g, b;
+  if (!widget || !iupStrToRGB(value, &r, &g, &b))
+    return 0;
+
+  QPalette palette = widget->palette();
+  palette.setColor(QPalette::Window, QColor(r, g, b));
+  widget->setPalette(palette);
+  widget->setAutoFillBackground(true);
+  return 1;
+}
+
 static int qtDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
   auto* widget = reinterpret_cast<QWidget*>(ih->handle);
@@ -1362,7 +1376,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", qtDialogGetClientOffsetAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
 
   /* IupDialog */
-  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, "DLGBGCOLOR", nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, qtDialogSetBgColorAttrib, "DLGBGCOLOR", nullptr, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BACKGROUND", nullptr, qtDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKIMAGEZOOM", nullptr, qtDialogSetBackImageZoomAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ICON", nullptr, qtDialogSetIconAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);

@@ -13,6 +13,7 @@
 #include <QList>
 #include <QApplication>
 #include <QTreeWidget>
+#include <QAbstractScrollArea>
 
 extern "C" {
 #include "iup.h"
@@ -31,6 +32,7 @@ struct IupQtDragDropData
 {
   int is_source;
   int is_target;
+  int is_files_target;
 
   QDrag* current_drag;
 
@@ -47,6 +49,7 @@ static IupQtDragDropData* qtDragDropGetData(Ihandle* ih, int create)
     dd_data = new IupQtDragDropData();
     dd_data->is_source = 0;
     dd_data->is_target = 0;
+    dd_data->is_files_target = 0;
     dd_data->current_drag = nullptr;
     dd_data->last_x = 0;
     dd_data->last_y = 0;
@@ -87,13 +90,12 @@ public:
     {
       case QEvent::DragEnter:
       {
-        if (!dd_data->is_target)
+        auto* de = static_cast<QDragEnterEvent*>(event);
+        if (!dd_data->is_target && !(dd_data->is_files_target && de->mimeData()->hasUrls()))
           return false;
 
-        auto* de = static_cast<QDragEnterEvent*>(event);
-
         auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "DROPMOTION_CB"));
-        if (cb)
+        if (cb && dd_data->is_target)
         {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
           int x = de->position().x();
@@ -122,13 +124,12 @@ public:
 
       case QEvent::DragMove:
       {
-        if (!dd_data->is_target)
+        auto* dm = static_cast<QDragMoveEvent*>(event);
+        if (!dd_data->is_target && !(dd_data->is_files_target && dm->mimeData()->hasUrls()))
           return false;
 
-        auto* dm = static_cast<QDragMoveEvent*>(event);
-
         auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "DROPMOTION_CB"));
-        if (cb)
+        if (cb && dd_data->is_target)
         {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
           int x = dm->position().x();
@@ -155,21 +156,12 @@ public:
         return true;
       }
 
-      case QEvent::DragLeave:
-      {
-        if (!dd_data->is_target)
-          return false;
-
-        return false;
-      }
-
       case QEvent::Drop:
       {
-        if (!dd_data->is_target)
-          return false;
-
         auto* drop = static_cast<QDropEvent*>(event);
         const QMimeData* mime = drop->mimeData();
+        if (!dd_data->is_target && !(dd_data->is_files_target && mime->hasUrls()))
+          return false;
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         int x = drop->position().x();
@@ -182,7 +174,7 @@ public:
         dd_data->last_y = y;
 
         const char* drop_types = iupAttribGetStr(ih, "DROPTYPES");
-        if (drop_types)
+        if (dd_data->is_target && drop_types)
         {
           QString mime_type = QString("application/x-iup-") + QString::fromUtf8(drop_types).toLower();
 
@@ -199,7 +191,7 @@ public:
           }
         }
 
-        if (mime->hasUrls())
+        if (dd_data->is_files_target && mime->hasUrls())
         {
           auto cbDropFiles = reinterpret_cast<IFnsiii>(IupGetCallback(ih, "DROPFILES_CB"));
           if (cbDropFiles)
@@ -370,9 +362,13 @@ static int qtDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
   {
     dd_data->is_source = 1;
 
-    auto* filter = new IupQtDragDropFilter(ih);
+    auto* filter = reinterpret_cast<IupQtDragDropFilter*>(iupAttribGet(ih, "_IUPQT_DRAGDROP_FILTER"));
+    if (!filter)
+    {
+      filter = new IupQtDragDropFilter(ih);
+      iupAttribSet(ih, "_IUPQT_DRAGDROP_FILTER", reinterpret_cast<char*>(filter));
+    }
     widget->installEventFilter(filter);
-    iupAttribSet(ih, "_IUPQT_DRAGDROP_FILTER", reinterpret_cast<char*>(filter));
 
     auto* view = qobject_cast<QAbstractItemView*>(widget);
     if (view && view->viewport())
@@ -385,7 +381,7 @@ static int qtDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
         tree->setDragEnabled(false);
         tree->setDropIndicatorShown(false);
 
-        if (dd_data->is_target)
+        if (dd_data->is_target || dd_data->is_files_target)
           tree->setDragDropMode(QAbstractItemView::DropOnly);
         else
           tree->setDragDropMode(QAbstractItemView::NoDragDrop);
@@ -397,7 +393,7 @@ static int qtDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
     dd_data->is_source = 0;
 
     auto* filter = reinterpret_cast<IupQtDragDropFilter*>(iupAttribGet(ih, "_IUPQT_DRAGDROP_FILTER"));
-    if (filter && !dd_data->is_target)
+    if (filter && !dd_data->is_target && !dd_data->is_files_target)
     {
       widget->removeEventFilter(filter);
       delete filter;
@@ -405,16 +401,14 @@ static int qtDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
     }
 
     auto* tree = qobject_cast<QTreeWidget*>(widget);
-    if (tree && dd_data->is_target)
-    {
+    if (tree && (dd_data->is_target || dd_data->is_files_target))
       tree->setDragDropMode(QAbstractItemView::DropOnly);
-    }
   }
 
   return 1;
 }
 
-static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
+static int qtDragDropUpdateTarget(Ihandle* ih, int* flag, const char* value)
 {
   IupQtDragDropData* dd_data = qtDragDropGetData(ih, 1);
 
@@ -422,11 +416,13 @@ static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
   if (!widget)
     return 0;
 
-  int enable = iupStrBoolean(value);
+  int was_target = dd_data->is_target || dd_data->is_files_target;
+  *flag = iupStrBoolean(value);
+  int is_target = dd_data->is_target || dd_data->is_files_target;
 
-  if (enable && !dd_data->is_target)
+  if (is_target && !was_target)
   {
-    dd_data->is_target = 1;
+    iupAttribSet(ih, "_IUPQT_DROP_ACCEPTED", widget->acceptDrops() ? "1" : "0");
     widget->setAcceptDrops(true);
 
     auto* filter = reinterpret_cast<IupQtDragDropFilter*>(iupAttribGet(ih, "_IUPQT_DRAGDROP_FILTER"));
@@ -437,24 +433,21 @@ static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
       iupAttribSet(ih, "_IUPQT_DRAGDROP_FILTER", reinterpret_cast<char*>(filter));
     }
 
-    auto* view = qobject_cast<QAbstractItemView*>(widget);
-    if (view && view->viewport())
-    {
-      view->viewport()->installEventFilter(filter);
+    auto* area = qobject_cast<QAbstractScrollArea*>(widget);
+    if (area && area->viewport())
+      area->viewport()->installEventFilter(filter);
 
-      auto* tree = qobject_cast<QTreeWidget*>(widget);
-      if (tree)
-      {
-        tree->setAcceptDrops(true);
-        tree->setDropIndicatorShown(false);
-        tree->setDragDropMode(QAbstractItemView::DropOnly);
-      }
+    auto* tree = qobject_cast<QTreeWidget*>(widget);
+    if (tree)
+    {
+      tree->setAcceptDrops(true);
+      tree->setDropIndicatorShown(false);
+      tree->setDragDropMode(QAbstractItemView::DropOnly);
     }
   }
-  else if (!enable && dd_data->is_target)
+  else if (!is_target && was_target)
   {
-    dd_data->is_target = 0;
-    widget->setAcceptDrops(false);
+    widget->setAcceptDrops(iupAttribGetBoolean(ih, "_IUPQT_DROP_ACCEPTED"));
 
     if (!dd_data->is_source)
     {
@@ -469,17 +462,22 @@ static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
 
     auto* tree = qobject_cast<QTreeWidget*>(widget);
     if (tree && !dd_data->is_source)
-    {
       tree->setDragDropMode(QAbstractItemView::NoDragDrop);
-    }
   }
 
   return 1;
 }
 
+static int qtDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
+{
+  IupQtDragDropData* dd_data = qtDragDropGetData(ih, 1);
+  return qtDragDropUpdateTarget(ih, &dd_data->is_target, value);
+}
+
 static int qtDragDropSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 {
-  return qtDragDropSetDropTargetAttrib(ih, value);
+  IupQtDragDropData* dd_data = qtDragDropGetData(ih, 1);
+  return qtDragDropUpdateTarget(ih, &dd_data->is_files_target, value);
 }
 
 IUP_DRV_API void iupqtDragDropCleanup(Ihandle* ih)
