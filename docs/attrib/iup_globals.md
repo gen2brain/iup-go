@@ -68,7 +68,7 @@ Default: "NO".
 
 ### EXITLOOP
 
-Disable the **IupExitLoop** function when **IupMainLoopLevel** is 1.
+Disable the **IupExitLoop** function when **IupMainLoopLevel** is 0 or 1.
 Used when the application runs secondary dialogs that behave as full applications but sharing the same IUP environment.
 Possible values: "YES" or "NO". Default: "YES".
 

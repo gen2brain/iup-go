@@ -214,6 +214,19 @@ IUP_DRV_API void iuphaikuAppIdleTick()
   }
 }
 
+static bool haiku_loop_exit_requested = false;
+
+static int haikuLoopStepResult()
+{
+  if (haiku_main_loop_level > 0 && haiku_main_loop_level <= 10)
+    return haiku_loop_exit_flag[haiku_main_loop_level - 1] ? IUP_CLOSE : IUP_DEFAULT;
+
+  if (!haiku_loop_exit_requested)
+    return IUP_DEFAULT;
+  haiku_loop_exit_requested = false;
+  return IUP_CLOSE;
+}
+
 extern "C" IUP_API void IupExitLoop(void)
 {
   char* exit_loop = IupGetGlobal("EXITLOOP");
@@ -224,8 +237,9 @@ extern "C" IUP_API void IupExitLoop(void)
       haiku_loop_exit_flag[haiku_main_loop_level - 1] = true;
       haikuWake();
     }
-    else if (haiku_main_loop_level == 1)
+    else if (haiku_main_loop_level == 1 && !haiku_loop_exit_flag[0])
     {
+      haiku_loop_exit_flag[0] = true;
       if (be_app)
       {
         BMessenger msgr(be_app);
@@ -233,6 +247,8 @@ extern "C" IUP_API void IupExitLoop(void)
       }
       haikuWake();
     }
+    else if (haiku_main_loop_level == 0)
+      haiku_loop_exit_requested = true;
   }
 }
 
@@ -258,6 +274,7 @@ extern "C" IUP_API int IupMainLoop(void)
     return IUP_ERROR;
   }
   haiku_loop_exit_flag[current_level] = false;
+  haiku_loop_exit_requested = false;
 
   if (current_level == 0)
   {
@@ -310,7 +327,7 @@ extern "C" IUP_API int IupLoopStepWait(void)
   haikuDrainPostQueue();
   acquire_sem_etc(sem, 1, B_RELATIVE_TIMEOUT, 100000);
   haikuDrainPostQueue();
-  return IUP_DEFAULT;
+  return haikuLoopStepResult();
 }
 
 extern "C" IUP_API int IupLoopStep(void)
@@ -320,10 +337,15 @@ extern "C" IUP_API int IupLoopStep(void)
   if (haiku_idle_cb)
   {
     int ret = haiku_idle_cb();
-    if (ret == IUP_CLOSE) { haiku_idle_cb = nullptr; return IUP_CLOSE; }
+    if (ret == IUP_CLOSE)
+    {
+      haiku_idle_cb = nullptr;
+      if (haiku_main_loop_level > 0) IupExitLoop();
+      return IUP_CLOSE;
+    }
     if (ret == IUP_IGNORE) haiku_idle_cb = nullptr;
   }
-  return IUP_DEFAULT;
+  return haikuLoopStepResult();
 }
 
 extern "C" IUP_API void IupFlush(void)

@@ -74,6 +74,23 @@ IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
     gtk_idle_id = g_idle_add(gtkIdleFunc, NULL);
 }
 
+static int gtk4_exit_requested = 0;
+
+static int gtk4LoopStepResult(void)
+{
+  if (gtk4_loop_level > 0 && gtk4_loop_stack[gtk4_loop_level - 1] &&
+      !g_main_loop_is_running(gtk4_loop_stack[gtk4_loop_level - 1]))
+    return IUP_CLOSE;
+
+  if (gtk4_exit_requested)
+  {
+    gtk4_exit_requested = 0;
+    return IUP_CLOSE;
+  }
+
+  return IUP_DEFAULT;
+}
+
 IUP_API void IupExitLoop(void)
 {
   char* exit_loop = IupGetGlobal("EXITLOOP");
@@ -84,6 +101,8 @@ IUP_API void IupExitLoop(void)
     if (current_loop && g_main_loop_is_running(current_loop))
       g_main_loop_quit(current_loop);
   }
+  else if (gtk4_loop_level == 0 && (!exit_loop || iupStrBoolean(exit_loop)))
+    gtk4_exit_requested = 1;
 }
 
 IUP_API int IupMainLoopLevel(void)
@@ -106,6 +125,7 @@ IUP_API int IupMainLoop(void)
     return IUP_ERROR;
   }
 
+  gtk4_exit_requested = 0;
   GMainLoop* new_loop = g_main_loop_new(NULL, FALSE);
   gtk4_loop_stack[gtk4_loop_level] = new_loop;
   gtk4_loop_level++;
@@ -127,11 +147,7 @@ IUP_API int IupLoopStepWait(void)
   GMainContext* context = g_main_context_default();
   g_main_context_iteration(context, TRUE);
 
-  if (gtk4_loop_level > 0 && gtk4_loop_stack[gtk4_loop_level - 1] &&
-      !g_main_loop_is_running(gtk4_loop_stack[gtk4_loop_level - 1]))
-    return IUP_CLOSE;
-
-  return IUP_DEFAULT;
+  return gtk4LoopStepResult();
 }
 
 IUP_API int IupLoopStep(void)
@@ -139,11 +155,7 @@ IUP_API int IupLoopStep(void)
   GMainContext* context = g_main_context_default();
   g_main_context_iteration(context, FALSE);
 
-  if (gtk4_loop_level > 0 && gtk4_loop_stack[gtk4_loop_level - 1] &&
-      !g_main_loop_is_running(gtk4_loop_stack[gtk4_loop_level - 1]))
-    return IUP_CLOSE;
-
-  return IUP_DEFAULT;
+  return gtk4LoopStepResult();
 }
 
 IUP_API void IupFlush(void)

@@ -103,6 +103,18 @@ extern "C" IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
 
 static int qt_main_loop_level = 0;
 static bool qt_loop_exit_flag[10] = {false}; /* Support up to 10 nested levels */
+static bool qt_loop_exit_requested = false;
+
+static bool qtLoopExitPending()
+{
+  if (qt_main_loop_level > 0 && qt_main_loop_level <= 10)
+    return qt_loop_exit_flag[qt_main_loop_level - 1];
+
+  if (!qt_loop_exit_requested)
+    return false;
+  qt_loop_exit_requested = false;
+  return true;
+}
 
 
 extern "C" IUP_API void IupExitLoop(void)
@@ -113,6 +125,8 @@ extern "C" IUP_API void IupExitLoop(void)
   {
     if (qt_main_loop_level > 0 && qt_main_loop_level <= 10)
       qt_loop_exit_flag[qt_main_loop_level - 1] = true;
+    else if (qt_main_loop_level == 0)
+      qt_loop_exit_requested = true;
   }
 }
 
@@ -141,6 +155,7 @@ extern "C" IUP_API int IupMainLoop(void)
   }
 
   qt_loop_exit_flag[current_level] = false;
+  qt_loop_exit_requested = false;
 
   QApplication* app = iupqtGetApplication();
   if (app)
@@ -168,7 +183,7 @@ extern "C" IUP_API int IupLoopStepWait(void)
 
   QCoreApplication::processEvents(QEventLoop::WaitForMoreEvents);
 
-  if (QCoreApplication::closingDown())
+  if (QCoreApplication::closingDown() || qtLoopExitPending())
     return IUP_CLOSE;
 
   return IUP_DEFAULT;
@@ -182,7 +197,7 @@ extern "C" IUP_API int IupLoopStep(void)
 
   QCoreApplication::processEvents(QEventLoop::AllEvents);
 
-  if (QCoreApplication::closingDown())
+  if (QCoreApplication::closingDown() || qtLoopExitPending())
     return IUP_CLOSE;
 
   return IUP_DEFAULT;
@@ -273,4 +288,5 @@ IUP_DRV_API void iupqtLoopCleanup()
 
   qt_idle_cb = nullptr;
   qt_main_loop_level = 0;
+  qt_loop_exit_requested = false;
 }

@@ -28,6 +28,7 @@
 static IFidle win_idle_cb = NULL;
 static int win_main_loop_level = 0;
 static UINT win_quit_message = WM_QUIT;
+static int win_quit_pending = 0;
 
 IUP_DRV_API void iupwinSetCustomQuitMessage(int enable)
 {
@@ -73,13 +74,21 @@ static int winLoopCallIdle(void)
 IUP_API void IupExitLoop(void)
 {
   char* exit_loop = IupGetGlobal("EXITLOOP");
-  if (win_main_loop_level > 1 || !exit_loop || iupStrBoolean(exit_loop))
+  if (!win_quit_pending && (win_main_loop_level > 1 || !exit_loop || iupStrBoolean(exit_loop)))
   {
+    win_quit_pending = 1;
     if (win_quit_message == WM_QUIT)
       PostQuitMessage(0);
     else
       PostMessage(NULL, win_quit_message, 0, 0L);
   }
+}
+
+static int winLoopStepResult(int ret)
+{
+  if (ret == IUP_CLOSE && win_main_loop_level > 0)
+    IupExitLoop();
+  return ret;
 }
 
 static void winProcessPostMessage(LPARAM lParam);
@@ -126,7 +135,10 @@ static int winLoopTranslateAccelerator(MSG* msg)
 static int winLoopProcessMessage(MSG* msg)
 {
   if (msg->message == win_quit_message)  /* IUP_CLOSE returned in a callback or IupHide in a popup dialog or all dialogs closed */
+  {
+    win_quit_pending = 0;
     return IUP_CLOSE;
+  }
   else
   {
     if (!winLoopTranslateAccelerator(msg) && !iupwinPostMessageFilter(msg))
@@ -191,6 +203,8 @@ IUP_API int IupMainLoop(void)
       if (ret == 0 || /* WM_QUIT */
           winLoopProcessMessage(&msg) == IUP_CLOSE)  /* ret != 0 */
       {
+        if (ret == 0)
+          win_quit_pending = 0;
         return_code = IUP_NOERROR;
         break;
       }
@@ -214,7 +228,11 @@ IUP_API int IupLoopStepWait(void)
 
   if (ret == 0 || /* WM_QUIT */
       winLoopProcessMessage(&msg) == IUP_CLOSE)  /* ret != 0 */
-    return IUP_CLOSE;
+  {
+    if (ret == 0)
+      win_quit_pending = 0;
+    return winLoopStepResult(IUP_CLOSE);
+  }
 
   return IUP_DEFAULT;
 }
@@ -223,9 +241,9 @@ IUP_API int IupLoopStep(void)
 {
   MSG msg;
   if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
-    return winLoopProcessMessage(&msg);
+    return winLoopStepResult(winLoopProcessMessage(&msg));
   else if (win_idle_cb)
-    return winLoopCallIdle();
+    return winLoopStepResult(winLoopCallIdle());
 
   return IUP_DEFAULT;
 }

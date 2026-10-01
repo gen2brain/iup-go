@@ -53,13 +53,9 @@ static int macLoopCallIdle(void)
   return ret;
 }
 
-static void cocoaExitLoop(void)
+static void macLoopPostWake(void)
 {
-  char* exit_loop = IupGetGlobal("EXITLOOP");
-  if (!exit_loop || iupStrBoolean(exit_loop))
-  {
-    mac_main_loop_should_quit = 1;
-
+  @autoreleasepool {
     NSEvent* event = [NSEvent otherEventWithType:NSEventTypeApplicationDefined
                                         location:NSMakePoint(0, 0)
                                    modifierFlags:0
@@ -69,15 +65,29 @@ static void cocoaExitLoop(void)
                                          subtype:0
                                            data1:0
                                            data2:0];
+#ifdef GNUSTEP
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [NSApp postEvent:event atStart:NO];
+    });
+#else
     [NSApp postEvent:event atStart:NO];
+#endif
+  }
+}
+
+static void cocoaExitLoop(void)
+{
+  char* exit_loop = IupGetGlobal("EXITLOOP");
+  if (!exit_loop || iupStrBoolean(exit_loop))
+  {
+    mac_main_loop_should_quit = 1;
+    macLoopPostWake();
   }
 }
 
 void IupExitLoop(void)
 {
-  @autoreleasepool {
-    cocoaExitLoop();
-  }
+  cocoaExitLoop();
 }
 
 static int macLoopProcessMessage(NSEvent* event)
@@ -137,11 +147,7 @@ int IupMainLoop(void)
     }
   }
 
-  /* reset the quit flag when leaving a nested loop so the parent loop continues */
-  if (mac_main_loop_level > 1 && mac_main_loop_should_quit)
-  {
-    mac_main_loop_should_quit = 0;
-  }
+  mac_main_loop_should_quit = 0;
 
   mac_main_loop_level--;
 
@@ -151,6 +157,18 @@ int IupMainLoop(void)
   }
 
   return IUP_NOERROR;
+}
+
+static int macLoopStepResult(void)
+{
+  if (!mac_main_loop_should_quit)
+    return IUP_DEFAULT;
+
+  if (mac_main_loop_level == 0)
+    mac_main_loop_should_quit = 0;
+  else
+    macLoopPostWake();
+  return IUP_CLOSE;
 }
 
 int IupLoopStepWait(void)
@@ -164,10 +182,7 @@ int IupLoopStepWait(void)
       macLoopProcessMessage(event);
   }
 
-  if (mac_main_loop_should_quit)
-    return IUP_CLOSE;
-
-  return IUP_DEFAULT;
+  return macLoopStepResult();
 }
 
 int IupLoopStep(void)
@@ -183,10 +198,7 @@ int IupLoopStep(void)
       macLoopCallIdle();
   }
 
-  if (mac_main_loop_should_quit)
-    return IUP_CLOSE;
-
-  return IUP_DEFAULT;
+  return macLoopStepResult();
 }
 
 void IupFlush(void)
