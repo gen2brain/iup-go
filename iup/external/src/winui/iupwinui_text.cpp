@@ -738,6 +738,34 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int winuiTextSetAutoCorrectAttrib(Ihandle* ih, const char* value)
+{
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  if (!aux || aux->isPassword || aux->isSpin)
+    return 1;
+
+  bool enable = iupStrBoolean(value) ? true : false;
+  if (aux->isFormatted)
+  {
+    auto reb = winuiGetHandle<RichEditBox>(ih);
+    if (reb)
+    {
+      reb.IsSpellCheckEnabled(enable);
+      reb.IsTextPredictionEnabled(enable);
+    }
+  }
+  else
+  {
+    auto tb = winuiGetHandle<TextBox>(ih);
+    if (tb)
+    {
+      tb.IsSpellCheckEnabled(enable);
+      tb.IsTextPredictionEnabled(enable);
+    }
+  }
+  return 1;
+}
+
 static int winuiTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
 {
   auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
@@ -1280,6 +1308,8 @@ static int winuiTextMapMethod(Ihandle* ih)
     if (parentCanvas)
       parentCanvas.Children().Append(reb);
 
+    reb.IsSpellCheckEnabled(false);
+    reb.IsTextPredictionEnabled(false);
     reb.ApplyTemplate();
 
     reb.Loaded([ih](IInspectable const& sender, RoutedEventArgs const&) {
@@ -1357,6 +1387,8 @@ static int winuiTextMapMethod(Ihandle* ih)
 
     int isReadOnly = iupAttribGetBoolean(ih, "READONLY");
     tb.IsReadOnly(isReadOnly ? true : false);
+    tb.IsSpellCheckEnabled(false);
+    tb.IsTextPredictionEnabled(false);
 
     if (value)
     {
@@ -4042,6 +4074,7 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VALUE", winuiTextGetValueAttrib, winuiTextSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPEND", nullptr, winuiTextSetAppendAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", winuiTextGetReadOnlyAttrib, winuiTextSetReadOnlyAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "AUTOCORRECT", nullptr, winuiTextSetAutoCorrectAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINEVALUE", winuiTextGetLineValueAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", nullptr, winuiTextSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 

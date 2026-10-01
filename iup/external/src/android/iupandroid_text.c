@@ -455,6 +455,22 @@ static int androidTextSetAppendAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int androidTextSetAutoCorrectAttrib(Ihandle* ih, const char* value)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_setAutoCorrect);
+
+  if (!ih->handle) return 1;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
+  jmethodID method_id = IUPJNI_GetStaticMethodID(IupTextHelper_setAutoCorrect, jni_env, java_class, "setAutoCorrect", "(JLandroid/view/View;Z)V");
+
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jobject)ih->handle, (jboolean)iupStrBoolean(value));
+  iupAndroid_CheckException(jni_env, "IupTextHelper.setAutoCorrect");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  return 1;
+}
+
 static int androidTextSetPasswordAttrib(Ihandle* ih, const char* value)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_setPassword);
@@ -548,7 +564,7 @@ static int androidTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
     (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jobject)ih->handle, is_read_only);
     iupAndroid_CheckException(jni_env, "IupTextHelper.setReadOnlyMultiLine");
   }
-  else if (sub_type == IUPANDROIDTEXTSUBTYPE_FIELD)
+  else if (sub_type == IUPANDROIDTEXTSUBTYPE_FIELD || sub_type == IUPANDROIDTEXTSUBTYPE_STEPPER)
   {
     method_id = IUPJNI_GetStaticMethodID(IupTextHelper_setReadOnlySingleLine, jni_env, java_class, "setReadOnlySingleLine", "(JLandroid/view/View;Z)V");
     (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jobject)ih->handle, is_read_only);
@@ -577,7 +593,7 @@ static char* androidTextGetReadOnlyAttrib(Ihandle* ih)
     is_read_only = (*jni_env)->CallStaticBooleanMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jobject)ih->handle);
     iupAndroid_CheckException(jni_env, "IupTextHelper.getReadOnlyMultiLine");
   }
-  else if (sub_type == IUPANDROIDTEXTSUBTYPE_FIELD)
+  else if (sub_type == IUPANDROIDTEXTSUBTYPE_FIELD || sub_type == IUPANDROIDTEXTSUBTYPE_STEPPER)
   {
     method_id = IUPJNI_GetStaticMethodID(IupTextHelper_getReadOnlySingleLine, jni_env, java_class, "getReadOnlySingleLine", "(JLandroid/view/View;)Z");
     is_read_only = (*jni_env)->CallStaticBooleanMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jobject)ih->handle);
@@ -1301,6 +1317,7 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, androidTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPEND", NULL, androidTextSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PASSWORD", NULL, androidTextSetPasswordAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AUTOCORRECT", NULL, androidTextSetAutoCorrectAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, androidTextSetNCAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINVALUE", androidTextGetSpinValueAttrib, androidTextSetSpinValueAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINMIN", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);

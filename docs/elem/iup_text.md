@@ -19,6 +19,11 @@ In the Multiline, if APPENDNEWLINE=YES, a "\n" character is automatically insert
 If APPENDSCROLL=YES, after the insert the view scrolls so the appended text is visible (APPENDSCROLL default is YES).
 Ignored if set before map.
 
+**AUTOCORRECT** (non-inheritable): enables the platform typing assistance: spelling correction and spell check, word suggestions, sentence capitalization, and smart quotes and dashes, as far as each platform has them. Can be YES or NO. Default: NO.
+Supported in WinUI, macOS, iOS and Android.
+Ignored when PASSWORD=YES or SPIN=YES.
+In Android, words a keyboard composes while it is YES reach only ACTION, not K_ANY.
+
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of the text. Default: the global attribute TXTBGCOLOR.
 Ignored in GTK when MULTILINE=NO.
 
