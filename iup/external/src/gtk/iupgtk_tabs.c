@@ -244,10 +244,13 @@ static int gtkTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
   if (child)
   {
     GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
+    int nested = iupAttribGet(ih, "_IUPGTK_IGNORE_CHANGE") != NULL;
+    if (!nested) iupAttribSet(ih, "_IUPGTK_IGNORE_CHANGE", "1");
     if (iupStrBoolean(value))
       gtk_widget_show(tab_page);
     else
       gtk_widget_hide(tab_page);
+    if (!nested) iupAttribSet(ih, "_IUPGTK_IGNORE_CHANGE", NULL);
   }
   return 0;
 }
