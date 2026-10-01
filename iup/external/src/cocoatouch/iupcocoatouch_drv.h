@@ -84,6 +84,10 @@ IUP_DRV_API NSArray<UIKeyCommand*>* iupCocoaTouchKeyCommands(void);
 IUP_DRV_API bool iupCocoaTouchKeyCommandAllowed(UIResponder* responder);
 IUP_DRV_API void iupCocoaTouchKeyCommandEvent(Ihandle* ih, UIKeyCommand* command, UIResponder* responder);
 
+/* printable keys, Space and Backspace reach a text input as inserted or deleted text, not as a press */
+IUP_DRV_API int iupCocoaTouchKeyTextCode(NSString* text);
+IUP_DRV_API bool iupCocoaTouchKeyText(Ihandle* ih, UIResponder* responder, int code);
+
 /* fills IUP status string (10 chars + NUL) */
 IUP_DRV_API void iupCocoaTouchButtonKeySetStatus(UIEvent* event, UIKeyModifierFlags modifier_flags, int pressed_button, int doubleclick, char* out_status);
 

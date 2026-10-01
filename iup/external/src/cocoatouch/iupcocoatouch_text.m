@@ -88,6 +88,13 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 	if (!handled) [super pressesEnded:presses withEvent:event];
 }
 
+/* an empty field changes no text, so the delegate never sees this Backspace */
+- (void)deleteBackward
+{
+	if ([self.text length] == 0 && iupCocoaTouchKeyText(_ihandle, self, K_BS)) return;
+	[super deleteBackward];
+}
+
 @end
 
 
@@ -210,6 +217,13 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 	for (UIPress* p in presses)
 		if (iupCocoaTouchKeyEvent(_ihandle, p, false)) handled = YES;
 	if (!handled) [super pressesEnded:presses withEvent:event];
+}
+
+/* an empty field changes no text, so the delegate never sees this Backspace */
+- (void)deleteBackward
+{
+	if ([self.text length] == 0 && iupCocoaTouchKeyText(_ihandle, self, K_BS)) return;
+	[super deleteBackward];
 }
 
 @end
@@ -1062,11 +1076,21 @@ static NSString* cocoaTouchTextValidateEdit(Ihandle* ih, NSString* current, NSRa
 	return filtered;
 }
 
+/* a single typed or deleted character */
+static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
+{
+	if ([replacement length] == 0)
+		return range.length == 1 ? K_BS : 0;
+	return iupCocoaTouchKeyTextCode(replacement);
+}
+
 @implementation IupCocoaTouchTextDelegate
 
 - (BOOL)textField:(UITextField*)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString*)replacement
 {
 	if (!_ihandle) return YES;
+	if (iupCocoaTouchKeyText(_ihandle, textField, cocoaTouchTextTypedKey(range, replacement))) return NO;
+	if (!iupObjectCheck(_ihandle)) return NO;
 
 	NSString* current = textField.text ? textField.text : @"";
 	NSRange effective = cocoaTouchOverwriteRange(_ihandle, current, range, replacement);
@@ -1151,6 +1175,8 @@ static NSString* cocoaTouchTextValidateEdit(Ihandle* ih, NSString* current, NSRa
 - (BOOL)textView:(UITextView*)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString*)replacement
 {
 	if (!_ihandle) return YES;
+	if (iupCocoaTouchKeyText(_ihandle, textView, cocoaTouchTextTypedKey(range, replacement))) return NO;
+	if (!iupObjectCheck(_ihandle)) return NO;
 	NSString* current = textView.text ? textView.text : @"";
 	NSRange effective = cocoaTouchOverwriteRange(_ihandle, current, range, replacement);
 	NSString* applied = cocoaTouchTextValidateEdit(_ihandle, current, effective, replacement);

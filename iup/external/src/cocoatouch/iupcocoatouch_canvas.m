@@ -320,18 +320,17 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 		return;
 	}
 
+	if (iupCocoaTouchKeyText(_ihandle, self, iupCocoaTouchKeyTextCode(text)) || !iupObjectCheck(_ihandle))
+	{
+		return;
+	}
+
 	iupKeyCallTextInputCb(_ihandle, [text UTF8String]);
 }
 
 - (void)deleteBackward
 {
-	if (_ihandle)
-	{
-		if (iupKeyCallKeyCb(_ihandle, K_BS) == IUP_CLOSE)
-		{
-			IupExitLoop();
-		}
-	}
+	iupCocoaTouchKeyText(_ihandle, self, K_BS);
 }
 
 - (UIKeyboardType)keyboardType

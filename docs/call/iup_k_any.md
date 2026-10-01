@@ -20,6 +20,9 @@ So if you return IUP_IGNORE the control will usually not process the key.
 But be aware that sometimes the control process the key in another event so even returning IUP_IGNORE the key can get processed.
 Although it will not be propagated.
 
+On Android and iOS a text input reports each character typed as a single key, from a hardware or a soft keyboard, including Space and Backspace.
+Characters outside Latin-1 and text composed by an input method reach only ACTION.
+
 **IMPORTANT**: The callbacks "K_*" of the dialog or native containers depend on the IUP_CONTINUE return value to work while the control is in focus.
 
 If the callback does not exists it is automatically propagated to the parent of the element.
