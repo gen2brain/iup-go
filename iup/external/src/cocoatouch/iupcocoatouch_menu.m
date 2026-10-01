@@ -145,16 +145,6 @@ static UIMenuElement* cocoaTouchMenuBuildChildElement(Ihandle* child)
 	if (!child || !child->iclass || !child->iclass->name) return nil;
 	const char* cname = child->iclass->name;
 
-	if (iupStrEqual(cname, "menuseparator"))
-	{
-		/* empty displayInline section renders as a divider */
-		return [UIMenu menuWithTitle:@""
-		                       image:nil
-		                  identifier:nil
-		                     options:UIMenuOptionsDisplayInline
-		                    children:@[]];
-	}
-
 	if (iupStrEqual(cname, "submenu"))
 	{
 		Ihandle* sub = IupGetChild(child, 0);
@@ -244,13 +234,35 @@ static UIMenu* cocoaTouchMenuBuildUIMenu(Ihandle* menu_ih)
 {
 	if (!menu_ih) return nil;
 
-	NSMutableArray<UIMenuElement*>* elements = [NSMutableArray array];
-	cocoaTouchMenuAppendRecentUIActions(elements, menu_ih);
+	NSMutableArray<NSMutableArray<UIMenuElement*>*>* sections = [NSMutableArray array];
+	NSMutableArray<UIMenuElement*>* section = [NSMutableArray array];
+	cocoaTouchMenuAppendRecentUIActions(section, menu_ih);
 	int count = IupGetChildCount(menu_ih);
 	for (int i = 0; i < count; i++)
 	{
-		UIMenuElement* element = cocoaTouchMenuBuildChildElement(IupGetChild(menu_ih, i));
-		if (element) [elements addObject:element];
+		Ihandle* child = IupGetChild(menu_ih, i);
+		if (child && child->iclass && iupStrEqual(child->iclass->name, "menuseparator"))
+		{
+			if (section.count)
+			{
+				[sections addObject:section];
+				section = [NSMutableArray array];
+			}
+			continue;
+		}
+		UIMenuElement* element = cocoaTouchMenuBuildChildElement(child);
+		if (element) [section addObject:element];
+	}
+	if (section.count) [sections addObject:section];
+
+	/* UIKit draws a divider between inline sections */
+	NSMutableArray<UIMenuElement*>* elements = [NSMutableArray array];
+	if (sections.count == 1)
+		[elements addObjectsFromArray:sections[0]];
+	else
+	{
+		for (NSArray<UIMenuElement*>* items in sections)
+			[elements addObject:[UIMenu menuWithTitle:@"" image:nil identifier:nil options:UIMenuOptionsDisplayInline children:items]];
 	}
 
 	return [UIMenu menuWithTitle:@""
