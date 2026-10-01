@@ -254,6 +254,9 @@ static int gtkTreeIsNodeSelected(GtkTreeModel* model, GtkTreeIter* iterItem)
 
 static void gtkTreeSelectNodeRaw(GtkTreeModel* model, GtkTreeIter* iterItem, int select)
 {
+  if ((gtkTreeIsNodeSelected(model, iterItem) ? 1 : 0) == (select ? 1 : 0))
+    return;
+
   /* Cannot change the selection of a row on the model that is not currently displayed.
      So we store the selection state here. And update the actual state when the node becomes visible. */
   gtk_tree_store_set(GTK_TREE_STORE(model), iterItem, IUPGTK_NODE_SELECTED, select, -1);
@@ -2137,6 +2140,72 @@ static void gtkTreeSetRenameSelectionPos(GtkCellEditable* editable, const char* 
 /* SIGNALS                                                                   */
 /*****************************************************************************/
 
+static gboolean gtkTreeRenameKeyPress(GtkWidget* entry, GdkEventKey* evt, Ihandle* ih)
+{
+  IFnis cbRename = (IFnis)IupGetCallback(ih, "RENAME_CB");
+
+  if (cbRename && (evt->keyval == GDK_KEY_Return || evt->keyval == GDK_KEY_KP_Enter))
+  {
+    const char* text = gtk_entry_get_text(GTK_ENTRY(entry));
+    if (cbRename(ih, iupAttribGetInt(ih, "_IUPGTK_EDIT_NODE"), iupgtkStrConvertFromSystem(text)) == IUP_IGNORE)
+      return TRUE;
+    if (iupObjectCheck(ih))
+      iupAttribSet(ih, "_IUPGTK_RENAME_DONE", "1");
+  }
+
+  return FALSE;
+}
+
+static void gtkTreeRenameMenuUnmap(GtkWidget* menu, Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPGTK_RENAME_MENU", NULL);
+  (void)menu;
+}
+
+static void gtkTreeRenamePopulatePopup(GtkEntry* entry, GtkWidget* menu, Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPGTK_RENAME_MENU", "1");
+  g_signal_connect(menu, "unmap", G_CALLBACK(gtkTreeRenameMenuUnmap), ih);
+  (void)entry;
+}
+
+static gboolean gtkTreeRenameFocusOut(GtkWidget* entry, GdkEventFocus* evt, Ihandle* ih)
+{
+  IFnis cbRename = (IFnis)IupGetCallback(ih, "RENAME_CB");
+  GtkTreeModel* model = gtk_tree_view_get_model(GTK_TREE_VIEW(ih->handle));
+  const char* text = gtk_entry_get_text(GTK_ENTRY(entry));
+  GtkTreeIter iterItem;
+  char* path_string;
+  int found;
+  (void)evt;
+
+  if (iupAttribGet(ih, "_IUPGTK_RENAME_MENU"))
+    return FALSE;
+
+  path_string = iupStrDup(iupAttribGet(ih, "_IUPGTK_EDIT_PATH"));
+  iupAttribSet(ih, "_IUPGTK_EDIT_PATH", NULL);
+  if (!path_string)
+    return FALSE;
+
+  found = gtk_tree_model_get_iter_from_string(model, &iterItem, path_string);
+  free(path_string);
+  if (!found)
+    return FALSE;
+
+  if (cbRename && cbRename(ih, gtkTreeFindNodeId(ih, &iterItem), iupgtkStrConvertFromSystem(text)) == IUP_IGNORE)
+    return FALSE;
+
+  if (iupObjectCheck(ih))
+    gtk_tree_store_set(GTK_TREE_STORE(model), &iterItem, IUPGTK_NODE_TITLE, text, -1);
+  return FALSE;
+}
+
+static void gtkTreeCellTextEditingCanceled(GtkCellRenderer* cell, Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPGTK_EDIT_PATH", NULL);
+  (void)cell;
+}
+
 static void gtkTreeCellTextEditingStarted(GtkCellRenderer* cell, GtkCellEditable* editable, const gchar* path_string, Ihandle* ih)
 {
   char* value;
@@ -2153,6 +2222,17 @@ static void gtkTreeCellTextEditingStarted(GtkCellRenderer* cell, GtkCellEditable
   {
     gtk_editable_set_editable(GTK_EDITABLE(editable), FALSE);
     return;
+  }
+
+  iupAttribSetInt(ih, "_IUPGTK_EDIT_NODE", gtkTreeFindNodeId(ih, &iterItem));
+  iupAttribSetStr(ih, "_IUPGTK_EDIT_PATH", path_string);
+  iupAttribSet(ih, "_IUPGTK_RENAME_DONE", NULL);
+  iupAttribSet(ih, "_IUPGTK_RENAME_MENU", NULL);
+  if (GTK_IS_ENTRY(editable))
+  {
+    g_signal_connect(editable, "key-press-event", G_CALLBACK(gtkTreeRenameKeyPress), ih);
+    g_signal_connect(editable, "focus-out-event", G_CALLBACK(gtkTreeRenameFocusOut), ih);
+    g_signal_connect(editable, "populate-popup", G_CALLBACK(gtkTreeRenamePopulatePopup), ih);
   }
 
   value = iupAttribGetStr(ih, "RENAMECARET");
@@ -2214,11 +2294,18 @@ static void gtkTreeCellTextEdited(GtkCellRendererText* cell, gchar* path_string,
   if (!new_text)
     new_text = "";
 
+  iupAttribSet(ih, "_IUPGTK_EDIT_PATH", NULL);
+
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ih->handle));
   if (!gtk_tree_model_get_iter_from_string(model, &iterItem, path_string))
     return;
 
   cbRename = (IFnis)IupGetCallback(ih, "RENAME_CB");
+  if (iupAttribGet(ih, "_IUPGTK_RENAME_DONE"))
+  {
+    iupAttribSet(ih, "_IUPGTK_RENAME_DONE", NULL);
+    cbRename = NULL;
+  }
   if (cbRename)
   {
     if (cbRename(ih, gtkTreeFindNodeId(ih, &iterItem), iupgtkStrConvertFromSystem(new_text)) == IUP_IGNORE)
@@ -3153,6 +3240,7 @@ static int gtkTreeMapMethod(Ihandle* ih)
 
   g_signal_connect(renderer_txt, "editing-started", G_CALLBACK(gtkTreeCellTextEditingStarted), ih);
   g_signal_connect(renderer_txt,          "edited", G_CALLBACK(gtkTreeCellTextEdited), ih);
+  g_signal_connect(renderer_txt, "editing-canceled", G_CALLBACK(gtkTreeCellTextEditingCanceled), ih);
 
   g_signal_connect(G_OBJECT(ih->handle), "enter-notify-event", G_CALLBACK(iupgtkEnterLeaveEvent), ih);
   g_signal_connect(G_OBJECT(ih->handle), "leave-notify-event", G_CALLBACK(iupgtkEnterLeaveEvent), ih);

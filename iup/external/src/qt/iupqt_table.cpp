@@ -305,11 +305,12 @@ class IupQtTableWidget : public QTableWidget
 private:
   Ihandle* ih;
   bool firstShow;
+  bool click_ignored;
   QPoint press_pos;  /* drag hotspot, viewport-relative */
 
 public:
   explicit IupQtTableWidget(Ihandle* ih_param, QWidget* parent = nullptr)
-    : QTableWidget(parent), ih(ih_param), firstShow(true)
+    : QTableWidget(parent), ih(ih_param), firstShow(true), click_ignored(false)
   {
     /* signals stay blocked until the first focus, so populating cells fires no VALUECHANGED_CB */
     blockSignals(true);
@@ -590,6 +591,7 @@ protected:
     if (event->button() == Qt::LeftButton)
       press_pos = pos;
 
+    click_ignored = false;
     auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "CLICK_CB"));
     if (cb)
     {
@@ -610,7 +612,20 @@ protected:
 
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
         iupqtButtonKeySetStatus(event->modifiers(), event->button(), button, status, 0);
-        cb(ih, index.row() + 1, index.column() + 1, status);
+        int ret = cb(ih, index.row() + 1, index.column() + 1, status);
+        if (!iupObjectCheck(ih))
+        {
+          event->accept();
+          return;
+        }
+        if (ret == IUP_CLOSE)
+          IupExitLoop();
+        else if (ret == IUP_IGNORE)
+        {
+          click_ignored = true;
+          event->accept();
+          return;
+        }
       }
     }
 
@@ -645,8 +660,34 @@ protected:
     }
   }
 
+  void mouseReleaseEvent(QMouseEvent* event) override
+  {
+    if (click_ignored)
+    {
+      event->accept();
+      return;
+    }
+    QTableWidget::mouseReleaseEvent(event);
+  }
+
+  void mouseDoubleClickEvent(QMouseEvent* event) override
+  {
+    if (click_ignored)
+    {
+      event->accept();
+      return;
+    }
+    QTableWidget::mouseDoubleClickEvent(event);
+  }
+
   void mouseMoveEvent(QMouseEvent* event) override
   {
+    if (click_ignored && event->buttons() != Qt::NoButton)
+    {
+      event->accept();
+      return;
+    }
+
     if ((event->buttons() & Qt::LeftButton) && iupTableCellsMode(ih))
     {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)

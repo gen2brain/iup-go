@@ -1817,18 +1817,6 @@ static int winTableSetAlignmentAttrib(Ihandle* ih, int col, const char* value)
  * Callbacks
  ****************************************************************************/
 
-static WORD winTableGetKeyFlags(WORD button)
-{
-  WORD keys = button;
-
-  if (GetKeyState(VK_SHIFT) & 0x8000)
-    keys |= MK_SHIFT;
-  if (GetKeyState(VK_CONTROL) & 0x8000)
-    keys |= MK_CONTROL;
-
-  return keys;
-}
-
 static int winTableCallEnterItemCB(Ihandle* ih, int lin, int col)
 {
   IFnii cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
@@ -2018,11 +2006,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 
         iupTableCellsCollapse(ih);
 
-        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-        iupwinButtonKeySetStatus(winTableGetKeyFlags(MK_LBUTTON), status, 0);
-
-        winTableCallClickCB(ih, lin, col, status);
-
         if (!data->suppress_callbacks)
           winTableCallEnterItemCB(ih, lin, col);
       }
@@ -2051,11 +2034,6 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
         iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
         iupTableCellsCollapse(ih);
         iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
-
-        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-        iupwinButtonKeySetStatus(winTableGetKeyFlags(MK_RBUTTON), status, 0);
-
-        winTableCallClickCB(ih, lin, col, status);
 
         IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
         if (cb)
@@ -2843,6 +2821,27 @@ static LRESULT CALLBACK winTableListViewWndProc(HWND hwnd, UINT msg, WPARAM wp, 
     return DefWindowProc(hwnd, msg, wp, lp);
 
   oldProc = (WNDPROC)IupGetCallback(ih, "_IUPWIN_LISTVIEWOLDPROC_CB");
+
+  if (msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN || msg == WM_LBUTTONDBLCLK)
+  {
+    LVHITTESTINFO ht;
+    ZeroMemory(&ht, sizeof(ht));
+    ht.pt.x = GET_X_LPARAM(lp);
+    ht.pt.y = GET_Y_LPARAM(lp);
+    if (ListView_SubItemHitTest(hwnd, &ht) >= 0 && ht.iItem >= 0 && ht.iSubItem > 0)
+    {
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      int ret;
+      iupwinButtonKeySetStatus(LOWORD(wp), status, msg == WM_LBUTTONDBLCLK);
+      ret = winTableCallClickCB(ih, ht.iItem + 1, ht.iSubItem, status);
+      if (!iupObjectCheck(ih))
+        return 0;
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+      else if (ret == IUP_IGNORE)
+        return 0;
+    }
+  }
 
   if (msg == WM_SETFOCUS || msg == WM_KILLFOCUS)
   {

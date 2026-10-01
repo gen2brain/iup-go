@@ -1345,6 +1345,30 @@ static int gtk4TableFindClickedCell(Ihandle* ih, GtkWidget* column_view, double 
   return 0;
 }
 
+static void on_click_capture(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+  int lin = 0, col = 0;
+  (void)n_press;
+
+  if (!click_cb || !gtk4TableFindClickedCell(ih, gtk_data->column_view, x, y, &lin, &col))
+    return;
+
+  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+  guint button = gtk_gesture_single_get_current_button(GTK_GESTURE_SINGLE(gesture));
+  GdkModifierType state = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(gesture));
+  iupgtk4ButtonKeySetStatus(state, button, status, 0);
+
+  int ret = click_cb(ih, lin, col, status);
+  if (!iupObjectCheck(ih))
+    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+  else if (ret == IUP_CLOSE)
+    IupExitLoop();
+  else if (ret == IUP_IGNORE)
+    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+}
+
 static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
@@ -1379,16 +1403,6 @@ static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, 
   IFnii enter_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
   if (enter_cb && (old_row != clicked_row || old_col != clicked_col))
     enter_cb(ih, gtk_data->current_row, gtk_data->current_col);
-
-  IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
-  if (click_cb)
-  {
-    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    GdkModifierType state = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(gesture));
-    iupgtk4ButtonKeySetStatus(state, button, status, 0);
-
-    click_cb(ih, gtk_data->current_row, gtk_data->current_col, status);
-  }
 
   if (button == GDK_BUTTON_SECONDARY)
   {
@@ -2479,6 +2493,14 @@ static int gtk4TableMapMethod(Ihandle* ih)
   gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gtk_data->click_controller), 0);
   gtk_widget_add_controller(gtk_data->column_view, gtk_data->click_controller);
   g_signal_connect(gtk_data->click_controller, "pressed", G_CALLBACK(on_click), ih);
+
+  {
+    GtkGesture* click_capture = gtk_gesture_click_new();
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click_capture), 0);
+    gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(click_capture), GTK_PHASE_CAPTURE);
+    gtk_widget_add_controller(gtk_data->column_view, GTK_EVENT_CONTROLLER(click_capture));
+    g_signal_connect(click_capture, "pressed", G_CALLBACK(on_click_capture), ih);
+  }
 
   {
     GtkGesture* drag = gtk_gesture_drag_new();

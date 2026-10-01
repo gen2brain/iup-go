@@ -1301,6 +1301,21 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
     }
     else if (lin > 0 && col > 0)
     {
+      IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+      if (cb)
+      {
+        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+        int ret;
+        iupmotButtonKeySetStatus(button_event->state, button_event->button, status, 0);
+        ret = cb(ih, lin, col, status);
+        if (!iupObjectCheck(ih))
+          return;
+        if (ret == IUP_CLOSE)
+          IupExitLoop();
+        else if (ret == IUP_IGNORE)
+          return;
+      }
+
       if (iupTableCellsMode(ih) && button_event->button == Button1 && (button_event->state & ShiftMask))
       {
         iupTableCellsExtendTo(ih, lin, col);
@@ -1342,14 +1357,6 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
         mot_data->row_dragging = 0;
         mot_data->drag_start_x = button_event->x;
         mot_data->drag_start_y = button_event->y;
-      }
-
-      IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
-      if (cb)
-      {
-        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-        iupmotButtonKeySetStatus(button_event->state, button_event->button, status, 0);
-        cb(ih, lin, col, status);
       }
 
       if (button_event->button == Button3)

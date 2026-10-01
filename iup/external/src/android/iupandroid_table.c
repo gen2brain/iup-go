@@ -509,7 +509,8 @@ static int androidTableSetAlternateColorAttrib(Ihandle* ih, const char* value)
 static int androidTableSetEvenRowColorAttrib(Ihandle* ih, const char* value)
 {
   int r, g, b;
-  if (!androidTableParseRgb(value, &r, &g, &b)) return 1;
+  if (!androidTableParseRgb(value, &r, &g, &b))
+    r = g = b = -1;
   androidTableCallRgb(ih, "setEvenRowColor", r, g, b);
   return 1;
 }
@@ -517,7 +518,8 @@ static int androidTableSetEvenRowColorAttrib(Ihandle* ih, const char* value)
 static int androidTableSetOddRowColorAttrib(Ihandle* ih, const char* value)
 {
   int r, g, b;
-  if (!androidTableParseRgb(value, &r, &g, &b)) return 1;
+  if (!androidTableParseRgb(value, &r, &g, &b))
+    r = g = b = -1;
   androidTableCallRgb(ih, "setOddRowColor", r, g, b);
   return 1;
 }

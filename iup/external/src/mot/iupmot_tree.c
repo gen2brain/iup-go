@@ -1937,7 +1937,7 @@ static void motTreeCallRightClickCb(Ihandle* ih, int x, int y)
   }
 }
 
-static void motTreeCallRenameCb(Ihandle* ih)
+static int motTreeCallRenameCb(Ihandle* ih, int from_enter)
 {
   IFnis cbRename;
   Widget wItem, wEdit;
@@ -1956,6 +1956,9 @@ static void motTreeCallRenameCb(Ihandle* ih)
       ignore = 1;
   }
 
+  if (ignore && from_enter)
+    return 0;
+
   if (!ignore)
     iupmotSetXmString(wItem, XmNlabelString, title);
 
@@ -1963,6 +1966,7 @@ static void motTreeCallRenameCb(Ihandle* ih)
 
   iupAttribSet(ih, "_IUPTREE_EDITFIELD", NULL);
   iupAttribSet(ih, "_IUPTREE_SELECTED",  NULL);
+  return 1;
 }
 
 static int motTreeCallDragDropCb(Ihandle* ih, Widget wItemDrag, Widget wItemDrop, int* is_ctrl)
@@ -1991,7 +1995,7 @@ static int motTreeCallDragDropCb(Ihandle* ih, Widget wItemDrag, Widget wItemDrop
 static void motTreeEditFocusChangeEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* cont)
 {
   if (evt->type == FocusOut)
-    motTreeCallRenameCb(ih);
+    motTreeCallRenameCb(ih, 0);
 
   (void)cont;
   (void)w;
@@ -2003,8 +2007,10 @@ static void motTreeEditKeyPressEvent(Widget w, Ihandle* ih, XKeyEvent* evt, Bool
   if (motcode == XK_Return)
   {
     Widget wItem = (Widget)iupAttribGet(ih, "_IUPTREE_SELECTED");
-    motTreeCallRenameCb(ih);
-    motTreeSetFocusNode(ih, wItem);
+    if (motTreeCallRenameCb(ih, 1))
+      motTreeSetFocusNode(ih, wItem);
+    else
+      *cont = False;
   }
   else if (motcode == XK_Escape)
   {

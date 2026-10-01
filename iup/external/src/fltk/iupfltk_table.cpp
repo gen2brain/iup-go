@@ -263,6 +263,7 @@ public:
   int drag_source_row;
   int drag_target_row;
   int row_dragging;
+  int click_ignored;
   int fit_pending;
   int font_h;
   int pending_scroll_lin, pending_scroll_col;
@@ -274,7 +275,7 @@ public:
       auto_widths_rows(0),
       sort_column(0), sort_ascending(1),
       drag_source_col(-1), drag_target_col(-1), drag_start_x(0), drag_start_y(0), dragging(0),
-      drag_source_row(-1), drag_target_row(-1), row_dragging(0), fit_pending(0), font_h(0),
+      drag_source_row(-1), drag_target_row(-1), row_dragging(0), click_ignored(0), fit_pending(0), font_h(0),
       pending_scroll_lin(0), pending_scroll_col(0), selection_stamp(0)
   {
     selection_color(FL_SELECTION_COLOR);
@@ -618,12 +619,36 @@ protected:
 
       case FL_PUSH:
       {
-        iupfltkDragDropHandleEvent(this, iup_handle, event);
-        take_focus();
-
         int R, C;
         ResizeFlag resizeflag;
         TableContext context = cursor2rowcol(R, C, resizeflag);
+
+        click_ignored = 0;
+        if (context == CONTEXT_CELL && (!has_dummy_col || C < iup_handle->data->num_col))
+        {
+          auto click_cb = reinterpret_cast<IFniis>(IupGetCallback(iup_handle, "CLICK_CB"));
+          if (click_cb)
+          {
+            char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+            int button = IUP_BUTTON1;
+            if (Fl::event_button() == FL_MIDDLE_MOUSE) button = IUP_BUTTON2;
+            else if (Fl::event_button() == FL_RIGHT_MOUSE) button = IUP_BUTTON3;
+            iupfltkButtonKeySetStatus(Fl::event_state(), button, status, 0);
+            int ret = click_cb(iup_handle, R + 1, C + 1, status);
+            if (!iupObjectCheck(iup_handle))
+              return 1;
+            if (ret == IUP_CLOSE)
+              IupExitLoop();
+            else if (ret == IUP_IGNORE)
+            {
+              click_ignored = 1;
+              return 1;
+            }
+          }
+        }
+
+        iupfltkDragDropHandleEvent(this, iup_handle, event);
+        take_focus();
 
         if (context == CONTEXT_COL_HEADER && C >= 0 &&
             (!has_dummy_col || C < iup_handle->data->num_col))
@@ -709,17 +734,6 @@ protected:
           }
           else
           {
-            auto click_cb = reinterpret_cast<IFniis>(IupGetCallback(iup_handle, "CLICK_CB"));
-            if (click_cb)
-            {
-              char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-              int button = IUP_BUTTON1;
-              if (Fl::event_button() == FL_MIDDLE_MOUSE) button = IUP_BUTTON2;
-              else if (Fl::event_button() == FL_RIGHT_MOUSE) button = IUP_BUTTON3;
-              iupfltkButtonKeySetStatus(Fl::event_state(), button, status, 0);
-              click_cb(iup_handle, R + 1, C + 1, status);
-            }
-
             if (Fl::event_button() == FL_RIGHT_MOUSE)
             {
               if (!iupStrEqualNoCase(iupAttribGetStr(iup_handle, "SELECTIONMODE"), "NONE"))
@@ -740,6 +754,9 @@ protected:
 
       case FL_DRAG:
       {
+        if (click_ignored)
+          return 1;
+
         if (iupfltkDragDropHandleEvent(this, iup_handle, event))
           return 1;
 
@@ -793,6 +810,9 @@ protected:
 
       case FL_RELEASE:
       {
+        if (click_ignored)
+          return 1;
+
         if (drag_source_col >= 0 && iup_handle->data->allow_reorder)
         {
           int src = drag_source_col;

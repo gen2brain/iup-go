@@ -20,6 +20,7 @@
 #include <QProxyStyle>
 #include <QStyleOption>
 #include <QStyledItemDelegate>
+#include <QKeyEvent>
 #include <QLineEdit>
 
 #include <cstring>
@@ -74,10 +75,38 @@ class IupQtTreeDelegate : public QStyledItemDelegate
 private:
   Ihandle* ih;
   QString old_text;
+  QTreeWidgetItem* edit_item = nullptr;
+  bool rename_done = false;
 
 public:
   IupQtTreeDelegate(Ihandle* ih_param, QObject* parent = nullptr)
     : QStyledItemDelegate(parent), ih(ih_param) {}
+
+  bool eventFilter(QObject* object, QEvent* event) override
+  {
+    auto* lineEdit = qobject_cast<QLineEdit*>(object);
+    if (lineEdit && ih && edit_item && event->type() == QEvent::KeyPress)
+    {
+      auto* keyEvent = static_cast<QKeyEvent*>(event);
+      auto cbRename = reinterpret_cast<IFnis>(IupGetCallback(ih, "RENAME_CB"));
+      if (cbRename && (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) &&
+          lineEdit->text() != old_text)
+      {
+        Ihandle* handle = ih;
+        int ret = cbRename(handle, qtTreeFindNodeId(handle, edit_item), const_cast<char*>(lineEdit->text().toUtf8().constData()));
+        if (!iupObjectCheck(handle) || ret == IUP_IGNORE)
+          return true;
+        rename_done = true;
+      }
+    }
+    return QStyledItemDelegate::eventFilter(object, event);
+  }
+
+  void destroyEditor(QWidget* editor, const QModelIndex& index) const override
+  {
+    const_cast<IupQtTreeDelegate*>(this)->edit_item = nullptr;
+    QStyledItemDelegate::destroyEditor(editor, index);
+  }
 
   QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override
   {
@@ -103,6 +132,8 @@ public:
       return nullptr;
 
     const_cast<IupQtTreeDelegate*>(this)->old_text = item->text(0);
+    const_cast<IupQtTreeDelegate*>(this)->edit_item = item;
+    const_cast<IupQtTreeDelegate*>(this)->rename_done = false;
 
     auto* editor = new QLineEdit(parent);
     (void)option;
@@ -157,6 +188,11 @@ public:
     int id = qtTreeFindNodeId(ih, item);
 
     auto cbRename = reinterpret_cast<IFnis>(IupGetCallback(ih, "RENAME_CB"));
+    if (rename_done)
+    {
+      const_cast<IupQtTreeDelegate*>(this)->rename_done = false;
+      cbRename = nullptr;
+    }
     if (cbRename)
     {
       if (cbRename(ih, id, const_cast<char*>(new_text.toUtf8().constData())) == IUP_IGNORE)

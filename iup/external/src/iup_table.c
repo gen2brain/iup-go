@@ -1120,6 +1120,21 @@ static int iTableSetFgColorAttrib(Ihandle* ih, int lin, int col, const char* val
   return iTableSetStyleAttrib(ih, "FGCOLOR", lin, col, value);
 }
 
+static int iTableSetAlternateColorAttrib(Ihandle* ih, const char* value)
+{
+  return iTableSetStyleAttrib(ih, "ALTERNATECOLOR", IUP_INVALID_ID, IUP_INVALID_ID, value);
+}
+
+static int iTableSetEvenRowColorAttrib(Ihandle* ih, const char* value)
+{
+  return iTableSetStyleAttrib(ih, "EVENROWCOLOR", IUP_INVALID_ID, IUP_INVALID_ID, value);
+}
+
+static int iTableSetOddRowColorAttrib(Ihandle* ih, const char* value)
+{
+  return iTableSetStyleAttrib(ih, "ODDROWCOLOR", IUP_INVALID_ID, IUP_INVALID_ID, value);
+}
+
 static int iTableSetAlignmentAttrib(Ihandle* ih, int col, const char* value)
 {
   if (!ih->handle)
@@ -1545,9 +1560,9 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterAttribute(ic, "STRETCHLAST", iTableGetStretchLastAttrib, iTableSetStretchLastAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);  /* Enable/disable last column stretching to fill space: YES, NO */
 
   /* Alternating row color attributes */
-  iupClassRegisterAttribute(ic, "ALTERNATECOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);  /* Enable/disable alternating row colors: YES, NO */
-  iupClassRegisterAttribute(ic, "EVENROWCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* Background color for even rows */
-  iupClassRegisterAttribute(ic, "ODDROWCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);   /* Background color for odd rows */
+  iupClassRegisterAttribute(ic, "ALTERNATECOLOR", NULL, iTableSetAlternateColorAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);  /* Enable/disable alternating row colors: YES, NO */
+  iupClassRegisterAttribute(ic, "EVENROWCOLOR", NULL, iTableSetEvenRowColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);  /* Background color for even rows */
+  iupClassRegisterAttribute(ic, "ODDROWCOLOR", NULL, iTableSetOddRowColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);   /* Background color for odd rows */
 
   /* Virtual mode attributes */
   iupClassRegisterAttribute(ic, "VIRTUALMODE", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT); /* Enable/disable virtual mode for large datasets: YES, NO */

@@ -502,6 +502,7 @@ struct IupWinUITableAux
   bool isVirtual;
   bool show_grid;
   bool suppress_callbacks;
+  bool click_ignored;
 
   int drag_source_col;
   int drag_target_col;

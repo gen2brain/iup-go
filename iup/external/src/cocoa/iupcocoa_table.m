@@ -562,6 +562,13 @@ static void cocoaTableSetCellValue(Ihandle* ih, int lin, int col, const char* va
   [row replaceObjectAtIndex:col withObject:str];
 }
 
+static void cocoaTableUpdateAlternatingRows(Ihandle* ih, NSTableView* tableView)
+{
+  BOOL system_colors = iupAttribGetBoolean(ih, "ALTERNATECOLOR") &&
+                       !iupAttribGet(ih, "EVENROWCOLOR") && !iupAttribGet(ih, "ODDROWCOLOR");
+  [tableView setUsesAlternatingRowBackgroundColors:system_colors];
+}
+
 static NSColor* cocoaTableGetRowBackgroundColor(Ihandle* ih, int row)
 {
   /* row is 0-based NSTableView row index, lin is 1-based IUP index */
@@ -793,6 +800,7 @@ static void cocoaTableBeginEdit(NSTableView* tableView, NSInteger col, NSInteger
 {
   Ihandle* ih;
   BOOL cells_tracking;
+  BOOL click_ignored;
 }
 - (id)initWithIhandle:(Ihandle*)ihandle;
 @end
@@ -893,9 +901,35 @@ static void cocoaTableBeginEdit(NSTableView* tableView, NSInteger col, NSInteger
   }
 }
 
+- (BOOL)callClickCb:(NSEvent*)event atPoint:(NSPoint)point
+{
+  NSInteger clickedCol = [self columnAtPoint:point];
+  NSInteger clickedRow = [self rowAtPoint:point];
+  IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+
+  click_ignored = NO;
+  if (!click_cb || clickedRow < 0 || clickedCol < 0)
+    return NO;
+
+  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+  iupcocoaButtonKeySetStatus(event, status);
+
+  int ret = click_cb(ih, (int)clickedRow + 1, (int)clickedCol + 1, status);
+  if (!iupObjectCheck(ih))
+    click_ignored = YES;
+  else if (ret == IUP_CLOSE)
+    IupExitLoop();
+  else if (ret == IUP_IGNORE)
+    click_ignored = YES;
+  return click_ignored;
+}
+
 - (void)mouseDown:(NSEvent*)event
 {
   NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
+
+  if ([self callClickCb:event atPoint:point])
+    return;
 
   if (iupTableCellsMode(ih))
   {
@@ -918,14 +952,6 @@ static void cocoaTableBeginEdit(NSTableView* tableView, NSInteger col, NSInteger
 
     [self cellsFocusLin:(int)clickedRow + 1 col:(int)clickedCol + 1];
 
-    IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
-    if (click_cb)
-    {
-      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupcocoaButtonKeySetStatus(event, status);
-      click_cb(ih, (int)clickedRow + 1, (int)clickedCol + 1, status);
-    }
-
     cells_tracking = YES;
     return;
   }
@@ -939,6 +965,9 @@ static void cocoaTableBeginEdit(NSTableView* tableView, NSInteger col, NSInteger
 
 - (void)mouseDragged:(NSEvent*)event
 {
+  if (click_ignored)
+    return;
+
   if (!cells_tracking)
   {
     [super mouseDragged:event];
@@ -954,6 +983,9 @@ static void cocoaTableBeginEdit(NSTableView* tableView, NSInteger col, NSInteger
 
 - (void)mouseUp:(NSEvent*)event
 {
+  if (click_ignored)
+    return;
+
   if (!cells_tracking)
   {
     [super mouseUp:event];
@@ -968,6 +1000,9 @@ static void cocoaTableBeginEdit(NSTableView* tableView, NSInteger col, NSInteger
   NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
   NSInteger clickedCol = [self columnAtPoint:point];
   NSInteger clickedRow = [self rowAtPoint:point];
+
+  if ([self callClickCb:event atPoint:point])
+    return;
 
   if (clickedRow >= 0 && clickedCol >= 0)
   {
@@ -2058,18 +2093,6 @@ static NSInteger cocoaTableRowOfField(Ihandle* ih, NSTableView* tableView, NSVie
   int lin = (clickedRow >= 0) ? (int)(clickedRow + 1) : 0;
   int col = (clickedCol >= 0) ? (int)(clickedCol + 1) : 0;
 
-  IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
-  if (click_cb && lin > 0 && col > 0)
-  {
-    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-
-    NSEvent* currentEvent = [NSApp currentEvent];
-    if (currentEvent)
-      iupcocoaButtonKeySetStatus(currentEvent, status);
-
-    click_cb(ih, lin, col, status);
-  }
-
   if (clickedRow >= 0 && clickedCol >= 0)
   {
     if (cocoaTableIsCellEditable(ih, col))
@@ -3108,6 +3131,9 @@ IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
   if (!tableView || lin > [tableView numberOfRows])
     return;
 
+  if (lin <= 0)
+    cocoaTableUpdateAlternatingRows(ih, tableView);
+
   first = (lin > 0) ? lin - 1 : 0;
   last = (lin > 0) ? lin - 1 : [tableView numberOfRows] - 1;
   if (last < first)
@@ -3377,21 +3403,7 @@ static int cocoaTableMapMethod(Ihandle* ih)
   [tableView setDrawsGrid:NO];
 #endif
 
-  char* alternate_color = iupAttribGetStr(ih, "ALTERNATECOLOR");
-  if (iupStrBoolean(alternate_color))
-  {
-    char* even_color = iupAttribGetStr(ih, "EVENROWCOLOR");
-    char* odd_color = iupAttribGetStr(ih, "ODDROWCOLOR");
-
-    if (!even_color && !odd_color)
-      [tableView setUsesAlternatingRowBackgroundColors:YES];
-    else
-      [tableView setUsesAlternatingRowBackgroundColors:NO];
-  }
-  else
-  {
-    [tableView setUsesAlternatingRowBackgroundColors:NO];
-  }
+  cocoaTableUpdateAlternatingRows(ih, tableView);
 
   [tableView setAllowsColumnReordering:(ih->data->allow_reorder ? YES : NO)];
   [tableView setAllowsColumnSelection:NO];

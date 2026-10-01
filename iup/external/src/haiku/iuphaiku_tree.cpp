@@ -313,7 +313,7 @@ public:
   Ihandle* GetIhandle() const { return fIhandle; }
 
   void StartRename(int id);
-  void EndRename(bool apply);
+  void EndRename(bool apply, bool from_enter = false);
 
   BRect LatchRect(BRect itemRect, int32 level) const override
   {
@@ -512,7 +512,7 @@ void IupHaikuTreeEditor::KeyDown(const char* bytes, int32 numBytes)
   if (!fEnded && numBytes >= 1)
   {
     if (bytes[0] == B_ESCAPE) { if (fTv) fTv->EndRename(false); return; }
-    if (bytes[0] == B_RETURN) { if (fTv) fTv->EndRename(true);  return; }
+    if (bytes[0] == B_RETURN) { if (fTv) fTv->EndRename(true, true); return; }
   }
   BTextView::KeyDown(bytes, numBytes);
 }
@@ -546,7 +546,7 @@ void IupHaikuTreeView::StartRename(int id)
   fEditor->MakeFocus(true);
 }
 
-void IupHaikuTreeView::EndRename(bool apply)
+void IupHaikuTreeView::EndRename(bool apply, bool from_enter)
 {
   if (!fEditor || fEditor->fEnded) return;
   fEditor->fEnded = true;
@@ -563,6 +563,11 @@ void IupHaikuTreeView::EndRename(bool apply)
     if (cb && cb(ih, id, const_cast<char*>(text.String())) == IUP_IGNORE) save = false;
     /* Callback may have destroyed the tree or removed nodes; re-lookup item below. */
     if (!iupObjectCheck(ih)) return;
+    if (!save && from_enter && fEditor)
+    {
+      fEditor->fEnded = false;
+      return;
+    }
   }
 
   IupHaikuTreeItem* item = (ih && id < ih->data->node_count)

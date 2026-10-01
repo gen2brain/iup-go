@@ -35,6 +35,7 @@
 #include "iupwin_darkmode.h"
 
 #define IUPWIN_TREE_RENAME_TIMER 0x1A2B
+#define IUPWIN_TREE_EDITHOOK_TIMER 0x1A2C
 
 
 /* Not defined for Cygwin and MingW */
@@ -2177,6 +2178,39 @@ static LRESULT CALLBACK winTreeEditWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARA
     return CallWindowProc(oldProc, hwnd, msg, wp, lp);
 }
 
+static LRESULT CALLBACK winTreeEditEnterProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+  Ihandle* ih = (Ihandle*)dwRefData;
+
+  if (msg == WM_KEYDOWN && wp == VK_RETURN && iupObjectCheck(ih))
+  {
+    IFnis cbRename = (IFnis)IupGetCallback(ih, "RENAME_CB");
+    HTREEITEM hItem = (HTREEITEM)iupAttribGet(ih, "_IUPWIN_EDIT_ITEM");
+    if (cbRename && hItem)
+    {
+      TCHAR* text = iupwinGetWindowText(hwnd);
+      int ret = cbRename(ih, iupTreeFindNodeId(ih, hItem), text ? iupwinStrFromSystem(text) : "");
+      if (!iupObjectCheck(ih))
+        return 0;
+      if (ret == IUP_IGNORE)
+      {
+        iupAttribSet(ih, "_IUPWIN_RENAME_KEEP", "1");
+        return 0;
+      }
+      iupAttribSet(ih, "_IUPWIN_RENAME_DONE", "1");
+    }
+  }
+  else if (msg == WM_CHAR && wp == VK_RETURN && iupObjectCheck(ih) && iupAttribGet(ih, "_IUPWIN_RENAME_KEEP"))
+  {
+    iupAttribSet(ih, "_IUPWIN_RENAME_KEEP", NULL);
+    return 0;
+  }
+  else if (msg == WM_NCDESTROY)
+    RemoveWindowSubclass(hwnd, winTreeEditEnterProc, uIdSubclass);
+
+  return DefSubclassProc(hwnd, msg, wp, lp);
+}
+
 static void winTreeDragBegin(Ihandle* ih, int x, int y)
 {
   HIMAGELIST  dragImageList;
@@ -2574,6 +2608,15 @@ static int winTreeMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* 
       return 0;
     }
   case WM_TIMER:
+    if (wp == IUPWIN_TREE_EDITHOOK_TIMER)
+    {
+      HWND hEdit = (HWND)iupAttribGet(ih, "_IUPWIN_EDITBOX");
+      KillTimer(ih->handle, IUPWIN_TREE_EDITHOOK_TIMER);
+      if (hEdit)
+        SetWindowSubclass(hEdit, winTreeEditEnterProc, 0, (DWORD_PTR)ih);
+      *result = 0;
+      return 1;
+    }
     if (wp == IUPWIN_TREE_RENAME_TIMER)
     {
       HTREEITEM hItem = (HTREEITEM)iupAttribGet(ih, "_IUPTREE_RENAMEITEM");
@@ -2820,6 +2863,10 @@ static int winTreeWmNotify(Ihandle* ih, NMHDR* msg_info, int* result)
     /* save the edit box. */
     iupwinHandleAdd(ih, hEdit);
     iupAttribSet(ih, "_IUPWIN_EDITBOX", (char*)hEdit);
+    iupAttribSet(ih, "_IUPWIN_EDIT_ITEM", (char*)info->item.hItem);
+    iupAttribSet(ih, "_IUPWIN_RENAME_DONE", NULL);
+    iupAttribSet(ih, "_IUPWIN_RENAME_KEEP", NULL);
+    SetTimer(ih->handle, IUPWIN_TREE_EDITHOOK_TIMER, 0, NULL);
 
     /* subclass the edit box. */
     IupSetCallback(ih, "_IUPWIN_EDITOLDWNDPROC_CB", (Icallback)GetWindowLongPtr(hEdit, GWLP_WNDPROC));
@@ -2858,10 +2905,21 @@ static int winTreeWmNotify(Ihandle* ih, NMHDR* msg_info, int* result)
       iupAttribSet(ih, "_IUPWIN_EDITBOX", NULL);
     }
 
+    iupAttribSet(ih, "_IUPWIN_EDIT_ITEM", NULL);
+    iupAttribSet(ih, "_IUPWIN_RENAME_KEEP", NULL);
+
     if (!info->item.pszText)  /* cancel, so abort */
+    {
+      iupAttribSet(ih, "_IUPWIN_RENAME_DONE", NULL);
       return 0;
+    }
 
     cbRename = (IFnis)IupGetCallback(ih, "RENAME_CB");
+    if (iupAttribGet(ih, "_IUPWIN_RENAME_DONE"))
+    {
+      iupAttribSet(ih, "_IUPWIN_RENAME_DONE", NULL);
+      cbRename = NULL;
+    }
     if (cbRename)
     {
       if (cbRename(ih, iupTreeFindNodeId(ih, info->item.hItem), iupwinStrFromSystem(info->item.pszText)) == IUP_IGNORE)

@@ -746,6 +746,21 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 
 	NSInteger col = [ip item] % num_col;
 	NSInteger lin = [ip item] / num_col;
+
+	IFniis click_cb = (IFniis)IupGetCallback(_ihandle, "CLICK_CB");
+	if (click_cb)
+	{
+		char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+		iupKEY_SETBUTTON1(status);
+		int ret = click_cb(_ihandle, (int)lin + 1, (int)col + 1, status);
+		if (ret == IUP_CLOSE) IupExitLoop();
+		if (ret == IUP_IGNORE || !iupObjectCheck(_ihandle))
+		{
+			[cv deselectItemAtIndexPath:ip animated:NO];
+			return;
+		}
+	}
+
 	NSInteger prev_lin = _focusLin;
 	_focusLin = lin + 1;
 	_focusCol = col + 1;
@@ -779,13 +794,6 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	}
 	[cv reconfigureItemsAtIndexPaths:reload];
 
-	IFniis click_cb = (IFniis)IupGetCallback(_ihandle, "CLICK_CB");
-	if (click_cb)
-	{
-		char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-		iupKEY_SETBUTTON1(status);
-		if (click_cb(_ihandle, (int)_focusLin, (int)_focusCol, status) == IUP_CLOSE) IupExitLoop();
-	}
 	IFnii enter_cb = (IFnii)IupGetCallback(_ihandle, "ENTERITEM_CB");
 	if (enter_cb && enter_cb(_ihandle, (int)_focusLin, (int)_focusCol) == IUP_CLOSE) IupExitLoop();
 

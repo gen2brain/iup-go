@@ -552,7 +552,7 @@ iupgtk4TreeCleanupRenameEntry(GtkWidget* entry)
 }
 
 static void
-iupgtk4TreeFinishRenameEditing(GtkWidget* entry, gpointer user_data)
+iupgtk4TreeFinishRenameEditing(GtkWidget* entry, gpointer user_data, int from_enter)
 {
   GtkListItem* list_item = GTK_LIST_ITEM(user_data);
   GtkTreeListRow* row;
@@ -604,6 +604,11 @@ iupgtk4TreeFinishRenameEditing(GtkWidget* entry, gpointer user_data)
         if (label)
           gtk_label_set_text(GTK_LABEL(label), new_text);
       }
+      else if (from_enter)
+      {
+        g_object_unref(item);
+        return;
+      }
     }
     else
     {
@@ -653,6 +658,12 @@ iupgtk4TreeCancelRenameEditing(GtkWidget* entry, gpointer user_data)
   iupgtk4TreeCleanupRenameEntry(entry);
 }
 
+static void
+iupgtk4TreeRenameEntryActivate(GtkWidget* entry, gpointer user_data)
+{
+  iupgtk4TreeFinishRenameEditing(entry, user_data, 1);
+}
+
 static gboolean
 iupgtk4TreeRenameEntryKeyPressed(GtkEventControllerKey* controller, guint keyval,
                                   guint keycode, GdkModifierType state, gpointer user_data)
@@ -669,11 +680,27 @@ iupgtk4TreeRenameEntryKeyPressed(GtkEventControllerKey* controller, guint keyval
   (void)state;
 }
 
+static gboolean
+iupgtk4TreeRenameEntryFocusOutIdle(gpointer entry)
+{
+  GtkListItem* list_item = g_object_get_data(G_OBJECT(entry), "iup-rename-list-item");
+  if (list_item)
+  {
+    g_object_ref(list_item);
+    g_object_set_data(G_OBJECT(entry), "iup-rename-list-item", NULL);
+    iupgtk4TreeFinishRenameEditing(GTK_WIDGET(entry), list_item, 0);
+    g_object_unref(list_item);
+  }
+  g_object_unref(entry);
+  return G_SOURCE_REMOVE;
+}
+
 static void
 iupgtk4TreeRenameEntryFocusOut(GtkEventControllerFocus* controller, gpointer user_data)
 {
   GtkWidget* entry = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(controller));
-  iupgtk4TreeFinishRenameEditing(entry, user_data);
+  g_object_set_data_full(G_OBJECT(entry), "iup-rename-list-item", g_object_ref(user_data), g_object_unref);
+  g_idle_add(iupgtk4TreeRenameEntryFocusOutIdle, g_object_ref(entry));
 }
 
 static void
@@ -723,7 +750,7 @@ iupgtk4TreeStartRenameEditing(GtkListItem* list_item)
   gtk_widget_set_valign(entry, GTK_ALIGN_FILL);
   gtk_widget_set_hexpand(entry, TRUE);
 
-  g_signal_connect(entry, "activate", G_CALLBACK(iupgtk4TreeFinishRenameEditing), list_item);
+  g_signal_connect(entry, "activate", G_CALLBACK(iupgtk4TreeRenameEntryActivate), list_item);
 
   key_controller = gtk_event_controller_key_new();
   g_signal_connect(key_controller, "key-pressed", G_CALLBACK(iupgtk4TreeRenameEntryKeyPressed), list_item);

@@ -335,6 +335,7 @@ struct IupQmlTreeData
   int press_row;
   bool press_was_current;
   bool press_collapse;
+  bool rename_done;
 };
 
 static IupQmlTreeData* qmlTreeGetData(Ihandle* ih)
@@ -2000,6 +2001,11 @@ static void qmlTreeRenamed(Ihandle* ih, int row, const QString& text)
     return;
 
   auto cbRename = reinterpret_cast<IFnis>(IupGetCallback(ih, "RENAME_CB"));
+  if (data->rename_done)
+  {
+    data->rename_done = false;
+    cbRename = nullptr;
+  }
   if (cbRename && cbRename(ih, qmlTreeFindNodeId(ih, node), const_cast<char*>(text.toUtf8().constData())) == IUP_IGNORE)
     return;
 
@@ -2007,10 +2013,50 @@ static void qmlTreeRenamed(Ihandle* ih, int row, const QString& text)
   data->model->refresh(node);
 }
 
-static void qmlTreeRenameStarted(Ihandle* ih, QObject* editor)
+class IupQmlTreeRenameFilter : public QObject
+{
+public:
+  Ihandle* ih;
+  int row;
+  IupQmlTreeRenameFilter(QObject* parent, Ihandle* handle, int edit_row) : QObject(parent), ih(handle), row(edit_row) {}
+
+  bool eventFilter(QObject* obj, QEvent* event) override
+  {
+    if (event->type() != QEvent::KeyPress || !iupObjectCheck(ih))
+      return false;
+
+    auto* key = static_cast<QKeyEvent*>(event);
+    if (key->key() != Qt::Key_Return && key->key() != Qt::Key_Enter)
+      return false;
+
+    IupQmlTreeData* data = qmlTreeGetData(ih);
+    IupQmlTreeNode* node = data ? qmlTreeNodeAtRow(data, row) : nullptr;
+    auto cbRename = reinterpret_cast<IFnis>(IupGetCallback(ih, "RENAME_CB"));
+    QString text = obj->property("text").toString();
+    if (!node || !cbRename || node->title == text)
+      return false;
+
+    int ret = cbRename(ih, qmlTreeFindNodeId(ih, node), const_cast<char*>(text.toUtf8().constData()));
+    if (!iupObjectCheck(ih) || ret == IUP_IGNORE)
+      return true;
+
+    data->rename_done = true;
+    return false;
+  }
+};
+
+static void qmlTreeRenameStarted(Ihandle* ih, QObject* editor, int row)
 {
   if (!editor)
     return;
+
+  IupQmlTreeData* data = qmlTreeGetData(ih);
+  if (data)
+    data->rename_done = false;
+
+  QMetaObject::invokeMethod(editor, [editor, ih, row]() {
+    editor->installEventFilter(new IupQmlTreeRenameFilter(editor, ih, row));
+  }, Qt::QueuedConnection);
 
   char* value = iupAttribGetStr(ih, "RENAMECARET");
   int pos = 1;
@@ -2292,7 +2338,7 @@ static const char* qmlTreeViewQml =
   "  signal iupRowClicked(int row)\n"
   "  signal iupPressed(int row, int modifiers)\n"
   "  signal iupRenamed(int row, string text)\n"
-  "  signal iupRenameStarted(var editor)\n"
+  "  signal iupRenameStarted(var editor, int row)\n"
   "  signal iupDragDropped(int row, point pos)\n"
   "  function iupScroll(row, top) { forceLayout(); positionViewAtRow(row, top ? TableView.AlignTop : TableView.Contain) }\n"
   "  function iupScrollVisible() { return (ScrollBar.horizontal.visible ? 1 : 0) + (ScrollBar.vertical.visible ? 2 : 0) }\n"
@@ -2359,7 +2405,7 @@ static const char* qmlTreeViewQml =
   "      verticalAlignment: TextInput.AlignVCenter\n"
   "      text: d.model.title\n"
   "      font: d.font\n"
-  "      Component.onCompleted: { selectAll(); view.iupRenameStarted(editor) }\n"
+  "      Component.onCompleted: { selectAll(); view.iupRenameStarted(editor, d.row) }\n"
   "      TableView.onCommit: view.iupRenamed(d.row, editor.text)\n"
   "    }\n"
   "  }\n"
@@ -2575,8 +2621,8 @@ static int qmlTreeMapMethod(Ihandle* ih)
   iupqmlConnect(view, "iupRenamed(int,QString)", [ih](void** args) {
     qmlTreeRenamed(ih, *static_cast<int*>(args[1]), *static_cast<QString*>(args[2]));
   });
-  iupqmlConnect(view, "iupRenameStarted(QVariant)", [ih](void** args) {
-    qmlTreeRenameStarted(ih, qvariant_cast<QObject*>(*static_cast<QVariant*>(args[1])));
+  iupqmlConnect(view, "iupRenameStarted(QVariant,int)", [ih](void** args) {
+    qmlTreeRenameStarted(ih, qvariant_cast<QObject*>(*static_cast<QVariant*>(args[1])), *static_cast<int*>(args[2]));
   });
   iupqmlConnect(view, "iupDragDropped(int,QPointF)", [ih](void** args) {
     qmlTreeDragDropped(ih, *static_cast<int*>(args[1]), *static_cast<QPointF*>(args[2]));

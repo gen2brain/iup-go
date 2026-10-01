@@ -536,6 +536,7 @@ struct IupQmlTableData
   QString edit_initial;
   QPointer<QObject> editor;
   int drag_lin = 0;
+  bool click_ignored = false;
   QList<int> move_old;
   QList<int> move_new;
 };
@@ -783,34 +784,40 @@ static void qmlTableCurrentChanged(Ihandle* ih, const QModelIndex& current)
     cb(ih, lin, col);
 }
 
+static int qmlTableCallClick(Ihandle* ih, int lin, int col, int qt_buttons, int modifiers)
+{
+  auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "CLICK_CB"));
+  if (!cb)
+    return IUP_DEFAULT;
+
+  int button = 0;
+  if (qt_buttons & Qt::LeftButton)
+    button = IUP_BUTTON1;
+  else if (qt_buttons & Qt::MiddleButton)
+    button = IUP_BUTTON2;
+  else if (qt_buttons & Qt::RightButton)
+    button = IUP_BUTTON3;
+  else if (qt_buttons & Qt::XButton1)
+    button = IUP_BUTTON4;
+  else if (qt_buttons & Qt::XButton2)
+    button = IUP_BUTTON5;
+
+  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+  iupqmlButtonKeySetStatus(Qt::KeyboardModifiers(modifiers), Qt::MouseButtons(qt_buttons), button, status, 0);
+  int ret = cb(ih, lin, col, status);
+  if (ret == IUP_CLOSE)
+    IupExitLoop();
+  return ret;
+}
+
 static void qmlTableClicked(Ihandle* ih, int row, int column, int qt_button, int modifiers)
 {
   IupQmlTableData* data = qmlTableGetData(ih);
-  if (!data)
+  if (!data || data->click_ignored)
     return;
 
   int lin = row + 1;
   int col = column + 1;
-
-  auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "CLICK_CB"));
-  if (cb)
-  {
-    int button = 0;
-    if (qt_button == Qt::LeftButton)
-      button = IUP_BUTTON1;
-    else if (qt_button == Qt::MiddleButton)
-      button = IUP_BUTTON2;
-    else if (qt_button == Qt::RightButton)
-      button = IUP_BUTTON3;
-    else if (qt_button == Qt::XButton1)
-      button = IUP_BUTTON4;
-    else if (qt_button == Qt::XButton2)
-      button = IUP_BUTTON5;
-
-    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    iupqmlButtonKeySetStatus(Qt::KeyboardModifiers(modifiers), Qt::MouseButtons(qt_button), button, status, 0);
-    cb(ih, lin, col, status);
-  }
 
   if (qt_button == Qt::LeftButton && !iupTableCellsMode(ih) && !(modifiers & (Qt::ControlModifier | Qt::ShiftModifier)))
   {
@@ -849,7 +856,7 @@ static void qmlTableClicked(Ihandle* ih, int row, int column, int qt_button, int
 static void qmlTableCellsDrag(Ihandle* ih, const QPointF& scene_pos)
 {
   IupQmlTableData* data = qmlTableGetData(ih);
-  if (!data || !iupTableCellsMode(ih))
+  if (!data || data->click_ignored || !iupTableCellsMode(ih))
     return;
 
   QModelIndex index = qmlTableIndexAt(data, scene_pos);
@@ -948,10 +955,17 @@ static void qmlTableEditClosed(Ihandle* ih, int row, int column, const QString& 
     editend_cb(ih, lin, col, const_cast<char*>(text.toUtf8().constData()), 0);
 }
 
-static void qmlTablePressed(Ihandle* ih, int row, int column, int modifiers)
+static void qmlTablePressed(Ihandle* ih, int row, int column, int qt_buttons, int modifiers)
 {
   IupQmlTableData* data = qmlTableGetData(ih);
   if (!data)
+    return;
+
+  int ret = qmlTableCallClick(ih, row + 1, column + 1, qt_buttons, modifiers);
+  if (!iupObjectCheck(ih))
+    return;
+  data->click_ignored = ret == IUP_IGNORE;
+  if (data->click_ignored || !(qt_buttons & Qt::LeftButton))
     return;
 
   if (iupAttribGetBoolean(ih, "CANFOCUS") && data->view->property("keyNavigationEnabled").toBool())
@@ -1055,7 +1069,7 @@ static void qmlTableColumnMoved(Ihandle* ih, int logical, int old_visual, int ne
 static void qmlTableRowDropped(Ihandle* ih, int drag_row, const QPointF& scene_pos)
 {
   IupQmlTableData* data = qmlTableGetData(ih);
-  if (!data || !ih->data->show_dragdrop)
+  if (!data || data->click_ignored || !ih->data->show_dragdrop)
     return;
 
   int drag_id = drag_row + 1;
@@ -1217,7 +1231,7 @@ static const char* qmlTableQml =
   "  property var iupBgColor: undefined\n"
   "  property font font\n"
   "  signal iupClicked(int row, int column, int button, int modifiers)\n"
-  "  signal iupPressed(int row, int column, int modifiers)\n"
+  "  signal iupPressed(int row, int column, int buttons, int modifiers)\n"
   "  signal iupDoubleClicked(int row, int column)\n"
   "  signal iupCellsDrag(point pos)\n"
   "  signal iupEditStarted(var editor)\n"
@@ -1357,7 +1371,7 @@ static const char* qmlTableQml =
   "        acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton | Qt.XButton1 | Qt.XButton2\n"
   "        onTapped: function(eventPoint, button) { root.iupClicked(cell.row, cell.column, button, point.modifiers) }\n"
   "        onDoubleTapped: function(eventPoint, button) { if (button === Qt.LeftButton) root.iupDoubleClicked(cell.row, cell.column) }\n"
-  "        onPressedChanged: if (pressed && (point.pressedButtons & Qt.LeftButton)) root.iupPressed(cell.row, cell.column, point.modifiers)\n"
+  "        onPressedChanged: if (pressed) root.iupPressed(cell.row, cell.column, point.pressedButtons, point.modifiers)\n"
   "      }\n"
   "      DragHandler {\n"
   "        enabled: root.iupDragDrop || root.iupCellsMode\n"
@@ -1437,14 +1451,16 @@ static int qmlTableMapMethod(Ihandle* ih)
     qmlTableCurrentChanged(ih, current);
   });
 
-  iupqmlConnect(root, "iupPressed(int,int,int)", [ih](void** args) {
-    qmlTablePressed(ih, *static_cast<int*>(args[1]), *static_cast<int*>(args[2]), *static_cast<int*>(args[3]));
+  iupqmlConnect(root, "iupPressed(int,int,int,int)", [ih](void** args) {
+    qmlTablePressed(ih, *static_cast<int*>(args[1]), *static_cast<int*>(args[2]), *static_cast<int*>(args[3]), *static_cast<int*>(args[4]));
   });
   iupqmlConnect(root, "iupClicked(int,int,int,int)", [ih](void** args) {
     qmlTableClicked(ih, *static_cast<int*>(args[1]), *static_cast<int*>(args[2]), *static_cast<int*>(args[3]), *static_cast<int*>(args[4]));
   });
   iupqmlConnect(root, "iupDoubleClicked(int,int)", [ih](void** args) {
-    qmlTableEditRequest(ih, *static_cast<int*>(args[1]), *static_cast<int*>(args[2]), QString());
+    IupQmlTableData* d = qmlTableGetData(ih);
+    if (d && !d->click_ignored)
+      qmlTableEditRequest(ih, *static_cast<int*>(args[1]), *static_cast<int*>(args[2]), QString());
   });
   iupqmlConnect(root, "iupCellsDrag(QPointF)", [ih](void** args) {
     qmlTableCellsDrag(ih, *static_cast<QPointF*>(args[1]));

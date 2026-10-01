@@ -648,6 +648,9 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 @end
 
 @interface IupCocoaTreeTextField : NSTextField <NSTextFieldDelegate, NSTextViewDelegate>
+{
+  BOOL rename_done;
+}
 @end
 
 @implementation IupCocoaTreeTextField
@@ -708,6 +711,11 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
     return;
 
   IFnis cb = (IFnis)IupGetCallback(ih, "RENAME_CB");
+  if (rename_done)
+  {
+    rename_done = NO;
+    cb = NULL;
+  }
   if (cb)
   {
     int ret = cb(ih, iupTreeFindNodeId(ih, (InodeHandle*)item), (char*)[newTitle UTF8String]);
@@ -719,6 +727,34 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   }
 
   [item setTitle:newTitle];
+}
+
+- (BOOL)control:(NSControl*)control textView:(NSTextView*)textView doCommandBySelector:(SEL)commandSelector
+{
+  IupCocoaOutlineView* outlineView = objc_getAssociatedObject(self, IUP_COCOA_TREE_TEXTFIELD_OWNER_KEY);
+  (void)control;
+
+  rename_done = NO;
+  if (commandSelector != @selector(insertNewline:) || !outlineView)
+    return NO;
+
+  Ihandle* ih = [outlineView ih];
+  NSInteger row = [outlineView rowForView:self];
+  IFnis cb = ih ? (IFnis)IupGetCallback(ih, "RENAME_CB") : NULL;
+  if (!cb || row < 0)
+    return NO;
+
+  IupCocoaTreeItem* item = [outlineView itemAtRow:row];
+  NSString* newTitle = [[[textView string] copy] autorelease];
+  if (!item || [[item title] isEqualToString:newTitle])
+    return NO;
+
+  int ret = cb(ih, iupTreeFindNodeId(ih, (InodeHandle*)item), (char*)[newTitle UTF8String]);
+  if (!iupObjectCheck(ih) || ret == IUP_IGNORE)
+    return YES;
+
+  rename_done = YES;
+  return NO;
 }
 
 - (BOOL)control:(NSControl*)control textShouldBeginEditing:(NSText*)fieldEditor

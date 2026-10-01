@@ -30,24 +30,12 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchSel
 
 JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchClick(
     JNIEnv* jni_env, jclass cls, jlong ihandle_ptr,
-    jint lin, jint col, jint focus_changed, jint double_click)
+    jint lin, jint col, jint double_click)
 {
   (void)jni_env;
   (void)cls;
   Ihandle* ih = (Ihandle*)ihandle_ptr;
   if (!ih) return 0;
-
-  iupAndroidTableCellsCollapse(ih);
-
-  if (focus_changed)
-  {
-    IFnii enter_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
-    if (enter_cb)
-    {
-      int ret = enter_cb(ih, (int)lin, (int)col);
-      if (ret == IUP_CLOSE) IupExitLoop();
-    }
-  }
 
   IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
   if (click_cb)
@@ -60,6 +48,24 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchCli
     if (ret == IUP_IGNORE) return 1;
   }
   return 0;
+}
+
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchFocus(
+    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr,
+    jint lin, jint col, jint focus_changed)
+{
+  (void)jni_env;
+  (void)cls;
+  Ihandle* ih = (Ihandle*)ihandle_ptr;
+  if (!ih) return;
+
+  iupAndroidTableCellsCollapse(ih);
+
+  if (focus_changed)
+  {
+    IFnii enter_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+    if (enter_cb && enter_cb(ih, (int)lin, (int)col) == IUP_CLOSE) IupExitLoop();
+  }
 }
 
 

@@ -1366,6 +1366,41 @@ static int cocoaTouchTreeSetDelNodeAttrib(Ihandle* ih, int id_, const char* valu
 	return 0;
 }
 
+static void cocoaTouchTreePresentRename(Ihandle* ih, int id, NSString* current)
+{
+	UIViewController* top = iupCocoaTouchFindTopPresentedViewController();
+	if (!top) return;
+
+	UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Rename"
+	                                                                message:nil
+	                                                         preferredStyle:UIAlertControllerStyleAlert];
+	[alert addTextFieldWithConfigurationHandler:^(UITextField* tf) {
+		tf.text = current;
+		tf.clearButtonMode = UITextFieldViewModeWhileEditing;
+	}];
+	[alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+	[alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* a) {
+		(void)a;
+		if (!iupObjectCheck(ih)) return;
+		UITextField* tf = alert.textFields.firstObject;
+		NSString* new_title = tf.text ? tf.text : @"";
+		IFnis rename_cb = (IFnis)IupGetCallback(ih, "RENAME_CB");
+		int ret = IUP_DEFAULT;
+		if (rename_cb) ret = rename_cb(ih, id, (char*)[new_title UTF8String]);
+		if (!iupObjectCheck(ih)) return;
+		if (ret == IUP_IGNORE)
+		{
+			cocoaTouchTreePresentRename(ih, id, new_title);
+			return;
+		}
+		IupCocoaTouchTreeNode* n2 = cocoaTouchTreeNodeFromId(ih, id);
+		if (n2) n2.title = new_title;
+		IupCocoaTouchTreeView* v2 = cocoaTouchTreeGetView(ih);
+		if (v2) [v2.tableView reloadData];
+	}]];
+	[top presentViewController:alert animated:YES completion:nil];
+}
+
 static int cocoaTouchTreeSetRenameAttrib(Ihandle* ih, const char* value)
 {
 	(void)value;
@@ -1380,36 +1415,7 @@ static int cocoaTouchTreeSetRenameAttrib(Ihandle* ih, const char* value)
 	IFni show_cb = (IFni)IupGetCallback(ih, "SHOWRENAME_CB");
 	if (show_cb && show_cb(ih, id_) == IUP_IGNORE) return 0;
 
-	UIViewController* top = iupCocoaTouchFindTopPresentedViewController();
-	if (!top) return 0;
-
-	Ihandle* ih_ref = ih;
-	int id_ref = id_;
-	UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Rename"
-	                                                                message:nil
-	                                                         preferredStyle:UIAlertControllerStyleAlert];
-	NSString* current = node.title ? node.title : @"";
-	[alert addTextFieldWithConfigurationHandler:^(UITextField* tf) {
-		tf.text = current;
-		tf.clearButtonMode = UITextFieldViewModeWhileEditing;
-	}];
-	[alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
-	[alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* a) {
-		(void)a;
-		UITextField* tf = alert.textFields.firstObject;
-		NSString* new_title = tf.text ? tf.text : @"";
-		IFnis rename_cb = (IFnis)IupGetCallback(ih_ref, "RENAME_CB");
-		int ret = IUP_DEFAULT;
-		if (rename_cb) ret = rename_cb(ih_ref, id_ref, (char*)[new_title UTF8String]);
-		if (ret != IUP_IGNORE)
-		{
-			IupCocoaTouchTreeNode* n2 = cocoaTouchTreeNodeFromId(ih_ref, id_ref);
-			if (n2) n2.title = new_title;
-			IupCocoaTouchTreeView* v2 = cocoaTouchTreeGetView(ih_ref);
-			if (v2) [v2.tableView reloadData];
-		}
-	}]];
-	[top presentViewController:alert animated:YES completion:nil];
+	cocoaTouchTreePresentRename(ih, id_, node.title ? node.title : @"");
 	return 0;
 }
 

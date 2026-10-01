@@ -136,8 +136,8 @@ EM_JS(void, iupwasmJsTreeDel, (int treeId, int rowId), {
   globalThis.__iupApply({ op: 'treedel', id: treeId, rowId: rowId });
 })
 
-EM_JS(void, iupwasmJsTreeStartRename, (int treeId, int rowId), {
-  globalThis.__iupApply({ op: 'treestartrename', id: treeId, rowId: rowId });
+EM_JS(void, iupwasmJsTreeStartRename, (int treeId, int rowId, const char* text), {
+  globalThis.__iupApply({ op: 'treestartrename', id: treeId, rowId: rowId, text: text ? UTF8ToString(text) : undefined });
 })
 
 /* navigation reads the pre-order DOM rows; mode 0 parent,1 next,2 prev,3 first,4 last */
@@ -254,7 +254,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTreeEvent(int treeId, int rowId, int type)
   }
 }
 
-EMSCRIPTEN_KEEPALIVE void iupwasmTreeRenameEnd(int treeId, int rowId, const char* text)
+EMSCRIPTEN_KEEPALIVE void iupwasmTreeRenameEnd(int treeId, int rowId, const char* text, int from_enter)
 {
   Ihandle* ih = iupwasmHandleFromId(treeId);
   int id, ret = IUP_DEFAULT;
@@ -269,8 +269,16 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTreeRenameEnd(int treeId, int rowId, const char
   cb = (IFnis)IupGetCallback(ih, "RENAME_CB");
   if (cb)
     ret = cb(ih, id, (char*)text);
+  if (!iupObjectCheck(ih))
+    return;
 
   iupwasmJsTreeSetTitle(rowId, (ret == IUP_IGNORE && old_title) ? old_title : (text ? text : ""));
+
+  if (ret == IUP_IGNORE && from_enter)
+  {
+    iupwasmJsTreeStartRename(treeId, rowId, text ? text : "");
+    return;
+  }
   iupAttribSetStrId(ih, "_IUPWASM_RENAMEOLD", rowId, NULL);
 }
 
@@ -667,7 +675,7 @@ static void wasmTreeStartRename(Ihandle* ih, int treeId, InodeHandle* node)
     return;
 
   iupAttribSetStrId(ih, "_IUPWASM_RENAMEOLD", (int)(intptr_t)node, wasmTreeGetTitleAttrib(ih, id));
-  iupwasmJsTreeStartRename(treeId, (int)(intptr_t)node);
+  iupwasmJsTreeStartRename(treeId, (int)(intptr_t)node, NULL);
 }
 
 static int wasmTreeSetRenameAttrib(Ihandle* ih, const char* value)
