@@ -1784,7 +1784,7 @@ static int qmlTextMapMethod(Ihandle* ih)
   else if (iupAttribGetBoolean(ih, "SPIN"))
   {
     handle = iupqmlCreateItem(IUPQML_IMPORTS
-      "SpinBox { id: spin; editable: true; property bool iupAuto: true\n"
+      "SpinBox { id: spin; editable: true; live: true; property bool iupAuto: true\n"
       "  textFromValue: function(value, locale) { return spin.iupAuto ? value.toString() : spin.contentItem.text }\n"
       "  valueFromText: function(text, locale) { return spin.iupAuto ? parseInt(text) : spin.value }\n"
       "  validator: spin.iupAuto ? iupIntValidator : null\n"

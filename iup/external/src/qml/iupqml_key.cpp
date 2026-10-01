@@ -258,7 +258,6 @@ static Iqt2iupkey other_remap[] = {
   { Qt::Key_Shift,   K_LSHIFT },
   { Qt::Key_Control, K_LCTRL  },
   { Qt::Key_Alt,     K_LALT   },
-  { Qt::Key_Meta,    K_LALT   },
   { Qt::Key_AltGr,   K_RALT   },
 };
 
