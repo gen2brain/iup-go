@@ -71,14 +71,6 @@ static jobjectArray androidDragDropParseTypes(JNIEnv* jni_env, const char* value
   return arr;
 }
 
-/* touch arrives in HW px, canvas callbacks are in logical px */
-static int androidDragDropCanvasPx(int v)
-{
-  float d = iupAndroid_GetDisplayDensity();
-  if (d < 1.0f) d = 1.0f;
-  return (int)((float)v / d);
-}
-
 static int androidDragDropTypeMatches(const char* drop_types, const char* type)
 {
   if (!drop_types || !*drop_types || !type) return 0;
@@ -138,7 +130,7 @@ JNIEXPORT jobject JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_reque
   if (!ih || !iupObjectCheck(ih)) return NULL;
 
   IFnii cb_begin = (IFnii)IupGetCallback(ih, "DRAGBEGIN_CB");
-  if (cb_begin && cb_begin(ih, (int)x, (int)y) == IUP_IGNORE)
+  if (cb_begin && cb_begin(ih, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y)) == IUP_IGNORE)
     return NULL;
 
   const char* types_attr = iupAttribGet(ih, "DRAGTYPES");
@@ -240,7 +232,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_deliverD
   jsize len = (*jni_env)->GetArrayLength(jni_env, j_data);
   jbyte* bytes = (*jni_env)->GetByteArrayElements(jni_env, j_data, NULL);
 
-  cb(ih, (char*)type, (void*)bytes, (int)len, androidDragDropCanvasPx(x), androidDragDropCanvasPx(y));
+  cb(ih, (char*)type, (void*)bytes, (int)len, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y));
 
   (*jni_env)->ReleaseByteArrayElements(jni_env, j_data, bytes, JNI_ABORT);
   if (j_type) (*jni_env)->ReleaseStringUTFChars(jni_env, j_type, type);
@@ -258,7 +250,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_deliverM
 
   char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
   iupKEY_SETBUTTON1(status);
-  cb(ih, androidDragDropCanvasPx(x), androidDragDropCanvasPx(y), status);
+  cb(ih, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y), status);
 }
 
 JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_dispatchDropFile(
@@ -282,7 +274,7 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_dispatch
   if (!cb) return IUP_DEFAULT;
 
   const char* path = (*jni_env)->GetStringUTFChars(jni_env, j_path, NULL);
-  int ret = cb(cb_ih, (char*)path, (int)remaining, androidDragDropCanvasPx(x), androidDragDropCanvasPx(y));
+  int ret = cb(cb_ih, (char*)path, (int)remaining, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y));
   (*jni_env)->ReleaseStringUTFChars(jni_env, j_path, path);
   return ret;
 }

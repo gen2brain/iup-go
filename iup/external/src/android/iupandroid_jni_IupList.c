@@ -56,8 +56,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupListHelper_dispatchList
   Ihandle* ih = (Ihandle*)ihandle_ptr;
   if (!ih || !iupObjectCheck(ih)) return;
 
-  float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
-  int lx = (int)((float)x / d), ly = (int)((float)y / d);
+  int lx = iupAndroid_PxToDpRound(x), ly = iupAndroid_PxToDpRound(y);
   char status[IUPKEY_STATUS_SIZE];
 
   if (is_button)

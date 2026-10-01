@@ -249,7 +249,7 @@ static int androidTreeConvertXYToPos(Ihandle* ih, int x, int y)
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTreeFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "nodeIdAt", "(Landroid/view/View;II)I");
-  jint id = (*env)->CallStaticIntMethod(env, cls, m, ih->handle, (jint)x, (jint)y);
+  jint id = (*env)->CallStaticIntMethod(env, cls, m, ih->handle, (jint)iupAndroid_DpToPx(x), (jint)iupAndroid_DpToPx(y));
   iupAndroid_CheckException(env, "IupTreeHelper.nodeIdAt");
   (*env)->DeleteLocalRef(env, cls);
   return (id < 0) ? -1 : (int)id;
@@ -1089,7 +1089,7 @@ static char* androidTreeGetIndentationAttrib(Ihandle* ih)
   jint r = (*env)->CallStaticIntMethod(env, cls, m, ih->handle);
   iupAndroid_CheckException(env, "IupTreeHelper.getIndentation");
   (*env)->DeleteLocalRef(env, cls);
-  return iupStrReturnInt((int)r);
+  return iupStrReturnInt(iupAndroid_PxToDp((int)r));
 }
 
 static int androidTreeSetIndentationAttrib(Ihandle* ih, const char* value)
@@ -1101,7 +1101,7 @@ static int androidTreeSetIndentationAttrib(Ihandle* ih, const char* value)
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTreeFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setIndentation", "(Landroid/view/View;I)V");
-  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)indent);
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)iupAndroid_DpToPx(indent));
   iupAndroid_CheckException(env, "IupTreeHelper.setIndentation");
   (*env)->DeleteLocalRef(env, cls);
   return 1;
@@ -1116,7 +1116,7 @@ static int androidTreeSetSpacingAttrib(Ihandle* ih, const char* value)
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTreeFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setSpacing", "(Landroid/view/View;I)V");
-  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)ih->data->spacing);
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)iupAndroid_DpToPx(ih->data->spacing));
   iupAndroid_CheckException(env, "IupTreeHelper.setSpacing");
   (*env)->DeleteLocalRef(env, cls);
   return 0;
@@ -1144,12 +1144,12 @@ IUP_SDK_API void iupdrvTreeAddBorders(Ihandle* ih, int* w, int* h)
   /* the core counts VISIBLELINES in font heights, a row is a touch target */
   if (visiblelines <= 0) visiblelines = 8;
   iupdrvFontGetCharSize(ih, &char_w, &char_h);
-  row_h = iupAndroid_DpToPx(32) + 2 * ih->data->spacing;
+  row_h = 32 + 2 * ih->data->spacing;
   if (row_h > char_h)
     *h += visiblelines * (row_h - char_h);
 
-  *w += iupAndroid_DpToPx(48);  /* chevron + leading icon + 1 indent step */
-  *h += iupAndroid_DpToPx(8);
+  *w += 48;  /* chevron + leading icon + 1 indent step */
+  *h += 8;
 }
 
 IUP_SDK_API static int androidTreeSetFgColorAttrib(Ihandle* ih, const char* value)

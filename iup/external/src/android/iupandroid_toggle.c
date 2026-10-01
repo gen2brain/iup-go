@@ -62,8 +62,8 @@ IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
   /* IMAGE-only: override IUP's raw-pixel size with a 32dp icon + 16dp pad. */
   (void)ih;
-  int icon_box = iupAndroid_DpToPx(32.0f);
-  int padding = iupAndroid_DpToPx(16.0f);
+  int icon_box = 32;
+  int padding = 16;
 
   if (x)
   {
@@ -83,16 +83,16 @@ IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char
 {
   /* Indicator (~24dp) plus drawable padding (~16dp) plus a breathing margin. */
   (void)str;
-  if (x) *x += iupAndroid_DpToPx(48.0f) + 2 * ih->data->horiz_padding;
-  if (y) *y += iupAndroid_DpToPx(8.0f) + 2 * ih->data->vert_padding;
+  if (x) *x += 48 + 2 * ih->data->horiz_padding;
+  if (y) *y += 8 + 2 * ih->data->vert_padding;
 }
 
 IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
   /* MaterialSwitch track is ~52dp wide + ~8dp padding. */
   (void)str;
-  if (x) *x += iupAndroid_DpToPx(60.0f) + 2 * ih->data->horiz_padding;
-  if (y) *y += iupAndroid_DpToPx(8.0f) + 2 * ih->data->vert_padding;
+  if (x) *x += 60 + 2 * ih->data->horiz_padding;
+  if (y) *y += 8 + 2 * ih->data->vert_padding;
 }
 
 static int androidToggleSetTitleAttrib(Ihandle* ih, const char* value)
@@ -283,15 +283,13 @@ static int androidToggleSetPaddingAttrib(Ihandle* ih, const char* value)
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupToggleHelper_setPadding);
 
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
-  ih->data->horiz_padding = iupdrvScaleNaturalPx(ih->data->horiz_padding);
-  ih->data->vert_padding  = iupdrvScaleNaturalPx(ih->data->vert_padding);
 
   if (!ih->handle) return 1;
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupToggleHelper, jni_env, "io/github/gen2brain/iupgo/IupToggleHelper");
   jmethodID m = IUPJNI_GetStaticMethodID(IupToggleHelper_setPadding, jni_env, cls, "setPadding", "(Landroid/view/View;II)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, (jint)ih->data->horiz_padding, (jint)ih->data->vert_padding);
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, (jint)iupAndroid_DpToPx(ih->data->horiz_padding), (jint)iupAndroid_DpToPx(ih->data->vert_padding));
   iupAndroid_CheckException(jni_env, "IupToggleHelper.setPadding");
   (*jni_env)->DeleteLocalRef(jni_env, cls);
   return 0;

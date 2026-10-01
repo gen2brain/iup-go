@@ -217,8 +217,8 @@ static void androidDatePickComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h,
   (void)children_expand;
   iupdrvFontGetMultiLineStringSize(ih, "WW/MMM/WWWW", w, h);
   /* Outlined MaterialButton padding: 24dp horiz + 1dp stroke; 8dp vert. */
-  *w += iupAndroid_DpToPx(50.0f);
-  *h += iupAndroid_DpToPx(16.0f);
+  *w += 50;
+  *h += 16;
 }
 
 static int androidDatePickMapMethod(Ihandle* ih)

@@ -21,7 +21,6 @@
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
-#include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
 
@@ -1669,9 +1668,8 @@ static void itermComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* chil
   ch_w = ih->data->ch_w;
   ch_h = ih->data->ch_h;
 
-  /* natural size is in HW pixels; the measurement above is in canvas coordinates */
-  *w = iupdrvScaleNaturalPx(cols * ch_w + 2 * ITERM_PADDING);
-  *h = iupdrvScaleNaturalPx(rows * ch_h + 2 * ITERM_PADDING);
+  *w = cols * ch_w + 2 * ITERM_PADDING;
+  *h = rows * ch_h + 2 * ITERM_PADDING;
   (void)children_expand;
 }
 

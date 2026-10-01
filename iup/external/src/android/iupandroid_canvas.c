@@ -9,7 +9,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
-#include <math.h>
 
 #include <jni.h>
 
@@ -59,13 +58,9 @@ static int androidCanvasMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-/* DRAWSIZE = canvas-coord (currentwidth/density), ceiled for exact round-trip. */
 static char* androidCanvasGetDrawSizeAttrib(Ihandle* ih)
 {
-  float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
-  int w = (int)ceilf((float)ih->currentwidth  / d);
-  int h = (int)ceilf((float)ih->currentheight / d);
-  return iupStrReturnIntInt(w, h, 'x');
+  return iupStrReturnIntInt(ih->currentwidth, ih->currentheight, 'x');
 }
 
 static int androidCanvasSetBgColorAttrib(Ihandle* ih, const char* value)

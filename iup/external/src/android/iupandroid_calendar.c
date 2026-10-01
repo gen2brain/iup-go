@@ -99,8 +99,8 @@ static void androidCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h,
   (void)children_expand;
   (void)ih;
   /* Android's CalendarView is large by default; IUP SIZE or EXPAND overrides. */
-  *w = iupAndroid_DpToPx(280.0f);
-  *h = iupAndroid_DpToPx(260.0f);
+  *w = 280;
+  *h = 260;
 }
 
 Iclass* iupCalendarNewClass(void)

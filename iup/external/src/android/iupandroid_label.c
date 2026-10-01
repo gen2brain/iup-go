@@ -244,8 +244,6 @@ static int androidLabelSetPaddingAttrib(Ihandle* ih, const char* value)
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupLabelHelper_setPadding);
 
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
-  ih->data->horiz_padding = iupdrvScaleNaturalPx(ih->data->horiz_padding);
-  ih->data->vert_padding  = iupdrvScaleNaturalPx(ih->data->vert_padding);
 
   if (!ih->handle) return 1;
   IupAndroidLabelSubType st = androidLabelGetSubType(ih);
@@ -254,7 +252,7 @@ static int androidLabelSetPaddingAttrib(Ihandle* ih, const char* value)
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupLabelHelper, jni_env, "io/github/gen2brain/iupgo/IupLabelHelper");
   jmethodID m = IUPJNI_GetStaticMethodID(IupLabelHelper_setPadding, jni_env, cls, "setPadding", "(Landroid/view/View;II)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, (jint)ih->data->horiz_padding, (jint)ih->data->vert_padding);
+  (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, (jint)iupAndroid_DpToPx(ih->data->horiz_padding), (jint)iupAndroid_DpToPx(ih->data->vert_padding));
   iupAndroid_CheckException(jni_env, "IupLabelHelper.setPadding");
   (*jni_env)->DeleteLocalRef(jni_env, cls);
   return 0;

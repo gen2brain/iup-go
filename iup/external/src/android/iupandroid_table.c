@@ -57,7 +57,7 @@ static int androidTableCallInt(Ihandle* ih, const char* method, const char* sig)
   jint r = (*env)->CallStaticIntMethod(env, cls, m, ih->handle);
   iupAndroid_CheckException(env, method);
   (*env)->DeleteLocalRef(env, cls);
-  return (int)r;
+  return iupAndroid_PxToDp((int)r);
 }
 
 IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
@@ -233,7 +233,7 @@ IUP_SDK_API void iupdrvTableSetColWidth(Ihandle* ih, int col, int width)
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTableFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setColWidth", "(Landroid/view/View;II)V");
-  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)col, (jint)width);
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)col, (jint)iupAndroid_DpToPx(width));
   iupAndroid_CheckException(env, "IupTableHelper.setColWidth");
   (*env)->DeleteLocalRef(env, cls);
 }
@@ -247,7 +247,7 @@ IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col)
   jint w = (*env)->CallStaticIntMethod(env, cls, m, ih->handle, (jint)col);
   iupAndroid_CheckException(env, "IupTableHelper.getColWidth");
   (*env)->DeleteLocalRef(env, cls);
-  return (int)w;
+  return iupAndroid_PxToDp((int)w);
 }
 
 IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
@@ -373,7 +373,7 @@ IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
   jint r = (*env)->CallStaticIntMethod(env, cls, m);
   iupAndroid_CheckException(env, "IupTableHelper.defaultRowHeightPx");
   (*env)->DeleteLocalRef(env, cls);
-  return (int)r;
+  return iupAndroid_PxToDp((int)r);
 }
 
 IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
@@ -387,7 +387,7 @@ IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
   jint r = (*env)->CallStaticIntMethod(env, cls, m);
   iupAndroid_CheckException(env, "IupTableHelper.defaultHeaderHeightPx");
   (*env)->DeleteLocalRef(env, cls);
-  return (int)r;
+  return iupAndroid_PxToDp((int)r);
 }
 
 IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)

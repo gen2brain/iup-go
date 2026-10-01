@@ -55,15 +55,18 @@ static void androidFrameCallColorSetter(Ihandle* ih, const char* method_name, un
 
 IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 {
-  int title_h = 0;
-  int stroke = 1;
   if (ih && ih->handle)
   {
-    title_h = androidFrameCallIntGetter(ih, "getTitleHeight");
-    stroke = androidFrameCallIntGetter(ih, "getStrokePx");
+    int title_h = androidFrameCallIntGetter(ih, "getTitleHeight");
+    int stroke = androidFrameCallIntGetter(ih, "getStrokePx");
+    if (x) *x = iupAndroid_PxToDp(stroke);
+    if (y) *y = iupAndroid_PxToDp(stroke + title_h);
   }
-  if (x) *x = stroke;
-  if (y) *y = stroke + title_h;
+  else
+  {
+    if (x) *x = 1;
+    if (y) *y = 1;
+  }
 }
 
 IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
@@ -84,7 +87,7 @@ IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 
   if (ih->handle)
   {
-    if (h) *h = androidFrameCallIntGetter(ih, "getTitleHeight");
+    if (h) *h = iupAndroid_PxToDp(androidFrameCallIntGetter(ih, "getTitleHeight"));
   }
   else
   {
@@ -97,12 +100,20 @@ IUP_SDK_API int iupdrvFrameGetTitleHeight(Ihandle* ih, int* h)
 
 IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
 {
-  int title_h;
-  int stroke = ih->handle ? androidFrameCallIntGetter(ih, "getStrokePx") : iupAndroid_DpToPx(1.0f);
-  iupdrvFrameGetTitleHeight(ih, &title_h);
-
-  if (w) *w = 2 * stroke;
-  if (h) *h = 2 * stroke + title_h;
+  if (ih->handle)
+  {
+    int stroke = androidFrameCallIntGetter(ih, "getStrokePx");
+    int title_h = androidFrameCallIntGetter(ih, "getTitleHeight");
+    if (w) *w = iupAndroid_PxToDp(2 * stroke);
+    if (h) *h = iupAndroid_PxToDp(2 * stroke + title_h);
+  }
+  else
+  {
+    int title_h;
+    iupdrvFrameGetTitleHeight(ih, &title_h);
+    if (w) *w = 2;
+    if (h) *h = 2 + title_h;
+  }
   return 1;
 }
 

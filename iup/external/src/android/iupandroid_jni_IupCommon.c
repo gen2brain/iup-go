@@ -7,7 +7,6 @@
 #include <jni.h>
 #include <stdint.h>
 #include <string.h>
-#include <math.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -46,7 +45,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_dispatchGlobalBu
   if (!cb) return;
   char status[IUPKEY_STATUS_SIZE];
   androidGlobalFillStatus(status, meta_state, pressed ? (1 << (button - IUP_BUTTON1)) : 0);
-  cb(button, pressed, x, y, status);
+  cb(button, pressed, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y), status);
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_dispatchGlobalMotion(JNIEnv* env, jclass cls, jint x, jint y, jint meta_state, jint button_state)
@@ -56,7 +55,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_dispatchGlobalMo
   if (!cb) return;
   char status[IUPKEY_STATUS_SIZE];
   androidGlobalFillStatus(status, meta_state, button_state);
-  cb(x, y, status);
+  cb(iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y), status);
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_dispatchGlobalKey(JNIEnv* env, jclass cls, jint keycode, jint meta_state, jint pressed)
@@ -216,16 +215,19 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupCommon_DoResize(JNIEnv*
 
   int ret = IUP_DEFAULT;
   IFnii cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
+
+  /* a canvas is sized by the layout, only the dialog takes its size from Android */
+  if (ih->iclass->nativetype != IUP_TYPEDIALOG)
+    return cb ? cb(ih, ih->currentwidth, ih->currentheight) : ret;
+
+  int w = iupAndroid_PxToDpRound((float)width);
+  int h = iupAndroid_PxToDpRound((float)height);
   if (cb)
-  {
-    /* RESIZE_CB sees logical px to match IupDraw's Canvas scale transform. */
-    float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
-    ret = cb(ih, (int)ceilf((float)width / d), (int)ceilf((float)height / d));
-  }
+    ret = cb(ih, w, h);
   /* SHRINK=YES would otherwise squeeze content into the viewport; let it overflow so NestedScrollView pans. */
-  if (ih->naturalheight > height) height = ih->naturalheight;
-  ih->currentwidth = width;
-  ih->currentheight = height;
+  if (ih->naturalheight > h) h = ih->naturalheight;
+  ih->currentwidth = w;
+  ih->currentheight = h;
   if (ret != IUP_IGNORE)
     IupRefresh(ih);
   return ret;

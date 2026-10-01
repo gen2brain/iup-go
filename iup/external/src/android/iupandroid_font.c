@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <math.h>
 
 #include <jni.h>
 #include <android/log.h>
@@ -38,18 +37,12 @@ static int androidFontKindForIhandle(Ihandle* ih)
   return IUPANDROID_FONT_KIND_DEFAULT;
 }
 
-/* Safe on NULL j_rect. */
-static void androidFontRectGetSize(JNIEnv* jni_env, jobject j_rect, jint* w, jint* h)
+static void androidFontGetFloats(JNIEnv* jni_env, jfloatArray j_arr, jfloat* vals, int count)
 {
-  *w = 0;
-  *h = 0;
-  if (!j_rect) return;
-  jclass rect_class = (*jni_env)->GetObjectClass(jni_env, j_rect);
-  jmethodID width_id = (*jni_env)->GetMethodID(jni_env, rect_class, "width", "()I");
-  jmethodID height_id = (*jni_env)->GetMethodID(jni_env, rect_class, "height", "()I");
-  *w = (*jni_env)->CallIntMethod(jni_env, j_rect, width_id);
-  *h = (*jni_env)->CallIntMethod(jni_env, j_rect, height_id);
-  (*jni_env)->DeleteLocalRef(jni_env, rect_class);
+  memset(vals, 0, count * sizeof(jfloat));
+  if (!j_arr) return;
+  (*jni_env)->GetFloatArrayRegion(jni_env, j_arr, 0, count, vals);
+  (*jni_env)->DeleteLocalRef(jni_env, j_arr);
 }
 
 IUP_SDK_API char* iupdrvGetSystemFont(void)
@@ -89,9 +82,8 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
 #define ANDROID_TYPEFACE_BOLD_ITALIC 3
 
 /* TypedValue.COMPLEX_UNIT_* selectors accepted by TextView.setTextSize. */
-#define ANDROID_COMPLEX_UNIT_PX 0
+#define ANDROID_COMPLEX_UNIT_DIP 1
 #define ANDROID_COMPLEX_UNIT_SP 2
-#define ANDROID_COMPLEX_UNIT_PT 3
 
 static void androidFontParse(const char* font, char family[1024], int* style, int* size_unit, float* size_value)
 {
@@ -111,7 +103,7 @@ static void androidFontParse(const char* font, char family[1024], int* style, in
         : is_bold                ? ANDROID_TYPEFACE_BOLD
         : is_italic              ? ANDROID_TYPEFACE_ITALIC
         : ANDROID_TYPEFACE_NORMAL;
-  if (size < 0) { *size_unit = ANDROID_COMPLEX_UNIT_PX; *size_value = (float)(-size); }
+  if (size < 0) { *size_unit = ANDROID_COMPLEX_UNIT_DIP; *size_value = (float)(-size); }
   else          { *size_unit = ANDROID_COMPLEX_UNIT_SP; *size_value = (float)size; }
 }
 
@@ -144,20 +136,18 @@ IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, 
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupFontHelper, jni_env, "io/github/gen2brain/iupgo/IupFontHelper");
-  jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getMultiLineStringSize, jni_env, java_class, "getMultiLineStringSize", "(JLjava/lang/Object;ILjava/lang/String;)Landroid/graphics/Rect;");
+  jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getMultiLineStringSize, jni_env, java_class, "getMultiLineStringSize", "(JLjava/lang/Object;ILjava/lang/String;)[F");
 
   jstring java_string = (*jni_env)->NewStringUTF(jni_env, str);
-  jobject j_rect = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, iupAndroid_RealNativeHandle(ih), (jint)androidFontKindForIhandle(ih), java_string);
+  jfloatArray j_arr = (jfloatArray)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, iupAndroid_RealNativeHandle(ih), (jint)androidFontKindForIhandle(ih), java_string);
   iupAndroid_CheckException(jni_env, "IupFontHelper.getMultiLineStringSize");
   (*jni_env)->DeleteLocalRef(jni_env, java_string);
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
-  jint j_width = 0, j_height = 0;
-  androidFontRectGetSize(jni_env, j_rect, &j_width, &j_height);
-  if (j_rect) (*jni_env)->DeleteLocalRef(jni_env, j_rect);
-
-  if (w) *w = (int)j_width;
-  if (h) *h = (int)j_height;
+  jfloat vals[2];
+  androidFontGetFloats(jni_env, j_arr, vals, 2);
+  if (w) *w = iupAndroid_PxToDp(vals[0]);
+  if (h) *h = iupAndroid_PxToDp(vals[1]);
 }
 
 IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int len, int* w, int* h)
@@ -170,25 +160,21 @@ IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int le
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupFontHelper, jni_env, "io/github/gen2brain/iupgo/IupFontHelper");
-  jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getTextSize, jni_env, java_class, "getTextSize", "(Ljava/lang/String;IIFLjava/lang/String;)Landroid/graphics/Rect;");
+  jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getTextSize, jni_env, java_class, "getTextSize", "(Ljava/lang/String;IIFLjava/lang/String;)[F");
 
   jstring j_family = family[0] ? (*jni_env)->NewStringUTF(jni_env, family) : NULL;
   jstring j_str = (*jni_env)->NewStringUTF(jni_env, str);
-  jobject j_rect = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id,
+  jfloatArray j_arr = (jfloatArray)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id,
       j_family, (jint)style, (jint)size_unit, (jfloat)size_value, j_str);
   iupAndroid_CheckException(jni_env, "IupFontHelper.getTextSize");
   if (j_family) (*jni_env)->DeleteLocalRef(jni_env, j_family);
   (*jni_env)->DeleteLocalRef(jni_env, j_str);
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
-  jint j_width = 0, j_height = 0;
-  androidFontRectGetSize(jni_env, j_rect, &j_width, &j_height);
-  (*jni_env)->DeleteLocalRef(jni_env, j_rect);
-
-  /* HW px -> canvas-coord; float density + ceil preserves exact px round-trip with iupdrvScaleNaturalPx */
-  float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
-  if (w) *w = (int)ceilf((float)j_width  / d);
-  if (h) *h = (int)ceilf((float)j_height / d);
+  jfloat vals[2];
+  androidFontGetFloats(jni_env, j_arr, vals, 2);
+  if (w) *w = iupAndroid_PxToDp(vals[0]);
+  if (h) *h = iupAndroid_PxToDp(vals[1]);
 }
 
 IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
@@ -197,15 +183,15 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupFontHelper, jni_env, "io/github/gen2brain/iupgo/IupFontHelper");
-  jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getStringWidth, jni_env, java_class, "getStringWidth", "(JLjava/lang/Object;ILjava/lang/String;)I");
+  jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getStringWidth, jni_env, java_class, "getStringWidth", "(JLjava/lang/Object;ILjava/lang/String;)F");
 
   jstring java_string = (*jni_env)->NewStringUTF(jni_env, str);
-  jint j_width = (*jni_env)->CallStaticIntMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, iupAndroid_RealNativeHandle(ih), (jint)androidFontKindForIhandle(ih), java_string);
+  jfloat j_width = (*jni_env)->CallStaticFloatMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, iupAndroid_RealNativeHandle(ih), (jint)androidFontKindForIhandle(ih), java_string);
   iupAndroid_CheckException(jni_env, "IupFontHelper.getStringWidth");
   (*jni_env)->DeleteLocalRef(jni_env, java_string);
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
-  return (int)j_width;
+  return iupAndroid_PxToDp(j_width);
 }
 
 IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charheight)
@@ -214,18 +200,16 @@ IUP_SDK_API void iupdrvFontGetCharSize(Ihandle* ih, int* charwidth, int* charhei
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupFontHelper, jni_env, "io/github/gen2brain/iupgo/IupFontHelper");
-  jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getCharSize, jni_env, java_class, "getCharSize", "(JLjava/lang/Object;I)Landroid/graphics/Rect;");
+  jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getCharSize, jni_env, java_class, "getCharSize", "(JLjava/lang/Object;I)[F");
 
-  jobject j_rect = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, iupAndroid_RealNativeHandle(ih), (jint)androidFontKindForIhandle(ih));
+  jfloatArray j_arr = (jfloatArray)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, iupAndroid_RealNativeHandle(ih), (jint)androidFontKindForIhandle(ih));
   iupAndroid_CheckException(jni_env, "IupFontHelper.getCharSize");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
-  jint j_width = 0, j_height = 0;
-  androidFontRectGetSize(jni_env, j_rect, &j_width, &j_height);
-  (*jni_env)->DeleteLocalRef(jni_env, j_rect);
-
-  if (charwidth) *charwidth = (int)j_width;
-  if (charheight) *charheight = (int)j_height;
+  jfloat vals[2];
+  androidFontGetFloats(jni_env, j_arr, vals, 2);
+  if (charwidth) *charwidth = iupAndroid_PxToDpRound(vals[0]);
+  if (charheight) *charheight = iupAndroid_PxToDpRound(vals[1]);
 }
 
 IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* line_height, int* ascent, int* descent)
@@ -242,26 +226,23 @@ IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* lin
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupFontHelper, jni_env, "io/github/gen2brain/iupgo/IupFontHelper");
-  jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getFontDim, jni_env, java_class, "getFontDim", "(Ljava/lang/String;IIF)[I");
+  jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getFontDim, jni_env, java_class, "getFontDim", "(Ljava/lang/String;IIF)[F");
 
   jstring j_family = family[0] ? (*jni_env)->NewStringUTF(jni_env, family) : NULL;
-  jintArray j_arr = (jintArray)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id,
+  jfloatArray j_arr = (jfloatArray)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id,
       j_family, (jint)style, (jint)size_unit, (jfloat)size_value);
   iupAndroid_CheckException(jni_env, "IupFontHelper.getFontDim");
   if (j_family) (*jni_env)->DeleteLocalRef(jni_env, j_family);
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
   if (!j_arr) return;
-  jint vals[4] = {0, 0, 0, 0};
-  (*jni_env)->GetIntArrayRegion(jni_env, j_arr, 0, 4, vals);
-  (*jni_env)->DeleteLocalRef(jni_env, j_arr);
+  jfloat vals[4];
+  androidFontGetFloats(jni_env, j_arr, vals, 4);
 
-  /* HW px -> canvas-coord (matches iupdrvFontGetTextSize and Canvas density transform). */
-  float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
-  if (max_width)   *max_width   = (int)ceilf((float)vals[0] / d);
-  if (line_height) *line_height = (int)ceilf((float)vals[1] / d);
-  if (ascent)      *ascent      = (int)ceilf((float)vals[2] / d);
-  if (descent)     *descent     = (int)ceilf((float)vals[3] / d);
+  if (max_width)   *max_width   = iupAndroid_PxToDp(vals[0]);
+  if (line_height) *line_height = iupAndroid_PxToDp(vals[1]);
+  if (ascent)      *ascent      = iupAndroid_PxToDp(vals[2]);
+  if (descent)     *descent     = iupAndroid_PxToDp(vals[3]);
 }
 
 IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
@@ -359,12 +340,12 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
     else if (is_bold)         style = ANDROID_TYPEFACE_BOLD;
     else if (is_italic)       style = ANDROID_TYPEFACE_ITALIC;
 
-    /* size>0 maps to SP (mobile body scale); size<0 stays absolute pixels. */
+    /* size>0 maps to SP (mobile body scale); size<0 is dp. */
     int size_unit;
     float size_value;
     if (size < 0)
     {
-      size_unit = ANDROID_COMPLEX_UNIT_PX;
+      size_unit = ANDROID_COMPLEX_UNIT_DIP;
       size_value = (float)(-size);
     }
     else

@@ -44,7 +44,7 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
     const char* image = iupAttribGet(ih, "IMAGE");
     int img_w = 0, img_h = 0;
     if (image) iupImageGetInfo(image, &img_w, &img_h, NULL);
-    int min_icon = iupAndroid_DpToPx(24.0f);
+    int min_icon = 24;
     int icon_w = iupMAX(img_w, min_icon), icon_h = iupMAX(img_h, min_icon);
 
     if (ih->data->type & IUP_BUTTON_TEXT)
@@ -54,7 +54,7 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
       char* str = iupStrProcessMnemonic(title, NULL, 0);
       iupFontGetMultiLineStringSize(ih, str, &text_w, &text_h);
       if (str && str != title) free(str);
-      int gap = iupAndroid_DpToPx(8.0f) - ih->data->spacing;
+      int gap = 8 - ih->data->spacing;
 
       if (ih->data->img_position == IUP_IMGPOS_LEFT || ih->data->img_position == IUP_IMGPOS_RIGHT)
       {
@@ -115,22 +115,18 @@ static int androidButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrEqual(value, "DEFAULTBUTTONPADDING"))
   {
-    ih->data->horiz_padding = iupAndroid_DpToPx(16.0f);
-    ih->data->vert_padding  = iupAndroid_DpToPx(8.0f);
+    ih->data->horiz_padding = 16;
+    ih->data->vert_padding  = 8;
   }
   else
-  {
     iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
-    ih->data->horiz_padding = iupdrvScaleNaturalPx(ih->data->horiz_padding);
-    ih->data->vert_padding  = iupdrvScaleNaturalPx(ih->data->vert_padding);
-  }
 
   if (!ih->handle) return 1;
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidButtonFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setPadding", "(Landroid/widget/Button;II)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, (jint)ih->data->horiz_padding, (jint)ih->data->vert_padding);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, (jint)iupAndroid_DpToPx(ih->data->horiz_padding), (jint)iupAndroid_DpToPx(ih->data->vert_padding));
   iupAndroid_CheckException(jni_env, "IupButtonHelper.setPadding");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
   return 0;
@@ -353,7 +349,7 @@ static int androidButtonMapMethod(Ihandle* ih)
   {
     jclass jc = androidButtonFindHelper(jni_env);
     jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, jc, "setPadding", "(Landroid/widget/Button;II)V");
-    (*jni_env)->CallStaticVoidMethod(jni_env, jc, m, ih->handle, (jint)ih->data->horiz_padding, (jint)ih->data->vert_padding);
+    (*jni_env)->CallStaticVoidMethod(jni_env, jc, m, ih->handle, (jint)iupAndroid_DpToPx(ih->data->horiz_padding), (jint)iupAndroid_DpToPx(ih->data->vert_padding));
     iupAndroid_CheckException(jni_env, "IupButtonHelper.setPadding");
     (*jni_env)->DeleteLocalRef(jni_env, jc);
   }

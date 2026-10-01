@@ -150,7 +150,7 @@ static int androidProgressBarMapMethod(Ihandle* ih)
 IUP_SDK_API void iupdrvProgressBarGetMinSize(Ihandle* ih, int* w, int* h)
 {
   (void)ih;
-  /* Logical px; 8dp = Material3 track thickness. */
+  /* 8dp = Material3 track thickness. */
   if (w) *w = 8;
   if (h) *h = 8;
 }

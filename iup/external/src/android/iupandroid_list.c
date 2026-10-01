@@ -43,7 +43,7 @@ static int androidListPreferredRowHeight(void)
   jint h = (*jni_env)->CallStaticIntMethod(jni_env, java_class, method_id);
   iupAndroid_CheckException(jni_env, "IupListHelper.getPreferredRowHeightPx");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
-  return (int)h;
+  return iupAndroid_PxToDp((int)h);
 }
 
 static int androidListEditBoxHeight(void)
@@ -54,7 +54,7 @@ static int androidListEditBoxHeight(void)
   jint h = (*jni_env)->CallStaticIntMethod(jni_env, java_class, method_id);
   iupAndroid_CheckException(jni_env, "IupListHelper.getEditBoxHeightPx");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
-  return (int)h;
+  return iupAndroid_PxToDp((int)h);
 }
 
 IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
@@ -65,7 +65,7 @@ IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
     int pref = androidListPreferredRowHeight();
     if (*h < pref) *h = pref;
     if (!ih->data->is_dropdown && ih->data->spacing > 0)
-      *h += 2 * iupAndroid_DpToPx((float)ih->data->spacing);
+      *h += 2 * ih->data->spacing;
   }
 }
 
@@ -79,34 +79,34 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
     jclass cls = IUPJNI_FindClass(IupListHelper, env, "io/github/gen2brain/iupgo/IupListHelper");
     jmethodID mh = (*env)->GetStaticMethodID(env, cls, "getDropdownBorderH", "()I");
     jmethodID mv = (*env)->GetStaticMethodID(env, cls, "getDropdownBorderV", "()I");
-    extra_x = (int)(*env)->CallStaticIntMethod(env, cls, mh);
-    extra_y = (int)(*env)->CallStaticIntMethod(env, cls, mv);
+    extra_x = iupAndroid_PxToDp((int)(*env)->CallStaticIntMethod(env, cls, mh));
+    extra_y = iupAndroid_PxToDp((int)(*env)->CallStaticIntMethod(env, cls, mv));
     (*env)->DeleteLocalRef(env, cls);
   }
   else
   {
-    extra_x = iupAndroid_DpToPx(32.0f);
+    extra_x = 32;
     extra_y = 0;  /* any slack shows a partial next row */
   }
   if (x) *x += extra_x;
   if (y) *y += extra_y;
 
-  /* core uses maximg_w in raw px; images render scaled to row height and need slack for the gap */
+  /* images render scaled to row height and need slack for the gap */
   if (x && ih->data->show_image && (ih->data->maximg_h > 0 || iupAttribGetBoolean(ih, "DROPTARGET")))
   {
     JNIEnv* env2 = iupAndroid_GetEnvThreadSafe();
     jclass cls2 = IUPJNI_FindClass(IupListHelper, env2, "io/github/gen2brain/iupgo/IupListHelper");
     jmethodID mh = (*env2)->GetStaticMethodID(env2, cls2, "getRowImageHeightPx", "()I");
     jmethodID mp = (*env2)->GetStaticMethodID(env2, cls2, "getRowIconPaddingPx", "()I");
-    int target_h = (int)(*env2)->CallStaticIntMethod(env2, cls2, mh);
-    int icon_pad = (int)(*env2)->CallStaticIntMethod(env2, cls2, mp);
+    int target_h = iupAndroid_PxToDp((int)(*env2)->CallStaticIntMethod(env2, cls2, mh));
+    int icon_pad = iupAndroid_PxToDp((int)(*env2)->CallStaticIntMethod(env2, cls2, mp));
     (*env2)->DeleteLocalRef(env2, cls2);
     int rendered_w = (ih->data->maximg_h > 0)
       ? (ih->data->fit_image ? ih->data->maximg_w * target_h / ih->data->maximg_h : ih->data->maximg_w)
       : target_h;
     int delta = rendered_w - ih->data->maximg_w;
     if (delta < 0) delta = 0;
-    *x += delta + icon_pad + iupAndroid_DpToPx(8.0f);
+    *x += delta + icon_pad + 8;
   }
 
   /* EDITBOX non-dropdown: VISIBLELINES counts the entry; swap one row for it. */
@@ -583,7 +583,7 @@ static int androidListConvertXYToPos(Ihandle* ih, int x, int y)
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupListHelper, jni_env, "io/github/gen2brain/iupgo/IupListHelper");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "pointToPosition", "(Landroid/view/View;II)I");
-  jint pos = (*jni_env)->CallStaticIntMethod(jni_env, java_class, method_id, ih->handle, (jint)x, (jint)y);
+  jint pos = (*jni_env)->CallStaticIntMethod(jni_env, java_class, method_id, ih->handle, (jint)iupAndroid_DpToPx(x), (jint)iupAndroid_DpToPx(y));
   iupAndroid_CheckException(jni_env, "IupListHelper.pointToPosition");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
   if (pos < 0) return -1;
@@ -740,11 +740,9 @@ static char* androidListGetReadOnlyAttrib(Ihandle* ih)
 static int androidListSetPaddingAttrib(Ihandle* ih, const char* value)
 {
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
-  ih->data->horiz_padding = iupdrvScaleNaturalPx(ih->data->horiz_padding);
-  ih->data->vert_padding  = iupdrvScaleNaturalPx(ih->data->vert_padding);
   if (!ih->handle || !ih->data->has_editbox) return 1;
   androidListCallVoidII(ih, "setEditPadding", "(Landroid/view/View;II)V",
-                        (jint)ih->data->horiz_padding, (jint)ih->data->vert_padding);
+                        (jint)iupAndroid_DpToPx(ih->data->horiz_padding), (jint)iupAndroid_DpToPx(ih->data->vert_padding));
   return 0;
 }
 

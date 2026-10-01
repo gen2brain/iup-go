@@ -15,7 +15,6 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
 #include "iup_stdcontrols.h"
@@ -869,7 +868,7 @@ static void iDropButtonComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int
   int fit2backimage = iupAttribGetBoolean(ih, "FITTOBACKIMAGE");
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
   if (fit2backimage && bgimage)
-    iupImageGetDrawInfo(bgimage, w, h, NULL);
+    iupImageGetInfo(bgimage, w, h, NULL);
   else
   {
     int visiblecolumns;
@@ -893,10 +892,6 @@ static void iDropButtonComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int
 
   *w += 2 * ih->data->border_width;
   *h += 2 * ih->data->border_width;
-
-  /* canvas-coord -> HW px (uses float density for HiDPI canvas drivers). */
-  *w = iupdrvScaleNaturalPx(*w);
-  *h = iupdrvScaleNaturalPx(*h);
 
   (void)children_expand; /* unset if not a container */
 }

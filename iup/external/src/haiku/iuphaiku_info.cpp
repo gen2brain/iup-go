@@ -33,11 +33,6 @@ extern "C" {
 }
 
 
-extern "C" IUP_SDK_API int iupdrvScaleNaturalPx(int px)
-{
-  return px;
-}
-
 extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
   (void)x;

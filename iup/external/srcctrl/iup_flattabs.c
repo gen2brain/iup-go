@@ -17,7 +17,6 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
 #include "iup_drvfont.h"
 #include "iup_layout.h"
 #include "iup_register.h"
@@ -2005,9 +2004,6 @@ static char* iFlatTabsGetClientSizeAttrib(Ihandle* ih)
   int tabType = iupAttribGetInt(ih, "_IUPTAB_TYPE");
 
   iFlatTabsGetTitleSize(ih, &title_width, &title_height, 0);
-  /* canvas-coord -> HW px. */
-  title_width  = iupdrvScaleNaturalPx(title_width);
-  title_height = iupdrvScaleNaturalPx(title_height);
 
   if (tabType == ITABS_TOP || tabType == ITABS_BOTTOM)
     height -= title_height;
@@ -2457,9 +2453,6 @@ static void iFlatTabsComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* 
   }
 
   iFlatTabsGetTitleSize(ih, &width, &height, 0);
-  /* canvas-coord -> HW px. */
-  width  = iupdrvScaleNaturalPx(width);
-  height = iupdrvScaleNaturalPx(height);
 
   *w = children_naturalwidth;
   *h = children_naturalheight;
@@ -2490,9 +2483,6 @@ static void iFlatTabsSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
   int width, height;
 
   iFlatTabsGetTitleSize(ih, &title_width, &title_height, 0);
-  /* canvas-coord -> HW px. */
-  title_width  = iupdrvScaleNaturalPx(title_width);
-  title_height = iupdrvScaleNaturalPx(title_height);
 
   width = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? ih->currentwidth : ih->currentwidth - title_width;
   height = (tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? ih->currentheight - title_height : ih->currentheight;
@@ -2535,9 +2525,6 @@ static void iFlatTabsSetChildrenPositionMethod(Ihandle* ih, int x, int y)
   if (offset) iupStrToIntInt(offset, &x, &y, 'x');
 
   iFlatTabsGetTitleSize(ih, &title_width, &title_height, 0);
-  /* canvas-coord -> HW px. */
-  title_width  = iupdrvScaleNaturalPx(title_width);
-  title_height = iupdrvScaleNaturalPx(title_height);
 
   if (tabType == ITABS_TOP)
     y += title_height;

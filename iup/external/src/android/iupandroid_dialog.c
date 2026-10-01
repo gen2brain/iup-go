@@ -17,6 +17,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_drvinfo.h"
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
 #include "iup_image.h"
@@ -27,10 +28,6 @@
 
 IUPJNI_DECLARE_CLASS_STATIC(IupActivity);
 IUPJNI_DECLARE_CLASS_STATIC(IupDialogHelper);
-
-/* Placeholder until the first Java layout pass reports the real size. */
-#define ANDROID_DEFAULT_DIALOG_WIDTH 1024
-#define ANDROID_DEFAULT_DIALOG_HEIGHT 1920
 
 static void androidDialogCallVoidWithString(Ihandle* ih, const char* method_name, const char* utf8)
 {
@@ -159,8 +156,13 @@ IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   (void)handle;
-  if (w) *w = ih ? ih->currentwidth : ANDROID_DEFAULT_DIALOG_WIDTH;
-  if (h) *h = ih ? ih->currentheight : ANDROID_DEFAULT_DIALOG_HEIGHT;
+  if (!ih)
+  {
+    iupdrvGetScreenSize(w, h);
+    return;
+  }
+  if (w) *w = ih->currentwidth;
+  if (h) *h = ih->currentheight;
 }
 
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
@@ -472,9 +474,6 @@ static int androidDialogMapMethod(Ihandle* ih)
   (*jni_env)->DeleteLocalRef(jni_env, view_group);
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
   (*jni_env)->DeleteLocalRef(jni_env, current_activity);
-
-  ih->currentwidth = ANDROID_DEFAULT_DIALOG_WIDTH;
-  ih->currentheight = ANDROID_DEFAULT_DIALOG_HEIGHT;
 
   return IUP_NOERROR;
 }

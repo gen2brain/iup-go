@@ -146,7 +146,6 @@ static int androidScrollbarMapMethod(Ihandle* ih)
 
 IUP_SDK_API void iupdrvScrollbarGetMinSize(Ihandle* ih, int* w, int* h)
 {
-  /* Logical px; parser scales to HW. */
   int thumb = 20;
   int len = 100;
   if (ih->data->orientation == ISCROLLBAR_HORIZONTAL)

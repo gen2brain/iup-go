@@ -14,7 +14,6 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
 #include "iup_register.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
@@ -168,8 +167,7 @@ static char* iFlatFrameGetDecorSizeAttrib(Ihandle* ih)
   }
 
   iFlatFrameGetTitleSize(ih, frame, &title_w, &title_h);
-  /* canvas-coord -> HW px. */
-  height += iupdrvScaleNaturalPx(title_h);
+  height += title_h;
 
   return iupStrReturnIntInt(width, height, 'x');
 }
@@ -191,7 +189,7 @@ static char* iFlatFrameGetDecorOffsetAttrib(Ihandle* ih)
   }
 
   iFlatFrameGetTitleSize(ih, frame, &title_w, &title_h);
-  dy += iupdrvScaleNaturalPx(title_h);
+  dy += title_h;
 
   return iupStrReturnIntInt(dx, dy, 'x');
 }

@@ -157,11 +157,6 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   }
 }
 
-IUP_SDK_API int iupdrvScaleNaturalPx(int px)
-{
-  return px;
-}
-
 static void cocoaGetCursorPos(int* x, int* y)
 {
   /* [NSEvent mouseLocation] origin is bottom-left of the primary screen. */

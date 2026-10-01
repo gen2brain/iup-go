@@ -197,9 +197,8 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 
 IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
 {
-  float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
-  if (w) *w = dc ? (int)ceilf((float)dc->w / d) : 0;
-  if (h) *h = dc ? (int)ceilf((float)dc->h / d) : 0;
+  if (w) *w = dc ? dc->w : 0;
+  if (h) *h = dc ? dc->h : 0;
 }
 
 static void androidDrawSetStroke(IdrawCanvas* dc, int style)
@@ -413,6 +412,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   if (font && font[0])
   {
     iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
+    if (size < 0) size = -iupAndroid_DpToPx(-size);
     family = iupFontGetAndroidName(typeface);
     if (!family) family = typeface;
   }
@@ -578,10 +578,7 @@ static int androidDrawReadBackBuffer(jobject canvas_view, unsigned char* data, i
 IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
   if (!dc || !dc->ih || !dc->ih->handle) return 0;
-  float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
-  int w = (int)ceilf((float)dc->w / d);
-  int h = (int)ceilf((float)dc->h / d);
-  return androidDrawReadBackBuffer((jobject)dc->ih->handle, data, w, h);
+  return androidDrawReadBackBuffer((jobject)dc->ih->handle, data, dc->w, dc->h);
 }
 
 IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)

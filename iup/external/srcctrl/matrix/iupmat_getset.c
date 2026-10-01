@@ -793,7 +793,6 @@ int iupMatrixGetColumnWidth(Ihandle* ih, int col, int use_value)
           if (title_value)
           {
             iupdrvFontGetMultiLineStringSize(ih, title_value, &width, NULL);
-            width = iupMatrixAuxCanvasPx(width);
             if (width > max_width)
               max_width = width;
           }
@@ -807,7 +806,6 @@ int iupMatrixGetColumnWidth(Ihandle* ih, int col, int use_value)
       if (title_value)
       {
         iupdrvFontGetMultiLineStringSize(ih, title_value, &width, NULL);
-        width = iupMatrixAuxCanvasPx(width);
       }
     }
     if (width)
@@ -835,7 +833,6 @@ int iupMatrixGetColumnWidth(Ihandle* ih, int col, int use_value)
       {
         int charwidth;
         iupdrvFontGetCharSize(ih, &charwidth, NULL);
-        charwidth = iupMatrixAuxCanvasPx(charwidth);
         result_width = iupWIDTH2RASTER(width, charwidth) + IMAT_PADDING_W + IMAT_FRAME_W;
         return result_width;
       }
@@ -874,7 +871,6 @@ int iupMatrixGetLineHeight(Ihandle* ih, int lin, int use_value)
           if (title_value && title_value[0])
           {
             iupdrvFontGetMultiLineStringSize(ih, title_value, NULL, &height);
-            height = iupMatrixAuxCanvasPx(height);
             if (height > max_height)
               max_height = height;
           }
@@ -893,7 +889,6 @@ int iupMatrixGetLineHeight(Ihandle* ih, int lin, int use_value)
         {
           int cell_height;
           iupdrvFontGetMultiLineStringSize(ih, cell_value, NULL, &cell_height);
-          cell_height = iupMatrixAuxCanvasPx(cell_height);
           if (cell_height > max_height)
             max_height = cell_height;
         }
@@ -919,7 +914,6 @@ int iupMatrixGetLineHeight(Ihandle* ih, int lin, int use_value)
       {
         int charheight;
         iupdrvFontGetCharSize(ih, NULL, &charheight);
-        charheight = iupMatrixAuxCanvasPx(charheight);
         return iupHEIGHT2RASTER(height, charheight) + IMAT_PADDING_H + IMAT_FRAME_H;
       }
     }
@@ -957,8 +951,6 @@ char* iupMatrixGetSize(Ihandle* ih, int index, int m, int pixels_unit)
     {
       int charwidth, charheight;
       iupdrvFontGetCharSize(ih, &charwidth, &charheight);
-      charwidth = iupMatrixAuxCanvasPx(charwidth);
-      charheight = iupMatrixAuxCanvasPx(charheight);
       if (m == IMAT_PROCESS_COL)
         size = iupRASTER2WIDTH(size, charwidth);
       else

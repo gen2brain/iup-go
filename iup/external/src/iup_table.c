@@ -605,7 +605,6 @@ static int iTableSetWidthIdAttrib(Ihandle* ih, int col, const char* value)
 {
   int width;
   char name[50];
-  char scaled_str[32];
 
   if (col < 1 || col > ih->data->num_col)
   {
@@ -620,11 +619,8 @@ static int iTableSetWidthIdAttrib(Ihandle* ih, int col, const char* value)
   if (width < 0)
     width = 0;
 
-  width = iupdrvScaleNaturalPx(width);        /* logical -> HW */
-  snprintf(scaled_str, sizeof(scaled_str), "%d", width);
-
   snprintf(name, sizeof(name), "WIDTH%d", col);
-  iupAttribSetStr(ih, name, scaled_str);
+  iupAttribSetStr(ih, name, value);
 
   if (ih->handle)
   {

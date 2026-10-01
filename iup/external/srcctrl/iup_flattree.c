@@ -436,7 +436,7 @@ static void iFlatTreeCalcNodeSize(Ihandle* ih, iFlatTreeNode* node, const char* 
   int txt_w = 0, txt_h = 0;
   char* image = iFlatTreeGetNodeImage(ih, node, 0);
 
-  iupImageGetDrawInfo(image, &img_w, &img_h, NULL);
+  iupImageGetInfo(image, &img_w, &img_h, NULL);
 
   iFlatTreeSetNodeDrawFont(ih, node, font);
 
@@ -1268,7 +1268,7 @@ static int iFlatTreeDrawNodes(Ihandle* ih, IdrawCanvas* dc, iFlatTreeNode* node,
       const char* back_color = (node->bg_color) ? node->bg_color : bg_color;
       const char* image = iFlatTreeGetNodeImage(ih, node, 1);
 
-      iupImageGetDrawInfo(image, &image_gap, NULL, NULL);
+      iupImageGetInfo(image, &image_gap, NULL, NULL);
       image_gap += ih->data->icon_spacing;
 
       /* toggle */
@@ -1493,7 +1493,7 @@ static void iFlatTreeGetTitlePos(Ihandle* ih, iFlatTreeNode* node, int* txt_x, i
   int img_h = 0;
   int img_w = 0;
 
-  iupImageGetDrawInfo(image, &img_w, &img_h, NULL);
+  iupImageGetInfo(image, &img_w, &img_h, NULL);
 
   *txt_x = -posx + border_width;
   *txt_y = -posy + border_width;
@@ -2147,7 +2147,7 @@ static int iFlatTreeButton_CB(Ihandle* ih, int button, int pressed, int x, int y
       toggle_gap = ih->data->toggle_size;
 
     image = iFlatTreeGetNodeImage(ih, node, 1);
-    iupImageGetDrawInfo(image, &img_w, NULL, NULL);
+    iupImageGetInfo(image, &img_w, NULL, NULL);
 
     xmin = node_x + toggle_gap;
     xmax = xmin + img_w + ih->data->icon_spacing + node->title_width;

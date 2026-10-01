@@ -20,12 +20,6 @@
 #include "iupmat_numlc.h"
 
 
-int iupMatrixAuxCanvasPx(int hw)
-{
-  return iupControlBaseCanvasPx(hw);
-}
-
-
 int iupMatrixAuxIsFullVisibleLast(ImatLinColData* p)
 {
   int i, sum = 0;

@@ -52,10 +52,12 @@ IUP_SDK_API void iupAndroid_DialogActivityCreated(Ihandle* ih);
 
 IUP_SDK_API float iupAndroid_GetDisplayDensity(void);
 
-IUP_SDK_API int   iupAndroid_DpToPx(float dp);
-IUP_SDK_API float iupAndroid_PxToDp(int px);
+IUP_SDK_API int   iupAndroid_DpToPx(int dp);
+IUP_SDK_API int   iupAndroid_PxToDp(float px);
+IUP_SDK_API int   iupAndroid_PxToDpRound(float px);
+IUP_SDK_API void  iupAndroid_DpToPxRect(int x, int y, int w, int h, int* px_x, int* px_y, int* px_w, int* px_h);
 
-/* empty MaterialButton overhead in px, cached */
+/* empty MaterialButton overhead in dp, cached */
 IUP_SDK_API void  iupAndroid_GetButtonBorderSize(int* w, int* h);
 
 IUP_SDK_API void  iupAndroid_ScrollbarDispatch(Ihandle* ih, int op, double value);

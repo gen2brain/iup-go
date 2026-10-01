@@ -25,7 +25,7 @@ IUPJNI_DECLARE_CLASS_STATIC(IupValHelper);
 
 IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
-  /* Logical px; parser scales to HW. 48dp thumb halo (cross axis), 200dp touch-friendly major. */
+  /* 48dp thumb halo (cross axis), 200dp touch-friendly major. */
   if (ih->data->orientation == IVAL_HORIZONTAL)
   {
     if (w) *w = 200;
