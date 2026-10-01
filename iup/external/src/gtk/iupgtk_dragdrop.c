@@ -175,6 +175,7 @@ static void gtkDragEnd(GtkWidget* widget, GdkDragContext* drag_context, Ihandle*
 {
   IFni cbDrag = (IFni)IupGetCallback(ih, "DRAGEND_CB");
 
+  iupAttribSet(ih, "_IUPGTK_DRAG_PRESS", NULL);
   gtk_drag_source_move = 0;
   if(cbDrag)
   {
@@ -198,6 +199,18 @@ static void gtkDragEnd(GtkWidget* widget, GdkDragContext* drag_context, Ihandle*
   (void)widget;
 }
 
+static gboolean gtkDragButtonPress(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
+{
+  if (evt->type == GDK_BUTTON_PRESS && evt->button == 1)
+  {
+    iupAttribSetInt(ih, "_IUPGTK_DRAG_PRESS_X", (int)evt->x_root);
+    iupAttribSetInt(ih, "_IUPGTK_DRAG_PRESS_Y", (int)evt->y_root);
+    iupAttribSet(ih, "_IUPGTK_DRAG_PRESS", "1");
+  }
+  (void)widget;
+  return FALSE;
+}
+
 static void gtkDragBegin(GtkWidget* widget, GdkDragContext* drag_context, Ihandle* ih)
 {
   char* value;
@@ -208,8 +221,19 @@ static void gtkDragBegin(GtkWidget* widget, GdkDragContext* drag_context, Ihandl
 
   if(cbDragBegin)
   {
-    int x, y;  /* the returned position is not exactly the start position. */
-    iupgtkWindowGetPointer(iupgtkGetWindow(ih->handle), &x, &y, NULL);
+    int x, y;
+    GdkWindow* window = iupgtkGetWindow(ih->handle);
+
+    /* GTK starts the drag after the pointer passes the threshold, report where the button went down */
+    if (iupAttribGet(ih, "_IUPGTK_DRAG_PRESS"))
+    {
+      int ox, oy;
+      gdk_window_get_origin(window, &ox, &oy);
+      x = iupAttribGetInt(ih, "_IUPGTK_DRAG_PRESS_X") - ox;
+      y = iupAttribGetInt(ih, "_IUPGTK_DRAG_PRESS_Y") - oy;
+    }
+    else
+      iupgtkWindowGetPointer(window, &x, &y, NULL);
 
     if (cbDragBegin(ih, x, y) == IUP_IGNORE)
       gdk_drag_abort(drag_context, 0);
@@ -294,6 +318,10 @@ static int gtkSetDropTargetAttrib(Ihandle* ih, const char* value)
     widget = gtkDragDropWidget(ih);
     drop_types_entry = gtk_target_table_new_from_list(targetlist, &targetlist_count);
 
+    /* SHOWDRAGDROP rows would request the dropped data a second time */
+    if (GTK_IS_TREE_VIEW(widget))
+      gtk_tree_view_unset_rows_drag_dest(GTK_TREE_VIEW(widget));
+
     gtk_drag_dest_set(widget, GTK_DEST_DEFAULT_ALL, drop_types_entry, targetlist_count, GDK_ACTION_MOVE|GDK_ACTION_COPY);
 
     g_signal_connect(widget, "drag_motion", G_CALLBACK(gtkDragMotion), ih);
@@ -339,9 +367,13 @@ static int gtkSetDragSourceAttrib(Ihandle* ih, const char* value)
     widget = gtkDragDropWidget(ih);
     drag_types_entry = gtk_target_table_new_from_list(targetlist, &targetlist_count);
 
+    if (GTK_IS_TREE_VIEW(widget))
+      gtk_tree_view_unset_rows_drag_source(GTK_TREE_VIEW(widget));
+
     gtk_drag_source_set(widget, GDK_BUTTON1_MASK, drag_types_entry, targetlist_count,
                         iupAttribGetBoolean(ih, "DRAGSOURCEMOVE")? GDK_ACTION_MOVE|GDK_ACTION_COPY: GDK_ACTION_COPY);
 
+    g_signal_connect(widget, "button-press-event", G_CALLBACK(gtkDragButtonPress), ih);
     g_signal_connect(widget, "drag_begin", G_CALLBACK(gtkDragBegin), ih);
     g_signal_connect(widget, "drag_data_get", G_CALLBACK(gtkDragDataGet), ih);
     g_signal_connect(widget, "drag_end", G_CALLBACK(gtkDragEnd), ih);

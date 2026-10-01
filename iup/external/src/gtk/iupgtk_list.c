@@ -1568,6 +1568,13 @@ static void gtkListDragDataReceived(GtkWidget* widget, GdkDragContext* context, 
   GtkTreePath* drop_path = NULL;
   GtkTreeViewDropPosition drop_pos;
 
+  /* DRAGSOURCE/DROPTARGET data is handled by the generic drag and drop */
+  if (gtk_selection_data_get_target(selection_data) != gdk_atom_intern_static_string("IUP_LIST_TARGET") || idDrag < 1)
+  {
+    iupAttribSet(ih, "_IUPLIST_DRAGITEM", NULL);
+    return;
+  }
+
   /* match the indicator: BEFORE keeps the hit row, AFTER lands past it. */
   if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(ih->handle), x, y, &drop_path, &drop_pos))
   {
@@ -1636,7 +1643,6 @@ static void gtkListDragDataReceived(GtkWidget* widget, GdkDragContext* context, 
   (void)info;
   (void)context;
   (void)time;
-  (void)selection_data;
 }
 
 static gboolean gtkListDragMotion(GtkWidget* widget, GdkDragContext* context, gint x, gint y, guint time, Ihandle* ih)
