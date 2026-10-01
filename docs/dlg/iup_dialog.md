@@ -314,8 +314,8 @@ Possible values: NORMAL, PAUSED, ERROR, INDETERMINATE, NOPROGRESS. Default: NORM
 **TASKBARBUTTON**: If set to SHOW force the application button to be shown on the taskbar even if the dialog does not have decorations.
 If set to HIDE force the application button to be hidden from the taskbar.
 In Win32 and WinUI HIDE also hides the system menu, the maximize and minimize buttons.
-In GTK, GTK 4, Qt, Motif, EFL and FLTK it requires X11; in Qt it needs Qt 6.2 or newer.
-Not supported in macOS, Haiku, Android, iOS, WebAssembly and QML.
+In GTK, GTK 4, Qt, QML, Motif, EFL and FLTK it requires X11; in Qt it needs Qt 6.2 or newer.
+Not supported in macOS, Haiku, Android, iOS and WebAssembly.
 
 #### Exclusive [Haiku Only]
 
