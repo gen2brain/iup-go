@@ -994,17 +994,16 @@ public final class IupTreeHelper
         AlertDialog dlg = new AlertDialog.Builder(activity)
             .setTitle("Rename")
             .setView(input)
-            .setPositiveButton(android.R.string.ok, (d, which) -> {
-                String newTitle = input.getText().toString();
-                int rejected = dispatchRename(t.ihandlePtr, id, newTitle);
-                if (rejected == 0)
-                {
-                    n.title = newTitle;
-                    notifyNodeChanged(t, n);
-                }
-            })
+            .setPositiveButton(android.R.string.ok, null)
             .setNegativeButton(android.R.string.cancel, null)
             .create();
+        dlg.setOnShowListener(d -> dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(b -> {
+            String newTitle = input.getText().toString();
+            if (dispatchRename(t.ihandlePtr, id, newTitle) != 0) return;
+            n.title = newTitle;
+            notifyNodeChanged(t, n);
+            dlg.dismiss();
+        }));
         dlg.show();
         input.requestFocus();
     }

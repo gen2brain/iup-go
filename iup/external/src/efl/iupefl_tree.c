@@ -577,7 +577,7 @@ static void eflTreeRenameActivatedCallback(void* data, Evas_Object* obj, void* e
   if (!iupObjectCheck(ih))
     return;
 
-  eflTreeEndRenameEdit(ih, 1);
+  eflTreeEndRenameEdit(ih, 2);
 }
 
 static void eflTreeRenameAbortedCallback(void* data, Evas_Object* obj, void* event_info)
@@ -762,8 +762,23 @@ static void eflTreeEndRenameEdit(Ihandle* ih, int apply)
   if (apply && new_text && (!original_title || strcmp(new_text, original_title) != 0))
   {
     IFnis cbRename = (IFnis)IupGetCallback(ih, "RENAME_CB");
-    if (cbRename && cbRename(ih, id, new_text) == IUP_IGNORE)
+    int ret = cbRename ? cbRename(ih, id, new_text) : IUP_DEFAULT;
+    if (!iupObjectCheck(ih))
     {
+      free(new_text);
+      return;
+    }
+    if (ret == IUP_IGNORE)
+    {
+      if (apply == 2)
+      {
+        free(new_text);
+        evas_object_smart_callback_add(entry, "activated", eflTreeRenameActivatedCallback, ih);
+        evas_object_smart_callback_add(entry, "aborted", eflTreeRenameAbortedCallback, ih);
+        evas_object_smart_callback_add(entry, "unfocused", eflTreeRenameFocusOutCallback, ih);
+        return;
+      }
+
       if (node->title)
         free(node->title);
       node->title = original_title ? strdup(original_title) : NULL;

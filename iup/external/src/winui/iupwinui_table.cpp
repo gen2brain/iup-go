@@ -361,6 +361,48 @@ static TextAlignment winuiTableGetColumnAlignment(Ihandle* ih, int col)
  * Row and Header Creation
  ****************************************************************************/
 
+/****************************************************************************
+ * Cell Click Detection
+ ****************************************************************************/
+
+static void winuiTableGetCellFromPoint(Ihandle* ih, DependencyObject source, int* out_lin, int* out_col)
+{
+  *out_lin = 0;
+  *out_col = 0;
+
+  ListView listView = winuiTableGetListView(ih);
+  if (!listView)
+    return;
+
+  int col = -1;
+  DependencyObject current = source;
+
+  while (current)
+  {
+    auto border = current.try_as<Border>();
+    if (border && col < 0)
+    {
+      auto parent = VisualTreeHelper::GetParent(border);
+      if (parent && parent.try_as<Grid>())
+        col = Grid::GetColumn(border);
+    }
+
+    auto lvi = current.try_as<ListViewItem>();
+    if (lvi)
+    {
+      int row = listView.IndexFromContainer(lvi);
+      if (row >= 0 && col >= 0)
+      {
+        *out_lin = row + 1;
+        *out_col = col + 1;
+      }
+      return;
+    }
+
+    current = VisualTreeHelper::GetParent(current);
+  }
+}
+
 static Grid winuiTableCreateRowGrid(Ihandle* ih, int num_col, bool show_grid)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
@@ -419,6 +461,52 @@ static Grid winuiTableCreateRowGrid(Ihandle* ih, int num_col, bool show_grid)
 
     grid.Children().Append(border);
   }
+
+  grid.PointerPressed([ih](IInspectable const&, PointerRoutedEventArgs const& args) {
+    IupWinUITableAux* a = winuiTableGetAux(ih);
+    if (!a)
+      return;
+
+    a->click_ignored = false;
+    auto click_cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "CLICK_CB"));
+    auto source = args.OriginalSource().try_as<DependencyObject>();
+    if (!click_cb || !source)
+      return;
+
+    int lin = 0, col = 0;
+    winuiTableGetCellFromPoint(ih, source, &lin, &col);
+    if (lin <= 0 || col <= 0)
+      return;
+
+    auto props = args.GetCurrentPoint(nullptr).Properties();
+    int keys = iupwinuiGetModifierKeys();
+    if (props.IsLeftButtonPressed()) keys |= MK_LBUTTON;
+    if (props.IsMiddleButtonPressed()) keys |= MK_MBUTTON;
+    if (props.IsRightButtonPressed()) keys |= MK_RBUTTON;
+
+    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+    iupwinuiButtonKeySetStatus(keys, 0, status, 0);
+
+    int ret = click_cb(ih, lin, col, status);
+    if (!iupObjectCheck(ih))
+    {
+      args.Handled(true);
+      return;
+    }
+    if (ret == IUP_CLOSE)
+      IupExitLoop();
+    else if (ret == IUP_IGNORE)
+    {
+      a->click_ignored = true;
+      args.Handled(true);
+    }
+  });
+
+  grid.PointerReleased([ih](IInspectable const&, PointerRoutedEventArgs const& args) {
+    IupWinUITableAux* a = winuiTableGetAux(ih);
+    if (a && a->click_ignored)
+      args.Handled(true);
+  });
 
   return grid;
 }
@@ -1528,48 +1616,6 @@ static int winuiTableSetUserResizeAttrib(Ihandle* ih, const char* value)
     ih->data->user_resize = 0;
 
   return 0;
-}
-
-/****************************************************************************
- * Cell Click Detection
- ****************************************************************************/
-
-static void winuiTableGetCellFromPoint(Ihandle* ih, DependencyObject source, int* out_lin, int* out_col)
-{
-  *out_lin = 0;
-  *out_col = 0;
-
-  ListView listView = winuiTableGetListView(ih);
-  if (!listView)
-    return;
-
-  int col = -1;
-  DependencyObject current = source;
-
-  while (current)
-  {
-    auto border = current.try_as<Border>();
-    if (border && col < 0)
-    {
-      auto parent = VisualTreeHelper::GetParent(border);
-      if (parent && parent.try_as<Grid>())
-        col = Grid::GetColumn(border);
-    }
-
-    auto lvi = current.try_as<ListViewItem>();
-    if (lvi)
-    {
-      int row = listView.IndexFromContainer(lvi);
-      if (row >= 0 && col >= 0)
-      {
-        *out_lin = row + 1;
-        *out_col = col + 1;
-      }
-      return;
-    }
-
-    current = VisualTreeHelper::GetParent(current);
-  }
 }
 
 /****************************************************************************
@@ -3363,6 +3409,9 @@ static int winuiTableMapMethod(Ihandle* ih)
   });
 
   aux->doubleTappedToken = listView.DoubleTapped([ih](IInspectable const&, DoubleTappedRoutedEventArgs const& args) {
+    IupWinUITableAux* a = winuiTableGetAux(ih);
+    if (a && a->click_ignored) return;
+
     auto source = args.OriginalSource().try_as<DependencyObject>();
     if (!source) return;
 
@@ -3378,7 +3427,7 @@ static int winuiTableMapMethod(Ihandle* ih)
 
   listView.Tapped([ih](IInspectable const&, TappedRoutedEventArgs const& args) {
     IupWinUITableAux* a = winuiTableGetAux(ih);
-    if (!a) return;
+    if (!a || a->click_ignored) return;
 
     auto source = args.OriginalSource().try_as<DependencyObject>();
     if (!source) return;
@@ -3404,17 +3453,13 @@ static int winuiTableMapMethod(Ihandle* ih)
         a->current_col = col;
         winuiTableSetFocusVisual(ih, lin, col);
       }
-
-      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys() | MK_LBUTTON, 0, status, 0);
-
-      auto click_cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "CLICK_CB"));
-      if (click_cb)
-        click_cb(ih, lin, col, status);
     }
   });
 
   aux->rightTappedToken = listView.RightTapped([ih](IInspectable const&, RightTappedRoutedEventArgs const& args) {
+    IupWinUITableAux* ra = winuiTableGetAux(ih);
+    if (ra && ra->click_ignored) return;
+
     auto source = args.OriginalSource().try_as<DependencyObject>();
     if (!source) return;
 
@@ -3449,13 +3494,6 @@ static int winuiTableMapMethod(Ihandle* ih)
         }
       }
 
-      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys() | MK_RBUTTON, 0, status, 0);
-
-      auto click_cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "CLICK_CB"));
-      if (click_cb)
-        click_cb(ih, lin, col, status);
-
       auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RIGHTCLICK_CB"));
       if (cb)
         cb(ih, lin, col);
@@ -3463,7 +3501,8 @@ static int winuiTableMapMethod(Ihandle* ih)
   });
 
   listView.AddHandler(UIElement::PointerPressedEvent(), winrt::box_value(PointerEventHandler([ih](IInspectable const&, PointerRoutedEventArgs const& args) {
-    if (!iupTableCellsMode(ih) || !args.GetCurrentPoint(nullptr).Properties().IsLeftButtonPressed())
+    IupWinUITableAux* pa = winuiTableGetAux(ih);
+    if ((pa && pa->click_ignored) || !iupTableCellsMode(ih) || !args.GetCurrentPoint(nullptr).Properties().IsLeftButtonPressed())
       return;
 
     auto source = args.OriginalSource().try_as<DependencyObject>();

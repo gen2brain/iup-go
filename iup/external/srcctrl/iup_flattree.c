@@ -1571,25 +1571,30 @@ static int iFlatTreeTextEditKEsc_CB(Ihandle* text)
 
 static void iFlatTreeRedraw(Ihandle* ih, int calc_size, int update_scrollbar);
 
-static int iFlatTreeTextEditKCR_CB(Ihandle* text)
+static void iFlatTreeTextEditEnd(Ihandle* text, int from_enter)
 {
   Ihandle* ih = text->parent;
   iFlatTreeNode* nodeFocus = iFlatTreeGetNode(ih, ih->data->focus_id);
   if (nodeFocus)
   {
     char* new_title = IupGetAttribute(text, "VALUE");
+    int ignore = 0;
 
     IFnis cbRename = (IFnis)IupGetCallback(ih, "RENAME_CB");
-    if (cbRename)
+    if (cbRename && cbRename(ih, nodeFocus->id, new_title) == IUP_IGNORE)
     {
-      if (cbRename(ih, nodeFocus->id, new_title) == IUP_IGNORE)
-        return IUP_IGNORE;
+      if (from_enter)
+        return;
+      ignore = 1;
     }
 
-    if (nodeFocus->title)
-      free(nodeFocus->title);
+    if (!ignore)
+    {
+      if (nodeFocus->title)
+        free(nodeFocus->title);
 
-    nodeFocus->title = iupStrDup(new_title);
+      nodeFocus->title = iupStrDup(new_title);
+    }
 
     IupSetAttribute(text, "VISIBLE", "NO");
     IupSetAttribute(text, "ACTIVE", "NO");
@@ -1597,14 +1602,18 @@ static int iFlatTreeTextEditKCR_CB(Ihandle* text)
     iFlatTreeUpdateNodeSize(ih, nodeFocus);
     iFlatTreeRedraw(ih, 0, 1);
   }
+}
 
+static int iFlatTreeTextEditKCR_CB(Ihandle* text)
+{
+  iFlatTreeTextEditEnd(text, 1);
   return IUP_IGNORE;  /* always ignore to avoid the defaultenter/defaultesc behavior from here */
 }
 
 static int iFlatTreeTextEditKILLFOCUS_CB(Ihandle* text)
 {
   if (IupGetInt(text, "VISIBLE"))
-    iFlatTreeTextEditKCR_CB(text);
+    iFlatTreeTextEditEnd(text, 0);
   return IUP_DEFAULT;
 }
 
@@ -2395,7 +2404,7 @@ static int iFlatTreeScroll_CB(Ihandle* ih, int action, float posx, float posy)
   }
 
   if (IupGetInt(text, "VISIBLE"))
-    iFlatTreeTextEditKCR_CB(text);
+    iFlatTreeTextEditEnd(text, 0);
 
   iupdrvRedrawNow(ih);  /* so FLATSCROLLBAR can also work */
 

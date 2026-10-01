@@ -2091,7 +2091,7 @@
         // EDITBEGIN_CB can veto, so the model opens the editor through 'tableeditopen'
         ttable.addEventListener('dblclick', function (e) {
           var td = e.target.closest('td'); if (!td || td.__iupEditing) return;
-          D('iupwasmTableEditBegin', tcid, +td.dataset.lin, +td.dataset.col);
+          D('iupwasmTableCellDblClick', tcid, +td.dataset.lin, +td.dataset.col);
         });
       } break;
       case 'tablefeatures': {
@@ -2250,7 +2250,7 @@
       case 'tablestripe': {
         if (el) {
           var tsrows = el.__iupBody.children;
-          for (var i = 0; i < tsrows.length; i++) { var tsbg = c.alt ? ((i % 2) ? c.odd : c.even) : ''; tsrows[i].__iupStripeBg = tsbg; if (!tsrows[i].__iupSelected) tsrows[i].style.background = tsbg; }
+          for (var i = 0; i < tsrows.length; i++) { var tsbg = c.alt ? ((i % 2) ? c.even : c.odd) : ''; tsrows[i].__iupStripeBg = tsbg; if (!tsrows[i].__iupSelected) tsrows[i].style.background = tsbg; }
           el.__iupEven = c.even; el.__iupOdd = c.odd; el.__iupAlt = c.alt;
         }
       } break;
@@ -2298,7 +2298,7 @@
           tvctd.style.background = c.bg; tvctd.style.color = c.fg; tvctd.style.font = c.font; tvctd.dataset.lin = c.lin; tvctd.dataset.col = c.col + 1; if (el.__iupAligns && el.__iupAligns[c.col + 1]) tvctd.style.textAlign = el.__iupAligns[c.col + 1]; } } }
       } break;
       case 'tablevstripe': {
-        if (el) { var tvstr = el.__iupVRows[c.rowIdx]; if (tvstr) tvstr.style.background = el.__iupAlt ? (((c.lin - 1) % 2) ? el.__iupOdd : el.__iupEven) : ''; }
+        if (el) { var tvstr = el.__iupVRows[c.rowIdx]; if (tvstr) tvstr.style.background = el.__iupAlt ? ((c.lin % 2) ? el.__iupOdd : el.__iupEven) : ''; }
       } break;
       case 'tablefocus': {
         if (el) {
@@ -3059,19 +3059,19 @@
           var treeId = c.id, rowId = c.rowId;
           var rttl = tr.__iupTitleEl, old = rttl.textContent;
           var inp = document.createElement('input');
-          inp.value = old; inp.style.font = 'inherit'; inp.style.width = '10em';
+          inp.value = (c.text !== undefined) ? c.text : old; inp.style.font = 'inherit'; inp.style.width = '10em';
           rttl.textContent = ''; rttl.appendChild(inp);
           inp.focus(); inp.select();
-          var done = 0;
+          var done = 0, viaEnter = 0;
           // RENAME_CB can veto, so the model writes the final title back through 'treesettitle'
           var commit = function () {
             if (done) return; done = 1;
             rttl.textContent = inp.value;
-            Dt('iupwasmTreeRenameEnd', ['number', 'number', 'string'], [treeId, rowId, inp.value]);
+            Dt('iupwasmTreeRenameEnd', ['number', 'number', 'string', 'number'], [treeId, rowId, inp.value, viaEnter]);
           };
           inp.addEventListener('blur', commit);
           inp.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+            if (e.key === 'Enter') { e.preventDefault(); viaEnter = 1; inp.blur(); }
             else if (e.key === 'Escape') { done = 1; rttl.textContent = old; }
             e.stopPropagation();
           });

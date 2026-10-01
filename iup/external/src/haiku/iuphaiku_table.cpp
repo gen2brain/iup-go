@@ -1139,6 +1139,9 @@ public:
           tgt->Name() && strcmp(tgt->Name(), "title_view") == 0)
         return B_SKIP_MESSAGE;
 
+      if (moved_buttons && fClickIgnored)
+        return B_SKIP_MESSAGE;
+
       if ((moved_buttons & B_PRIMARY_MOUSE_BUTTON) && iupTableCellsMode(fTv->GetIhandle()))
       {
         BPoint where;
@@ -1232,6 +1235,25 @@ public:
     msg->FindInt32("buttons", &buttons);
     msg->FindInt32("modifiers", &mods);
 
+    int click_lin, click_col;
+    auto click_cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "CLICK_CB"));
+    fClickIgnored = false;
+    if (click_cb && col && HitCell(tgt, where, &click_lin, &click_col))
+    {
+      char status[11];
+      haikuTableFillStatus(msg, status);
+      int ret = click_cb(ih, click_lin, click_col, status);
+      if (!iupObjectCheck(ih))
+        return B_SKIP_MESSAGE;
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+      else if (ret == IUP_IGNORE)
+      {
+        fClickIgnored = true;
+        return B_SKIP_MESSAGE;
+      }
+    }
+
     if (col && (buttons & B_PRIMARY_MOUSE_BUTTON) && (mods & B_SHIFT_KEY) && iupTableCellsMode(ih))
     {
       int lin, c;
@@ -1280,14 +1302,6 @@ public:
           outline->Invalidate();
         }
 
-        auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "CLICK_CB"));
-        if (cb)
-        {
-          char status[11];
-          haikuTableFillStatus(msg, status);
-          cb(ih, hit_lin, col->LogicalFieldNum() + 1, status);
-        }
-
         if (buttons & B_SECONDARY_MOUSE_BUTTON)
         {
           auto rcb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RIGHTCLICK_CB"));
@@ -1303,6 +1317,7 @@ public:
 
 private:
   IupHaikuTableView* fTv;
+  bool fClickIgnored = false;
 };
 
 

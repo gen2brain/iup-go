@@ -1759,6 +1759,24 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
   if (lin == 0)
     return;
 
+  cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+  if (cb)
+  {
+    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+    Evas* evas = evas_object_evas_get(iupeflGetWidget(ih));
+    int ret;
+
+    iupeflButtonKeySetStatus(evas ? (Evas_Modifier*)evas_key_modifier_get(evas) : NULL,
+                             efl_input_pointer_button_get(pointer), status, is_double_click);
+    ret = cb(ih, lin, col, status);
+    if (!iupObjectCheck(ih))
+      return;
+    if (ret == IUP_CLOSE)
+      IupExitLoop();
+    else if (ret == IUP_IGNORE)
+      return;
+  }
+
   if (ih->data->show_dragdrop && !table_data->is_virtual)
   {
     Eina_Position2D pos = efl_input_pointer_position_get(pointer);
@@ -1860,25 +1878,11 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
   {
     eflTableStartCellEdit(ih, lin, col);
   }
-  else
+  else if (efl_input_pointer_button_get(pointer) == 3)
   {
-    cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
-    if (cb)
-    {
-      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      Evas* evas = evas_object_evas_get(iupeflGetWidget(ih));
-
-      iupeflButtonKeySetStatus(evas ? (Evas_Modifier*)evas_key_modifier_get(evas) : NULL,
-                               efl_input_pointer_button_get(pointer), status, is_double_click);
-      cb(ih, lin, col, status);
-    }
-
-    if (efl_input_pointer_button_get(pointer) == 3)
-    {
-      IFnii rcb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
-      if (rcb)
-        rcb(ih, lin, col);
-    }
+    IFnii rcb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+    if (rcb)
+      rcb(ih, lin, col);
   }
 
   iupTableCallMultiSelectionCb(ih);

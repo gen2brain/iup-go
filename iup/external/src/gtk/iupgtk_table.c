@@ -663,6 +663,7 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
   if (evt->type == GDK_BUTTON_PRESS)
   {
     IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+    iupAttribSet(ih, "_IUPGTK_TABLE_CLICK_IGNORED", NULL);
     if (cb)
     {
       GList* columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(widget));
@@ -674,8 +675,23 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupgtkButtonKeySetStatus(evt->state, evt->button, status, 0);
 
-      cb(ih, lin, col_index, status);
+      int ret = cb(ih, lin, col_index, status);
+      if (!iupObjectCheck(ih))
+      {
+        gtk_tree_path_free(path);
+        return TRUE;
+      }
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+      else if (ret == IUP_IGNORE)
+        iupAttribSet(ih, "_IUPGTK_TABLE_CLICK_IGNORED", "1");
     }
+  }
+
+  if (iupAttribGet(ih, "_IUPGTK_TABLE_CLICK_IGNORED"))
+  {
+    gtk_tree_path_free(path);
+    return TRUE;
   }
 
   if (evt->button == 1 && evt->type == GDK_BUTTON_PRESS && (evt->state & GDK_SHIFT_MASK) && iupTableCellsMode(ih))

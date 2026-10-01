@@ -138,8 +138,17 @@ static void fltkTreeEndRenameEdit(Ihandle* ih, int apply)
     auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "RENAME_CB"));
     if (cb)
     {
-      if (cb(ih, id, const_cast<char*>(new_text)) != IUP_IGNORE)
+      int ret = cb(ih, id, const_cast<char*>(new_text));
+      if (!iupObjectCheck(ih))
+        return;
+      if (ret != IUP_IGNORE)
         item->label(new_text);
+      else if (apply == 2)
+      {
+        iupAttribSet(ih, "_IUPFLTK_RENAME_EDIT", reinterpret_cast<char*>(edit));
+        iupAttribSet(ih, "_IUPFLTK_RENAME_ITEM", reinterpret_cast<char*>(item));
+        return;
+      }
     }
     else
       item->label(new_text);
@@ -179,7 +188,7 @@ public:
       {
         if (active)
         {
-          fltkTreeEndRenameEdit(iup_handle, 1);
+          fltkTreeEndRenameEdit(iup_handle, 2);
           return 1;
         }
       }

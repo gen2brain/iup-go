@@ -1540,7 +1540,7 @@ static bool winuiTreeFindTitleControls(DependencyObject const& parent, Panel& ou
   return false;
 }
 
-static void winuiTreeFinishRenameEditing(Ihandle* ih, TextBox const& editBox, bool commit)
+static void winuiTreeFinishRenameEditing(Ihandle* ih, TextBox const& editBox, int commit)
 {
   int id = iupAttribGetInt(ih, "_IUPWINUI_TREE_RENAME_ID");
 
@@ -1554,6 +1554,8 @@ static void winuiTreeFinishRenameEditing(Ihandle* ih, TextBox const& editBox, bo
     {
       if (cbRename(ih, id, newTitle) != IUP_IGNORE)
         IupSetAttributeId(ih, "TITLE", id, newTitle);
+      else if (commit == 2)
+        return;
     }
     else
       IupSetAttributeId(ih, "TITLE", id, newTitle);
@@ -1647,19 +1649,19 @@ static int winuiTreeSetRenameAttrib(Ihandle* ih, const char* value)
   editBox.KeyDown([ih, editBox](IInspectable const&, KeyRoutedEventArgs const& args) {
     if (args.Key() == Windows::System::VirtualKey::Enter)
     {
-      winuiTreeFinishRenameEditing(ih, editBox, true);
+      winuiTreeFinishRenameEditing(ih, editBox, 2);
       args.Handled(true);
     }
     else if (args.Key() == Windows::System::VirtualKey::Escape)
     {
-      winuiTreeFinishRenameEditing(ih, editBox, false);
+      winuiTreeFinishRenameEditing(ih, editBox, 0);
       args.Handled(true);
     }
   });
 
   editBox.LostFocus([ih, editBox](IInspectable const&, RoutedEventArgs const&) {
     if (iupAttribGet(ih, "_IUPWINUI_TREE_RENAME_ID"))
-      winuiTreeFinishRenameEditing(ih, editBox, true);
+      winuiTreeFinishRenameEditing(ih, editBox, 1);
   });
 
   (void)value;

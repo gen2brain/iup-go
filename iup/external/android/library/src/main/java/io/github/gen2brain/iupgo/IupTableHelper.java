@@ -421,29 +421,30 @@ public final class IupTableHelper
 
     static void handleCellTap(IupTableView t, int lin, int col)
     {
-        int oldLin = t.focusLin, oldCol = t.focusCol;
-        boolean changed = (oldLin != lin || oldCol != col);
-
-        t.focusLin = lin;
-        t.focusCol = col;
-
-        if ("MULTIPLE".equalsIgnoreCase(t.selectionMode))
-        {
-            if (!t.selectedLins.remove(Integer.valueOf(lin)))
-                t.selectedLins.add(lin);
-        }
-        else if (!"NONE".equalsIgnoreCase(t.selectionMode) && !"CELLS".equalsIgnoreCase(t.selectionMode))
-        {
-            selectOnly(t, lin);
-        }
-
-        refreshRowStyle(t, oldLin);
-        refreshRowStyle(t, lin);
-
-        final boolean changedFinal = changed;
-        /* Defer; sync CLICK_CB that opens a modal would race the touch dispatcher Surface teardown. */
+        /* Deferred so the callback can open a modal. */
         t.recyclerView.post(() -> {
-            dispatchClick(t.ihandlePtr, lin, col, changedFinal ? 1 : 0, 0);
+            if (dispatchClick(t.ihandlePtr, lin, col, 0) != 0) return;
+
+            int oldLin = t.focusLin, oldCol = t.focusCol;
+            boolean changed = (oldLin != lin || oldCol != col);
+
+            t.focusLin = lin;
+            t.focusCol = col;
+
+            if ("MULTIPLE".equalsIgnoreCase(t.selectionMode))
+            {
+                if (!t.selectedLins.remove(Integer.valueOf(lin)))
+                    t.selectedLins.add(lin);
+            }
+            else if (!"NONE".equalsIgnoreCase(t.selectionMode) && !"CELLS".equalsIgnoreCase(t.selectionMode))
+            {
+                selectOnly(t, lin);
+            }
+
+            refreshRowStyle(t, oldLin);
+            refreshRowStyle(t, lin);
+
+            dispatchFocus(t.ihandlePtr, lin, col, changed ? 1 : 0);
             dispatchSelection(t.ihandlePtr);
         });
     }
@@ -552,7 +553,7 @@ public final class IupTableHelper
                     final int lin = state.lin, col = state.col;
                     /* defer; startEditCell + AlertDialog handlers all fire user CBs */
                     tv.post(() -> {
-                        if (dispatchClick(t.ihandlePtr, lin, col, 0, 1) == 0 && isCellEditable(t, col))
+                        if (dispatchClick(t.ihandlePtr, lin, col, 1) == 0 && isCellEditable(t, col))
                             startEditCell(t, lin, col);
                     });
                     return true;
@@ -602,7 +603,7 @@ public final class IupTableHelper
         String title = (col - 1 < t.colTitles.length && t.colTitles[col - 1] != null)
             ? t.colTitles[col - 1] : "";
 
-        /* Defer dialog-button user CBs; sync dispatch races the AlertDialog Surface dismiss. */
+        /* Deferred until the AlertDialog is dismissed. */
         AlertDialog dlg = new AlertDialog.Builder(activity)
             .setTitle(title)
             .setView(input)
@@ -783,7 +784,7 @@ public final class IupTableHelper
             }
         });
 
-        /* Defer; handleSortTap calls a user CB (dispatchSort) that may open a modal. */
+        /* Deferred so the callback can open a modal. */
         tv.setOnClickListener(v -> {
             int c = colRef[0];
             if (c > 0 && t.sortable) v.post(() -> handleSortTap(t, c));
@@ -1822,8 +1823,8 @@ public final class IupTableHelper
     public static void setEvenRowColor(View v, int r, int g, int b)
     {
         if (!(v instanceof IupTableView t)) return;
-        t.evenBg = Color.rgb(r, g, b);
-        t.hasEvenBg = true;
+        t.hasEvenBg = r >= 0;
+        if (t.hasEvenBg) t.evenBg = Color.rgb(r, g, b);
         t.adapter.notifyDataSetChanged();
     }
 
@@ -1831,8 +1832,8 @@ public final class IupTableHelper
     public static void setOddRowColor(View v, int r, int g, int b)
     {
         if (!(v instanceof IupTableView t)) return;
-        t.oddBg = Color.rgb(r, g, b);
-        t.hasOddBg = true;
+        t.hasOddBg = r >= 0;
+        if (t.hasOddBg) t.oddBg = Color.rgb(r, g, b);
         t.adapter.notifyDataSetChanged();
     }
 
@@ -2076,7 +2077,8 @@ public final class IupTableHelper
         t.stretchLast = on;
     }
 
-    public static native int dispatchClick(long ihandlePtr, int lin, int col, int focusChanged, int doubleClick);
+    public static native int dispatchClick(long ihandlePtr, int lin, int col, int doubleClick);
+    public static native void dispatchFocus(long ihandlePtr, int lin, int col, int focusChanged);
     public static native Bitmap dispatchImageRequest(long ihandlePtr, int lin, int col);
     public static native void dispatchRightClick(long ihandlePtr, int lin, int col, int focusChanged);
     public static native void dispatchCellsExtend(long ihandlePtr, int lin, int col);

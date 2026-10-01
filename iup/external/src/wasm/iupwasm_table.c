@@ -148,14 +148,24 @@ EM_JS(void, iupwasmJsTableScrollTo, (int id, int lin, int col), {
   globalThis.__iupApply({ op: 'tablescrollto', id: id, lin: lin, col: col });
 })
 
+static void wasmTableStripeCss(const char* value, const char* def, char* css)
+{
+  unsigned char r, g, b;
+  if (value && iupStrToRGB(value, &r, &g, &b))
+    snprintf(css, 20, "rgb(%d,%d,%d)", r, g, b);
+  else
+    snprintf(css, 20, "%s", def);
+}
+
 static void wasmTableApplyColors(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih);
   int alt = iupAttribGetBoolean(ih, "ALTERNATECOLOR");
-  char* even = iupAttribGetStr(ih, "EVENROWCOLOR");
-  char* odd = iupAttribGetStr(ih, "ODDROWCOLOR");
+  char even[20], odd[20];
+  wasmTableStripeCss(iupAttribGetStr(ih, "EVENROWCOLOR"), "#f0f0f0", even);
+  wasmTableStripeCss(iupAttribGetStr(ih, "ODDROWCOLOR"), "#ffffff", odd);
   if (id)
-    iupwasmJsTableStripe(id, alt, even ? even : "#ffffff", odd ? odd : "#f0f0f0");
+    iupwasmJsTableStripe(id, alt, even, odd);
 }
 
 static const char* wasmTableAlignCss(const char* a)
@@ -819,6 +829,9 @@ IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
   if (!id)
     return;
 
+  if (lin <= 0 && col <= 0)
+    wasmTableApplyColors(ih);
+
   if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
   {
     iupdrvTableRedraw(ih);
@@ -875,12 +888,34 @@ static void wasmTableLayoutUpdate(Ihandle* ih)
     iupwasmJsSetPos(id, ih->x, ih->y, ih->currentwidth, ih->currentheight);
 }
 
-EMSCRIPTEN_KEEPALIVE void iupwasmTableCellPress(int id, int lin, int col, int mods)
+static int wasmTableCallClick(Ihandle* ih, int lin, int col, int mods)
 {
-  Ihandle* ih = iupwasmHandleFromId(id);
+  IFniis click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
+  int ret;
+
+  iupAttribSet(ih, "_IUPWASM_TABLE_CLICK_IGNORED", NULL);
+  if (!click_cb)
+    return IUP_DEFAULT;
+
+  {
+    char status[IUPKEY_STATUS_SIZE];
+    iupwasmFillStatus(status, mods);
+    ret = click_cb(ih, lin, col, status);
+  }
+  if (!iupObjectCheck(ih))
+    return IUP_IGNORE;
+  if (ret == IUP_CLOSE)
+    IupExitLoop();
+  else if (ret == IUP_IGNORE)
+    iupAttribSet(ih, "_IUPWASM_TABLE_CLICK_IGNORED", "1");
+  return ret;
+}
+
+static void wasmTableCellsPress(Ihandle* ih, int lin, int col, int mods)
+{
   IFnii enter_cb;
   int old_lin, old_col;
-  if (!ih || !iupTableCellsMode(ih))
+  if (!iupTableCellsMode(ih))
     return;
 
   if (mods & 1)
@@ -898,33 +933,27 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableCellPress(int id, int lin, int col, int mo
     IupExitLoop();
 }
 
+EMSCRIPTEN_KEEPALIVE void iupwasmTableCellPress(int id, int lin, int col, int mods)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  if (!ih || wasmTableCallClick(ih, lin, col, mods) == IUP_IGNORE)
+    return;
+  wasmTableCellsPress(ih, lin, col, mods);
+}
+
 EMSCRIPTEN_KEEPALIVE void iupwasmTableCellDrag(int id, int lin, int col)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
-  if (ih)
+  if (ih && !iupAttribGet(ih, "_IUPWASM_TABLE_CLICK_IGNORED"))
     iupTableCellsExtendTo(ih, lin, col);
 }
 
-EMSCRIPTEN_KEEPALIVE void iupwasmTableCellClick(int id, int lin, int col, int mods)
+static void wasmTableCellClick(Ihandle* ih, int lin, int col, int mods)
 {
-  Ihandle* ih = iupwasmHandleFromId(id);
-  IFniis click_cb;
   IFnii enter_cb;
-  if (!ih)
-    return;
 
   if (iupTableCellsMode(ih))
-  {
-    click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
-    if (click_cb)
-    {
-      char status[IUPKEY_STATUS_SIZE];
-      iupwasmFillStatus(status, mods);
-      if (click_cb(ih, lin, col, status) == IUP_CLOSE)
-        IupExitLoop();
-    }
     return;
-  }
 
   wasmTableSetFocus(ih, lin, col);
 
@@ -969,29 +998,27 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableCellClick(int id, int lin, int col, int mo
   if (enter_cb)
     enter_cb(ih, lin, col);
 
-  click_cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
-  if (click_cb)
-  {
-    char status[IUPKEY_STATUS_SIZE];
-    iupwasmFillStatus(status, mods);
-    if (click_cb(ih, lin, col, status) == IUP_CLOSE)
-      IupExitLoop();
-  }
-
   iupTableCallMultiSelectionCb(ih);
+}
+
+EMSCRIPTEN_KEEPALIVE void iupwasmTableCellClick(int id, int lin, int col, int mods)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  if (ih && !iupAttribGet(ih, "_IUPWASM_TABLE_CLICK_IGNORED"))
+    wasmTableCellClick(ih, lin, col, mods);
 }
 
 EMSCRIPTEN_KEEPALIVE void iupwasmTableRightClick(int id, int lin, int col, int mods)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
   IFnii cb;
-  if (!ih)
+  if (!ih || wasmTableCallClick(ih, lin, col, mods) == IUP_IGNORE)
     return;
 
   iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
-  iupwasmTableCellPress(id, lin, col, mods & ~1);
+  wasmTableCellsPress(ih, lin, col, mods & ~1);
   iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
-  iupwasmTableCellClick(id, lin, col, mods);
+  wasmTableCellClick(ih, lin, col, mods);
 
   cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
   if (cb && cb(ih, lin, col) == IUP_CLOSE)
@@ -1019,6 +1046,13 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableEditBegin(int id, int lin, int col)
 
   text = iupdrvTableGetCellValue(ih, lin, col);
   iupwasmJsTableEditOpen(id, lin, col, text ? text : "");
+}
+
+EMSCRIPTEN_KEEPALIVE void iupwasmTableCellDblClick(int id, int lin, int col)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  if (ih && !iupAttribGet(ih, "_IUPWASM_TABLE_CLICK_IGNORED"))
+    iupwasmTableEditBegin(id, lin, col);
 }
 
 EMSCRIPTEN_KEEPALIVE void iupwasmTableEditEnd(int id, int lin, int col, const char* text, int apply)
