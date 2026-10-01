@@ -10,6 +10,7 @@
 #include "iup.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_str.h"
 
 
@@ -100,6 +101,7 @@ static void cocoaTouchTipShow(UIView* view, NSString* text, CGPoint anchor)
 
 
 @interface IupCocoaTouchTipGesture : UILongPressGestureRecognizer
+@property(nonatomic, assign) Ihandle* ihandle;
 @end
 
 @implementation IupCocoaTouchTipGesture
@@ -118,7 +120,7 @@ static void cocoaTouchTipOnLongPress(UILongPressGestureRecognizer* g)
 }
 
 
-@interface IupCocoaTouchTipTarget : NSObject
+@interface IupCocoaTouchTipTarget : NSObject <UIGestureRecognizerDelegate>
 + (instancetype)shared;
 - (void)handle:(UILongPressGestureRecognizer*)g;
 @end
@@ -132,6 +134,14 @@ static void cocoaTouchTipOnLongPress(UILongPressGestureRecognizer* g)
 	return s;
 }
 - (void)handle:(UILongPressGestureRecognizer*)g { cocoaTouchTipOnLongPress(g); }
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer*)g
+{
+	Ihandle* ih = ((IupCocoaTouchTipGesture*)g).ihandle;
+	int x1, y1, x2, y2;
+	if (!iupObjectCheck(ih) || !iupStrToRect(iupAttribGet(ih, "TIPRECT"), &x1, &y1, &x2, &y2)) return YES;
+	CGPoint p = [g locationInView:g.view];
+	return p.x >= x1 && p.x <= x2 && p.y >= y1 && p.y <= y2;
+}
 @end
 
 
@@ -155,6 +165,8 @@ IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 	{
 		IupCocoaTouchTipGesture* g = [[IupCocoaTouchTipGesture alloc] initWithTarget:[IupCocoaTouchTipTarget shared] action:@selector(handle:)];
 		g.minimumPressDuration = 0.5;
+		g.ihandle = ih;
+		g.delegate = [IupCocoaTouchTipTarget shared];
 		[view addGestureRecognizer:g];
 		objc_setAssociatedObject(view, IUPCOCOATOUCH_TIP_GESTURE_KEY, g, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 		[g release];
