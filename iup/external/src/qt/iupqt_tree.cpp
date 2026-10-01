@@ -1463,25 +1463,23 @@ static char* qtTreeGetMarkedNodesAttrib(Ihandle* ih)
 
 static int qtTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
 {
-  auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
-
-  tree->clearSelection();
-
-  if (!value)
+  if (ih->data->mark_mode == ITREE_MARK_SINGLE || !value)
     return 0;
 
-  QString str = QString::fromUtf8(value);
-  QStringList ids = str.split(':', Qt::SkipEmptyParts);
+  int count = static_cast<int>(strlen(value));
+  if (count > ih->data->node_count)
+    count = ih->data->node_count;
 
-  for (const QString& id_str : ids)
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
+  for (int i = 0; i < count; i++)
   {
-    int id = id_str.toInt();
-    QTreeWidgetItem* item = qtTreeFindNode(ih, id);
+    QTreeWidgetItem* item = qtTreeFindNode(ih, i);
     if (item)
-      item->setSelected(true);
+      item->setSelected(value[i] == '+');
   }
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
 
-  return 1;
+  return 0;
 }
 
 static int qtTreeSetToggleValueAttrib(Ihandle* ih, int id, const char* value)

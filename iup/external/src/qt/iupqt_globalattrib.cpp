@@ -111,7 +111,7 @@ public:
 #endif
 
           char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-          iupqtButtonKeySetStatus(mouse_evt->modifiers(), Qt::NoButton, 0, status, 0);
+          iupqtButtonKeySetStatus(mouse_evt->modifiers(), mouse_evt->buttons(), 0, status, 0);
 
           cb(x, y, status);
         }

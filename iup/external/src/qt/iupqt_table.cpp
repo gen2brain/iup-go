@@ -1835,9 +1835,10 @@ IUP_SDK_API void iupdrvTableSelectLin(Ihandle* ih, int lin, int select)
   QModelIndex first = table->model()->index(lin - 1, 0);
   QModelIndex last = table->model()->index(lin - 1, table->columnCount() - 1);
 
-  table->selectionModel()->select(QItemSelection(first, last),
-                                  (select ? QItemSelectionModel::Select : QItemSelectionModel::Deselect) |
-                                  QItemSelectionModel::Rows);
+  QItemSelectionModel::SelectionFlags mode = QItemSelectionModel::Deselect;
+  if (select)
+    mode = iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "SINGLE") ? QItemSelectionModel::ClearAndSelect : QItemSelectionModel::Select;
+  table->selectionModel()->select(QItemSelection(first, last), mode | QItemSelectionModel::Rows);
 }
 
 IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
