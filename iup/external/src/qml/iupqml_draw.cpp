@@ -177,7 +177,7 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
       auto* old_buffer = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQML_CANVAS_BUFFER"));
       if (old_buffer)
       {
-        if (old_buffer->size() != widget_size)
+        if (!iupqmlCanvasBufferMatches(old_buffer, dc->item, widget_size.width(), widget_size.height()))
         {
           delete old_buffer;
           old_buffer = nullptr;
@@ -190,14 +190,7 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
       if (!old_buffer)
       {
-        unsigned char r = 255, g = 255, b = 255;
-        char* bgcolor = iupAttribGet(ih, "BGCOLOR");
-        if (!bgcolor || !iupStrToRGB(bgcolor, &r, &g, &b))
-          iupStrToRGB(iupBaseNativeParentGetBgColor(ih), &r, &g, &b);
-
-        dc->buffer = new QPixmap(widget_size);
-        dc->buffer->fill(QColor(r, g, b));
-
+        dc->buffer = iupqmlCanvasCreateBuffer(ih, dc->item, widget_size.width(), widget_size.height());
         iupAttribSet(ih, "_IUPQML_CANVAS_BUFFER", reinterpret_cast<char*>(dc->buffer));
       }
     }
@@ -1242,12 +1235,21 @@ void qmlDrawSetShapeAntiAlias(IdrawCanvas* dc, int antialias)
   }
 }
 
+static QImage qmlDrawBufferImage(const QPixmap* buffer)
+{
+  QImage img = buffer->toImage();
+  QSize size = buffer->deviceIndependentSize().toSize();
+  if (img.size() != size)
+    img = img.scaled(size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  return img.convertToFormat(QImage::Format_RGBA8888);
+}
+
 extern "C" IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
   if (!dc || !dc->buffer)
     return 0;
 
-  QImage img = dc->buffer->toImage().convertToFormat(QImage::Format_RGBA8888);
+  QImage img = qmlDrawBufferImage(dc->buffer);
   int w = img.width();
   int h = img.height();
 
@@ -1269,7 +1271,7 @@ extern "C" IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* 
   if (!buffer)
     return 0;
 
-  QImage img = buffer->toImage().convertToFormat(QImage::Format_RGBA8888);
+  QImage img = qmlDrawBufferImage(buffer);
 
   if (w > img.width())
     w = img.width();

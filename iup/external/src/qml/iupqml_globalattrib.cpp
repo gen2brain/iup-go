@@ -42,7 +42,8 @@ public:
 
   bool eventFilter(QObject* obj, QEvent* event) override
   {
-    (void)obj;
+    if (!obj->isWindowType())
+      return false;
 
     switch(event->type())
     {

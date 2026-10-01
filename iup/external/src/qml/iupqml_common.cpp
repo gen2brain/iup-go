@@ -15,10 +15,10 @@
 #include <QThread>
 #include <QEvent>
 #include <QMouseEvent>
-#include <QMimeData>
-#include <QUrl>
 #include <QPalette>
 #include <QColor>
+#include <QQmlContext>
+#include <QQmlProperty>
 
 extern "C" {
 #include "iup.h"
@@ -202,47 +202,6 @@ public:
       }
       return false;
 
-    case QEvent::DragEnter:
-    case QEvent::DragMove:
-      if (IupGetCallback(ih, "DROPFILES_CB"))
-      {
-        auto* drag = static_cast<QDragMoveEvent*>(event);
-        if (drag->mimeData()->hasUrls())
-        {
-          drag->acceptProposedAction();
-          return true;
-        }
-      }
-      return false;
-
-    case QEvent::Drop:
-      {
-        auto cb = reinterpret_cast<IFnsiii>(IupGetCallback(ih, "DROPFILES_CB"));
-        auto* drop = static_cast<QDropEvent*>(event);
-        if (cb && drop->mimeData()->hasUrls())
-        {
-          QList<QUrl> urls = drop->mimeData()->urls();
-          int count = urls.size();
-          int x = static_cast<int>(drop->position().x());
-          int y = static_cast<int>(drop->position().y());
-
-          for (int i = 0; i < count; i++)
-          {
-            QString path = urls[i].toLocalFile();
-            if (!path.isEmpty())
-            {
-              QByteArray bytes = path.toUtf8();
-              if (cb(ih, const_cast<char*>(bytes.constData()), count - i - 1, x, y) == IUP_IGNORE)
-                break;
-            }
-          }
-
-          drop->acceptProposedAction();
-          return true;
-        }
-      }
-      return false;
-
     default:
       return false;
     }
@@ -274,7 +233,6 @@ IUP_DRV_API void iupqmlInstallFilter(Ihandle* ih, QQuickItem* item)
   iupqmlSetIhandle(item, ih);
   iupAttribSet(ih, "_IUPQML_EVENT_ITEM", reinterpret_cast<char*>(item));
   item->setAcceptHoverEvents(true);
-  item->setFlag(QQuickItem::ItemAcceptsDrops, true);
   item->installEventFilter(new IupQmlItemFilter(item, ih));
 
   if (item->isFocusScope())
@@ -799,9 +757,6 @@ extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* v
     return 0;
 
   auto* obj = reinterpret_cast<QObject*>(ih->handle);
-  if (ih->iclass->nativetype == IUP_TYPEDIALOG)
-    obj = iupqmlDialogGetContent(ih);
-
   QColor color(r, g, b);
   iupqmlSetPaletteColor(obj, "window", color);
   iupqmlSetPaletteColor(obj, "base", color);
@@ -880,10 +835,13 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
   if (!receiver) return;
 
   Qt::KeyboardModifiers mods(static_cast<int>(state));
+  QString text;
+  if (iup_isprint(iup_XkeyBase(key)) && !iup_isCtrlXkey(key) && !iup_isAltXkey(key) && !iup_isSysXkey(key))
+    text = QString(QChar(iup_XkeyBase(key)));
   if (press & 0x01)
-    QCoreApplication::postEvent(receiver, new QKeyEvent(QEvent::KeyPress, static_cast<int>(keyval), mods));
+    QCoreApplication::postEvent(receiver, new QKeyEvent(QEvent::KeyPress, static_cast<int>(keyval), mods, text));
   if (press & 0x02)
-    QCoreApplication::postEvent(receiver, new QKeyEvent(QEvent::KeyRelease, static_cast<int>(keyval), mods));
+    QCoreApplication::postEvent(receiver, new QKeyEvent(QEvent::KeyRelease, static_cast<int>(keyval), mods, text));
 }
 
 extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
@@ -932,14 +890,33 @@ extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
                                               button, buttons, Qt::NoModifier));
 }
 
+static void qmlSetAccessibleText(Ihandle* ih, const char* name, const char* value)
+{
+  QQuickItem* item;
+  if (ih->iclass->nativetype == IUP_TYPEDIALOG)
+    item = iupqmlDialogGetContent(ih);
+  else
+  {
+    item = reinterpret_cast<QQuickItem*>(iupAttribGet(ih, "_IUPQML_EVENT_ITEM"));
+    if (!item)
+      item = iupqmlGetItem(ih);
+  }
+
+  QQmlContext* context = nullptr;
+  for (QQuickItem* parent = item; parent && !context; parent = parent->parentItem())
+    context = qmlContext(parent);
+  if (!context)
+    return;
+
+  QQmlProperty(item, QString::fromLatin1(name), context).write(value ? QString::fromUtf8(value) : QString());
+}
+
 extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
-  (void)ih;
-  (void)title;
+  qmlSetAccessibleText(ih, "Accessible.name", title);
 }
 
 extern "C" IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
 {
-  (void)ih;
-  (void)description;
+  qmlSetAccessibleText(ih, "Accessible.description", description);
 }

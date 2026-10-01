@@ -35,6 +35,7 @@ struct IupQmlDragDropData
 {
   int is_source;
   int is_target;
+  int is_files_target;
   QDrag* current_drag;
   int last_x;
   int last_y;
@@ -49,6 +50,7 @@ static IupQmlDragDropData* qmlDragDropGetData(Ihandle* ih, int create)
     dd_data = new IupQmlDragDropData();
     dd_data->is_source = 0;
     dd_data->is_target = 0;
+    dd_data->is_files_target = 0;
     dd_data->current_drag = nullptr;
     dd_data->last_x = 0;
     dd_data->last_y = 0;
@@ -107,13 +109,12 @@ public:
       case QEvent::DragEnter:
       case QEvent::DragMove:
       {
-        if (!dd_data->is_target)
+        auto* de = static_cast<QDragMoveEvent*>(event);
+        if (!dd_data->is_target && !(dd_data->is_files_target && de->mimeData()->hasUrls()))
           return false;
 
-        auto* de = static_cast<QDragMoveEvent*>(event);
-
         auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "DROPMOTION_CB"));
-        if (cb)
+        if (cb && dd_data->is_target)
         {
           QPoint p = qmlDragDropControlPos(ih, qobject_cast<QQuickItem*>(obj), de->position());
           int x = p.x();
@@ -138,11 +139,10 @@ public:
 
       case QEvent::Drop:
       {
-        if (!dd_data->is_target)
-          return false;
-
         auto* drop = static_cast<QDropEvent*>(event);
         const QMimeData* mime = drop->mimeData();
+        if (!dd_data->is_target && !(dd_data->is_files_target && mime->hasUrls()))
+          return false;
 
         QPoint p = qmlDragDropControlPos(ih, qobject_cast<QQuickItem*>(obj), drop->position());
         int x = p.x();
@@ -151,7 +151,7 @@ public:
         dd_data->last_y = y;
 
         const char* drop_types = iupAttribGetStr(ih, "DROPTYPES");
-        if (drop_types)
+        if (dd_data->is_target && drop_types)
         {
           QString mime_type = QString("application/x-iup-") + QString::fromUtf8(drop_types).toLower();
 
@@ -168,7 +168,7 @@ public:
           }
         }
 
-        if (mime->hasUrls())
+        if (dd_data->is_files_target && mime->hasUrls())
         {
           auto cbDropFiles = reinterpret_cast<IFnsiii>(IupGetCallback(ih, "DROPFILES_CB"));
           if (cbDropFiles)
@@ -401,7 +401,7 @@ static int qmlDragDropSetDragSourceAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int qmlDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
+static int qmlDragDropUpdateTarget(Ihandle* ih, int* flag, const char* value)
 {
   IupQmlDragDropData* dd_data = qmlDragDropGetData(ih, 1);
 
@@ -409,28 +409,31 @@ static int qmlDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
   if (!item)
     return 0;
 
-  int enable = iupStrBoolean(value);
+  int was_target = dd_data->is_target || dd_data->is_files_target;
+  *flag = iupStrBoolean(value);
+  int is_target = dd_data->is_target || dd_data->is_files_target;
 
-  if (enable && !dd_data->is_target)
+  if (is_target && !was_target)
   {
-    dd_data->is_target = 1;
     item->setFlag(QQuickItem::ItemAcceptsDrops, true);
     qmlDragDropEnsureFilter(ih, item);
   }
-  else if (!enable && dd_data->is_target)
-  {
-    dd_data->is_target = 0;
-    if (!IupGetCallback(ih, "DROPFILES_CB"))
-      item->setFlag(QQuickItem::ItemAcceptsDrops, false);
+  else if (!is_target && was_target)
     qmlDragDropRemoveFilter(ih, item);
-  }
 
   return 1;
 }
 
+static int qmlDragDropSetDropTargetAttrib(Ihandle* ih, const char* value)
+{
+  IupQmlDragDropData* dd_data = qmlDragDropGetData(ih, 1);
+  return qmlDragDropUpdateTarget(ih, &dd_data->is_target, value);
+}
+
 static int qmlDragDropSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 {
-  return qmlDragDropSetDropTargetAttrib(ih, value);
+  IupQmlDragDropData* dd_data = qmlDragDropGetData(ih, 1);
+  return qmlDragDropUpdateTarget(ih, &dd_data->is_files_target, value);
 }
 
 IUP_DRV_API void iupqmlDragDropCleanup(Ihandle* ih)
