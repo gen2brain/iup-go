@@ -57,6 +57,7 @@ Not supported in WebAssembly.
 
 **MULTIPLEFILES**: Allows the user to select multiple files when DIALOGTYPE=OPEN.
 Can be "YES" or "NO". Default "NO".
+In QML only one file can be selected when the platform has no native file dialog for Qt Quick.
 
 **NOCHANGEDIR**: Indicates if the current working directory must be restored after the user navigation.
 Default: "YES".
@@ -72,7 +73,6 @@ Default is "NO", i.e., prompt before overwrite.
 When the global attribute SANDBOX is set, the portal is used automatically.
 If the portal is not available, falls back to the native dialog.
 Supported in GTK 3, Motif, EFL and QML.
-In QML, MULTIPLEFILES=YES also uses the portal when it is available.
 In GTK 4, the native GtkFileDialog already uses portals when appropriate.
 
 **SHOWEDITBOX** [Windows Only]: Show an edit box in the directory selection dialog (DIALOGTYPE=DIR).
