@@ -250,9 +250,8 @@ static void eflTabsReorderTab(Ihandle* ih, int source, int target)
 
   if (current)
   {
-    int current_pos = IupGetChildPos(ih, current);
-    iupdrvTabsSetCurrentTab(ih, current_pos);
-    iupAttribSetInt(ih, "_IUP_EFL_PREV_POS", current_pos);
+    iupdrvTabsSetCurrentTab(ih, IupGetChildPos(ih, current));
+    iupAttribSet(ih, "_IUP_EFL_PREV_CHILD", (char*)current);
   }
 
   IupRefresh(ih);
@@ -469,7 +468,7 @@ IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
       iupAttribSet(ih, "_IUP_EFL_IGNORE_CHANGE", NULL);
       }
 
-      iupAttribSetInt(ih, "_IUP_EFL_PREV_POS", pos);
+      iupAttribSet(ih, "_IUP_EFL_PREV_CHILD", (char*)child);
       eflTabsScheduleLayout(ih);
     }
   }
@@ -507,12 +506,21 @@ IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
                      Callbacks
 ****************************************************************/
 
+static Ihandle* eflTabsPrevChild(Ihandle* ih)
+{
+  Ihandle* child = (Ihandle*)iupAttribGet(ih, "_IUP_EFL_PREV_CHILD");
+  if (child && iupObjectCheck(child) && child->parent == ih)
+    return child;
+  return NULL;
+}
+
 static void eflTabsItemSelectedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Eo* selected;
   Eo* pager;
-  int pos, prev_pos;
+  Ihandle* child;
+  Ihandle* prev_child;
   IFnnn cb;
 
   if (iupAttribGet(ih, "_IUP_EFL_IGNORE_CHANGE"))
@@ -531,28 +539,24 @@ static void eflTabsItemSelectedCallback(void* data, const Efl_Event* ev)
   if (!page)
     return;
 
-  pos = eflTabsPageToPos(ih, page);
-  prev_pos = iupAttribGetInt(ih, "_IUP_EFL_PREV_POS");
+  child = IupGetChild(ih, eflTabsPageToPos(ih, page));
+  prev_child = eflTabsPrevChild(ih);
 
-  if (pos == prev_pos)
+  if (!child || child == prev_child)
     return;
 
-  iupAttribSetInt(ih, "_IUP_EFL_PREV_POS", pos);
+  iupAttribSet(ih, "_IUP_EFL_PREV_CHILD", (char*)child);
 
   eflTabsScheduleLayout(ih);
 
   cb = (IFnnn)IupGetCallback(ih, "TABCHANGE_CB");
   if (cb)
-  {
-    Ihandle* child = IupGetChild(ih, pos);
-    Ihandle* prev_child = IupGetChild(ih, prev_pos);
     cb(ih, child, prev_child);
-  }
   else
   {
     IFnii cb2 = (IFnii)IupGetCallback(ih, "TABCHANGEPOS_CB");
-    if (cb2)
-      cb2(ih, pos, prev_pos);
+    if (cb2 && prev_child)
+      cb2(ih, IupGetChildPos(ih, child), IupGetChildPos(ih, prev_child));
   }
   }
 }
@@ -588,7 +592,7 @@ static void eflTabsSetPageHidden(Ihandle* ih, Ihandle* child, int hide)
           iupAttribSet(ih, "_IUP_EFL_IGNORE_CHANGE", "1");
           efl_ui_selectable_selected_set(other_item, EINA_TRUE);
           iupAttribSet(ih, "_IUP_EFL_IGNORE_CHANGE", NULL);
-          iupAttribSetInt(ih, "_IUP_EFL_PREV_POS", eflTabsPageToPos(ih, other));
+          iupAttribSet(ih, "_IUP_EFL_PREV_CHILD", (char*)IupGetChild(ih, eflTabsPageToPos(ih, other)));
         }
       }
     }
@@ -666,14 +670,15 @@ static Eo* eflTabsCreateCloseButton(Ihandle* ih, Ihandle* child, Eo* item)
     return NULL;
 
   icon = efl_add(EFL_UI_IMAGE_CLASS, btn);
-  if (icon)
+  if (icon && efl_ui_image_icon_set(icon, "window-close"))
   {
-    efl_file_simple_load(icon, "window-close", NULL);
     efl_content_set(btn, icon);
     efl_gfx_entity_visible_set(icon, EINA_TRUE);
   }
   else
   {
+    if (icon)
+      efl_del(icon);
     efl_text_set(btn, "X");
   }
 
@@ -1003,7 +1008,7 @@ static int eflTabsMapMethod(Ihandle* ih)
     efl_event_callback_add(tab_bar, EFL_UI_EVENT_ITEM_SELECTED, eflTabsItemSelectedCallback, ih);
   }
 
-  iupAttribSetInt(ih, "_IUP_EFL_PREV_POS", 0);
+  iupAttribSet(ih, "_IUP_EFL_PREV_CHILD", (char*)ih->firstchild);
 
   if (ih->firstchild)
   {
