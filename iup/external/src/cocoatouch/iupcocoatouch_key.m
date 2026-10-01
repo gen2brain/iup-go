@@ -315,6 +315,10 @@ IUP_DRV_API bool iupCocoaTouchKeyEvent(Ihandle* ih, UIPress* press, bool is_pres
 	}
 
 	iupAttribSet(ih, "_IUPCOCOATOUCH_KEYPAD", iup_isKeyPadXkey(code)? "1": NULL);
+	if (is_pressed)
+		iupAttribSetInt(ih, "_IUPCOCOATOUCH_KEYPRESS", code);
+	else
+		iupAttribSet(ih, "_IUPCOCOATOUCH_KEYPRESS", NULL);
 
 	if (is_pressed)
 	{
@@ -470,6 +474,60 @@ IUP_DRV_API void iupCocoaTouchKeyCommandEvent(Ihandle* ih, UIKeyCommand* command
 	{
 		[(id<UIKeyInput>)responder insertText:@"\t"];
 	}
+}
+
+IUP_DRV_API int iupCocoaTouchKeyTextCode(NSString* text)
+{
+	if ([text length] != 1)
+		return 0;
+
+	unichar ch = [text characterAtIndex:0];
+	if ((ch >= K_SP && ch <= K_tilde) || (ch >= 0xA0 && ch <= 0xFF))
+		return (int)ch;
+	return 0;
+}
+
+/* true when K_ANY or KEYPRESS_CB consumed the key; a press that already reported it is skipped */
+IUP_DRV_API bool iupCocoaTouchKeyText(Ihandle* ih, UIResponder* responder, int code)
+{
+	if (!ih || code == 0)
+		return false;
+	if (iupAttribGetInt(ih, "_IUPCOCOATOUCH_KEYPRESS") == code)
+	{
+		iupAttribSet(ih, "_IUPCOCOATOUCH_KEYPRESS", NULL);
+		return false;
+	}
+	if ([responder conformsToProtocol:@protocol(UITextInput)] && [(id<UITextInput>)responder markedTextRange])
+		return false;
+
+	int result = iupKeyCallKeyCb(ih, code);
+	if (result == IUP_CLOSE)
+	{
+		IupExitLoop();
+		return true;
+	}
+	if (result == IUP_IGNORE || !iupObjectCheck(ih))
+		return true;
+
+	if (ih->iclass->nativetype == IUP_TYPECANVAS)
+	{
+		result = iupKeyCallKeyPressCb(ih, code, 1);
+		if (result == IUP_CLOSE)
+		{
+			IupExitLoop();
+			return true;
+		}
+		if (!iupObjectCheck(ih))
+			return true;
+		if (iupKeyCallKeyPressCb(ih, code, 0) == IUP_CLOSE)
+		{
+			IupExitLoop();
+			return true;
+		}
+		if (result == IUP_IGNORE || !iupObjectCheck(ih))
+			return true;
+	}
+	return false;
 }
 
 IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
