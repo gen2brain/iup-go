@@ -79,9 +79,10 @@ The name of the content attribute is given by the attribute ATTRIBUTE_NAME.
 **JAVASCRIPT**: executes JavaScript code and returns the result as a string.
 
 **PRINT** (write-only): shows the print dialog.
+Not supported in Haiku and QML.
 
 **PRINTPREVIEW** (write-only): shows a print preview dialog.
-Not supported in QML.
+Not supported in Haiku and QML.
 
 **RELOAD** (write-only): reloads the page in the webbrowser.
 
