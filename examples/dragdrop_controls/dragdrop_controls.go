@@ -81,8 +81,8 @@ func partList() iup.Ihandle {
 	list := iup.List().SetAttributes(lines + ", VISIBLECOLUMNS=12, EXPAND=YES").SetHandle("list")
 	fillList(list)
 
-	source(list, "list", func(int, int) string {
-		return iup.GetAttributeId(list, "", list.GetInt("VALUE"))
+	source(list, "list", func(x, y int) string {
+		return iup.GetAttributeId(list, "", iup.ConvertXYToPos(list, x, y))
 	}, func(text string) {
 		parts = remove(parts, text)
 		fillList(list)
@@ -113,8 +113,8 @@ func assemblyTree() iup.Ihandle {
 		return iup.DEFAULT
 	}))
 
-	source(tree, "tree", func(int, int) string {
-		return iup.GetAttributeId(tree, "TITLE", tree.GetInt("VALUE"))
+	source(tree, "tree", func(x, y int) string {
+		return iup.GetAttributeId(tree, "TITLE", iup.ConvertXYToPos(tree, x, y))
 	}, func(text string) {
 		nodes = remove(nodes, text)
 		fillTree(tree)

@@ -211,7 +211,7 @@ func buildMenu() {
 	iup.SetHandle("dash_menu", iup.Menu(
 		iup.Submenu("File", iup.Menu(
 			item("Reset counters", resetCounters),
-			iup.Separator(),
+			iup.MenuSeparator(),
 			item("Quit", func() { iup.ExitLoop() }),
 		)),
 		iup.Submenu("View", iup.Menu(

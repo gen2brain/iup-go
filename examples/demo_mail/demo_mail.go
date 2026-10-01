@@ -84,10 +84,10 @@ func main() {
 			item("Reply", func() { reply(false) }),
 			item("Reply to all", func() { reply(true) }),
 			item("Forward", forward),
-			iup.Separator(),
+			iup.MenuSeparator(),
 			item(flag, toggleFlag),
 			item(read, toggleRead),
-			iup.Separator(),
+			iup.MenuSeparator(),
 			item("Delete", deleteMessage),
 		)
 		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)

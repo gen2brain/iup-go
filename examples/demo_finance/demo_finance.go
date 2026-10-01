@@ -170,7 +170,7 @@ func (app *dashboard) build() {
 		}
 		menu := iup.Menu(
 			iup.Submenu("Set category", iup.Menu(items...)),
-			iup.Separator(),
+			iup.MenuSeparator(),
 			menuItem("Copy row", func() { app.copyRow(app.visible[lin-1]) }),
 		)
 		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)

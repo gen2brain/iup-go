@@ -169,13 +169,13 @@ func treeMenu(tree iup.Ihandle, id int) int {
 		folderName := iup.GetAttributeId(tree, "TITLE", iup.GetIntId(tree, "PARENT", id))
 		menu = iup.Menu(
 			item("Open "+name, func() { openFile(folderName, name) }),
-			iup.Separator(),
+			iup.MenuSeparator(),
 			item("Copy path", func() { copyPath(folderName + "/" + name) }),
 		)
 	} else {
 		menu = iup.Menu(
 			item("Open all in "+iup.GetAttributeId(tree, "TITLE", id), func() { openFolder(tree, id) }),
-			iup.Separator(),
+			iup.MenuSeparator(),
 			item("Collapse", func() { iup.SetAttributeId(tree, "STATE", id, "COLLAPSED") }),
 			item("Expand", func() { iup.SetAttributeId(tree, "STATE", id, "EXPANDED") }),
 		)

@@ -109,7 +109,7 @@ func setupMenu() {
 		iup.MenuItem("New").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int { setStatus("Menu: New"); return iup.DEFAULT })),
 		iup.MenuItem("Open").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int { setStatus("Menu: Open"); return iup.DEFAULT })),
 		iup.MenuItem("Save").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int { setStatus("Menu: Save"); return iup.DEFAULT })),
-		iup.Separator(),
+		iup.MenuSeparator(),
 		iup.MenuItem("Exit").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int { return iup.CLOSE })),
 	)
 

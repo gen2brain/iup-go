@@ -212,7 +212,7 @@ func photoTable() iup.Ihandle {
 			menuItem("Pick", func() { applyFlag("pick") }),
 			menuItem("Reject", func() { applyFlag("reject") }),
 			menuItem("Clear flag", func() { applyFlag("clear") }),
-			iup.Separator(),
+			iup.MenuSeparator(),
 			iup.Submenu("Rating", iup.Menu(ratings...)),
 		)
 		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)

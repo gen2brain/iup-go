@@ -89,7 +89,7 @@ func main() {
 		menu := iup.Menu(
 			item("Copy", copyRange),
 			item("Clear", clear),
-			iup.Separator(),
+			iup.MenuSeparator(),
 			item("Sum below", insertSum),
 		)
 		iup.Popup(menu, iup.MOUSEPOS, iup.MOUSEPOS)
