@@ -1945,7 +1945,6 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VISIBLECOLUMNS", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "5", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLELINES", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", qmlTextGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPFILESTARGET", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", nullptr, iupTextSetAddFormatTagAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", nullptr, iupTextSetAddFormatTagHandleAttrib, nullptr, nullptr, IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);

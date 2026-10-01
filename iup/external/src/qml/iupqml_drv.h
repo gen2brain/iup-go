@@ -131,6 +131,8 @@ IUP_DRV_API int iupqmlDialogCloseEvent(Ihandle* ih);
 IUP_DRV_API QQuickItem* iupqmlCanvasGetItem(Ihandle* ih);
 IUP_DRV_API void iupqmlCanvasRedraw(Ihandle* ih, int now);
 IUP_DRV_API void iupqmlCanvasFlush(Ihandle* ih);
+IUP_DRV_API QPixmap* iupqmlCanvasCreateBuffer(Ihandle* ih, QQuickItem* item, int w, int h);
+IUP_DRV_API int iupqmlCanvasBufferMatches(QPixmap* buffer, QQuickItem* item, int w, int h);
 
 /* Tooltips and drag and drop */
 IUP_DRV_API void iupqmlTipsDestroy(Ihandle* ih);

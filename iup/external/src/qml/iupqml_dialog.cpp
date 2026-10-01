@@ -1039,7 +1039,7 @@ static int qmlDialogSetBgColorAttrib(Ihandle* ih, const char* value)
 
   if (!iupAttribGet(ih, "OPACITYIMAGE"))
     dialog->setColor(QColor(r, g, b));
-  iupdrvBaseSetBgColorAttrib(ih, value);
+  iupqmlSetPaletteColor(iupqmlDialogGetContent(ih), "window", QColor(r, g, b));
   return 1;
 }
 

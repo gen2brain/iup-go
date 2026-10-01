@@ -4,18 +4,19 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <QGuiApplication>
 #include <QQuickItem>
+#include <QQuickWindow>
 #include <QSGSimpleTextureNode>
 #include <QSGTexture>
 #include <QPainter>
 #include <QPixmap>
 #include <QImage>
 #include <QMouseEvent>
-#include <QMimeData>
-#include <QUrl>
 #include <QVarLengthArray>
 #include <QColor>
 
+#include <cmath>
 #include <cstring>
 
 extern "C" {
@@ -30,6 +31,35 @@ extern "C" {
 }
 
 #include "iupqml_drv.h"
+
+static qreal qmlCanvasPixelRatio(QQuickItem* item)
+{
+  QQuickWindow* window = item ? item->window() : nullptr;
+  return window ? window->effectiveDevicePixelRatio() : qGuiApp->devicePixelRatio();
+}
+
+static void qmlCanvasFillBackground(Ihandle* ih, QPixmap* buffer)
+{
+  unsigned char r = 255, g = 255, b = 255;
+  char* bgcolor = iupAttribGet(ih, "BGCOLOR");
+  if (!bgcolor || !iupStrToRGB(bgcolor, &r, &g, &b))
+    iupStrToRGB(iupBaseNativeParentGetBgColor(ih), &r, &g, &b);
+  buffer->fill(QColor(r, g, b));
+}
+
+IUP_DRV_API QPixmap* iupqmlCanvasCreateBuffer(Ihandle* ih, QQuickItem* item, int w, int h)
+{
+  qreal ratio = qmlCanvasPixelRatio(item);
+  auto* buffer = new QPixmap(static_cast<int>(std::ceil(w * ratio)), static_cast<int>(std::ceil(h * ratio)));
+  buffer->setDevicePixelRatio(ratio);
+  qmlCanvasFillBackground(ih, buffer);
+  return buffer;
+}
+
+IUP_DRV_API int iupqmlCanvasBufferMatches(QPixmap* buffer, QQuickItem* item, int w, int h)
+{
+  return buffer->devicePixelRatio() == qmlCanvasPixelRatio(item) && buffer->deviceIndependentSize().toSize() == QSize(w, h);
+}
 
 
 /****************************************************************************
@@ -49,12 +79,18 @@ public:
   IupQmlCanvas(Ihandle* handle) : QQuickItem(), ih(handle), texture_dirty(true), needs_action(true), action_queued(false), buffer_dirty(false)
   {
     setFlag(ItemHasContents, true);
-    setFlag(ItemAcceptsDrops, true);
     setAcceptedMouseButtons(Qt::AllButtons);
     setAcceptHoverEvents(true);
     setAcceptTouchEvents(true);
     setFlag(ItemAcceptsInputMethod, true);
     setActiveFocusOnTab(true);
+  }
+
+  void itemChange(ItemChange change, const ItemChangeData& value) override
+  {
+    if (change == ItemDevicePixelRatioHasChanged)
+      requestRedraw();
+    QQuickItem::itemChange(change, value);
   }
 
   void requestRedraw()
@@ -113,7 +149,7 @@ public:
     }
 
     auto* buffer = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQML_CANVAS_BUFFER"));
-    if (buffer && buffer->size() != QSize(w, h))
+    if (buffer && !iupqmlCanvasBufferMatches(buffer, this, w, h))
     {
       delete buffer;
       buffer = nullptr;
@@ -137,27 +173,17 @@ public:
           needs_action = false;
         if (!buffer)
         {
-          buffer = new QPixmap(w, h);
+          buffer = iupqmlCanvasCreateBuffer(ih, this, w, h);
           iupAttribSet(ih, "_IUPQML_CANVAS_BUFFER", reinterpret_cast<char*>(buffer));
-          fillBackground(buffer);
         }
         else if (!cb)
-          fillBackground(buffer);
+          qmlCanvasFillBackground(ih, buffer);
       }
     }
 
     buffer_dirty = true;
     polish();
     update();
-  }
-
-  void fillBackground(QPixmap* buffer) const
-  {
-    unsigned char r = 255, g = 255, b = 255;
-    char* bgcolor = iupAttribGet(ih, "BGCOLOR");
-    if (!bgcolor || !iupStrToRGB(bgcolor, &r, &g, &b))
-      iupStrToRGB(iupBaseNativeParentGetBgColor(ih), &r, &g, &b);
-    buffer->fill(QColor(r, g, b));
   }
 
 protected:
@@ -167,7 +193,7 @@ protected:
       return;
 
     auto* buffer = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQML_CANVAS_BUFFER"));
-    if (buffer && !buffer->isNull() && buffer->size() == QSize(static_cast<int>(width()), static_cast<int>(height())))
+    if (buffer && !buffer->isNull() && iupqmlCanvasBufferMatches(buffer, this, static_cast<int>(width()), static_cast<int>(height())))
     {
       image = buffer->toImage();
       texture_dirty = true;
@@ -392,57 +418,6 @@ protected:
     if (ih)
       iupqmlFocusInOutEvent(event, ih);
     QQuickItem::focusOutEvent(event);
-  }
-
-  void dragEnterEvent(QDragEnterEvent* event) override
-  {
-    if (ih && IupGetCallback(ih, "DROPFILES_CB") && event->mimeData()->hasUrls())
-    {
-      event->acceptProposedAction();
-      return;
-    }
-    QQuickItem::dragEnterEvent(event);
-  }
-
-  void dragMoveEvent(QDragMoveEvent* event) override
-  {
-    if (ih && IupGetCallback(ih, "DROPFILES_CB") && event->mimeData()->hasUrls())
-    {
-      event->acceptProposedAction();
-      return;
-    }
-    QQuickItem::dragMoveEvent(event);
-  }
-
-  void dropEvent(QDropEvent* event) override
-  {
-    if (!ih)
-      return;
-
-    auto cb = reinterpret_cast<IFnsiii>(IupGetCallback(ih, "DROPFILES_CB"));
-    if (cb && event->mimeData()->hasUrls())
-    {
-      QList<QUrl> urls = event->mimeData()->urls();
-      int count = urls.size();
-      int x = static_cast<int>(event->position().x());
-      int y = static_cast<int>(event->position().y());
-
-      for (int i = 0; i < count; i++)
-      {
-        QString filePath = urls[i].toLocalFile();
-        if (!filePath.isEmpty())
-        {
-          QByteArray fileArray = filePath.toUtf8();
-          if (cb(ih, const_cast<char*>(fileArray.constData()), count - i - 1, x, y) == IUP_IGNORE)
-            break;
-        }
-      }
-
-      event->acceptProposedAction();
-      return;
-    }
-
-    QQuickItem::dropEvent(event);
   }
 
   void touchEvent(QTouchEvent* touchEvent) override
@@ -1046,7 +1021,6 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TOUCH", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKINGSTORE", nullptr, nullptr, "YES", nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "DROPFILESTARGET", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HTTRANSPARENT", nullptr, qmlCanvasSetHTTransparentAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WHEELDROPFOCUS", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIPRECT", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
