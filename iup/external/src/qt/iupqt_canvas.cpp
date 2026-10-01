@@ -10,8 +10,6 @@
 #include <QTimer>
 #include <QHBoxLayout>
 #include <QWheelEvent>
-#include <QMimeData>
-#include <QUrl>
 #include <QVarLengthArray>
 #include <QGesture>
 
@@ -174,7 +172,7 @@ protected:
     }
 
     auto* buffer = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER"));
-    if (buffer && !buffer->isNull() && buffer->size() == size() && !iupAttribGet(ih, "_IUPQT_UPDATERECT"))
+    if (buffer && !buffer->isNull() && iupqtCanvasBufferMatches(buffer, this) && !iupAttribGet(ih, "_IUPQT_UPDATERECT"))
     {
       QPainter painter(this);
       painter.drawPixmap(0, 0, *buffer);
@@ -384,60 +382,6 @@ protected:
     if (ih)
       iupqtEnterLeaveEvent(this, event, ih);
     QWidget::leaveEvent(event);
-  }
-
-  void dragEnterEvent(QDragEnterEvent* event) override
-  {
-    if (!ih)
-      return;
-
-    if (IupGetCallback(ih, "DROPFILES_CB"))
-    {
-      if (event->mimeData()->hasUrls())
-      {
-        event->acceptProposedAction();
-        return;
-      }
-    }
-
-    QWidget::dragEnterEvent(event);
-  }
-
-  void dropEvent(QDropEvent* event) override
-  {
-    if (!ih)
-      return;
-
-    auto cb = reinterpret_cast<IFnsiii>(IupGetCallback(ih, "DROPFILES_CB"));
-    if (cb && event->mimeData()->hasUrls())
-    {
-      QList<QUrl> urls = event->mimeData()->urls();
-      int count = urls.size();
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-      int x = event->position().x();
-      int y = event->position().y();
-#else
-      int x = event->pos().x();
-      int y = event->pos().y();
-#endif
-
-      for (int i = 0; i < count; i++)
-      {
-        QString filePath = urls[i].toLocalFile();
-        if (!filePath.isEmpty())
-        {
-          QByteArray fileArray = filePath.toUtf8();
-          if (cb(ih, const_cast<char*>(fileArray.constData()), count - i - 1, x, y) == IUP_IGNORE)
-            break;
-        }
-      }
-
-      event->acceptProposedAction();
-      return;
-    }
-
-    QWidget::dropEvent(event);
   }
 
   bool event(QEvent* event) override
@@ -1214,7 +1158,6 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TOUCH", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKINGSTORE", nullptr, nullptr, "YES", nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "DROPFILESTARGET", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HTTRANSPARENT", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WHEELDROPFOCUS", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIPRECT", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);

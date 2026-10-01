@@ -147,6 +147,25 @@ static void qtDrawApplyStroke(QPen& pen, IdrawCanvas* dc, int style, int line_wi
  * Create Draw Canvas
  ****************************************************************************/
 
+static QSize qtDrawBufferLogicalSize(const QPixmap* buffer)
+{
+  return (QSizeF(buffer->size()) / buffer->devicePixelRatio()).toSize();
+}
+
+IUP_DRV_API int iupqtCanvasBufferMatches(QPixmap* buffer, QWidget* widget)
+{
+  return buffer->devicePixelRatio() == widget->devicePixelRatioF() && qtDrawBufferLogicalSize(buffer) == widget->size();
+}
+
+static QImage qtDrawBufferImage(const QPixmap* buffer)
+{
+  QImage img = buffer->toImage();
+  QSize size = qtDrawBufferLogicalSize(buffer);
+  if (img.size() != size)
+    img = img.scaled(size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  return img.convertToFormat(QImage::Format_RGBA8888);
+}
+
 extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   auto* dc = new IdrawCanvas();
@@ -177,7 +196,7 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
       auto* old_buffer = reinterpret_cast<QPixmap*>(iupAttribGet(ih, "_IUPQT_CANVAS_BUFFER"));
       if (old_buffer)
       {
-        if (old_buffer->size() != widget_size)
+        if (!iupqtCanvasBufferMatches(old_buffer, dc->widget))
         {
           delete old_buffer;
           old_buffer = nullptr;
@@ -195,7 +214,9 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
         if (!bgcolor || !iupStrToRGB(bgcolor, &r, &g, &b))
           iupStrToRGB(iupBaseNativeParentGetBgColor(ih), &r, &g, &b);
 
-        dc->buffer = new QPixmap(widget_size);
+        qreal ratio = dc->widget->devicePixelRatioF();
+        dc->buffer = new QPixmap(static_cast<int>(std::ceil(widget_size.width() * ratio)), static_cast<int>(std::ceil(widget_size.height() * ratio)));
+        dc->buffer->setDevicePixelRatio(ratio);
         dc->buffer->fill(QColor(r, g, b));
 
         iupAttribSet(ih, "_IUPQT_CANVAS_BUFFER", reinterpret_cast<char*>(dc->buffer));
@@ -1251,7 +1272,7 @@ extern "C" IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char
   if (!dc || !dc->buffer)
     return 0;
 
-  QImage img = dc->buffer->toImage().convertToFormat(QImage::Format_RGBA8888);
+  QImage img = qtDrawBufferImage(dc->buffer);
   int w = img.width();
   int h = img.height();
 
@@ -1273,7 +1294,7 @@ extern "C" IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* 
   if (!buffer)
     return 0;
 
-  QImage img = buffer->toImage().convertToFormat(QImage::Format_RGBA8888);
+  QImage img = qtDrawBufferImage(buffer);
 
   if (w > img.width())
     w = img.width();

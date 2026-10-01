@@ -16,7 +16,6 @@
 #include <QString>
 #include <QFont>
 #include <QColor>
-#include <QMimeData>
 #include <QUrl>
 #include <QFrame>
 #include <QTextList>
@@ -136,51 +135,6 @@ protected:
   {
     QLineEdit::focusOutEvent(event);
     iupqtFocusInOutEvent(this, event, ih);
-  }
-
-  void dragEnterEvent(QDragEnterEvent* event) override
-  {
-    if (IupGetCallback(ih, "DROPFILES_CB"))
-    {
-      if (event->mimeData()->hasUrls())
-      {
-        event->acceptProposedAction();
-        return;
-      }
-    }
-    QLineEdit::dragEnterEvent(event);
-  }
-
-  void dropEvent(QDropEvent* event) override
-  {
-    auto cb = reinterpret_cast<IFnsiii>(IupGetCallback(ih, "DROPFILES_CB"));
-    if (cb && event->mimeData()->hasUrls())
-    {
-      QList<QUrl> urls = event->mimeData()->urls();
-      int count = urls.size();
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-      int x = event->position().x();
-      int y = event->position().y();
-#else
-      int x = event->pos().x();
-      int y = event->pos().y();
-#endif
-
-      for (int i = 0; i < count; i++)
-      {
-        QString filePath = urls[i].toLocalFile();
-        if (!filePath.isEmpty())
-        {
-          QByteArray fileArray = filePath.toUtf8();
-          if (cb(ih, const_cast<char*>(fileArray.constData()), count - i - 1, x, y) == IUP_IGNORE)
-            break;
-        }
-      }
-
-      event->acceptProposedAction();
-      return;
-    }
-    QLineEdit::dropEvent(event);
   }
 };
 
@@ -323,51 +277,6 @@ protected:
   {
     QTextEdit::focusOutEvent(event);
     iupqtFocusInOutEvent(this, event, ih);
-  }
-
-  void dragEnterEvent(QDragEnterEvent* event) override
-  {
-    if (IupGetCallback(ih, "DROPFILES_CB"))
-    {
-      if (event->mimeData()->hasUrls())
-      {
-        event->acceptProposedAction();
-        return;
-      }
-    }
-    QTextEdit::dragEnterEvent(event);
-  }
-
-  void dropEvent(QDropEvent* event) override
-  {
-    auto cb = reinterpret_cast<IFnsiii>(IupGetCallback(ih, "DROPFILES_CB"));
-    if (cb && event->mimeData()->hasUrls())
-    {
-      QList<QUrl> urls = event->mimeData()->urls();
-      int count = urls.size();
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-      int x = event->position().x();
-      int y = event->position().y();
-#else
-      int x = event->pos().x();
-      int y = event->pos().y();
-#endif
-
-      for (int i = 0; i < count; i++)
-      {
-        QString filePath = urls[i].toLocalFile();
-        if (!filePath.isEmpty())
-        {
-          QByteArray fileArray = filePath.toUtf8();
-          if (cb(ih, const_cast<char*>(fileArray.constData()), count - i - 1, x, y) == IUP_IGNORE)
-            break;
-        }
-      }
-
-      event->acceptProposedAction();
-      return;
-    }
-    QTextEdit::dropEvent(event);
   }
 
   void mouseReleaseEvent(QMouseEvent* event) override
@@ -2054,7 +1963,6 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VISIBLECOLUMNS", nullptr, qtTextSetVisibleColumnsAttrib, IUPAF_SAMEASSYSTEM, "5", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLELINES", nullptr, qtTextSetVisibleLinesAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", qtTextGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DROPFILESTARGET", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", nullptr, iupTextSetAddFormatTagAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", nullptr, iupTextSetAddFormatTagHandleAttrib, nullptr, nullptr, IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);

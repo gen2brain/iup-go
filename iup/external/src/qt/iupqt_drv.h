@@ -27,6 +27,7 @@ class QApplication;
 class QFont;
 class QColor;
 class QPalette;
+class QPixmap;
 class QEvent;
 class QKeyEvent;
 class QMouseEvent;
@@ -152,6 +153,7 @@ IUP_DRV_API QApplication* iupqtGetApplication();
  ****************************************************************************/
 
 IUP_DRV_API QWidget* iupqtCanvasGetWidget(Ihandle* ih);
+IUP_DRV_API int iupqtCanvasBufferMatches(QPixmap* buffer, QWidget* widget);
 
 /****************************************************************************
  * Tooltip/Tips Management
