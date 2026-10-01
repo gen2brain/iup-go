@@ -595,14 +595,16 @@ public final class IupMenuHelper
         if (sDrawerMenuIh == 0) { forceNavigationRefresh(); return; }
 
         appendRecentItemsAsDrawer(m, sDrawerMenuIh);
+        int group = Menu.NONE;
         int count = nativeGetChildCount(sDrawerMenuIh);
         for (int i = 0; i < count; i++)
         {
             long childIh = nativeGetChild(sDrawerMenuIh, i);
             if (childIh == 0) continue;
             int type = nativeGetType(childIh);
-            if (type == TYPE_ITEM) addDrawerLeaf(m, childIh);
-            else if (type == TYPE_SUBMENU) addDrawerSection(m, childIh);
+            if (type == TYPE_ITEM) addDrawerLeaf(m, childIh, group);
+            else if (type == TYPE_SUBMENU) addDrawerSection(m, childIh, group);
+            else if (type == TYPE_SEPARATOR) group = sNextSectionGroupId++;
         }
         forceNavigationRefresh();
     }
@@ -720,18 +722,18 @@ public final class IupMenuHelper
     }
 
     /* Section header; EXPANDABLE=YES makes it a clickable collapsible header. */
-    private static void addDrawerSection(Menu parent, long submenuIh)
+    private static void addDrawerSection(Menu parent, long submenuIh, int parentGroupId)
     {
         String title = nativeGetTitle(submenuIh);
         long innerMenu = submenuInnerMenu(submenuIh);
 
         if (nativeGetBoolAttribute(submenuIh, "EXPANDABLE"))
         {
-            addExpandableSection(parent, submenuIh, title, innerMenu);
+            addExpandableSection(parent, submenuIh, title, innerMenu, parentGroupId);
             return;
         }
 
-        android.view.SubMenu section = parent.addSubMenu(Menu.NONE, Menu.NONE, Menu.NONE, title != null ? title : "");
+        android.view.SubMenu section = parent.addSubMenu(parentGroupId, Menu.NONE, Menu.NONE, title != null ? title : "");
         if (innerMenu == 0) return;
 
         appendRecentItemsAsDrawer(section, innerMenu);
@@ -762,7 +764,7 @@ public final class IupMenuHelper
         }
     }
 
-    private static void addExpandableSection(Menu parent, long submenuIh, String title, long innerMenu)
+    private static void addExpandableSection(Menu parent, long submenuIh, String title, long innerMenu, int parentGroupId)
     {
         Boolean cached = sExpandedState.get(submenuIh);
         boolean expanded = (cached != null)
@@ -774,7 +776,7 @@ public final class IupMenuHelper
 
         int headerId = sDrawerNextId++;
         sDrawerEntries.put(headerId, new DrawerEntry(submenuIh, RECENT_INDEX_EXPAND));
-        MenuItem hdr = parent.add(Menu.NONE, headerId, Menu.NONE, headerLabel(title, expanded));
+        MenuItem hdr = parent.add(parentGroupId, headerId, Menu.NONE, headerLabel(title, expanded));
         hdr.setEnabled(true);
         hdr.setCheckable(false);
         Activity a = IupApplication.getIupApplication().getCurrentActivity();
