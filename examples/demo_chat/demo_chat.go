@@ -326,7 +326,8 @@ func retheme() {
 	setPalette()
 	makeIcons()
 	iup.GetHandle("chat_subtitle").SetAttribute("FGCOLOR", pal.accentText)
-	open(selected)
+	showConversation(selected)
+	iup.Update(iup.GetHandle("chat_conv"))
 }
 
 func rgb(c string) (float64, float64, float64) {
@@ -349,6 +350,14 @@ func mix(a, b string, t float64) string {
 }
 
 func open(idx int) {
+	showConversation(idx)
+	if mobile {
+		iup.GetHandle("chat_screens").SetAttribute("VALUEPOS", "1")
+	}
+	iup.Update(iup.GetHandle("chat_conv"))
+}
+
+func showConversation(idx int) {
 	subtitle := iup.GetHandle("chat_subtitle")
 	thread := iup.GetHandle("chat_thread")
 
@@ -370,10 +379,6 @@ func open(idx int) {
 	}
 	thread.SetAttribute("READONLY", "YES")
 	thread.SetAttribute("SCROLLTO", fmt.Sprintf("%d:1", thread.GetInt("LINECOUNT")))
-	if mobile {
-		iup.GetHandle("chat_screens").SetAttribute("VALUEPOS", "1")
-	}
-	iup.Update(iup.GetHandle("chat_conv"))
 }
 
 func appendMessage(m *message) {
