@@ -684,7 +684,7 @@ static int qtFileDlgPopup(Ihandle* ih, int x, int y)
       const QString& filename = selectedFiles[0];
       QByteArray filenameBytes = filename.toUtf8();
 
-      char* final_filename = qtFileCheckExt(ih, filenameBytes.constData());
+      char* final_filename = dialogtype == 2 ? const_cast<char*>(filenameBytes.constData()) : qtFileCheckExt(ih, filenameBytes.constData());
       iupAttribSetStr(ih, "VALUE", final_filename);
 
       QString final_path = QString::fromUtf8(final_filename);

@@ -1188,7 +1188,7 @@ static int qtListSetValueAttrib(Ihandle* ih, const char* value)
         }
       }
 
-      iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
+      iupAttribSetStr(ih, "_IUPLIST_OLDVALUE", value);
       iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);
     }
   }
@@ -1767,10 +1767,15 @@ static void qtListWidgetItemSelectionChanged(QListWidget* list, Ihandle* ih)
   else
   {
     IFns multi_cb = reinterpret_cast<IFns>(IupGetCallback(ih, "MULTISELECT_CB"));
-    if (multi_cb)
+    auto cb = reinterpret_cast<IFnsii>(IupGetCallback(ih, "ACTION"));
+    if (multi_cb || cb)
     {
-      char* value = qtListGetValueAttrib(ih);
-      multi_cb(ih, value);
+      QVector<int> selected_pos;
+      int count = list->count();
+      for (int i = 0; i < count; i++)
+        if (list->item(i)->isSelected())
+          selected_pos.append(i);
+      iupListMultipleCallActionCb(ih, cb, multi_cb, selected_pos.data(), static_cast<int>(selected_pos.size()));
     }
   }
 
@@ -1795,12 +1800,11 @@ static void qtListEditTextChanged(QLineEdit* edit, Ihandle* ih)
 
 static void qtListCaretChanged(QLineEdit* edit, Ihandle* ih)
 {
-  auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "CARET_CB"));
+  auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
   if (cb)
   {
-    int pos = edit->cursorPosition() + 1;  /* IUP starts at 1 */
-    int col = 0;
-    cb(ih, pos, col);
+    int pos = edit->cursorPosition();
+    cb(ih, 1, pos + 1, pos);
   }
 }
 
