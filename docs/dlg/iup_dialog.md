@@ -503,6 +503,14 @@ Very simple dialog with a label and a button. The application is closed when the
 | GTK                               | Qt                              | Win32                            | macOS                            |
 | ![](../images/iupdialog_gtk3.png) | ![](../images/iupdialog_qt.png) | ![](../images/iupdialog_win.png) | ![](../images/iupdialog_mac.png) |
 
+MENU and DRAWER:
+
+|                                            |                                        |
+|--------------------------------------------|----------------------------------------|
+| Android                                    | iOS                                    |
+| ![](../images/iupdialogmenu_android.png)   | ![](../images/iupdialogmenu_ios.png)   |
+| ![](../images/iupdialogdrawer_android.png) | ![](../images/iupdialogdrawer_ios.png) |
+
 [Browse for Example Files](../../examples/)
 
 ### See Also
