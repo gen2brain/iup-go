@@ -347,9 +347,9 @@ public:
     {
       QColor track_off_color = pal.color(QPalette::Active, QPalette::Mid);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
-      /* macOS sets Accent to controlAccentColor; a near-white Accent means it was never set */
+      /* an unset Accent reads near-white on macOS and black with the GTK 3 platform theme */
       QColor accent = pal.color(QPalette::Active, QPalette::Accent);
-      QColor track_on_color = (accent.lightness() > 250) ? pal.color(QPalette::Active, QPalette::Highlight) : accent;
+      QColor track_on_color = (accent.lightness() > 250 || accent.lightness() < 5) ? pal.color(QPalette::Active, QPalette::Highlight) : accent;
 #else
       QColor track_on_color = pal.color(QPalette::Active, QPalette::Highlight);
 #endif
