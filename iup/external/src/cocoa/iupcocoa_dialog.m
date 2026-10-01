@@ -14,6 +14,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_globalattrib.h"
 #include "iup_str.h"
 #define _IUPDLG_PRIVATE
@@ -791,6 +792,8 @@ static void cocoaDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, i
 
   if (x) *x = the_rect.origin.x;
   if (y) *y = iupcocoaComputeIupScreenHeightFromCartesian(the_rect.origin.y + the_rect.size.height);
+
+  iupdrvAddScreenOffset(x, y, -1);
 }
 
 IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)

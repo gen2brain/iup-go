@@ -20,6 +20,7 @@
 #include "iup_attrib.h"
 #include "iup_image.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_markup.h"
 
 #include "iupcocoa_drv.h"
@@ -497,12 +498,7 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 {
   if (!ih->handle) return;
 
-  Ihandle* context_menu_ih = (Ihandle*)iupcocoaCommonBaseGetContextMenuAttrib(ih);
-  if(NULL != context_menu_ih)
-  {
-    IupDestroy(context_menu_ih);
-  }
-  iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
+  iupcocoaCommonBaseDestroyContextMenu(ih);
 
   if (iupAttribGet(ih, "_IUPCOCOA_CURSOR_DELEGATE"))
   {
@@ -1462,33 +1458,9 @@ static void cocoaWarpPointer(int x, int y)
 
 IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
+  iupdrvAddScreenOffset(&x, &y, 1);
   @autoreleasepool {
     cocoaWarpPointer(x, y);
-  }
-}
-
-IUP_DRV_API void iupcocoaCommonBaseAppendMenuItems(NSMenu* dst_menu, NSMenu* src_menu)
-{
-  if((src_menu != nil) && ([src_menu numberOfItems] > 0))
-  {
-    [dst_menu addItem:[NSMenuItem separatorItem]];
-
-    NSArray<NSMenuItem*>* item_array = [src_menu itemArray];
-    for(NSMenuItem* a_default_item in item_array)
-    {
-      NSMenuItem* item_copy = [a_default_item copy];
-      [dst_menu addItem:item_copy];
-      [item_copy release];
-    }
-  }
-}
-
-IUP_DRV_API void iupcocoaCommonBaseAppendDefaultMenuItemsForClassType(NSMenu* dst_menu, Class class_of_widget)
-{
-  if([class_of_widget respondsToSelector:@selector(defaultMenu)])
-  {
-    NSMenu* default_menu = [class_of_widget defaultMenu];
-    iupcocoaCommonBaseAppendMenuItems(dst_menu, default_menu);
   }
 }
 
@@ -1517,12 +1489,8 @@ IUP_DRV_API void iupcocoaCommonBaseSetContextMenuForWidget(Ihandle* ih, id widge
     return;
   }
 
-  NSMenu* the_menu = (NSMenu*)menu_ih->handle;
   if ([widget_to_attach_menu_to respondsToSelector:@selector(setMenu:)])
-  {
-    iupcocoaCommonBaseAppendDefaultMenuItemsForClassType(the_menu, [widget_to_attach_menu_to class]);
-    [widget_to_attach_menu_to setMenu:the_menu];
-  }
+    [widget_to_attach_menu_to setMenu:(NSMenu*)menu_ih->handle];
 }
 
 IUP_DRV_API int iupcocoaCommonBaseIupButtonForCocoaButton(NSInteger which_cocoa_button)
@@ -1681,19 +1649,21 @@ IUP_DRV_API bool iupcocoaCommonBaseScrollWheelCallback(Ihandle* ih, NSEvent* the
   return !caller_should_propagate;
 }
 
-IUP_DRV_API int iupcocoaCommonBaseSetContextMenuAttrib(Ihandle* ih, const char* value)
-{
-  Ihandle* menu_ih = (Ihandle*)value;
-  id widget_to_attach_menu_to = iupcocoaGetMainView(ih);
-
-  iupcocoaCommonBaseSetContextMenuForWidget(ih, widget_to_attach_menu_to, menu_ih);
-
-  return 1;
-}
-
 IUP_DRV_API char* iupcocoaCommonBaseGetContextMenuAttrib(Ihandle* ih)
 {
   return (char*)iupAttribGet(ih, "_COCOA_CONTEXT_MENU_IH");
+}
+
+IUP_DRV_API void iupcocoaCommonBaseDestroyContextMenu(Ihandle* ih)
+{
+  Ihandle* menu_ih = (Ihandle*)iupAttribGet(ih, "_COCOA_CONTEXT_MENU_IH");
+  if (!menu_ih)
+    return;
+
+  iupAttribSet(ih, "_COCOA_CONTEXT_MENU_IH", NULL);
+  iupAttribSet(ih, "_IUPCOCOA_CONTEXTMENU_SET", NULL);
+  iupAttribSet(ih, "CONTEXTMENU", NULL);
+  IupDestroy(menu_ih);
 }
 
 

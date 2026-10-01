@@ -863,12 +863,7 @@ static void cocoaToggleUnMapMethod(Ihandle* ih)
 {
   id the_toggle = ih->handle;
 
-  Ihandle* context_menu_ih = (Ihandle*)iupcocoaCommonBaseGetContextMenuAttrib(ih);
-  if (context_menu_ih != NULL)
-  {
-    IupDestroy(context_menu_ih);
-    iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
-  }
+  iupcocoaCommonBaseDestroyContextMenu(ih);
 
   [the_toggle setTarget:nil];
   objc_setAssociatedObject(the_toggle, IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);

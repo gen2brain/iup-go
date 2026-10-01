@@ -3646,6 +3646,12 @@ static int cocoaListSetContextMenuAttrib(Ihandle* ih, const char* value)
   Ihandle* menu_ih = (Ihandle*)value;
   id widget_to_attach = nil;
 
+  if (!ih->handle)
+  {
+    iupcocoaCommonBaseSetContextMenuForWidget(ih, nil, menu_ih);
+    return 1;
+  }
+
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
   switch(sub_type)
   {
@@ -4234,12 +4240,7 @@ static void cocoaListUnMapMethod(Ihandle* ih)
       break;
   }
 
-  Ihandle* menu_ih = (Ihandle*)iupAttribGet(ih, "_COCOA_CONTEXT_MENU_IH");
-  if (menu_ih)
-  {
-    IupDestroy(menu_ih);
-    iupAttribSet(ih, "_COCOA_CONTEXT_MENU_IH", NULL);
-  }
+  iupcocoaCommonBaseDestroyContextMenu(ih);
 
   objc_setAssociatedObject(base_view, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
 
@@ -4283,7 +4284,7 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, cocoaListSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLTO", NULL, cocoaListSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, cocoaListSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CONTEXTMENU", iupcocoaCommonBaseGetContextMenuAttrib, cocoaListSetContextMenuAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CONTEXTMENU", iupcocoaCommonBaseGetContextMenuAttrib, cocoaListSetContextMenuAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, cocoaListSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", NULL, cocoaListSetFilterAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);

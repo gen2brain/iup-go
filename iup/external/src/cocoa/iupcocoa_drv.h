@@ -80,11 +80,9 @@ IUP_DRV_API bool iupcocoaCommonBaseHandleMouseMotionCallback(Ihandle* ih, NSEven
 /* WHEEL_CB: WARNING: IUP does not support delta-y axis. */
 IUP_DRV_API bool iupcocoaCommonBaseScrollWheelCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view);
 
-IUP_DRV_API void iupcocoaCommonBaseAppendMenuItems(NSMenu* dst_menu, NSMenu* src_menu);
-IUP_DRV_API void iupcocoaCommonBaseAppendDefaultMenuItemsForClassType(NSMenu* dst_menu, Class class_of_widget);
 IUP_DRV_API void iupcocoaCommonBaseSetContextMenuForWidget(Ihandle* ih, id ih_widget_to_attach_menu_to, Ihandle* menu_ih);
-IUP_DRV_API int iupcocoaCommonBaseSetContextMenuAttrib(Ihandle* ih, const char* value);
 IUP_DRV_API char* iupcocoaCommonBaseGetContextMenuAttrib(Ihandle* ih);
+IUP_DRV_API void iupcocoaCommonBaseDestroyContextMenu(Ihandle* ih);
 
 IUP_DRV_API bool iupcocoaKeyEvent(Ihandle* ih, NSEvent* ns_event, int mac_key_code, bool is_pressed);
 IUP_DRV_API int iupcocoaKeyDecodeEvent(NSEvent* ns_event, int mac_key_code);
@@ -98,6 +96,10 @@ IUP_DRV_API void iupcocoaButtonKeySetStatus(NSEvent* ns_event, char* out_status)
 IUP_DRV_API void iupcocoaReloadTableView(NSTableView* tableView);
 
 #ifdef GNUSTEP
+/* sets a default in the volatile GSPrimaryDomain, which overrides every other domain and is never saved; nil removes it */
+IUP_DRV_API void iupcocoaGnustepSetPrimaryDefault(NSString* key, id value);
+/* NULL or empty restores the theme from the user defaults; returns 0 when the theme does not load */
+IUP_DRV_API int iupcocoaGnustepSetTheme(const char* name);
 /* GNUstep needs drawsGrid=NO and autoresizesAllColumnsToFit=YES set directly; the setters are no-ops */
 IUP_DRV_API void iupcocoaGnustepConfigureTableView(NSTableView* tableView);
 /* intrinsic content height with fallbacks; -intrinsicContentSize is (-1,-1) on GNUstep */

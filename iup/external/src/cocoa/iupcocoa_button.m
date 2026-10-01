@@ -976,12 +976,7 @@ static void cocoaButtonUnMapMethod(Ihandle* ih)
 {
   id the_button = ih->handle;
 
-  Ihandle* context_menu_ih = (Ihandle*)iupcocoaCommonBaseGetContextMenuAttrib(ih);
-  if(context_menu_ih)
-  {
-    IupDestroy(context_menu_ih);
-    iupcocoaCommonBaseSetContextMenuAttrib(ih, NULL);
-  }
+  iupcocoaCommonBaseDestroyContextMenu(ih);
 
   [the_button setTarget:nil];
   id button_receiver = objc_getAssociatedObject(the_button, IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY);
