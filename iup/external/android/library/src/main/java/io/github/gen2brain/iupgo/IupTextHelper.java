@@ -146,6 +146,8 @@ public final class IupTextHelper
     {
         long ihandlePtr;
         KeyListener savedKeyListener;
+        /* input type while editable; READONLY swaps the KeyListener, which resets the type */
+        int editInputType;
         int maxChars;
         /* Set during programmatic mutation; the TextWatcher skips dispatch while true. */
         boolean suppressVC;
@@ -210,7 +212,7 @@ public final class IupTextHelper
         IupEditText tv = newEditText(ihandlePtr, 1, til.getContext());
         tv.setSingleLine(true);
         /* NO_SUGGESTIONS so filter sees per-key, not composition batches. */
-        tv.setInputType(InputType.TYPE_CLASS_TEXT
+        setEditInputType(tv, InputType.TYPE_CLASS_TEXT
             | InputType.TYPE_TEXT_VARIATION_NORMAL
             | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         tv.setMinHeight(0);
@@ -231,7 +233,7 @@ public final class IupTextHelper
     public static View createMultiLineText(final long ihandlePtr, boolean wordWrap, boolean autoHide)
     {
         IupEditText tv = newEditText(ihandlePtr, 0, new ContextThemeWrapper(IupCommon.getContextThemeWrapper(), android.R.style.Theme_DeviceDefault));
-        tv.setInputType(InputType.TYPE_CLASS_TEXT
+        setEditInputType(tv, InputType.TYPE_CLASS_TEXT
             | InputType.TYPE_TEXT_VARIATION_NORMAL
             | InputType.TYPE_TEXT_FLAG_MULTI_LINE
             | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
@@ -298,7 +300,7 @@ public final class IupTextHelper
         TextInputLayout til = newTextInputLayout();
         final IupEditText tv = newEditText(ihandlePtr, 1, til.getContext());
         tv.setSingleLine(true);
-        tv.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED);
+        setEditInputType(tv, InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED);
         tv.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
         tv.setMinHeight(0);
         tv.setMinimumHeight(0);
@@ -824,12 +826,26 @@ public final class IupTextHelper
     {
         IupEditText tv = resolve(v);
         if (tv == null) return;
-        int type = tv.getInputType();
+        int type = tv.editInputType;
         if (password)
             type = (type & ~InputType.TYPE_MASK_VARIATION) | InputType.TYPE_TEXT_VARIATION_PASSWORD;
         else
             type = (type & ~InputType.TYPE_MASK_VARIATION) | InputType.TYPE_TEXT_VARIATION_NORMAL;
-        tv.setInputType(type);
+        setEditInputType(tv, type);
+    }
+
+    @Keep
+    public static void setAutoCorrect(final long ihandlePtr, View v, boolean autoCorrect)
+    {
+        IupEditText tv = resolve(v);
+        if (tv == null || (tv.editInputType & InputType.TYPE_MASK_CLASS) != InputType.TYPE_CLASS_TEXT) return;
+        int flags = InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES;
+        int type = tv.editInputType;
+        if (autoCorrect)
+            type = (type & ~InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS) | flags;
+        else
+            type = (type & ~flags) | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
+        setEditInputType(tv, type);
     }
 
     @Keep
@@ -846,9 +862,7 @@ public final class IupTextHelper
     {
         IupEditText tv = resolve(v);
         if (tv == null) return;
-        setReadOnly(tv, readOnly, InputType.TYPE_CLASS_TEXT
-            | InputType.TYPE_TEXT_VARIATION_NORMAL
-            | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        setReadOnly(tv, readOnly);
         /* setTextIsSelectable installs ArrowKeyMovementMethod, which drops ClickableSpan taps. */
         tv.setMovementMethod(LinkMovementMethod.getInstance());
     }
@@ -857,7 +871,7 @@ public final class IupTextHelper
     public static void setReadOnlySingleLine(final long ihandlePtr, View v, boolean readOnly)
     {
         IupEditText tv = resolve(v);
-        if (tv != null) setReadOnly(tv, readOnly, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_NORMAL);
+        if (tv != null) setReadOnly(tv, readOnly);
     }
 
     @Keep
@@ -874,12 +888,21 @@ public final class IupTextHelper
         return tv != null && tv.getKeyListener() == null;
     }
 
-    private static void setReadOnly(IupEditText tv, boolean readOnly, int editInputType)
+    private static void setReadOnly(IupEditText tv, boolean readOnly)
     {
         /* setInputType(TYPE_NULL) would wipe MULTI_LINE; swap the KeyListener instead. */
         tv.setTextIsSelectable(true);
         tv.setKeyListener(readOnly ? null : tv.savedKeyListener);
-        if (!readOnly) tv.setInputType(editInputType);
+        if (!readOnly) tv.setInputType(tv.editInputType);
+    }
+
+    /* setInputType installs a KeyListener, so a read-only field only records the type */
+    private static void setEditInputType(IupEditText tv, int type)
+    {
+        tv.editInputType = type;
+        if (tv.getKeyListener() == null) return;
+        tv.setInputType(type);
+        tv.savedKeyListener = tv.getKeyListener();
     }
 
 

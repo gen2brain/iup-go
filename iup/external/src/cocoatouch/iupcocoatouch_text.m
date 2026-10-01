@@ -1400,6 +1400,43 @@ static char* cocoaTouchTextGetReadOnlyAttrib(Ihandle* ih)
 	return "NO";
 }
 
+static int cocoaTouchTextSetAutoCorrectAttrib(Ihandle* ih, const char* value)
+{
+	if (iupAttribGetBoolean(ih, "SPIN") || iupAttribGetBoolean(ih, "PASSWORD"))
+		return 1;
+
+	BOOL on = iupStrBoolean(value) ? YES : NO;
+	UITextAutocorrectionType correction = on ? UITextAutocorrectionTypeYes : UITextAutocorrectionTypeNo;
+	UITextSpellCheckingType spelling = on ? UITextSpellCheckingTypeYes : UITextSpellCheckingTypeNo;
+	UITextAutocapitalizationType capitals = on ? UITextAutocapitalizationTypeSentences : UITextAutocapitalizationTypeNone;
+	UITextSmartQuotesType quotes = on ? UITextSmartQuotesTypeYes : UITextSmartQuotesTypeNo;
+	UITextSmartDashesType dashes = on ? UITextSmartDashesTypeYes : UITextSmartDashesTypeNo;
+
+	UITextField* f = cocoaTouchTextField(ih);
+	UITextView* v = f ? nil : cocoaTouchTextView(ih);
+	UIView<UITextInput>* input = f ? (UIView<UITextInput>*)f : (UIView<UITextInput>*)v;
+	if (f)
+	{
+		f.autocorrectionType = correction;
+		f.spellCheckingType = spelling;
+		f.autocapitalizationType = capitals;
+		f.smartQuotesType = quotes;
+		f.smartDashesType = dashes;
+	}
+	else if (v)
+	{
+		v.autocorrectionType = correction;
+		v.spellCheckingType = spelling;
+		v.autocapitalizationType = capitals;
+		v.smartQuotesType = quotes;
+		v.smartDashesType = dashes;
+	}
+	/* a focused input keeps its keyboard configuration until reloaded */
+	if (input && [input isFirstResponder])
+		[input reloadInputViews];
+	return 1;
+}
+
 static int cocoaTouchTextSetPasswordAttrib(Ihandle* ih, const char* value)
 {
 	UITextField* f = cocoaTouchTextField(ih);
@@ -2062,6 +2099,7 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "READONLY", cocoaTouchTextGetReadOnlyAttrib, cocoaTouchTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "CUEBANNER", NULL, cocoaTouchTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "PASSWORD", NULL, cocoaTouchTextSetPasswordAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "AUTOCORRECT", NULL, cocoaTouchTextSetAutoCorrectAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, cocoaTouchTextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "BORDER", NULL, cocoaTouchTextSetBorderAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, cocoaTouchTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NO_INHERIT);

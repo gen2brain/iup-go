@@ -90,12 +90,28 @@ static NSTextField* cocoaTextGetStepperTextField(Ihandle* ih)
   return (NSTextField*)iupcocoaGetMainView(ih);
 }
 
+static void cocoaTextSetCorrections(NSTextView* text_view, BOOL enable)
+{
+#ifndef GNUSTEP
+  [text_view setAutomaticSpellingCorrectionEnabled:enable];
+  [text_view setContinuousSpellCheckingEnabled:enable];
+  [text_view setAutomaticQuoteSubstitutionEnabled:enable];
+  [text_view setAutomaticDashSubstitutionEnabled:enable];
+  [text_view setAutomaticTextReplacementEnabled:enable];
+#else
+  (void)text_view;
+  (void)enable;
+#endif
+}
+
 @interface IupCocoaTextFieldCell : NSTextFieldCell
 {
   CGFloat _horizPadding;
   CGFloat _vertPadding;
+  BOOL _autoCorrect;
 }
 - (void)setIupPaddingHoriz:(CGFloat)horiz vert:(CGFloat)vert;
+- (void)setIupAutoCorrect:(BOOL)enable;
 @end
 
 @implementation IupCocoaTextFieldCell
@@ -126,6 +142,20 @@ static NSTextField* cocoaTextGetStepperTextField(Ihandle* ih)
 {
   _horizPadding = horiz;
   _vertPadding = vert;
+}
+
+- (void)setIupAutoCorrect:(BOOL)enable
+{
+  _autoCorrect = enable;
+}
+
+/* the window's field editor is shared by every text field, so each field applies its own setting */
+- (NSText*)setUpFieldEditorAttributes:(NSText*)text_object
+{
+  NSText* editor = [super setUpFieldEditorAttributes:text_object];
+  if ([editor isKindOfClass:[NSTextView class]])
+    cocoaTextSetCorrections((NSTextView*)editor, _autoCorrect);
+  return editor;
 }
 
 - (NSRect)drawingRectForBounds:(NSRect)rect
@@ -4539,6 +4569,30 @@ static char* cocoaTextGetActiveAttrib(Ihandle* ih)
   return iupStrReturnBoolean(is_active);
 }
 
+static int cocoaTextSetAutoCorrectAttrib(Ihandle* ih, const char* value)
+{
+  BOOL enable = iupStrBoolean(value) ? YES : NO;
+  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
+
+  if (sub_type == IUPCOCOATEXTSUBTYPE_VIEW)
+  {
+    cocoaTextSetCorrections(cocoaTextGetTextView(ih), enable);
+    return 1;
+  }
+  if (sub_type != IUPCOCOATEXTSUBTYPE_FIELD)
+    return 1;
+
+  NSTextField* text_field = cocoaTextGetTextField(ih);
+  if (![[text_field cell] isKindOfClass:[IupCocoaTextFieldCell class]])
+    return 1;
+
+  [(IupCocoaTextFieldCell*)[text_field cell] setIupAutoCorrect:enable];
+  NSText* editor = [text_field currentEditor];
+  if ([editor isKindOfClass:[NSTextView class]])
+    cocoaTextSetCorrections((NSTextView*)editor, enable);
+  return 1;
+}
+
 static int cocoaTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
 {
   BOOL is_editable = !(BOOL)iupStrBoolean(value);
@@ -5305,6 +5359,7 @@ static int cocoaTextMapMethod(Ihandle* ih)
 
     [text_view setEditable:!iupAttribGetBoolean(ih, "READONLY")];
     [text_view setSelectable:YES];
+    cocoaTextSetCorrections(text_view, NO);
     [text_view setRichText:ih->data->has_formatting];
     [text_view setImportsGraphics:NO];
     [text_view setUsesFindPanel:YES];
@@ -5764,6 +5819,7 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, cocoaTextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, cocoaTextSetTabSizeAttrib, "8", NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "PASSWORD", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AUTOCORRECT", NULL, cocoaTextSetAutoCorrectAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, cocoaTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FILTER", NULL, cocoaTextSetFilterAttrib, NULL, NULL, IUPAF_NO_INHERIT);
