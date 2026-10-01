@@ -957,7 +957,7 @@ public final class IupTextHelper
 
         tv.setOnKeyListener((v, keyCode, ev) -> {
             if (ev.getAction() != KeyEvent.ACTION_DOWN) return false;
-            return dispatchKAny(tv.ihandlePtr, keyCode, ev.getMetaState());
+            return dispatchKAny(tv.ihandlePtr, keyCode, ev.getMetaState(), ev.getUnicodeChar(ev.getMetaState()));
         });
 
         /* IME Done/Go/Send/Next -> AKEYCODE_ENTER so DEFAULTENTER fires; multiline uses native Enter */
@@ -970,7 +970,7 @@ public final class IupTextHelper
                 case android.view.inputmethod.EditorInfo.IME_ACTION_NEXT:
                 case android.view.inputmethod.EditorInfo.IME_ACTION_PREVIOUS:
                 case android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH:
-                    return dispatchKAny(tv.ihandlePtr, KeyEvent.KEYCODE_ENTER, 0);
+                    return dispatchKAny(tv.ihandlePtr, KeyEvent.KEYCODE_ENTER, 0, 0);
                 default:
                     return false;
             }
@@ -1008,12 +1008,16 @@ public final class IupTextHelper
             String insert = source.subSequence(start, end).toString();
             int key = 0;
             if (insert.length() == 1) key = insert.charAt(0);
+            /* an IME composing a word replaces it on every key, so only committed characters are typed keys */
+            boolean composing = source instanceof android.text.Spannable
+                && android.view.inputmethod.BaseInputConnection.getComposingSpanStart((android.text.Spannable)source) >= 0;
+            int typed = composing ? 0 : key;
 
             String newValue = new StringBuilder(dest)
                 .replace(dstart, dend, insert)
                 .toString();
 
-            int result = dispatchAction(tv.ihandlePtr, key, newValue);
+            int result = dispatchAction(tv.ihandlePtr, key, typed, newValue);
             if (result == 0) return dest.subSequence(dstart, dend);
             if (result > 0 && key != 0)
                 return String.valueOf((char) result);
@@ -1027,9 +1031,9 @@ public final class IupTextHelper
     }
 
 
-    public static native int dispatchAction(long ihandlePtr, int key, String newValue);
+    public static native int dispatchAction(long ihandlePtr, int key, int typed, String newValue);
     public static native void dispatchValueChanged(long ihandlePtr);
-    public static native boolean dispatchKAny(long ihandlePtr, int androidKeyCode, int metaState);
+    public static native boolean dispatchKAny(long ihandlePtr, int androidKeyCode, int metaState, int unicodeChar);
     public static native void dispatchCaret(long ihandlePtr, int pos);
 
     /** Applies SPININC/MIN/MAX/WRAP, fires SPIN_CB, returns new value or Integer.MIN_VALUE if rejected. */

@@ -20,8 +20,20 @@
 
 #include <string.h>
 
+#ifndef AMETA_SHIFT_ON
+#define AMETA_SHIFT_ON  0x0001
+#define AMETA_ALT_ON    0x0002
+#define AMETA_CTRL_ON   0x1000
+#define AMETA_META_ON   0x10000
+#endif
 
-/* AKEYCODE -> IUP key. Printable chars route through ACTION, not K_ANY. */
+
+static int androidTextIsTypedKey(int c)
+{
+  return (c >= K_SP && c <= K_tilde) || (c >= 0xA0 && c <= 0xFF);
+}
+
+/* AKEYCODE -> IUP key; printable keys use the typed character instead */
 static int androidTextAndroidKeyToIup(jint keyCode)
 {
   switch (keyCode)
@@ -47,12 +59,22 @@ static int androidTextAndroidKeyToIup(jint keyCode)
 }
 
 JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatchAction(
-    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint key, jstring new_value)
+    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint key, jint typed, jstring new_value)
 {
   (void)cls;
 
   Ihandle* ih = (Ihandle*)ihandle_ptr;
   if (!ih || !iupObjectCheck(ih)) return -1;
+
+  /* a typed character reaches K_ANY here unless its key event already did */
+  if (iupAttribGet(ih, "_IUPANDROID_KEYTYPED"))
+    iupAttribSet(ih, "_IUPANDROID_KEYTYPED", NULL);
+  else if (androidTextIsTypedKey(typed))
+  {
+    int kret = iupKeyCallKeyCb(ih, (int)typed);
+    if (kret == IUP_CLOSE) IupExitLoop();
+    if (kret == IUP_IGNORE || kret == IUP_CLOSE || !iupObjectCheck(ih)) return 0;
+  }
 
   /* same pipeline drives Text and List EDITBOX; switch callback + mask owner by class */
   int is_list = ih->iclass && ih->iclass->name && strcmp(ih->iclass->name, "list") == 0;
@@ -103,15 +125,18 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatchValu
 
 
 JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatchKAny(
-    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint android_key_code, jint meta_state)
+    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint android_key_code, jint meta_state, jint unicode_char)
 {
   (void)jni_env;
   (void)cls;
 
   Ihandle* ih = (Ihandle*)ihandle_ptr;
   if (!ih || !iupObjectCheck(ih)) return JNI_FALSE;
+  iupAttribSet(ih, "_IUPANDROID_KEYTYPED", NULL);
 
   int iup_key = androidTextAndroidKeyToIup(android_key_code);
+  if (iup_key == 0 && !(meta_state & (AMETA_ALT_ON | AMETA_CTRL_ON | AMETA_META_ON)) && androidTextIsTypedKey(unicode_char))
+    iup_key = (int)unicode_char;
   if (iup_key == 0) return JNI_FALSE;
 
   /* Android meta_state bit 1 == META_SHIFT_ON. */
@@ -121,6 +146,9 @@ JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatch
   int ret = iupKeyCallKeyCb(ih, iup_key);
   if (ret == IUP_CLOSE) IupExitLoop();
   if (ret == IUP_IGNORE) kany_consumed = 1;
+  if (!iupObjectCheck(ih)) return JNI_TRUE;
+  if (!kany_consumed && androidTextIsTypedKey(iup_key))
+    iupAttribSet(ih, "_IUPANDROID_KEYTYPED", "1");
 
   if (!kany_consumed && iupKeyProcessNavigation(ih, iup_key, shift))
     return JNI_TRUE;
