@@ -212,8 +212,7 @@ static int qmlFileDlgPopup(Ihandle* ih, int x, int y)
     if (value)
       use_portal = iupStrBoolean(value);
     else
-      use_portal = IupGetGlobal("SANDBOX") != nullptr ||
-                   (iupAttribGetBoolean(ih, "MULTIPLEFILES") && iupStrEqualNoCase(iupAttribGetStr(ih, "DIALOGTYPE"), "OPEN"));
+      use_portal = IupGetGlobal("SANDBOX") != nullptr;
 
     if (use_portal && iupUnixPortalFileDialog(ih) == IUP_NOERROR)
       return IUP_NOERROR;
