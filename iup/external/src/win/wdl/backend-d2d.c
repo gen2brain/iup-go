@@ -24,10 +24,28 @@
 #include "backend-d2d.h"
 #include "lock.h"
 
+#include <d3d11.h>
+
 
 static HMODULE d2d_dll = NULL;
 
 dummy_ID2D1Factory* d2d_factory = NULL;
+
+static const GUID dummy_IID_IDXGIDevice =
+        {0x54ec77fa,0x1377,0x44e6,{0x8c,0x32,0x88,0xfd,0x5f,0x44,0xc8,0x4c}};
+
+static const GUID dummy_IID_IDXGIFactory2 =
+        {0x50c83a1c,0xe072,0x4c48,{0x87,0xb0,0x36,0x30,0xfa,0x36,0xa6,0xd0}};
+
+static const GUID dummy_IID_IDXGISurface =
+        {0xcafcb56c,0x6ac3,0x4889,{0xbf,0x47,0x9e,0x23,0xbb,0xd2,0x60,0xec}};
+
+static HMODULE d3d11_dll = NULL;
+static ID3D11Device* d2d_d3d_device = NULL;
+static IDXGIFactory2* d2d_dxgi_factory = NULL;
+static dummy_ID2D1Device* d2d_device = NULL;
+static UINT d2d_device_generation = 0;
+static BOOL d2d_device_unsupported = FALSE;
 
 
 static inline void
@@ -87,9 +105,261 @@ err_LoadLibrary:
     return -1;
 }
 
+static void
+d2d_device_release(void)
+{
+    if(d2d_device != NULL) {
+        dummy_ID2D1Device_Release(d2d_device);
+        d2d_device = NULL;
+    }
+    if(d2d_dxgi_factory != NULL) {
+        d2d_dxgi_factory->lpVtbl->Release(d2d_dxgi_factory);
+        d2d_dxgi_factory = NULL;
+    }
+    if(d2d_d3d_device != NULL) {
+        d2d_d3d_device->lpVtbl->Release(d2d_d3d_device);
+        d2d_d3d_device = NULL;
+    }
+}
+
+static BOOL
+d2d_device_create(void)
+{
+    PFN_D3D11_CREATE_DEVICE fn_D3D11CreateDevice;
+    dummy_ID2D1Factory1* factory1 = NULL;
+    IDXGIDevice* dxgi_device = NULL;
+    IDXGIAdapter* adapter = NULL;
+    HRESULT hr;
+
+    if(d2d_device != NULL)
+        return TRUE;
+    if(d2d_device_unsupported)
+        return FALSE;
+
+    if(d3d11_dll == NULL) {
+        d3d11_dll = wd_load_system_dll(_T("D3D11.DLL"));
+        if(d3d11_dll == NULL)
+            goto err;
+    }
+
+    fn_D3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE) GetProcAddress(d3d11_dll, "D3D11CreateDevice");
+    if(fn_D3D11CreateDevice == NULL)
+        goto err;
+
+    hr = fn_D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+                NULL, 0, D3D11_SDK_VERSION, &d2d_d3d_device, NULL, NULL);
+    if(FAILED(hr))
+        hr = fn_D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_WARP, NULL, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+                    NULL, 0, D3D11_SDK_VERSION, &d2d_d3d_device, NULL, NULL);
+    if(FAILED(hr)) {
+        WD_TRACE_HR("d2d_device_create: D3D11CreateDevice() failed.");
+        goto err;
+    }
+
+    hr = d2d_d3d_device->lpVtbl->QueryInterface(d2d_d3d_device, &dummy_IID_IDXGIDevice, (void**) &dxgi_device);
+    if(FAILED(hr))
+        goto err;
+    hr = dxgi_device->lpVtbl->GetAdapter(dxgi_device, &adapter);
+    if(FAILED(hr))
+        goto err;
+    hr = adapter->lpVtbl->GetParent(adapter, &dummy_IID_IDXGIFactory2, (void**) &d2d_dxgi_factory);
+    if(FAILED(hr))
+        goto err;
+
+    hr = dummy_ID2D1Factory_QueryInterface(d2d_factory, &dummy_IID_ID2D1Factory1, (void**) &factory1);
+    if(FAILED(hr))
+        goto err;
+    hr = dummy_ID2D1Factory1_CreateDevice(factory1, (IUnknown*) dxgi_device, &d2d_device);
+    if(FAILED(hr)) {
+        WD_TRACE_HR("d2d_device_create: ID2D1Factory1::CreateDevice() failed.");
+        goto err;
+    }
+
+    dummy_ID2D1Factory1_Release(factory1);
+    adapter->lpVtbl->Release(adapter);
+    dxgi_device->lpVtbl->Release(dxgi_device);
+    d2d_device_generation++;
+    return TRUE;
+
+err:
+    if(factory1 != NULL)
+        dummy_ID2D1Factory1_Release(factory1);
+    if(adapter != NULL)
+        adapter->lpVtbl->Release(adapter);
+    if(dxgi_device != NULL)
+        dxgi_device->lpVtbl->Release(dxgi_device);
+    d2d_device_release();
+    d2d_device_unsupported = TRUE;
+    return FALSE;
+}
+
+/* Canvases still on an older device must not drop the current one. */
+void
+d2d_device_lost(UINT generation)
+{
+    wd_lock();
+    if(generation == d2d_device_generation)
+        d2d_device_release();
+    wd_unlock();
+}
+
+static BOOL
+d2d_swap_chain_attach_target(d2d_canvas_t* c)
+{
+    dummy_D2D1_BITMAP_PROPERTIES1 props;
+    IDXGISurface* surface;
+    HRESULT hr;
+
+    hr = c->swap_chain->lpVtbl->GetBuffer(c->swap_chain, 0, &dummy_IID_IDXGISurface, (void**) &surface);
+    if(FAILED(hr)) {
+        WD_TRACE_HR("d2d_swap_chain_attach_target: IDXGISwapChain::GetBuffer() failed.");
+        return FALSE;
+    }
+
+    memset(&props, 0, sizeof(props));
+    props.pixelFormat.format = dummy_DXGI_FORMAT_B8G8R8A8_UNORM;
+    props.pixelFormat.alphaMode = dummy_D2D1_ALPHA_MODE_IGNORE;
+    props.dpiX = 96.0f;
+    props.dpiY = 96.0f;
+    props.bitmapOptions = dummy_D2D1_BITMAP_OPTIONS_TARGET | dummy_D2D1_BITMAP_OPTIONS_CANNOT_DRAW;
+
+    hr = dummy_ID2D1DeviceContext_CreateBitmapFromDxgiSurface(c->device_context,
+                (IUnknown*) surface, &props, &c->swap_target);
+    surface->lpVtbl->Release(surface);
+    if(FAILED(hr)) {
+        WD_TRACE_HR("d2d_swap_chain_attach_target: "
+                    "ID2D1DeviceContext::CreateBitmapFromDxgiSurface() failed.");
+        return FALSE;
+    }
+
+    dummy_ID2D1DeviceContext_SetTarget(c->device_context, (dummy_ID2D1Image*) c->swap_target);
+    return TRUE;
+}
+
+static void
+d2d_swap_chain_detach_target(d2d_canvas_t* c)
+{
+    if(c->swap_target != NULL) {
+        dummy_ID2D1DeviceContext_SetTarget(c->device_context, NULL);
+        dummy_ID2D1Bitmap1_Release(c->swap_target);
+        c->swap_target = NULL;
+    }
+}
+
+d2d_canvas_t*
+d2d_swap_chain_canvas_alloc(HWND hwnd, UINT width, UINT height, BOOL rtl)
+{
+    DXGI_SWAP_CHAIN_DESC1 desc;
+    IDXGISwapChain1* swap_chain;
+    dummy_ID2D1DeviceContext* device_context;
+    d2d_canvas_t* c;
+    UINT generation;
+    HRESULT hr;
+
+    wd_lock();
+    if(!d2d_device_create()) {
+        wd_unlock();
+        return NULL;
+    }
+
+    /* Bitblt model with a single buffer keeps the back buffer between frames,
+     * so partial repaints work like D2D1_PRESENT_OPTIONS_RETAINCONTENTS. */
+    memset(&desc, 0, sizeof(desc));
+    desc.Width = (width > 0 ? width : 1);
+    desc.Height = (height > 0 ? height : 1);
+    desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    desc.SampleDesc.Count = 1;
+    desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    desc.BufferCount = 1;
+    desc.Scaling = DXGI_SCALING_STRETCH;
+    desc.SwapEffect = DXGI_SWAP_EFFECT_SEQUENTIAL;
+    desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+
+    hr = d2d_dxgi_factory->lpVtbl->CreateSwapChainForHwnd(d2d_dxgi_factory,
+                (IUnknown*) d2d_d3d_device, hwnd, &desc, NULL, NULL, &swap_chain);
+    if(FAILED(hr)) {
+        wd_unlock();
+        WD_TRACE_HR("d2d_swap_chain_canvas_alloc: "
+                    "IDXGIFactory2::CreateSwapChainForHwnd() failed.");
+        return NULL;
+    }
+    d2d_dxgi_factory->lpVtbl->MakeWindowAssociation(d2d_dxgi_factory, hwnd, DXGI_MWA_NO_WINDOW_CHANGES);
+
+    hr = dummy_ID2D1Device_CreateDeviceContext(d2d_device, 0, &device_context);
+    generation = d2d_device_generation;
+    wd_unlock();
+    if(FAILED(hr)) {
+        WD_TRACE_HR("d2d_swap_chain_canvas_alloc: "
+                    "ID2D1Device::CreateDeviceContext() failed.");
+        swap_chain->lpVtbl->Release(swap_chain);
+        return NULL;
+    }
+
+    c = d2d_canvas_alloc((dummy_ID2D1RenderTarget*) device_context, D2D_CANVASTYPE_SWAPCHAIN, width, rtl);
+    if(c == NULL) {
+        dummy_ID2D1DeviceContext_Release(device_context);
+        swap_chain->lpVtbl->Release(swap_chain);
+        return NULL;
+    }
+    c->swap_chain = swap_chain;
+    c->device_generation = generation;
+
+    if(!d2d_swap_chain_attach_target(c)) {
+        d2d_swap_chain_release(c);
+        dummy_ID2D1DeviceContext_Release(c->device_context);
+        free(c);
+        return NULL;
+    }
+
+    return c;
+}
+
+BOOL
+d2d_swap_chain_resize(d2d_canvas_t* c, UINT width, UINT height)
+{
+    HRESULT hr;
+
+    d2d_swap_chain_detach_target(c);
+    hr = c->swap_chain->lpVtbl->ResizeBuffers(c->swap_chain, 0,
+                (width > 0 ? width : 1), (height > 0 ? height : 1), DXGI_FORMAT_UNKNOWN, 0);
+    if(FAILED(hr)) {
+        WD_TRACE_HR("d2d_swap_chain_resize: IDXGISwapChain::ResizeBuffers() failed.");
+        return FALSE;
+    }
+    return d2d_swap_chain_attach_target(c);
+}
+
+HRESULT
+d2d_swap_chain_present(d2d_canvas_t* c)
+{
+    HRESULT hr;
+
+    hr = c->swap_chain->lpVtbl->Present(c->swap_chain, 0, 0);
+    if(hr == DXGI_ERROR_DEVICE_REMOVED  ||  hr == DXGI_ERROR_DEVICE_RESET)
+        d2d_device_lost(c->device_generation);
+    return hr;
+}
+
+void
+d2d_swap_chain_release(d2d_canvas_t* c)
+{
+    d2d_swap_chain_detach_target(c);
+    if(c->swap_chain != NULL) {
+        c->swap_chain->lpVtbl->Release(c->swap_chain);
+        c->swap_chain = NULL;
+    }
+}
+
 void
 d2d_fini(void)
 {
+    d2d_device_release();
+    if(d3d11_dll != NULL) {
+        FreeLibrary(d3d11_dll);
+        d3d11_dll = NULL;
+    }
+    d2d_device_unsupported = FALSE;
+
     dummy_ID2D1Factory_Release(d2d_factory);
     FreeLibrary(d2d_dll);
     d2d_dll = NULL;

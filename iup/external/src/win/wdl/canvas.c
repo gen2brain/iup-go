@@ -48,6 +48,15 @@ wdCreateCanvasWithPaintStruct(HWND hWnd, PAINTSTRUCT* pPS, DWORD dwFlags)
         dummy_ID2D1HwndRenderTarget* target;
         HRESULT hr;
 
+        if(dwFlags & WD_CANVAS_NOGDICOMPAT) {
+            c = d2d_swap_chain_canvas_alloc(hWnd, rect.right - rect.left, rect.bottom - rect.top,
+                        (dwFlags & WD_CANVAS_LAYOUTRTL));
+            if(c != NULL) {
+                dummy_ID2D1RenderTarget_SetTextAntialiasMode(c->target, dummy_D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
+                return (WD_HCANVAS) c;
+            }
+        }
+
         props2.hwnd = hWnd;
         props2.pixelSize.width = rect.right - rect.left;
         props2.pixelSize.height = rect.bottom - rect.top;
@@ -169,6 +178,8 @@ wdDestroyCanvas(WD_HCANVAS hCanvas)
         if(c->gdi_interop != NULL)
             WD_TRACE("wdDestroyCanvas: Logical error: Unpaired wdStartGdi()/wdEndGdi().");
 
+        if(c->type == D2D_CANVASTYPE_SWAPCHAIN)
+            d2d_swap_chain_release(c);
         dummy_ID2D1RenderTarget_Release(c->target);
         free(c);
     } else {
@@ -216,7 +227,16 @@ wdEndPaint(WD_HCANVAS hCanvas)
         if(FAILED(hr)) {
             if(hr != D2DERR_RECREATE_TARGET)
                 WD_TRACE_HR("wdEndPaint: ID2D1RenderTarget::EndDraw() failed.");
+            else if(c->type == D2D_CANVASTYPE_SWAPCHAIN)
+                d2d_device_lost(c->device_generation);
             return FALSE;
+        }
+        if(c->type == D2D_CANVASTYPE_SWAPCHAIN) {
+            hr = d2d_swap_chain_present(c);
+            if(FAILED(hr)) {
+                WD_TRACE_HR("wdEndPaint: IDXGISwapChain::Present() failed.");
+                return FALSE;
+            }
         }
         return TRUE;
     } else {
@@ -238,15 +258,20 @@ wdResizeCanvas(WD_HCANVAS hCanvas, UINT uWidth, UINT uHeight)
 {
     if(d2d_enabled()) {
         d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
-        if(c->type == D2D_CANVASTYPE_HWND) {
-            dummy_D2D1_SIZE_U size = { uWidth, uHeight };
-            HRESULT hr;
+        if(c->type == D2D_CANVASTYPE_HWND  ||  c->type == D2D_CANVASTYPE_SWAPCHAIN) {
+            if(c->type == D2D_CANVASTYPE_SWAPCHAIN) {
+                if(!d2d_swap_chain_resize(c, uWidth, uHeight))
+                    return FALSE;
+            } else {
+                dummy_D2D1_SIZE_U size = { uWidth, uHeight };
+                HRESULT hr;
 
-            hr = dummy_ID2D1HwndRenderTarget_Resize(c->hwnd_target, &size);
-            if(FAILED(hr)) {
-                WD_TRACE_HR("wdResizeCanvas: "
-                            "ID2D1HwndRenderTarget_Resize() failed.");
-                return FALSE;
+                hr = dummy_ID2D1HwndRenderTarget_Resize(c->hwnd_target, &size);
+                if(FAILED(hr)) {
+                    WD_TRACE_HR("wdResizeCanvas: "
+                                "ID2D1HwndRenderTarget_Resize() failed.");
+                    return FALSE;
+                }
             }
 
             /* In RTL mode, we have to update the transformation matrix
@@ -581,7 +606,8 @@ d2d_canvas_get_image_data_d2d11(d2d_canvas_t* c, BYTE* buffer, UINT width, UINT 
 
     memset(&props, 0, sizeof(props));
     props.pixelFormat.format = dummy_DXGI_FORMAT_B8G8R8A8_UNORM;
-    props.pixelFormat.alphaMode = dummy_D2D1_ALPHA_MODE_PREMULTIPLIED;
+    props.pixelFormat.alphaMode = (c->type == D2D_CANVASTYPE_SWAPCHAIN) ?
+                dummy_D2D1_ALPHA_MODE_IGNORE : dummy_D2D1_ALPHA_MODE_PREMULTIPLIED;
     props.dpiX = 96.0f;
     props.dpiY = 96.0f;
     props.bitmapOptions = dummy_D2D1_BITMAP_OPTIONS_CPU_READ | dummy_D2D1_BITMAP_OPTIONS_CANNOT_DRAW;
