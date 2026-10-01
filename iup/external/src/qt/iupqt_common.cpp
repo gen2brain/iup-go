@@ -751,16 +751,19 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
   if (!receiver) return;
 
   Qt::KeyboardModifiers mods(static_cast<int>(state));
+  QString text;
+  if (iup_isprint(iup_XkeyBase(key)) && !iup_isCtrlXkey(key) && !iup_isAltXkey(key) && !iup_isSysXkey(key))
+    text = QString(QChar(iup_XkeyBase(key)));
   if (press & 0x01)
-    QCoreApplication::postEvent(receiver, new QKeyEvent(QEvent::KeyPress, static_cast<int>(keyval), mods));
+    QCoreApplication::postEvent(receiver, new QKeyEvent(QEvent::KeyPress, static_cast<int>(keyval), mods, text));
   if (press & 0x02)
-    QCoreApplication::postEvent(receiver, new QKeyEvent(QEvent::KeyRelease, static_cast<int>(keyval), mods));
+    QCoreApplication::postEvent(receiver, new QKeyEvent(QEvent::KeyRelease, static_cast<int>(keyval), mods, text));
 }
 
 extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 {
   QPoint global(x, y);
-  QWidget* receiver = QApplication::widgetAt(global);
+  QWindow* receiver = QGuiApplication::topLevelAt(global);
   if (!receiver) return;
   QPoint local = receiver->mapFromGlobal(global);
 
