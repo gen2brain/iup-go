@@ -647,6 +647,7 @@ int iupDialogCustomFrameRestore(Ihandle* ih)
     IupRefresh(ih);
     IupFlush(); /* update size first */
 
+    iupdrvAddScreenOffset(&x, &y, 1);
     iupdrvDialogSetPosition(ih, x, y);
     return 1;
   }
@@ -666,7 +667,10 @@ void iupDialogCustomFrameMaximize(Ihandle* ih)
 
   IupRefresh(ih);
 
-  iupdrvDialogSetPosition(ih, 0, 0);
+  x = 0;
+  y = 0;
+  iupdrvAddScreenOffset(&x, &y, 1);
+  iupdrvDialogSetPosition(ih, x, y);
 }
 
 typedef enum
