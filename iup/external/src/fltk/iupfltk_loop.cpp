@@ -88,6 +88,24 @@ static int fltk_main_loop_level = 0;
 static bool fltk_loop_exit_flag[10] = {false};
 
 
+static bool fltk_loop_exit_requested = false;
+
+static int fltkLoopStepResult()
+{
+  if (fltk_main_loop_level > 0 && fltk_main_loop_level <= 10)
+  {
+    if (!fltk_loop_exit_flag[fltk_main_loop_level - 1])
+      return IUP_DEFAULT;
+    Fl::awake();
+    return IUP_CLOSE;
+  }
+
+  if (!fltk_loop_exit_requested)
+    return IUP_DEFAULT;
+  fltk_loop_exit_requested = false;
+  return IUP_CLOSE;
+}
+
 extern "C" IUP_API void IupExitLoop(void)
 {
   char* exit_loop = IupGetGlobal("EXITLOOP");
@@ -99,6 +117,8 @@ extern "C" IUP_API void IupExitLoop(void)
       fltk_loop_exit_flag[fltk_main_loop_level - 1] = true;
       Fl::awake();
     }
+    else if (fltk_main_loop_level == 0)
+      fltk_loop_exit_requested = true;
   }
 }
 
@@ -127,6 +147,7 @@ extern "C" IUP_API int IupMainLoop(void)
   }
 
   fltk_loop_exit_flag[current_level] = false;
+  fltk_loop_exit_requested = false;
 
   while (!fltk_loop_exit_flag[current_level])
     Fl::wait(1e20);
@@ -143,26 +164,13 @@ extern "C" IUP_API int IupMainLoop(void)
 extern "C" IUP_API int IupLoopStepWait(void)
 {
   Fl::wait(1e20);
-  return IUP_DEFAULT;
+  return fltkLoopStepResult();
 }
 
 extern "C" IUP_API int IupLoopStep(void)
 {
   Fl::check();
-
-  if (fltk_idle_cb)
-  {
-    int ret = fltk_idle_cb();
-    if (ret == IUP_CLOSE)
-    {
-      fltk_idle_cb = nullptr;
-      return IUP_CLOSE;
-    }
-    if (ret == IUP_IGNORE)
-      fltk_idle_cb = nullptr;
-  }
-
-  return IUP_DEFAULT;
+  return fltkLoopStepResult();
 }
 
 extern "C" IUP_API void IupFlush(void)

@@ -28,6 +28,7 @@ using namespace Microsoft::UI::Xaml::Controls;
 
 static int winui_main_loop_level = 0;
 static int winui_exit_loop = 0;
+static int winui_quit_pending = 0;
 static IFidle winui_idle_cb = nullptr;
 
 static void winuiFlushXamlLayout()
@@ -50,15 +51,35 @@ IUP_DRV_API void iupwinuiLoopCleanup(void)
 {
   winui_idle_cb = nullptr;
   winui_exit_loop = 0;
+  winui_quit_pending = 0;
   winui_main_loop_level = 0;
 }
 
 extern "C" void IupExitLoop(void)
 {
-  winui_exit_loop = 1;
+  char* exit_loop = IupGetGlobal("EXITLOOP");
+  if (winui_main_loop_level > 1 || !exit_loop || iupStrBoolean(exit_loop))
+  {
+    winui_exit_loop = 1;
 
-  if (winui_main_loop_level <= 1)
-    PostQuitMessage(0);
+    if (winui_main_loop_level <= 1 && !winui_quit_pending)
+    {
+      winui_quit_pending = 1;
+      PostQuitMessage(0);
+    }
+  }
+}
+
+static int winuiLoopStepResult(int ret)
+{
+  if (winui_main_loop_level > 0)
+  {
+    if (ret == IUP_CLOSE)
+      IupExitLoop();
+    if (winui_exit_loop)
+      return IUP_CLOSE;
+  }
+  return ret;
 }
 
 extern "C" int IupMainLoopLevel(void)
@@ -71,7 +92,10 @@ static int winuiLoopProcessMessage(MSG* msg)
   int dispatched = 0;
 
   if (msg->message == WM_QUIT)
+  {
+    winui_quit_pending = 0;
     return IUP_CLOSE;
+  }
 
   if (msg->wParam == VK_MENU)
   {
@@ -188,6 +212,7 @@ extern "C" int IupMainLoop(void)
         int idle_ret = winui_idle_cb();
         if (idle_ret == IUP_CLOSE)
         {
+          winui_idle_cb = nullptr;
           return_code = IUP_CLOSE;
           break;
         }
@@ -203,11 +228,13 @@ extern "C" int IupMainLoop(void)
         return_code = IUP_ERROR;
       if (ret == 0 || winuiLoopProcessMessage(&msg) == IUP_CLOSE)
       {
+        if (ret == 0)
+          winui_quit_pending = 0;
         return_code = IUP_NOERROR;
         break;
       }
     }
-  } while (ret && !winui_exit_loop);
+  } while (ret && !(winui_exit_loop && winui_main_loop_level > 1));
 
   winui_exit_loop = 0;
   winui_main_loop_level--;
@@ -225,24 +252,31 @@ extern "C" int IupLoopStepWait(void)
   if (ret == -1)
     return IUP_ERROR;
   if (ret == 0 || winuiLoopProcessMessage(&msg) == IUP_CLOSE)
-    return IUP_CLOSE;
-  return IUP_DEFAULT;
+  {
+    if (ret == 0)
+      winui_quit_pending = 0;
+    return winuiLoopStepResult(IUP_CLOSE);
+  }
+  return winuiLoopStepResult(IUP_DEFAULT);
 }
 
 extern "C" int IupLoopStep(void)
 {
   MSG msg;
   if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-    return winuiLoopProcessMessage(&msg);
+    return winuiLoopStepResult(winuiLoopProcessMessage(&msg));
   else if (winui_idle_cb)
   {
     int ret = winui_idle_cb();
     if (ret == IUP_CLOSE)
-      return IUP_CLOSE;
+    {
+      winui_idle_cb = nullptr;
+      return winuiLoopStepResult(IUP_CLOSE);
+    }
     if (ret == IUP_IGNORE)
       winui_idle_cb = nullptr;
   }
-  return IUP_DEFAULT;
+  return winuiLoopStepResult(IUP_DEFAULT);
 }
 
 extern "C" void IupFlush(void)

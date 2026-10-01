@@ -124,17 +124,30 @@ IUP_API int IupMainLoop(void)
   return IUP_NOERROR;
 }
 
+static int motLoopStepResult(void)
+{
+  if (!mot_exitmainloop)
+    return IUP_DEFAULT;
+
+  if (mot_mainloop == 0)
+    mot_exitmainloop = 0;
+  return IUP_CLOSE;
+}
+
 IUP_API int IupLoopStepWait(void)
 {
-  return motLoopProcessEvent();
+  XtAppProcessEvent(iupmot_appcontext, XtIMAll);
+  return motLoopStepResult();
 }
 
 IUP_API int IupLoopStep(void)
 {
-  if (!XtAppPending(iupmot_appcontext))
-    return IUP_DEFAULT;
+  if (XtAppPending(iupmot_appcontext))
+    XtAppProcessEvent(iupmot_appcontext, XtIMAll);
+  else if (mot_idle_cb && motIdlecbWorkProc(NULL))
+    XtRemoveWorkProc(mot_idle_id);
 
-  return motLoopProcessEvent();
+  return motLoopStepResult();
 }
 
 IUP_API void IupFlush(void)

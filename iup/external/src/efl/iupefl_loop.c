@@ -183,16 +183,34 @@ IUP_SDK_API int IupMainLoop(void)
   return IUP_NOERROR;
 }
 
+static int eflLoopStepResult(void)
+{
+  if (!efl_exitmainloop)
+    return IUP_DEFAULT;
+
+  if (efl_mainloop == 0)
+    efl_exitmainloop = 0;
+  return IUP_CLOSE;
+}
+
 IUP_SDK_API int IupLoopStepWait(void)
 {
   ecore_main_loop_iterate_may_block(EINA_TRUE);
-  return efl_exitmainloop ? IUP_CLOSE : IUP_DEFAULT;
+  return eflLoopStepResult();
 }
 
 IUP_SDK_API int IupLoopStep(void)
 {
   ecore_main_loop_iterate();
-  return efl_exitmainloop ? IUP_CLOSE : IUP_DEFAULT;
+
+  if (efl_idler)
+  {
+    Ecore_Idler* idler = efl_idler;
+    if (eflIdlerCallback(NULL) == ECORE_CALLBACK_CANCEL)
+      ecore_idler_del(idler);
+  }
+
+  return eflLoopStepResult();
 }
 
 IUP_SDK_API void IupFlush(void)

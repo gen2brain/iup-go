@@ -70,6 +70,22 @@ IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
     gtk_idle_id = g_idle_add(gtkIdleFunc, NULL);
 }
 
+static int gtk_exit_requested = 0;
+
+static int gtkLoopStepResult(gboolean quit)
+{
+  if (quit && gtk_main_level() > 0)
+    return IUP_CLOSE;
+
+  if (gtk_exit_requested)
+  {
+    gtk_exit_requested = 0;
+    return IUP_CLOSE;
+  }
+
+  return IUP_DEFAULT;
+}
+
 IUP_API void IupExitLoop(void)
 {
   char* exit_loop = IupGetGlobal("EXITLOOP");
@@ -80,6 +96,8 @@ IUP_API void IupExitLoop(void)
     /* gtk_main_quit() quits the innermost level only */
     gtk_main_quit();
   }
+  else if (level == 0 && (!exit_loop || iupStrBoolean(exit_loop)))
+    gtk_exit_requested = 1;
 }
 
 IUP_API int IupMainLoopLevel(void)
@@ -96,6 +114,7 @@ IUP_API int IupMainLoop(void)
     iupLoopCallEntryCb();
   }
 
+  gtk_exit_requested = 0;
   gtk_main();
 
   if (gtk_main_level() == 0)
@@ -106,16 +125,12 @@ IUP_API int IupMainLoop(void)
 
 IUP_API int IupLoopStepWait(void)
 {
-  if (gtk_main_iteration_do(TRUE) && gtk_main_level() > 0)
-    return IUP_CLOSE;
-  return IUP_DEFAULT;
+  return gtkLoopStepResult(gtk_main_iteration_do(TRUE));
 }
 
 IUP_API int IupLoopStep(void)
 {
-  if (gtk_main_iteration_do(FALSE) && gtk_main_level() > 0)
-    return IUP_CLOSE;
-  return IUP_DEFAULT;
+  return gtkLoopStepResult(gtk_main_iteration_do(FALSE));
 }
 
 IUP_API void IupFlush(void)
