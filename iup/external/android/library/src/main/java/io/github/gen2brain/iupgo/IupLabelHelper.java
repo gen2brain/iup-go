@@ -145,7 +145,7 @@ public final class IupLabelHelper
         textView.setTextIsSelectable(enable);
     }
 
-    /* h and v are device pixels (already scaled by iupdrvScaleNaturalPx). */
+    /* h and v are device pixels. */
     @Keep
     public static void setPadding(View view, int h, int v)
     {

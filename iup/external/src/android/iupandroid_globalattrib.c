@@ -9,6 +9,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include <jni.h>
 
@@ -60,7 +61,26 @@ static char* androidGetVirtualScreen(void)
   jint vals[4] = {0, 0, 0, 0};
   (*jni_env)->GetIntArrayRegion(jni_env, arr, 0, 4, vals);
   (*jni_env)->DeleteLocalRef(jni_env, arr);
-  return iupStrReturnStrf("%d %d %d %d", (int)vals[0], (int)vals[1], (int)vals[2], (int)vals[3]);
+  return iupStrReturnStrf("%d %d %d %d", iupAndroid_PxToDpRound(vals[0]), iupAndroid_PxToDpRound(vals[1]), iupAndroid_PxToDpRound(vals[2]), iupAndroid_PxToDpRound(vals[3]));
+}
+
+static char* androidGetMonitorsInfo(void)
+{
+  int monitors_count = androidGetIntStatic("getMonitorsCount");
+  const char* info = androidGetStringStatic("getMonitorsInfo");
+  char* str = iupStrGetMemory(monitors_count * 50);
+  char* pstr = str;
+  int x, y, w, h, i;
+
+  for (i = 0; i < monitors_count && info && sscanf(info, "%d %d %d %d", &x, &y, &w, &h) == 4; i++)
+  {
+    pstr += snprintf(pstr, (str + monitors_count * 50) - pstr, "%d %d %d %d\n",
+                     iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y), iupAndroid_PxToDpRound(w), iupAndroid_PxToDpRound(h));
+    info = strchr(info, '\n');
+    if (info) info++;
+  }
+
+  return str;
 }
 
 
@@ -103,7 +123,7 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   if (iupStrEqual(name, "APPNAME"))        return androidGetStringStatic("getAppName");
   if (iupStrEqual(name, "VIRTUALSCREEN"))  return androidGetVirtualScreen();
   if (iupStrEqual(name, "MONITORSCOUNT"))  return iupStrReturnInt(androidGetIntStatic("getMonitorsCount"));
-  if (iupStrEqual(name, "MONITORSINFO"))   return androidGetStringStatic("getMonitorsInfo");
+  if (iupStrEqual(name, "MONITORSINFO"))   return androidGetMonitorsInfo();
   if (iupStrEqual(name, "TRUECOLORCANVAS")) return iupStrReturnBoolean(iupdrvGetScreenDepth() > 8);
   if (iupStrEqual(name, "UTF8MODE"))       return iupStrReturnBoolean(1);
   if (iupStrEqual(name, "TOUCHREADY"))     return iupStrReturnBoolean(1);

@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <limits.h>
+#include <math.h>
 #include <unistd.h>
 
 #include <jni.h>
@@ -228,14 +229,27 @@ float iupAndroid_GetDisplayDensity(void)
   return cached;
 }
 
-int iupAndroid_DpToPx(float dp)
+int iupAndroid_DpToPx(int dp)
 {
-  return (int)(dp * iupAndroid_GetDisplayDensity() + 0.5f);
+  return (int)lroundf((float)dp * iupAndroid_GetDisplayDensity());
 }
 
-float iupAndroid_PxToDp(int px)
+int iupAndroid_PxToDp(float px)
 {
-  return (float)px / iupAndroid_GetDisplayDensity();
+  return (int)ceilf(px / iupAndroid_GetDisplayDensity() - 0.001f);  /* float noise on exact multiples */
+}
+
+int iupAndroid_PxToDpRound(float px)
+{
+  return (int)lroundf(px / iupAndroid_GetDisplayDensity());
+}
+
+void iupAndroid_DpToPxRect(int x, int y, int w, int h, int* px_x, int* px_y, int* px_w, int* px_h)
+{
+  *px_x = iupAndroid_DpToPx(x);
+  *px_y = iupAndroid_DpToPx(y);
+  *px_w = iupAndroid_DpToPx(x + w) - *px_x;
+  *px_h = iupAndroid_DpToPx(y + h) - *px_y;
 }
 
 /* Cached empty-MaterialButton size, pairs with IupFontHelper.measureButtonText. */
@@ -255,8 +269,8 @@ void iupAndroid_GetButtonBorderSize(int* w, int* h)
     jclass rect_class = (*jni_env)->GetObjectClass(jni_env, j_rect);
     jmethodID width_id = (*jni_env)->GetMethodID(jni_env, rect_class, "width", "()I");
     jmethodID height_id = (*jni_env)->GetMethodID(jni_env, rect_class, "height", "()I");
-    cached_w = (int)(*jni_env)->CallIntMethod(jni_env, j_rect, width_id);
-    cached_h = (int)(*jni_env)->CallIntMethod(jni_env, j_rect, height_id);
+    cached_w = iupAndroid_PxToDp((int)(*jni_env)->CallIntMethod(jni_env, j_rect, width_id));
+    cached_h = iupAndroid_PxToDp((int)(*jni_env)->CallIntMethod(jni_env, j_rect, height_id));
 
     (*jni_env)->DeleteLocalRef(jni_env, rect_class);
     (*jni_env)->DeleteLocalRef(jni_env, j_rect);
@@ -311,11 +325,13 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   jobject child_handle = ih->handle;
+  int x, y, w, h;
+  iupAndroid_DpToPxRect(ih->x, ih->y, ih->currentwidth, ih->currentheight, &x, &y, &w, &h);
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupCommon, jni_env, "io/github/gen2brain/iupgo/IupCommon");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupCommon_setWidgetPosition, jni_env, java_class, "setWidgetPosition", "(Ljava/lang/Object;IIII)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, child_handle, ih->x, ih->y, ih->currentwidth, ih->currentheight);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, child_handle, (jint)x, (jint)y, (jint)w, (jint)h);
   iupAndroid_CheckException(jni_env, "IupCommon.setWidgetPosition");
 
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
@@ -345,8 +361,8 @@ static void androidCommonGetViewScreenLocation(Ihandle* ih, int* sx, int* sy)
   {
     jint vals[2];
     (*jni_env)->GetIntArrayRegion(jni_env, arr, 0, 2, vals);
-    *sx = (int)vals[0];
-    *sy = (int)vals[1];
+    *sx = iupAndroid_PxToDpRound((int)vals[0]);
+    *sy = iupAndroid_PxToDpRound((int)vals[1]);
     (*jni_env)->DeleteLocalRef(jni_env, arr);
   }
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
@@ -548,7 +564,7 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupCommon, jni_env, "io/github/gen2brain/iupgo/IupCommon");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "sendMouse", "(IIII)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jint)x, (jint)y, (jint)bt, (jint)status);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jint)iupAndroid_DpToPx(x), (jint)iupAndroid_DpToPx(y), (jint)bt, (jint)status);
   iupAndroid_CheckException(jni_env, "IupCommon.sendMouse");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }

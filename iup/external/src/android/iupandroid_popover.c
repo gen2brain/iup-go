@@ -75,8 +75,8 @@ static int androidPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       "(Landroid/widget/PopupWindow;Landroid/view/View;IIIIZ)V");
     (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id,
       ih->handle, anchor->handle,
-      (jint)x, (jint)y,
-      (jint)ih->currentwidth, (jint)ih->currentheight,
+      (jint)iupAndroid_DpToPx(x), (jint)iupAndroid_DpToPx(y),
+      (jint)iupAndroid_DpToPx(ih->currentwidth), (jint)iupAndroid_DpToPx(ih->currentheight),
       (jboolean)(autohide ? JNI_TRUE : JNI_FALSE));
     iupAndroid_CheckException(jni_env, "IupPopoverHelper.show");
 

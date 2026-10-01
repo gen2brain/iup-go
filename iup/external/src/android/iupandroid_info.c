@@ -42,8 +42,8 @@ static void androidQueryDisplayMetrics(void)
   {
     jint vals[3];
     (*jni_env)->GetIntArrayRegion(jni_env, arr, 0, 3, vals);
-    s_screen_w = vals[0];
-    s_screen_h = vals[1];
+    s_screen_w = iupAndroid_PxToDpRound(vals[0]);
+    s_screen_h = iupAndroid_PxToDpRound(vals[1]);
     s_screen_dpi = vals[2];
     (*jni_env)->DeleteLocalRef(jni_env, arr);
   }
@@ -55,8 +55,8 @@ static void androidQueryDisplayMetrics(void)
   {
     jint vals[2];
     (*jni_env)->GetIntArrayRegion(jni_env, arr, 0, 2, vals);
-    s_full_w = vals[0];
-    s_full_h = vals[1];
+    s_full_w = iupAndroid_PxToDpRound(vals[0]);
+    s_full_h = iupAndroid_PxToDpRound(vals[1]);
     (*jni_env)->DeleteLocalRef(jni_env, arr);
   }
 
@@ -108,11 +108,6 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   return (double)s_screen_dpi;
 }
 
-IUP_SDK_API int iupdrvScaleNaturalPx(int px)
-{
-  return iupAndroid_DpToPx((float)px);
-}
-
 IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   if (x) *x = 0;
@@ -125,9 +120,8 @@ IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 
   jmethodID mx = (*env)->GetStaticMethodID(env, cls, "getLastTouchX", "()I");
   jmethodID my = (*env)->GetStaticMethodID(env, cls, "getLastTouchY", "()I");
-  /* Device px, matching the IUP layout coord space on Android. */
-  if (mx && x) *x = (int)(*env)->CallStaticIntMethod(env, cls, mx);
-  if (my && y) *y = (int)(*env)->CallStaticIntMethod(env, cls, my);
+  if (mx && x) *x = iupAndroid_PxToDpRound((int)(*env)->CallStaticIntMethod(env, cls, mx));
+  if (my && y) *y = iupAndroid_PxToDpRound((int)(*env)->CallStaticIntMethod(env, cls, my));
   iupAndroid_CheckException(env, "IupActivity.getLastTouch");
   (*env)->DeleteLocalRef(env, cls);
 }

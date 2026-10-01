@@ -172,7 +172,6 @@ static void iFlatListCalcItemMaxSize(Ihandle* ih, iFlatListItem* items, int coun
   *max_h = 0;
 
   iupdrvFontGetCharSize(ih, NULL, max_h);
-  *max_h = iupControlBaseCanvasPx(*max_h);
 
   for (i = 0; i < count; i++)
   {
@@ -1777,7 +1776,7 @@ static void iFlatListComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* 
 
   if (fit2backimage && back_image)
   {
-    iupImageGetDrawInfo(back_image, w, h, NULL);
+    iupImageGetInfo(back_image, w, h, NULL);
     *w += 2 * ih->data->border_width;
     *h += 2 * ih->data->border_width;
 
@@ -1793,7 +1792,7 @@ static void iFlatListComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* 
 
   if (visiblecolumns)
   {
-    *w = iupControlBaseCanvasPx(iupdrvFontGetStringWidth(ih, "WWWWWWWWWW"));
+    *w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
     *w = (visiblecolumns*(*w)) / 10;
   }
   else
@@ -1807,7 +1806,6 @@ static void iFlatListComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* 
   if (max_h == 0)
   {
     iupdrvFontGetCharSize(ih, NULL, &max_h);
-    max_h = iupControlBaseCanvasPx(max_h);
   }
 
   *h = max_h * num_lines;
@@ -1833,10 +1831,6 @@ static void iFlatListComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* 
     *w += 2;
     *h += 2;
   }
-
-  /* canvas-coord -> HW px (uses float density for HiDPI canvas drivers). */
-  *w = iupdrvScaleNaturalPx(*w);
-  *h = iupdrvScaleNaturalPx(*h);
 }
 
 static void iFlatListSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)

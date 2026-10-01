@@ -21,7 +21,6 @@
 #include "iup_controls.h"
 #include "iup_str.h"
 #include "iup_drv.h"
-#include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
 #include "iup_drvfont.h"
 #include "iup_register.h"
@@ -60,7 +59,7 @@ static void iFlatValGetHandlerSize(Ihandle* ih, int is_horizontal, int draw_w, i
   {
     *width = 0;
     *height = 0;
-    iupImageGetDrawInfo(image, width, height, NULL);
+    iupImageGetInfo(image, width, height, NULL);
   }
   else
   {
@@ -296,7 +295,7 @@ static int iFlatValRedraw_CB(Ihandle* ih)
   {
     int x, y, width = 0, height = 0, make_inactive;
     const char* draw_image = iupFlatGetImageName(ih, "IMAGE", image, ih->data->pressed, ih->data->highlighted, active, &make_inactive);
-    iupImageGetDrawInfo(draw_image, &width, &height, NULL);
+    iupImageGetInfo(draw_image, &width, &height, NULL);
 
     /* always center the image */
     x = (x2 - x1 + 1 - width) / 2;
@@ -814,7 +813,7 @@ static void iFlatValComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* c
   if (fit2backimage && bgimage)
   {
     iupAttribSet(ih, "BORDERWIDTH", "0");
-    iupImageGetDrawInfo(bgimage, &natural_w, &natural_h, NULL);
+    iupImageGetInfo(bgimage, &natural_w, &natural_h, NULL);
   }
   else
   {
@@ -822,8 +821,6 @@ static void iFlatValComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* c
     int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
 
     iupdrvFontGetCharSize(ih, &charwidth, &charheight);
-    charwidth  = iupControlBaseCanvasPx(charwidth);
-    charheight = iupControlBaseCanvasPx(charheight);
 
     if (is_horizontal)
     {
@@ -841,9 +838,6 @@ static void iFlatValComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* c
 
   *w = natural_w + 2 * ih->data->focus_width;
   *h = natural_h + 2 * ih->data->focus_width;
-
-  *w = iupdrvScaleNaturalPx(*w);
-  *h = iupdrvScaleNaturalPx(*h);
 
   (void)children_expand; /* unset if not a container */
 }

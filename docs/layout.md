@@ -43,6 +43,9 @@ The native **Client** size is used only internally to reposition the elements in
 
 ### IUP Sizes
 
+On Android every pixel value in IUP (sizes, positions, margins, screen metrics, callback coordinates)
+is a density-independent pixel (dp), and on macOS and iOS it is a point.
+
 #### Natural Size
 
 IUP does not require that the application specifies the size of any element.

@@ -156,7 +156,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupMenuHelper, jni_env, "io/github/gen2brain/iupgo/IupMenuHelper");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "popup", "(JII)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jint)x, (jint)y);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jint)iupAndroid_DpToPx(x), (jint)iupAndroid_DpToPx(y));
   iupAndroid_CheckException(jni_env, "IupMenuHelper.popup");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
   return IUP_NOERROR;
@@ -166,7 +166,7 @@ IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 {
   (void)ih;
   /* Material toolbar is 56dp. */
-  return iupAndroid_DpToPx(56.0f);
+  return 56;
 }
 
 IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)

@@ -96,12 +96,6 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
 	}
 }
 
-IUP_SDK_API int iupdrvScaleNaturalPx(int px)
-{
-	/* UIKit layout is in points; Retina scale is rendering-only */
-	return px;
-}
-
 extern void iupCocoaTouchGetLastTouchScreen(CGPoint* out);
 
 static void cocoaTouchGetCursorPos(int* x, int* y)

@@ -58,12 +58,9 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchBu
   char status[IUPKEY_STATUS_SIZE];
   androidCanvasFillStatus(status, button, pressed, meta_state);
 
-  /* Touch in HW px, canvas/draw in logical px (float density for accuracy). */
-  float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
-
   /* IUP button codes are the ASCII digits '1'..'5', not integer indices. */
   int iup_button = '0' + button;
-  cb(ih, iup_button, pressed, (int)((float)x / d), (int)((float)y / d), status);
+  cb(ih, iup_button, pressed, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y), status);
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchMotion(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint x, jint y, jint meta_state, jint button_state)
@@ -86,8 +83,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchMo
   if (button_state & 8) iupKEY_SETBUTTON4(status);
   if (button_state & 16) iupKEY_SETBUTTON5(status);
 
-  float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
-  cb(ih, (int)((float)x / d), (int)((float)y / d), status);
+  cb(ih, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y), status);
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchAction(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint x1, jint y1, jint x2, jint y2)
@@ -101,7 +97,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchAc
   IFn cb = (IFn)IupGetCallback(ih, "ACTION");
   if (cb)
   {
-    iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", (int)x1, (int)y1, (int)x2, (int)y2);
+    iupAttribSetStrf(ih, "CLIPRECT", "%d %d %d %d", iupAndroid_PxToDpRound(x1), iupAndroid_PxToDpRound(y1), iupAndroid_PxToDp(x2 + 1) - 1, iupAndroid_PxToDp(y2 + 1) - 1);
     cb(ih);
     iupAttribSet(ih, "CLIPRECT", NULL);
   }
@@ -206,7 +202,7 @@ JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_isGest
   return IupGetCallback(ih, "GESTURE_CB") ? JNI_TRUE : JNI_FALSE;
 }
 
-/* x/y always need density conversion; only PAN's v1/v2 offset is in HW pixels too */
+/* only PAN's v1/v2 offset is in device px; the other gestures pass scale and angle */
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchGesture(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint gesture, jint state, jint x, jint y, jdouble v1, jdouble v2)
 {
   (void)jni_env;
@@ -218,12 +214,10 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchGe
   IFniiiidd cb = (IFniiiidd)IupGetCallback(ih, "GESTURE_CB");
   if (!cb) return;
 
-  float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
-
   double v1d = v1, v2d = v2;
-  if (gesture == IUP_GESTURE_PAN) { v1d /= d; v2d /= d; }
+  if (gesture == IUP_GESTURE_PAN) { v1d /= iupAndroid_GetDisplayDensity(); v2d /= iupAndroid_GetDisplayDensity(); }
 
-  if (cb(ih, (int)gesture, (int)state, (int)((float)x / d), (int)((float)y / d), v1d, v2d) == IUP_CLOSE)
+  if (cb(ih, (int)gesture, (int)state, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y), v1d, v2d) == IUP_CLOSE)
     IupExitLoop();
 }
 
@@ -243,12 +237,11 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchTo
   jint* ys = (*jni_env)->GetIntArrayElements(jni_env, jys, NULL);
   jint* states = (*jni_env)->GetIntArrayElements(jni_env, jstates, NULL);
 
-  float d = iupAndroid_GetDisplayDensity(); if (d < 1.0f) d = 1.0f;
   int i;
   for (i = 0; i < count; i++)
   {
-    xs[i] = (jint)((float)xs[i] / d);
-    ys[i] = (jint)((float)ys[i] / d);
+    xs[i] = (jint)iupAndroid_PxToDpRound(xs[i]);
+    ys[i] = (jint)iupAndroid_PxToDpRound(ys[i]);
   }
 
   if (single_cb)

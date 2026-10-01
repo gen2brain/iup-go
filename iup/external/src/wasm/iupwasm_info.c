@@ -75,11 +75,6 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   return iupwasmScreenDpi();
 }
 
-IUP_SDK_API int iupdrvScaleNaturalPx(int px)
-{
-  return px;
-}
-
 EM_JS(char*, iupwasmJsBrowserVersion, (void), {
   var s = "";
   try {

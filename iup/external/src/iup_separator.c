@@ -18,7 +18,6 @@
 #include "iup_register.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
-#include "iup_drvinfo.h"
 
 
 enum { ISEPARATOR_VERT, ISEPARATOR_HORIZ };
@@ -30,7 +29,6 @@ struct _IcontrolData
 
   int orientation,
       barsize,
-      barsize_hw,    /* barsize scaled to HW pixels; cached at set-time. */
       style,
       hover;
 };
@@ -68,7 +66,7 @@ static int iSeparatorRedraw_CB(Ihandle* ih)
 
     if (ih->data->style == ISEPARATOR_GRIP)
     {
-      int len, thick = iupdrvScaleNaturalPx(2);
+      int len, thick = 2;
 
       if (!ih->data->hover)
       {
@@ -80,8 +78,8 @@ static int iSeparatorRedraw_CB(Ihandle* ih)
       if (ih->data->orientation == ISEPARATOR_VERT)
       {
         len = h / 8;
-        if (len > iupdrvScaleNaturalPx(28))
-          len = iupdrvScaleNaturalPx(28);
+        if (len > 28)
+          len = 28;
 
         if (len >= thick)
         {
@@ -93,8 +91,8 @@ static int iSeparatorRedraw_CB(Ihandle* ih)
       else
       {
         len = w / 8;
-        if (len > iupdrvScaleNaturalPx(28))
-          len = iupdrvScaleNaturalPx(28);
+        if (len > 28)
+          len = 28;
 
         if (len >= thick)
         {
@@ -230,7 +228,6 @@ static int iSeparatorSetStyleAttrib(Ihandle* ih, const char* value)
 static int iSeparatorSetBarSizeAttrib(Ihandle* ih, const char* value)
 {
   iupStrToInt(value, &ih->data->barsize);
-  ih->data->barsize_hw = iupdrvScaleNaturalPx(ih->data->barsize);
   IupUpdate(ih);
   return 0; /* do not store value in hash table */
 }
@@ -271,7 +268,6 @@ static int iSeparatorCreateMethod(Ihandle* ih, void** params)
   ih->data = iupALLOCCTRLDATA();
 
   ih->data->barsize = 5;
-  ih->data->barsize_hw = iupdrvScaleNaturalPx(5);
   ih->data->style = ISEPARATOR_SUNKENLINE;
   ih->data->orientation = ISEPARATOR_VERT;
   ih->expand = IUP_EXPAND_HFREE;
@@ -292,12 +288,11 @@ static void iSeparatorComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int*
 {
   int natural_w = 0,
       natural_h = 0;
-  int barsize = ih->data->barsize_hw;
 
   if (ih->data->orientation == ISEPARATOR_HORIZ)
-    natural_h = barsize;
+    natural_h = ih->data->barsize;
   else
-    natural_w = barsize;
+    natural_w = ih->data->barsize;
 
   *w = natural_w;
   *h = natural_h;

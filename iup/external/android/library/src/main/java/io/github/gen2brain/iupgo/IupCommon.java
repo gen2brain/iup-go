@@ -733,9 +733,11 @@ public final class IupCommon
     public static void loopStepFlush()
     {
         if (Looper.myLooper() != Looper.getMainLooper()) return;
-        /* drain what is already queued: pump until a marker posted behind it runs */
+        /* drain what is queued; the marker is async so a layout sync barrier cannot hold it inside doFrame */
         final boolean[] done = { false };
-        new android.os.Handler(Looper.getMainLooper()).post(() -> done[0] = true);
+        Message marker = Message.obtain(new android.os.Handler(Looper.getMainLooper()), () -> done[0] = true);
+        marker.setAsynchronous(true);
+        marker.sendToTarget();
         pumpUntilDone(done);
     }
 

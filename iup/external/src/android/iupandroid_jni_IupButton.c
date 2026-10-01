@@ -43,6 +43,6 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupButtonHelper_dispatchBu
   char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
   if (pressed) iupKEY_SETBUTTON1(status);
 
-  int ret = cb(ih, androidButtonToIupButton((int)button), (int)pressed, (int)x, (int)y, status);
+  int ret = cb(ih, androidButtonToIupButton((int)button), (int)pressed, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y), status);
   if (ret == IUP_CLOSE) IupExitLoop();
 }

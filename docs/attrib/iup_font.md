@@ -99,6 +99,8 @@ The DEFAULTFONT is retrieved from the application theme, "sans-serif, 14" assume
 
 Font faces other than sans-serif, serif and monospace are mapped with the table below.
 
+Positive sizes are scaled pixels (sp), negative sizes are dp.
+
 #### Haiku
 
 The DEFAULTFONT is the system plain font, "Sans, 10" assumed otherwise.

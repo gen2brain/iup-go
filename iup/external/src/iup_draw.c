@@ -2215,7 +2215,7 @@ IUP_API void IupDrawGetTextMetrics(Ihandle* ih, int* ascent, int* descent, int* 
 
 IUP_API void IupDrawGetImageInfo(const char* name, int* w, int* h, int* bpp)
 {
-  iupImageGetDrawInfo(name, w, h, bpp);
+  iupImageGetInfo(name, w, h, bpp);
 }
 
 IUP_API Ihandle* IupDrawGetImage(Ihandle* ih)
@@ -2369,7 +2369,7 @@ IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, in
   if (value && iupStrToRect(value, &sx, &sy, &sw, &sh) && sw > 0 && sh > 0)
   {
     int img_w = 0, img_h = 0;
-    iupImageGetDrawInfo(name, &img_w, &img_h, NULL);
+    iupImageGetInfo(name, &img_w, &img_h, NULL);
     if (img_w > 0 && img_h > 0)
     {
       if (sx < 0) sx = 0;
@@ -3270,7 +3270,7 @@ IUP_SDK_API void iupFlatDrawGetIconSize(Ihandle* ih, int img_position, int spaci
   if (imagename)
   {
     int img_width = 0, img_height = 0;
-    iupImageGetDrawInfo(imagename, &img_width, &img_height, NULL);
+    iupImageGetInfo(imagename, &img_width, &img_height, NULL);
 
     if (title)
     {
@@ -3343,7 +3343,7 @@ IUP_SDK_API void iupFlatDrawIcon(Ihandle* ih, IdrawCanvas* dc, int icon_x, int i
   if (imagename)
   {
     int img_width = 0, img_height = 0;
-    iupImageGetDrawInfo(imagename, &img_width, &img_height, NULL);
+    iupImageGetInfo(imagename, &img_width, &img_height, NULL);
 
     if (title)
     {

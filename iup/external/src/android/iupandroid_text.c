@@ -61,7 +61,7 @@ IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
   (void)ih;
   (void)h;
-  if (w) *w += iupAndroid_DpToPx(72.0f);  /* 2x 36dp spin buttons */
+  if (w) *w += 72;  /* 2x 36dp spin buttons */
 }
 
 IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
@@ -87,14 +87,14 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
       jmethodID mh = has_padding
         ? IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutOuterH, jni_env, java_class, "getTextInputLayoutOuterH", "()I")
         : IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutBorderH, jni_env, java_class, "getTextInputLayoutBorderH", "()I");
-      *x += (int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mh);
+      *x += iupAndroid_PxToDp((int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mh));
     }
     if (y)
     {
       jmethodID mv = has_padding
         ? IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutOuterV, jni_env, java_class, "getTextInputLayoutOuterV", "()I")
         : IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutBorderV, jni_env, java_class, "getTextInputLayoutBorderV", "()I");
-      *y += (int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mv);
+      *y += iupAndroid_PxToDp((int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mv));
     }
   }
   else if (!has_padding)
@@ -102,12 +102,12 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
     if (x)
     {
       jmethodID mh = IUPJNI_GetStaticMethodID(IupTextHelper_getEditTextBorderH, jni_env, java_class, "getEditTextBorderH", "()I");
-      *x += (int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mh);
+      *x += iupAndroid_PxToDp((int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mh));
     }
     if (y)
     {
       jmethodID mv = IUPJNI_GetStaticMethodID(IupTextHelper_getEditTextBorderV, jni_env, java_class, "getEditTextBorderV", "()I");
-      *y += (int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mv);
+      *y += iupAndroid_PxToDp((int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mv));
     }
   }
 
@@ -954,8 +954,6 @@ static int androidTextSetPaddingAttrib(Ihandle* ih, const char* value)
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_setPadding);
 
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
-  ih->data->horiz_padding = iupdrvScaleNaturalPx(ih->data->horiz_padding);
-  ih->data->vert_padding  = iupdrvScaleNaturalPx(ih->data->vert_padding);
 
   if (!ih->handle) return 1;
 
@@ -964,7 +962,7 @@ static int androidTextSetPaddingAttrib(Ihandle* ih, const char* value)
   jmethodID m = IUPJNI_GetStaticMethodID(IupTextHelper_setPadding, jni_env, cls,
       "setPadding", "(Landroid/view/View;II)V");
   (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle,
-      (jint)ih->data->horiz_padding, (jint)ih->data->vert_padding);
+      (jint)iupAndroid_DpToPx(ih->data->horiz_padding), (jint)iupAndroid_DpToPx(ih->data->vert_padding));
   iupAndroid_CheckException(jni_env, "IupTextHelper.setPadding");
   (*jni_env)->DeleteLocalRef(jni_env, cls);
   return 0;

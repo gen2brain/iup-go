@@ -113,8 +113,8 @@ IUP_SDK_API int iupBaseSetRasterSizeAttrib(Ihandle* ih, const char* value)
     iupStrToIntInt(value, &w, &h, 'x');
     if (w < 0) w = 0;
     if (h < 0) h = 0;
-    ih->userwidth = iupdrvScaleNaturalPx(w);   /* logical -> HW */
-    ih->userheight = iupdrvScaleNaturalPx(h);
+    ih->userwidth = w;
+    ih->userheight = h;
   }
   iupAttribSet(ih, "SIZE", NULL); /* clear SIZE in hash table */
   return 0;

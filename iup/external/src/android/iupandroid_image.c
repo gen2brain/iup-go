@@ -348,7 +348,6 @@ IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
     return 0;
   }
 
-  /* Raw pixels; core applies iupdrvScaleNaturalPx for user IupImages. */
   if (w) *w = (int)bitmap_info.width;
   if (h) *h = (int)bitmap_info.height;
   if (bpp) *bpp = 32;

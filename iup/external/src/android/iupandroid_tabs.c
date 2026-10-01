@@ -94,11 +94,11 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
     int iw = 0, ih_img = 0;
     iupImageGetInfo(tab_image, &iw, &ih_img, NULL);
     iupTabsScaleImageSize(ih, iw, ih_img, &iw, &ih_img);
-    w += iw + iupAndroid_DpToPx(8.0f);
+    w += iw + 8;
     if (ih_img > h) h = ih_img;
   }
-  if (tab_width) *tab_width = w + iupAndroid_DpToPx(32.0f);
-  if (tab_height) *tab_height = h + iupAndroid_DpToPx(16.0f);
+  if (tab_width) *tab_width = w + 32;
+  if (tab_height) *tab_height = h + 16;
 }
 
 static int androidTabsIconSizePx(Ihandle* ih)
@@ -106,7 +106,7 @@ static int androidTabsIconSizePx(Ihandle* ih)
   int box_w = 0, box_h = 0;
   iupTabsGetImageBoxSize(ih, &box_w, &box_h);
   int side = box_w > box_h ? box_w : box_h;
-  return side > 0 ? side : 0;
+  return side > 0 ? iupAndroid_DpToPx(side) : 0;
 }
 
 static int androidTabsAppendChild(Ihandle* ih, Ihandle* child, int pos)
@@ -360,14 +360,12 @@ static int androidTabsSetTabPaddingAttrib(Ihandle* ih, const char* value)
 {
   int h = 0, v = 0;
   iupStrToIntInt(value, &h, &v, 'x');
-  h = iupdrvScaleNaturalPx(h);
-  v = iupdrvScaleNaturalPx(v);
   if (!ih->handle) return 1;
 
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupTabsHelper, env, "io/github/gen2brain/iupgo/IupTabsHelper");
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setTabPadding", "(Landroid/view/View;II)V");
-  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)h, (jint)v);
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)iupAndroid_DpToPx(h), (jint)iupAndroid_DpToPx(v));
   iupAndroid_CheckException(env, "IupTabsHelper.setTabPadding");
   (*env)->DeleteLocalRef(env, cls);
   return 1;

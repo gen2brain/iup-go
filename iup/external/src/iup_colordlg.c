@@ -18,7 +18,6 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_predialogs.h"
-#include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
 #include "iup_colorhsi.h"
@@ -1203,10 +1202,7 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
 
   if (colordlg_data->color_browser->currentwidth < colordlg_data->color_browser->currentheight)
   {
-    /* currentheight is HW px; divide back to logical so the RASTERSIZE setter doesn't scale twice. */
-    int scale = iupdrvScaleNaturalPx(1); if (scale < 1) scale = 1;
-    int side = colordlg_data->color_browser->currentheight / scale;
-    IupSetStrf(colordlg_data->color_browser, "RASTERSIZE", "%dx%d", side, side);
+    IupSetStrf(colordlg_data->color_browser, "RASTERSIZE", "%dx%d", colordlg_data->color_browser->currentheight, colordlg_data->color_browser->currentheight);
     IupSetAttribute(ih, "RASTERSIZE", NULL);
   }
 

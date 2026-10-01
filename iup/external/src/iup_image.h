@@ -48,9 +48,6 @@ IUP_SDK_API void* iupImageGetImageTint(const char* name, Ihandle* parent, int ma
  * \ingroup image */
 IUP_SDK_API unsigned char* iupImageGetRGBAData(Ihandle* ih, int make_inactive, const char* bgcolor, int* img_w, int* img_h);
 IUP_SDK_API void iupImageGetInfo(const char* name, int* w, int* h, int* bpp);
-/** Same as iupImageGetInfo but in draw units, without iupdrvScaleNaturalPx.
- * \ingroup image */
-IUP_SDK_API void iupImageGetDrawInfo(const char* name, int* w, int* h, int* bpp);
 void iupImageRemoveFromCache(Ihandle* ih, void* handle);
 
 IUP_SDK_API int iupImageInitColorTable(Ihandle* ih, iupColor* colors, int* colors_count);
