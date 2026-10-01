@@ -27,10 +27,13 @@
 #include "misc.h"
 #include "dummy/d2d1.h"
 
+#include <dxgi1_2.h>
+
 
 #define D2D_CANVASTYPE_BITMAP       0
 #define D2D_CANVASTYPE_DC           1
 #define D2D_CANVASTYPE_HWND         2
+#define D2D_CANVASTYPE_SWAPCHAIN    3
 
 #define D2D_CANVASFLAG_RECTCLIP     0x1
 #define D2D_CANVASFLAG_RTL          0x2
@@ -55,7 +58,11 @@ struct d2d_canvas_tag {
         dummy_ID2D1RenderTarget* target;
         dummy_ID2D1BitmapRenderTarget* bmp_target;
         dummy_ID2D1HwndRenderTarget* hwnd_target;
+        dummy_ID2D1DeviceContext* device_context;
     };
+    IDXGISwapChain1* swap_chain;
+    dummy_ID2D1Bitmap1* swap_target;
+    UINT device_generation;
     dummy_ID2D1GdiInteropRenderTarget* gdi_interop;
     dummy_ID2D1Layer* clip_layer;
     dummy_ID2D1Layer* push_layers[8];
@@ -85,6 +92,12 @@ int d2d_init(void);
 void d2d_fini(void);
 
 d2d_canvas_t* d2d_canvas_alloc(dummy_ID2D1RenderTarget* target, WORD type, UINT width, BOOL rtl);
+
+d2d_canvas_t* d2d_swap_chain_canvas_alloc(HWND hwnd, UINT width, UINT height, BOOL rtl);
+BOOL d2d_swap_chain_resize(d2d_canvas_t* c, UINT width, UINT height);
+HRESULT d2d_swap_chain_present(d2d_canvas_t* c);
+void d2d_swap_chain_release(d2d_canvas_t* c);
+void d2d_device_lost(UINT generation);
 
 void d2d_reset_clip(d2d_canvas_t* c);
 void d2d_pop_layer(d2d_canvas_t* c);

@@ -44,6 +44,9 @@ static const GUID dummy_IID_ID2D1GdiInteropRenderTarget =
 static const GUID dummy_IID_ID2D1DeviceContext =
         {0xe8f7fe7a,0x191c,0x466d,{0xad,0x95,0x97,0x56,0x78,0xbd,0xa9,0x98}};
 
+static const GUID dummy_IID_ID2D1Factory1 =
+        {0xbb12d362,0xdaee,0x4b9a,{0xaa,0x1d,0x14,0xba,0x40,0x1c,0xfa,0x1f}};
+
 
 /******************************
  ***  Forward declarations  ***
@@ -70,6 +73,9 @@ typedef struct dummy_ID2D1LinearGradientBrush_tag       dummy_ID2D1LinearGradien
 typedef struct dummy_ID2D1RadialGradientBrush_tag       dummy_ID2D1RadialGradientBrush;
 typedef struct dummy_ID2D1Bitmap1_tag                   dummy_ID2D1Bitmap1;
 typedef struct dummy_ID2D1DeviceContext_tag             dummy_ID2D1DeviceContext;
+typedef struct dummy_ID2D1Factory1_tag                  dummy_ID2D1Factory1;
+typedef struct dummy_ID2D1Device_tag                    dummy_ID2D1Device;
+typedef struct dummy_ID2D1Image_tag                     dummy_ID2D1Image;
 
 
 /*****************************
@@ -101,7 +107,9 @@ enum dummy_D2D1_ANTIALIAS_MODE_tag {
 typedef enum dummy_D2D1_ALPHA_MODE_tag dummy_D2D1_ALPHA_MODE;
 enum dummy_D2D1_ALPHA_MODE_tag {
     dummy_D2D1_ALPHA_MODE_UNKNOWN = 0,
-    dummy_D2D1_ALPHA_MODE_PREMULTIPLIED = 1
+    dummy_D2D1_ALPHA_MODE_PREMULTIPLIED = 1,
+    dummy_D2D1_ALPHA_MODE_STRAIGHT = 2,
+    dummy_D2D1_ALPHA_MODE_IGNORE = 3
 };
 
 typedef enum dummy_D2D1_ARC_SIZE_tag dummy_D2D1_ARC_SIZE;
@@ -195,6 +203,7 @@ enum dummy_D2D1_LINE_JOIN_tag {
 
 /* D2D 1.1 bitmap options */
 #define dummy_D2D1_BITMAP_OPTIONS_NONE          0x00000000
+#define dummy_D2D1_BITMAP_OPTIONS_TARGET        0x00000001
 #define dummy_D2D1_BITMAP_OPTIONS_CANNOT_DRAW   0x00000002
 #define dummy_D2D1_BITMAP_OPTIONS_CPU_READ      0x00000004
 
@@ -1373,7 +1382,7 @@ struct dummy_ID2D1DeviceContextVtbl_tag {
     STDMETHOD(dummy_DC_CreateColorContext)(void);
     STDMETHOD(dummy_DC_CreateColorContextFromFilename)(void);
     STDMETHOD(dummy_DC_CreateColorContextFromWicColorContext)(void);
-    STDMETHOD(dummy_DC_CreateBitmapFromDxgiSurface)(void);
+    STDMETHOD(CreateBitmapFromDxgiSurface)(dummy_ID2D1DeviceContext*, IUnknown*, const dummy_D2D1_BITMAP_PROPERTIES1*, dummy_ID2D1Bitmap1**);
     STDMETHOD(dummy_DC_CreateEffect)(void);
     STDMETHOD(dummy_DC_CreateGradientStopCollection)(void);
     STDMETHOD(dummy_DC_CreateImageBrush)(void);
@@ -1385,7 +1394,7 @@ struct dummy_ID2D1DeviceContextVtbl_tag {
     STDMETHOD(dummy_DC_GetImageWorldBounds)(void);
     STDMETHOD(dummy_DC_GetGlyphRunWorldBounds)(void);
     STDMETHOD(dummy_DC_GetDevice)(void);
-    STDMETHOD(dummy_DC_SetTarget)(void);
+    STDMETHOD_(void, SetTarget)(dummy_ID2D1DeviceContext*, dummy_ID2D1Image*);
     STDMETHOD(dummy_DC_GetTarget)(void);
     STDMETHOD(dummy_DC_SetRenderingControls)(void);
     STDMETHOD(dummy_DC_GetRenderingControls)(void);
@@ -1411,6 +1420,73 @@ struct dummy_ID2D1DeviceContext_tag {
 #define dummy_ID2D1DeviceContext_QueryInterface(self,a,b)        (self)->vtbl->QueryInterface(self,a,b)
 #define dummy_ID2D1DeviceContext_Release(self)                   (self)->vtbl->Release(self)
 #define dummy_ID2D1DeviceContext_CreateBitmap(self,a,b,c,d,e)    (self)->vtbl->CreateBitmap(self,a,b,c,d,e)
+#define dummy_ID2D1DeviceContext_CreateBitmapFromDxgiSurface(self,a,b,c) (self)->vtbl->CreateBitmapFromDxgiSurface(self,a,b,c)
+#define dummy_ID2D1DeviceContext_SetTarget(self,a)               (self)->vtbl->SetTarget(self,a)
+
+
+/*******************************
+ ***  Interface ID2D1Device  ***
+ *******************************/
+
+typedef struct dummy_ID2D1DeviceVtbl_tag dummy_ID2D1DeviceVtbl;
+struct dummy_ID2D1DeviceVtbl_tag {
+    /* IUnknown methods */
+    STDMETHOD(QueryInterface)(dummy_ID2D1Device*, REFIID, void**);
+    STDMETHOD_(ULONG, AddRef)(dummy_ID2D1Device*);
+    STDMETHOD_(ULONG, Release)(dummy_ID2D1Device*);
+
+    /* ID2D1Resource methods */
+    STDMETHOD(dummy_GetFactory)(void);
+
+    /* ID2D1Device methods */
+    STDMETHOD(CreateDeviceContext)(dummy_ID2D1Device*, UINT32, dummy_ID2D1DeviceContext**);
+};
+
+struct dummy_ID2D1Device_tag {
+    dummy_ID2D1DeviceVtbl* vtbl;
+};
+
+#define dummy_ID2D1Device_Release(self)                     (self)->vtbl->Release(self)
+#define dummy_ID2D1Device_CreateDeviceContext(self,a,b)     (self)->vtbl->CreateDeviceContext(self,a,b)
+
+
+/*********************************
+ ***  Interface ID2D1Factory1  ***
+ *********************************/
+
+typedef struct dummy_ID2D1Factory1Vtbl_tag dummy_ID2D1Factory1Vtbl;
+struct dummy_ID2D1Factory1Vtbl_tag {
+    /* IUnknown methods */
+    STDMETHOD(QueryInterface)(dummy_ID2D1Factory1*, REFIID, void**);
+    STDMETHOD_(ULONG, AddRef)(dummy_ID2D1Factory1*);
+    STDMETHOD_(ULONG, Release)(dummy_ID2D1Factory1*);
+
+    /* ID2D1Factory methods */
+    STDMETHOD(dummy_ReloadSystemMetrics)(void);
+    STDMETHOD(dummy_GetDesktopDpi)(void);
+    STDMETHOD(dummy_CreateRectangleGeometry)(void);
+    STDMETHOD(dummy_CreateRoundedRectangleGeometry)(void);
+    STDMETHOD(dummy_CreateEllipseGeometry)(void);
+    STDMETHOD(dummy_CreateGeometryGroup)(void);
+    STDMETHOD(dummy_CreateTransformedGeometry)(void);
+    STDMETHOD(dummy_CreatePathGeometry)(void);
+    STDMETHOD(dummy_CreateStrokeStyle)(void);
+    STDMETHOD(dummy_CreateDrawingStateBlock)(void);
+    STDMETHOD(dummy_CreateWicBitmapRenderTarget)(void);
+    STDMETHOD(dummy_CreateHwndRenderTarget)(void);
+    STDMETHOD(dummy_CreateDxgiSurfaceRenderTarget)(void);
+    STDMETHOD(dummy_CreateDCRenderTarget)(void);
+
+    /* ID2D1Factory1 methods */
+    STDMETHOD(CreateDevice)(dummy_ID2D1Factory1*, IUnknown*, dummy_ID2D1Device**);
+};
+
+struct dummy_ID2D1Factory1_tag {
+    dummy_ID2D1Factory1Vtbl* vtbl;
+};
+
+#define dummy_ID2D1Factory1_Release(self)                   (self)->vtbl->Release(self)
+#define dummy_ID2D1Factory1_CreateDevice(self,a,b)          (self)->vtbl->CreateDevice(self,a,b)
 
 
 #endif  /* DUMMY_D2D1_H */
