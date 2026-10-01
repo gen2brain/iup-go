@@ -219,12 +219,17 @@ IUP_DRV_API void iupqtSetGlobalColors()
   qtSetGlobalColorAttrib("TXTBGCOLOR", palette.color(QPalette::Base));
   qtSetGlobalColorAttrib("TXTFGCOLOR", palette.color(QPalette::Text));
   qtSetGlobalColorAttrib("TXTHLCOLOR", palette.color(QPalette::Highlight));
-#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0) && defined(Q_OS_MACOS)
+  /* the Cocoa theme provides Accent, but theme colors are never marked as set */
+  qtSetGlobalColorAttrib("ACCENTCOLOR", palette.color(QPalette::Accent));
+#elif QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
   if (palette.isBrushSet(QPalette::Active, QPalette::Accent))
     qtSetGlobalColorAttrib("ACCENTCOLOR", palette.color(QPalette::Accent));
   else
-#endif
     qtSetGlobalColorAttrib("ACCENTCOLOR", palette.color(QPalette::Highlight));
+#else
+  qtSetGlobalColorAttrib("ACCENTCOLOR", palette.color(QPalette::Highlight));
+#endif
   qtSetGlobalColorAttrib("MENUBGCOLOR", palette.color(QPalette::Window));
   qtSetGlobalColorAttrib("MENUFGCOLOR", palette.color(QPalette::WindowText));
   qtSetGlobalColorAttrib("LINKFGCOLOR", palette.color(QPalette::Link));
