@@ -302,7 +302,7 @@ IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
 
 IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
 {
-  char* buffer = (char*)iupStrGetMemory(10240);
+  char* buffer = iupStrGetMemory(10240);
   return getcwd(buffer, 10240) ? buffer : NULL;
 }
 
