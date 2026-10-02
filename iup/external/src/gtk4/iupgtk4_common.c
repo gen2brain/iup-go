@@ -587,16 +587,16 @@ IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
 {
   GtkWidget* container = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
 
   if (!ih->handle || !GTK_IS_WIDGET(ih->handle))
     return;
 
-  gtk_widget_set_visible(ih->handle, visible);
+  gtk_widget_set_visible(ih->handle, enable);
   if (container && GTK_IS_WIDGET(container))
-    gtk_widget_set_visible(container, visible);
+    gtk_widget_set_visible(container, enable);
 }
 
 IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)

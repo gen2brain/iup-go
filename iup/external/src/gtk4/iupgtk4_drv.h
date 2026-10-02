@@ -13,8 +13,8 @@
 extern "C" {
 #endif
 
-#define iupgtk4ColorFromDouble(_x) ((unsigned char)(_x*255))
-#define iupgtk4ColorToDouble(_x) ((double)_x/255.0)
+#define iupgtk4ColorFromDouble(_x) ((unsigned char)((_x)*255))
+#define iupgtk4ColorToDouble(_x) ((double)(_x)/255.0)
 
 /* Common */
 IUP_DRV_API void iupgtk4SetupEnterLeaveEvents(GtkWidget* widget, Ihandle* ih);

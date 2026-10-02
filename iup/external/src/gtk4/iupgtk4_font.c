@@ -244,9 +244,9 @@ static void gtk4FontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescri
         offset += snprintf(css_font + offset, sizeof(css_font) - offset, " font-weight: %d;", (int)weight);
 
       if (style == PANGO_STYLE_ITALIC)
-        offset += snprintf(css_font + offset, sizeof(css_font) - offset, " font-style: italic;");
+        snprintf(css_font + offset, sizeof(css_font) - offset, " font-style: italic;");
       else if (style == PANGO_STYLE_OBLIQUE)
-        offset += snprintf(css_font + offset, sizeof(css_font) - offset, " font-style: oblique;");
+        snprintf(css_font + offset, sizeof(css_font) - offset, " font-style: oblique;");
 
       iupgtk4CssSetWidgetFont(widget, css_font);
     }

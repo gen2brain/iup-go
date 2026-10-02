@@ -445,13 +445,13 @@ static int gtk4FileDlgPopupDefault(Ihandle* ih, int x, int y)
   data.loop = g_main_loop_new(NULL, FALSE);
 
   if (is_save)
-    gtk_file_dialog_save(dialog, (GtkWindow*)parent, NULL, gtk4FileDlgSaveCallback, &data);
+    gtk_file_dialog_save(dialog, parent, NULL, gtk4FileDlgSaveCallback, &data);
   else if (is_dir)
-    gtk_file_dialog_select_folder(dialog, (GtkWindow*)parent, NULL, gtk4FileDlgSelectFolderCallback, &data);
+    gtk_file_dialog_select_folder(dialog, parent, NULL, gtk4FileDlgSelectFolderCallback, &data);
   else if (is_multiple)
-    gtk_file_dialog_open_multiple(dialog, (GtkWindow*)parent, NULL, gtk4FileDlgOpenMultipleCallback, &data);
+    gtk_file_dialog_open_multiple(dialog, parent, NULL, gtk4FileDlgOpenMultipleCallback, &data);
   else
-    gtk_file_dialog_open(dialog, (GtkWindow*)parent, NULL, gtk4FileDlgOpenCallback, &data);
+    gtk_file_dialog_open(dialog, parent, NULL, gtk4FileDlgOpenCallback, &data);
 
   g_main_loop_run(data.loop);
   g_main_loop_unref(data.loop);
