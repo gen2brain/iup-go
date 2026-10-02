@@ -35,7 +35,7 @@ You can also build a binary in the [MSYS2](https://msys2.github.io/) shell.
 * For MSYS2, install `pacman -S mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config`.
 * You can build for Qt, with the `qt` build tag. Install deps with `pacman -S mingw-w64-x86_64-qt6-base`.
 * You can build for Qt Quick, with the `qml` build tag. Install deps with `pacman -S mingw-w64-x86_64-qt6-declarative`.
-* You can build for GTK, with the `gtk/gtk4` build tags. Install deps with `pacman -S mingw-w64-x86_64-gtk3 / -gtk4`.
+* You can build for GTK, with the `gtk3/gtk4` build tags. Install deps with `pacman -S mingw-w64-x86_64-gtk3 / -gtk4`.
 * You can build for FLTK, with the `fltk` build tag. Install deps with `pacman -S mingw-w64-x86_64-fltk`.
 
 [<img src="examples/sample/sample_win32.png" width="700"/>](examples/sample/sample_win32.png)
@@ -63,7 +63,7 @@ To create an `.app` bundle, see [Packaging](#packaging).
 
 * You can build for Qt, with the `qt` build tag. Install deps with `brew install qt`.
 * You can build for Qt Quick, with the `qml` build tag. Install deps with `brew install qt`.
-* You can build for GTK, with the `gtk/gtk4` build tag. Install deps with `brew install gtk+3 / gtk4`.
+* You can build for GTK, with the `gtk3/gtk4` build tags. Install deps with `brew install gtk+3 / gtk4`.
 * You can build for FLTK, with the `fltk` build tag. Install deps with `brew install fltk`.
 
 [<img src="examples/sample/sample_cocoa.png" width="700"/>](examples/sample/sample_cocoa.png)
@@ -244,7 +244,7 @@ For a one-command `.ipa`, see [Packaging](#packaging).
 * `media` - build with support for `Audio`, `Camera` and `Microphone` controls
 * `plot` - build with support for `Plot` control
 * `ctrl` - build with support for `Matrix`, `Cells`, and `Flat*` controls
-* `gtk` - use GTK on macOS or Windows
+* `gtk3` - build for GTK3 on macOS or Windows (default on Linux/BSD)
 * `gtk4` - build for GTK4, default is GTK3
 * `gtk2` - build for GTK2 (Linux/BSD)
 * `qt` - build for the Qt framework

@@ -1,4 +1,4 @@
-//go:build gtk && windows
+//go:build gtk3 && windows
 
 package iup
 
