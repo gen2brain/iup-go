@@ -204,6 +204,9 @@ IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
     return 1;
   }
 
+  if (kind == IUP_USER_DIR_RESOURCE)
+    return 0;
+
   if (SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, SHGFP_TYPE_CURRENT, path) != S_OK)
     return 0;
   return 1;

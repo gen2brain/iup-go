@@ -79,17 +79,14 @@ static void* winImagePackDib(HBITMAP hBitmap)
 
 static void* winImageLockDib(HANDLE handle, void** packed)
 {
-  void* dib = GlobalLock(handle);
-
   *packed = NULL;
-  if (dib)
-    return dib;
+  if (GetObjectType(handle) == OBJ_BITMAP)
+  {
+    *packed = winImagePackDib((HBITMAP)handle);
+    return *packed;
+  }
 
-  if (GetObjectType(handle) != OBJ_BITMAP)
-    return NULL;
-
-  *packed = winImagePackDib((HBITMAP)handle);
-  return *packed;
+  return GlobalLock(handle);
 }
 
 static void winImageUnlockDib(HANDLE handle, void* packed)
