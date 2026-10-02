@@ -439,7 +439,6 @@ static gboolean gtkDialogConfigureEvent(GtkWidget* widget, GdkEventConfigure* ev
     int border, caption, menu;
     int client_width, client_height;
     int has_csd = 0;
-    int is_wayland = 0;
 
     iupAttribSetInt(ih, "_IUPGTK_OLD_WIDTH", evt->width);
     iupAttribSetInt(ih, "_IUPGTK_OLD_HEIGHT", evt->height);
@@ -454,24 +453,10 @@ static gboolean gtkDialogConfigureEvent(GtkWidget* widget, GdkEventConfigure* ev
     }
 #endif
 
-#ifdef GDK_WINDOWING_WAYLAND
-    {
-      GdkWindow* window = iupgtkGetWindow(ih->handle);
-      if (window && GDK_IS_WAYLAND_WINDOW(window))
-        is_wayland = 1;
-    }
-#endif
-
     if (has_csd)
     {
       /* CSD: shadows are OUTSIDE the visible frame, IUP doesn't care about them.
-         We normalize evt to always be the visible frame (window geometry).
-
-         On Wayland:
-         - Initial/restore (saved_size=true): evt includes shadows, subtract them
-         - Resize (saved_size=false): evt is already the visible frame
-
-         On X11 CSD: evt includes shadows, subtract them */
+         We normalize evt to always be the visible frame (window geometry). */
       int visible_width, visible_height;
       int shadow_margin = gtkDialogGetCSDShadowMargin(ih);
 
@@ -915,7 +900,6 @@ static void gtkDialogLayoutUpdateMethod(Ihandle* ih)
   int border, caption, menu;
   int width, height;
   int decorheight;
-  int has_csd = 0;
 
   if (ih->data->ignore_resize || iupAttribGet(ih, "_IUPGTK_FS_STYLE"))
     return;
@@ -931,7 +915,6 @@ static void gtkDialogLayoutUpdateMethod(Ihandle* ih)
     GtkStyleContext* context = gtk_widget_get_style_context(ih->handle);
     if (gtk_style_context_has_class(context, "csd"))
     {
-      has_csd = 1;
       /* gtk_window_resize expects the client area, current includes the titlebar for CSD */
       iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
       decorheight = caption;

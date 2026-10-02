@@ -65,7 +65,7 @@ typedef struct _IgtkTableData
   int sort_ascending;   /* Sort direction: 1=ascending, 0=descending */
 } IgtkTableData;
 
-#define IGTK_TABLE_DATA(ih) ((IgtkTableData*)(ih->data->native_data))
+#define IGTK_TABLE_DATA(ih) ((IgtkTableData*)((ih)->data->native_data))
 
 static int gtkTableModelColCount(Ihandle* ih);
 static int gtkTableTextModelCol(Ihandle* ih, int iup_col);
@@ -1166,7 +1166,6 @@ static void gtkTableCellDataFunc(GtkTreeViewColumn* column, GtkCellRenderer* ren
 static gboolean gtkTableKeyPressEvent(GtkWidget* widget, GdkEventKey* event, Ihandle* ih)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
-  GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(gtk_data->tree_view));
   GtkTreePath* path = NULL;
   GtkTreeViewColumn* column = NULL;
 
@@ -1787,18 +1786,9 @@ static void gtkTableCreateColumns(Ihandle* ih)
       IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
       if (ih->data->sortable)
       {
-        if (gtk_data->is_virtual)
-        {
-          gtk_tree_view_column_set_sort_column_id(column, -1);
-          gtk_tree_view_column_set_clickable(column, TRUE);
-          g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
-        }
-        else
-        {
-          gtk_tree_view_column_set_sort_column_id(column, -1);
-          gtk_tree_view_column_set_clickable(column, TRUE);
-          g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
-        }
+        gtk_tree_view_column_set_sort_column_id(column, -1);
+        gtk_tree_view_column_set_clickable(column, TRUE);
+        g_signal_connect(G_OBJECT(column), "clicked", G_CALLBACK(gtkTableColumnClicked), ih);
       }
       else
       {
@@ -3052,7 +3042,6 @@ static int gtkTableSetSortableAttrib(Ihandle* ih, const char* value)
       for (GList* l = columns; l != NULL; l = l->next)
       {
         GtkTreeViewColumn* column = GTK_TREE_VIEW_COLUMN(l->data);
-        int col_index = g_list_index(columns, column);
 
         if (ih->data->sortable)
         {

@@ -268,12 +268,11 @@ static int gtkTextColumnAdjust(Ihandle* ih, int visiblecolumns)
   return visiblecolumns * adjust;
 }
 
-IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 {
   /* Used also by IupCalendar in GTK */
 
   iupgtkTextMeasureEntryBorders();
-  int border_size_x = iupgtk_entry_border_x;
   int border_size_y = iupgtk_entry_border_y;
 
   static int spin_natural_height = -1;
@@ -306,7 +305,7 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
     iupgtkTextMeasureMultilineMetrics();
 
-    (*x) += iupgtk_multiline_border_width - gtkTextColumnAdjust(ih, visiblecolumns);
+    (*w) += iupgtk_multiline_border_width - gtkTextColumnAdjust(ih, visiblecolumns);
 
     if (visiblelines > 0)
     {
@@ -317,28 +316,28 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
       int gtk_content_h = iupgtk_multiline_line_height * visiblelines;
       int line_diff = iup_content_h - gtk_content_h;
 
-      (*y) += iupgtk_multiline_border_height;
-      (*y) -= line_diff;
+      (*h) += iupgtk_multiline_border_height;
+      (*h) -= line_diff;
     }
     else
     {
-      (*y) += iupgtk_multiline_border_height;
+      (*h) += iupgtk_multiline_border_height;
     }
   }
   else
   {
     int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-    (*x) += iupgtk_entry_css_dec_x - gtkTextColumnAdjust(ih, visiblecolumns);
+    (*w) += iupgtk_entry_css_dec_x - gtkTextColumnAdjust(ih, visiblecolumns);
 
     if (iupAttribGetBoolean(ih, "SPIN"))
     {
-      int add = spin_natural_height - (*y);
+      int add = spin_natural_height - (*h);
       if (add < 0) add = 0;
-      (*y) += add;
+      (*h) += add;
     }
     else
     {
-      (*y) += border_size_y;
+      (*h) += border_size_y;
     }
   }
 }
@@ -1043,7 +1042,7 @@ static char* gtkTextGetSelectionAttrib(Ihandle* ih)
     {
       start++; /* IUP starts at 1 */
       end++;
-      return iupStrReturnIntInt((int)start, (int)end, ':');
+      return iupStrReturnIntInt(start, end, ':');
     }
   }
 
@@ -1104,13 +1103,13 @@ static char* gtkTextGetSelectionPosAttrib(Ihandle* ih)
       start = gtk_text_iter_get_offset(&start_iter);
       end = gtk_text_iter_get_offset(&end_iter);
 
-      return iupStrReturnIntInt((int)start, (int)end, ':');
+      return iupStrReturnIntInt(start, end, ':');
     }
   }
   else
   {
     if (gtk_editable_get_selection_bounds(GTK_EDITABLE(ih->handle), &start, &end))
-      return iupStrReturnIntInt((int)start, (int)end, ':');
+      return iupStrReturnIntInt(start, end, ':');
   }
 
   return NULL;

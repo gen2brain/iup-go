@@ -252,7 +252,7 @@ static int gtkFrameSetFontAttrib(Ihandle* ih, const char* value)
   {
     GtkWidget* label = gtk_frame_get_label_widget((GtkFrame*)ih->handle);
     if (label)
-      iupgtkUpdateWidgetFont(ih, (GtkWidget*)label);
+      iupgtkUpdateWidgetFont(ih, label);
   }
   return 1;
 }
