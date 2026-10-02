@@ -123,11 +123,11 @@ static void iCameraTakeFrame(Ihandle* ih)
   iupdrvMutexUnlock(ih->data->mutex);
 }
 
-void iupCameraRotate(const unsigned char* src, int width, int height, int orientation, unsigned char* dst)
+void iupCameraRotate(const unsigned char* src, int width, int height, int angle, unsigned char* dst)
 {
   int x, y;
 
-  if (orientation == 90)
+  if (angle == 90)
   {
     for (y = 0; y < height; y++)
     {
@@ -139,7 +139,7 @@ void iupCameraRotate(const unsigned char* src, int width, int height, int orient
       }
     }
   }
-  else if (orientation == 270)
+  else if (angle == 270)
   {
     for (y = 0; y < height; y++)
     {
