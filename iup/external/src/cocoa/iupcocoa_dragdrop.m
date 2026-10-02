@@ -860,7 +860,7 @@ static void cocoaSourceDragProvideDataForTypeUser(Ihandle* ih, NSPasteboard* pas
     return [self defaultFilePromiseName];
   }
 
-  return [NSString stringWithUTF8String:file_buffer];
+  return iupcocoaStrToNSString(file_buffer);
 }
 
 static bool cocoaSourceDragDoDefaultFileCreate(NSFilePromiseProvider* file_promise_provider, NSURL* write_url)
@@ -1017,7 +1017,7 @@ static NSString* cocoaDragDropTypeName(const char* name)
   if (iupStrEqualNoCase(name, "image/tiff"))
     return NSPasteboardTypeTIFF;
 
-  return [NSString stringWithUTF8String:name];
+  return iupcocoaStrToNSString(name);
 }
 
 static NSMutableArray* cocoaParseDragDropTypes(const char* value)

@@ -780,7 +780,7 @@ static int cocoaTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iup_pos
   if (title)
   {
     char* stripped_str = iupStrProcessMnemonic(title, NULL, 0);
-    ns_title = [NSString stringWithUTF8String:stripped_str];
+    ns_title = iupcocoaStrToNSString(stripped_str);
     if (stripped_str && stripped_str != title) free(stripped_str);
   }
 
@@ -950,7 +950,7 @@ static int cocoaTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
   if (value)
   {
     char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);
-    tab_title = [NSString stringWithUTF8String:stripped_str];
+    tab_title = iupcocoaStrToNSString(stripped_str);
     if (stripped_str && stripped_str != value) free(stripped_str);
   }
   [tab_cell setTitle:tab_title];

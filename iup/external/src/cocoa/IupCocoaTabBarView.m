@@ -1071,9 +1071,6 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   if (!enabled)
     return;
 
-  NSPoint p = [theEvent locationInWindow];
-  p = [self convertPoint:p fromView:nil];
-
   NSUInteger index = 0;
   for (index = 0; index < [tabs count]; ++ index)
   {

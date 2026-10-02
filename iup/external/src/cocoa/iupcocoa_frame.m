@@ -71,7 +71,7 @@ IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
   const char* title = iupAttribGet(ih, "TITLE");
   if (title && *title)
   {
-    [tempBox setTitle:[NSString stringWithUTF8String:title]];
+    [tempBox setTitle:iupcocoaStrToNSString(title)];
     [tempBox setTitlePosition:NSAtTop];
 
     IupCocoaFont* iup_font = iupcocoaGetFont(ih);
@@ -119,7 +119,7 @@ static int cocoaFrameSetTitleAttrib(Ihandle* ih, const char* value)
 
   if (value && *value)
   {
-    NSString* ns_string = [NSString stringWithUTF8String:value];
+    NSString* ns_string = iupcocoaStrToNSString(value);
     [the_frame setTitle:ns_string];
     [the_frame setTitlePosition:NSAtTop];
   }
@@ -248,7 +248,7 @@ static int cocoaFrameMapMethod(Ihandle* ih)
   {
     if (title && *title)
     {
-      [the_frame setTitle:[NSString stringWithUTF8String:title]];
+      [the_frame setTitle:iupcocoaStrToNSString(title)];
     }
     else
     {

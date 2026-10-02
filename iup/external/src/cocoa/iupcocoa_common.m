@@ -322,6 +322,78 @@ IUP_DRV_API void iupcocoaRemoveFromParent(Ihandle* ih)
   }
 }
 
+static int cocoaUtf8SequenceLength(const unsigned char* s)
+{
+  unsigned char c = s[0];
+  int len, i;
+
+  if (c < 0x80)
+    return 1;
+  if (c >= 0xC2 && c <= 0xDF)
+    len = 2;
+  else if (c >= 0xE0 && c <= 0xEF)
+    len = 3;
+  else if (c >= 0xF0 && c <= 0xF4)
+    len = 4;
+  else
+    return 0;
+
+  for (i = 1; i < len; i++)
+  {
+    if ((s[i] & 0xC0) != 0x80)
+      return 0;
+  }
+
+  if ((c == 0xE0 && s[1] < 0xA0) || (c == 0xED && s[1] > 0x9F) ||
+      (c == 0xF0 && s[1] < 0x90) || (c == 0xF4 && s[1] > 0x8F))
+    return 0;
+
+  return len;
+}
+
+IUP_DRV_API NSString* iupcocoaStrToNSString(const char* str)
+{
+  NSString* ns_string;
+  const unsigned char* s;
+  char* valid;
+  char* d;
+
+  if (!str)
+    return nil;
+
+  ns_string = [NSString stringWithUTF8String:str];
+  if (ns_string)
+    return ns_string;
+
+  valid = (char*)malloc(strlen(str) * 3 + 1);
+  if (!valid)
+    return @"";
+
+  s = (const unsigned char*)str;
+  d = valid;
+  while (*s)
+  {
+    int len = cocoaUtf8SequenceLength(s);
+    if (len)
+    {
+      memcpy(d, s, len);
+      d += len;
+      s += len;
+    }
+    else
+    {
+      memcpy(d, "\xef\xbf\xbd", 3);
+      d += 3;
+      s++;
+    }
+  }
+  *d = 0;
+
+  ns_string = [NSString stringWithUTF8String:valid];
+  free(valid);
+  return ns_string ? ns_string : @"";
+}
+
 IUP_DRV_API int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height)
 {
   NSRect main_screen_frame = [[NSScreen mainScreen] frame];
@@ -991,7 +1063,7 @@ static NSCursor* iupCocoaGetCursor(Ihandle* ih, const char* name)
   {
     if (iupStrEqualNoCase(name, table[i].iupname))
     {
-      SEL syssel = NSSelectorFromString([NSString stringWithUTF8String:table[i].sel_name]);
+      SEL syssel = NSSelectorFromString(iupcocoaStrToNSString(table[i].sel_name));
       if ([NSCursor respondsToSelector:syssel])
       {
         return [NSCursor performSelector:syssel];
@@ -1141,7 +1213,7 @@ static void cocoaSetAccessibleTitle(Ihandle* ih, const char* title)
     }
     else
     {
-      NSString* ns_title = [NSString stringWithUTF8String:title];
+      NSString* ns_title = iupcocoaStrToNSString(title);
       [the_object setAccessibilityLabel:ns_title];
     }
   }
@@ -1158,7 +1230,7 @@ static void cocoaSetAccessibleDescription(Ihandle* ih, const char* description)
 {
   id the_object = iupcocoaGetMainView(ih);
   if([the_object respondsToSelector:@selector(setAccessibilityHelp:)])
-    [the_object setAccessibilityHelp:description ? [NSString stringWithUTF8String:description] : nil];
+    [the_object setAccessibilityHelp:description ? iupcocoaStrToNSString(description) : nil];
 }
 
 IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
@@ -1191,7 +1263,7 @@ IUP_DRV_API NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihand
   for (int i = 0; i < data->count; i++)
   {
     ImarkupRun* run = &data->runs[i];
-    NSString* text = [NSString stringWithUTF8String:run->text];
+    NSString* text = iupcocoaStrToNSString(run->text);
     NSMutableDictionary* attrs = [NSMutableDictionary dictionary];
 
     CGFloat font_size = base_size;
@@ -1206,7 +1278,7 @@ IUP_DRV_API NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihand
     }
 
     NSString* family = run->font_family
-      ? [NSString stringWithUTF8String:run->font_family]
+      ? iupcocoaStrToNSString(run->font_family)
       : (base_font ? [base_font familyName] : nil);
 
     NSFontTraitMask traits = 0;
@@ -1651,7 +1723,7 @@ IUP_DRV_API bool iupcocoaCommonBaseScrollWheelCallback(Ihandle* ih, NSEvent* the
 
 IUP_DRV_API char* iupcocoaCommonBaseGetContextMenuAttrib(Ihandle* ih)
 {
-  return (char*)iupAttribGet(ih, "_COCOA_CONTEXT_MENU_IH");
+  return iupAttribGet(ih, "_COCOA_CONTEXT_MENU_IH");
 }
 
 IUP_DRV_API void iupcocoaCommonBaseDestroyContextMenu(Ihandle* ih)

@@ -222,7 +222,7 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
     replace_char[0] = (char)ret_val;
     replace_char[1] = 0;
 
-    NSString* replacement = [NSString stringWithUTF8String:replace_char];
+    NSString* replacement = iupcocoaStrToNSString(replace_char);
 
     ih->data->disable_callbacks = 1;
     [text_view replaceCharactersInRange:change_range withString:replacement];
@@ -826,7 +826,7 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
     replace_char[0] = (char)ret_val;
     replace_char[1] = 0;
 
-    NSString* replacement = [NSString stringWithUTF8String:replace_char];
+    NSString* replacement = iupcocoaStrToNSString(replace_char);
 
     ih->data->disable_callbacks = 1;
     [text_view replaceCharactersInRange:effective_range withString:replacement];
@@ -1609,7 +1609,7 @@ static int cocoaTextSetValueAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    ns_string = [NSString stringWithUTF8String:value];
+    ns_string = iupcocoaStrToNSString(value);
   }
 
   IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
@@ -2898,11 +2898,11 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
     const char* mapped_name = iupFontGetMacName(format);
     if(mapped_name)
     {
-      font_family_name = [NSString stringWithUTF8String:mapped_name];
+      font_family_name = iupcocoaStrToNSString(mapped_name);
     }
     else
     {
-      font_family_name = [NSString stringWithUTF8String:format];
+      font_family_name = iupcocoaStrToNSString(format);
     }
 
     did_change_attribute = true;
@@ -3108,7 +3108,7 @@ static NSMutableDictionary* cocoaTextParseCharacterFormat(Ihandle* ih, Ihandle* 
   format = iupAttribGet(formattag, "LINK");
   if(format)
   {
-    NSURL* link_url = [NSURL URLWithString:[NSString stringWithUTF8String:format]];
+    NSURL* link_url = [NSURL URLWithString:iupcocoaStrToNSString(format)];
     if(link_url)
       [attribute_dict setValue:link_url forKey:NSLinkAttributeName];
 
@@ -3665,7 +3665,7 @@ static int cocoaTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
         NSDictionary<NSAttributedStringKey, id>* text_storage_attributes = [[text_storage attributedSubstringFromRange:NSMakeRange(selected_range.location, 1)] attributesAtIndex:0 effectiveRange:NULL];
         [attribute_dict addEntriesFromDictionary:text_storage_attributes];
 
-        NSString* ns_insert_string = [NSString stringWithUTF8String:value];
+        NSString* ns_insert_string = iupcocoaStrToNSString(value);
 
         NSAttributedString* attributed_insert_string = [[NSAttributedString alloc] initWithString:ns_insert_string attributes:attribute_dict];
         [attributed_insert_string autorelease];
@@ -3698,7 +3698,7 @@ static int cocoaTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
           return 0;
         }
 
-        NSString* ns_string = [NSString stringWithUTF8String:value];
+        NSString* ns_string = iupcocoaStrToNSString(value);
         NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
         [(NSTextView*)field_editor insertText:ns_string replacementRange:selected_range];
         return 0;
@@ -3713,7 +3713,7 @@ static int cocoaTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
           return 0;
         }
 
-        NSString* ns_string = [NSString stringWithUTF8String:value];
+        NSString* ns_string = iupcocoaStrToNSString(value);
         NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
         [(NSTextView*)field_editor insertText:ns_string replacementRange:selected_range];
         return 0;
@@ -4492,7 +4492,7 @@ static int cocoaTextSetCueBannerAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    ns_string = [NSString stringWithUTF8String:value];
+    ns_string = iupcocoaStrToNSString(value);
   }
 
   IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
@@ -4720,12 +4720,12 @@ static int cocoaTextSetAppendAttrib(Ihandle* ih, const char* value)
 
     if(ih->data->append_newline && ([text_storage length] > 0))
     {
-      NSString* temp = [NSString stringWithUTF8String:value];
+      NSString* temp = iupcocoaStrToNSString(value);
       ns_append_string = [@"\n" stringByAppendingString:temp];
     }
     else
     {
-      ns_append_string = [NSString stringWithUTF8String:value];
+      ns_append_string = iupcocoaStrToNSString(value);
     }
 
     NSRange change_range = NSMakeRange([text_storage length], 0);
@@ -4778,7 +4778,7 @@ static int cocoaTextSetAppendAttrib(Ihandle* ih, const char* value)
           IupCocoaFont* iup_font = iupcocoaGetFont(ih);
           NSMutableAttributedString* old_string_value = [[[text_field attributedStringValue] mutableCopy] autorelease];
 
-          NSString* ns_append_string = [NSString stringWithUTF8String:value];
+          NSString* ns_append_string = iupcocoaStrToNSString(value);
 
           NSAttributedString* attributed_append_string = [[NSAttributedString alloc] initWithString:ns_append_string attributes:[iup_font attributeDictionary]];
           [attributed_append_string autorelease];
@@ -4847,7 +4847,7 @@ static int cocoaTextSetInsertAttrib(Ihandle* ih, const char* value)
         NSDictionary<NSAttributedStringKey, id>* text_storage_attributes = [[text_storage attributedSubstringFromRange:NSMakeRange(insertion_point.location, 1)] attributesAtIndex:0 effectiveRange:NULL];
         [attribute_dict addEntriesFromDictionary:text_storage_attributes];
 
-        NSString* ns_insert_string = [NSString stringWithUTF8String:value];
+        NSString* ns_insert_string = iupcocoaStrToNSString(value);
 
         NSAttributedString* attributed_insert_string = [[NSAttributedString alloc] initWithString:ns_insert_string attributes:attribute_dict];
         [attributed_insert_string autorelease];
@@ -4884,7 +4884,7 @@ static int cocoaTextSetInsertAttrib(Ihandle* ih, const char* value)
           return cocoaTextSetSelectedTextAttrib(ih, value);
         }
 
-        NSString* ns_string = [NSString stringWithUTF8String:value];
+        NSString* ns_string = iupcocoaStrToNSString(value);
         NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
         [(NSTextView*)field_editor insertText:ns_string replacementRange:selected_range];
         return 0;

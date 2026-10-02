@@ -26,7 +26,7 @@ static int cocoaClipboardSetTextAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  NSString* ns_string = [NSString stringWithUTF8String:value];
+  NSString* ns_string = iupcocoaStrToNSString(value);
   if (!ns_string)
   {
     ns_string = @"";
@@ -197,7 +197,7 @@ static int cocoaClipboardSetSaveNativeVectorImageAttrib(Ihandle* ih, const char*
 
   if (pdf_data)
   {
-    NSString* path = [NSString stringWithUTF8String:value];
+    NSString* path = iupcocoaStrToNSString(value);
     [pdf_data writeToFile:path atomically:NO];
   }
 
@@ -238,7 +238,7 @@ static int cocoaClipboardSetFormatDataAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  NSString* format_string = [NSString stringWithUTF8String:format];
+  NSString* format_string = iupcocoaStrToNSString(format);
   if (!format_string)
   {
     return 0;
@@ -260,7 +260,7 @@ static char* cocoaClipboardGetFormatDataAttrib(Ihandle* ih)
     return NULL;
   }
 
-  NSString* format_string = [NSString stringWithUTF8String:format];
+  NSString* format_string = iupcocoaStrToNSString(format);
   if (!format_string)
   {
     return NULL;
@@ -297,7 +297,7 @@ static char* cocoaClipboardGetFormatAvailableAttrib(Ihandle* ih)
     return iupStrReturnBoolean(0);
   }
 
-  NSString* format_string = [NSString stringWithUTF8String:format];
+  NSString* format_string = iupcocoaStrToNSString(format);
   if (!format_string)
   {
     return iupStrReturnBoolean(0);

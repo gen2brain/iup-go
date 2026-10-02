@@ -354,7 +354,7 @@ static void cocoaMenuSetTitle(Ihandle* ih, id handle, const char* value)
   NSString* ns_title = nil;
   if (title_str)
   {
-    ns_title = [NSString stringWithUTF8String:title_str];
+    ns_title = iupcocoaStrToNSString(title_str);
   }
 
   if (!ns_title)
@@ -1379,7 +1379,7 @@ IUP_SDK_API int iupdrvRecentMenuUpdate(Ihandle* menu, const char** filenames, in
     for (i = 0; i < count; i++)
     {
         char attr_name[32];
-        NSString* title = [NSString stringWithUTF8String:filenames[i]];
+        NSString* title = iupcocoaStrToNSString(filenames[i]);
 
         snprintf(attr_name, sizeof(attr_name), "_IUP_RECENT_FILE%d", i);
         iupAttribSetStr(menu, attr_name, filenames[i]);

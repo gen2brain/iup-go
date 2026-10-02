@@ -67,7 +67,7 @@ typedef struct _IcocoaTableData {
   BOOL autosize_pending;
 } IcocoaTableData;
 
-#define ICOCOA_TABLE_DATA(ih) ((IcocoaTableData*)(ih->data->native_data))
+#define ICOCOA_TABLE_DATA(ih) ((IcocoaTableData*)((ih)->data->native_data))
 
 /* ========================================================================= */
 /* Custom NSTableCellView with Focus Rectangle                              */
@@ -463,7 +463,6 @@ static void cocoaTableFitRowToImage(Ihandle* ih, NSImage* image)
 
 static CGFloat cocoaTableCalculateColumnWidth(Ihandle* ih, int col_index, NSFont* font)
 {
-  IcocoaTableData* table_data = cocoaTableGetData(ih);
   CGFloat max_width = 0.0;
   int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;
 
@@ -521,7 +520,7 @@ static NSString* cocoaTableGetCellValue(Ihandle* ih, int lin, int col)
     {
       char* value = value_cb(ih, lin + 1, col + 1);
       if (value)
-        return [NSString stringWithUTF8String:value];
+        return iupcocoaStrToNSString(value);
       return @"";
     }
   }
@@ -558,7 +557,7 @@ static void cocoaTableSetCellValue(Ihandle* ih, int lin, int col, const char* va
     [row addObject:@""];
   }
 
-  NSString* str = value ? [NSString stringWithUTF8String:value] : @"";
+  NSString* str = value ? iupcocoaStrToNSString(value) : @"";
   [row replaceObjectAtIndex:col withObject:str];
 }
 
@@ -1387,7 +1386,7 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
   for (c = 0; c < num_col; c++)
   {
     char* title = iupAttribGetId(ih, "_IUPCOCOA_COLTITLE", c + 1);
-    [[[columns objectAtIndex:c] headerCell] setStringValue:title ? [NSString stringWithUTF8String:title] : [NSString stringWithFormat:@"Col %d", c + 1]];
+    [[[columns objectAtIndex:c] headerCell] setStringValue:title ? iupcocoaStrToNSString(title) : [NSString stringWithFormat:@"Col %d", c + 1]];
   }
 
   if ([descriptors count] > 0)
@@ -2416,7 +2415,7 @@ static int cocoaTableSetNumColAttrib(Ihandle* ih, const char* value)
       NSTableColumn* column = [[NSTableColumn alloc] initWithIdentifier:identifier];
       char* col_title = iupAttribGetId(ih, "_IUPCOCOA_COLTITLE", i + 1);
 
-      IupCocoaTableHeaderCell* headerCell = [[IupCocoaTableHeaderCell alloc] initTextCell:col_title ? [NSString stringWithUTF8String:col_title] : [NSString stringWithFormat:@"Col %d", i + 1]];
+      IupCocoaTableHeaderCell* headerCell = [[IupCocoaTableHeaderCell alloc] initTextCell:col_title ? iupcocoaStrToNSString(col_title) : [NSString stringWithFormat:@"Col %d", i + 1]];
       [column setHeaderCell:headerCell];
       [headerCell release];
 
@@ -2869,7 +2868,7 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   if (col - 1 < [columns count])
   {
     NSTableColumn* column = [columns objectAtIndex:(col - 1)];
-    NSString* titleStr = title ? [NSString stringWithUTF8String:title] : @"";
+    NSString* titleStr = title ? iupcocoaStrToNSString(title) : @"";
     iupAttribSetStrId(ih, "_IUPCOCOA_COLTITLE", col, title);
     [column.headerCell setStringValue:titleStr];
 

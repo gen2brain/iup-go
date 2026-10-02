@@ -1187,26 +1187,21 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   }
   else if ([replacementString length] > 0)
   {
-    const char* insert_value = [replacementString UTF8String];
-
     for (NSUInteger i = 0; i < [replacementString length]; i++)
     {
       unichar c = [replacementString characterAtIndex:i];
       char single_char[5] = "";
-      int len = 0;
 
       if (c < 0x80)
       {
         single_char[0] = (char)c;
         single_char[1] = 0;
-        len = 1;
       }
       else
       {
         NSString* singleCharStr = [NSString stringWithCharacters:&c length:1];
         const char* utf8 = [singleCharStr UTF8String];
         iupStrCopyN(single_char, sizeof(single_char), utf8);
-        len = (int)strlen(single_char);
       }
 
       int pos = (int)(affectedCharRange.location + i);
@@ -1492,7 +1487,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
       return nil;
 
     char* text = iupListGetItemValueCb(ih, (int)the_row + 1);
-    string_item = [NSString stringWithUTF8String:(text ? text : "")];
+    string_item = iupcocoaStrToNSString((text ? text : ""));
 
     if (ih->data->show_image)
     {
@@ -1532,7 +1527,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   NSFont* font = nil;
   if (ih)
   {
-    font = (NSFont*)cocoaGetNativeFont(ih);
+    font = cocoaGetNativeFont(ih);
 
     unsigned char r, g, b;
     char* color_str = iupAttribGet(ih, "BGCOLOR");
@@ -1593,15 +1588,6 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(table_view, IHANDLE_ASSOCIATED_OBJ_KEY);
 
   CGFloat row_height;
-  NSFont* font = nil;
-  if (ih)
-    font = cocoaGetNativeFont(ih);
-  if (!font)
-  {
-    const char* default_font = IupGetGlobal("DEFAULTFONT");
-    IupCocoaFont* iup_font = iupcocoaFindFont(default_font);
-    font = iup_font ? [iup_font nativeFont] : [NSFont systemFontOfSize:13];
-  }
 
   int char_width, char_height;
   if (ih)
@@ -2423,7 +2409,7 @@ IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
   if (!value)
     value = "";
 
-  NSString* ns_string = [NSString stringWithUTF8String:value];
+  NSString* ns_string = iupcocoaStrToNSString(value);
 
   switch(sub_type)
   {
@@ -2495,7 +2481,7 @@ IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
   if (!value)
     value = "";
 
-  NSString* ns_string = [NSString stringWithUTF8String:value];
+  NSString* ns_string = iupcocoaStrToNSString(value);
 
   switch(sub_type)
   {
@@ -2915,7 +2901,7 @@ static int cocoaListSetValueAttrib(Ihandle* ih, const char* value)
         if (NULL == value)
           ns_string = @"";
         else
-          ns_string = [NSString stringWithUTF8String:value];
+          ns_string = iupcocoaStrToNSString(value);
 
         [combo_box setStringValue:ns_string];
         [combo_box selectItemWithObjectValue:ns_string];
@@ -2930,7 +2916,7 @@ static int cocoaListSetValueAttrib(Ihandle* ih, const char* value)
           if (NULL == value)
             ns_string = @"";
           else
-            ns_string = [NSString stringWithUTF8String:value];
+            ns_string = iupcocoaStrToNSString(value);
           [text_field setStringValue:ns_string];
         }
         break;
@@ -3127,7 +3113,7 @@ static int cocoaListSetInsertAttrib(Ihandle* ih, const char* value)
   NSText* field_editor = text_control ? [[text_control window] fieldEditor:YES forObject:text_control] : nil;
   if (field_editor)
   {
-    NSString* ns_string = [NSString stringWithUTF8String:value];
+    NSString* ns_string = iupcocoaStrToNSString(value);
     [field_editor insertText:ns_string];
   }
 
@@ -3145,7 +3131,7 @@ static int cocoaListSetAppendAttrib(Ihandle* ih, const char* value)
   if (text_control)
   {
     NSString* current = [(id)text_control stringValue];
-    NSString* append = [NSString stringWithUTF8String:value];
+    NSString* append = iupcocoaStrToNSString(value);
     [(id)text_control setStringValue:[current stringByAppendingString:append]];
   }
 
@@ -3302,7 +3288,7 @@ static int cocoaListSetSelectedTextAttrib(Ihandle* ih, const char* value)
   NSRange range = [field_editor selectedRange];
   if (range.length > 0)
   {
-    NSString* ns_string = [NSString stringWithUTF8String:value];
+    NSString* ns_string = iupcocoaStrToNSString(value);
     [field_editor replaceCharactersInRange:range withString:ns_string];
   }
 
@@ -3659,11 +3645,8 @@ static int cocoaListSetContextMenuAttrib(Ihandle* ih, const char* value)
       return 0;
 
     case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
-      widget_to_attach = cocoaListGetBaseWidget(ih);
-      break;
-
     case IUPCOCOALISTSUBTYPE_MULTIPLELIST:
-      case IUPCOCOALISTSUBTYPE_SINGLELIST:
+    case IUPCOCOALISTSUBTYPE_SINGLELIST:
       widget_to_attach = cocoaListGetBaseWidget(ih);
       break;
 
@@ -3760,7 +3743,7 @@ static int cocoaListSetCueBannerAttrib(Ihandle* ih, const char* value)
   NSControl* text_control = cocoaListGetEditControl(ih);
   if (text_control)
   {
-    NSString* placeholder = value ? [NSString stringWithUTF8String:value] : nil;
+    NSString* placeholder = value ? iupcocoaStrToNSString(value) : nil;
     [[text_control cell] setPlaceholderString:placeholder];
   }
 
@@ -4196,9 +4179,9 @@ static void cocoaListUnMapMethod(Ihandle* ih)
         id popup_observer = (id)iupAttribGet(ih, "_IUPCOCOA_POPUP_OBSERVER");
         id menu_observer = (id)iupAttribGet(ih, "_IUPCOCOA_MENU_OBSERVER");
         if (popup_observer)
-          [[NSNotificationCenter defaultCenter] removeObserver:(id)popup_observer];
+          [[NSNotificationCenter defaultCenter] removeObserver:popup_observer];
         if (menu_observer)
-          [[NSNotificationCenter defaultCenter] removeObserver:(id)menu_observer];
+          [[NSNotificationCenter defaultCenter] removeObserver:menu_observer];
         [popup_button setTarget:nil];
         objc_setAssociatedObject(base_view, IUP_COCOA_LIST_POPUPBUTTON_RECEIVER_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
         break;

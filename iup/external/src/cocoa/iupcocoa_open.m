@@ -385,7 +385,7 @@ static int cocoaSetGlobalAppNameAttrib(const char* value)
   if (appname_set || !value || !value[0])
     return 0;
 
-  NSString* appName = [NSString stringWithUTF8String:value];
+  NSString* appName = iupcocoaStrToNSString(value);
   [[NSProcessInfo processInfo] setProcessName:appName];
   appname_set = 1;
   return 1;

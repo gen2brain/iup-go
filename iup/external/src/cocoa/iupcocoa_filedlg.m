@@ -248,7 +248,7 @@ static void cocoaPreviewSetButtonStatus(int button, char* status)
   }
 
   NSString* file_name = [[file_url path] lastPathComponent];
-  NSString* semicolon_separated_string = [NSString stringWithUTF8String:value];
+  NSString* semicolon_separated_string = iupcocoaStrToNSString(value);
   NSArray* array_of_filters = [semicolon_separated_string componentsSeparatedByString:@";"];
 
   file_name = [file_name lowercaseString];
@@ -318,7 +318,7 @@ static void cocoaPreviewSetButtonStatus(int button, char* status)
       char* value = iupAttribGet(ih, "FILE");
       if (value)
       {
-        [(NSSavePanel*)sender setNameFieldStringValue:[NSString stringWithUTF8String:value]];
+        [(NSSavePanel*)sender setNameFieldStringValue:iupcocoaStrToNSString(value)];
       }
       return NO;
     }
@@ -412,7 +412,7 @@ static int cocoaFileDlgPopup(Ihandle* ih, int x, int y)
   char* active_filter = iupAttribGet(ih, "_COCOA_ACTIVE_FILTER");
   if (active_filter)
   {
-    NSArray* arr = [[NSString stringWithUTF8String:active_filter] componentsSeparatedByString:@";"];
+    NSArray* arr = [iupcocoaStrToNSString(active_filter) componentsSeparatedByString:@";"];
     extention_array = [NSMutableArray arrayWithCapacity:[arr count]];
     for (NSString* str in arr)
     {
@@ -443,20 +443,20 @@ static int cocoaFileDlgPopup(Ihandle* ih, int x, int y)
   value = iupAttribGet(ih, "FILE");
   if (value && *value)
   {
-    [file_panel setNameFieldStringValue:[NSString stringWithUTF8String:value]];
+    [file_panel setNameFieldStringValue:iupcocoaStrToNSString(value)];
   }
 
   value = iupAttribGet(ih, "DIRECTORY");
   if (value && *value)
   {
-    NSURL* ns_url = [NSURL fileURLWithPath:[NSString stringWithUTF8String:value]];
+    NSURL* ns_url = [NSURL fileURLWithPath:iupcocoaStrToNSString(value)];
     [file_panel setDirectoryURL:ns_url];
   }
 
   value = iupAttribGet(ih, "TITLE");
   if (value && *value)
   {
-    [file_panel setTitle:[NSString stringWithUTF8String:value]];
+    [file_panel setTitle:iupcocoaStrToNSString(value)];
   }
 
   if (iupAttribGetBoolean(ih, "SHOWHIDDEN"))
@@ -525,7 +525,7 @@ static int cocoaFileDlgPopup(Ihandle* ih, int x, int y)
       char* ext_default = iupAttribGet(ih, "EXTDEFAULT");
       if (ext_default && strlen(ext_default) > 0 && [[path pathExtension] length] == 0)
       {
-        path = [path stringByAppendingPathExtension:[NSString stringWithUTF8String:ext_default]];
+        path = [path stringByAppendingPathExtension:iupcocoaStrToNSString(ext_default)];
       }
 
       iupAttribSetStr(ih, "VALUE", [path UTF8String]);
@@ -580,7 +580,7 @@ static int cocoaFileDlgPopup(Ihandle* ih, int x, int y)
             dir_no_sep[dir_len - 1] = '\0';
           }
 
-          NSMutableString* value_str = [NSMutableString stringWithUTF8String:dir_no_sep];
+          NSMutableString* value_str = [NSMutableString stringWithString:iupcocoaStrToNSString(dir_no_sep)];
           [value_str appendString:@"|"];
           free(dir_no_sep);
 
