@@ -147,7 +147,7 @@ IUP_DRV_API IupCocoaFont* iupcocoaFindFont(const char* iup_font_name)
     return NULL;
   }
 
-  NSString* ns_iup_font_name = [NSString stringWithUTF8String:iup_font_name];
+  NSString* ns_iup_font_name = iupcocoaStrToNSString(iup_font_name);
 
   IupCocoaFont* the_font = [s_mapOfFonts objectForKey:ns_iup_font_name];
   if (nil != the_font)
@@ -199,7 +199,7 @@ IUP_DRV_API IupCocoaFont* iupcocoaFindFont(const char* iup_font_name)
   }
   else
   {
-    NSString* ns_type_face = [NSString stringWithUTF8String:type_face];
+    NSString* ns_type_face = iupcocoaStrToNSString(type_face);
     ns_font = [NSFont fontWithName:ns_type_face size:final_font_size];
 
     /* fontWithName: matches a font name, a family name only resolves through a descriptor */

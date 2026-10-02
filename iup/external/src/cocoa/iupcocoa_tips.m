@@ -151,7 +151,7 @@ static void cocoaTipsShow(Ihandle* ih, NSPoint screen_point)
   if (markup)
     [cocoa_tip_label setAttributedStringValue:markup];
   else
-    [cocoa_tip_label setStringValue:[NSString stringWithUTF8String:tip]];
+    [cocoa_tip_label setStringValue:iupcocoaStrToNSString(tip)];
 
   text_size = [[cocoa_tip_label cell] cellSize];
   frame = NSMakeRect(screen_point.x, screen_point.y - 20 - (text_size.height + 2 * pad_y),
@@ -230,7 +230,7 @@ static void cocoaTipsCallTipsCb(Ihandle* ih, NSView* view, NSPoint point)
   if (!tip_cstr)
     return nil;
 
-  return [NSString stringWithUTF8String:tip_cstr];
+  return iupcocoaStrToNSString(tip_cstr);
 }
 
 - (void)cancelTimer

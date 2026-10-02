@@ -539,7 +539,7 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
   IFnii cb = (IFnii)IupGetCallback(ih, "MOVE_CB");
   if (cb)
   {
-    int x, y;
+    int x = 0, y = 0;
     iupdrvDialogGetPosition(ih, NULL, &x, &y);
     cb(ih, x, y);
   }
@@ -629,7 +629,7 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
     Ihandle* ih = (Ihandle*)objc_getAssociatedObject(the_window, IHANDLE_ASSOCIATED_OBJ_KEY);
 
     if (!iupObjectCheck(ih))
-    return;
+      return;
 
     iupcocoaSetGlobalColors();
 
@@ -641,16 +641,16 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
     NSView* content_view = [the_window contentView];
     if (content_view)
     {
-    NSMutableArray* view_stack = [NSMutableArray arrayWithObject:content_view];
-    while ([view_stack count] > 0)
-    {
-      NSView* current_view = [view_stack lastObject];
-      [view_stack removeLastObject];
+      NSMutableArray* view_stack = [NSMutableArray arrayWithObject:content_view];
+      while ([view_stack count] > 0)
+      {
+        NSView* current_view = [view_stack lastObject];
+        [view_stack removeLastObject];
 
-      [current_view setNeedsDisplay:YES];
+        [current_view setNeedsDisplay:YES];
 
-      [view_stack addObjectsFromArray:[current_view subviews]];
-    }
+        [view_stack addObjectsFromArray:[current_view subviews]];
+      }
     }
 
     ih->data->ignore_resize = 1;
@@ -1155,7 +1155,7 @@ static int cocoaDialogSetTitleAttrib(Ihandle* ih, const char* value)
   NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (the_window)
   {
-    NSString* ns_string = value ? [NSString stringWithUTF8String:value] : @"";
+    NSString* ns_string = value ? iupcocoaStrToNSString(value) : @"";
     [the_window setTitle:ns_string];
   }
 

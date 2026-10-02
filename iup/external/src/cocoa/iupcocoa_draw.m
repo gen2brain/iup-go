@@ -1056,7 +1056,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 
     NSString* ns_string = len > 0 ?
       [[[NSString alloc] initWithBytes:text length:len encoding:NSUTF8StringEncoding] autorelease] :
-      [NSString stringWithUTF8String:text];
+      iupcocoaStrToNSString(text);
 
     int layout_w = w;
     int layout_h = h;

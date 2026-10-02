@@ -483,7 +483,7 @@ static void* cocoaImageLoad(const char* name, int type)
   }
 
   NSImage* the_image = nil;
-  NSString* ns_name = [NSString stringWithUTF8String:name];
+  NSString* ns_name = iupcocoaStrToNSString(name);
 
   the_image = [[NSImage alloc] initWithContentsOfFile:ns_name];
 
@@ -699,7 +699,7 @@ static int cocoaImageSave(unsigned char* imgdata, int width, int height, int bpp
     NSData* data = iCocoaImageEncode(imgdata, width, height, bpp, colors, colors_count, format);
     if (!data) return 0;
 
-    NSString* path = [NSString stringWithUTF8String:filename];
+    NSString* path = iupcocoaStrToNSString(filename);
     return [data writeToFile:path atomically:YES] ? 1 : 0;
   }
 }

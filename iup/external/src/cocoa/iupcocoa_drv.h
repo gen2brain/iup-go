@@ -60,6 +60,9 @@ IUP_DRV_API NSView* iupcocoaCommonBaseLayoutGetParentView(Ihandle* ih);
 IUP_DRV_API NSView* iupcocoaCommonBaseLayoutGetChildView(Ihandle* ih);
 IUP_DRV_API void iupcocoaSetViewFrame(NSView* view, NSRect rect);
 
+/* Invalid UTF-8 sequences become U+FFFD; NULL returns nil. */
+IUP_DRV_API NSString* iupcocoaStrToNSString(const char* str);
+
 /* Coordinate conversion helpers: Cocoa uses Cartesian (y-up), IUP uses (y-down). */
 IUP_DRV_API int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height);
 IUP_DRV_API int iupcocoaComputeIupScreenHeightFromCartesian(int cartesian_height);

@@ -278,7 +278,7 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
 @property(nonatomic, retain) IupCocoaFont* font;
 @property(nonatomic, retain) IupCocoaTreeToggleReceiver* toggleReceiver;
 
-- (instancetype) cloneWithNewParentItem:(IupCocoaTreeItem*)new_parent_item ihandle:(Ihandle*)ih;
+- (instancetype) cloneWithNewParentItem:(IupCocoaTreeItem*)new_parent_item ihandle:(Ihandle*)ih NS_RETURNS_RETAINED;
 - (IupCocoaTreeItem*) childAtIndex:(NSUInteger)the_index;
 
 @end
@@ -410,6 +410,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   [leafImage release];
   [expandedImage release];
   [collapsedImage release];
+  [_markStartNode release];
   [super dealloc];
 }
 
@@ -1154,7 +1155,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       active_image = [tree_item bitmapImage];
       if(nil == active_image)
       {
-        active_image = [(IupCocoaOutlineView*)outline_view expandedImage];
+        active_image = [outline_view expandedImage];
       }
     }
     else
@@ -1162,7 +1163,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       active_image = [tree_item collapsedImage];
       if(nil == active_image)
       {
-        active_image = [(IupCocoaOutlineView*)outline_view collapsedImage];
+        active_image = [outline_view collapsedImage];
       }
     }
   }
@@ -1171,7 +1172,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
     active_image = [tree_item bitmapImage];
     if(nil == active_image)
     {
-      active_image = [(IupCocoaOutlineView*)outline_view leafImage];
+      active_image = [outline_view leafImage];
     }
   }
 
@@ -1675,7 +1676,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
 
   char* tip = iupAttribGet(ih, "TIP");
   if (tip)
-    return [NSString stringWithUTF8String:tip];
+    return iupcocoaStrToNSString(tip);
 
   if (!iupAttribGetBoolean(ih, "INFOTIP"))
     return nil;
@@ -2359,7 +2360,7 @@ static void helperMoveNode(IupCocoaOutlineView* outline_view, IupCocoaTreeItem* 
   {
     return;
   }
-  IupCocoaOutlineView* iup_outline_view = (IupCocoaOutlineView*)outline_view;
+  IupCocoaOutlineView* iup_outline_view = outline_view;
   IupCocoaTreeDelegate* data_source_delegate = (IupCocoaTreeDelegate*)[outline_view dataSource];
   Ihandle* ih = [iup_outline_view ih];
 
@@ -2478,7 +2479,7 @@ static void helperCopyAndInsertNode(IupCocoaOutlineView* outline_view, IupCocoaT
   {
     return;
   }
-  IupCocoaOutlineView* iup_outline_view = (IupCocoaOutlineView*)outline_view;
+  IupCocoaOutlineView* iup_outline_view = outline_view;
   IupCocoaTreeDelegate* data_source_delegate = (IupCocoaTreeDelegate*)[outline_view dataSource];
   Ihandle* ih = [iup_outline_view ih];
 
@@ -2656,7 +2657,6 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
     }
     else
     {
-      NSInteger item_row_before = [outline_view rowForItem:tree_item];
       helperMoveNode((IupCocoaOutlineView*)outline_view, tree_item, parent_target_tree_item, target_child_index);
       new_tree_item = tree_item;
     }
@@ -2806,7 +2806,7 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const cha
 
   IupCocoaTreeItem* tree_item_new = [[IupCocoaTreeItem alloc] init];
   [tree_item_new setKind:kind];
-  NSString* ns_title = [NSString stringWithUTF8String:title];
+  NSString* ns_title = iupcocoaStrToNSString(title);
   [tree_item_new setTitle:ns_title];
 
   IupCocoaTreeToggleReceiver* toggle_receiver = [[IupCocoaTreeToggleReceiver alloc] init];
@@ -3476,7 +3476,7 @@ static int cocoaTreeSetTitleAttrib(Ihandle* ih, int item_id, const char* value)
   {
     NSString* ns_title = @"";
     if (value)
-      ns_title = [NSString stringWithUTF8String:value];
+      ns_title = iupcocoaStrToNSString(value);
 
     IupCocoaTreeItem* tree_item = (IupCocoaTreeItem*)inode_handle;
     NSCAssert([tree_item isKindOfClass:[IupCocoaTreeItem class]], @"expecting class IupCocoaTreeItem");
@@ -4187,7 +4187,7 @@ static char* cocoaTreeGetToggleVisibleAttrib(Ihandle* ih, int item_id)
 
   IupCocoaTreeItem* tree_item = (IupCocoaTreeItem*)inode_handle;
   bool check_box_hidden = [tree_item isCheckBoxHidden];
-  return iupStrReturnBoolean((int)!check_box_hidden);
+  return iupStrReturnBoolean(!check_box_hidden);
 }
 
 static int cocoaTreeSetToggleVisibleAttrib(Ihandle* ih, int item_id, const char* value)
@@ -4559,7 +4559,7 @@ static int cocoaTreeSetTipAttrib(Ihandle* ih, const char* value)
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
 
   if (value)
-    [outline_view setToolTip:[NSString stringWithUTF8String:value]];
+    [outline_view setToolTip:iupcocoaStrToNSString(value)];
   else
     [outline_view setToolTip:nil];
 

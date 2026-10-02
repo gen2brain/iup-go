@@ -95,7 +95,7 @@ static int cocoaFontDlgPopup(Ihandle* ih, int x, int y)
   }
   else
   {
-    NSString* ns_typeface = [NSString stringWithUTF8String:typeface];
+    NSString* ns_typeface = iupcocoaStrToNSString(typeface);
     font = [NSFont fontWithName:ns_typeface size:(CGFloat)size];
   }
 
@@ -126,7 +126,7 @@ static int cocoaFontDlgPopup(Ihandle* ih, int x, int y)
   char* title_str = iupAttribGet(ih, "TITLE");
   if (title_str)
   {
-    [panel setTitle:[NSString stringWithUTF8String:title_str]];
+    [panel setTitle:iupcocoaStrToNSString(title_str)];
   }
 
   CGFloat view_width = 260;

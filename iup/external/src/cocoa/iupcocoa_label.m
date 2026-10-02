@@ -420,7 +420,7 @@ static int cocoaLabelSetTitleAttrib(Ihandle* ih, const char* value)
   if (value)
   {
     char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);
-    ns_string = [NSString stringWithUTF8String:stripped_str];
+    ns_string = iupcocoaStrToNSString(stripped_str);
 
     has_newlines = (strchr(value, '\n') != NULL);
 
@@ -1053,7 +1053,7 @@ static int cocoaLabelMapMethod(Ihandle* ih)
       char* title = iupAttribGet(ih, "TITLE");
       if (title)
       {
-        NSString* ns_string = [NSString stringWithUTF8String:title];
+        NSString* ns_string = iupcocoaStrToNSString(title);
 
         BOOL has_newlines = (strchr(title, '\n') != NULL);
 

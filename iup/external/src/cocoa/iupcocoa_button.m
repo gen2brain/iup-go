@@ -550,7 +550,7 @@ static int cocoaButtonSetTitleAttrib(Ihandle* ih, const char* value)
       }
 
       char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);
-      NSString* ns_string = [NSString stringWithUTF8String:stripped_str];
+      NSString* ns_string = iupcocoaStrToNSString(stripped_str);
 
       if(stripped_str && stripped_str != value)
       {
@@ -885,7 +885,7 @@ static int cocoaButtonMapMethod(Ihandle* ih)
       ih->data->type |= IUP_BUTTON_TEXT;
 
       char* stripped_str = iupStrProcessMnemonic(title, NULL, 0);
-      NSString* ns_string = [NSString stringWithUTF8String:stripped_str];
+      NSString* ns_string = iupcocoaStrToNSString(stripped_str);
 
       if(stripped_str && stripped_str != title)
         free(stripped_str);

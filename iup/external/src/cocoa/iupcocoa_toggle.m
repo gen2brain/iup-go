@@ -432,7 +432,7 @@ static int cocoaToggleSetTitleAttrib(Ihandle* ih, const char* value)
 
     if (stripped_str && *stripped_str != 0)
     {
-      NSString* ns_string = [NSString stringWithUTF8String:stripped_str];
+      NSString* ns_string = iupcocoaStrToNSString(stripped_str);
       [the_toggle setTitle:ns_string];
     }
     else
@@ -807,7 +807,7 @@ static int cocoaToggleMapMethod(Ihandle* ih)
       if (value && *value != 0)
       {
         char* stripped_str = iupStrProcessMnemonic(value, NULL, 0);
-        NSString* ns_string = [NSString stringWithUTF8String:stripped_str];
+        NSString* ns_string = iupcocoaStrToNSString(stripped_str);
 
         if (stripped_str && stripped_str != value)
           free(stripped_str);

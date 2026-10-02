@@ -1318,7 +1318,7 @@ static char* cocoaCanvasGetCGContextAttrib(Ihandle* ih)
 
 static char* cocoaCanvasGetDrawableAttrib(Ihandle* ih)
 {
-  return (char*)cocoaCanvasGetCGContextAttrib(ih);
+  return cocoaCanvasGetCGContextAttrib(ih);
 }
 
 static char* cocoaCanvasGetNSViewAttrib(Ihandle* ih)

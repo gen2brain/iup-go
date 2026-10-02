@@ -94,8 +94,8 @@ static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
     help_pressed = NO;
     NSAlert* alert = [[NSAlert alloc] init];
 
-    [alert setMessageText:[NSString stringWithUTF8String:title_str ? title_str : ""]];
-    [alert setInformativeText:[NSString stringWithUTF8String:value_str ? value_str : ""]];
+    [alert setMessageText:iupcocoaStrToNSString(title_str ? title_str : "")];
+    [alert setInformativeText:iupcocoaStrToNSString(value_str ? value_str : "")];
 
     if (iupStrEqualNoCase(icon_str, "ERROR"))
       [alert setAlertStyle:NSAlertStyleCritical];
@@ -118,7 +118,7 @@ static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
     else if (iupStrEqualNoCase(buttons_str, "RETRYCANCEL"))
     {
       const char* retry_cstr = IupGetLanguageString("IUP_RETRY");
-      NSString* retry_str = retry_cstr ? [NSString stringWithUTF8String:retry_cstr] : @"Retry";
+      NSString* retry_str = retry_cstr ? iupcocoaStrToNSString(retry_cstr) : @"Retry";
       [titles addObject:retry_str]; [responses addObject:@"1"];
       [titles addObject:@"Cancel"]; [responses addObject:@"2"];
     }

@@ -193,7 +193,7 @@ IUP_DRV_API int iupcocoaGnustepSetTheme(const char* name)
 {
   if (name && name[0])
   {
-    NSString* theme_name = [NSString stringWithUTF8String:name];
+    NSString* theme_name = iupcocoaStrToNSString(name);
     GSTheme* theme = [GSTheme loadThemeNamed:theme_name];
     if (!theme)
       return 0;
@@ -321,7 +321,7 @@ static int cocoaSetGlobal(const char* name, const char* value)
   if (iupStrEqual(name, "ACTIVATIONPOLICY"))
   {
     NSApplicationActivationPolicy old_policy = [[NSApplication sharedApplication] activationPolicy];
-    NSApplicationActivationPolicy new_policy = old_policy;
+    NSApplicationActivationPolicy new_policy;
 
     if (iupStrEqual(value, "REGULAR"))
       new_policy = NSApplicationActivationPolicyRegular;
