@@ -329,7 +329,7 @@ static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata)
   /* get a device context */
   {
     LONG style = GetClassLong(gldata->window, GCL_STYLE);
-    gldata->is_owned_dc = (int) ((style & CS_OWNDC) || (style & CS_CLASSDC));
+    gldata->is_owned_dc = (style & CS_OWNDC) || (style & CS_CLASSDC);
   }
 
   gldata->device = GetDC(gldata->window);
@@ -534,7 +534,7 @@ static int wGLCanvasMapMethod(Ihandle* ih)
 
   {
     LONG style = GetClassLong(gldata->window, GCL_STYLE);
-    gldata->is_owned_dc = (int) ((style & CS_OWNDC) || (style & CS_CLASSDC));
+    gldata->is_owned_dc = (style & CS_OWNDC) || (style & CS_CLASSDC);
   }
 
   return wGLCreateContext(ih, gldata);
@@ -577,7 +577,7 @@ static int wGLCanvasLazyInit(Ihandle* ih, IGlControlData* gldata)
 
   {
     LONG style = GetClassLong(gldata->window, GCL_STYLE);
-    gldata->is_owned_dc = (int) ((style & CS_OWNDC) || (style & CS_CLASSDC));
+    gldata->is_owned_dc = (style & CS_OWNDC) || (style & CS_CLASSDC);
   }
 
   gldata->lazy_init = 0;
