@@ -331,8 +331,8 @@ protected:
         iupAttribSetClassObject(ih_focus, "SHOWDROPDOWN", "NO");
     }
 
-    QPoint numDegrees = event->angleDelta() / 8;
-    int delta = numDegrees.y() / 15;
+    QPoint angle = event->angleDelta();
+    float delta = angle.y() / 120.0f;
 
     auto cb = reinterpret_cast<IFnfiis>(IupGetCallback(ih, "WHEEL_CB"));
     if (cb)
@@ -340,31 +340,30 @@ protected:
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupqmlButtonKeySetStatus(event->modifiers(), Qt::NoButton, 0, status, 0);
 
-      cb(ih, static_cast<float>(delta), static_cast<int>(event->position().x()), static_cast<int>(event->position().y()), status);
+      cb(ih, delta, static_cast<int>(event->position().x()), static_cast<int>(event->position().y()), status);
       event->accept();
       return;
     }
 
-    if (numDegrees.y() != 0)
+    if (angle.y() != 0)
     {
       double posy = ih->data->posy;
       posy -= delta * iupAttribGetDouble(ih, "DY") / 10.0;
       IupSetDouble(ih, "POSY", posy);
     }
-    else if (numDegrees.x() != 0)
+    else if (angle.x() != 0)
     {
-      int deltax = numDegrees.x() / 15;
       double posx = ih->data->posx;
-      posx -= deltax * iupAttribGetDouble(ih, "DX") / 10.0;
+      posx -= angle.x() / 120.0 * iupAttribGetDouble(ih, "DX") / 10.0;
       IupSetDouble(ih, "POSX", posx);
     }
 
     auto scb = reinterpret_cast<IFniff>(IupGetCallback(ih, "SCROLL_CB"));
     if (scb)
     {
-      int op = delta > 0 ? IUP_SBUP : IUP_SBDN;
-      if (numDegrees.y() == 0)
-        op = (numDegrees.x() / 15) > 0 ? IUP_SBLEFT : IUP_SBRIGHT;
+      int op = angle.y() > 0 ? IUP_SBUP : IUP_SBDN;
+      if (angle.y() == 0)
+        op = angle.x() > 0 ? IUP_SBLEFT : IUP_SBRIGHT;
       scb(ih, op, static_cast<float>(ih->data->posx), static_cast<float>(ih->data->posy));
     }
     else if (IupGetCallback(ih, "ACTION"))
