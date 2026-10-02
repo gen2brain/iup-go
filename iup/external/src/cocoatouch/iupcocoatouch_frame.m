@@ -138,7 +138,7 @@ static int cocoaTouchFrameMapMethod(Ihandle* ih)
 	if (title && *title)
 	{
 		iupAttribSet(ih, "_IUPFRAME_HAS_TITLE", "1");
-		cocoaTouchFrameApplyTitle(ih, frame, [NSString stringWithUTF8String:title]);
+		cocoaTouchFrameApplyTitle(ih, frame, iupCocoaTouchStrToNSString(title));
 	}
 	else if (iupAttribGet(ih, "BGCOLOR"))
 	{
@@ -251,7 +251,7 @@ static int cocoaTouchFrameSetTitleAttrib(Ihandle* ih, const char* value)
 {
 	IupCocoaTouchFrameView* frame = cocoaTouchFrameGet(ih);
 	if (!frame) return 0;
-	NSString* title = (value && *value) ? [NSString stringWithUTF8String:value] : nil;
+	NSString* title = (value && *value) ? iupCocoaTouchStrToNSString(value) : nil;
 	if (title)
 	{
 		iupAttribSet(ih, "_IUPFRAME_HAS_TITLE", "1");

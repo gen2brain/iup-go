@@ -199,7 +199,7 @@ static void cocoaTouchListSetDropdownDisplay(UIButton* button, NSString* text, U
 	if (virtual_mode)
 	{
 		char* cstr = iupListGetItemValueCb(_ihandle, (int)row + 1);
-		text = cstr ? [NSString stringWithUTF8String:cstr] : @"";
+		text = cstr ? iupCocoaTouchStrToNSString(cstr) : @"";
 		if (_ihandle->data->show_image)
 		{
 			char* image_name = iupListGetItemImageCb(_ihandle, (int)row + 1);
@@ -824,7 +824,7 @@ IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
 	IupCocoaTouchListController* ctrl = cocoaTouchListGetController(ih);
 	if (!ctrl) return;
-	NSString* text = value ? [NSString stringWithUTF8String:value] : @"";
+	NSString* text = value ? iupCocoaTouchStrToNSString(value) : @"";
 	if (iupAttribGetBoolean(ih, "SORT"))
 	{
 		NSUInteger pos = cocoaTouchListSortPos(ctrl.items, value);
@@ -846,7 +846,7 @@ IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 	if (!ctrl) return;
 	NSUInteger insert_at = iupAttribGetBoolean(ih, "SORT") ? cocoaTouchListSortPos(ctrl.items, value) : (NSUInteger)pos;
 	if (insert_at > [ctrl.items count]) insert_at = [ctrl.items count];
-	NSString* text = value ? [NSString stringWithUTF8String:value] : @"";
+	NSString* text = value ? iupCocoaTouchStrToNSString(value) : @"";
 	[ctrl.items insertObject:(text ?: @"") atIndex:insert_at];
 	[ctrl.itemImages insertObject:[NSNull null] atIndex:insert_at];
 	if (ih->data->is_dropdown) cocoaTouchListRebuildDropdownMenu(ih);
@@ -921,22 +921,22 @@ IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 	if (table) [table reloadData];
 }
 
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
 	if (ih->data->is_dropdown)
 	{
 		/* UIButton chevron 24 + content-insets 16+16 + safety. */
-		if (x) *x += 64;
-		if (y) *y += 12;
+		if (w) *w += 64;
+		if (h) *h += 12;
 	}
 	else
 	{
 		/* UITableView default cell content margin 16+16. */
-		if (x) *x += 32;
-		if (y) *y += 8;
+		if (w) *w += 32;
+		if (h) *h += 8;
 	}
 
-	if (x && ih->data->show_image && (ih->data->maximg_h > 0 || iupAttribGetBoolean(ih, "DROPTARGET")))
+	if (w && ih->data->show_image && (ih->data->maximg_h > 0 || iupAttribGetBoolean(ih, "DROPTARGET")))
 	{
 		IupCocoaTouchListController* ctrl = cocoaTouchListGetController(ih);
 		UIFont* f = ctrl.cellFont ?: [UIFont systemFontOfSize:[UIFont labelFontSize]];
@@ -946,11 +946,11 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
 			: target_h;
 		int delta = rendered_w - ih->data->maximg_w;
 		if (delta < 0) delta = 0;
-		*x += delta + 8 + 8;
+		*w += delta + 8 + 8;
 	}
 
 	/* EDITBOX non-dropdown: VISIBLELINES counts the entry, swap one row for the 36+4 pt field. */
-	if (ih->data->has_editbox && !ih->data->is_dropdown && y)
+	if (ih->data->has_editbox && !ih->data->is_dropdown && h)
 	{
 		int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 		if (visiblelines > 0)
@@ -959,9 +959,9 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
 			iupdrvFontGetCharSize(ih, &char_w, &char_h);
 			int item_h = char_h;
 			iupdrvListAddItemSpace(ih, &item_h);
-			*y -= item_h;
+			*h -= item_h;
 		}
-		*y += 40;
+		*h += 40;
 	}
 }
 
@@ -1025,7 +1025,7 @@ static int cocoaTouchListSetValueAttrib(Ihandle* ih, const char* value)
 		if (field)
 		{
 			ctrl.suppressEditCb = YES;
-			field.text = value ? [NSString stringWithUTF8String:value] : @"";
+			field.text = value ? iupCocoaTouchStrToNSString(value) : @"";
 			ctrl.suppressEditCb = NO;
 		}
 		return 0;
@@ -1202,7 +1202,7 @@ static int cocoaTouchListSetValueStringAttrib(Ihandle* ih, const char* value)
 {
 	IupCocoaTouchListController* ctrl = cocoaTouchListGetController(ih);
 	if (!ctrl || !value) return 0;
-	NSString* needle = [NSString stringWithUTF8String:value];
+	NSString* needle = iupCocoaTouchStrToNSString(value);
 	NSUInteger count = ctrl.items.count;
 	for (NSUInteger i = 0; i < count; i++)
 	{

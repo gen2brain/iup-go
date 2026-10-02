@@ -374,7 +374,7 @@ static int cocoaTouchMessageDlgFillButtons(const char* buttons_str, cocoaTouchMe
 	else if (iupStrEqualNoCase(buttons_str, "RETRYCANCEL"))
 	{
 		const char* retry = IupGetLanguageString("IUP_RETRY");
-		out[count++] = (cocoaTouchMessageDlgButton){ retry ? [NSString stringWithUTF8String:retry] : @"Retry", 1, NO };
+		out[count++] = (cocoaTouchMessageDlgButton){ retry ? iupCocoaTouchStrToNSString(retry) : @"Retry", 1, NO };
 		out[count++] = (cocoaTouchMessageDlgButton){ @"Cancel", 2, YES };
 	}
 	else if (iupStrEqualNoCase(buttons_str, "YESNO"))
@@ -413,7 +413,7 @@ static int cocoaTouchMessageDlgPopup(Ihandle* ih, int x, int y)
 	{
 		const char* help = IupGetLanguageString("IUP_HELP");
 		buttons[n_buttons++] = (cocoaTouchMessageDlgButton){
-			help ? [NSString stringWithUTF8String:help] : @"Help",
+			help ? iupCocoaTouchStrToNSString(help) : @"Help",
 			IUPCOCOATOUCH_MSGDLG_HELP, NO };
 	}
 
@@ -434,8 +434,8 @@ static int cocoaTouchMessageDlgPopup(Ihandle* ih, int x, int y)
 			return IUP_NOERROR;
 		}
 
-		NSString* title_ns   = title_str ? [NSString stringWithUTF8String:title_str] : @"";
-		NSString* message_ns = value_str ? [NSString stringWithUTF8String:value_str] : @"";
+		NSString* title_ns   = title_str ? iupCocoaTouchStrToNSString(title_str) : @"";
+		NSString* message_ns = value_str ? iupCocoaTouchStrToNSString(value_str) : @"";
 
 		const char* dlg_type = iupAttribGetStr(ih, "DIALOGTYPE");
 		NSString* icon_name  = nil;
@@ -455,8 +455,8 @@ static int cocoaTouchMessageDlgPopup(Ihandle* ih, int x, int y)
 
 		const char* btn_style_c    = iupAttribGet(ih, "BUTTONSTYLE");
 		const char* corner_style_c = iupAttribGet(ih, "CORNERSTYLE");
-		NSString* btn_style_ns    = btn_style_c    ? [NSString stringWithUTF8String:btn_style_c]    : nil;
-		NSString* corner_style_ns = corner_style_c ? [NSString stringWithUTF8String:corner_style_c] : nil;
+		NSString* btn_style_ns    = btn_style_c    ? iupCocoaTouchStrToNSString(btn_style_c)    : nil;
+		NSString* corner_style_ns = corner_style_c ? iupCocoaTouchStrToNSString(corner_style_c) : nil;
 
 		IupCocoaTouchAlertView* alert = [[IupCocoaTouchAlertView alloc]
 		    initWithTitle:title_ns

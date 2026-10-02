@@ -644,7 +644,7 @@ static UIFont* cocoaTouchTextTagBuildFont(Ihandle* tag, UIFont* base)
 	if (named_face)
 	{
 		const char* mapped = iupCocoaTouchFontFaceName(face);
-		UIFont* named = [UIFont fontWithName:[NSString stringWithUTF8String:mapped ? mapped : face] size:size];
+		UIFont* named = [UIFont fontWithName:iupCocoaTouchStrToNSString(mapped ? mapped : face) size:size];
 		if (named) out = named;
 	}
 
@@ -836,7 +836,7 @@ static void cocoaTouchTextApplyTagToAttributes(Ihandle* tag, NSMutableDictionary
 	const char* link = iupAttribGet(tag, "LINK");
 	if (link)
 	{
-		NSURL* url = [NSURL URLWithString:[NSString stringWithUTF8String:link]];
+		NSURL* url = [NSURL URLWithString:iupCocoaTouchStrToNSString(link)];
 		if (url) attrs[NSLinkAttributeName] = url;
 		if (!iupAttribGet(tag, "FGCOLOR")) attrs[NSForegroundColorAttributeName] = [UIColor systemBlueColor];
 		if (!iupAttribGet(tag, "UNDERLINE")) attrs[NSUnderlineStyleAttributeName] = @(NSUnderlineStyleSingle);
@@ -1116,7 +1116,7 @@ static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
 		if (ret != -1 && applied_utf8 && applied_utf8[0])
 		{
 			char rep[2] = { (char)ret, 0 };
-			NSString* repstr = [NSString stringWithUTF8String:rep];
+			NSString* repstr = iupCocoaTouchStrToNSString(rep);
 			NSString* new_text = [current stringByReplacingCharactersInRange:range withString:repstr];
 			textField.text = new_text;
 			cocoaTouchTextFieldSetSelection(textField, range.location + 1, range.location + 1);
@@ -1201,7 +1201,7 @@ static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
 		if (ret != -1 && applied_utf8 && applied_utf8[0])
 		{
 			char rep[2] = { (char)ret, 0 };
-			NSString* repstr = [NSString stringWithUTF8String:rep];
+			NSString* repstr = iupCocoaTouchStrToNSString(rep);
 			NSString* new_text = [current stringByReplacingCharactersInRange:range withString:repstr];
 			textView.text = new_text;
 			[textView setSelectedRange:NSMakeRange(range.location + 1, 0)];
@@ -1317,7 +1317,7 @@ static int cocoaTouchTextSetValueAttrib(Ihandle* ih, const char* value)
 		spin.field.text = [NSString stringWithFormat:@"%d", (int)spin.stepper.value];
 		return 0;
 	}
-	NSString* s = value ? [NSString stringWithUTF8String:value] : @"";
+	NSString* s = value ? iupCocoaTouchStrToNSString(value) : @"";
 	cocoaTouchTextSetString(ih, s);
 	return 0;
 }
@@ -1332,7 +1332,7 @@ static int cocoaTouchTextSetCueBannerAttrib(Ihandle* ih, const char* value)
 {
 	UITextField* f = cocoaTouchTextField(ih);
 	if (!f) return 0;
-	f.placeholder = value ? [NSString stringWithUTF8String:value] : @"";
+	f.placeholder = value ? iupCocoaTouchStrToNSString(value) : @"";
 	return 1;
 }
 
@@ -1564,7 +1564,7 @@ static int cocoaTouchTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
 	NSRange r = cocoaTouchTextSelection(ih);
 	if (r.length == 0) return 0;
 	NSString* current = cocoaTouchTextGetString(ih);
-	NSString* replacement = value ? [NSString stringWithUTF8String:value] : @"";
+	NSString* replacement = value ? iupCocoaTouchStrToNSString(value) : @"";
 	if (r.location > current.length) r.location = current.length;
 	if (r.location + r.length > current.length) r.length = current.length - r.location;
 
@@ -1719,7 +1719,7 @@ static int cocoaTouchTextSetInsertAttrib(Ihandle* ih, const char* value)
 {
 	if (!value) return 0;
 	NSRange r = cocoaTouchTextSelection(ih);
-	NSString* ins = [NSString stringWithUTF8String:value];
+	NSString* ins = iupCocoaTouchStrToNSString(value);
 	NSString* current = cocoaTouchTextGetString(ih);
 	NSString* new_text = [current stringByReplacingCharactersInRange:r withString:ins];
 	cocoaTouchTextSetString(ih, new_text);
@@ -1731,7 +1731,7 @@ static int cocoaTouchTextSetInsertAttrib(Ihandle* ih, const char* value)
 static int cocoaTouchTextSetAppendAttrib(Ihandle* ih, const char* value)
 {
 	if (!value) return 0;
-	NSString* append = [NSString stringWithUTF8String:value];
+	NSString* append = iupCocoaTouchStrToNSString(value);
 
 	UITextView* tv = cocoaTouchTextView(ih);
 	if (tv)
@@ -1802,14 +1802,14 @@ static int cocoaTouchTextSetClipboardAttrib(Ihandle* ih, const char* value)
 	if (iupStrEqualNoCase(value, "COPY"))
 	{
 		char* sel = cocoaTouchTextGetSelectedTextAttrib(ih);
-		if (sel) [pb setString:[NSString stringWithUTF8String:sel]];
+		if (sel) [pb setString:iupCocoaTouchStrToNSString(sel)];
 	}
 	else if (iupStrEqualNoCase(value, "CUT"))
 	{
 		char* sel = cocoaTouchTextGetSelectedTextAttrib(ih);
 		if (sel)
 		{
-			[pb setString:[NSString stringWithUTF8String:sel]];
+			[pb setString:iupCocoaTouchStrToNSString(sel)];
 			cocoaTouchTextSetSelectedTextAttrib(ih, "");
 		}
 	}

@@ -389,7 +389,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 		if (cb)
 		{
 			char* v = cb(_ihandle, (int)lin, (int)col);
-			return v ? [NSString stringWithUTF8String:v] : @"";
+			return v ? iupCocoaTouchStrToNSString(v) : @"";
 		}
 		return @"";
 	}
@@ -407,7 +407,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 		if (cb)
 		{
 			char* v = cb(_ihandle, (int)lin, (int)col);
-			return v ? [NSString stringWithUTF8String:v] : nil;
+			return v ? iupCocoaTouchStrToNSString(v) : nil;
 		}
 		return nil;
 	}
@@ -1015,7 +1015,7 @@ IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const ch
 {
 	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
 	if (!ctrl) return;
-	NSString* text = value ? [NSString stringWithUTF8String:value] : @"";
+	NSString* text = value ? iupCocoaTouchStrToNSString(value) : @"";
 	[ctrl setCell:(text ?: @"") atLin:lin col:col];
 	UICollectionView* view = cocoaTouchTableGet(ih);
 	if (view)
@@ -1037,7 +1037,7 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
 {
 	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
 	if (!ctrl) return;
-	[ctrl setImage:(image ? [NSString stringWithUTF8String:image] : nil) atLin:lin col:col];
+	[ctrl setImage:(image ? iupCocoaTouchStrToNSString(image) : nil) atLin:lin col:col];
 	UICollectionView* view = cocoaTouchTableGet(ih);
 	if (view)
 	{
@@ -1052,7 +1052,7 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
 	if (!ctrl || col < 1) return;
 	NSUInteger index = (NSUInteger)(col - 1);
 	while ([ctrl.headers count] <= index) [ctrl.headers addObject:@""];
-	[ctrl.headers replaceObjectAtIndex:index withObject:(title ? [NSString stringWithUTF8String:title] : @"")];
+	[ctrl.headers replaceObjectAtIndex:index withObject:(title ? iupCocoaTouchStrToNSString(title) : @"")];
 	UICollectionView* view = cocoaTouchTableGet(ih);
 	if (view)
 	{
@@ -1284,11 +1284,11 @@ static void cocoaTouchTableReplayStored(Ihandle* ih)
 		for (int c = 1; c <= ncol; c++)
 		{
 			char* v = iupAttribGetId2(ih, "", l, c);
-			if (v) [ctrl setCell:[NSString stringWithUTF8String:v] atLin:l col:c];
+			if (v) [ctrl setCell:iupCocoaTouchStrToNSString(v) atLin:l col:c];
 			if (ih->data->show_image)
 			{
 				char* img = iupAttribGetId2(ih, "IMAGE", l, c);
-				if (img) [ctrl setImage:[NSString stringWithUTF8String:img] atLin:l col:c];
+				if (img) [ctrl setImage:iupCocoaTouchStrToNSString(img) atLin:l col:c];
 			}
 		}
 	}

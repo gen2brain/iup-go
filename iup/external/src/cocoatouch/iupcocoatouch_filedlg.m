@@ -111,7 +111,7 @@ static NSArray<UTType*>* cocoaTouchFileDlgContentTypes(Ihandle* ih)
 	const char* dot = strrchr(pattern, '.');
 	if (!dot) return @[UTTypeItem];
 	dot++;
-	NSString* ext = [NSString stringWithUTF8String:dot];
+	NSString* ext = iupCocoaTouchStrToNSString(dot);
 	UTType* type = [UTType typeWithFilenameExtension:ext];
 	return type ? @[type] : @[UTTypeItem];
 }
@@ -172,7 +172,7 @@ static int cocoaTouchFileDlgPopup(Ihandle* ih, int x, int y)
 		const char* file_name = iupAttribGet(ih, "FILE");
 		if (!file_name || !*file_name) file_name = "untitled";
 		scratch_path = [NSTemporaryDirectory() stringByAppendingPathComponent:
-			[NSString stringWithUTF8String:file_name]];
+			iupCocoaTouchStrToNSString(file_name)];
 		[[NSData data] writeToFile:scratch_path atomically:YES];
 		NSURL* scratch_url = [NSURL fileURLWithPath:scratch_path];
 		picker = [[[UIDocumentPickerViewController alloc]
@@ -233,8 +233,8 @@ static void cocoaTouchFileDlgDestroyMethod(Ihandle* ih)
 	if (!scratch_cstr || !dest_cstr) return;
 
 	@autoreleasepool {
-		NSString* scratch = [NSString stringWithUTF8String:scratch_cstr];
-		NSURL*    dest    = [NSURL URLWithString:[NSString stringWithUTF8String:dest_cstr]];
+		NSString* scratch = iupCocoaTouchStrToNSString(scratch_cstr);
+		NSURL*    dest    = [NSURL URLWithString:iupCocoaTouchStrToNSString(dest_cstr)];
 		NSFileManager* fm = [NSFileManager defaultManager];
 
 		if (dest && [dest startAccessingSecurityScopedResource])

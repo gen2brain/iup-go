@@ -8,6 +8,7 @@
 #import <objc/runtime.h>
 
 #include "iup.h"
+#include "iupcocoatouch_drv.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
@@ -17,14 +18,18 @@
 static const void* IUPCOCOATOUCH_TIP_TEXT_KEY    = &IUPCOCOATOUCH_TIP_TEXT_KEY;
 static const void* IUPCOCOATOUCH_TIP_GESTURE_KEY = &IUPCOCOATOUCH_TIP_GESTURE_KEY;
 
-extern UIViewController* iupCocoaTouchFindTopPresentedViewController(void);
-
 
 @interface IupCocoaTouchTipController : UIViewController <UIPopoverPresentationControllerDelegate>
 @property(nonatomic, copy) NSString* tipText;
 @end
 
 @implementation IupCocoaTouchTipController
+
+- (void)dealloc
+{
+	[_tipText release];
+	[super dealloc];
+}
 
 - (void)viewDidLoad
 {
@@ -151,12 +156,12 @@ IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 	if (![handle isKindOfClass:[UIView class]])
 	{
 		if ([handle respondsToSelector:@selector(setAccessibilityHint:)])
-			[handle setAccessibilityHint:(value && *value) ? [NSString stringWithUTF8String:value] : nil];
+			[handle setAccessibilityHint:(value && *value) ? iupCocoaTouchStrToNSString(value) : nil];
 		return 1;
 	}
 
 	UIView* view = (UIView*)handle;
-	NSString* text = (value && *value) ? [NSString stringWithUTF8String:value] : nil;
+	NSString* text = (value && *value) ? iupCocoaTouchStrToNSString(value) : nil;
 	objc_setAssociatedObject(view, IUPCOCOATOUCH_TIP_TEXT_KEY, text, OBJC_ASSOCIATION_COPY_NONATOMIC);
 	[view setAccessibilityHint:text];
 

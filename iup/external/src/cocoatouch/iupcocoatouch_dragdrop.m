@@ -47,14 +47,14 @@ NSString* iupCocoaTouchDragTypeToUTI(const char* iup_type)
 	if (iupStrEqualNoCase(iup_type, "image/bmp"))     return IUPCOCOATOUCH_UTI_BMP;
 	if (iupStrEqualNoCase(iup_type, "image/gif"))     return IUPCOCOATOUCH_UTI_GIF;
 
-	return [NSString stringWithUTF8String:iup_type];
+	return iupCocoaTouchStrToNSString(iup_type);
 }
 
-NSArray<NSString*>* iupCocoaTouchDragParseTypes(const char* value)
+NSArray<NSString*>* iupCocoaTouchDragParseTypes(const char* csv)
 {
-	if (!value || !*value) return @[];
+	if (!csv || !*csv) return @[];
 	NSMutableArray<NSString*>* out = [NSMutableArray array];
-	NSArray<NSString*>* parts = [[NSString stringWithUTF8String:value] componentsSeparatedByString:@","];
+	NSArray<NSString*>* parts = [iupCocoaTouchStrToNSString(csv) componentsSeparatedByString:@","];
 	for (NSString* part in parts)
 	{
 		NSString* trimmed = [part stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
@@ -156,6 +156,12 @@ IUP_DRV_API void iupCocoaTouchDragLoadData(Ihandle* ih, NSString* uti, void (^co
 
 @implementation IupCocoaTouchDragSource
 
+- (void)dealloc
+{
+	[_types release];
+	[super dealloc];
+}
+
 - (NSArray<UIDragItem*>*)dragInteraction:(UIDragInteraction*)interaction itemsForBeginningSession:(id<UIDragSession>)session
 {
 	if (!_ihandle || !iupObjectCheck(_ihandle) || [_types count] == 0)
@@ -218,6 +224,12 @@ IUP_DRV_API void iupCocoaTouchDragLoadData(Ihandle* ih, NSString* uti, void (^co
 @end
 
 @implementation IupCocoaTouchDropTarget
+
+- (void)dealloc
+{
+	[_types release];
+	[super dealloc];
+}
 
 - (NSString*)firstMatchingUTI:(id<UIDropSession>)session
 {

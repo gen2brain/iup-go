@@ -46,8 +46,8 @@ static NSString* cocoaTouchMenuItemDisplayTitle(Ihandle* ih)
 
 	const char* tab = strchr(src, '\t');
 	NSString* result = tab
-		? [[[NSString alloc] initWithBytes:src length:(NSUInteger)(tab - src) encoding:NSUTF8StringEncoding] autorelease]
-		: [NSString stringWithUTF8String:src];
+		? iupCocoaTouchStrToNSStringLen(src, (size_t)(tab - src))
+		: iupCocoaTouchStrToNSString(src);
 
 	if (stripped && stripped != with_mnem && stripped != raw) free(stripped);
 	if (with_mnem && with_mnem != raw) free(with_mnem);
@@ -210,7 +210,7 @@ static void cocoaTouchMenuAppendRecentUIActions(NSMutableArray<UIMenuElement*>* 
 		const char* path = iupAttribGet(menu_ih, attr);
 		if (!path || !*path) continue;
 
-		NSString* title = [NSString stringWithUTF8String:path];
+		NSString* title = iupCocoaTouchStrToNSString(path);
 		Ihandle* menu_capture = menu_ih;
 		int index_capture = i;
 		Icallback cb_capture = cb;
@@ -405,7 +405,7 @@ static IupCocoaTouchMenuRow* cocoaTouchMenuNewRow(Ihandle* item, int recent_inde
 		char attr[32];
 		snprintf(attr, sizeof(attr), "_IUP_RECENT_FILE%d", row.recentIndex);
 		const char* path = iupAttribGet([self currentMenu], attr);
-		return path ? [NSString stringWithUTF8String:path] : @"";
+		return path ? iupCocoaTouchStrToNSString(path) : @"";
 	}
 	return cocoaTouchMenuItemDisplayTitle(row.item);
 }
@@ -651,7 +651,7 @@ static IupCocoaTouchMenuRow* cocoaTouchMenuNewRow(Ihandle* item, int recent_inde
 	if (idx == NSNotFound)
 		idx = delta > 0 ? 0 : paths.count - 1;
 	else
-		idx = (idx + paths.count + (NSUInteger)(delta > 0 ? 1 : paths.count - 1)) % paths.count;
+		idx = (idx + paths.count + (delta > 0 ? 1 : paths.count - 1)) % paths.count;
 
 	[_focused release];
 	_focused = [paths[idx] retain];
@@ -860,7 +860,6 @@ static void cocoaTouchMenuInvalidateAncestor(Ihandle* item_ih)
 	/* drawer has no IUP parent; locate it by walking dialogs and matching the left bar-button */
 	if (!dialog_ih)
 	{
-		extern UIWindow* iupCocoaTouchFindCurrentWindow(void);
 		UIWindow* w = iupCocoaTouchFindCurrentWindow();
 		UIViewController* root = w ? [w rootViewController] : nil;
 		while (root)

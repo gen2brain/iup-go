@@ -154,7 +154,7 @@ static NSString* cocoaTouchTabsStrippedTitle(const char* raw)
 {
 	if (!raw) return @"";
 	char* stripped = iupStrProcessMnemonic(raw, NULL, 0);
-	NSString* title = stripped ? [NSString stringWithUTF8String:stripped] : @"";
+	NSString* title = stripped ? iupCocoaTouchStrToNSString(stripped) : @"";
 	if (stripped && stripped != raw) free(stripped);
 	return title;
 }
@@ -361,6 +361,7 @@ static int cocoaTouchTabsCreateAndInsertItem(Ihandle* ih, Ihandle* child, int iu
 	page.hidden = YES;
 	page.clipsToBounds = YES;
 	[root.contentArea addSubview:page];
+	[page release];
 	iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)page);
 
 	cocoaTouchTabsRebuildCloseButtons(ih);

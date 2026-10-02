@@ -174,7 +174,7 @@ static NSAttributedString* cocoaTouchButtonAttributedTitle(Ihandle* ih, IupCocoa
 	if (!value || !*value) return nil;
 	char* stripped = iupStrProcessMnemonic(value, NULL, 0);
 	const char* display = stripped ? stripped : value;
-	NSString* ns = [NSString stringWithUTF8String:display];
+	NSString* ns = iupCocoaTouchStrToNSString(display);
 
 	const char* font_name = cocoaTouchButtonAttrib(ih, "FONT");
 	IupCocoaTouchFont* iup_font = font_name ? iupCocoaTouchFindFont(font_name) : NULL;

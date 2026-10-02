@@ -452,7 +452,7 @@ static int cocoaTouchToggleSetTitleAttrib(Ihandle* ih, const char* value)
 		attributed = iupCocoaTouchParseMarkup(display, base_font, nil);
 	if (!attributed)
 	{
-		NSString* ns = [NSString stringWithUTF8String:display ?: ""];
+		NSString* ns = iupCocoaTouchStrToNSString(display ?: "");
 		attributed = [[[NSAttributedString alloc] initWithString:ns ?: @"" attributes:@{ NSFontAttributeName: base_font }] autorelease];
 	}
 
