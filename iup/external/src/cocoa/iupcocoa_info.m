@@ -341,7 +341,14 @@ static int cocoaGetPreferencePath(char* filename, const char* app_name, int use_
       filename[0] = '\0';
       return 0;
     }
-    NSString* ns_path = [[NSString stringWithUTF8String:root] stringByAppendingPathComponent:[NSString stringWithUTF8String:app_name]];
+    NSString* ns_root = [NSString stringWithUTF8String:root];
+    NSString* ns_app_name = [NSString stringWithUTF8String:app_name];
+    if (!ns_root || !ns_app_name)
+    {
+      filename[0] = '\0';
+      return 0;
+    }
+    NSString* ns_path = [ns_root stringByAppendingPathComponent:ns_app_name];
     [[NSFileManager defaultManager] createDirectoryAtPath:ns_path withIntermediateDirectories:YES attributes:nil error:nil];
     NSString* ns_config_path = [ns_path stringByAppendingPathComponent:@"config"];
     const char* c_path = [ns_config_path fileSystemRepresentation];

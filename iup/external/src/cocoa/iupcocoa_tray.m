@@ -163,7 +163,9 @@ static void cocoaTrayBuildMenuItems(NSMenu* ns_menu, Ihandle* parent_ih, Ihandle
       if (!title) title = "";
 
       char* title_str = iupStrProcessMnemonic(title, NULL, 0);
-      NSString* ns_title = title_str ? [NSString stringWithUTF8String:title_str] : @"";
+      NSString* ns_title = title_str ? [NSString stringWithUTF8String:title_str] : nil;
+      if (!ns_title)
+        ns_title = @"";
       if (title_str && title_str != title) free(title_str);
 
       BOOL is_item = iupStrEqual(child->iclass->name, "menuitem");

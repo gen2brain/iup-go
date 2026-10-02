@@ -245,9 +245,10 @@ static void cocoaNotifyRegisterCategory(Ihandle* ih)
     if (action_title)
     {
       NSString* identifier = [NSString stringWithFormat:@"action%d", i];
+      NSString* ns_action_title = [NSString stringWithUTF8String:action_title];
       UNNotificationAction* act = [UNNotificationAction
           actionWithIdentifier:identifier
-                         title:[NSString stringWithUTF8String:action_title]
+                         title:ns_action_title ? ns_action_title : @""
                        options:UNNotificationActionOptionForeground];
       [actions addObject:act];
     }
@@ -448,14 +449,20 @@ IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
   const char* threadId = IupGetAttribute(ih, "THREADID");
   int silent = IupGetInt(ih, "SILENT");
 
-  if (title)
-    content.title = [NSString stringWithUTF8String:title];
-  if (body)
-    content.body = [NSString stringWithUTF8String:body];
-  if (subtitle)
-    content.subtitle = [NSString stringWithUTF8String:subtitle];
-  if (threadId)
-    content.threadIdentifier = [NSString stringWithUTF8String:threadId];
+  NSString* ns_str;
+
+  ns_str = title ? [NSString stringWithUTF8String:title] : nil;
+  if (ns_str)
+    content.title = ns_str;
+  ns_str = body ? [NSString stringWithUTF8String:body] : nil;
+  if (ns_str)
+    content.body = ns_str;
+  ns_str = subtitle ? [NSString stringWithUTF8String:subtitle] : nil;
+  if (ns_str)
+    content.subtitle = ns_str;
+  ns_str = threadId ? [NSString stringWithUTF8String:threadId] : nil;
+  if (ns_str)
+    content.threadIdentifier = ns_str;
 
   if (!silent)
     content.sound = [UNNotificationSound defaultSound];
