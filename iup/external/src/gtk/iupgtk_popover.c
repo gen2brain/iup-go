@@ -6,6 +6,10 @@
 
 #include <gtk/gtk.h>
 
+#ifdef GDK_WINDOWING_WAYLAND
+#include <gdk/gdkwayland.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <memory.h>
@@ -30,6 +34,273 @@
 /***********************************************************************************
  * Native GtkPopover implementation (GTK >= 3.12)
  ***********************************************************************************/
+
+typedef struct _iupGtkPopover
+{
+  GtkPopover popover;
+  gboolean has_arrow;
+} iupGtkPopover;
+
+typedef struct _iupGtkPopoverClass
+{
+  GtkPopoverClass parent_class;
+} iupGtkPopoverClass;
+
+static GType iup_gtk_popover_get_type(void) G_GNUC_CONST;
+static void iup_gtk_popover_class_init(iupGtkPopoverClass* _class);
+static void iup_gtk_popover_init(iupGtkPopover* popover);
+
+G_DEFINE_TYPE(iupGtkPopover, iup_gtk_popover, GTK_TYPE_POPOVER)
+
+#define IUP_GTK_POPOVER(obj) ((iupGtkPopover*)(obj))
+
+static void iup_gtk_popover_init(iupGtkPopover* popover)
+{
+  popover->has_arrow = TRUE;
+}
+
+static void iup_gtk_popover_get_frame(GtkWidget* widget, GtkBorder* margin, GtkBorder* frame, int* radius)
+{
+  GtkStyleContext* context = gtk_widget_get_style_context(widget);
+  GtkStateFlags state = gtk_style_context_get_state(context);
+  int border_width = gtk_container_get_border_width(GTK_CONTAINER(widget));
+  GtkBorder border;
+
+  gtk_style_context_get_margin(context, state, margin);
+  gtk_style_context_get_padding(context, state, frame);
+  gtk_style_context_get_border(context, state, &border);
+  gtk_style_context_get(context, state, GTK_STYLE_PROPERTY_BORDER_RADIUS, radius, NULL);
+
+  frame->left += border.left + border_width;
+  frame->right += border.right + border_width;
+  frame->top += border.top + border_width;
+  frame->bottom += border.bottom + border_width;
+}
+
+static void iup_gtk_popover_get_body(GtkWidget* widget, GdkRectangle* body)
+{
+  GtkAllocation allocation;
+  GtkBorder margin, frame;
+  int radius;
+
+  gtk_widget_get_allocation(widget, &allocation);
+  iup_gtk_popover_get_frame(widget, &margin, &frame, &radius);
+
+  body->x = margin.left;
+  body->y = margin.top;
+  body->width = allocation.width - margin.left - margin.right;
+  body->height = allocation.height - margin.top - margin.bottom;
+}
+
+static void iup_gtk_popover_measure(GtkWidget* widget, GtkOrientation orientation, int for_size, int* minimum, int* natural)
+{
+  GtkWidget* child = gtk_bin_get_child(GTK_BIN(widget));
+  GtkBorder margin, frame;
+  int radius, min = 0, nat = 0, extra;
+
+  iup_gtk_popover_get_frame(widget, &margin, &frame, &radius);
+
+  if (orientation == GTK_ORIENTATION_HORIZONTAL)
+  {
+    if (child)
+    {
+      if (for_size < 0)
+        gtk_widget_get_preferred_width(child, &min, &nat);
+      else
+        gtk_widget_get_preferred_width_for_height(child, MAX(0, for_size - margin.top - margin.bottom - frame.top - frame.bottom), &min, &nat);
+    }
+    extra = frame.left + frame.right + margin.left + margin.right;
+  }
+  else
+  {
+    if (child)
+    {
+      if (for_size < 0)
+        gtk_widget_get_preferred_height(child, &min, &nat);
+      else
+        gtk_widget_get_preferred_height_for_width(child, MAX(0, for_size - margin.left - margin.right - frame.left - frame.right), &min, &nat);
+    }
+    extra = frame.top + frame.bottom + margin.top + margin.bottom;
+  }
+
+  *minimum = MAX(min, 2 * radius) + extra;
+  *natural = MAX(nat, 2 * radius) + extra;
+}
+
+static void iup_gtk_popover_get_preferred_width(GtkWidget* widget, gint* minimum, gint* natural)
+{
+  if (IUP_GTK_POPOVER(widget)->has_arrow)
+    GTK_WIDGET_CLASS(iup_gtk_popover_parent_class)->get_preferred_width(widget, minimum, natural);
+  else
+    iup_gtk_popover_measure(widget, GTK_ORIENTATION_HORIZONTAL, -1, minimum, natural);
+}
+
+static void iup_gtk_popover_get_preferred_height(GtkWidget* widget, gint* minimum, gint* natural)
+{
+  if (IUP_GTK_POPOVER(widget)->has_arrow)
+    GTK_WIDGET_CLASS(iup_gtk_popover_parent_class)->get_preferred_height(widget, minimum, natural);
+  else
+    iup_gtk_popover_measure(widget, GTK_ORIENTATION_VERTICAL, -1, minimum, natural);
+}
+
+static void iup_gtk_popover_get_preferred_width_for_height(GtkWidget* widget, gint height, gint* minimum, gint* natural)
+{
+  if (IUP_GTK_POPOVER(widget)->has_arrow)
+    GTK_WIDGET_CLASS(iup_gtk_popover_parent_class)->get_preferred_width_for_height(widget, height, minimum, natural);
+  else
+    iup_gtk_popover_measure(widget, GTK_ORIENTATION_HORIZONTAL, height, minimum, natural);
+}
+
+static void iup_gtk_popover_get_preferred_height_for_width(GtkWidget* widget, gint width, gint* minimum, gint* natural)
+{
+  if (IUP_GTK_POPOVER(widget)->has_arrow)
+    GTK_WIDGET_CLASS(iup_gtk_popover_parent_class)->get_preferred_height_for_width(widget, width, minimum, natural);
+  else
+    iup_gtk_popover_measure(widget, GTK_ORIENTATION_VERTICAL, width, minimum, natural);
+}
+
+static void iup_gtk_popover_rounded_path(cairo_t* cr, const GdkRectangle* rect, int radius)
+{
+  double r = MIN(radius, MIN(rect->width, rect->height) / 2);
+  double x = rect->x, y = rect->y, w = rect->width, h = rect->height;
+
+  cairo_new_sub_path(cr);
+  cairo_arc(cr, x + w - r, y + r, r, -G_PI_2, 0);
+  cairo_arc(cr, x + w - r, y + h - r, r, 0, G_PI_2);
+  cairo_arc(cr, x + r, y + h - r, r, G_PI_2, G_PI);
+  cairo_arc(cr, x + r, y + r, r, G_PI, 3 * G_PI_2);
+  cairo_close_path(cr);
+}
+
+static void iup_gtk_popover_update_shape(GtkWidget* widget)
+{
+  GdkWindow* window = gtk_widget_get_window(widget);
+  cairo_surface_t* surface;
+  cairo_region_t* region;
+  GdkRectangle body;
+  GtkBorder margin, frame;
+  int radius;
+  cairo_t* cr;
+
+#ifdef GDK_WINDOWING_WAYLAND
+  if (GDK_IS_WAYLAND_DISPLAY(gtk_widget_get_display(widget)))
+    return;
+#endif
+
+  if (!window)
+    return;
+
+  iup_gtk_popover_get_frame(widget, &margin, &frame, &radius);
+  iup_gtk_popover_get_body(widget, &body);
+
+  surface = gdk_window_create_similar_surface(window, CAIRO_CONTENT_COLOR_ALPHA,
+                                              gdk_window_get_width(window), gdk_window_get_height(window));
+  cr = cairo_create(surface);
+  cairo_set_source_rgba(cr, 0, 0, 0, 1);
+  iup_gtk_popover_rounded_path(cr, &body, radius);
+  cairo_fill(cr);
+  cairo_destroy(cr);
+
+  region = gdk_cairo_region_create_from_surface(surface);
+  cairo_surface_destroy(surface);
+
+  gtk_widget_shape_combine_region(widget, region);
+  cairo_region_destroy(region);
+
+  gdk_window_set_child_shapes(gtk_widget_get_parent_window(widget));
+}
+
+static void iup_gtk_popover_size_allocate(GtkWidget* widget, GtkAllocation* allocation)
+{
+  GtkWidget* child;
+
+  if (IUP_GTK_POPOVER(widget)->has_arrow)
+  {
+    GTK_WIDGET_CLASS(iup_gtk_popover_parent_class)->size_allocate(widget, allocation);
+    return;
+  }
+
+  gtk_widget_set_allocation(widget, allocation);
+
+  child = gtk_bin_get_child(GTK_BIN(widget));
+  if (child)
+  {
+    GtkAllocation child_alloc;
+    GdkRectangle body;
+    GtkBorder margin, frame;
+    int radius;
+
+    iup_gtk_popover_get_frame(widget, &margin, &frame, &radius);
+    iup_gtk_popover_get_body(widget, &body);
+
+    child_alloc.x = body.x + frame.left;
+    child_alloc.y = body.y + frame.top;
+    child_alloc.width = MAX(1, body.width - frame.left - frame.right);
+    child_alloc.height = MAX(1, body.height - frame.top - frame.bottom);
+    gtk_widget_size_allocate(child, &child_alloc);
+  }
+
+  if (gtk_widget_get_realized(widget))
+  {
+    gdk_window_move_resize(gtk_widget_get_window(widget), 0, 0, allocation->width, allocation->height);
+    iup_gtk_popover_update_shape(widget);
+  }
+
+  gtk_widget_queue_draw(widget);
+}
+
+static void iup_gtk_popover_map(GtkWidget* widget)
+{
+  GTK_WIDGET_CLASS(iup_gtk_popover_parent_class)->map(widget);
+
+  if (!IUP_GTK_POPOVER(widget)->has_arrow)
+    iup_gtk_popover_update_shape(widget);
+}
+
+static gboolean iup_gtk_popover_draw(GtkWidget* widget, cairo_t* cr)
+{
+  GtkStyleContext* context;
+  GtkWidget* child;
+  GdkRectangle body;
+
+  if (IUP_GTK_POPOVER(widget)->has_arrow)
+    return GTK_WIDGET_CLASS(iup_gtk_popover_parent_class)->draw(widget, cr);
+
+  context = gtk_widget_get_style_context(widget);
+  iup_gtk_popover_get_body(widget, &body);
+
+  gtk_render_background(context, cr, body.x, body.y, body.width, body.height);
+  gtk_render_frame(context, cr, body.x, body.y, body.width, body.height);
+
+  child = gtk_bin_get_child(GTK_BIN(widget));
+  if (child)
+    gtk_container_propagate_draw(GTK_CONTAINER(widget), child, cr);
+
+  return GDK_EVENT_PROPAGATE;
+}
+
+static void iup_gtk_popover_class_init(iupGtkPopoverClass* _class)
+{
+  GtkWidgetClass* widget_class = (GtkWidgetClass*)_class;
+  widget_class->get_preferred_width = iup_gtk_popover_get_preferred_width;
+  widget_class->get_preferred_height = iup_gtk_popover_get_preferred_height;
+  widget_class->get_preferred_width_for_height = iup_gtk_popover_get_preferred_width_for_height;
+  widget_class->get_preferred_height_for_width = iup_gtk_popover_get_preferred_height_for_width;
+  widget_class->size_allocate = iup_gtk_popover_size_allocate;
+  widget_class->map = iup_gtk_popover_map;
+  widget_class->draw = iup_gtk_popover_draw;
+}
+
+static void iup_gtk_popover_set_has_arrow(GtkWidget* widget, gboolean has_arrow)
+{
+  iupGtkPopover* popover = IUP_GTK_POPOVER(widget);
+
+  if (popover->has_arrow == has_arrow)
+    return;
+
+  popover->has_arrow = has_arrow;
+  gtk_widget_queue_resize(widget);
+}
 
 static void gtkPopoverClosedCb(GtkPopover* popover, Ihandle* ih)
 {
@@ -62,15 +333,26 @@ static int gtkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
     popover = (GtkPopover*)ih->handle;
 
+    iup_gtk_popover_set_has_arrow(ih->handle, iupAttribGetBoolean(ih, "ARROW"));
+
+    if (ih->firstchild)
+    {
+      iupLayoutCompute(ih);
+      iupLayoutUpdate(ih);
+    }
+
     {
       int position = iupPopoverGetPosition(ih);
+      int has_arrow = IUP_GTK_POPOVER(popover)->has_arrow;
       GtkPositionType gtk_pos;
       GdkRectangle pointing_to;
-      int use_pointing_to = 0;
       GtkWidget* anchor_widget = (GtkWidget*)anchor->handle;
       GtkAllocation alloc;
+      int min_w, req_w, min_h, req_h;
 
       gtk_widget_get_allocation(anchor_widget, &alloc);
+      iup_gtk_popover_measure(GTK_WIDGET(popover), GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &req_w);
+      iup_gtk_popover_measure(GTK_WIDGET(popover), GTK_ORIENTATION_VERTICAL, req_w, &min_h, &req_h);
 
       switch (position)
       {
@@ -96,62 +378,37 @@ static int gtkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
       gtk_popover_set_position(popover, gtk_pos);
 
+      pointing_to.x = 0;
+      pointing_to.y = 0;
+      pointing_to.width = alloc.width;
+      pointing_to.height = alloc.height;
+
       switch (position)
       {
       case IUP_POPOVER_BOTTOMLEFT:
       case IUP_POPOVER_TOPLEFT:
-        pointing_to.x = 0;
-        pointing_to.y = 0;
-        pointing_to.width = 1;
-        pointing_to.height = alloc.height;
-        use_pointing_to = 1;
+        pointing_to.width = has_arrow ? 1 : req_w;
         break;
       case IUP_POPOVER_BOTTOMRIGHT:
       case IUP_POPOVER_TOPRIGHT:
-        pointing_to.x = alloc.width - 1;
-        pointing_to.y = 0;
-        pointing_to.width = 1;
-        pointing_to.height = alloc.height;
-        use_pointing_to = 1;
+        pointing_to.width = has_arrow ? 1 : req_w;
+        pointing_to.x = alloc.width - pointing_to.width;
         break;
       case IUP_POPOVER_LEFTTOP:
       case IUP_POPOVER_RIGHTTOP:
-        pointing_to.x = 0;
-        pointing_to.y = 0;
-        pointing_to.width = alloc.width;
-        pointing_to.height = 1;
-        use_pointing_to = 1;
+        pointing_to.height = has_arrow ? 1 : req_h;
         break;
       case IUP_POPOVER_LEFTBOTTOM:
       case IUP_POPOVER_RIGHTBOTTOM:
-        pointing_to.x = 0;
-        pointing_to.y = alloc.height - 1;
-        pointing_to.width = alloc.width;
-        pointing_to.height = 1;
-        use_pointing_to = 1;
+        pointing_to.height = has_arrow ? 1 : req_h;
+        pointing_to.y = alloc.height - pointing_to.height;
         break;
       }
 
-      {
-        int offsetx = iupAttribGetInt(ih, "OFFSETX");
-        int offsety = iupAttribGetInt(ih, "OFFSETY");
-        if (offsetx != 0 || offsety != 0)
-        {
-          if (!use_pointing_to)
-          {
-            pointing_to.x = 0;
-            pointing_to.y = 0;
-            pointing_to.width = alloc.width;
-            pointing_to.height = alloc.height;
-            use_pointing_to = 1;
-          }
-          pointing_to.x += offsetx;
-          pointing_to.y += offsety;
-        }
-      }
+      pointing_to.x += iupAttribGetInt(ih, "OFFSETX");
+      pointing_to.y += iupAttribGetInt(ih, "OFFSETY");
 
-      if (use_pointing_to)
-        gtk_popover_set_pointing_to(popover, &pointing_to);
+      gtk_popover_set_pointing_to(popover, &pointing_to);
     }
 
     {
@@ -162,12 +419,6 @@ static int gtkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 #if GTK_CHECK_VERSION(3, 20, 0)
     gtk_popover_set_constrain_to(popover, GTK_POPOVER_CONSTRAINT_NONE);
 #endif
-
-    if (ih->firstchild)
-    {
-      iupLayoutCompute(ih);
-      iupLayoutUpdate(ih);
-    }
 
 #if GTK_CHECK_VERSION(3, 22, 0)
     gtk_popover_popup(popover);
@@ -236,7 +487,7 @@ static int gtkPopoverMapMethod(Ihandle* ih)
   if (!anchor || !anchor->handle)
     return IUP_ERROR;
 
-  popover = gtk_popover_new((GtkWidget*)anchor->handle);
+  popover = g_object_new(iup_gtk_popover_get_type(), "relative-to", (GtkWidget*)anchor->handle, NULL);
   if (!popover)
     return IUP_ERROR;
 
