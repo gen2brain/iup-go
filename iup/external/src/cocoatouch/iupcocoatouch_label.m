@@ -295,7 +295,7 @@ static void cocoaTouchLabelApplyTitle(IupCocoaTouchLabelView* label, Ihandle* ih
 
 	char* stripped = iupStrProcessMnemonic(value, NULL, 0);
 	const char* display = stripped ? stripped : value;
-	NSString* title = [NSString stringWithUTF8String:display];
+	NSString* title = iupCocoaTouchStrToNSString(display);
 
 	NSAttributedString* markup = nil;
 	if (iupAttribGetBoolean(ih, "MARKUP"))

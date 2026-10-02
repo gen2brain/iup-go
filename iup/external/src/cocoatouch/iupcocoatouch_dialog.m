@@ -344,7 +344,7 @@ static int cocoaTouchDialogSetTitleAttrib(Ihandle* ih, const char* value)
 {
 	IupViewController* vc = cocoaTouchDialogVC(ih);
 	if (!vc) return 1;
-	NSString* title = (value && *value) ? [NSString stringWithUTF8String:value] : nil;
+	NSString* title = (value && *value) ? iupCocoaTouchStrToNSString(value) : nil;
 	[vc setTitle:title];
 	cocoaTouchDialogRefreshTitleView(ih, iupAttribGet(ih, "ICON"));
 	return 1;
@@ -596,7 +596,7 @@ static int cocoaTouchDialogMapMethod(Ihandle* ih)
 	[delegate release];
 
 	const char* title_str = iupAttribGet(ih, "TITLE");
-	if (title_str) [vc setTitle:[NSString stringWithUTF8String:title_str]];
+	if (title_str) [vc setTitle:iupCocoaTouchStrToNSString(title_str)];
 
 	UIViewController* root = [window rootViewController];
 	BOOL presenting = !(root == nil || iupCocoaTouchIsLaunchPlaceholder(root));

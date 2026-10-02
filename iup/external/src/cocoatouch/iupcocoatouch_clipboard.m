@@ -40,7 +40,7 @@ static int cocoaTouchClipboardSetTextAttrib(Ihandle* ih, const char* value)
 		return 0;
 	}
 
-	NSString* ns_string = [NSString stringWithUTF8String:value];
+	NSString* ns_string = iupCocoaTouchStrToNSString(value);
 	[pb setString:ns_string ? ns_string : @""];
 	return 0;
 }
@@ -173,7 +173,7 @@ static int cocoaTouchClipboardSetSaveNativeVectorImageAttrib(Ihandle* ih, const 
 	NSData* pdf = [cocoaTouchClipboardPB() dataForPasteboardType:IUPCOCOATOUCH_UTI_PDF];
 	if (pdf)
 	{
-		[pdf writeToFile:[NSString stringWithUTF8String:value] atomically:NO];
+		[pdf writeToFile:iupCocoaTouchStrToNSString(value) atomically:NO];
 	}
 	return 0;
 }
@@ -205,7 +205,7 @@ static NSString* cocoaTouchClipboardFormatString(Ihandle* ih)
 	{
 		return nil;
 	}
-	NSString* s = [NSString stringWithUTF8String:format];
+	NSString* s = iupCocoaTouchStrToNSString(format);
 	if (!s || !cocoaTouchClipboardIsValidType(s)) return nil;
 	return s;
 }

@@ -21,7 +21,7 @@
 #include "iup_sensor.h"
 
 #define IUPCOCOATOUCH_SENSOR_KEY "_IUPCOCOATOUCH_SENSOR"
-#define IUPCOCOATOUCH_SENSOR_G -9.80665
+#define IUPCOCOATOUCH_SENSOR_G (-9.80665)
 
 @interface IupCocoaTouchSensor : NSObject <CLLocationManagerDelegate>
 @property(nonatomic, assign) Ihandle* ih;

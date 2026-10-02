@@ -194,7 +194,7 @@ IUP_DRV_API IupCocoaTouchFont* iupCocoaTouchFindFont(const char* iup_font_name)
 
 	if (s_fontCache == nil) s_fontCache = [[NSMutableDictionary alloc] init];
 
-	NSString* key = [NSString stringWithUTF8String:iup_font_name];
+	NSString* key = iupCocoaTouchStrToNSString(iup_font_name);
 	IupCocoaTouchFont* cached = [s_fontCache objectForKey:key];
 	if (cached) return cached;
 
@@ -230,7 +230,7 @@ IUP_DRV_API IupCocoaTouchFont* iupCocoaTouchFindFont(const char* iup_font_name)
 	}
 	else
 	{
-		NSString* name = [NSString stringWithUTF8String:type_face];
+		NSString* name = iupCocoaTouchStrToNSString(type_face);
 		ui_font = [UIFont fontWithName:name size:point_size];
 		if (!ui_font) ui_font = cocoaTouchFontBuildSystem(point_size, is_bold, is_italic);
 		else          ui_font = cocoaTouchFontApplyTraits(ui_font, point_size, is_bold, is_italic);
@@ -340,7 +340,7 @@ static void cocoaTouchFontGetTextSize(IupCocoaTouchFont* font, const char* str, 
 		const char* next = iupStrNextLine(cursor, &line_len);
 		if (line_len > 0)
 		{
-			NSString* line = [[NSString alloc] initWithBytes:cursor length:line_len encoding:NSUTF8StringEncoding];
+			NSString* line = [iupCocoaTouchStrToNSStringLen(cursor, (size_t)line_len) retain];
 			CGSize size = [line sizeWithAttributes:[font attributeDictionary]];
 			int line_w = (int)ceil(size.width);
 			if (line_w > max_w) max_w = line_w;

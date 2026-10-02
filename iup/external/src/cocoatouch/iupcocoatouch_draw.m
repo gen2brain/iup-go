@@ -269,7 +269,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 	iupAttribSet(dc->ih, "_IUPCOCOATOUCH_BUFFER_PENDING", "1");
 	if (dc->canvasView)
 	{
-		[(UIView*)dc->canvasView setNeedsDisplay];
+		[dc->canvasView setNeedsDisplay];
 	}
 }
 
@@ -831,11 +831,11 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 		NSString* ns_string;
 		if (len > 0)
 		{
-			ns_string = [[[NSString alloc] initWithBytes:text length:len encoding:NSUTF8StringEncoding] autorelease];
+			ns_string = iupCocoaTouchStrToNSStringLen(text, (size_t)len);
 		}
 		else
 		{
-			ns_string = [NSString stringWithUTF8String:text];
+			ns_string = iupCocoaTouchStrToNSString(text);
 		}
 		if (!ns_string) return;
 

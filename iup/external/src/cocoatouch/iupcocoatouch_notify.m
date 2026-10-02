@@ -253,8 +253,8 @@ static int cocoaTouchToastShow(Ihandle* ih)
 
 	const char* title = IupGetAttribute(ih, "TITLE");
 	const char* body  = IupGetAttribute(ih, "BODY");
-	NSString* tt = (title && *title) ? [NSString stringWithUTF8String:title] : nil;
-	NSString* bb = (body  && *body)  ? [NSString stringWithUTF8String:body]  : nil;
+	NSString* tt = (title && *title) ? iupCocoaTouchStrToNSString(title) : nil;
+	NSString* bb = (body  && *body)  ? iupCocoaTouchStrToNSString(body)  : nil;
 	if (!tt.length && !bb.length) return 0;
 
 	UIImage* icon_image = nil;
@@ -444,7 +444,7 @@ static void cocoaTouchNotifyRegisterCategory(Ihandle* ih)
 		NSString* identifier = [NSString stringWithFormat:@"action%d", i];
 		UNNotificationAction* act = [UNNotificationAction
 		    actionWithIdentifier:identifier
-		                   title:[NSString stringWithUTF8String:title]
+		                   title:iupCocoaTouchStrToNSString(title)
 		                 options:UNNotificationActionOptionForeground];
 		[actions addObject:act];
 	}
@@ -539,10 +539,10 @@ IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
 	const char* thread   = IupGetAttribute(ih, "THREADID");
 	int silent           = IupGetInt(ih, "SILENT");
 
-	content.title    = title    ? [NSString stringWithUTF8String:title]    : @"";
-	content.body     = body     ? [NSString stringWithUTF8String:body]     : @"";
-	if (subtitle) content.subtitle = [NSString stringWithUTF8String:subtitle];
-	if (thread)   content.threadIdentifier = [NSString stringWithUTF8String:thread];
+	content.title    = title    ? iupCocoaTouchStrToNSString(title)    : @"";
+	content.body     = body     ? iupCocoaTouchStrToNSString(body)     : @"";
+	if (subtitle) content.subtitle = iupCocoaTouchStrToNSString(subtitle);
+	if (thread)   content.threadIdentifier = iupCocoaTouchStrToNSString(thread);
 	if (!silent)  content.sound = [UNNotificationSound defaultSound];
 	content.categoryIdentifier = IUPCOCOATOUCH_NOTIFY_CATEGORY;
 

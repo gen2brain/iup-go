@@ -56,6 +56,10 @@ IUP_DRV_API UIViewController* iupCocoaTouchFindTopPresentedViewController(void);
 IUP_DRV_API bool iupCocoaTouchIsLaunchPlaceholder(UIViewController* vc);
 IUP_DRV_API UIViewController* iupCocoaTouchNewLaunchPlaceholder(void);
 
+/* Invalid UTF-8 sequences become U+FFFD; NULL returns nil. */
+IUP_DRV_API NSString* iupCocoaTouchStrToNSString(const char* str);
+IUP_DRV_API NSString* iupCocoaTouchStrToNSStringLen(const char* str, size_t len);
+
 /* client-area Fixed of a mapped Dialog, nil otherwise */
 IUP_DRV_API IupCocoaTouchFixed* iupCocoaTouchDialogGetClientArea(Ihandle* dialog_ih);
 

@@ -536,7 +536,7 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const cha
 
 	IupCocoaTouchTreeNode* new_node = [[[IupCocoaTouchTreeNode alloc] init] autorelease];
 	new_node.kind = kind;
-	new_node.title = title ? [NSString stringWithUTF8String:title] : @"";
+	new_node.title = title ? iupCocoaTouchStrToNSString(title) : @"";
 	new_node.expanded = ih->data->add_expanded ? YES : NO;
 
 	if (!prev_node)
@@ -749,7 +749,7 @@ static int cocoaTouchTreeSetTitleIdAttrib(Ihandle* ih, int id_, const char* valu
 {
 	IupCocoaTouchTreeNode* node = cocoaTouchTreeNodeFromId(ih, id_);
 	if (!node) return 0;
-	node.title = value ? [NSString stringWithUTF8String:value] : @"";
+	node.title = value ? iupCocoaTouchStrToNSString(value) : @"";
 	IupCocoaTouchTreeView* view = cocoaTouchTreeGetView(ih);
 	if (view) [view.tableView reloadData];
 	return 0;

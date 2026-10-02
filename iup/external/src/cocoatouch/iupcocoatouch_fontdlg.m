@@ -168,7 +168,7 @@ static int cocoaTouchFontDlgPopup(Ihandle* ih, int x, int y)
 		if (initial_bold)   traits |= UIFontDescriptorTraitBold;
 		if (initial_italic) traits |= UIFontDescriptorTraitItalic;
 		NSDictionary* attrs = @{
-			UIFontDescriptorFamilyAttribute: [NSString stringWithUTF8String:initial_face],
+			UIFontDescriptorFamilyAttribute: iupCocoaTouchStrToNSString(initial_face),
 			UIFontDescriptorTraitsAttribute: @{ UIFontSymbolicTrait: @(traits) }
 		};
 		picker.selectedFontDescriptor = [UIFontDescriptor fontDescriptorWithFontAttributes:attrs];
@@ -186,7 +186,7 @@ static int cocoaTouchFontDlgPopup(Ihandle* ih, int x, int y)
 	UIFontDescriptor* picked = delegate.pickedDescriptor;
 	NSString* family = picked ? [picked objectForKey:UIFontDescriptorFamilyAttribute] : nil;
 	if (!family) family = picked ? picked.postscriptName : nil;
-	if (!family) family = [NSString stringWithUTF8String:initial_face[0] ? initial_face : "System"];
+	if (!family) family = iupCocoaTouchStrToNSString(initial_face[0] ? initial_face : "System");
 	NSString* face = cocoaTouchFontDlgFaceString(picked);
 
 	int final_size = initial_size;

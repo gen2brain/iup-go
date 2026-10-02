@@ -214,7 +214,7 @@ static int cocoaTouchGetPreferencePath(char* filename, const char* app_name, int
 	if (!iupdrvGetUserDir(root, sizeof(root), IUP_USER_DIR_CONFIG))
 		return 0;
 
-	NSString* dir = [[NSString stringWithUTF8String:root] stringByAppendingPathComponent:[NSString stringWithUTF8String:app_name]];
+	NSString* dir = [iupCocoaTouchStrToNSString(root) stringByAppendingPathComponent:iupCocoaTouchStrToNSString(app_name)];
 	if (![[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil])
 		return 0;
 
@@ -319,7 +319,7 @@ IUP_API void IupLogV(const char* type, const char* format, va_list arglist)
 	         iupStrEqualNoCase(type, "ALERT") ||
 	         iupStrEqualNoCase(type, "EMERGENCY")) level = OS_LOG_TYPE_FAULT;
 
-	NSString* fmt = [NSString stringWithUTF8String:format];
+	NSString* fmt = iupCocoaTouchStrToNSString(format);
 	NSString* msg = [[[NSString alloc] initWithFormat:fmt arguments:arglist] autorelease];
 	const char* tag = (type && *type) ? type : "INFO";
 	os_log_with_type(OS_LOG_DEFAULT, level, "[Iup %{public}s] %{public}s", tag, [msg UTF8String]);

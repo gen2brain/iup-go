@@ -243,7 +243,7 @@ static void* cocoaTouchImageLoad(const char* name, int type)
 {
 	(void)type;
 	if (!name) return NULL;
-	NSString* ns_name = [NSString stringWithUTF8String:name];
+	NSString* ns_name = iupCocoaTouchStrToNSString(name);
 
 	UIImage* ui_image = [[UIImage alloc] initWithContentsOfFile:ns_name];
 	if (ui_image) return ui_image;
@@ -436,7 +436,7 @@ static int cocoaTouchImageSave(unsigned char* imgdata, int width, int height, in
 {
 	NSData* data = nil;
 	if (!cocoaTouchImageEncode(imgdata, width, height, bpp, colors, colors_count, format, &data)) return 0;
-	BOOL ok = [data writeToFile:[NSString stringWithUTF8String:filename] atomically:YES];
+	BOOL ok = [data writeToFile:iupCocoaTouchStrToNSString(filename) atomically:YES];
 	[data release];
 	return ok ? 1 : 0;
 }

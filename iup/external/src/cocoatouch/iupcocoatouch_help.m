@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "iup.h"
+#include "iupcocoatouch_drv.h"
 
 
 /* http(s) gets percent-escaped; mailto/tel/itms-apps pass through */
@@ -18,7 +19,7 @@ static NSURL* cocoaTouchHelpBuildURL(const char* url)
 	{
 		return nil;
 	}
-	NSString* raw = [NSString stringWithUTF8String:url];
+	NSString* raw = iupCocoaTouchStrToNSString(url);
 	if (!raw)
 	{
 		return nil;
@@ -56,12 +57,12 @@ static int cocoaTouchExecute(const char* filename, const char* parameters)
 {
 	if (!filename || !*filename) return -1;
 
-	NSString* base = [NSString stringWithUTF8String:filename];
+	NSString* base = iupCocoaTouchStrToNSString(filename);
 	if (!base) return -1;
 
 	if (parameters && *parameters)
 	{
-		NSString* ns_params = [NSString stringWithUTF8String:parameters];
+		NSString* ns_params = iupCocoaTouchStrToNSString(parameters);
 		if (ns_params)
 		{
 			NSString* escaped = [ns_params stringByAddingPercentEncodingWithAllowedCharacters:

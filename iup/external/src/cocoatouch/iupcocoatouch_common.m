@@ -149,9 +149,9 @@ IUP_DRV_API char* iupCocoaTouchColorFromNative(UIColor* color)
 	return NULL;
 }
 
-IUP_DRV_API int iupCocoaTouchSetBgColorAttrib(Ihandle* ih, const char* color_str)
+IUP_DRV_API int iupCocoaTouchSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-	UIColor* color = iupCocoaTouchToNativeColor(color_str);
+	UIColor* color = iupCocoaTouchToNativeColor(value);
 	if (color && [(id)ih->handle isKindOfClass:[UIView class]])
 	{
 		[(UIView*)ih->handle setBackgroundColor:color];
@@ -186,7 +186,7 @@ static NSString* cocoaTouchMarkupResolveFamily(const char* family)
 		return @"Times New Roman";
 	if (iupStrEqualNoCase(family, "Sans") || iupStrEqualNoCase(family, "Sans-serif") || iupStrEqualNoCase(family, "System"))
 		return nil;  /* nil = system font */
-	return [NSString stringWithUTF8String:family];
+	return iupCocoaTouchStrToNSString(family);
 }
 
 typedef struct {
@@ -222,7 +222,7 @@ IUP_DRV_API NSAttributedString* iupCocoaTouchParseMarkup(const char* raw, UIFont
 		{
 			const char* start = p;
 			while (*p && *p != '<') p++;
-			NSString* chunk = [[[NSString alloc] initWithBytes:start length:(NSUInteger)(p - start) encoding:NSUTF8StringEncoding] autorelease];
+			NSString* chunk = iupCocoaTouchStrToNSStringLen(start, (size_t)(p - start));
 
 			cocoaTouchMarkupState* st = &stack[sp];
 			CGFloat target_size = (st->size > 0 ? st->size : base_font.pointSize) * st->size_factor;
@@ -600,7 +600,7 @@ static void cocoaTouchSetAccessibleTitle(Ihandle* ih, const char* title)
 	id handle = ih->handle;
 	if ([handle respondsToSelector:@selector(setAccessibilityLabel:)])
 	{
-		[handle setAccessibilityLabel:title ? [NSString stringWithUTF8String:title] : nil];
+		[handle setAccessibilityLabel:title ? iupCocoaTouchStrToNSString(title) : nil];
 	}
 }
 
@@ -616,7 +616,7 @@ static void cocoaTouchSetAccessibleDescription(Ihandle* ih, const char* descript
 {
 	id handle = ih->handle;
 	if ([handle respondsToSelector:@selector(setAccessibilityHint:)])
-		[handle setAccessibilityHint:description ? [NSString stringWithUTF8String:description] : nil];
+		[handle setAccessibilityHint:description ? iupCocoaTouchStrToNSString(description) : nil];
 }
 
 IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* description)
@@ -705,4 +705,84 @@ IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 	{
 		cocoaTouchWarpPointer(x, y);
 	}
+}
+
+static size_t cocoaTouchUtf8SequenceLength(const unsigned char* s, size_t avail)
+{
+	unsigned char c = s[0];
+	size_t len, i;
+
+	if (c < 0x80)
+		return 1;
+	if (c >= 0xC2 && c <= 0xDF)
+		len = 2;
+	else if (c >= 0xE0 && c <= 0xEF)
+		len = 3;
+	else if (c >= 0xF0 && c <= 0xF4)
+		len = 4;
+	else
+		return 0;
+
+	if (len > avail)
+		return 0;
+
+	for (i = 1; i < len; i++)
+	{
+		if ((s[i] & 0xC0) != 0x80)
+			return 0;
+	}
+
+	if ((c == 0xE0 && s[1] < 0xA0) || (c == 0xED && s[1] > 0x9F) ||
+	    (c == 0xF0 && s[1] < 0x90) || (c == 0xF4 && s[1] > 0x8F))
+		return 0;
+
+	return len;
+}
+
+IUP_DRV_API NSString* iupCocoaTouchStrToNSStringLen(const char* str, size_t len)
+{
+	NSString* ns_string;
+	const unsigned char* s;
+	char* valid;
+	size_t pos = 0, out = 0;
+
+	if (!str)
+		return nil;
+
+	ns_string = [[[NSString alloc] initWithBytes:str length:len encoding:NSUTF8StringEncoding] autorelease];
+	if (ns_string)
+		return ns_string;
+
+	valid = (char*)malloc(len * 3 + 1);
+	if (!valid)
+		return @"";
+
+	s = (const unsigned char*)str;
+	while (pos < len)
+	{
+		size_t seq = cocoaTouchUtf8SequenceLength(s + pos, len - pos);
+		if (seq)
+		{
+			memcpy(valid + out, s + pos, seq);
+			out += seq;
+			pos += seq;
+		}
+		else
+		{
+			memcpy(valid + out, "\xef\xbf\xbd", 3);
+			out += 3;
+			pos++;
+		}
+	}
+
+	ns_string = [[[NSString alloc] initWithBytes:valid length:out encoding:NSUTF8StringEncoding] autorelease];
+	free(valid);
+	return ns_string ? ns_string : @"";
+}
+
+IUP_DRV_API NSString* iupCocoaTouchStrToNSString(const char* str)
+{
+	if (!str)
+		return nil;
+	return iupCocoaTouchStrToNSStringLen(str, strlen(str));
 }
