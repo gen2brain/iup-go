@@ -489,13 +489,6 @@ static void* cocoaImageLoad(const char* name, int type)
 
   if (nil == the_image)
   {
-    NSString* resource_path = [[NSBundle mainBundle] resourcePath];
-    NSString* the_path = [resource_path stringByAppendingPathComponent:ns_name];
-    the_image = [[NSImage alloc] initWithContentsOfFile:the_path];
-  }
-
-  if (nil == the_image)
-  {
     NSString* bundle_path = [[NSBundle mainBundle] bundlePath];
     bundle_path = [bundle_path stringByDeletingLastPathComponent];
     NSString* the_path = [bundle_path stringByAppendingPathComponent:ns_name];

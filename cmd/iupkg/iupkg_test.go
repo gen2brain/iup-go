@@ -3,6 +3,10 @@ package main
 import (
 	"bytes"
 	"encoding/xml"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
 	"testing"
 )
 
@@ -114,5 +118,55 @@ func TestMSIXManifest(t *testing.T) {
 	c.tags = []string{"winui"}
 	if !bytes.Contains(msixManifest(c, "x64", "CN=V"), []byte(`<PackageDependency Name="Microsoft.WindowsAppRuntime.1.8"`)) {
 		t.Error("no runtime dependency with the winui tag")
+	}
+}
+
+func TestLoadData(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, data string) {
+		p := filepath.Join(dir, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("gopher.png", "png")
+	write("images/a.png", "a")
+	write("images/sub/b.png", "b")
+	write("other/gopher.png", "dup")
+
+	c := &config{data: []string{filepath.Join(dir, "gopher.png"), filepath.Join(dir, "images")}}
+	if err := c.loadData(); err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, f := range c.files {
+		names = append(names, f.name)
+	}
+	slices.Sort(names)
+	want := []string{"gopher.png", "images/a.png", "images/sub/b.png"}
+	if !slices.Equal(names, want) {
+		t.Errorf("names = %v, want %v", names, want)
+	}
+
+	c = &config{data: []string{filepath.Join(dir, "gopher.png"), filepath.Join(dir, "other", "gopher.png")}}
+	if err := c.loadData(); err == nil {
+		t.Error("two entries with the same name: no error")
+	}
+}
+
+func TestMakefileData(t *testing.T) {
+	c := &config{exe: "demo"}
+	if mk := string(makefile(c, "demo")); strings.Contains(mk, "share/$(EXE)") {
+		t.Errorf("makefile without data installs share/$(EXE):\n%s", mk)
+	}
+	c.files = []dataFile{{"gopher.png", 0o644, []byte("png")}}
+	mk := string(makefile(c, "demo"))
+	for _, want := range []string{"cp -R share/$(EXE)/. $(DESTDIR)$(PREFIX)/share/$(EXE)/", "find share/$(EXE) -type f", "find share/$(EXE) -depth -type d"} {
+		if !strings.Contains(mk, want) {
+			t.Errorf("makefile lacks %q:\n%s", want, mk)
+		}
 	}
 }

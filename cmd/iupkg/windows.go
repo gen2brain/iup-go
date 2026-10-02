@@ -89,6 +89,9 @@ func packageWindows(c *config) error {
 	if slices.Contains(c.formats, "msix") {
 		return packageMSIX(c, out, img, ldflags)
 	}
+	if len(c.files) > 0 {
+		fmt.Fprintln(os.Stderr, "iupkg: --data is packaged only into the .msix (--format msix)")
+	}
 	return nil
 }
 
@@ -175,6 +178,14 @@ func packageMSIX(c *config, exe string, img image.Image, ldflags []string) error
 			return err
 		}
 		files = append(files, msix.File{Name: "Assets/" + logo.name + ".png", Data: png})
+	}
+	for _, f := range c.files {
+		for _, existing := range files {
+			if strings.EqualFold(existing.Name, f.name) {
+				return fmt.Errorf("--data: %s is already in the package", f.name)
+			}
+		}
+		files = append(files, msix.File{Name: f.name, Data: f.data})
 	}
 	pkg, err := msix.Write(msixManifest(c, arch, publisher), files, signer)
 	if err != nil {

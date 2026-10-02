@@ -141,6 +141,20 @@ extern "C" IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
 extern "C" IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
 {
   if (!path || size <= 0) return 0;
+  if (kind == IUP_USER_DIR_RESOURCE)
+  {
+    const char* exe = iupdrvExeFileName();
+    BPath app, root;
+    struct stat st;
+    if (!exe || BPath(exe).GetParent(&app) != B_OK || app.GetParent(&root) != B_OK || root.GetParent(&root) != B_OK)
+      return 0;
+    root.Append("data");
+    root.Append(BPath(exe).Leaf());
+    if (stat(root.Path(), &st) != 0 || !S_ISDIR(st.st_mode))
+      return 0;
+    snprintf(path, size, "%s", root.Path());
+    return 1;
+  }
   directory_which which = B_USER_DIRECTORY;
   switch (kind)
   {
@@ -148,6 +162,7 @@ extern "C" IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
     case IUP_USER_DIR_DATA:   which = B_USER_DATA_DIRECTORY; break;
     case IUP_USER_DIR_CONFIG: which = B_USER_SETTINGS_DIRECTORY; break;
     case IUP_USER_DIR_TEMP:   which = B_SYSTEM_TEMP_DIRECTORY; break;
+    default: return 0;
   }
   BPath p;
   if (find_directory(which, &p) != B_OK)

@@ -245,6 +245,15 @@ IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
     return 1;
   }
 
+  if (kind == IUP_USER_DIR_RESOURCE)
+  {
+    struct stat st;
+    if (stat("/resources", &st) != 0 || !S_ISDIR(st.st_mode))
+      return 0;
+    iupStrCopyN(path, size, "/resources");
+    return 1;
+  }
+
   switch (kind)
   {
     case IUP_USER_DIR_CACHE:  subdir = ".cache";       break;

@@ -4,8 +4,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -71,6 +73,7 @@ type config struct {
 	copyright   string
 	license     string
 	permissions []string
+	data        []string
 	sign        string
 	signer      string
 	timestamp   bool
@@ -85,6 +88,13 @@ type config struct {
 	pkgDir  string
 	exe     string
 	iupDir  string
+	files   []dataFile
+}
+
+type dataFile struct {
+	name string
+	mode os.FileMode
+	data []byte
 }
 
 func main() {
@@ -187,6 +197,10 @@ func newFlagSet(c *config) *flag.FlagSet {
 		c.permissions = splitList(s)
 		return nil
 	})
+	fs.Func("data", "`file` or directory shipped with the application, read back from the RESOURCEDIR global; a directory keeps its name; repeatable", func(s string) error {
+		c.data = append(c.data, s)
+		return nil
+	})
 	fs.StringVar(&c.sign, "sign", "", "signing `identity`: a .p12 or PEM file with the key and certificate, linux: an exported OpenPGP secret key; a keychain identity with --signer codesign, a gpg key with --signer gpg (default: android a debug key, darwin ad-hoc, others unsigned)")
 	fs.StringVar(&c.signer, "signer", "", "signing `tool`: iupkg, darwin, ios: codesign, linux: gpg (default: codesign on macOS, else iupkg)")
 	fs.BoolVar(&c.timestamp, "timestamp", true, "add a trusted timestamp when signing with a certificate")
@@ -271,6 +285,10 @@ func runPackage(args []string) error {
 		}
 	}
 
+	if err := c.loadData(); err != nil {
+		return err
+	}
+
 	if err := c.resolve(); err != nil {
 		return err
 	}
@@ -296,6 +314,88 @@ func runPackage(args []string) error {
 		return packageHaiku(c)
 	}
 	return fmt.Errorf("unsupported target os %q", c.goos)
+}
+
+func (c *config) loadData() error {
+	seen := map[string]string{}
+	add := func(name, src string) error {
+		if prev, ok := seen[strings.ToLower(name)]; ok {
+			return fmt.Errorf("--data: %s and %s both become %s", prev, src, name)
+		}
+		seen[strings.ToLower(name)] = src
+		info, err := os.Stat(src)
+		if err != nil {
+			return err
+		}
+		data, err := os.ReadFile(src)
+		if err != nil {
+			return err
+		}
+		mode := os.FileMode(0o644)
+		if info.Mode()&0o111 != 0 {
+			mode = 0o755
+		}
+		c.files = append(c.files, dataFile{name, mode, data})
+		return nil
+	}
+
+	for _, root := range c.data {
+		info, err := os.Stat(root)
+		if err != nil {
+			return fmt.Errorf("--data: %w", err)
+		}
+		base := filepath.Base(filepath.Clean(root))
+		if !info.IsDir() {
+			if err := add(base, root); err != nil {
+				return err
+			}
+			continue
+		}
+		err = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			rel, err := filepath.Rel(root, p)
+			if err != nil {
+				return err
+			}
+			if !d.Type().IsRegular() {
+				if info, err := os.Stat(p); err != nil || !info.Mode().IsRegular() {
+					return nil
+				}
+			}
+			return add(path.Join(base, filepath.ToSlash(rel)), p)
+		})
+		if err != nil {
+			return fmt.Errorf("--data: %w", err)
+		}
+	}
+	return nil
+}
+
+func (c *config) writeData(root string, reserved ...string) error {
+	for _, f := range c.files {
+		top, _, _ := strings.Cut(f.name, "/")
+		for _, r := range reserved {
+			if strings.EqualFold(top, r) {
+				return fmt.Errorf("--data: %s is reserved in the package", f.name)
+			}
+		}
+		dst := filepath.Join(root, filepath.FromSlash(f.name))
+		if _, err := os.Lstat(dst); err == nil {
+			return fmt.Errorf("--data: %s is already in the package", f.name)
+		}
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(dst, f.data, f.mode); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *config) resolve() error {

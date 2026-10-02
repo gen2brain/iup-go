@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html"
 	"os"
@@ -63,6 +64,23 @@ func packageJS(c *config) error {
 	}
 	if err := os.WriteFile(filepath.Join(dir, "wasm_exec.js"), data, 0o644); err != nil {
 		return err
+	}
+
+	if len(c.files) > 0 {
+		if err := c.writeData(filepath.Join(dir, "resources")); err != nil {
+			return err
+		}
+		var names []string
+		for _, f := range c.files {
+			names = append(names, f.name)
+		}
+		list, err := json.Marshal(names)
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(filepath.Join(dir, "resources.json"), list, 0o644); err != nil {
+			return err
+		}
 	}
 
 	fmt.Fprintln(os.Stderr, dir)

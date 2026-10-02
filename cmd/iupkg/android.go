@@ -119,6 +119,18 @@ func packageAndroid(c *config) error {
 		entries = append(entries, e)
 	}
 
+	for _, f := range c.files {
+		name := "assets/resources/" + f.name
+		if apk.Find(entries, name) != nil {
+			return fmt.Errorf("--data: %s is already in the package", f.name)
+		}
+		e, err := apk.NewEntry(name, f.data, zip.Deflate, 0)
+		if err != nil {
+			return err
+		}
+		entries = append(entries, e)
+	}
+
 	var id *keys.Identity
 	if c.sign == "" {
 		id, err = apk.DebugIdentity()

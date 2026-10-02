@@ -125,7 +125,7 @@ For example:
     or
     IupSetAttributeHandle(label, "IMAGE", image); // an automatic name will be created internally
 
-In all drivers, a path to a file name, or a system-specific stock / named image, can also be used as the attribute value. See [IupImageGetHandle](../func/iup_imagegethandle.md) for the per-driver list of accepted file formats and named lookups. Loading from a file path is not supported in WebAssembly.
+In all drivers, a path to a file name, or a system-specific stock / named image, can also be used as the attribute value. See [IupImageGetHandle](../func/iup_imagegethandle.md) for the per-driver list of accepted file formats and named lookups. In WebAssembly only image files in [RESOURCEDIR](../attrib/iup_globals.md#resourcedir-read-only) load.
 
     IupSetAttribute(label, "IMAGE", "TECGRAF_BITMAP");      // a resource in the linked "etc/iup.rc" file (Win32)
     IupSetAttribute(label, "IMAGE", "gtk-open");            // a GTK Stock Item (GTK 3)

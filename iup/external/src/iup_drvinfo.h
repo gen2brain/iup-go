@@ -96,12 +96,13 @@ IUP_SDK_API char* iupdrvExeFileName(void);
  * \ingroup drvinfo */
 IUP_SDK_API int iupdrvGetPreferencePath(char* filename, const char* app_name, int use_system);
 
-/** Per-user directory kinds for \ref iupdrvGetUserDir. \ingroup drvinfo */
+/** Directory kinds for \ref iupdrvGetUserDir. \ingroup drvinfo */
 enum {
-  IUP_USER_DIR_CACHE  = 0,
-  IUP_USER_DIR_DATA   = 1,
-  IUP_USER_DIR_CONFIG = 2,
-  IUP_USER_DIR_TEMP   = 3
+  IUP_USER_DIR_CACHE    = 0,
+  IUP_USER_DIR_DATA     = 1,
+  IUP_USER_DIR_CONFIG   = 2,
+  IUP_USER_DIR_TEMP     = 3,
+  IUP_USER_DIR_RESOURCE = 4
 };
 
 /** Writes the per-user standard directory for the requested kind into \p path

@@ -138,6 +138,108 @@ function mountPersistentHome() {
   });
 }
 
+// iupdrvImageLoad is synchronous and the browser decoder is not, so images are decoded here
+function preloadResources() {
+  var FS = Module.FS;
+  globalThis.__iupResourceImages = {};
+  try { FS.mkdirTree('/resources'); } catch (e) { return Promise.resolve(); }
+  return fetch('resources.json').then(function (r) { return r.ok ? r.json() : []; }, function () { return []; }).then(function (names) {
+    return Promise.all(names.map(function (name) {
+      var path = '/resources/' + name;
+      return fetch('resources/' + name.split('/').map(encodeURIComponent).join('/')).then(function (r) {
+        if (!r.ok) throw new Error(name + ': ' + r.status);
+        return r.arrayBuffer();
+      }).then(function (buf) {
+        var data = new Uint8Array(buf);
+        FS.mkdirTree(path.substring(0, path.lastIndexOf('/')));
+        FS.writeFile(path, data);
+        if (!/\.(png|jpe?g|gif|bmp|webp|ico|avif)$/i.test(name)) return;
+        return createImageBitmap(new Blob([data]), { colorSpaceConversion: 'none', premultiplyAlpha: 'none' }).then(function (bmp) {
+          var cv = new OffscreenCanvas(bmp.width, bmp.height);
+          var ctx = cv.getContext('2d');
+          ctx.drawImage(bmp, 0, 0);
+          globalThis.__iupResourceImages[path] = { w: bmp.width, h: bmp.height, rgba: ctx.getImageData(0, 0, bmp.width, bmp.height).data };
+          bmp.close();
+        }, function () {});
+      });
+    }));
+  }).catch(function (err) { console.error('iup resources', err); });
+}
+
+// wasm_exec.js installs its ENOSYS fs stub only when globalThis.fs is unset
+function installGoFs() {
+  var FS = Module.FS;
+  var codes = { 2: 'EACCES', 8: 'EBADF', 10: 'EBUSY', 20: 'EEXIST', 28: 'EINVAL', 29: 'EIO', 31: 'EISDIR',
+    32: 'ELOOP', 33: 'EMFILE', 37: 'ENAMETOOLONG', 44: 'ENOENT', 51: 'ENOSPC', 52: 'ENOSYS', 54: 'ENOTDIR',
+    55: 'ENOTEMPTY', 63: 'EPERM', 69: 'EROFS', 70: 'ESPIPE', 75: 'EXDEV' };
+  var fail = function (e) {
+    var err = new Error((e && e.message) || 'fs error');
+    err.code = (e && codes[e.errno]) || 'EIO';
+    return err;
+  };
+  var call = function (cb, fn) {
+    var r;
+    try { r = fn(); } catch (e) { cb(fail(e)); return; }
+    cb(null, r);
+  };
+  var stream = function (fd) {
+    var st = FS.getStream(fd);
+    if (!st) throw new FS.ErrnoError(8);
+    return st;
+  };
+  var at = function (p) { return p === null ? undefined : p; };
+  var stat = function (s) {
+    return { dev: s.dev, ino: s.ino, mode: s.mode, nlink: s.nlink, uid: s.uid, gid: s.gid, rdev: s.rdev,
+      size: s.size, blksize: s.blksize, blocks: s.blocks, atimeMs: +s.atime, mtimeMs: +s.mtime, ctimeMs: +s.ctime,
+      isDirectory: function () { return (s.mode & 61440) === 16384; } };
+  };
+  var out = '', dec = new TextDecoder();
+  var print = function (buf) {
+    out += dec.decode(buf);
+    var nl = out.lastIndexOf('\n');
+    if (nl !== -1) { console.log(out.substring(0, nl)); out = out.substring(nl + 1); }
+    return buf.length;
+  };
+  globalThis.fs = {
+    constants: { O_WRONLY: 1, O_RDWR: 2, O_CREAT: 64, O_EXCL: 128, O_TRUNC: 512, O_APPEND: 1024, O_DIRECTORY: 65536 },
+    writeSync: function (fd, buf) {
+      if (fd === 1 || fd === 2) return print(buf);
+      return FS.write(stream(fd), buf, 0, buf.length);
+    },
+    write: function (fd, buf, offset, length, position, cb) {
+      if ((fd === 1 || fd === 2) && offset === 0 && length === buf.length && position === null) { cb(null, print(buf)); return; }
+      call(cb, function () { return FS.write(stream(fd), buf, offset, length, at(position)); });
+    },
+    read: function (fd, buf, offset, length, position, cb) {
+      call(cb, function () { return FS.read(stream(fd), buf, offset, length, at(position)); });
+    },
+    open: function (path, flags, mode, cb) { call(cb, function () { return FS.open(path, flags, mode).fd; }); },
+    close: function (fd, cb) { call(cb, function () { FS.close(stream(fd)); }); },
+    fstat: function (fd, cb) { call(cb, function () { return stat(FS.fstat(fd)); }); },
+    stat: function (path, cb) { call(cb, function () { return stat(FS.stat(path)); }); },
+    lstat: function (path, cb) { call(cb, function () { return stat(FS.lstat(path)); }); },
+    readdir: function (path, cb) {
+      call(cb, function () { return FS.readdir(path).filter(function (n) { return n !== '.' && n !== '..'; }); });
+    },
+    mkdir: function (path, perm, cb) { call(cb, function () { FS.mkdir(path, perm); }); },
+    unlink: function (path, cb) { call(cb, function () { FS.unlink(path); }); },
+    rmdir: function (path, cb) { call(cb, function () { FS.rmdir(path); }); },
+    rename: function (from, to, cb) { call(cb, function () { FS.rename(from, to); }); },
+    chmod: function (path, mode, cb) { call(cb, function () { FS.chmod(path, mode); }); },
+    fchmod: function (fd, mode, cb) { call(cb, function () { FS.fchmod(fd, mode); }); },
+    chown: function (path, uid, gid, cb) { cb(null); },
+    fchown: function (fd, uid, gid, cb) { cb(null); },
+    lchown: function (path, uid, gid, cb) { cb(null); },
+    utimes: function (path, atime, mtime, cb) { call(cb, function () { FS.utime(path, atime * 1000, mtime * 1000); }); },
+    truncate: function (path, length, cb) { call(cb, function () { FS.truncate(path, length); }); },
+    ftruncate: function (fd, length, cb) { call(cb, function () { FS.ftruncate(fd, length); }); },
+    readlink: function (path, cb) { call(cb, function () { return FS.readlink(path); }); },
+    symlink: function (path, link, cb) { call(cb, function () { FS.symlink(path, link); }); },
+    link: function (path, link, cb) { cb(fail({ errno: 52 })); },
+    fsync: function (fd, cb) { cb(null); }
+  };
+}
+
 function boot() {
   importScripts('iup.js');
   // mainScriptUrlOrBlob: lets -pthread workers spawn from inside this Worker
@@ -148,8 +250,11 @@ function boot() {
     for (var k = 0; k < q.length; k++) dispatchEvent(q[k][0], q[k][1], q[k][2]);
     return mountPersistentHome();
   }).then(function () {
+    return preloadResources();
+  }).then(function () {
     return fetch('app.wasm', { method: 'HEAD' }).then(function (r) {
       if (!r.ok) { Module.callMain([]); return; }  // C app: its main() runs the blocking IupMainLoop
+      installGoFs();
       importScripts('wasm_exec.js');
       var go = new Go();
       return WebAssembly.instantiateStreaming(fetch('app.wasm'), go.importObject).then(function (res) { go.run(res.instance); });

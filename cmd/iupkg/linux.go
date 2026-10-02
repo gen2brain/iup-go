@@ -62,6 +62,9 @@ func packageLinux(c *config) error {
 		dim := strconv.Itoa(size)
 		files = append(files, tarFile{path.Join(top, "share", "icons", "hicolor", dim+"x"+dim, "apps", id+".png"), 0o644, data})
 	}
+	for _, f := range c.files {
+		files = append(files, tarFile{path.Join(top, "share", c.exe, f.name), int64(f.mode), f.data})
+	}
 
 	var sign pgp.Signer
 	if c.sign != "" {
@@ -109,6 +112,21 @@ func installedFiles(c *config, id string, exe []byte, img image.Image) ([]pkgtre
 		}
 		dim := strconv.Itoa(size)
 		files = append(files, pkgtree.File{Path: "/usr/share/icons/hicolor/" + dim + "x" + dim + "/apps/" + id + ".png", Mode: 0o644, Data: data})
+	}
+	if len(c.files) > 0 {
+		root := "/usr/share/" + c.exe
+		dirs := []string{root}
+		for _, f := range c.files {
+			for d := path.Dir(f.name); d != "."; d = path.Dir(d) {
+				if !slices.Contains(dirs, root+"/"+d) {
+					dirs = append(dirs, root+"/"+d)
+				}
+			}
+			files = append(files, pkgtree.File{Path: root + "/" + f.name, Mode: uint32(f.mode), Data: f.data})
+		}
+		for _, d := range dirs {
+			files = append(files, pkgtree.File{Path: d, Mode: 0o755, Dir: true})
+		}
 	}
 	return files, nil
 }
@@ -235,6 +253,12 @@ func makefile(c *config, id string) []byte {
 	for _, size := range linuxIconSizes {
 		sizes = append(sizes, strconv.Itoa(size))
 	}
+	var install, uninstall string
+	if len(c.files) > 0 {
+		install = "\tmkdir -p $(DESTDIR)$(PREFIX)/share/$(EXE)\n\tcp -R share/$(EXE)/. $(DESTDIR)$(PREFIX)/share/$(EXE)/\n"
+		uninstall = "\tfind share/$(EXE) -type f | while IFS= read -r f; do rm -f \"$(DESTDIR)$(PREFIX)/$$f\"; done\n" +
+			"\tfind share/$(EXE) -depth -type d | while IFS= read -r d; do rmdir \"$(DESTDIR)$(PREFIX)/$$d\" 2>/dev/null || true; done\n"
+	}
 	return fmt.Appendf(nil, `PREFIX ?= /usr/local
 
 EXE = %s
@@ -246,12 +270,12 @@ install:
 	mkdir -p $(DESTDIR)$(PREFIX)/share/applications
 	sed 's|@BINDIR@|$(PREFIX)/bin|' share/applications/$(ID).desktop > $(DESTDIR)$(PREFIX)/share/applications/$(ID).desktop
 	for s in $(SIZES); do install -Dm644 share/icons/hicolor/$${s}x$${s}/apps/$(ID).png $(DESTDIR)$(PREFIX)/share/icons/hicolor/$${s}x$${s}/apps/$(ID).png; done
-
+%s
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(EXE)
 	rm -f $(DESTDIR)$(PREFIX)/share/applications/$(ID).desktop
 	for s in $(SIZES); do rm -f $(DESTDIR)$(PREFIX)/share/icons/hicolor/$${s}x$${s}/apps/$(ID).png; done
-
+%s
 user-install:
 	$(MAKE) install PREFIX=$(HOME)/.local
 
@@ -259,5 +283,5 @@ user-uninstall:
 	$(MAKE) uninstall PREFIX=$(HOME)/.local
 
 .PHONY: install uninstall user-install user-uninstall
-`, c.exe, id, strings.Join(sizes, " "))
+`, c.exe, id, strings.Join(sizes, " "), install, uninstall)
 }

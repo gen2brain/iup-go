@@ -67,6 +67,9 @@ func packageIOS(c *config) error {
 	if err := os.WriteFile(filepath.Join(app, "Info.plist"), iosInfoPlist(c), 0o644); err != nil {
 		return err
 	}
+	if err := c.writeData(app, "_CodeSignature", "embedded.mobileprovision", "Frameworks", "PlugIns"); err != nil {
+		return err
+	}
 
 	if !c.simulator {
 		if err := signIOS(c, app, tmp); err != nil {

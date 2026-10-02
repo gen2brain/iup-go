@@ -94,6 +94,9 @@ func packageDarwin(c *config) error {
 	if err := os.WriteFile(filepath.Join(contents, "Resources", c.exe+".icns"), icns, 0o644); err != nil {
 		return err
 	}
+	if err := c.writeData(filepath.Join(contents, "Resources")); err != nil {
+		return err
+	}
 
 	minOS, err := macho.MinVersion(bins[0])
 	if err != nil {

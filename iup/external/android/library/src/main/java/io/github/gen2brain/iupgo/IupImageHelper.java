@@ -1,7 +1,5 @@
 package io.github.gen2brain.iupgo;
 
-import android.content.Context;
-import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
@@ -11,7 +9,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Locale;
 
 
@@ -28,31 +25,15 @@ public final class IupImageHelper
         return bmp;
     }
 
-    /* try filesystem first, fall back to APK assets; null if neither yields a bitmap */
     @Keep
     public static Bitmap loadBitmap(String fileName)
     {
-        if (null == fileName)
+        if (null == fileName || !new File(fileName).exists())
         {
             return null;
         }
 
-        File file = new File(fileName);
-        if (file.exists())
-        {
-            return BitmapFactory.decodeFile(fileName);
-        }
-
-        Context context = IupApplication.getIupApplication();
-        AssetManager assetManager = context.getAssets();
-
-        try (InputStream inputStream = assetManager.open(fileName)) {
-            return BitmapFactory.decodeStream(inputStream);
-        } catch (IOException ex) {
-            Log.w(TAG, "loadBitmap: asset open failed for " + fileName + ": " + ex.getMessage());
-            return null;
-        }
-        /* Close-failure on read path is non-actionable; leak is bounded. */
+        return BitmapFactory.decodeFile(fileName);
     }
 
     @Keep

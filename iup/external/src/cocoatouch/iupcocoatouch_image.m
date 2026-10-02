@@ -248,14 +248,6 @@ static void* cocoaTouchImageLoad(const char* name, int type)
 	UIImage* ui_image = [[UIImage alloc] initWithContentsOfFile:ns_name];
 	if (ui_image) return ui_image;
 
-	NSString* resource_path = [[NSBundle mainBundle] resourcePath];
-	if (resource_path)
-	{
-		NSString* bundled = [resource_path stringByAppendingPathComponent:ns_name];
-		ui_image = [[UIImage alloc] initWithContentsOfFile:bundled];
-		if (ui_image) return ui_image;
-	}
-
 	UIImage* named = [UIImage imageNamed:ns_name];
 	if (named) return [named retain];
 

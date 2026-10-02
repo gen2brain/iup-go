@@ -185,6 +185,14 @@ IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
   if (!path || size <= 0) return 0;
   path[0] = '\0';
 
+  if (kind == IUP_USER_DIR_RESOURCE)
+  {
+    char* dir = androidCallStringStatic("getResourceDir");
+    if (!dir) return 0;
+    iupStrCopyN(path, size, dir);
+    return path[0] ? 1 : 0;
+  }
+
   const char* method_name;
   switch (kind)
   {
