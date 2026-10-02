@@ -341,6 +341,7 @@ static int cocoaOpen(void)
 
   cocoaSetAppearance(IUP_APPEARANCE_SYSTEM);
 #else
+  iupGlobalSetAppearanceNative(1);
   iupcocoaSetGlobalColors();
 #endif
   IupSetGlobal("_IUP_RESET_GLOBALCOLORS", "YES");
