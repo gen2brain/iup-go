@@ -87,7 +87,7 @@ typedef struct _IwinTableData {
   BOOL row_dragging;
 } IwinTableData;
 
-#define IWIN_TABLE_DATA(ih) ((IwinTableData*)(ih->data->native_data))
+#define IWIN_TABLE_DATA(ih) ((IwinTableData*)((ih)->data->native_data))
 
 /****************************************************************************
  * Utilities
@@ -2732,10 +2732,6 @@ static int winTableKeyProc(Ihandle* ih, HWND hwnd, UINT msg, WPARAM wp, LPARAM l
         break;
 
       case VK_RETURN:
-        winTableStartEdit(ih, lin, col);
-        handled = TRUE;
-        break;
-
       case VK_F2:
         winTableStartEdit(ih, lin, col);
         handled = TRUE;

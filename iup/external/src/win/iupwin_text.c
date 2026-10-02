@@ -79,7 +79,7 @@
 /*   End Cygwin/MingW */
 
 
-#define WM_IUPCARET WM_APP+1   /* Custom IUP message */
+#define WM_IUPCARET (WM_APP+1)   /* Custom IUP message */
 
 
 IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)

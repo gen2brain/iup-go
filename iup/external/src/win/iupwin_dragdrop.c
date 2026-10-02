@@ -121,7 +121,7 @@ static HRESULT STDMETHODCALLTYPE IwinEnumFORMATETC_Next (IwinEnumFORMATETC* pThi
 
   while(pThis->nIndex < pThis->nNumFormats && nCeltCopied < nCelt)
   {
-    winFormatEtcCopy((struct tagFORMATETC*)&pFormatEtc[nCeltCopied], &pThis->pFormatEtc[pThis->nIndex]);
+    winFormatEtcCopy(&pFormatEtc[nCeltCopied], &pThis->pFormatEtc[pThis->nIndex]);
     nCeltCopied++;
     pThis->nIndex++;
   }
@@ -674,7 +674,7 @@ static HRESULT STDMETHODCALLTYPE IwinDropTarget_DragLeave(IwinDropTarget* pThis)
 
 static void winCallDropDataCB(Ihandle* ih, CLIPFORMAT cf, HGLOBAL hData, int x, int y)
 {
-  IFnsViii cbDropData = (IFnsViii)IupGetCallback((Ihandle*)ih, "DROPDATA_CB");
+  IFnsViii cbDropData = (IFnsViii)IupGetCallback(ih, "DROPDATA_CB");
   if(cbDropData)
   {
     void* targetData = NULL;
@@ -821,7 +821,7 @@ static IwinDropTarget* winRegisterDrop(Ihandle* ih)
   j = 0;
   for(i = 0; i < count; i++)
   {
-    CLIPFORMAT f = (CLIPFORMAT)winRegisterClipboardFormat(dropListData[i]);
+    CLIPFORMAT f = winRegisterClipboardFormat(dropListData[i]);
     if (f)
     {
       cfList[j] = f;
@@ -860,7 +860,7 @@ static int winRegisterProcessDrag(Ihandle* ih)
   j = 0;
   for(i = 0; i < dragListCount; i++)
   {
-    CLIPFORMAT f = (CLIPFORMAT)winRegisterClipboardFormat(dragListData[i]);
+    CLIPFORMAT f = winRegisterClipboardFormat(dragListData[i]);
     if (f)
     {
       cfList[j] = f;

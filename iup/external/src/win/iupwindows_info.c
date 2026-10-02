@@ -225,9 +225,9 @@ IUP_SDK_API char* iupdrvGetUserName(void)
   return str;
 }
 
-IUP_SDK_API int iupdrvSetCurrentDirectory(const char* path)
+IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
 {
-  return SetCurrentDirectoryA(path);
+  return SetCurrentDirectoryA(dir);
 }
 
 IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
