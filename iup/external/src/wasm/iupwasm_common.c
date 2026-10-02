@@ -644,13 +644,13 @@ IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
 {
   int id = iupwasmIdOf(ih);
   if (id)
   {
-    iupwasmSetVisibleState(id, visible);
-    iupwasmJsSetVisible(id, visible);
+    iupwasmSetVisibleState(id, enable);
+    iupwasmJsSetVisible(id, enable);
   }
 }
 
