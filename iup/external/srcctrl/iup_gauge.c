@@ -178,7 +178,7 @@ static int iGaugeRedraw_CB(Ihandle* ih)
       int end = (ih->data->orientation == IGAUGE_HORIZONTAL) ? xend : yend;
       double step = (double)(end - start + 1) / (double)IGAUGE_DASHED_BLOCKS;
       double step_fill = step - IGAUGE_DASHED_GAP;
-      double range = (double)((end - start + 1) * (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin));
+      double range = (end - start + 1) * (ih->data->value - ih->data->vmin) / (ih->data->vmax - ih->data->vmin);
       int range_percent = (int)(100 * range);
       double i = 0;
 

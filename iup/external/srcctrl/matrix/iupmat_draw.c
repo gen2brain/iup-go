@@ -583,7 +583,6 @@ static void iMatrixDrawBackground(Ihandle* ih, int x1, int x2, int y1, int y2, i
 
 static void iMatrixDrawText(Ihandle* ih, int x1, int x2, int y1, int y2, int col_alignment, int lin_alignment, int marked, int active, int lin, int col, const char* text)
 {
-  int text_alignment;
   int charheight, x, y, hidden_text_marks = 0;
 
   iupdrvFontGetCharSize(ih, NULL, &charheight);
@@ -625,92 +624,22 @@ static void iMatrixDrawText(Ihandle* ih, int x1, int x2, int y1, int y2, int col
 
   iupMatrixGetCellAlign(ih, lin, col, &col_alignment, &lin_alignment);
 
-  /* IupDraw: Use top-left positioning and let IupDrawText handle alignment via bounding box */
-  if (lin_alignment == IMAT_ALIGN_CENTER)
-  {
-    y = iupROUND((y1 + y2) / 2.0);
-
-    if (col_alignment == IMAT_ALIGN_CENTER)
-    {
-      x = iupROUND((x1 + x2) / 2.0);
-      text_alignment = IUP_ALIGN_ACENTER;  /* Center both H and V */
-    }
-    else if (col_alignment == IMAT_ALIGN_START)
-    {
-      x = x1;
-      text_alignment = IUP_ALIGN_ALEFT;  /* Left, center V */
-    }
-    else  /* RIGHT */
-    {
-      x = x2;
-      text_alignment = IUP_ALIGN_ARIGHT;  /* Right, center V */
-    }
-  }
-  else if (lin_alignment == IMAT_ALIGN_START)
-  {
-    y = y1;
-
-    if (col_alignment == IMAT_ALIGN_CENTER)
-    {
-      x = iupROUND((x1 + x2) / 2.0);
-      text_alignment = IUP_ALIGN_ACENTER | IUP_ALIGN_ATOP;  /* Center H, top V */
-    }
-    else if (col_alignment == IMAT_ALIGN_START)
-    {
-      x = x1;
-      text_alignment = IUP_ALIGN_ALEFT | IUP_ALIGN_ATOP;  /* Left-top */
-    }
-    else  /* RIGHT */
-    {
-      x = x2;
-      text_alignment = IUP_ALIGN_ARIGHT | IUP_ALIGN_ATOP;  /* Right-top */
-    }
-  }
-  else /* lin_alignment == IMAT_ALIGN_END */
-  {
-    y = y2;
-
-    if (col_alignment == IMAT_ALIGN_CENTER)
-    {
-      x = iupROUND((x1 + x2) / 2.0);
-      text_alignment = IUP_ALIGN_ACENTER | IUP_ALIGN_ABOTTOM;  /* Center H, bottom V */
-    }
-    else if (col_alignment == IMAT_ALIGN_START)
-    {
-      x = x1;
-      text_alignment = IUP_ALIGN_ALEFT | IUP_ALIGN_ABOTTOM;  /* Left-bottom */
-    }
-    else  /* RIGHT */
-    {
-      x = x2;
-      text_alignment = IUP_ALIGN_ARIGHT | IUP_ALIGN_ABOTTOM;  /* Right-bottom */
-    }
-  }
-
-  /* Get actual text size to properly center it within the cell, avoiding clipping */
   int text_w, text_h;
   iupdrvFontGetMultiLineStringSize(ih, text, &text_w, &text_h);
 
-  /* Adjust position based on alignment and actual text size */
   if (col_alignment == IMAT_ALIGN_CENTER)
-  {
     x = x1 + (x2 - x1 - text_w) / 2;
-  }
   else if (col_alignment == IMAT_ALIGN_END)
-  {
     x = x2 - text_w;
-  }
-  /* else START alignment, x = x1 already set */
+  else
+    x = x1;
 
   if (lin_alignment == IMAT_ALIGN_CENTER)
-  {
     y = y1 + (y2 - y1 - text_h) / 2;
-  }
   else if (lin_alignment == IMAT_ALIGN_END)
-  {
     y = y2 - text_h;
-  }
-  /* else START alignment, y = y1 already set */
+  else
+    y = y1;
 
   /* Draw text at exact position without bounding box - this prevents clipping */
   IupDrawText(ih, text, -1, x, y, 0, 0);
@@ -765,7 +694,6 @@ static void iMatrixDrawFill(Ihandle* ih, int x1, int x2, int y1, int y2, int mar
 
   if (ih->data->show_fill_value)
   {
-    int y = (int)((y1 + y2) / 2.0 - 0.5);
     int empty1 = ((x2 - x1)*fill) / 100;
     char text[50];
     snprintf(text, sizeof(text), "%d%%", fill);
@@ -1704,13 +1632,6 @@ void iupMatrixDrawCB(Ihandle* ih)
     iupMatrixAuxCalcSizes(ih);  /* does not use IupDraw, can be done before Begin */
     /* Note: scrollbar resize early return is disabled - was not working reliably in original code */
   }
-
-  int posx = IupGetInt(ih, "POSX");
-  int posy = IupGetInt(ih, "POSY");
-  int dx = IupGetInt(ih, "DX");
-  int dy = IupGetInt(ih, "DY");
-  int xmax = IupGetInt(ih, "XMAX");
-  int ymax = IupGetInt(ih, "YMAX");
 
   /* IupDraw: All drawing must be between Begin/End calls */
   IupDrawBegin(ih);

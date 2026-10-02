@@ -21,7 +21,7 @@
 #include "iup_register.h"
 
 
-#define ICELLS_OUT -999
+#define ICELLS_OUT (-999)
 
 struct _IcontrolData
 {

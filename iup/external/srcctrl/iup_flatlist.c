@@ -465,6 +465,8 @@ static void iFlatListSelectItem(Ihandle* ih, int pos, int ctrlPressed, int shftP
     char* val = iupAttribGet(ih, "_IUPFLATLIST_LASTSELECTED");
     int last_pos = 0;
     if (val) iupStrToInt(val, &last_pos);
+    if (shftPressed && last_pos < 1)
+      return;
     if (pos <= last_pos)
     {
       start = pos - 1;

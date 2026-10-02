@@ -37,7 +37,7 @@
 #define IMTXL_IMAGE_WIDTH 16
 
 /* inactive line effect */
-#define IMAT_LIGHTER(_x)  (_x+192)/2
+#define IMAT_LIGHTER(_x)  (((_x)+192)/2)
 
 typedef struct _ImatrixListData  /* Used only by the IupMatrixList control */
 {
@@ -483,7 +483,7 @@ static char* iMatrixListGetColumnOrderAttrib(Ihandle* ih)
   if (names[1])
     pos += snprintf(str + pos, 30 - pos, ":%s", names[1]);
   if (names[2])
-    pos += snprintf(str + pos, 30 - pos, ":%s", names[2]);
+    snprintf(str + pos, 30 - pos, ":%s", names[2]);
 
   return str;
 }
