@@ -33,6 +33,7 @@ Not supported in WinUI, GTK 4, EFL, macOS, iOS and Haiku.
 
 [TITLE](../attrib/iup_title.md) (non-inheritable): Text the user will see at the top of the frame.
 If not defined during creation it cannot be added later, to be changed it must be at least "" during creation.
+The natural width of the frame is at least the width of the title.
 
 > 
 >

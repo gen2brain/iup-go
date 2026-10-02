@@ -19,6 +19,8 @@
 #include "iup_draw.h"
 
 
+#define IFLATFRAME_CROSSTITLE_OFFSET 6
+
 static void iFlatFrameGetTitleSize(Ihandle* ih, int frame, int* width, int* height)
 {
   int img_position = iupFlatGetImagePosition(iupAttribGetStr(ih, "TITLEIMAGEPOSITION"));
@@ -114,7 +116,7 @@ static int iFlatFrameRedraw_CB(Ihandle* ih)
     if (frame == 2)
     {
       title_alignment = IUP_ALIGN_ALEFT;
-      x_off = 6;
+      x_off = IFLATFRAME_CROSSTITLE_OFFSET;
       iupFlatDrawBox(dc, frame_width + x_off - 2, frame_width + x_off + title_w + 2,
                          frame_width, frame_width + title_h - 1 - title_line, backcolor, NULL, 1); /* background is always active */
     }
@@ -194,6 +196,25 @@ static char* iFlatFrameGetDecorOffsetAttrib(Ihandle* ih)
   return iupStrReturnIntInt(dx, dy, 'x');
 }
 
+static void iFlatFrameComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
+{
+  int title_w, title_h;
+  int frame = iFlatFrameGetFrame(ih);
+  (void)h;
+  (void)children_expand;
+
+  iFlatFrameGetTitleSize(ih, frame, &title_w, &title_h);
+  if (title_w)
+  {
+    if (frame != 0)
+      title_w += 2 * iupAttribGetInt(ih, "FRAMEWIDTH");
+    if (frame == 2)
+      title_w += 2 * IFLATFRAME_CROSSTITLE_OFFSET;
+    if (*w < title_w)
+      *w = title_w;
+  }
+}
+
 static int iFlatFrameCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
@@ -233,6 +254,7 @@ Iclass* iupFlatFrameNewClass(void)
   /* Class functions */
   ic->New = iupFlatFrameNewClass;
   ic->Create = iFlatFrameCreateMethod;
+  ic->ComputeNaturalSize = iFlatFrameComputeNaturalSizeMethod;
 
   /* replace IupCanvas behavior */
   iupClassRegisterReplaceAttribFlags(ic, "BORDER", IUPAF_READONLY);

@@ -110,6 +110,18 @@ static void iFrameComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* chi
     *w += child->naturalwidth;
     *h += child->naturalheight;
   }
+
+  {
+    char* title = IupGetAttribute(ih, "TITLE");
+    if (title && *title)
+    {
+      int charwidth, title_width;
+      iupdrvFontGetCharSize(ih, &charwidth, NULL);
+      title_width = decorwidth + iupdrvFontGetStringWidth(ih, title) + 2 * charwidth;
+      if (*w < title_width)
+        *w = title_width;
+    }
+  }
 }
 
 static void iFrameSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
