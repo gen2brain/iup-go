@@ -45,6 +45,10 @@ func main() {
 2. Second ordered item
 3. Third ordered item
 
+- [x] Completed task
+- [ ] Open task
+  - [ ] Nested subtask
+
 > This is a blockquote.
 > It can span multiple lines.
 
