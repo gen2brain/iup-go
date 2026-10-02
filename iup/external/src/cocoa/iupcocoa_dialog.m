@@ -32,6 +32,16 @@ static const char IUPCocoaZoomRestoreFrameKey = 0;
 
 static void* IupCocoaAppearanceContext = &IupCocoaAppearanceContext;
 
+static void cocoaDialogReloadRows(NSTableView* table_view)
+{
+  NSInteger rows = [table_view numberOfRows];
+  NSInteger cols = [table_view numberOfColumns];
+
+  if (rows > 0 && cols > 0)
+    [table_view reloadDataForRowIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, rows)]
+                          columnIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, cols)]];
+}
+
 static void cocoaDialogRefreshControlsOnThemeChange(Ihandle* child)
 {
   Ihandle* c;
@@ -44,7 +54,7 @@ static void cocoaDialogRefreshControlsOnThemeChange(Ihandle* child)
       {
         NSTableView* table_view = (NSTableView*)iupAttribGet(c, "_IUPCOCOA_TABLEVIEW");
         if (table_view)
-          [table_view reloadData];
+          cocoaDialogReloadRows(table_view);
       }
       else if (iupStrEqual(c->iclass->name, "tree"))
       {
@@ -53,7 +63,7 @@ static void cocoaDialogRefreshControlsOnThemeChange(Ihandle* child)
         {
           NSOutlineView* outline_view = (NSOutlineView*)[scroll_view documentView];
           if ([outline_view isKindOfClass:[NSOutlineView class]])
-            [outline_view reloadData];
+            cocoaDialogReloadRows(outline_view);
         }
       }
     }

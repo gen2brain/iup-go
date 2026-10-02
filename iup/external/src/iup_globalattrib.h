@@ -32,6 +32,12 @@ IUP_SDK_API void iupGlobalSetPaletteForced(int forced);
 /* Elements mapped while this is set get the global palette pushed at map. */
 IUP_SDK_API int iupGlobalIsPaletteForced(void);
 
+/* Drivers set it when their native controls follow a forced APPEARANCE by themselves. */
+IUP_SDK_API void iupGlobalSetAppearanceNative(int native);
+
+/* When set, the palette push skips the attributes whose default is the same as the system default. */
+IUP_SDK_API int iupGlobalIsAppearanceNative(void);
+
 /* Re-applies the global palette to every mapped element that did not set its own color. */
 IUP_SDK_API void iupGlobalUpdateThemeColors(void);
 

@@ -1170,6 +1170,7 @@ static void iClassObjectUpdateGlobalDefaults(Ihandle* ih)
 {
   Iclass* ic = ih->iclass;
   char* name = iupTableFirst(ic->attrib_func);
+  int native = iupGlobalIsAppearanceNative();
 
   while (name)
   {
@@ -1179,6 +1180,7 @@ static void iClassObjectUpdateGlobalDefaults(Ihandle* ih)
         !(afunc->flags & IUPAF_NO_DEFAULTVALUE) &&
         !(afunc->flags & IUPAF_NO_STRING) &&
         !(afunc->flags & IUPAF_HAS_ID) &&
+        !(native && iupStrEqualNoCase(afunc->default_value, afunc->system_default)) &&
         !iupAttribGet(ih, name))
       afunc->set(ih, iClassGetDefaultValue(afunc));
 
