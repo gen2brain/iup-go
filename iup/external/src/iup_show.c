@@ -96,8 +96,8 @@ IUP_API int IupMap(Ihandle* ih)
   /* ensure attributes default values, at this time only the ones that need to be set after map */
   iupClassObjectEnsureDefaultAttributes(ih);
 
-  /* a forced APPEARANCE has to reach the elements the palette would not normally be pushed to */
-  if (ih->handle && iupGlobalGetAppearance() != IUP_APPEARANCE_SYSTEM)
+  /* a forced palette has to reach the elements it would not normally be pushed to */
+  if (ih->handle && iupGlobalIsPaletteForced())
     iupClassObjectUpdateGlobalDefaults(ih);
 
   /* updates the defined attributes from the hash table (this) to the native system (this). */

@@ -1,7 +1,7 @@
 /** \file
- * \brief XDG Desktop Portal - FileChooser and OpenURI via D-Bus
+ * \brief XDG Desktop Portal - FileChooser, OpenURI and Settings via D-Bus
  *
- * Provides portal-based file dialogs and URI opening.
+ * Provides portal-based file dialogs, URI opening and the appearance settings.
  *
  * See Copyright Notice in "iup.h"
  */
@@ -23,12 +23,16 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_array.h"
+#include "iup_drv.h"
+#include "iup_globalattrib.h"
 
 #define PORTAL_BUS_NAME    "org.freedesktop.portal.Desktop"
 #define PORTAL_OBJECT_PATH "/org/freedesktop/portal/desktop"
 #define PORTAL_FILECHOOSER "org.freedesktop.portal.FileChooser"
 #define PORTAL_OPENURI     "org.freedesktop.portal.OpenURI"
 #define PORTAL_REQUEST     "org.freedesktop.portal.Request"
+#define PORTAL_SETTINGS    "org.freedesktop.portal.Settings"
+#define PORTAL_APPEARANCE  "org.freedesktop.appearance"
 
 #define PORTAL_TIMEOUT_FILE 120
 #define PORTAL_TIMEOUT_URI  10
@@ -588,6 +592,156 @@ static char* portalFileCheckExt(Ihandle* ih, const char* filename)
 }
 
 /****************************************************************************
+ * Settings
+ ****************************************************************************/
+
+static DBusConnection* portal_settings_connection = NULL;
+static int portal_color_scheme = 0;
+static int portal_accent_set = 0;
+static unsigned char portal_accent[3] = {0, 0, 0};
+static int portal_settings_changed = 0;
+
+static void portalSettingsParseValue(const char* key, DBusMessageIter* iter)
+{
+  while (dbus_message_iter_get_arg_type(iter) == DBUS_TYPE_VARIANT)
+  {
+    DBusMessageIter sub;
+    dbus_message_iter_recurse(iter, &sub);
+    *iter = sub;
+  }
+
+  if (iupStrEqual(key, "color-scheme"))
+  {
+    int scheme = 0;
+
+    if (dbus_message_iter_get_arg_type(iter) == DBUS_TYPE_UINT32)
+    {
+      dbus_uint32_t value;
+      dbus_message_iter_get_basic(iter, &value);
+      if (value <= 2)
+        scheme = (int)value;
+    }
+
+    if (scheme != portal_color_scheme)
+    {
+      portal_color_scheme = scheme;
+      portal_settings_changed = 1;
+    }
+  }
+  else if (iupStrEqual(key, "accent-color"))
+  {
+    unsigned char rgb[3] = {0, 0, 0};
+    int set = 0;
+
+    if (dbus_message_iter_get_arg_type(iter) == DBUS_TYPE_STRUCT)
+    {
+      DBusMessageIter sub;
+      int i;
+
+      dbus_message_iter_recurse(iter, &sub);
+      set = 1;
+      for (i = 0; i < 3; i++)
+      {
+        double value;
+
+        if (dbus_message_iter_get_arg_type(&sub) != DBUS_TYPE_DOUBLE)
+        {
+          set = 0;
+          break;
+        }
+
+        dbus_message_iter_get_basic(&sub, &value);
+        if (value < 0.0 || value > 1.0)
+        {
+          set = 0;
+          break;
+        }
+
+        rgb[i] = (unsigned char)(value * 255.0 + 0.5);
+        dbus_message_iter_next(&sub);
+      }
+
+      if (!set)
+        rgb[0] = rgb[1] = rgb[2] = 0;
+    }
+
+    if (set != portal_accent_set || memcmp(rgb, portal_accent, 3) != 0)
+    {
+      portal_accent_set = set;
+      memcpy(portal_accent, rgb, 3);
+      portal_settings_changed = 1;
+    }
+  }
+}
+
+static void portalSettingsRead(const char* key)
+{
+  const char* name_space = PORTAL_APPEARANCE;
+  const char* methods[] = {"ReadOne", "Read"};
+  int i;
+
+  for (i = 0; i < 2; i++)
+  {
+    DBusMessage* msg;
+    DBusMessage* reply;
+    DBusMessageIter iter;
+    DBusError error;
+    int retry;
+
+    msg = dbus_message_new_method_call(PORTAL_BUS_NAME, PORTAL_OBJECT_PATH, PORTAL_SETTINGS, methods[i]);
+    if (!msg)
+      return;
+
+    dbus_message_append_args(msg, DBUS_TYPE_STRING, &name_space, DBUS_TYPE_STRING, &key, DBUS_TYPE_INVALID);
+
+    dbus_error_init(&error);
+    reply = dbus_connection_send_with_reply_and_block(portal_settings_connection, msg, 1000, &error);
+    dbus_message_unref(msg);
+
+    if (reply)
+    {
+      if (dbus_message_iter_init(reply, &iter))
+        portalSettingsParseValue(key, &iter);
+      dbus_message_unref(reply);
+      return;
+    }
+
+    retry = dbus_error_is_set(&error) && iupStrEqual(error.name, "org.freedesktop.DBus.Error.UnknownMethod");
+    if (dbus_error_is_set(&error))
+      dbus_error_free(&error);
+
+    if (!retry)
+      return;
+  }
+}
+
+static DBusHandlerResult portalSettingsFilter(DBusConnection* connection, DBusMessage* message, void* user_data)
+{
+  DBusMessageIter iter;
+  const char* name_space;
+  const char* key;
+
+  (void)connection;
+  (void)user_data;
+
+  if (!dbus_message_is_signal(message, PORTAL_SETTINGS, "SettingChanged"))
+    return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+
+  if (!dbus_message_iter_init(message, &iter) || dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
+    return DBUS_HANDLER_RESULT_HANDLED;
+  dbus_message_iter_get_basic(&iter, &name_space);
+
+  if (!dbus_message_iter_next(&iter) || dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
+    return DBUS_HANDLER_RESULT_HANDLED;
+  dbus_message_iter_get_basic(&iter, &key);
+
+  if (iupStrEqual(name_space, PORTAL_APPEARANCE) && dbus_message_iter_next(&iter))
+    portalSettingsParseValue(key, &iter);
+
+  return DBUS_HANDLER_RESULT_HANDLED;
+}
+
+/****************************************************************************
  * Public API
  ****************************************************************************/
 
@@ -946,4 +1100,116 @@ int iupUnixPortalHelp(const char* url)
     return 1;
 
   return -1;
+}
+
+int iupUnixPortalSettingsOpen(void)
+{
+  DBusConnection* connection;
+  DBusError error;
+  int fd = -1;
+
+  if (portal_settings_connection)
+  {
+    if (!dbus_connection_get_unix_fd(portal_settings_connection, &fd))
+      return -1;
+    return fd;
+  }
+
+#ifdef IUPDBUS_USE_DLOPEN
+  if (!iupDBusOpen() || !dbus_bus_get_private || !dbus_connection_get_unix_fd ||
+      !dbus_connection_set_exit_on_disconnect || !dbus_connection_get_is_connected)
+    return -1;
+#endif
+
+  dbus_error_init(&error);
+  connection = dbus_bus_get_private(DBUS_BUS_SESSION, &error);
+  if (dbus_error_is_set(&error))
+    dbus_error_free(&error);
+  if (!connection)
+    return -1;
+
+  dbus_connection_set_exit_on_disconnect(connection, FALSE);
+
+  if (!dbus_bus_name_has_owner(connection, PORTAL_BUS_NAME, NULL) ||
+      !dbus_connection_get_unix_fd(connection, &fd))
+  {
+    dbus_connection_close(connection);
+    dbus_connection_unref(connection);
+    return -1;
+  }
+
+  portal_settings_connection = connection;
+
+  dbus_connection_add_filter(connection, portalSettingsFilter, NULL, NULL);
+  dbus_bus_add_match(connection,
+      "type='signal',"
+      "interface='" PORTAL_SETTINGS "',"
+      "member='SettingChanged',"
+      "arg0='" PORTAL_APPEARANCE "'",
+      NULL);
+
+  portalSettingsRead("color-scheme");
+  portalSettingsRead("accent-color");
+  portal_settings_changed = 0;
+
+  return fd;
+}
+
+void iupUnixPortalSettingsClose(void)
+{
+  DBusConnection* connection = portal_settings_connection;
+
+  if (!connection)
+    return;
+
+  portal_settings_connection = NULL;
+  dbus_connection_remove_filter(connection, portalSettingsFilter, NULL);
+  dbus_connection_close(connection);
+  dbus_connection_unref(connection);
+
+  portal_color_scheme = 0;
+  portal_accent_set = 0;
+  portal_settings_changed = 0;
+}
+
+int iupUnixPortalSettingsDispatch(void)
+{
+  DBusConnection* connection = portal_settings_connection;
+
+  if (!connection)
+    return 0;
+
+  if (!dbus_connection_read_write(connection, 0) || !dbus_connection_get_is_connected(connection))
+  {
+    iupUnixPortalSettingsClose();
+    return 0;
+  }
+
+  while (dbus_connection_get_dispatch_status(connection) == DBUS_DISPATCH_DATA_REMAINS)
+    dbus_connection_dispatch(connection);
+
+  if (portal_settings_changed)
+  {
+    portal_settings_changed = 0;
+    iupdrvSetAppearance(iupGlobalGetAppearance());
+    iupGlobalUpdateThemeColors();
+    iupGlobalNotifyThemeChanged();
+  }
+
+  return 1;
+}
+
+int iupUnixPortalGetDarkMode(int fallback)
+{
+  if (portal_color_scheme == 1)
+    return 1;
+  if (portal_color_scheme == 2)
+    return 0;
+  return fallback;
+}
+
+void iupUnixPortalSetAccentColor(void)
+{
+  if (portal_accent_set)
+    iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", portal_accent[0], portal_accent[1], portal_accent[2]);
 }

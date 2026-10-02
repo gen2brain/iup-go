@@ -41,6 +41,7 @@ extern "C" {
 }
 
 #include "iupfltk_drv.h"
+#include "unix/iupunix_portal.h"
 
 #ifdef IUPX11_USE_DLOPEN
 #include "iupunix_x11.h"
@@ -184,6 +185,7 @@ IUP_DRV_API void iupfltkSetGlobalColors()
   Fl::get_color(FL_SELECTION_COLOR, r, g, b);
   iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", r, g, b);
   iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", r, g, b);
+  iupUnixPortalSetAccentColor();
 
   Fl::get_color(FL_BACKGROUND_COLOR, r, g, b);
   iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", r, g, b);
@@ -201,6 +203,7 @@ IUP_DRV_API void iupfltkSetGlobalColors()
 static unsigned char fltk_system_bg[3] = { 192, 192, 192 };
 static unsigned char fltk_system_fg[3] = { 0, 0, 0 };
 static unsigned char fltk_system_bg2[3] = { 255, 255, 255 };
+static int fltk_portal_fd = -1;
 
 extern "C" IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 {
@@ -210,9 +213,14 @@ extern "C" IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 
 extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
 {
-  int dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
+  int dark;
 
-  if (appearance == IUP_APPEARANCE_SYSTEM || iupdrvIsSystemDarkMode() == dark)
+  if (appearance == IUP_APPEARANCE_SYSTEM)
+    dark = iupUnixPortalGetDarkMode(iupdrvIsSystemDarkMode());
+  else
+    dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
+
+  if (iupdrvIsSystemDarkMode() == dark)
   {
     Fl::background(fltk_system_bg[0], fltk_system_bg[1], fltk_system_bg[2]);
     Fl::foreground(fltk_system_fg[0], fltk_system_fg[1], fltk_system_fg[2]);
@@ -234,6 +242,17 @@ extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
   iupfltkSetGlobalColors();
 
   Fl::redraw();
+}
+
+static void fltkPortalSettingsHandler(FL_SOCKET fd, void* data)
+{
+  (void)data;
+
+  if (!iupUnixPortalSettingsDispatch())
+  {
+    Fl::remove_fd(fd);
+    fltk_portal_fd = -1;
+  }
 }
 
 /****************************************************************************
@@ -304,7 +323,14 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
   Fl::get_color(FL_FOREGROUND_COLOR, fltk_system_fg[0], fltk_system_fg[1], fltk_system_fg[2]);
   Fl::get_color(FL_BACKGROUND2_COLOR, fltk_system_bg2[0], fltk_system_bg2[1], fltk_system_bg2[2]);
 
-  iupfltkSetGlobalColors();
+  fltk_portal_fd = iupUnixPortalSettingsOpen();
+  if (fltk_portal_fd >= 0)
+    Fl::add_fd(fltk_portal_fd, FL_READ, fltkPortalSettingsHandler);
+
+  if (iupUnixPortalGetDarkMode(iupdrvIsSystemDarkMode()) != iupdrvIsSystemDarkMode())
+    iupdrvSetAppearance(IUP_APPEARANCE_SYSTEM);
+  else
+    iupfltkSetGlobalColors();
 
   return IUP_NOERROR;
 }
@@ -333,6 +359,12 @@ extern "C" IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 
 extern "C" IUP_SDK_API void iupdrvClose(void)
 {
+  if (fltk_portal_fd >= 0)
+  {
+    Fl::remove_fd(fltk_portal_fd);
+    fltk_portal_fd = -1;
+  }
+  iupUnixPortalSettingsClose();
   iupfltkLoopCleanup();
 #ifdef IUPX11_USE_DLOPEN
   iupX11Close();

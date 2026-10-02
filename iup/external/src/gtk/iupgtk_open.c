@@ -38,6 +38,11 @@ void* gdk_quartz_window_get_nsview(GdkWindow* window);
 #include "iup_globalattrib.h"
 
 #include "iupgtk_drv.h"
+#include "iupunix_portal.h"
+
+#if GTK_CHECK_VERSION(3, 0, 0) && !defined(_WIN32) && !defined(__APPLE__)
+#include <glib-unix.h>
+#endif
 
 #if defined(GDK_WINDOWING_WIN32)
 #if GTK_CHECK_VERSION(3, 0, 0)
@@ -593,13 +598,32 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
 static int gtk_system_prefer_dark = 0;
 #endif
 
+#if GTK_CHECK_VERSION(3, 0, 0) && !defined(_WIN32) && !defined(__APPLE__)
+static guint gtk_portal_source = 0;
+
+static gboolean gtkPortalSettingsWatch(gint fd, GIOCondition condition, gpointer data)
+{
+  (void)fd;
+  (void)condition;
+  (void)data;
+
+  if (!iupUnixPortalSettingsDispatch())
+  {
+    gtk_portal_source = 0;
+    return G_SOURCE_REMOVE;
+  }
+
+  return G_SOURCE_CONTINUE;
+}
+#endif
+
 IUP_SDK_API void iupdrvSetAppearance(int appearance)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   gboolean prefer_dark;
 
   if (appearance == IUP_APPEARANCE_SYSTEM)
-    prefer_dark = gtk_system_prefer_dark? TRUE: FALSE;
+    prefer_dark = iupUnixPortalGetDarkMode(gtk_system_prefer_dark)? TRUE: FALSE;
   else
     prefer_dark = (appearance == IUP_APPEARANCE_DARK)? TRUE: FALSE;
 
@@ -721,7 +745,20 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
   }
 #endif
 
+#if GTK_CHECK_VERSION(3, 0, 0) && !defined(_WIN32) && !defined(__APPLE__)
+  {
+    int fd = iupUnixPortalSettingsOpen();
+    if (fd >= 0)
+      gtk_portal_source = g_unix_fd_add(fd, G_IO_IN | G_IO_HUP | G_IO_ERR, gtkPortalSettingsWatch, NULL);
+  }
+
+  if (iupUnixPortalGetDarkMode(gtk_system_prefer_dark) != gtk_system_prefer_dark)
+    iupdrvSetAppearance(IUP_APPEARANCE_SYSTEM);
+  else
+    iupgtkSetGlobalColors();
+#else
   iupgtkSetGlobalColors();
+#endif
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");
 
@@ -757,5 +794,13 @@ IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 
 IUP_SDK_API void iupdrvClose(void)
 {
+#if GTK_CHECK_VERSION(3, 0, 0) && !defined(_WIN32) && !defined(__APPLE__)
+  if (gtk_portal_source)
+  {
+    g_source_remove(gtk_portal_source);
+    gtk_portal_source = 0;
+  }
+  iupUnixPortalSettingsClose();
+#endif
   iupgtkStrRelease();
 }

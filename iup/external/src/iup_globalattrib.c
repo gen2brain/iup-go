@@ -29,6 +29,7 @@
 static Itable* iglobal_table = NULL;
 static int iglobal_appearance = IUP_APPEARANCE_SYSTEM;
 static int iglobal_appearance_applying = 0;
+static int iglobal_palette_forced = 0;
 static char iglobal_theme_state[256] = "";
 
 void iupGlobalAttribInit(void)
@@ -41,6 +42,7 @@ void iupGlobalAttribFinish(void)
   iupTableDestroy(iglobal_table);
   iglobal_table = NULL;
   iglobal_appearance = IUP_APPEARANCE_SYSTEM;
+  iglobal_palette_forced = 0;
   iglobal_theme_state[0] = 0;
 }
 
@@ -137,6 +139,16 @@ IUP_SDK_API void iupGlobalSetAppearanceColors(int dark)
 IUP_SDK_API int iupGlobalGetAppearance(void)
 {
   return iglobal_appearance;
+}
+
+IUP_SDK_API void iupGlobalSetPaletteForced(int forced)
+{
+  iglobal_palette_forced = forced;
+}
+
+IUP_SDK_API int iupGlobalIsPaletteForced(void)
+{
+  return iglobal_appearance != IUP_APPEARANCE_SYSTEM || iglobal_palette_forced;
 }
 
 IUP_SDK_API int iupGlobalIsDarkMode(void)

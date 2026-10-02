@@ -26,6 +26,12 @@ IUP_SDK_API int iupGlobalIsDarkMode(void);
 /* Seeds the palette for a forced appearance, for drivers with no native theme switch. */
 IUP_SDK_API void iupGlobalSetAppearanceColors(int dark);
 
+/* Drivers set it when they replace the toolkit palette with the one from iupGlobalSetAppearanceColors. */
+IUP_SDK_API void iupGlobalSetPaletteForced(int forced);
+
+/* Elements mapped while this is set get the global palette pushed at map. */
+IUP_SDK_API int iupGlobalIsPaletteForced(void);
+
 /* Re-applies the global palette to every mapped element that did not set its own color. */
 IUP_SDK_API void iupGlobalUpdateThemeColors(void);
 
