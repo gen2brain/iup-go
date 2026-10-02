@@ -292,6 +292,22 @@ static void iImageStockUnload(const char* name)
     istock->image = NULL;
 }
 
+static void* iImageLoad(const char* name, int type)
+{
+  char path[10240];
+  char* dir;
+  void* handle = iupdrvImageLoad(name, type);
+  if (handle || !name[0] || name[0] == '/' || name[0] == '\\' || (name[0] && name[1] == ':') || strstr(name, "://"))
+    return handle;
+
+  dir = IupGetGlobal("RESOURCEDIR");
+  if (!dir)
+    return NULL;
+
+  snprintf(path, sizeof(path), "%s/%s", dir, name);
+  return iupdrvImageLoad(path, type);
+}
+
 static void iImageStockLoad(const char* name)
 {
   /* Used only in iupImageStockLoadAll */
@@ -573,7 +589,7 @@ void* iupImageGetIcon(const char* name)
     const char* native_name = NULL;
 
     /* Check in the system resources. */
-    icon = iupdrvImageLoad(name, IUPIMAGE_ICON);
+    icon = iImageLoad(name, IUPIMAGE_ICON);
     if (icon)
       return icon;
 
@@ -615,7 +631,7 @@ void* iupImageGetCursor(const char* name)
   if (!ih)
   {
     /* Check in the system resources. */
-    cursor = iupdrvImageLoad(name, IUPIMAGE_CURSOR);
+    cursor = iImageLoad(name, IUPIMAGE_CURSOR);
     if (cursor)
       return cursor;
 
@@ -654,7 +670,7 @@ IUP_SDK_API void* iupImageGetImage(const char* name, Ihandle* ih_parent, int mak
     const char* native_name = NULL;
 
     /* Check in the system resources. */
-    handle = iupdrvImageLoad(name, IUPIMAGE_IMAGE);
+    handle = iImageLoad(name, IUPIMAGE_IMAGE);
     if (handle)
     {
       iupImageSetHandleFromLoaded(name, handle);  /* next time iupImageGetImageFromName will return the new handle */
@@ -884,7 +900,7 @@ IUP_SDK_API void iupImageGetInfo(const char* name, int* w, int* h, int* bpp)
     void* handle;
 
     /* Check in the system resources. */
-    handle = iupdrvImageLoad(name, IUPIMAGE_IMAGE);
+    handle = iImageLoad(name, IUPIMAGE_IMAGE);
     if (handle)
     {
       iupdrvImageGetInfo(handle, w, h, bpp);
@@ -968,7 +984,7 @@ IUP_API Ihandle* IupImageGetHandle(const char* name)
     return ih;
 
   /* Check in the system resources. */
-  handle = iupdrvImageLoad(name, IUPIMAGE_IMAGE);
+  handle = iImageLoad(name, IUPIMAGE_IMAGE);
   if (handle)
   {
     /* the loaded image is converted and destroyed */

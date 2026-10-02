@@ -399,6 +399,24 @@ CACHEDIR is clearable storage; DATADIR is persistent; CONFIGDIR holds settings; 
 
 In WebAssembly the home directory is backed by IndexedDB, so CACHEDIR, DATADIR and CONFIGDIR survive a page reload. TMPDIR is in memory and does not.
 
+### RESOURCEDIR (read-only)
+
+Directory of the files shipped with the application. The returned path is absolute and has no
+trailing separator.
+
+| Platform    | RESOURCEDIR                                                                   |
+|-------------|-------------------------------------------------------------------------------|
+| Windows     | directory of the executable                                                   |
+| macOS       | `<bundle>/Contents/Resources`                                                 |
+| Linux, BSD  | `<prefix>/share/<exe>`, executable in `<prefix>/bin`                          |
+| iOS         | directory of the executable                                                   |
+| Android     | `Context.getNoBackupFilesDir()/resources`, copy of the APK `assets/resources` |
+| Haiku       | `<root>/data/<exe>`, executable in `<root>/apps/<name>`                       |
+| WebAssembly | `/resources`, copy of the site `resources` folder listed in `resources.json`  |
+
+In macOS, Linux, BSD and Haiku, when that directory does not exist it is the directory of the executable.
+The Android copy is made again when the APK changes. The WebAssembly copy is made when the page starts.
+
 ### GL_VERSION (read-only)
 
 Returns the OpenGL version. Available only after the first call to [IupGLMakeCurrent](../ctrl/iup_glcanvas.md).

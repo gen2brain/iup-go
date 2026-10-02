@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -21,6 +22,12 @@ import androidx.annotation.Keep;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.view.ContextThemeWrapper;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -462,6 +469,101 @@ public final class IupCommon
             return null;
 
         return app.getPackageCodePath();
+    }
+
+    private static String resourceDir;
+
+    /** Directory with the files packaged under assets/resources, extracted once per installed APK. */
+    @Keep
+    public static synchronized String getResourceDir()
+    {
+        if (resourceDir != null)
+            return resourceDir;
+
+        IupApplication app = IupApplication.getIupApplication();
+        if (app == null)
+            return null;
+
+        File base = app.getNoBackupFilesDir();
+        File dir = new File(base, "resources");
+        File stamp = new File(base, "resources.stamp");
+        String key = Long.toString(new File(app.getPackageCodePath()).lastModified());
+
+        if (!dir.isDirectory() || !key.equals(readStamp(stamp)))
+        {
+            deleteTree(dir);
+            if (!dir.mkdirs())
+                return null;
+            try
+            {
+                copyAssets(app.getAssets(), "resources", dir);
+                try (OutputStream out = new FileOutputStream(stamp))
+                {
+                    out.write(key.getBytes("UTF-8"));
+                }
+            }
+            catch (IOException ex)
+            {
+                Log.w(TAG, "getResourceDir: " + ex.getMessage());
+            }
+        }
+
+        resourceDir = dir.getAbsolutePath();
+        return resourceDir;
+    }
+
+    private static String readStamp(File stamp)
+    {
+        try (InputStream in = new FileInputStream(stamp))
+        {
+            byte[] buf = new byte[64];
+            int n = in.read(buf);
+            return n > 0 ? new String(buf, 0, n, "UTF-8") : null;
+        }
+        catch (IOException ex)
+        {
+            return null;
+        }
+    }
+
+    private static void deleteTree(File file)
+    {
+        File[] children = file.listFiles();
+        if (children != null)
+        {
+            for (File child : children)
+                deleteTree(child);
+        }
+        file.delete();
+    }
+
+    private static void copyAssets(AssetManager assets, String path, File out) throws IOException
+    {
+        String[] names = assets.list(path);
+        if (names == null)
+            return;
+
+        for (String name : names)
+        {
+            String child = path + "/" + name;
+            String[] sub = assets.list(child);
+            if (sub != null && sub.length > 0)
+            {
+                File dir = new File(out, name);
+                if (!dir.mkdirs() && !dir.isDirectory())
+                    throw new IOException("cannot create " + dir);
+                copyAssets(assets, child, dir);
+                continue;
+            }
+
+            try (InputStream in = assets.open(child); OutputStream os = new FileOutputStream(new File(out, name)))
+            {
+                byte[] buf = new byte[65536];
+                int n;
+                while ((n = in.read(buf)) > 0)
+                    os.write(buf, 0, n);
+            }
+        }
     }
 
     /** "Manufacturer Model", suitable for COMPUTERNAME. */

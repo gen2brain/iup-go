@@ -44,6 +44,7 @@ iupkg staple <app>
  | `--version`                                          | `1.0.0`             | version string                                                                                                              |
  | `--build`                                            | `1`                 | build number: `versionCode`, `CFBundleVersion`, last Windows version field, deb/rpm/hpkg revision                           |
  | `--icon`                                             | the IUP icon        | square PNG, 1024 px recommended                                                                                             |
+ | `--data`                                             |                     | file or directory shipped with the application, repeatable; a directory keeps its name; found at the `RESOURCEDIR` global   |
  | `--tags`                                             |                     | Go build tags (`gl,ctrl,web,...`)                                                                                           |
  | `--ldflags`                                          |                     | extra linker flags                                                                                                          |
  | `--cgo`                                              |                     | build with cgo (default: `go env CGO_ENABLED` for the host platform, off when cross-compiling, always on with a driver tag) |
@@ -68,6 +69,8 @@ iupkg staple <app>
 
 Without `--cgo` the program is built with `CGO_ENABLED=0` and the purego backend, so the desktop targets build from any host with only Go installed.
 With `--cgo` the IUP C library is compiled into the executable; cross builds then need the matching C toolchain in `CC` and `CXX`.
+
+`--data` files go to `Contents/Resources` (darwin), the `.app` root (ios), `assets/resources` (android, copied out on first start), `/usr/share/<exe>` (deb, rpm), `share/<exe>` (targz, installed by its Makefile), `data/<exe>` (haiku), the package root (msix) and `resources/` with a `resources.json` list (js, copied in when the page starts). They are not copied next to a plain `.exe`.
 Android, iOS and Haiku are always cgo builds.
 
 ### Targets

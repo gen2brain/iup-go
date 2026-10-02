@@ -132,11 +132,31 @@ IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
 }
 
 
+EM_JS(int, iupwasmJsResourceImage, (const char* name, int* w, int* h), {
+  var cache = globalThis.__iupResourceImages;
+  if (!cache) return 0;
+  var path = UTF8ToString(name);
+  if (path.charAt(0) !== '/') path = FS.cwd() + '/' + path;
+  var entry = cache['/' + path.split('/').filter(function (part) { return part; }).join('/')];
+  if (!entry) return 0;
+  var ptr = _malloc(entry.w * entry.h * 4);
+  HEAPU8.set(entry.rgba, ptr);
+  HEAP32[w >> 2] = entry.w;
+  HEAP32[h >> 2] = entry.h;
+  return ptr;
+})
+
 IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
 {
-  (void)name;
+  int w = 0, h = 0;
+  void* handle;
+  unsigned char* rgba = (unsigned char*)(intptr_t)iupwasmJsResourceImage(name, &w, &h);
   (void)type;
-  return NULL;
+  if (!rgba)
+    return NULL;
+  handle = wasmImageCreateRGBA(w, h, 32, NULL, rgba);
+  free(rgba);
+  return handle;
 }
 
 IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)

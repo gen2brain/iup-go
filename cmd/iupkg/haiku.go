@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/hpkg"
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/icon"
@@ -83,8 +84,31 @@ func packageHaiku(c *config) error {
 		{Name: "BEOS:L:STD_ICON", Type: hpkg.LargeIconType, Data: hpkg.BitmapIcon(img, 32)},
 		{Name: "BEOS:M:STD_ICON", Type: hpkg.MiniIconType, Data: hpkg.BitmapIcon(img, 16)},
 	}})
-	menu := root.Add(&hpkg.Entry{Name: "data", Dir: true}).
-		Add(&hpkg.Entry{Name: "deskbar", Dir: true}).
+	dataDir := root.Add(&hpkg.Entry{Name: "data", Dir: true})
+	if len(c.files) > 0 {
+		if strings.EqualFold(c.exe, "deskbar") {
+			return fmt.Errorf("--data: data/%s is reserved in the package", c.exe)
+		}
+		res := dataDir.Add(&hpkg.Entry{Name: c.exe, Dir: true})
+		for _, f := range c.files {
+			dir := res
+			parts := strings.Split(f.name, "/")
+			for _, part := range parts[:len(parts)-1] {
+				var next *hpkg.Entry
+				for _, child := range dir.Children {
+					if child.Dir && child.Name == part {
+						next = child
+					}
+				}
+				if next == nil {
+					next = dir.Add(&hpkg.Entry{Name: part, Dir: true})
+				}
+				dir = next
+			}
+			dir.Add(&hpkg.Entry{Name: parts[len(parts)-1], Mode: uint32(f.mode), Data: f.data})
+		}
+	}
+	menu := dataDir.Add(&hpkg.Entry{Name: "deskbar", Dir: true}).
 		Add(&hpkg.Entry{Name: "menu", Dir: true}).
 		Add(&hpkg.Entry{Name: "Applications", Dir: true})
 	menu.Add(&hpkg.Entry{Name: c.name, Link: "../../../../apps/" + c.name + "/" + c.exe})

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -344,6 +345,62 @@ IUP_API void IupSetStrGlobal(const char* name, const char* value)
   iGlobalSet(name, value, 1);
 }
 
+static int iGlobalIsDirectory(const char* path)
+{
+  struct stat st;
+  return stat(path, &st) == 0 && (st.st_mode & S_IFMT) == S_IFDIR;
+}
+
+static int iGlobalGetResourceDir(char* path, int size)
+{
+  char dir[10240], title[1024], candidate[10240];
+  char* exe = iupdrvExeFileName();
+  char sep;
+  int len, i;
+
+  if (!exe)
+    return 0;
+
+  dir[0] = 0;
+  title[0] = 0;
+  iupStrFileNameSplit(exe, dir, (int)sizeof(dir), title, (int)sizeof(title));
+  len = (int)strlen(dir);
+  if (len < 2 || !title[0])
+    return 0;
+
+  sep = dir[len - 1];
+  dir[len - 1] = 0;
+
+  for (i = len - 2; i >= 0; i--)
+  {
+    if (dir[i] == '/' || dir[i] == '\\')
+      break;
+  }
+
+  if (i > 0)
+  {
+    snprintf(candidate, sizeof(candidate), "%.*s%cResources", i, dir, sep);
+    if (iGlobalIsDirectory(candidate))
+    {
+      iupStrCopyN(path, size, candidate);
+      return 1;
+    }
+
+    snprintf(candidate, sizeof(candidate), "%.*s%cshare%c%s", i, dir, sep, sep, title);
+    if (iGlobalIsDirectory(candidate))
+    {
+      iupStrCopyN(path, size, candidate);
+      return 1;
+    }
+  }
+
+  if (i < 0)
+    snprintf(path, size, "%s%c", dir, sep);
+  else
+    iupStrCopyN(path, size, dir);
+  return 1;
+}
+
 IUP_API char* IupGetGlobal(const char* name)
 {
   char* value;
@@ -463,10 +520,13 @@ IUP_API char* IupGetGlobal(const char* name)
     else if (iupStrEqual(name, "DATADIR"))   kind = IUP_USER_DIR_DATA;
     else if (iupStrEqual(name, "CONFIGDIR")) kind = IUP_USER_DIR_CONFIG;
     else if (iupStrEqual(name, "TMPDIR"))    kind = IUP_USER_DIR_TEMP;
+    else if (iupStrEqual(name, "RESOURCEDIR")) kind = IUP_USER_DIR_RESOURCE;
     if (kind != -1)
     {
       char buffer[10240];
       if (iupdrvGetUserDir(buffer, (int)sizeof(buffer), kind))
+        return iupStrReturnStr(buffer);
+      if (kind == IUP_USER_DIR_RESOURCE && iGlobalGetResourceDir(buffer, (int)sizeof(buffer)))
         return iupStrReturnStr(buffer);
       return NULL;
     }

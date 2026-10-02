@@ -16,6 +16,7 @@ Name can be a global name set with **IupSetHandle**.
 In this case, the function just returns the existing element.
 
 Name can also be a file name that will be loaded from disk.
+A relative file name that is not found is also looked up in the [RESOURCEDIR](../attrib/iup_globals.md#resourcedir-read-only) directory.
 The available file formats supported are system-dependent:
 - **Windows (Win32)**: BMP via LoadImage, plus BMP, GIF, JPEG, PNG, TIFF and others via WIC (Windows Imaging Component)
 - **Windows (WinUI)**: BMP, GIF, JPEG, PNG, TIFF and others via WIC
@@ -29,9 +30,9 @@ The available file formats supported are system-dependent:
 - **Motif**: XBM and XPM. With Motif 2.4.0+: also JPEG, PNG and SVG via XmGetPixmap
 - **Android**: formats supported by BitmapFactory, such as PNG, JPEG, GIF, BMP and WebP
 - **Haiku**: formats supported by the Translation Kit (BTranslatorRoster / BTranslationUtils), such as BMP, GIF, JPEG, PNG, TGA, TIFF and WebP
+- **WebAssembly**: formats supported by the browser, such as PNG, JPEG, GIF, BMP, WebP, ICO and AVIF, only for files in RESOURCEDIR, decoded when the page starts
 
 In this case, the function returns a new image handle and associates the name with that handle, so in the next call it will return the existing handle.
-Not supported in WebAssembly.
 
 Name can also be a system-specific stock / named image:
 
