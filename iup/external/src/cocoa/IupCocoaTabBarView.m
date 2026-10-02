@@ -119,33 +119,156 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   return total;
 }
 
+- (CGFloat)availableTabWidth
+{
+  CGFloat tabListWidth = self.allowsTabListMenu ? kWidthOfTabList : 0;
+  return [self frame].size.width - tabListWidth - kTabBarSidePadding;
+}
+
+- (CGFloat)layoutWidthOfTabAtIndex:(NSUInteger)index naturalTotal:(CGFloat)total available:(CGFloat)available
+{
+  CGFloat natural = [self naturalWidthOfTabAtIndex:index];
+
+  if (total <= available || total <= 0)
+    return natural;
+
+  return MAX(floor(natural * available / total), MIN(natural, kMinOverflowTabWidth));
+}
+
+- (CGFloat)totalLayoutWidthOfTabs
+{
+  CGFloat natural_total = [self totalWidthOfTabs];
+  CGFloat available = [self availableTabWidth];
+  CGFloat total = 0;
+  NSUInteger i;
+
+  for (i = 0; i < [tabs count]; i++)
+    total += [self layoutWidthOfTabAtIndex:i naturalTotal:natural_total available:available];
+
+  return total;
+}
+
+- (BOOL)isOverflowing
+{
+  return self.orientation == IupCocoaTabBarHorizontal && [self totalLayoutWidthOfTabs] > [self availableTabWidth];
+}
+
+- (NSRect)rectForScrollArrows
+{
+  CGFloat y = (self.tabPosition == IupCocoaTabPositionBottom) ? [self frame].size.height - kTabCellHeight : 0;
+  return NSMakeRect([self frame].size.width - kScrollArrowsWidth, y, kScrollArrowsWidth, kTabCellHeight);
+}
+
+- (CGFloat)visibleTabWidth
+{
+  return [self availableTabWidth] - kScrollArrowsWidth;
+}
+
+- (NSRect)visibleTabArea
+{
+  NSRect area = [self bounds];
+  if ([self isOverflowing])
+  {
+    CGFloat tabListWidth = self.allowsTabListMenu ? kWidthOfTabList : 0;
+    area = NSMakeRect(tabListWidth, 0, NSWidth(area) - tabListWidth - kScrollArrowsWidth, NSHeight(area));
+  }
+  return area;
+}
+
+- (void)clampScrollOffset
+{
+  CGFloat minimum;
+
+  if (![self isOverflowing])
+  {
+    scrollOffset = 0;
+    return;
+  }
+
+  minimum = [self visibleTabWidth] - [self totalLayoutWidthOfTabs];
+  if (scrollOffset < minimum)
+    scrollOffset = minimum;
+  if (scrollOffset > 0)
+    scrollOffset = 0;
+}
+
+- (void)scrollTabIntoView:(IupCocoaTabCell*)tab
+{
+  NSUInteger index = [tabs indexOfObject:tab];
+  CGFloat start = 0, end;
+  NSUInteger i;
+
+  if (index == NSNotFound || ![self isOverflowing])
+  {
+    [self clampScrollOffset];
+    return;
+  }
+
+  CGFloat natural_total = [self totalWidthOfTabs];
+  CGFloat available = [self availableTabWidth];
+  for (i = 0; i < index; i++)
+    start += [self layoutWidthOfTabAtIndex:i naturalTotal:natural_total available:available];
+  end = start + [self layoutWidthOfTabAtIndex:index naturalTotal:natural_total available:available];
+
+  if (start + scrollOffset < 0)
+    scrollOffset = -start;
+  else if (end + scrollOffset > [self visibleTabWidth])
+    scrollOffset = [self visibleTabWidth] - end;
+
+  [self clampScrollOffset];
+}
+
+- (void)scrollTabsBy:(CGFloat)delta
+{
+  NSUInteger i;
+
+  scrollOffset += delta;
+  [self clampScrollOffset];
+
+  for (i = 0; i < [tabs count]; i++)
+  {
+    [[tabs objectAtIndex:i] setIsHovered:NO];
+    [[tabs objectAtIndex:i] setCanDrawCloseButton:NO];
+  }
+  [self redraw];
+}
+
   - (NSRect)tabRectFromIndex:(NSUInteger)index
 {
   if (self.orientation == IupCocoaTabBarHorizontal)
   {
     NSUInteger tabListWidth = self.allowsTabListMenu ? kWidthOfTabList : 0;
     CGFloat leftPadding = 4;
-    CGFloat rightPadding = kTabBarSidePadding - leftPadding;
-    CGFloat available = [self frame].size.width - tabListWidth - leftPadding - rightPadding;
-    CGFloat total = [self totalWidthOfTabs];
-    CGFloat scale = (total > available && total > 0) ? available / total : 1.0;
+    CGFloat available = [self availableTabWidth];
+    CGFloat natural_total = [self totalWidthOfTabs];
+    CGFloat total = 0;
     CGFloat x = tabListWidth + leftPadding;
     CGFloat y = 0;
+    CGFloat width = 0;
     NSUInteger i;
 
-    /* NSTabView centers the tabs when they all fit */
-    if (scale == 1.0)
-      x += (available - total) / 2.0;
+    for (i = 0; i < [tabs count]; i++)
+    {
+      CGFloat w = [self layoutWidthOfTabAtIndex:i naturalTotal:natural_total available:available];
+      if (i < index)
+        x += w;
+      else if (i == index)
+        width = w;
+      total += w;
+    }
 
-    for (i = 0; i < index; i++)
-      x += floor([self naturalWidthOfTabAtIndex:i] * scale);
+    /* NSTabView centers the tabs when they all fit */
+    if (total <= available)
+      x += (available - total) / 2.0;
+    else
+      x += scrollOffset;
 
     if (self.tabPosition == IupCocoaTabPositionBottom)
     {
       y = [self frame].size.height - kTabCellHeight;
     }
 
-    NSRect rect = NSMakeRect(x, y, floor([self naturalWidthOfTabAtIndex:index] * scale), kTabCellHeight);
+    NSRect rect = NSMakeRect(x, y, width, kTabCellHeight);
     return rect;
   }
   else
@@ -261,6 +384,8 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 - (IupCocoaTabCell*)tabCellInPoint:(NSPoint)p
 {
   NSUInteger index = 0;
+  if (!NSPointInRect(p, [self visibleTabArea]))
+    return nil;
   for (index = 0; index < [tabs count]; index++)
   {
     IupCocoaTabCell* tab = [tabs objectAtIndex:index];
@@ -567,12 +692,13 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 - (void)removeTabCell:(IupCocoaTabCell*)tabCell
 {
   NSUInteger index = [[self tabs] indexOfObject:tabCell];
+  BOOL was_selected = (tabCell == selectedTab);
   if (index > 0)
   {
     index--;
   }
   [[self tabs] removeObject:tabCell];
-  if ([tabs count] > 0)
+  if (was_selected && [tabs count] > 0)
   {
     IupCocoaTabCell* nextTab = [tabs objectAtIndex:index];
     [nextTab setAsActiveTab];
@@ -635,6 +761,9 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     [bgColor set];
     NSRectFill(rect);
   }
+
+  [self clampScrollOffset];
+  BOOL overflowing = [self isOverflowing];
 
 
   if (self.allowsTabListMenu)
@@ -723,6 +852,13 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     [tab setFrame:rect];
   }
 
+  [NSGraphicsContext saveGraphicsState];
+  if (overflowing)
+  {
+    CGFloat tabListWidth = self.allowsTabListMenu ? kWidthOfTabList : 0;
+    NSRectClip(NSMakeRect(tabListWidth, 0, NSWidth(rect) - tabListWidth - kScrollArrowsWidth, NSHeight(rect)));
+  }
+
   /* the group sits on a rounded track, with a separator between plain neighbours */
   if (usesMaterialBackground && self.orientation == IupCocoaTabBarHorizontal && [tabs count] > 0)
   {
@@ -756,8 +892,9 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   for (index = 0; index < [tabs count]; ++index)
   {
     IupCocoaTabCell* tab = [tabs objectAtIndex:index];
-    [self setToolTip:[tab title]];
-    [self addToolTipRect:[tab frame] owner:[tab title] userData:nil];
+    NSRect tipRect = NSIntersectionRect([tab frame], [self visibleTabArea]);
+    if (!NSIsEmptyRect(tipRect))
+      [self addToolTipRect:tipRect owner:[tab title] userData:nil];
     if (tab != draggingTab)
       [tab draw];
   }
@@ -774,7 +911,72 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
     [NSGraphicsContext restoreGraphicsState];
   }
 
+  [NSGraphicsContext restoreGraphicsState];
+
+  if (overflowing)
+    [self drawScrollArrows];
+
   [self syncAccessibilityElements];
+}
+
+- (void)drawScrollArrow:(NSString*)symbol inRect:(NSRect)arrowRect pointsLeft:(BOOL)left enabled:(BOOL)isEnabled
+{
+  NSColor* color = isEnabled ? tabTitleColor : [tabTitleColor colorWithAlphaComponent:0.3];
+  NSImage* image = iupCocoaTintedSymbol(symbol, color);
+
+  if (image)
+  {
+    NSSize sz = [image size];
+    CGFloat side = MIN(NSWidth(arrowRect), NSHeight(arrowRect)) * 0.5;
+    if (sz.width > 0 && sz.height > 0)
+    {
+      CGFloat scale = side / MAX(sz.width, sz.height);
+      sz.width *= scale;
+      sz.height *= scale;
+    }
+    [image drawInRect:NSMakeRect(NSMidX(arrowRect) - sz.width / 2.0, NSMidY(arrowRect) - sz.height / 2.0, sz.width, sz.height)
+             fromRect:NSZeroRect operation:NSCompositingOperationSourceOver fraction:1.0];
+  }
+  else
+  {
+    NSBezierPath* path = [NSBezierPath bezierPath];
+    CGFloat midX = NSMidX(arrowRect), midY = NSMidY(arrowRect);
+    CGFloat dx = left ? 3.0 : -3.0;
+    [path moveToPoint:NSMakePoint(midX + dx, midY - 5.0)];
+    [path lineToPoint:NSMakePoint(midX - dx, midY)];
+    [path lineToPoint:NSMakePoint(midX + dx, midY + 5.0)];
+    [path closePath];
+    [color set];
+    [path fill];
+  }
+}
+
+- (void)drawScrollArrows
+{
+  NSRect arrows = [self rectForScrollArrows];
+  NSRect leftRect = NSMakeRect(NSMinX(arrows), NSMinY(arrows), NSWidth(arrows) / 2.0, NSHeight(arrows));
+  NSRect rightRect = NSMakeRect(NSMidX(arrows), NSMinY(arrows), NSWidth(arrows) / 2.0, NSHeight(arrows));
+  CGFloat minimum = [self visibleTabWidth] - [self totalLayoutWidthOfTabs];
+
+  [self drawScrollArrow:@"chevron.left" inRect:leftRect pointsLeft:YES enabled:(scrollOffset < 0)];
+  [self drawScrollArrow:@"chevron.right" inRect:rightRect pointsLeft:NO enabled:(scrollOffset > minimum)];
+}
+
+- (void)scrollWheel:(NSEvent*)event
+{
+  CGFloat delta;
+
+  if (![self isOverflowing])
+  {
+    [super scrollWheel:event];
+    return;
+  }
+
+  delta = [event deltaX];
+  if (delta == 0)
+    delta = [event deltaY];
+
+  [self scrollTabsBy:delta * 10.0];
 }
 
 - (id)addTabViewWithTitle:(NSString*)title
@@ -820,6 +1022,14 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
   NSPoint p = [theEvent locationInWindow];
   p = [self convertPoint:p fromView:nil];
 
+  if ([self isOverflowing] && NSPointInRect(p, [self rectForScrollArrows]))
+  {
+    NSRect arrows = [self rectForScrollArrows];
+    CGFloat step = [self visibleTabWidth] / 2.0;
+    [self scrollTabsBy:(p.x < NSMidX(arrows)) ? step : -step];
+    return;
+  }
+
   if (self.allowsTabListMenu)
   {
     NSRect rectOfTabList;
@@ -840,13 +1050,15 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
 
   NSUInteger index = 0;
+  BOOL in_area = NSPointInRect(p, [self visibleTabArea]);
   for (index = 0; index < [tabs count]; ++ index)
   {
     IupCocoaTabCell* tab = [tabs objectAtIndex:index];
-    BOOL inside = NSPointInRect(p, [tab frame]);
+    BOOL inside = in_area && NSPointInRect(p, [tab frame]);
     [tab setIsPressed:inside];
 
-    [tab mouseDown:theEvent];
+    if (in_area)
+      [tab mouseDown:theEvent];
   };
 
   [self redraw];
@@ -892,6 +1104,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 - (void)setFrame:(NSRect)frame
 {
   [super setFrame:frame];
+  [self scrollTabIntoView:selectedTab];
   [self removeTrackingArea:trackingArea];
   [trackingArea release];
 
@@ -1120,6 +1333,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
     [selectedTab release];
     selectedTab = [newSelectedTab retain];
   }
+  [self scrollTabIntoView:selectedTab];
 }
 
 - (void)setBgColor:(NSColor*)newBgColor

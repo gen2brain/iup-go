@@ -365,6 +365,38 @@ static HWND winTabsGetPageWindow(Ihandle* ih, int pos)
     return NULL;  /* invisible */
 }
 
+static void winTabsScrollToCurrent(Ihandle* ih)
+{
+  int cur = (int)SendMessage(ih->handle, TCM_GETCURSEL, 0, 0);
+  int count = (int)SendMessage(ih->handle, TCM_GETITEMCOUNT, 0, 0);
+  int first = 0, total = 0, used = 0, available, i;
+  RECT client, item;
+
+  GetClientRect(ih->handle, &client);
+  for (i = 0; i < count; i++)
+  {
+    SendMessage(ih->handle, TCM_GETITEMRECT, i, (LPARAM)&item);
+    total += item.right - item.left;
+  }
+
+  if (cur > 0 && total > client.right)
+  {
+    available = client.right - 2 * GetSystemMetrics(SM_CXHSCROLL);
+    first = cur;
+    for (i = cur; i >= 0; i--)
+    {
+      SendMessage(ih->handle, TCM_GETITEMRECT, i, (LPARAM)&item);
+      used += item.right - item.left;
+      if (used > available)
+        break;
+      first = i;
+    }
+  }
+
+  SendMessage(ih->handle, WM_HSCROLL, MAKEWPARAM(SB_THUMBPOSITION, first), 0);
+  SendMessage(ih->handle, WM_HSCROLL, MAKEWPARAM(SB_ENDSCROLL, 0), 0);
+}
+
 IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
   int p = winTabsPosFixToWin(ih, pos);
@@ -376,6 +408,8 @@ IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
       ShowWindow(tab_container, SW_HIDE);
 
     SendMessage(ih->handle, TCM_SETCURSEL, p, 0);
+    if (!ih->data->is_multiline)
+      winTabsScrollToCurrent(ih);
 
     tab_container = winTabsGetPageWindow(ih, pos);
     if (tab_container)
@@ -768,6 +802,9 @@ static void winTabsDeleteItem(Ihandle* ih, int p, HWND tab_container)
   ShowWindow(tab_container, SW_HIDE);
 
   SendMessage(ih->handle, TCM_DELETEITEM, p, 0);
+
+  if (!ih->data->is_multiline)
+    winTabsScrollToCurrent(ih);
 
   if (ih->data->is_multiline)
   {

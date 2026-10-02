@@ -195,6 +195,7 @@ public:
     BTab* tab = BTabView::RemoveTab(index);
     if (tab)
       delete item;
+    ScrollToTab(Selection());
     return tab;
   }
 
@@ -225,6 +226,7 @@ public:
     }
 
     BTabView::Select(tab);
+    ScrollToTab(Selection());
     if (fSuppressSelectCallbacks) return;
     if (!fIhandle || prev == tab) return;
 
@@ -246,6 +248,13 @@ public:
   void MouseDown(BPoint where) override
   {
     if (fIhandle && !iupdrvIsActive(fIhandle)) return;
+
+    if (IsOverflowing() && ArrowsRect().Contains(where))
+    {
+      float step = (Bounds().right - kArrowsWidth) / 2.0f;
+      ScrollTabsBy(where.x < ArrowsRect().left + kArrowsWidth / 2.0f ? step : -step);
+      return;
+    }
 
     BPoint mouse_pt;
     uint32 buttons = 0;
@@ -325,8 +334,11 @@ public:
     }
 
     int tip_idx = -1;
-    for (int32 i = 0; i < CountTabs(); i++)
-      if (TabFrame(i).Contains(where)) { tip_idx = i; break; }
+    if (!(IsOverflowing() && ArrowsRect().Contains(where)))
+    {
+      for (int32 i = 0; i < CountTabs(); i++)
+        if (TabFrame(i).Contains(where)) { tip_idx = i; break; }
+    }
     if (tip_idx != fHotTipTab)
     {
       fHotTipTab = tip_idx;
@@ -386,6 +398,8 @@ public:
       StrokeLine(BPoint(x, t.top), BPoint(x, t.bottom));
       StrokeLine(BPoint(x + 1, t.top), BPoint(x + 1, t.bottom));
     }
+    if (IsOverflowing())
+      DrawArrows();
   }
 
   void ReorderBTab(int src_btab_pos, int tgt_btab_pos)
@@ -448,8 +462,16 @@ public:
     return -1;
   }
 
-  /* Same as BTabView::TabFrame B_WIDTH_FROM_LABEL, plus per-tab icon+close extras. */
   BRect TabFrame(int32 index) const override
+  {
+    BRect r = RawTabFrame(index);
+    if (IsHorizontalSide() && r.IsValid())
+      r.OffsetBy(fScrollOffset, 0);
+    return r;
+  }
+
+  /* Same as BTabView::TabFrame B_WIDTH_FROM_LABEL, plus per-tab icon+close extras. */
+  BRect RawTabFrame(int32 index) const
   {
     if (index >= CountTabs() || index < 0) return {};
     const float pad = ceilf(be_control_look->DefaultLabelSpacing() * 3.3f);
@@ -479,10 +501,97 @@ public:
     return {};
   }
 
+  bool IsHorizontalSide() const
+  {
+    return TabSide() == kTopSide || TabSide() == kBottomSide;
+  }
+
+  bool IsOverflowing() const
+  {
+    int32 count = CountTabs();
+    return count > 0 && IsHorizontalSide() && RawTabFrame(count - 1).right > Bounds().right;
+  }
+
+  BRect ArrowsRect() const
+  {
+    BRect b = Bounds();
+    float h = TabHeight();
+    if (TabSide() == kBottomSide)
+      return {b.right - kArrowsWidth, b.bottom - h, b.right, b.bottom};
+    return {b.right - kArrowsWidth, 0.0f, b.right, h};
+  }
+
+  float MinScrollOffset() const
+  {
+    return (Bounds().right - kArrowsWidth) - RawTabFrame(CountTabs() - 1).right;
+  }
+
+  void ClampScroll()
+  {
+    if (!IsOverflowing())
+    {
+      fScrollOffset = 0.0f;
+      return;
+    }
+    if (fScrollOffset < MinScrollOffset())
+      fScrollOffset = MinScrollOffset();
+    if (fScrollOffset > 0.0f)
+      fScrollOffset = 0.0f;
+  }
+
+  void ScrollToTab(int32 index)
+  {
+    if (IsOverflowing() && index >= 0 && index < CountTabs())
+    {
+      BRect r = RawTabFrame(index);
+      float first = RawTabFrame(0).left;
+      float limit = Bounds().right - kArrowsWidth;
+      if (r.left + fScrollOffset < first)
+        fScrollOffset = first - r.left;
+      else if (r.right + fScrollOffset > limit)
+        fScrollOffset = limit - r.right;
+    }
+    ClampScroll();
+    Invalidate();
+  }
+
+  void ScrollTabsBy(float delta)
+  {
+    fScrollOffset += delta;
+    ClampScroll();
+    Invalidate();
+  }
+
+  void DrawArrows()
+  {
+    BRect arrows = ArrowsRect();
+    float mid = arrows.top + arrows.Height() / 2.0f;
+    float lx = arrows.left + kArrowsWidth / 4.0f;
+    float rx = arrows.right - kArrowsWidth / 4.0f;
+    rgb_color text = ui_color(B_PANEL_TEXT_COLOR);
+    rgb_color dim = tint_color(ui_color(B_PANEL_BACKGROUND_COLOR), B_DISABLED_LABEL_TINT);
+
+    SetHighColor(ui_color(B_PANEL_BACKGROUND_COLOR));
+    FillRect(arrows);
+
+    SetHighColor(fScrollOffset < 0.0f ? text : dim);
+    FillTriangle(BPoint(lx - 3.0f, mid), BPoint(lx + 3.0f, mid - 5.0f), BPoint(lx + 3.0f, mid + 5.0f));
+    SetHighColor(fScrollOffset > MinScrollOffset() ? text : dim);
+    FillTriangle(BPoint(rx + 3.0f, mid), BPoint(rx - 3.0f, mid - 5.0f), BPoint(rx - 3.0f, mid + 5.0f));
+  }
+
+  void FrameResized(float width, float height) override
+  {
+    BTabView::FrameResized(width, height);
+    ScrollToTab(Selection());
+  }
+
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }
   void SetSuppressSelectCallbacks(bool suppress) { fSuppressSelectCallbacks = suppress; }
 
 private:
+  static constexpr float kArrowsWidth = 36.0f;
+  float fScrollOffset = 0.0f;
   Ihandle* fIhandle;
   int fHotCloseTab;
   int fHotTipTab;

@@ -19,6 +19,8 @@
 #define kCloseButtonWidth 8
 #define kTabCellPadding 12
 #define kTabCloseButtonArea 20.0
+#define kMinOverflowTabWidth 90
+#define kScrollArrowsWidth 36
 
 @protocol IupCocoaTabBarViewDelegate;
 @class IupCocoaTabCell;
@@ -77,6 +79,7 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
   BOOL enabled;
   BOOL usesMaterialBackground;
   NSMutableArray* accessibilityElements;
+  CGFloat scrollOffset;
 }
 
 @property(nonatomic, retain) NSFont* tabFont;

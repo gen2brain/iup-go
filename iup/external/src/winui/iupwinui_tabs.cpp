@@ -531,6 +531,13 @@ static void winuiTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
   if (aux) aux->ignoreChange = 0;
 
+  tabView.UpdateLayout();
+  if (tabView.SelectedIndex() >= 0)
+  {
+    if (auto item = tabView.ContainerFromIndex(tabView.SelectedIndex()).try_as<UIElement>())
+      item.StartBringIntoView();
+  }
+
   winuiTabsReleaseChildAttrib(child, "_IUPTAB_CONTAINER");
   winuiTabsReleaseChildAttrib(child, IUPWINUI_TABITEMNATIVE);
   winuiTabsReleaseChildAttrib(child, IUPWINUI_TABIMAGE_NATIVE);

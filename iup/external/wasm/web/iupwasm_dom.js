@@ -1206,6 +1206,7 @@
         wrap.style.position = 'absolute'; wrap.style.boxSizing = 'border-box'; wrap.style.display = 'flex'; wrap.style.flexDirection = 'column';
         var strip = document.createElement('div');
         strip.style.display = 'flex'; strip.style.flexWrap = 'nowrap'; strip.style.flex = '0 0 auto'; strip.style.borderBottom = '1px solid var(--iup-bd)';
+        strip.style.overflowX = 'auto'; strip.style.overflowY = 'hidden'; strip.style.scrollbarWidth = 'thin';
         var content = document.createElement('div');
         content.style.position = 'relative'; content.style.flex = '1 1 auto'; content.style.overflow = 'hidden';
         wrap.appendChild(strip); wrap.appendChild(content);
@@ -1272,6 +1273,7 @@
             tw.__iupTabs[i].style.background = (i === c.pos) ? 'var(--iup-face2)' : 'var(--iup-bd-faint)';
           }
           tw.__iupCurrent = c.pos;
+          if (tw.__iupTabs[c.pos]) tw.__iupTabs[c.pos].scrollIntoView({ block: 'nearest', inline: 'nearest' });
         }
       } break;
       case 'tabspadding': {
@@ -1303,6 +1305,7 @@
           var rp = tw.__iupPages.splice(c.pos, 1)[0];
           if (rt) rt.remove();
           if (rp) rp.remove();
+          if (c.pos < tw.__iupCurrent) tw.__iupCurrent--;
           if (tw.__iupCurrent >= tw.__iupTabs.length) tw.__iupCurrent = tw.__iupTabs.length - 1;
           if (tw.__iupCurrent >= 0) D('iupwasmTabsSetCurrent', c.id, tw.__iupCurrent);
         }
@@ -1347,6 +1350,8 @@
           else if (c.type === 2) { tw.style.flexDirection = 'row'; tstrip.style.flexDirection = 'column'; tstrip.style.flexWrap = 'nowrap'; tstrip.style.borderRight = '1px solid var(--iup-bd)'; }
           else if (c.type === 3) { tw.style.flexDirection = 'row-reverse'; tstrip.style.flexDirection = 'column'; tstrip.style.flexWrap = 'nowrap'; tstrip.style.borderLeft = '1px solid var(--iup-bd)'; }
           else { tw.style.flexDirection = 'column'; tstrip.style.flexDirection = 'row'; tstrip.style.flexWrap = 'nowrap'; tstrip.style.borderBottom = '1px solid var(--iup-bd)'; }
+          tstrip.style.overflowX = (c.type === 2 || c.type === 3) ? 'hidden' : 'auto';
+          tstrip.style.overflowY = (c.type === 2 || c.type === 3) ? 'auto' : 'hidden';
         }
       } break;
       case 'tabssetvertical': {

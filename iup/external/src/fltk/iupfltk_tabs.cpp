@@ -82,6 +82,22 @@ public:
   {
   }
 
+  void clampTabOffset()
+  {
+    int m = overflow_type == OVERFLOW_PULLDOWN ? abs(tab_height()) : 0;
+    if (children() == 0)
+      return;
+
+    tab_positions();
+
+    int dw = tab_pos[children()] + tab_offset - w();
+    if (dw < -m)
+      tab_offset -= dw + m;
+    if (tab_offset > 0)
+      tab_offset = 0;
+    redraw_tabs();
+  }
+
   int findTabIndex(int ex, int ey)
   {
     Fl_Widget* w = which(ex, ey);
@@ -847,6 +863,7 @@ static void fltkTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   {
     auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
     auto* page = reinterpret_cast<Fl_Group*>(iupAttribGet(child, "_IUPTAB_CONTAINER"));
+    bool was_current = page && tabs->value() == page;
 
     if (page)
     {
@@ -864,13 +881,14 @@ static void fltkTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
     iupAttribSet(child, "_IUPTAB_CONTAINER", nullptr);
     iupAttribSet(child, "_IUPTAB_PAGE", nullptr);
 
-    if (tabs->children() > 0)
+    if (was_current && tabs->children() > 0)
     {
       if (pos >= tabs->children())
         pos = tabs->children() - 1;
       iupdrvTabsSetCurrentTab(ih, pos);
     }
 
+    tabs->clampTabOffset();
     tabs->redraw();
   }
 }
@@ -885,6 +903,9 @@ static void fltkTabsLayoutUpdateMethod(Ihandle* ih)
 
   auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
   if (!tabs) return;
+
+  tabs->handle_overflow(ih->currentwidth < ih->naturalwidth ? Fl_Tabs::OVERFLOW_PULLDOWN : Fl_Tabs::OVERFLOW_COMPRESS);
+  tabs->clampTabOffset();
 
   int tab_h = fltkTabsGetTabHeight(ih);
   int page_x = tabs->x() + 2;

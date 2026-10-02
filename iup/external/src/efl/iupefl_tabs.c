@@ -430,11 +430,32 @@ IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
   return 1;
 }
 
+static void eflTabsShowSelectedTab(Ihandle* ih)
+{
+  Eo* scroller = (Eo*)iupAttribGet(ih, "_IUP_EFL_TAB_SCROLLER");
+  Eo* pager = iupeflGetWidget(ih);
+  Eo* tab_bar = pager ? efl_ui_tab_pager_tab_bar_get(pager) : NULL;
+  Eo* selected = tab_bar ? efl_ui_selectable_last_selected_get(tab_bar) : NULL;
+  Eo* box = scroller ? efl_content_get(scroller) : NULL;
+  Eina_Rect item, content;
+
+  if (!selected || !box)
+    return;
+
+  efl_canvas_group_calculate(tab_bar);
+  item = efl_gfx_entity_geometry_get(selected);
+  content = efl_gfx_entity_geometry_get(box);
+  item.x -= content.x;
+  item.y -= content.y;
+  efl_ui_scrollable_scroll(scroller, item, EINA_FALSE);
+}
+
 static void eflTabsLayoutJob(void* data)
 {
   Ihandle* ih = (Ihandle*)data;
   iupAttribSet(ih, "_IUP_EFL_LAYOUT_JOB", NULL);
   iupLayoutUpdate(ih);
+  eflTabsShowSelectedTab(ih);
 }
 
 static void eflTabsScheduleLayout(Ihandle* ih)
@@ -984,6 +1005,9 @@ static void eflTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   iupAttribSet(child, "_IUPTAB_PAGE", NULL);
   iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
   iupAttribSet(child, "_IUPTAB_CLOSE", NULL);
+
+  if (ih->handle)
+    eflTabsScheduleLayout(ih);
 }
 
 static int eflTabsMapMethod(Ihandle* ih)
@@ -1005,6 +1029,18 @@ static int eflTabsMapMethod(Ihandle* ih)
   tab_bar = efl_ui_tab_pager_tab_bar_get(pager);
   if (tab_bar)
   {
+    Eo* box = efl_content_get(efl_part(tab_bar, "efl.content"));
+    if (box)
+    {
+      Eo* scroller;
+      efl_content_unset(efl_part(tab_bar, "efl.content"));
+      scroller = efl_add(EFL_UI_SCROLLER_CLASS, tab_bar);
+      efl_ui_scrollbar_bar_mode_set(scroller, EFL_UI_SCROLLBAR_MODE_OFF, EFL_UI_SCROLLBAR_MODE_OFF);
+      efl_ui_scrollable_match_content_set(scroller, EINA_FALSE, EINA_TRUE);
+      efl_content_set(scroller, box);
+      efl_content_set(efl_part(tab_bar, "efl.content"), scroller);
+      iupAttribSet(ih, "_IUP_EFL_TAB_SCROLLER", (char*)scroller);
+    }
     efl_event_callback_add(tab_bar, EFL_UI_EVENT_ITEM_SELECTED, eflTabsItemSelectedCallback, ih);
   }
 
