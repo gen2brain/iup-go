@@ -226,7 +226,7 @@ static int eflClipboardSetFormatDataAttrib(Ihandle* ih, const char* value)
 
   /* Cache locally to avoid X11 self-selection deadlock */
   {
-    char* old_cache = (char*)iupAttribGet(ih, "_IUP_CLIPBOARD_FORMAT_CACHE");
+    char* old_cache = iupAttribGet(ih, "_IUP_CLIPBOARD_FORMAT_CACHE");
     char* cache = (char*)malloc(size);
     if (cache)
     {
@@ -608,6 +608,11 @@ static char* eflClipboardGetFormatAvailableAttrib(Ihandle* ih)
   return "NO";
 }
 
+static void eflClipboardDestroy(Ihandle* ih)
+{
+  free(iupAttribGet(ih, "_IUP_CLIPBOARD_FORMAT_CACHE"));
+  iupAttribSet(ih, "_IUP_CLIPBOARD_FORMAT_CACHE", NULL);
+}
 
 Iclass* iupClipboardNewClass(void)
 {
@@ -620,6 +625,7 @@ Iclass* iupClipboardNewClass(void)
   ic->is_interactive = 0;
 
   ic->New = iupClipboardNewClass;
+  ic->Destroy = eflClipboardDestroy;
 
   iupClassRegisterAttribute(ic, "TEXT", eflClipboardGetTextAttrib, eflClipboardSetTextAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTAVAILABLE", eflClipboardGetTextAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);

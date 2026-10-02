@@ -129,8 +129,8 @@ static void eflTextDestroyImageOverlays(Ihandle* ih)
   textblock = eflTextGetTextblock(ih);
   if (textblock)
   {
-    evas_object_event_callback_del_full((Evas_Object*)textblock, EVAS_CALLBACK_RESIZE, eflTextImageOverlayResizeCB, ih);
-    evas_object_event_callback_del_full((Evas_Object*)textblock, EVAS_CALLBACK_MOVE, eflTextImageOverlayMoveCB, ih);
+    evas_object_event_callback_del_full(textblock, EVAS_CALLBACK_RESIZE, eflTextImageOverlayResizeCB, ih);
+    evas_object_event_callback_del_full(textblock, EVAS_CALLBACK_MOVE, eflTextImageOverlayMoveCB, ih);
   }
 }
 
@@ -170,7 +170,7 @@ IUP_DRV_API void iupeflTextInsertAt(Eo* entry, int pos, const char* text)
     efl_text_cursor_object_text_insert(cur, text);
     efl_del(cur);
   }
-  iupeflTextSetCursor(entry, pos + (int)eina_unicode_utf8_get_len(text));
+  iupeflTextSetCursor(entry, pos + eina_unicode_utf8_get_len(text));
 }
 
 static void eflTextChangedCallback(void* data, const Efl_Event* ev)
@@ -2447,7 +2447,7 @@ static void eflTextBuildParagraphFormat(Ihandle* formattag, char* format, int fo
 
       remaining = format_size - pos;
       if (remaining > 1)
-        pos += snprintf(format + pos, remaining, "left_margin=%d ", numberingtab);
+        snprintf(format + pos, remaining, "left_margin=%d ", numberingtab);
     }
   }
 
@@ -2608,8 +2608,8 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
 
         if (!overlay->next)
         {
-          evas_object_event_callback_add((Evas_Object*)textblock, EVAS_CALLBACK_RESIZE, eflTextImageOverlayResizeCB, ih);
-          evas_object_event_callback_add((Evas_Object*)textblock, EVAS_CALLBACK_MOVE, eflTextImageOverlayMoveCB, ih);
+          evas_object_event_callback_add(textblock, EVAS_CALLBACK_RESIZE, eflTextImageOverlayResizeCB, ih);
+          evas_object_event_callback_add(textblock, EVAS_CALLBACK_MOVE, eflTextImageOverlayMoveCB, ih);
         }
 
         iupAttribSet(ih, "_IUP_EFL_IMAGE_OVERLAYS", (char*)overlay);

@@ -62,7 +62,7 @@ typedef struct _IeflTableData
   int sort_ascending;          /* 1=ascending, 0=descending */
 } IeflTableData;
 
-#define IEFL_TABLE_DATA(ih) ((IeflTableData*)(ih->data->native_data))
+#define IEFL_TABLE_DATA(ih) ((IeflTableData*)((ih)->data->native_data))
 
 #define DEFAULT_COL_WIDTH 80
 #define DEFAULT_ROW_HEIGHT 24
@@ -825,11 +825,11 @@ static int eflTableFindTargetColumn(Ihandle* ih, int x)
     Evas_Object* label = data->header_labels[col];
     if (label)
     {
-      int lx, ly, lw, lh;
+      int lx, lw;
       int mid_x;
       {
         Eina_Rect geom = efl_gfx_entity_geometry_get(label);
-        lx = geom.x; ly = geom.y; lw = geom.w; lh = geom.h;
+        lx = geom.x; lw = geom.w;
       }
       mid_x = lx + lw / 2;
       if (x < mid_x)
@@ -1405,11 +1405,11 @@ static void eflTableResizeCallback(void* data, const Efl_Event* ev)
 
   if (table_data && table_data->scroller && table_data->table)
   {
-    Evas_Coord vp_w, vp_h, table_w, table_h;
+    Evas_Coord vp_w, table_w, table_h;
     {
       Eina_Rect sg = efl_gfx_entity_geometry_get(table_data->scroller);
       Eina_Rect tg = efl_gfx_entity_geometry_get(table_data->table);
-      vp_w = sg.w; vp_h = sg.h;
+      vp_w = sg.w;
       table_w = tg.w; table_h = tg.h;
     }
 

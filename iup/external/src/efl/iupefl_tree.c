@@ -345,7 +345,7 @@ static void eflTreeExpandedCallback(void* data, Evas_Object* obj, void* event_in
 {
   Ihandle* ih = (Ihandle*)data;
   Elm_Object_Item* item = (Elm_Object_Item*)event_info;
-  Evas_Object* tree = (Evas_Object*)obj;
+  Evas_Object* tree = obj;
   IFni cb;
   int id;
   IeflTreeNode* node;

@@ -1172,25 +1172,25 @@ IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
   return !iupeflGetDisabled(widget);
 }
 
-IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
 {
   Eo* widget = iupeflGetWidget(ih);
   Eo* container = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   Eo* bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
 
-  iupAttribSet(ih, "_IUPEFL_HIDDEN", visible ? NULL : "1");
+  iupAttribSet(ih, "_IUPEFL_HIDDEN", enable ? NULL : "1");
 
   if (container)
-    iupeflSetVisible(container, visible ? EINA_TRUE : EINA_FALSE);
+    iupeflSetVisible(container, enable ? EINA_TRUE : EINA_FALSE);
 
   if (widget && widget != (Eo*)-1)
-    iupeflSetVisible(widget, visible ? EINA_TRUE : EINA_FALSE);
+    iupeflSetVisible(widget, enable ? EINA_TRUE : EINA_FALSE);
 
   if (bg_rect)
-    iupeflSetVisible(bg_rect, visible ? EINA_TRUE : EINA_FALSE);
+    iupeflSetVisible(bg_rect, enable ? EINA_TRUE : EINA_FALSE);
 
   if (ih->iclass->nativetype == IUP_TYPECANVAS)
-    iupeflCanvasSetScrollBarsVisible(ih, visible);
+    iupeflCanvasSetScrollBarsVisible(ih, enable);
 }
 
 IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)

@@ -31,9 +31,9 @@ static void eflCalendarChangedCallback(void* data, const Efl_Event* ev)
 
   old_day = iupAttribGetInt(ih, "_IUP_OLD_DAY");
 
-  if ((int)selected_time.tm_mday != old_day)
+  if (selected_time.tm_mday != old_day)
   {
-    iupAttribSetInt(ih, "_IUP_OLD_DAY", (int)selected_time.tm_mday);
+    iupAttribSetInt(ih, "_IUP_OLD_DAY", selected_time.tm_mday);
     iupBaseCallValueChangedCb(ih);
   }
 }
