@@ -139,7 +139,7 @@ static int androidPopoverMapMethod(Ihandle* ih)
     return IUP_ERROR;
   }
 
-  ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, popup));
+  ih->handle = (*jni_env)->NewGlobalRef(jni_env, popup);
 
   jmethodID inner_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "getInner", "(Landroid/widget/PopupWindow;)Lio/github/gen2brain/iupgo/IupAndroidFixed;");
   jobject inner = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, inner_id, popup);

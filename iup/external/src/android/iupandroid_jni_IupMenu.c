@@ -86,11 +86,11 @@ JNIEXPORT jstring JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeGet
     char* tmp = (char*)malloc((size_t)len + 1);
     memcpy(tmp, src, (size_t)len);
     tmp[len] = '\0';
-    j_str = (*jni_env)->NewStringUTF(jni_env, tmp);
+    j_str = iupAndroid_NewStringUTF(jni_env, tmp);
     free(tmp);
   }
   else
-    j_str = (*jni_env)->NewStringUTF(jni_env, src);
+    j_str = iupAndroid_NewStringUTF(jni_env, src);
   if (stripped && stripped != title) free(stripped);
   return j_str;
 }
@@ -128,7 +128,7 @@ JNIEXPORT jstring JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeGet
   if (!ih || !j_name) return NULL;
   const char* name = (*jni_env)->GetStringUTFChars(jni_env, j_name, NULL);
   const char* val = iupAttribGet(ih, name);
-  jstring result = val ? (*jni_env)->NewStringUTF(jni_env, val) : NULL;
+  jstring result = val ? iupAndroid_NewStringUTF(jni_env, val) : NULL;
   (*jni_env)->ReleaseStringUTFChars(jni_env, j_name, name);
   return result;
 }
@@ -212,7 +212,7 @@ JNIEXPORT jstring JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeGet
   snprintf(attr, sizeof(attr), "_IUP_RECENT_FILE%d", (int)index);
   const char* path = iupAttribGet(ih, attr);
   if (!path) return NULL;
-  return (*jni_env)->NewStringUTF(jni_env, path);
+  return iupAndroid_NewStringUTF(jni_env, path);
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeDispatchRecent(
@@ -237,7 +237,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeDispat
   {
     jclass java_class = IUPJNI_FindClass(IupFileDlgHelper, jni_env, "io/github/gen2brain/iupgo/IupFileDlgHelper");
     jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, java_class, "stageRecentUri", "(Ljava/lang/String;)Ljava/lang/String;");
-    jstring j_uri = (*jni_env)->NewStringUTF(jni_env, filename);
+    jstring j_uri = iupAndroid_NewStringUTF(jni_env, filename);
     jstring j_path = (jstring)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, m, j_uri);
     iupAndroid_CheckException(jni_env, "IupFileDlgHelper.stageRecentUri");
     (*jni_env)->DeleteLocalRef(jni_env, j_uri);

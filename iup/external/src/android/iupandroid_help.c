@@ -37,7 +37,7 @@ static int androidHelpOpenUrl(const char* url)
   jclass java_class = IUPJNI_FindClass(IupHelpHelper, jni_env, "io/github/gen2brain/iupgo/IupHelpHelper");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "openUrl", "(Ljava/lang/String;)I");
 
-  jstring j_url = (*jni_env)->NewStringUTF(jni_env, url);
+  jstring j_url = iupAndroid_NewStringUTF(jni_env, url);
   jint ret = (*jni_env)->CallStaticIntMethod(jni_env, java_class, method_id, j_url);
   iupAndroid_CheckException(jni_env, "IupHelpHelper.openUrl");
 
@@ -52,7 +52,7 @@ static int androidHelpLaunchPackage(const char* package_name)
   jclass java_class = IUPJNI_FindClass(IupHelpHelper, jni_env, "io/github/gen2brain/iupgo/IupHelpHelper");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "launchPackage", "(Ljava/lang/String;)I");
 
-  jstring j_pkg = (*jni_env)->NewStringUTF(jni_env, package_name);
+  jstring j_pkg = iupAndroid_NewStringUTF(jni_env, package_name);
   jint ret = (*jni_env)->CallStaticIntMethod(jni_env, java_class, method_id, j_pkg);
   iupAndroid_CheckException(jni_env, "IupHelpHelper.launchPackage");
 

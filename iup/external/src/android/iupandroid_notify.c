@@ -49,8 +49,8 @@ IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
     if (toast_icon && *toast_icon)
       j_toast_icon = (jobject)iupImageGetImage(toast_icon, ih, 0, NULL);
 
-    jstring j_title = title ? (*jni_env)->NewStringUTF(jni_env, title) : NULL;
-    jstring j_body  = body  ? (*jni_env)->NewStringUTF(jni_env, body)  : NULL;
+    jstring j_title = title ? iupAndroid_NewStringUTF(jni_env, title) : NULL;
+    jstring j_body  = body  ? iupAndroid_NewStringUTF(jni_env, body)  : NULL;
     jmethodID toast_m = (*jni_env)->GetStaticMethodID(jni_env, java_class, "showToast",
       "(JLjava/lang/String;Ljava/lang/String;Landroid/graphics/Bitmap;I)V");
     (*jni_env)->CallStaticVoidMethod(jni_env, java_class, toast_m,
@@ -109,14 +109,14 @@ IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
   const char* channel_id = IupGetAttribute(ih, "CHANNELID");
   const char* importance = IupGetAttribute(ih, "IMPORTANCE");
 
-  jstring j_title   = title      ? (*jni_env)->NewStringUTF(jni_env, title)      : NULL;
-  jstring j_body    = body       ? (*jni_env)->NewStringUTF(jni_env, body)       : NULL;
-  jstring j_a1      = a1         ? (*jni_env)->NewStringUTF(jni_env, a1)         : NULL;
-  jstring j_a2      = a2         ? (*jni_env)->NewStringUTF(jni_env, a2)         : NULL;
-  jstring j_a3      = a3         ? (*jni_env)->NewStringUTF(jni_env, a3)         : NULL;
-  jstring j_a4      = a4         ? (*jni_env)->NewStringUTF(jni_env, a4)         : NULL;
-  jstring j_channel = channel_id ? (*jni_env)->NewStringUTF(jni_env, channel_id) : NULL;
-  jstring j_imp     = importance ? (*jni_env)->NewStringUTF(jni_env, importance) : NULL;
+  jstring j_title   = title      ? iupAndroid_NewStringUTF(jni_env, title)      : NULL;
+  jstring j_body    = body       ? iupAndroid_NewStringUTF(jni_env, body)       : NULL;
+  jstring j_a1      = a1         ? iupAndroid_NewStringUTF(jni_env, a1)         : NULL;
+  jstring j_a2      = a2         ? iupAndroid_NewStringUTF(jni_env, a2)         : NULL;
+  jstring j_a3      = a3         ? iupAndroid_NewStringUTF(jni_env, a3)         : NULL;
+  jstring j_a4      = a4         ? iupAndroid_NewStringUTF(jni_env, a4)         : NULL;
+  jstring j_channel = channel_id ? iupAndroid_NewStringUTF(jni_env, channel_id) : NULL;
+  jstring j_imp     = importance ? iupAndroid_NewStringUTF(jni_env, importance) : NULL;
 
   jmethodID show_m = (*jni_env)->GetStaticMethodID(jni_env, java_class, "show",
     "(JILjava/lang/String;Ljava/lang/String;Landroid/graphics/Bitmap;IIZZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IIZLandroid/graphics/Bitmap;Ljava/lang/String;Ljava/lang/String;)I");

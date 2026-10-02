@@ -87,7 +87,7 @@ static int androidCalendarMapMethod(Ihandle* ih)
 
   if (!widget) return IUP_ERROR;
 
-  ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, widget));
+  ih->handle = (*jni_env)->NewGlobalRef(jni_env, widget);
   (*jni_env)->DeleteLocalRef(jni_env, widget);
 
   iupAndroid_AddWidgetToParent(jni_env, ih);

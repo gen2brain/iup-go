@@ -427,8 +427,8 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "drawText",
     "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;Ljava/lang/String;IIIIIIFLjava/lang/String;IIZZ)V");
 
-  jstring j_text = (*jni_env)->NewStringUTF(jni_env, text);
-  jstring j_family = (family && family[0]) ? (*jni_env)->NewStringUTF(jni_env, family) : NULL;
+  jstring j_text = iupAndroid_NewStringUTF(jni_env, text);
+  jstring j_family = (family && family[0]) ? iupAndroid_NewStringUTF(jni_env, family) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id,
     dc->ih->handle, j_text,
     (jint)x, (jint)y, (jint)w, (jint)h,

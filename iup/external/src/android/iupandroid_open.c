@@ -99,7 +99,7 @@ static int iupAndroidResolveThemeColor(const char* attr_name, int fallback_argb)
   jmethodID m = (*env)->GetStaticMethodID(env, ic, "resolveThemeColorByName", "(Ljava/lang/String;I)I");
   if (m)
   {
-    jstring j_name = (*env)->NewStringUTF(env, attr_name);
+    jstring j_name = iupAndroid_NewStringUTF(env, attr_name);
     color = (*env)->CallStaticIntMethod(env, ic, m, j_name, (jint)fallback_argb);
     iupAndroid_CheckException(env, "IupCommon.resolveThemeColorByName");
     (*env)->DeleteLocalRef(env, j_name);

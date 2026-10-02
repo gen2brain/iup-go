@@ -90,7 +90,7 @@ static int androidButtonSetTitleAttrib(Ihandle* ih, const char* value)
   /* MARKUP=YES: feed value as-is so '&' isn't mistaken for a mnemonic marker. */
   char* stripped = (value && !markup) ? iupStrProcessMnemonic(value, NULL, 0) : NULL;
   const char* effective = stripped ? stripped : value;
-  jstring j_string = effective ? (*jni_env)->NewStringUTF(jni_env, effective) : NULL;
+  jstring j_string = effective ? iupAndroid_NewStringUTF(jni_env, effective) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, j_string, markup ? JNI_TRUE : JNI_FALSE);
   iupAndroid_CheckException(jni_env, "IupButtonHelper.setTitle");
   if (j_string) (*jni_env)->DeleteLocalRef(jni_env, j_string);
@@ -143,8 +143,8 @@ static int androidButtonSetAlignmentAttrib(Ihandle* ih, const char* value)
   jclass java_class = androidButtonFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setAlignment", "(Landroid/widget/Button;Ljava/lang/String;Ljava/lang/String;)V");
 
-  jstring j_horiz = (*jni_env)->NewStringUTF(jni_env, horiz);
-  jstring j_vert = (*jni_env)->NewStringUTF(jni_env, vert);
+  jstring j_horiz = iupAndroid_NewStringUTF(jni_env, horiz);
+  jstring j_vert = iupAndroid_NewStringUTF(jni_env, vert);
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, j_horiz, j_vert);
   iupAndroid_CheckException(jni_env, "IupButtonHelper.setAlignment");
   (*jni_env)->DeleteLocalRef(jni_env, j_horiz);
@@ -249,7 +249,7 @@ static int androidButtonSetButtonStyleAttrib(Ihandle* ih, const char* value)
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidButtonFindHelper(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setButtonStyle", "(Landroid/widget/Button;Ljava/lang/String;)V");
-  jstring j_str = value ? (*env)->NewStringUTF(env, value) : NULL;
+  jstring j_str = value ? iupAndroid_NewStringUTF(env, value) : NULL;
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, j_str);
   iupAndroid_CheckException(env, "IupButtonHelper.setButtonStyle");
   if (j_str) (*env)->DeleteLocalRef(env, j_str);
@@ -263,7 +263,7 @@ static int androidButtonSetCornerStyleAttrib(Ihandle* ih, const char* value)
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidButtonFindHelper(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setCornerStyle", "(Landroid/widget/Button;Ljava/lang/String;)V");
-  jstring j_str = value ? (*env)->NewStringUTF(env, value) : NULL;
+  jstring j_str = value ? iupAndroid_NewStringUTF(env, value) : NULL;
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, j_str);
   iupAndroid_CheckException(env, "IupButtonHelper.setCornerStyle");
   if (j_str) (*env)->DeleteLocalRef(env, j_str);
@@ -300,7 +300,7 @@ static int androidButtonSetImagePositionAttrib(Ihandle* ih, const char* value)
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidButtonFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setImagePosition", "(Landroid/widget/Button;Ljava/lang/String;)V");
-  jstring j_pos = value ? (*jni_env)->NewStringUTF(jni_env, value) : NULL;
+  jstring j_pos = value ? iupAndroid_NewStringUTF(jni_env, value) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, j_pos);
   iupAndroid_CheckException(jni_env, "IupButtonHelper.setImagePosition");
   if (j_pos) (*jni_env)->DeleteLocalRef(jni_env, j_pos);
@@ -320,7 +320,7 @@ static int androidButtonMapMethod(Ihandle* ih)
 
   if (!widget) return IUP_ERROR;
 
-  ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, widget));
+  ih->handle = (*jni_env)->NewGlobalRef(jni_env, widget);
   (*jni_env)->DeleteLocalRef(jni_env, widget);
 
   const char* image = iupAttribGet(ih, "IMAGE");

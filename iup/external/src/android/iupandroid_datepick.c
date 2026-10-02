@@ -97,7 +97,7 @@ static void androidDatePickPushPattern(Ihandle* ih, const char* pattern)
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidDatePickFindHelper(env);
   jmethodID mid = (*env)->GetStaticMethodID(env, cls, "setPattern", "(Lcom/google/android/material/button/MaterialButton;Ljava/lang/String;)V");
-  jstring js = (*env)->NewStringUTF(env, pattern);
+  jstring js = iupAndroid_NewStringUTF(env, pattern);
   (*env)->CallStaticVoidMethod(env, cls, mid, (jobject)ih->handle, js);
   iupAndroid_CheckException(env, "IupDatePickHelper.setPattern");
   (*env)->DeleteLocalRef(env, js);
@@ -231,7 +231,7 @@ static int androidDatePickMapMethod(Ihandle* ih)
   (*env)->DeleteLocalRef(env, cls);
   if (!widget) return IUP_ERROR;
 
-  ih->handle = (jobject)((*env)->NewGlobalRef(env, widget));
+  ih->handle = (*env)->NewGlobalRef(env, widget);
   (*env)->DeleteLocalRef(env, widget);
 
   int y = iupAttribGetInt(ih, "_IUPDATEPICK_YEAR");

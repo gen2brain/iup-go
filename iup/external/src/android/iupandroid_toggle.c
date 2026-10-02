@@ -118,7 +118,7 @@ static int androidToggleSetTitleAttrib(Ihandle* ih, const char* value)
   /* MARKUP=YES: feed value as-is so '&' isn't mistaken for a mnemonic marker. */
   char* stripped = (value && !markup) ? iupStrProcessMnemonic(value, NULL, 0) : NULL;
   const char* effective = stripped ? stripped : value;
-  jstring j_string = effective ? (*jni_env)->NewStringUTF(jni_env, effective) : NULL;
+  jstring j_string = effective ? iupAndroid_NewStringUTF(jni_env, effective) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, j_string, markup ? JNI_TRUE : JNI_FALSE);
   iupAndroid_CheckException(jni_env, "IupToggleHelper.setTitle");
   if (j_string) (*jni_env)->DeleteLocalRef(jni_env, j_string);
@@ -206,8 +206,8 @@ static int androidToggleSetAlignmentAttrib(Ihandle* ih, const char* value)
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupToggleHelper, jni_env, "io/github/gen2brain/iupgo/IupToggleHelper");
   jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, cls, "setImageAlignment", "(Landroid/view/View;Ljava/lang/String;Ljava/lang/String;)V");
-  jstring j_horiz = (*jni_env)->NewStringUTF(jni_env, horiz);
-  jstring j_vert = (*jni_env)->NewStringUTF(jni_env, vert);
+  jstring j_horiz = iupAndroid_NewStringUTF(jni_env, horiz);
+  jstring j_vert = iupAndroid_NewStringUTF(jni_env, vert);
   (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, ih->handle, j_horiz, j_vert);
   iupAndroid_CheckException(jni_env, "IupToggleHelper.setImageAlignment");
   (*jni_env)->DeleteLocalRef(jni_env, j_horiz);
@@ -374,7 +374,7 @@ static int androidToggleMapMethod(Ihandle* ih)
 
   if (!widget) return IUP_ERROR;
 
-  ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, widget));
+  ih->handle = (*jni_env)->NewGlobalRef(jni_env, widget);
   (*jni_env)->DeleteLocalRef(jni_env, widget);
 
   if (ih->data->type == IUP_TOGGLE_TEXT && !ih->data->is_radio && !iupAttribGetBoolean(ih, "SWITCH") &&

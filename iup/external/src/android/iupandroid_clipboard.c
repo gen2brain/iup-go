@@ -29,7 +29,7 @@ static int androidClipboardSetTextAttrib(Ihandle* ih, const char* value)
   jclass java_class = IUPJNI_FindClass(IupClipboardHelper, jni_env, "io/github/gen2brain/iupgo/IupClipboardHelper");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setText", "(Ljava/lang/String;)V");
 
-  jstring j_text = value ? (*jni_env)->NewStringUTF(jni_env, value) : NULL;
+  jstring j_text = value ? iupAndroid_NewStringUTF(jni_env, value) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, j_text);
   iupAndroid_CheckException(jni_env, "IupClipboardHelper.setText");
   if (j_text) (*jni_env)->DeleteLocalRef(jni_env, j_text);
@@ -140,7 +140,7 @@ static char* androidClipboardGetFormatAvailableAttrib(Ihandle* ih)
   jclass java_class = IUPJNI_FindClass(IupClipboardHelper, jni_env, "io/github/gen2brain/iupgo/IupClipboardHelper");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "isFormatAvailable", "(Ljava/lang/String;)Z");
 
-  jstring j_mime = (*jni_env)->NewStringUTF(jni_env, format);
+  jstring j_mime = iupAndroid_NewStringUTF(jni_env, format);
   jboolean available = (*jni_env)->CallStaticBooleanMethod(jni_env, java_class, method_id, j_mime);
   iupAndroid_CheckException(jni_env, "IupClipboardHelper.isFormatAvailable");
   (*jni_env)->DeleteLocalRef(jni_env, j_mime);
@@ -158,8 +158,8 @@ static int androidClipboardSetFormatDataStringAttrib(Ihandle* ih, const char* va
   jclass java_class = IUPJNI_FindClass(IupClipboardHelper, jni_env, "io/github/gen2brain/iupgo/IupClipboardHelper");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setFormatData", "(Ljava/lang/String;Ljava/lang/String;)V");
 
-  jstring j_mime = (*jni_env)->NewStringUTF(jni_env, format);
-  jstring j_text = value ? (*jni_env)->NewStringUTF(jni_env, value) : NULL;
+  jstring j_mime = iupAndroid_NewStringUTF(jni_env, format);
+  jstring j_text = value ? iupAndroid_NewStringUTF(jni_env, value) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, j_mime, j_text);
   iupAndroid_CheckException(jni_env, "IupClipboardHelper.setFormatData");
   if (j_text) (*jni_env)->DeleteLocalRef(jni_env, j_text);
@@ -181,7 +181,7 @@ static char* androidClipboardGetFormatDataStringAttrib(Ihandle* ih)
   jclass java_class = IUPJNI_FindClass(IupClipboardHelper, jni_env, "io/github/gen2brain/iupgo/IupClipboardHelper");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "getFormatData", "(Ljava/lang/String;)Ljava/lang/String;");
 
-  jstring j_mime = (*jni_env)->NewStringUTF(jni_env, format);
+  jstring j_mime = iupAndroid_NewStringUTF(jni_env, format);
   jstring j_text = (jstring)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, j_mime);
   iupAndroid_CheckException(jni_env, "IupClipboardHelper.getFormatData");
   (*jni_env)->DeleteLocalRef(jni_env, j_mime);

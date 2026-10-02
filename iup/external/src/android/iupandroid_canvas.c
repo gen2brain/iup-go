@@ -51,7 +51,7 @@ static int androidCanvasMapMethod(Ihandle* ih)
   if (!view)
     return IUP_ERROR;
 
-  ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, view));
+  ih->handle = (*jni_env)->NewGlobalRef(jni_env, view);
   (*jni_env)->DeleteLocalRef(jni_env, view);
 
   iupAndroid_AddWidgetToParent(jni_env, ih);

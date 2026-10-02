@@ -52,9 +52,9 @@
 #define AMETA_CTRL_ON   0x1000
 #define AMETA_META_ON   0x10000
 
-IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
+IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int* keyval, unsigned int* state)
 {
-  int base = iup_XkeyBase(code);
+  int base = iup_XkeyBase(key);
   unsigned int kv = 0;
   unsigned int s = 0;
 
@@ -105,10 +105,10 @@ IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* s
     }
   }
 
-  if (iup_isShiftXkey(code)) s |= AMETA_SHIFT_ON;
-  if (iup_isCtrlXkey(code))  s |= AMETA_CTRL_ON;
-  if (iup_isAltXkey(code))   s |= AMETA_ALT_ON;
-  if (iup_isSysXkey(code))   s |= AMETA_META_ON;
+  if (iup_isShiftXkey(key)) s |= AMETA_SHIFT_ON;
+  if (iup_isCtrlXkey(key))  s |= AMETA_CTRL_ON;
+  if (iup_isAltXkey(key))   s |= AMETA_ALT_ON;
+  if (iup_isSysXkey(key))   s |= AMETA_META_ON;
 
   if (keyval) *keyval = kv;
   if (state)  *state = s;

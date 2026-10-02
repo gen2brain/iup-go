@@ -228,7 +228,7 @@ JNIEXPORT jstring JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatch
   sIFnii cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
   if (!cb) return NULL;
   char* v = cb(ih, (int)lin, (int)col);
-  return v ? (*jni_env)->NewStringUTF(jni_env, v) : NULL;
+  return v ? iupAndroid_NewStringUTF(jni_env, v) : NULL;
 }
 
 JNIEXPORT jobject JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchImageRequest(
