@@ -75,7 +75,7 @@ static int androidLabelSetTitleAttrib(Ihandle* ih, const char* value)
   /* MARKUP=YES: feed value as-is so '&' isn't mistaken for a mnemonic marker. */
   char* stripped = markup ? NULL : iupStrProcessMnemonic(value, NULL, 0);
   const char* effective = stripped ? stripped : value;
-  jstring j_string = (*jni_env)->NewStringUTF(jni_env, effective);
+  jstring j_string = iupAndroid_NewStringUTF(jni_env, effective);
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jobject)ih->handle, j_string, markup ? JNI_TRUE : JNI_FALSE);
   iupAndroid_CheckException(jni_env, "IupLabelHelper.setText");
   (*jni_env)->DeleteLocalRef(jni_env, j_string);
@@ -103,8 +103,8 @@ static int androidLabelSetAlignmentAttrib(Ihandle* ih, const char* value)
   jclass java_class = IUPJNI_FindClass(IupLabelHelper, jni_env, "io/github/gen2brain/iupgo/IupLabelHelper");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupLabelHelper_setAlignment, jni_env, java_class, "setAlignment", "(Landroid/widget/TextView;Ljava/lang/String;Ljava/lang/String;)V");
 
-  jstring j_horiz = (*jni_env)->NewStringUTF(jni_env, horiz);
-  jstring j_vert = (*jni_env)->NewStringUTF(jni_env, vert);
+  jstring j_horiz = iupAndroid_NewStringUTF(jni_env, horiz);
+  jstring j_vert = iupAndroid_NewStringUTF(jni_env, vert);
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, j_horiz, j_vert);
   iupAndroid_CheckException(jni_env, "IupLabelHelper.setAlignment");
   (*jni_env)->DeleteLocalRef(jni_env, j_horiz);
@@ -310,7 +310,7 @@ static int androidLabelMapMethod(Ihandle* ih)
   if (!java_widget)
     return IUP_ERROR;
 
-  ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, java_widget));
+  ih->handle = (*jni_env)->NewGlobalRef(jni_env, java_widget);
   (*jni_env)->DeleteLocalRef(jni_env, java_widget);
 
   iupAndroid_AddWidgetToParent(jni_env, ih);

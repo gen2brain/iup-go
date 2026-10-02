@@ -60,24 +60,24 @@ extern "C" {
         jobject tmp_jclass_ ## varname = NULL; \
         if (NULL == g_javaClass ## varname) \
         { \
-            tmp_jclass_ ## varname = (*jni_env)->FindClass(jni_env, classstr); \
+            tmp_jclass_ ## varname = (*(jni_env))->FindClass(jni_env, classstr); \
             if (NULL == tmp_jclass_ ## varname) \
             { \
-                if ((*jni_env)->ExceptionCheck(jni_env)) \
+                if ((*(jni_env))->ExceptionCheck(jni_env)) \
                 { \
-                    (*jni_env)->ExceptionDescribe(jni_env); \
-                    (*jni_env)->ExceptionClear(jni_env); \
+                    (*(jni_env))->ExceptionDescribe(jni_env); \
+                    (*(jni_env))->ExceptionClear(jni_env); \
                 } \
                 __android_log_print(ANDROID_LOG_ERROR, "Iup", "IUPJNI_FindClass: class not found: %s", classstr); \
             } \
             else \
             { \
-                g_javaClass ## varname = (jobject)((*jni_env)->NewGlobalRef(jni_env, tmp_jclass_ ## varname)); \
+                g_javaClass ## varname = (jobject)((*(jni_env))->NewGlobalRef(jni_env, tmp_jclass_ ## varname)); \
             } \
         } \
         else \
         { \
-            tmp_jclass_ ## varname = (jobject)((*jni_env)->NewLocalRef(jni_env, g_javaClass ## varname)); \
+            tmp_jclass_ ## varname = (jobject)((*(jni_env))->NewLocalRef(jni_env, g_javaClass ## varname)); \
         } \
         tmp_jclass_ ## varname; \
     })
@@ -87,24 +87,24 @@ extern "C" {
         jobject tmp_jclass_ ## varname = NULL; \
         if (NULL == g_javaClass ## varname) \
         { \
-            tmp_jclass_ ## varname = (*jni_env)->GetObjectClass(jni_env, java_object); \
+            tmp_jclass_ ## varname = (*(jni_env))->GetObjectClass(jni_env, java_object); \
             if (NULL == tmp_jclass_ ## varname) \
             { \
-                if ((*jni_env)->ExceptionCheck(jni_env)) \
+                if ((*(jni_env))->ExceptionCheck(jni_env)) \
                 { \
-                    (*jni_env)->ExceptionDescribe(jni_env); \
-                    (*jni_env)->ExceptionClear(jni_env); \
+                    (*(jni_env))->ExceptionDescribe(jni_env); \
+                    (*(jni_env))->ExceptionClear(jni_env); \
                 } \
                 __android_log_print(ANDROID_LOG_ERROR, "Iup", "IUPJNI_GetObjectClass: failed for " #varname); \
             } \
             else \
             { \
-                g_javaClass ## varname = (jobject)((*jni_env)->NewGlobalRef(jni_env, tmp_jclass_ ## varname)); \
+                g_javaClass ## varname = (jobject)((*(jni_env))->NewGlobalRef(jni_env, tmp_jclass_ ## varname)); \
             } \
         } \
         else \
         { \
-            tmp_jclass_ ## varname = (jobject)((*jni_env)->NewLocalRef(jni_env, g_javaClass ## varname)); \
+            tmp_jclass_ ## varname = (jobject)((*(jni_env))->NewLocalRef(jni_env, g_javaClass ## varname)); \
         } \
         tmp_jclass_ ## varname; \
     })
@@ -116,10 +116,10 @@ extern "C" {
     #define IUPJNI_DECLARE_CLASS_EXTERN(varname)
 
     #define IUPJNI_FindClass(varname, jni_env, classstr) \
-        ((*jni_env)->FindClass(jni_env, classstr))
+        ((*(jni_env))->FindClass(jni_env, classstr))
 
     #define IUPJNI_GetObjectClass(varname, jni_env, java_object) \
-        ((*jni_env)->GetObjectClass(jni_env, java_object))
+        ((*(jni_env))->GetObjectClass(jni_env, java_object))
 
 #endif
 
@@ -140,13 +140,13 @@ extern "C" {
     ({ \
         if (0 == s_methodID_ ## varname) \
         { \
-            jmethodID tmp_method_ ## varname = (*jni_env)->GetStaticMethodID(jni_env, java_class, method_name, method_signature); \
+            jmethodID tmp_method_ ## varname = (*(jni_env))->GetStaticMethodID(jni_env, java_class, method_name, method_signature); \
             if (0 == tmp_method_ ## varname) \
             { \
-                if ((*jni_env)->ExceptionCheck(jni_env)) \
+                if ((*(jni_env))->ExceptionCheck(jni_env)) \
                 { \
-                    (*jni_env)->ExceptionDescribe(jni_env); \
-                    (*jni_env)->ExceptionClear(jni_env); \
+                    (*(jni_env))->ExceptionDescribe(jni_env); \
+                    (*(jni_env))->ExceptionClear(jni_env); \
                 } \
                 __android_log_print(ANDROID_LOG_ERROR, "Iup", "IUPJNI_GetStaticMethodID: %s %s not found", method_name, method_signature); \
             } \
@@ -159,13 +159,13 @@ extern "C" {
     ({ \
         if (0 == s_methodID_ ## varname) \
         { \
-            jmethodID tmp_method_ ## varname = (*jni_env)->GetMethodID(jni_env, java_class, method_name, method_signature); \
+            jmethodID tmp_method_ ## varname = (*(jni_env))->GetMethodID(jni_env, java_class, method_name, method_signature); \
             if (0 == tmp_method_ ## varname) \
             { \
-                if ((*jni_env)->ExceptionCheck(jni_env)) \
+                if ((*(jni_env))->ExceptionCheck(jni_env)) \
                 { \
-                    (*jni_env)->ExceptionDescribe(jni_env); \
-                    (*jni_env)->ExceptionClear(jni_env); \
+                    (*(jni_env))->ExceptionDescribe(jni_env); \
+                    (*(jni_env))->ExceptionClear(jni_env); \
                 } \
                 __android_log_print(ANDROID_LOG_ERROR, "Iup", "IUPJNI_GetMethodID: %s %s not found", method_name, method_signature); \
             } \
@@ -181,10 +181,10 @@ extern "C" {
     #define IUPJNI_DECLARE_METHOD_ID_EXTERN(varname)
 
     #define IUPJNI_GetStaticMethodID(varname, jni_env, java_class, method_name, method_signature) \
-        ((*jni_env)->GetStaticMethodID(jni_env, java_class, method_name, method_signature))
+        ((*(jni_env))->GetStaticMethodID(jni_env, java_class, method_name, method_signature))
 
     #define IUPJNI_GetMethodID(varname, jni_env, java_class, method_name, method_signature) \
-        ((*jni_env)->GetMethodID(jni_env, java_class, method_name, method_signature))
+        ((*(jni_env))->GetMethodID(jni_env, java_class, method_name, method_signature))
 
 #endif
 

@@ -26,7 +26,7 @@ IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupTipHelper, jni_env, "io/github/gen2brain/iupgo/IupTipHelper");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setTip", "(Ljava/lang/Object;Ljava/lang/String;)V");
-  jstring j_text = value ? (*jni_env)->NewStringUTF(jni_env, value) : NULL;
+  jstring j_text = value ? iupAndroid_NewStringUTF(jni_env, value) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jobject)ih->handle, j_text);
   iupAndroid_CheckException(jni_env, "IupTipHelper.setTip");
   if (j_text) (*jni_env)->DeleteLocalRef(jni_env, j_text);

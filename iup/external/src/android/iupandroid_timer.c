@@ -45,7 +45,7 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
     method_id = IUPJNI_GetStaticMethodID(IupTimer_createTimer, jni_env, java_class, "createTimer", "(J)Lio/github/gen2brain/iupgo/IupTimerHelper$IupTimer;");
     java_widget = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih);
     iupAndroid_CheckException(jni_env, "IupTimerHelper.createTimer");
-    ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, java_widget));
+    ih->handle = (*jni_env)->NewGlobalRef(jni_env, java_widget);
   }
   else
   {

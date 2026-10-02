@@ -41,7 +41,7 @@ static void androidDialogCallVoidWithString(Ihandle* ih, const char* method_name
 
   if (method_id)
   {
-    jstring j_string = utf8 ? (*jni_env)->NewStringUTF(jni_env, utf8) : NULL;
+    jstring j_string = utf8 ? iupAndroid_NewStringUTF(jni_env, utf8) : NULL;
     (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, j_string);
     iupAndroid_CheckException(jni_env, method_name);
     if (j_string)
@@ -468,7 +468,7 @@ static int androidDialogMapMethod(Ihandle* ih)
   iupAndroid_CheckException(jni_env, "IupActivity.createActivity");
 
   /* ViewGroup placeholder now; Activity.onCreate swaps to the Activity later. */
-  ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, view_group));
+  ih->handle = (*jni_env)->NewGlobalRef(jni_env, view_group);
   iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", "1");  /* cleared once the Activity exists */
 
   (*jni_env)->DeleteLocalRef(jni_env, view_group);

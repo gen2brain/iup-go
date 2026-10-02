@@ -129,7 +129,7 @@ static int androidFrameSetTitleAttrib(Ihandle* ih, const char* value)
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupFrameHelper_setTitle, jni_env, java_class, "setTitle", "(Lio/github/gen2brain/iupgo/IupAndroidFrame;Ljava/lang/String;)V");
 
   char* stripped = value ? iupStrProcessMnemonic(value, NULL, 0) : NULL;
-  jstring j_string = stripped ? (*jni_env)->NewStringUTF(jni_env, stripped) : NULL;
+  jstring j_string = stripped ? iupAndroid_NewStringUTF(jni_env, stripped) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, j_string);
   iupAndroid_CheckException(jni_env, "IupFrameHelper.setTitle");
   if (j_string)
@@ -205,7 +205,7 @@ static int androidFrameSetFontAttrib(Ihandle* ih, const char* value)
   jclass cls = IUPJNI_FindClass(IupFrameHelper, jni_env, "io/github/gen2brain/iupgo/IupFrameHelper");
   jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, cls, "setTitleFont",
       "(Lio/github/gen2brain/iupgo/IupAndroidFrame;Ljava/lang/String;IIF)V");
-  jstring j_family = typeface[0] ? (*jni_env)->NewStringUTF(jni_env, typeface) : NULL;
+  jstring j_family = typeface[0] ? iupAndroid_NewStringUTF(jni_env, typeface) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, ih->handle, j_family, (jint)style, (jint)size_unit, (jfloat)size_value);
   iupAndroid_CheckException(jni_env, "IupFrameHelper.setTitleFont");
   if (j_family) (*jni_env)->DeleteLocalRef(jni_env, j_family);
@@ -249,7 +249,7 @@ static int androidFrameMapMethod(Ihandle* ih)
     return IUP_ERROR;
   }
 
-  ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, frame));
+  ih->handle = (*jni_env)->NewGlobalRef(jni_env, frame);
 
   jmethodID inner_id = IUPJNI_GetStaticMethodID(IupFrameHelper_getInner, jni_env, java_class, "getInner", "(Lio/github/gen2brain/iupgo/IupAndroidFrame;)Lio/github/gen2brain/iupgo/IupAndroidFixed;");
   jobject inner = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, inner_id, ih->handle);

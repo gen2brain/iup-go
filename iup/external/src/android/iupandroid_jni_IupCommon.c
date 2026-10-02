@@ -109,7 +109,7 @@ JNIEXPORT jstring JNICALL Java_io_github_gen2brain_iupgo_IupCommon_nativeIupAttr
   (*jni_env)->ReleaseStringUTFChars(jni_env, j_key_string, key_string);
 
   if (value_string != NULL && *value_string != 0)
-    return (*jni_env)->NewStringUTF(jni_env, value_string);
+    return iupAndroid_NewStringUTF(jni_env, value_string);
   return NULL;
 }
 

@@ -55,7 +55,7 @@ static jobjectArray androidDragDropParseTypes(JNIEnv* jni_env, const char* value
       buf[bi] = '\0';
       const char* start = buf;
       while (*start == ' ') start++;
-      jstring js = (*jni_env)->NewStringUTF(jni_env, start);
+      jstring js = iupAndroid_NewStringUTF(jni_env, start);
       (*jni_env)->SetObjectArrayElement(jni_env, arr, idx++, js);
       (*jni_env)->DeleteLocalRef(jni_env, js);
       bi = 0;

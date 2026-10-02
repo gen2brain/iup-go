@@ -69,7 +69,7 @@ IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
   }
 }
 
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
   int extra_x, extra_y;
   if (ih->data->is_dropdown)
@@ -88,11 +88,11 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
     extra_x = 32;
     extra_y = 0;  /* any slack shows a partial next row */
   }
-  if (x) *x += extra_x;
-  if (y) *y += extra_y;
+  if (w) *w += extra_x;
+  if (h) *h += extra_y;
 
   /* images render scaled to row height and need slack for the gap */
-  if (x && ih->data->show_image && (ih->data->maximg_h > 0 || iupAttribGetBoolean(ih, "DROPTARGET")))
+  if (w && ih->data->show_image && (ih->data->maximg_h > 0 || iupAttribGetBoolean(ih, "DROPTARGET")))
   {
     JNIEnv* env2 = iupAndroid_GetEnvThreadSafe();
     jclass cls2 = IUPJNI_FindClass(IupListHelper, env2, "io/github/gen2brain/iupgo/IupListHelper");
@@ -106,11 +106,11 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
       : target_h;
     int delta = rendered_w - ih->data->maximg_w;
     if (delta < 0) delta = 0;
-    *x += delta + icon_pad + 8;
+    *w += delta + icon_pad + 8;
   }
 
   /* EDITBOX non-dropdown: VISIBLELINES counts the entry; swap one row for it. */
-  if (ih->data->has_editbox && !ih->data->is_dropdown && y)
+  if (ih->data->has_editbox && !ih->data->is_dropdown && h)
   {
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
     if (visiblelines > 0)
@@ -119,9 +119,9 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
       iupdrvFontGetCharSize(ih, &char_w, &char_h);
       int item_h = char_h;
       iupdrvListAddItemSpace(ih, &item_h);
-      *y -= item_h;
+      *h -= item_h;
     }
-    *y += androidListEditBoxHeight();
+    *h += androidListEditBoxHeight();
   }
 }
 
@@ -143,7 +143,7 @@ static void androidListCallStringAtPos(Ihandle* ih, const char* method, const ch
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupListHelper, jni_env, "io/github/gen2brain/iupgo/IupListHelper");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, method, sig);
-  jstring j_text = text ? (*jni_env)->NewStringUTF(jni_env, text) : NULL;
+  jstring j_text = text ? iupAndroid_NewStringUTF(jni_env, text) : NULL;
   if (pos < 0)
     (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, j_text);
   else
@@ -351,7 +351,7 @@ static int androidListSetValueAttrib(Ihandle* ih, const char* value)
   {
     /* EDITBOX: VALUE is entry text, not index. */
     jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setEditBoxText", "(Landroid/view/View;Ljava/lang/String;)V");
-    jstring j_text = (*jni_env)->NewStringUTF(jni_env, value);
+    jstring j_text = iupAndroid_NewStringUTF(jni_env, value);
     (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, j_text);
     iupAndroid_CheckException(jni_env, "IupListHelper.setEditBoxText");
     (*jni_env)->DeleteLocalRef(jni_env, j_text);
@@ -359,7 +359,7 @@ static int androidListSetValueAttrib(Ihandle* ih, const char* value)
   else if (ih->data->is_multiple && !ih->data->is_dropdown)
   {
     jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setMultipleSelection", "(Landroid/view/View;Ljava/lang/String;)V");
-    jstring j_mask = (*jni_env)->NewStringUTF(jni_env, value);
+    jstring j_mask = iupAndroid_NewStringUTF(jni_env, value);
     (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, j_mask);
     iupAndroid_CheckException(jni_env, "IupListHelper.setMultipleSelection");
     (*jni_env)->DeleteLocalRef(jni_env, j_mask);
@@ -617,7 +617,7 @@ static void androidListEditStrCall(Ihandle* ih, const char* name, const char* va
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupListHelper, env, "io/github/gen2brain/iupgo/IupListHelper");
   jmethodID m = (*env)->GetStaticMethodID(env, cls, name, "(Landroid/view/View;Ljava/lang/String;)V");
-  jstring js = value ? (*env)->NewStringUTF(env, value) : NULL;
+  jstring js = value ? iupAndroid_NewStringUTF(env, value) : NULL;
   (*env)->CallStaticVoidMethod(env, cls, m, (jobject)ih->handle, js);
   iupAndroid_CheckException(env, name);
   if (js) (*env)->DeleteLocalRef(env, js);
@@ -795,7 +795,7 @@ static int androidListMapMethod(Ihandle* ih)
 
   if (!widget) return IUP_ERROR;
 
-  ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, widget));
+  ih->handle = (*jni_env)->NewGlobalRef(jni_env, widget);
   (*jni_env)->DeleteLocalRef(jni_env, widget);
 
   iupAndroid_AddWidgetToParent(jni_env, ih);

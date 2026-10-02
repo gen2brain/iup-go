@@ -139,7 +139,7 @@ IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const ch
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTableFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setCellValue", "(Landroid/view/View;IILjava/lang/String;)V");
-  jstring j_text = value ? (*env)->NewStringUTF(env, value) : NULL;
+  jstring j_text = value ? iupAndroid_NewStringUTF(env, value) : NULL;
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)lin, (jint)col, j_text);
   iupAndroid_CheckException(env, "IupTableHelper.setCellValue");
   if (j_text) (*env)->DeleteLocalRef(env, j_text);
@@ -184,7 +184,7 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTableFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setColTitle", "(Landroid/view/View;ILjava/lang/String;)V");
-  jstring j_text = title ? (*env)->NewStringUTF(env, title) : NULL;
+  jstring j_text = title ? iupAndroid_NewStringUTF(env, title) : NULL;
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)col, j_text);
   iupAndroid_CheckException(env, "IupTableHelper.setColTitle");
   if (j_text) (*env)->DeleteLocalRef(env, j_text);
@@ -473,7 +473,7 @@ static void androidTableApplyFont(Ihandle* ih, int lin, int col, const char* val
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTableFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setCellFont", "(Landroid/view/View;IILjava/lang/String;IIF)V");
-  jstring j_family = family ? (*env)->NewStringUTF(env, family) : NULL;
+  jstring j_family = family ? iupAndroid_NewStringUTF(env, family) : NULL;
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)lin, (jint)col, j_family, (jint)style, (jint)size_unit, (jfloat)size_value);
   iupAndroid_CheckException(env, "IupTableHelper.setCellFont");
   if (j_family) (*env)->DeleteLocalRef(env, j_family);
@@ -486,7 +486,7 @@ static int androidTableSetAlignmentIdAttrib(Ihandle* ih, int col, const char* va
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTableFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setColAlignment", "(Landroid/view/View;ILjava/lang/String;)V");
-  jstring j_value = value ? (*env)->NewStringUTF(env, value) : NULL;
+  jstring j_value = value ? iupAndroid_NewStringUTF(env, value) : NULL;
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)col, j_value);
   iupAndroid_CheckException(env, "IupTableHelper.setColAlignment");
   if (j_value) (*env)->DeleteLocalRef(env, j_value);
@@ -698,7 +698,7 @@ static int androidTableSetSelectionModeAttrib(Ihandle* ih, const char* value)
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTableFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setSelectionMode", "(Landroid/view/View;Ljava/lang/String;)V");
-  jstring jmode = (*env)->NewStringUTF(env, value ? value : "SINGLE");
+  jstring jmode = iupAndroid_NewStringUTF(env, value ? value : "SINGLE");
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, jmode);
   iupAndroid_CheckException(env, "IupTableHelper.setSelectionMode");
   (*env)->DeleteLocalRef(env, jmode);
@@ -829,7 +829,7 @@ static int androidTableMapMethod(Ihandle* ih)
   (*env)->DeleteLocalRef(env, cls);
   if (!widget) return IUP_ERROR;
 
-  ih->handle = (jobject)((*env)->NewGlobalRef(env, widget));
+  ih->handle = (*env)->NewGlobalRef(env, widget);
   (*env)->DeleteLocalRef(env, widget);
 
   int num_col = ih->data->num_col;

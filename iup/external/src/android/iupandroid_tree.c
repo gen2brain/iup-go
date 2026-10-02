@@ -70,7 +70,7 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const cha
   jclass cls = androidTreeFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls,
       "addNode", "(Landroid/view/View;Ljava/lang/Object;ILjava/lang/String;I)Ljava/lang/Object;");
-  jstring j_title = title ? (*env)->NewStringUTF(env, title) : NULL;
+  jstring j_title = title ? iupAndroid_NewStringUTF(env, title) : NULL;
   jobject new_local = (*env)->CallStaticObjectMethod(env, cls, m, ih->handle, prev_obj,
       (jint)kind, j_title, (jint)add);
   iupAndroid_CheckException(env, "IupTreeHelper.addNode");
@@ -217,15 +217,15 @@ static int androidTreeSetCopyNodeAttrib(Ihandle* ih, int id, const char* value)
   return androidTreeCopyMoveCommon(ih, id, value, 1);
 }
 
-IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* src_node, InodeHandle* dst_node)
+IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHandle* itemSrc, InodeHandle* itemDst)
 {
-  if (!src || !dst || !src->handle || !dst->handle || !src_node || !dst_node) return;
+  if (!src || !dst || !src->handle || !dst->handle || !itemSrc || !itemDst) return;
 
-  int src_id = iupTreeFindNodeId(src, src_node);
-  int dst_id = iupTreeFindNodeId(dst, dst_node);
+  int src_id = iupTreeFindNodeId(src, itemSrc);
+  int dst_id = iupTreeFindNodeId(dst, itemDst);
   if (src_id < 0 || dst_id < 0) return;
 
-  int count = 1 + iupdrvTreeTotalChildCount(src, src_node);
+  int count = 1 + iupdrvTreeTotalChildCount(src, itemSrc);
   int old_count = dst->data->node_count;
 
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -265,7 +265,7 @@ static int androidTreeSetTitleIdAttrib(Ihandle* ih, int id, const char* value)
   jclass cls = androidTreeFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setNodeTitle",
       "(Landroid/view/View;Ljava/lang/Object;Ljava/lang/String;)V");
-  jstring j_value = value ? (*env)->NewStringUTF(env, value) : NULL;
+  jstring j_value = value ? iupAndroid_NewStringUTF(env, value) : NULL;
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jobject)h, j_value);
   iupAndroid_CheckException(env, "setNodeTitle");
   if (j_value) (*env)->DeleteLocalRef(env, j_value);
@@ -398,7 +398,7 @@ static int androidTreeSetValueAttrib(Ihandle* ih, const char* value)
     cur = (*env)->CallStaticIntMethod(env, cls, mc, ih->handle);
     iupAndroid_CheckException(env, "getFocusNodeId");
     jmethodID mn = (*env)->GetStaticMethodID(env, cls, "resolveNavId", "(Landroid/view/View;ILjava/lang/String;)I");
-    jstring j_kw = (*env)->NewStringUTF(env, value);
+    jstring j_kw = iupAndroid_NewStringUTF(env, value);
     id = (*env)->CallStaticIntMethod(env, cls, mn, ih->handle, (jint)cur, j_kw);
     iupAndroid_CheckException(env, "resolveNavId");
     (*env)->DeleteLocalRef(env, j_kw);
@@ -522,7 +522,7 @@ static int androidTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
 
   jclass cls = androidTreeFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "deleteNode", "(Landroid/view/View;ILjava/lang/String;)V");
-  jstring j_scope = value ? (*env)->NewStringUTF(env, value) : NULL;
+  jstring j_scope = value ? iupAndroid_NewStringUTF(env, value) : NULL;
   int resolved = is_selected ? resolve_id : id;
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)resolved, j_scope);
   iupAndroid_CheckException(env, "deleteNode");
@@ -656,7 +656,7 @@ static int androidTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTreeFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setMarkedNodesStr", "(Landroid/view/View;Ljava/lang/String;)V");
-  jstring js = value ? (*env)->NewStringUTF(env, value) : NULL;
+  jstring js = value ? iupAndroid_NewStringUTF(env, value) : NULL;
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, js);
   iupAndroid_CheckException(env, "setMarkedNodesStr");
   if (js) (*env)->DeleteLocalRef(env, js);
@@ -761,7 +761,7 @@ static int androidTreeSetTitleFontIdAttrib(Ihandle* ih, int id, const char* valu
   jclass cls = androidTreeFindClass(env);
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setNodeFont",
       "(Landroid/view/View;ILjava/lang/String;IIF)V");
-  jstring j_family = family ? (*env)->NewStringUTF(env, family) : NULL;
+  jstring j_family = family ? iupAndroid_NewStringUTF(env, family) : NULL;
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)id, j_family, (jint)style, (jint)size_unit, (jfloat)size_value);
   iupAndroid_CheckException(env, "setNodeFont");
   if (j_family) (*env)->DeleteLocalRef(env, j_family);
@@ -1028,7 +1028,7 @@ static int androidTreeMapMethod(Ihandle* ih)
   (*env)->DeleteLocalRef(env, cls);
   if (!widget) return IUP_ERROR;
 
-  ih->handle = (jobject)((*env)->NewGlobalRef(env, widget));
+  ih->handle = (*env)->NewGlobalRef(env, widget);
   (*env)->DeleteLocalRef(env, widget);
 
   androidTreePushShowToggle(ih);

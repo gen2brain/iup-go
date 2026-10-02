@@ -119,7 +119,7 @@ void iupAndroid_RetainIhandle(JNIEnv* jni_env, jobject native_widget, Ihandle* i
 {
   if (ih)
   {
-    ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, native_widget));
+    ih->handle = (*jni_env)->NewGlobalRef(jni_env, native_widget);
   }
 }
 
@@ -297,6 +297,85 @@ char* iupAndroid_JStringToReturnStr(JNIEnv* jni_env, jstring j_string)
   return value;
 }
 
+static int androidUtf8SequenceLength(const unsigned char* s)
+{
+  unsigned char c = s[0];
+  int len, i;
+
+  if (c < 0x80)
+    return 1;
+  if (c >= 0xC2 && c <= 0xDF)
+    len = 2;
+  else if (c >= 0xE0 && c <= 0xEF)
+    len = 3;
+  else if (c >= 0xF0 && c <= 0xF4)
+    len = 4;
+  else
+    return 0;
+
+  for (i = 1; i < len; i++)
+  {
+    if ((s[i] & 0xC0) != 0x80)
+      return 0;
+  }
+
+  if ((c == 0xE0 && s[1] < 0xA0) || (c == 0xED && s[1] > 0x9F) ||
+      (c == 0xF0 && s[1] < 0x90) || (c == 0xF4 && s[1] > 0x8F))
+    return 0;
+
+  return len;
+}
+
+IUP_SDK_API jstring iupAndroid_NewStringUTF(JNIEnv* jni_env, const char* str)
+{
+  const unsigned char* s = (const unsigned char*)str;
+  jstring j_string;
+  char* valid;
+  char* d;
+
+  if (!str)
+    return NULL;
+
+  while (*s)
+  {
+    int len = androidUtf8SequenceLength(s);
+    if (!len)
+      break;
+    s += len;
+  }
+
+  if (!*s)
+    return (*jni_env)->NewStringUTF(jni_env, str);
+
+  valid = (char*)malloc(strlen(str) * 3 + 1);
+  if (!valid)
+    return (*jni_env)->NewStringUTF(jni_env, "");
+
+  s = (const unsigned char*)str;
+  d = valid;
+  while (*s)
+  {
+    int len = androidUtf8SequenceLength(s);
+    if (len)
+    {
+      memcpy(d, s, len);
+      d += len;
+      s += len;
+    }
+    else
+    {
+      memcpy(d, "\xef\xbf\xbd", 3);
+      d += 3;
+      s++;
+    }
+  }
+  *d = 0;
+
+  j_string = (*jni_env)->NewStringUTF(jni_env, valid);
+  free(valid);
+  return j_string;
+}
+
 IUP_SDK_API void iupdrvActivate(Ihandle* ih)
 {
   if (!ih || !ih->handle) return;
@@ -391,14 +470,14 @@ IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
 {
   jobject widget = iupAndroid_RealNativeHandle(ih);
   if (!widget) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupCommon, jni_env, "io/github/gen2brain/iupgo/IupCommon");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setViewVisible", "(Ljava/lang/Object;Z)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, widget, (jboolean)(visible ? JNI_TRUE : JNI_FALSE));
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, widget, (jboolean)(enable ? JNI_TRUE : JNI_FALSE));
   iupAndroid_CheckException(jni_env, "IupCommon.setViewVisible");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
@@ -487,7 +566,7 @@ IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupCommon, jni_env, "io/github/gen2brain/iupgo/IupCommon");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setAccessibleTitle", "(Ljava/lang/Object;Ljava/lang/String;)V");
-  jstring j_title = title ? (*jni_env)->NewStringUTF(jni_env, title) : NULL;
+  jstring j_title = title ? iupAndroid_NewStringUTF(jni_env, title) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, widget, j_title);
   iupAndroid_CheckException(jni_env, "IupCommon.setAccessibleTitle");
   if (j_title) (*jni_env)->DeleteLocalRef(jni_env, j_title);
@@ -502,7 +581,7 @@ IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* descrip
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupCommon, jni_env, "io/github/gen2brain/iupgo/IupCommon");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setAccessibleDescription", "(Ljava/lang/Object;Ljava/lang/String;)V");
-  jstring j_desc = description ? (*jni_env)->NewStringUTF(jni_env, description) : NULL;
+  jstring j_desc = description ? iupAndroid_NewStringUTF(jni_env, description) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, widget, j_desc);
   iupAndroid_CheckException(jni_env, "IupCommon.setAccessibleDescription");
   if (j_desc) (*jni_env)->DeleteLocalRef(jni_env, j_desc);
@@ -589,7 +668,7 @@ void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p)
   jclass java_class = IUPJNI_FindClass(IupPostMessage, jni_env, "io/github/gen2brain/iupgo/IupPostMessage");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupPostMessage_postMessage, jni_env, java_class, "postMessage", "(Landroid/content/Context;JJLjava/lang/String;JD)V");
 
-  jstring j_string = (s && *s) ? (*jni_env)->NewStringUTF(jni_env, s) : NULL;
+  jstring j_string = (s && *s) ? iupAndroid_NewStringUTF(jni_env, s) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, app_context, (jlong)(intptr_t)ih, (jlong)(intptr_t)p, j_string, (jlong)i, (jdouble)d);
   iupAndroid_CheckException(jni_env, "IupPostMessage.postMessage");
 

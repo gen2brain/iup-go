@@ -114,7 +114,7 @@ static void androidFontApply(JNIEnv* jni_env, jobject widget, const char* typefa
   jclass java_class = IUPJNI_FindClass(IupFontHelper, jni_env, "io/github/gen2brain/iupgo/IupFontHelper");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_applyFont, jni_env, java_class, "applyFont", "(Ljava/lang/Object;Ljava/lang/String;IIFZZ)V");
 
-  jstring j_family = typeface ? (*jni_env)->NewStringUTF(jni_env, typeface) : NULL;
+  jstring j_family = typeface ? iupAndroid_NewStringUTF(jni_env, typeface) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, widget, j_family, (jint)style, (jint)size_unit, (jfloat)size,
                                    underline ? JNI_TRUE : JNI_FALSE, strikeout ? JNI_TRUE : JNI_FALSE);
   iupAndroid_CheckException(jni_env, "IupFontHelper.applyFont");
@@ -138,7 +138,7 @@ IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, 
   jclass java_class = IUPJNI_FindClass(IupFontHelper, jni_env, "io/github/gen2brain/iupgo/IupFontHelper");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getMultiLineStringSize, jni_env, java_class, "getMultiLineStringSize", "(JLjava/lang/Object;ILjava/lang/String;)[F");
 
-  jstring java_string = (*jni_env)->NewStringUTF(jni_env, str);
+  jstring java_string = iupAndroid_NewStringUTF(jni_env, str);
   jfloatArray j_arr = (jfloatArray)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, iupAndroid_RealNativeHandle(ih), (jint)androidFontKindForIhandle(ih), java_string);
   iupAndroid_CheckException(jni_env, "IupFontHelper.getMultiLineStringSize");
   (*jni_env)->DeleteLocalRef(jni_env, java_string);
@@ -162,8 +162,8 @@ IUP_SDK_API void iupdrvFontGetTextSize(const char* font, const char* str, int le
   jclass java_class = IUPJNI_FindClass(IupFontHelper, jni_env, "io/github/gen2brain/iupgo/IupFontHelper");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getTextSize, jni_env, java_class, "getTextSize", "(Ljava/lang/String;IIFLjava/lang/String;)[F");
 
-  jstring j_family = family[0] ? (*jni_env)->NewStringUTF(jni_env, family) : NULL;
-  jstring j_str = (*jni_env)->NewStringUTF(jni_env, str);
+  jstring j_family = family[0] ? iupAndroid_NewStringUTF(jni_env, family) : NULL;
+  jstring j_str = iupAndroid_NewStringUTF(jni_env, str);
   jfloatArray j_arr = (jfloatArray)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id,
       j_family, (jint)style, (jint)size_unit, (jfloat)size_value, j_str);
   iupAndroid_CheckException(jni_env, "IupFontHelper.getTextSize");
@@ -185,7 +185,7 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
   jclass java_class = IUPJNI_FindClass(IupFontHelper, jni_env, "io/github/gen2brain/iupgo/IupFontHelper");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getStringWidth, jni_env, java_class, "getStringWidth", "(JLjava/lang/Object;ILjava/lang/String;)F");
 
-  jstring java_string = (*jni_env)->NewStringUTF(jni_env, str);
+  jstring java_string = iupAndroid_NewStringUTF(jni_env, str);
   jfloat j_width = (*jni_env)->CallStaticFloatMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, iupAndroid_RealNativeHandle(ih), (jint)androidFontKindForIhandle(ih), java_string);
   iupAndroid_CheckException(jni_env, "IupFontHelper.getStringWidth");
   (*jni_env)->DeleteLocalRef(jni_env, java_string);
@@ -228,7 +228,7 @@ IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* lin
   jclass java_class = IUPJNI_FindClass(IupFontHelper, jni_env, "io/github/gen2brain/iupgo/IupFontHelper");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupFontHelper_getFontDim, jni_env, java_class, "getFontDim", "(Ljava/lang/String;IIF)[F");
 
-  jstring j_family = family[0] ? (*jni_env)->NewStringUTF(jni_env, family) : NULL;
+  jstring j_family = family[0] ? iupAndroid_NewStringUTF(jni_env, family) : NULL;
   jfloatArray j_arr = (jfloatArray)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id,
       j_family, (jint)style, (jint)size_unit, (jfloat)size_value);
   iupAndroid_CheckException(jni_env, "IupFontHelper.getFontDim");

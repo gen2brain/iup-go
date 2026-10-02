@@ -64,7 +64,7 @@ IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
   if (w) *w += 72;  /* 2x 36dp spin buttons */
 }
 
-IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getEditTextBorderH);
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getEditTextBorderV);
@@ -82,32 +82,32 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
   if (has_til)
   {
     /* PADDING replaces the inner field's compound padding, only the layout's own remains */
-    if (x)
+    if (w)
     {
       jmethodID mh = has_padding
         ? IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutOuterH, jni_env, java_class, "getTextInputLayoutOuterH", "()I")
         : IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutBorderH, jni_env, java_class, "getTextInputLayoutBorderH", "()I");
-      *x += iupAndroid_PxToDp((int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mh));
+      *w += iupAndroid_PxToDp((int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mh));
     }
-    if (y)
+    if (h)
     {
       jmethodID mv = has_padding
         ? IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutOuterV, jni_env, java_class, "getTextInputLayoutOuterV", "()I")
         : IUPJNI_GetStaticMethodID(IupTextHelper_getTextInputLayoutBorderV, jni_env, java_class, "getTextInputLayoutBorderV", "()I");
-      *y += iupAndroid_PxToDp((int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mv));
+      *h += iupAndroid_PxToDp((int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mv));
     }
   }
   else if (!has_padding)
   {
-    if (x)
+    if (w)
     {
       jmethodID mh = IUPJNI_GetStaticMethodID(IupTextHelper_getEditTextBorderH, jni_env, java_class, "getEditTextBorderH", "()I");
-      *x += iupAndroid_PxToDp((int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mh));
+      *w += iupAndroid_PxToDp((int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mh));
     }
-    if (y)
+    if (h)
     {
       jmethodID mv = IUPJNI_GetStaticMethodID(IupTextHelper_getEditTextBorderV, jni_env, java_class, "getEditTextBorderV", "()I");
-      *y += iupAndroid_PxToDp((int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mv));
+      *h += iupAndroid_PxToDp((int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, mv));
     }
   }
 
@@ -267,8 +267,8 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
       jmethodID method_id = IUPJNI_GetStaticMethodID(IupTextHelper_applyImageSpan, jni_env, java_class,
         "applyImageSpan", "(Landroid/view/View;Ljava/lang/String;Ljava/lang/String;Landroid/graphics/Bitmap;II)V");
 
-      jstring jsel = sel ? (*jni_env)->NewStringUTF(jni_env, sel) : NULL;
-      jstring jselpos = selpos ? (*jni_env)->NewStringUTF(jni_env, selpos) : NULL;
+      jstring jsel = sel ? iupAndroid_NewStringUTF(jni_env, sel) : NULL;
+      jstring jselpos = selpos ? iupAndroid_NewStringUTF(jni_env, selpos) : NULL;
       (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id,
         (jobject)ih->handle, jsel, jselpos, bitmap, (jint)img_w, (jint)img_h);
       iupAndroid_CheckException(jni_env, "IupTextHelper.applyImageSpan");
@@ -353,12 +353,12 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
     "applyFormatTag",
     "(Landroid/view/View;Ljava/lang/String;Ljava/lang/String;IIIIIIIIIFLjava/lang/String;IIIJLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
 
-  jstring jsel = selection ? (*jni_env)->NewStringUTF(jni_env, selection) : NULL;
-  jstring jselpos = selectionpos ? (*jni_env)->NewStringUTF(jni_env, selectionpos) : NULL;
-  jstring jfontfam = fontFamily ? (*jni_env)->NewStringUTF(jni_env, fontFamily) : NULL;
-  jstring jlink = link ? (*jni_env)->NewStringUTF(jni_env, link) : NULL;
-  jstring jnumbering = numbering ? (*jni_env)->NewStringUTF(jni_env, numbering) : NULL;
-  jstring jnumstyle = numberingStyle ? (*jni_env)->NewStringUTF(jni_env, numberingStyle) : NULL;
+  jstring jsel = selection ? iupAndroid_NewStringUTF(jni_env, selection) : NULL;
+  jstring jselpos = selectionpos ? iupAndroid_NewStringUTF(jni_env, selectionpos) : NULL;
+  jstring jfontfam = fontFamily ? iupAndroid_NewStringUTF(jni_env, fontFamily) : NULL;
+  jstring jlink = link ? iupAndroid_NewStringUTF(jni_env, link) : NULL;
+  jstring jnumbering = numbering ? iupAndroid_NewStringUTF(jni_env, numbering) : NULL;
+  jstring jnumstyle = numberingStyle ? iupAndroid_NewStringUTF(jni_env, numberingStyle) : NULL;
 
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id,
     (jobject)ih->handle, jsel, jselpos,
@@ -388,7 +388,7 @@ static int androidTextSetValueAttrib(Ihandle* ih, const char* value)
   jclass java_class = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupTextHelper_setText, jni_env, java_class, "setText", "(JLandroid/view/View;Ljava/lang/String;)V");
 
-  jstring j_string = (*jni_env)->NewStringUTF(jni_env, value);
+  jstring j_string = iupAndroid_NewStringUTF(jni_env, value);
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jobject)ih->handle, j_string);
   iupAndroid_CheckException(jni_env, "IupTextHelper.setText");
   (*jni_env)->DeleteLocalRef(jni_env, j_string);
@@ -424,7 +424,7 @@ static int androidTextSetCueBannerAttrib(Ihandle* ih, const char* value)
   jclass java_class = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupTextHelper_setCueBanner, jni_env, java_class, "setCueBanner", "(JLandroid/view/View;Ljava/lang/String;)V");
 
-  jstring j_string = (*jni_env)->NewStringUTF(jni_env, value);
+  jstring j_string = iupAndroid_NewStringUTF(jni_env, value);
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jobject)ih->handle, j_string);
   iupAndroid_CheckException(jni_env, "IupTextHelper.setCueBanner");
   (*jni_env)->DeleteLocalRef(jni_env, j_string);
@@ -444,7 +444,7 @@ static int androidTextSetAppendAttrib(Ihandle* ih, const char* value)
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupTextHelper_appendText, jni_env, java_class, "appendText", "(JLandroid/view/View;Ljava/lang/String;ZZ)V");
 
   int multi_newline = ih->data->is_multiline && ih->data->append_newline;
-  jstring j_string = (*jni_env)->NewStringUTF(jni_env, value);
+  jstring j_string = iupAndroid_NewStringUTF(jni_env, value);
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih, (jobject)ih->handle, j_string,
     multi_newline ? JNI_TRUE : JNI_FALSE,
     ih->data->append_scroll ? JNI_TRUE : JNI_FALSE);
@@ -685,7 +685,7 @@ static void androidTextReplaceSelectionImpl(Ihandle* ih, const char* value)
   jclass cls = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
   jmethodID m = IUPJNI_GetStaticMethodID(IupTextHelper_replaceSelection, jni_env, cls,
       "replaceSelection", "(Landroid/view/View;Ljava/lang/String;)V");
-  jstring js = (*jni_env)->NewStringUTF(jni_env, value);
+  jstring js = iupAndroid_NewStringUTF(jni_env, value);
   (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, js);
   iupAndroid_CheckException(jni_env, "IupTextHelper.replaceSelection");
   (*jni_env)->DeleteLocalRef(jni_env, js);
@@ -700,7 +700,7 @@ static void androidTextInsertAtCaretImpl(Ihandle* ih, const char* value)
   jclass cls = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
   jmethodID m = IUPJNI_GetStaticMethodID(IupTextHelper_insertAtCaret, jni_env, cls,
       "insertAtCaret", "(Landroid/view/View;Ljava/lang/String;)V");
-  jstring js = (*jni_env)->NewStringUTF(jni_env, value);
+  jstring js = iupAndroid_NewStringUTF(jni_env, value);
   (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, js);
   iupAndroid_CheckException(jni_env, "IupTextHelper.insertAtCaret");
   (*jni_env)->DeleteLocalRef(jni_env, js);

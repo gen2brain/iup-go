@@ -314,7 +314,7 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
   jclass java_class = IUPJNI_FindClass(IupImageHelper, jni_env, "io/github/gen2brain/iupgo/IupImageHelper");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupImageHelper_loadBitmap, jni_env, java_class, "loadBitmap", "(Ljava/lang/String;)Landroid/graphics/Bitmap;");
 
-  jstring j_string = (*jni_env)->NewStringUTF(jni_env, name);
+  jstring j_string = iupAndroid_NewStringUTF(jni_env, name);
   jobject java_bitmap = (*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, j_string);
   iupAndroid_CheckException(jni_env, "IupImageHelper.loadBitmap");
   (*jni_env)->DeleteLocalRef(jni_env, j_string);
@@ -435,8 +435,8 @@ IUP_SDK_API int iupdrvImageSave(unsigned char* imgdata, int width, int height, i
 
   jclass java_class = IUPJNI_FindClass(IupImageHelper, jni_env, "io/github/gen2brain/iupgo/IupImageHelper");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupImageHelper_saveBitmap, jni_env, java_class, "saveBitmap", "(Landroid/graphics/Bitmap;Ljava/lang/String;Ljava/lang/String;I)Z");
-  jstring j_filename = (*jni_env)->NewStringUTF(jni_env, filename);
-  jstring j_format = (*jni_env)->NewStringUTF(jni_env, format);
+  jstring j_filename = iupAndroid_NewStringUTF(jni_env, filename);
+  jstring j_format = iupAndroid_NewStringUTF(jni_env, format);
   jboolean ok = (*jni_env)->CallStaticBooleanMethod(jni_env, java_class, method_id, java_bitmap, j_filename, j_format, (jint)quality);
   iupAndroid_CheckException(jni_env, "IupImageHelper.saveBitmap");
   (*jni_env)->DeleteLocalRef(jni_env, j_filename);
@@ -462,7 +462,7 @@ IUP_SDK_API unsigned char* iupdrvImageSaveToBuffer(unsigned char* imgdata, int w
 
   jclass java_class = IUPJNI_FindClass(IupImageHelper, jni_env, "io/github/gen2brain/iupgo/IupImageHelper");
   jmethodID method_id = IUPJNI_GetStaticMethodID(IupImageHelper_saveBitmapToBuffer, jni_env, java_class, "saveBitmapToBuffer", "(Landroid/graphics/Bitmap;Ljava/lang/String;I)[B");
-  jstring j_format = (*jni_env)->NewStringUTF(jni_env, format);
+  jstring j_format = iupAndroid_NewStringUTF(jni_env, format);
   jbyteArray j_bytes = (jbyteArray)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, method_id, java_bitmap, j_format, (jint)quality);
   iupAndroid_CheckException(jni_env, "IupImageHelper.saveBitmapToBuffer");
   (*jni_env)->DeleteLocalRef(jni_env, j_format);

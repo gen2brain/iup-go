@@ -102,13 +102,13 @@ static int androidFileDlgPopup(Ihandle* ih, int x, int y)
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupFileDlgHelper, jni_env, "io/github/gen2brain/iupgo/IupFileDlgHelper");
 
-  jstring j_mime = mime ? (*jni_env)->NewStringUTF(jni_env, mime) : NULL;
+  jstring j_mime = mime ? iupAndroid_NewStringUTF(jni_env, mime) : NULL;
   jstring j_string = NULL;
 
   if (is_save)
   {
     const char* default_name = iupAttribGet(ih, "FILE");
-    jstring j_name = default_name ? (*jni_env)->NewStringUTF(jni_env, default_name) : NULL;
+    jstring j_name = default_name ? iupAndroid_NewStringUTF(jni_env, default_name) : NULL;
     jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, java_class, "pickSave", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
     j_string = (jstring)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, m, j_mime, j_name);
     iupAndroid_CheckException(jni_env, "IupFileDlgHelper.pickSave");

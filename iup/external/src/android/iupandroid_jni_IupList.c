@@ -103,7 +103,7 @@ JNIEXPORT jstring JNICALL Java_io_github_gen2brain_iupgo_IupListHelper_dispatchL
   sIFni cb = (sIFni)IupGetCallback(ih, "VALUE_CB");
   if (!cb) return NULL;
   char* value = cb(ih, (int)pos + 1);
-  return value ? (*jni_env)->NewStringUTF(jni_env, value) : NULL;
+  return value ? iupAndroid_NewStringUTF(jni_env, value) : NULL;
 }
 
 JNIEXPORT jobject JNICALL Java_io_github_gen2brain_iupgo_IupListHelper_dispatchListImageCb(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint pos)

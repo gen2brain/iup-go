@@ -135,7 +135,7 @@ static int androidScrollbarMapMethod(Ihandle* ih)
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
   if (!widget) return IUP_ERROR;
-  ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, widget));
+  ih->handle = (*jni_env)->NewGlobalRef(jni_env, widget);
   (*jni_env)->DeleteLocalRef(jni_env, widget);
 
   iupAndroid_AddWidgetToParent(jni_env, ih);

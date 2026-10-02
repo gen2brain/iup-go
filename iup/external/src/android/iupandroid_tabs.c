@@ -118,7 +118,7 @@ static int androidTabsAppendChild(Ihandle* ih, Ihandle* child, int pos)
   const char* title = iupAttribGetId(ih, "TABTITLE", pos);
   if (!title) title = iupAttribGet(child, "TABTITLE");
   char* stripped_title = title ? iupStrProcessMnemonic(title, NULL, 0) : NULL;
-  jstring j_title = stripped_title ? (*jni_env)->NewStringUTF(jni_env, stripped_title) : NULL;
+  jstring j_title = stripped_title ? iupAndroid_NewStringUTF(jni_env, stripped_title) : NULL;
 
   const char* image = iupAttribGetId(ih, "TABIMAGE", pos);
   if (!image) image = iupAttribGet(child, "TABIMAGE");
@@ -178,7 +178,7 @@ static int androidTabsMapMethod(Ihandle* ih)
 
   if (!widget) return IUP_ERROR;
 
-  ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, widget));
+  ih->handle = (*jni_env)->NewGlobalRef(jni_env, widget);
   (*jni_env)->DeleteLocalRef(jni_env, widget);
 
   iupAndroid_AddWidgetToParent(jni_env, ih);
@@ -228,7 +228,7 @@ static int androidTabsSetTabTitleAttribId(Ihandle* ih, int pos, const char* valu
   /* TABTITLE supports mnemonic '&' just like TITLE; strip on Android. */
   char* stripped = value ? iupStrProcessMnemonic(value, NULL, 0) : NULL;
   const char* effective = stripped ? stripped : value;
-  jstring j_title = effective ? (*jni_env)->NewStringUTF(jni_env, effective) : NULL;
+  jstring j_title = effective ? iupAndroid_NewStringUTF(jni_env, effective) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, (jobject)ih->handle, (jint)pos, j_title);
   iupAndroid_CheckException(jni_env, "IupTabsHelper.setTabTitle");
   if (j_title) (*jni_env)->DeleteLocalRef(jni_env, j_title);
@@ -378,7 +378,7 @@ static int androidTabsSetTabTipAttribId(Ihandle* ih, int pos, const char* value)
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupTabsHelper, env, "io/github/gen2brain/iupgo/IupTabsHelper");
   jmethodID m = (*env)->GetStaticMethodID(env, cls, "setTabTip", "(Landroid/view/View;ILjava/lang/String;)V");
-  jstring js = value ? (*env)->NewStringUTF(env, value) : NULL;
+  jstring js = value ? iupAndroid_NewStringUTF(env, value) : NULL;
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)pos, js);
   iupAndroid_CheckException(env, "IupTabsHelper.setTabTip");
   if (js) (*env)->DeleteLocalRef(env, js);

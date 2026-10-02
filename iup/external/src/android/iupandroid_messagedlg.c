@@ -20,12 +20,12 @@
 
 IUPJNI_DECLARE_CLASS_STATIC(IupMessageDialogHelper);
 
-#define ANDROID_MSGDLG_HELP     -1
+#define ANDROID_MSGDLG_HELP     (-1)
 #define ANDROID_MSGDLG_CANCELED  0
 
 static jstring androidMessageDlgNewString(JNIEnv* jni_env, const char* str)
 {
-  return str ? (*jni_env)->NewStringUTF(jni_env, str) : NULL;
+  return str ? iupAndroid_NewStringUTF(jni_env, str) : NULL;
 }
 
 /* PARENTDIALOG resolves to an Activity or a detached ViewGroup; Java handles both */

@@ -139,7 +139,7 @@ static int androidProgressBarMapMethod(Ihandle* ih)
   if (!java_widget)
     return IUP_ERROR;
 
-  ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, java_widget));
+  ih->handle = (*jni_env)->NewGlobalRef(jni_env, java_widget);
   (*jni_env)->DeleteLocalRef(jni_env, java_widget);
 
   iupAndroid_AddWidgetToParent(jni_env, ih);
