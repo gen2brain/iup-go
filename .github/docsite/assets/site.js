@@ -1,16 +1,6 @@
 new PagefindUI({ element: "#search", showSubResults: true, showImages: false, resetStyles: false });
 
 (function () {
-  var here = location.pathname.replace(/\/$/, "/index.html");
-  var links = document.querySelectorAll(".sidebar-nav a");
-  links.forEach(function (a) {
-    if (a.pathname === here) {
-      a.classList.add("active");
-      for (var d = a.closest("details"); d; d = d.parentElement.closest("details")) d.open = true;
-      a.scrollIntoView({ block: "center" });
-    }
-  });
-
   var key = "iupdoc-open";
   var open = [];
   try { open = JSON.parse(sessionStorage.getItem(key) || "[]"); } catch (e) {}
@@ -22,6 +12,41 @@ new PagefindUI({ element: "#search", showSubResults: true, showImages: false, re
       try { sessionStorage.setItem(key, JSON.stringify(list)); } catch (e) {}
     });
   });
+
+  function page(path) { return path.replace(/\/$/, "/index.html").replace(/\.html$/, ""); }
+  var here = page(location.pathname);
+  var sidebar = document.querySelector(".sidebar");
+  document.querySelectorAll(".sidebar-nav a").forEach(function (a) {
+    if (page(a.pathname) !== here) return;
+    a.classList.add("active");
+    for (var d = a.closest("details"); d; d = d.parentElement.closest("details")) d.open = true;
+    var top = a.getBoundingClientRect().top - sidebar.getBoundingClientRect().top + sidebar.scrollTop;
+    sidebar.scrollTop = top - (sidebar.clientHeight - a.offsetHeight) / 2;
+  });
+
+  function markZoomable(img) {
+    var scaled = img.naturalWidth > img.clientWidth + 1 || img.naturalHeight > img.clientHeight + 1;
+    img.classList.toggle("zoomable", scaled && !img.closest("a"));
+  }
+  var images = document.querySelectorAll(".content img");
+  images.forEach(function (img) {
+    if (img.complete) markZoomable(img); else img.addEventListener("load", function () { markZoomable(img); });
+    img.addEventListener("click", function () {
+      if (!img.classList.contains("zoomable")) return;
+      var box = document.createElement("div");
+      box.className = "lightbox";
+      var big = document.createElement("img");
+      big.src = img.currentSrc || img.src;
+      big.alt = img.alt;
+      box.appendChild(big);
+      function close() { box.remove(); document.removeEventListener("keydown", onKey); }
+      function onKey(e) { if (e.key === "Escape") close(); }
+      box.addEventListener("click", close);
+      document.addEventListener("keydown", onKey);
+      document.body.appendChild(box);
+    });
+  });
+  addEventListener("resize", function () { images.forEach(markZoomable); });
 
   document.querySelector(".menu-toggle").addEventListener("click", function () {
     document.body.classList.toggle("nav-open");
