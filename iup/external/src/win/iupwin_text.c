@@ -26,6 +26,7 @@
 #include "iup_drvfont.h"
 #include "iup_array.h"
 #include "iup_text.h"
+#include "iup_key.h"
 #include "iup_image.h"
 #include "iup_dialog.h"
 
@@ -2472,6 +2473,25 @@ static int winTextMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* 
       winTextCallCaretCb(ih);
       break;
     }
+  case WM_MOUSEWHEEL:
+    {
+      IFnfiis cb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
+      short delta = (short)HIWORD(wp);
+      if (cb && delta != 0)
+      {
+        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+        POINT p;
+        p.x = GET_X_LPARAM(lp);
+        p.y = GET_Y_LPARAM(lp);
+        ScreenToClient(ih->handle, &p);
+        iupwinButtonKeySetStatus(LOWORD(wp), status, 0);
+        if (cb(ih, (float)delta/120.0f, p.x, p.y, status) == IUP_CLOSE)
+          IupExitLoop();
+        *result = 0;
+        return 1;
+      }
+      break;
+    }
   case WM_MOUSEMOVE:
     {
       iupwinMouseMove(ih, msg, wp, lp);
@@ -2498,6 +2518,21 @@ static int winTextMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* 
   }
   else
     return iupwinBaseMsgProc(ih, msg, wp, lp, result);
+}
+
+/* the up-down control subclasses its buddy after IUP and steps the value on the wheel */
+static LRESULT CALLBACK winTextSpinBuddySubclass(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR id, DWORD_PTR ref)
+{
+  if (msg == WM_MOUSEWHEEL)
+  {
+    Ihandle* ih = (Ihandle*)ref;
+    LRESULT result = 0;
+    if (iupObjectCheck(ih) && IupGetCallback(ih, "WHEEL_CB") && winTextMsgProc(ih, msg, wp, lp, &result))
+      return result;
+  }
+  else if (msg == WM_NCDESTROY)
+    RemoveWindowSubclass(hwnd, winTextSpinBuddySubclass, id);
+  return DefSubclassProc(hwnd, msg, wp, lp);
 }
 
 static void winTextCreateSpin(Ihandle* ih)
@@ -2527,6 +2562,7 @@ static void winTextCreateSpin(Ihandle* ih)
   IupSetCallback(ih, "_IUPWIN_NOTIFY_CB", (Icallback)winTextSpinWmNotify);
 
   SendMessage(hSpin, UDM_SETBUDDY, (WPARAM)ih->handle, 0);
+  SetWindowSubclass(ih->handle, winTextSpinBuddySubclass, 1, (DWORD_PTR)ih);
   iupAttribSet(ih, "_IUPWIN_SPIN", (char*)hSpin);
 
   /* default values, make sure limits are set before value */

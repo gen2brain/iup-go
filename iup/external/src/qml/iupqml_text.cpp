@@ -12,6 +12,7 @@
 #include <QTextOption>
 #include <QFontMetrics>
 #include <QKeyEvent>
+#include <QWheelEvent>
 #include <QString>
 #include <QUrl>
 #include <QColor>
@@ -36,6 +37,7 @@ extern "C" {
 #include "iup_array.h"
 #include "iup_mask.h"
 #include "iup_text.h"
+#include "iup_key.h"
 }
 
 #include "iupqml_drv.h"
@@ -439,6 +441,21 @@ public:
   bool eventFilter(QObject* obj, QEvent* event) override
   {
     (void)obj;
+    if (event->type() == QEvent::Wheel && iupObjectCheck(ih))
+    {
+      auto cb = reinterpret_cast<IFnfiis>(IupGetCallback(ih, "WHEEL_CB"));
+      auto* wevt = static_cast<QWheelEvent*>(event);
+      if (!cb || wevt->angleDelta().y() == 0)
+        return false;
+
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      iupqmlButtonKeySetStatus(wevt->modifiers(), Qt::NoButton, 0, status, 0);
+      if (cb(ih, wevt->angleDelta().y() / 120.0f, static_cast<int>(wevt->position().x()), static_cast<int>(wevt->position().y()), status) == IUP_CLOSE)
+        IupExitLoop();
+      wevt->accept();
+      return true;
+    }
+
     if (event->type() != QEvent::KeyPress || !iupObjectCheck(ih))
       return false;
 

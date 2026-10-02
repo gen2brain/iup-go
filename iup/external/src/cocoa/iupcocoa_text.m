@@ -241,6 +241,18 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
 
 @implementation IupCocoaTextField
 
+- (void)scrollWheel:(NSEvent*)the_event
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih && IupGetCallback(ih, "WHEEL_CB"))
+  {
+    if ([the_event deltaY] != 0)
+      iupcocoaCommonBaseScrollWheelCallback(ih, the_event, self);
+    return;
+  }
+  [super scrollWheel:the_event];
+}
+
 + (Class)cellClass
 {
   return [IupCocoaTextFieldCell class];
@@ -360,6 +372,18 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
 
 @implementation IupCocoaSecureTextField
 
+- (void)scrollWheel:(NSEvent*)the_event
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih && IupGetCallback(ih, "WHEEL_CB"))
+  {
+    if ([the_event deltaY] != 0)
+      iupcocoaCommonBaseScrollWheelCallback(ih, the_event, self);
+    return;
+  }
+  [super scrollWheel:the_event];
+}
+
 + (Class)cellClass
 {
   return [IupCocoaSecureTextFieldCell class];
@@ -423,6 +447,18 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
 @end
 
 @implementation IupCocoaTextView
+
+- (void)scrollWheel:(NSEvent*)the_event
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih && IupGetCallback(ih, "WHEEL_CB"))
+  {
+    if ([the_event deltaY] != 0)
+      iupcocoaCommonBaseScrollWheelCallback(ih, the_event, self);
+    return;
+  }
+  [super scrollWheel:the_event];
+}
 
 - (void)dealloc
 {

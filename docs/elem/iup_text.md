@@ -312,6 +312,10 @@ Markdown links set that tag.
 [MOTION_CB](../call/iup_motion_cb.md): Action generated when the mouse is moved.
 Use [IupConvertXYToPos](../func/iup_convertxytopos.md) to convert (x,y) coordinates in character positioning.
 
+[WHEEL_CB](../call/iup_wheel_cb.md): Action generated when the mouse wheel is rotated over the text.
+When defined, the text does not scroll with the wheel, except a multiline text in EFL.
+Not supported in Android, iOS and WebAssembly.
+
 **SPIN_CB**: Action generated when a spin button is pressed. Valid only when SPIN=YES.
 When this callback is called the ACTION callback is not called.
 The VALUE attribute can be changed during this callback only if SPINAUTO=NO.

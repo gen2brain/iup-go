@@ -140,34 +140,56 @@ static int iDatePickTextValueChanged_CB(Ihandle* ih_text)
   return IUP_DEFAULT;
 }
 
-static int iDatePickTextKAny_CB(Ihandle* ih_text, int key)
+static void iDatePickTextStep(Ihandle* ih_text, int step)
 {
   Ihandle* ih = IupGetParent(IupGetParent(ih_text));
+  int value = IupGetInt(ih_text, "VALUE") + step;
 
+  if (iupAttribGetBoolean(ih, "ZEROPRECED"))
+    IupSetStrf(ih_text, "VALUEMASKED", "%02d", value);
+  else
+    IupSetInt(ih_text, "VALUEMASKED", value);
+
+  if (IupGetInt(ih_text, "VALUE") == value)
+    iDatePickTextValueChanged_CB(ih_text);
+}
+
+static int iDatePickTextWheel_CB(Ihandle* ih_text, float delta, int x, int y, char* status)
+{
+  double total;
+  (void)x;
+  (void)y;
+  (void)status;
+
+  if (!IupGetInt(ih_text, "ACTIVE"))
+    return IUP_IGNORE;
+
+  total = iupAttribGetDouble(ih_text, "_IUP_DATEPICK_WHEEL") + delta;
+
+  while (total >= 1.0)
+  {
+    iDatePickTextStep(ih_text, 1);
+    total -= 1.0;
+  }
+  while (total <= -1.0)
+  {
+    iDatePickTextStep(ih_text, -1);
+    total += 1.0;
+  }
+  iupAttribSetDouble(ih_text, "_IUP_DATEPICK_WHEEL", total);
+  return IUP_IGNORE;
+}
+
+static int iDatePickTextKAny_CB(Ihandle* ih_text, int key)
+{
   if (key == K_UP || key == K_plus || key == K_sPlus)
   {
-    int value = IupGetInt(ih_text, "VALUE");
-    value++;
-    if (iupAttribGetBoolean(ih, "ZEROPRECED"))
-      IupSetStrf(ih_text, "VALUEMASKED", "%02d", value);
-    else
-      IupSetInt(ih_text, "VALUEMASKED", value);
-
-    if (IupGetInt(ih_text, "VALUE") == value)
-      iDatePickTextValueChanged_CB(ih_text);
+    iDatePickTextStep(ih_text, 1);
     return IUP_IGNORE;
   }
   else if (key == K_DOWN || key == K_minus || key == K_sMinus)
   {
-    int value = IupGetInt(ih_text, "VALUE");
-    value--;
-    if (iupAttribGetBoolean(ih, "ZEROPRECED"))
-      IupSetStrf(ih_text, "VALUEMASKED", "%02d", value);
-    else
-      IupSetInt(ih_text, "VALUEMASKED", value);
-
-    if (IupGetInt(ih_text, "VALUE") == value)
-      iDatePickTextValueChanged_CB(ih_text);
+    iDatePickTextStep(ih_text, -1);
     return IUP_IGNORE;
   }
   else if (key == K_LEFT)
@@ -436,6 +458,7 @@ static Ihandle* iDatePickCreateText(void)
   IupSetAttribute(txt, "NOHIDESEL", "NO");
   IupSetAttribute(txt, "ALIGNMENT", "ACENTER");
   IupSetCallback(txt, "K_ANY", (Icallback)iDatePickTextKAny_CB);
+  IupSetCallback(txt, "WHEEL_CB", (Icallback)iDatePickTextWheel_CB);
   IupSetCallback(txt, "VALUECHANGED_CB", iDatePickTextValueChanged_CB);
   return txt;
 }

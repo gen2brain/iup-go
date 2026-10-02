@@ -823,6 +823,7 @@ Iclass* iupTextNewClass(void)
   iupClassRegisterCallback(ic, "ACTION", "is");
   iupClassRegisterCallback(ic, "BUTTON_CB", "iiiis");
   iupClassRegisterCallback(ic, "MOTION_CB", "iis");
+  iupClassRegisterCallback(ic, "WHEEL_CB", "fiis");
   iupClassRegisterCallback(ic, "SPIN_CB", "i");
   iupClassRegisterCallback(ic, "VALUECHANGED_CB", "");
   iupClassRegisterCallback(ic, "LINK_CB", "s");

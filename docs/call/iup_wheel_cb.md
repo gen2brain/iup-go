@@ -22,4 +22,4 @@ In macOS, the sign follows the system scroll direction setting (natural scrollin
 
 ### Affects
 
-[IupCanvas](../elem/iup_canvas.md), [IupGLCanvas](../ctrl/iup_glcanvas.md)
+[IupCanvas](../elem/iup_canvas.md), [IupGLCanvas](../ctrl/iup_glcanvas.md), [IupText](../elem/iup_text.md)

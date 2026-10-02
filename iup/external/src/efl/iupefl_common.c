@@ -1047,7 +1047,7 @@ IUP_DRV_API void iupeflPointerWheelEvent(void* data, const Efl_Event* ev)
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
     Eina_Bool is_horizontal = efl_input_pointer_wheel_horizontal_get(pointer);
     int wheel_delta = efl_input_pointer_wheel_delta_get(pointer);
-    float delta = is_horizontal ? 0.0f : (float)wheel_delta;
+    float delta = is_horizontal ? 0.0f : (float)-wheel_delta;
 
     if (efl_input_modifier_enabled_get(pointer, EFL_INPUT_MODIFIER_SHIFT, NULL))
       iupKEY_SETSHIFT(status);

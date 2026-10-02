@@ -28,6 +28,7 @@
 #include "iup_mask.h"
 #include "iup_array.h"
 #include "iup_text.h"
+#include "iup_key.h"
 
 #include "iupmot_drv.h"
 #include "iupmot_color.h"
@@ -1024,6 +1025,26 @@ static void motTextValueChangedCallback(Widget w, Ihandle* ih, XmAnyCallbackStru
   (void)w;
 }
 
+static void motTextWheelEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean* cont)
+{
+  XButtonEvent* but_evt = (XButtonEvent*)evt;
+  IFnfiis wcb;
+  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+  (void)w;
+
+  if (but_evt->button != Button4 && but_evt->button != Button5)
+    return;
+
+  wcb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
+  if (!wcb)
+    return;
+
+  *cont = False;
+  iupmotButtonKeySetStatus(but_evt->state, but_evt->button, status, 0);
+  if (wcb(ih, but_evt->button == Button4 ? 1.0f : -1.0f, but_evt->x, but_evt->y, status) == IUP_CLOSE)
+    IupExitLoop();
+}
+
 static void motTextKeyPressEvent(Widget w, Ihandle* ih, XKeyEvent* evt, Boolean* cont)
 {
   Widget spinbox;
@@ -1287,6 +1308,7 @@ static int motTextMapMethod(Ihandle* ih)
   XtAddEventHandler(ih->handle, KeyPressMask, False, (XtEventHandler)motTextKeyPressEvent, (XtPointer)ih);
   XtAddEventHandler(ih->handle, PointerMotionMask, False, (XtEventHandler)iupmotPointerMotionEvent, (XtPointer)ih);
   XtAddEventHandler(ih->handle, ButtonPressMask|ButtonReleaseMask, False, (XtEventHandler)iupmotButtonPressReleaseEvent, (XtPointer)ih);
+  XtInsertEventHandler(ih->handle, ButtonPressMask, False, (XtEventHandler)motTextWheelEvent, (XtPointer)ih, XtListHead);
   XtAddEventHandler(ih->handle, ButtonPressMask, False, (XtEventHandler)iupmotScrolledWindowWheelEvent, (XtPointer)ih);
 
   XtAddCallback(ih->handle, XmNmodifyVerifyCallback, (XtCallbackProc)motTextModifyVerifyCallback, (XtPointer)ih);

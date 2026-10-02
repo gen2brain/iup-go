@@ -21,6 +21,7 @@
 #include "iup_image.h"
 #include "iup_mask.h"
 #include "iup_drvfont.h"
+#include "iup_key.h"
 #include "iup_array.h"
 #include "iup_text.h"
 
@@ -2209,6 +2210,33 @@ static gboolean gtkTextKeyReleaseEvent(GtkWidget* widget, GdkEventKey* evt, Ihan
   return FALSE;
 }
 
+static gboolean gtkTextScrollEvent(GtkWidget* widget, GdkEventScroll* evt, Ihandle* ih)
+{
+  IFnfiis wcb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
+  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+  double delta;
+  (void)widget;
+
+  if (!wcb)
+    return FALSE;
+
+  if (evt->direction == GDK_SCROLL_UP)
+    delta = 1;
+  else if (evt->direction == GDK_SCROLL_DOWN)
+    delta = -1;
+#if GTK_CHECK_VERSION(3, 4, 0)
+  else if (evt->direction == GDK_SCROLL_SMOOTH && evt->delta_y != 0)
+    delta = -evt->delta_y;
+#endif
+  else
+    return FALSE;
+
+  iupgtkButtonKeySetStatus(evt->state, delta > 0 ? 4 : 5, status, 0);
+  if (wcb(ih, (float)delta, (int)evt->x, (int)evt->y, status) == IUP_CLOSE)
+    IupExitLoop();
+  return TRUE;
+}
+
 static gboolean gtkTextButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
 {
   gtkTextMoveCursor(NULL, 0, 0, 0, ih);
@@ -2604,6 +2632,8 @@ static int gtkTextMapMethod(Ihandle* ih)
   g_signal_connect(G_OBJECT(ih->handle), "button-press-event", G_CALLBACK(gtkTextButtonEvent), ih);  /* if connected "after" then it is ignored */
   g_signal_connect(G_OBJECT(ih->handle), "button-release-event",G_CALLBACK(gtkTextButtonEvent), ih);
   g_signal_connect(G_OBJECT(ih->handle), "motion-notify-event",G_CALLBACK(iupgtkMotionNotifyEvent), ih);
+  gtk_widget_add_events(ih->handle, GDK_SCROLL_MASK);
+  g_signal_connect(G_OBJECT(ih->handle), "scroll-event", G_CALLBACK(gtkTextScrollEvent), ih);
 
   if (ih->data->is_multiline)
   {

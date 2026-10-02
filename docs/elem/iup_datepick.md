@@ -63,7 +63,8 @@ Not supported in iOS and WebAssembly.
 
 ### Notes
 
-In GTK, GTK 4, WinUI, macOS, EFL, FLTK, Motif and Haiku it is a custom control built with IUP elements.
+In GTK, GTK 4, WinUI, macOS, EFL, FLTK, Motif, Haiku and QML it is a custom control built with IUP elements.
+In the custom control the Up and Down keys, + and -, and the mouse wheel over the day, month or year change it by one.
 
 In iOS, the label uses the system locale's date format; ORDER, SEPARATOR, ZEROPRECED, MONTHSHORTNAMES and FORMAT are not supported.
 
