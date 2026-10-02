@@ -24,10 +24,12 @@
 #include "iupcocoatouch_drv.h"
 
 static const CGFloat kIupCocoaTouchTabBarHeight = 32.0;
+static const CGFloat kIupCocoaTouchMinSegmentWidth = 100.0;
 
 @interface IupCocoaTouchTabsView : UIView
 @property(nonatomic, assign) Ihandle* ihandle;
 @property(nonatomic, retain) UISegmentedControl* segmentedControl;
+@property(nonatomic, retain) UIScrollView* barScroll;
 @property(nonatomic, retain) UIView* contentArea;
 @property(nonatomic, retain) NSMutableArray<UIButton*>* closeButtons;
 @end
@@ -43,10 +45,17 @@ static const CGFloat kIupCocoaTouchTabBarHeight = 32.0;
 		self.translatesAutoresizingMaskIntoConstraints = YES;
 		self.clipsToBounds = YES;
 
+		_barScroll = [[UIScrollView alloc] initWithFrame:CGRectZero];
+		_barScroll.autoresizingMask = UIViewAutoresizingNone;
+		_barScroll.showsHorizontalScrollIndicator = NO;
+		_barScroll.showsVerticalScrollIndicator = NO;
+		_barScroll.alwaysBounceVertical = NO;
+		[self addSubview:_barScroll];
+
 		_segmentedControl = [[UISegmentedControl alloc] initWithItems:@[]];
 		_segmentedControl.autoresizingMask = UIViewAutoresizingNone;
 		_segmentedControl.apportionsSegmentWidthsByContent = NO;
-		[self addSubview:_segmentedControl];
+		[_barScroll addSubview:_segmentedControl];
 
 		_contentArea = [[UIView alloc] initWithFrame:CGRectZero];
 		_contentArea.autoresizingMask = UIViewAutoresizingNone;
@@ -61,6 +70,7 @@ static const CGFloat kIupCocoaTouchTabBarHeight = 32.0;
 - (void)dealloc
 {
 	[_segmentedControl release];
+	[_barScroll release];
 	[_contentArea release];
 	[_closeButtons release];
 	[super dealloc];
@@ -75,6 +85,16 @@ static IupCocoaTouchTabsView* cocoaTouchTabsGetRoot(Ihandle* ih)
 	id handle = ih->handle;
 	if (![handle isKindOfClass:[IupCocoaTouchTabsView class]]) return nil;
 	return (IupCocoaTouchTabsView*)handle;
+}
+
+static void cocoaTouchTabsScrollToSelected(IupCocoaTouchTabsView* root)
+{
+	UISegmentedControl* sc = root.segmentedControl;
+	NSInteger n = sc.numberOfSegments;
+	NSInteger sel = sc.selectedSegmentIndex;
+	if (n <= 0 || sel < 0 || sel >= n) return;
+	CGFloat seg_w = sc.bounds.size.width / (CGFloat)n;
+	[root.barScroll scrollRectToVisible:CGRectMake((CGFloat)sel * seg_w, 0, seg_w, sc.bounds.size.height) animated:NO];
 }
 
 static Iarray* cocoaTouchTabsGetVisibleArray(Ihandle* ih)
@@ -171,6 +191,7 @@ static BOOL cocoaTouchTabsShouldShowClose(Ihandle* ih, int iup_pos);
 	if (iup_pos == prev_pos) return;
 
 	cocoaTouchTabsShowOnlyPage(ih, iup_pos);
+	cocoaTouchTabsScrollToSelected((IupCocoaTouchTabsView*)ih->handle);
 
 	if (iup_pos != -1 && prev_pos != -1)
 	{
@@ -423,6 +444,7 @@ IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 
 	iupAttribSet(ih, "_IUPCOCOATOUCH_IGNORE_CHANGE", "1");
 	root.segmentedControl.selectedSegmentIndex = native_pos;
+	cocoaTouchTabsScrollToSelected(root);
 	iupAttribSet(ih, "_IUPCOCOATOUCH_IGNORE_CHANGE", NULL);
 
 	IupCocoaTouchTabsTarget* target = objc_getAssociatedObject(root, @"IUP_TABS_TARGET");
@@ -650,7 +672,7 @@ static void cocoaTouchTabsRebuildCloseButtons(Ihandle* ih)
 			[btn setImage:xmark forState:UIControlStateNormal];
 			btn.tintColor = [UIColor secondaryLabelColor];
 			[btn addTarget:target action:@selector(closeButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
-			[root addSubview:btn];
+			[root.barScroll addSubview:btn];
 			[root.closeButtons addObject:btn];
 		}
 		native_pos++;
@@ -955,7 +977,14 @@ static void cocoaTouchTabsLayoutUpdateMethod(Ihandle* ih)
 	CGFloat content_h = h - bar_h;
 	if (content_h < 0) content_h = 0;
 
-	root.segmentedControl.frame = CGRectMake(0, bar_y, w, bar_h);
+	NSUInteger segments = root.segmentedControl.numberOfSegments;
+	CGFloat bar_w = w;
+	if (segments > 0 && w / (CGFloat)segments < kIupCocoaTouchMinSegmentWidth)
+		bar_w = kIupCocoaTouchMinSegmentWidth * (CGFloat)segments;
+
+	root.barScroll.frame = CGRectMake(0, bar_y, w, bar_h);
+	root.barScroll.contentSize = CGSizeMake(bar_w, bar_h);
+	root.segmentedControl.frame = CGRectMake(0, 0, bar_w, bar_h);
 	root.contentArea.frame = CGRectMake(0, content_y, w, content_h);
 
 	CGRect page_rect = CGRectMake(0, 0, w, content_h);
@@ -966,6 +995,7 @@ static void cocoaTouchTabsLayoutUpdateMethod(Ihandle* ih)
 	}
 
 	cocoaTouchTabsLayoutCloseButtons(root);
+	cocoaTouchTabsScrollToSelected(root);
 }
 
 IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)

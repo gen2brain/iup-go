@@ -59,9 +59,9 @@ Can be "YES" or "NO". Default: "NO".
 **TABLIST** [macOS Only] (non-inheritable): Shows a dropdown menu control in the tab bar that lists all tabs. Useful when there are too many tabs to display.
 Can be "YES" or "NO". Default: "NO".
 
-[SIZE](../attrib/iup_size.md) (non-inheritable): The default size is the smallest size that fits its largest child.
+[SIZE](../attrib/iup_size.md) (non-inheritable): The default size is the smallest size that fits its largest child and all its tab buttons.
 All child elements are considered even invisible ones.
-In QML the tab buttons keep their natural width and are clipped when they do not fit.
+When the Tabs is smaller than that (dialog SHRINK=YES), the tab bar scrolls and keeps the current tab visible.
 
 **TABORIENTATION** (non-inheritable): Indicates the orientation of tab text, which can be "HORIZONTAL" or "VERTICAL".
 Default is "HORIZONTAL". VERTICAL can be set in GTK, GTK 4, Qt, macOS and WebAssembly.

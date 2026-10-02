@@ -807,97 +807,16 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
 
 }
 
-static void gtkTabsSizeAllocateCallback(GtkWidget* widget, GdkRectangle* allocation, Ihandle* ih)
+static void gtkTabsLayoutUpdateMethod(Ihandle* ih)
 {
-  GtkNotebook* notebook = (GtkNotebook*)widget;
-  int n_pages = gtk_notebook_get_n_pages(notebook);
-  gboolean scrollable = gtk_notebook_get_scrollable(notebook);
-  int i;
+  int shrunk;
+  if (ih->data->type == ITABS_TOP || ih->data->type == ITABS_BOTTOM)
+    shrunk = ih->currentwidth < ih->naturalwidth;
+  else
+    shrunk = ih->currentheight < ih->naturalheight;
 
-  if (n_pages > 0 && (ih->data->type == ITABS_TOP || ih->data->type == ITABS_BOTTOM))
-  {
-    int total_tabs_width = 0;
-    int total_allocated_width = 0;
-    int i;
-    int m, s;
-
-    m = 4;
-    s = 2;
-
-    for (i = 0; i < n_pages; i++)
-    {
-      GtkWidget* page = gtk_notebook_get_nth_page(notebook, i);
-      GtkWidget* tab_label = gtk_notebook_get_tab_label(notebook, page);
-      if (tab_label)
-      {
-        GtkAllocation tab_alloc;
-        gtk_widget_get_allocation(tab_label, &tab_alloc);
-        total_allocated_width += tab_alloc.width;
-#if GTK_CHECK_VERSION(3, 0, 0)
-        GtkRequisition tab_min, tab_nat;
-        gtk_widget_get_preferred_size(tab_label, &tab_min, &tab_nat);
-        total_tabs_width += tab_nat.width;
-#else
-        GtkRequisition tab_req;
-        gtk_widget_size_request(tab_label, &tab_req);
-        total_tabs_width += tab_req.width;
-#endif
-      }
-    }
-
-    total_tabs_width += 2 * m;  /* left and right margins */
-    if (n_pages > 1)
-      total_tabs_width += (n_pages - 1) * s;  /* spacing between tabs */
-
-    gboolean need_scrollable = (total_tabs_width > allocation->width);
-
-    if (need_scrollable != scrollable)
-    {
-      gtk_notebook_set_scrollable(notebook, need_scrollable);
-    }
-  }
-  else if (n_pages > 0 && (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT))
-  {
-    int total_tabs_height = 0;
-    int total_allocated_height = 0;
-    int total_tabs_width = 0;
-    int total_allocated_width = 0;
-    int i;
-    int m = 4;
-
-    for (i = 0; i < n_pages; i++)
-    {
-      GtkWidget* page = gtk_notebook_get_nth_page(notebook, i);
-      GtkWidget* tab_label = gtk_notebook_get_tab_label(notebook, page);
-      if (tab_label)
-      {
-        GtkAllocation tab_alloc;
-        gtk_widget_get_allocation(tab_label, &tab_alloc);
-        total_allocated_height += tab_alloc.height;
-        total_allocated_width += tab_alloc.width;
-#if GTK_CHECK_VERSION(3, 0, 0)
-        GtkRequisition tab_min, tab_nat;
-        gtk_widget_get_preferred_size(tab_label, &tab_min, &tab_nat);
-        total_tabs_height += tab_nat.height;
-        total_tabs_width += tab_nat.width;
-#else
-        GtkRequisition tab_req;
-        gtk_widget_size_request(tab_label, &tab_req);
-        total_tabs_height += tab_req.height;
-        total_tabs_width += tab_req.width;
-#endif
-      }
-    }
-
-    total_tabs_height += 2 * m;
-
-    gboolean need_scrollable = (total_tabs_height > allocation->height);
-
-    if (need_scrollable != scrollable)
-    {
-      gtk_notebook_set_scrollable(notebook, need_scrollable);
-    }
-  }
+  gtk_notebook_set_scrollable((GtkNotebook*)ih->handle, shrunk);
+  iupdrvBaseLayoutUpdateMethod(ih);
 }
 
 static int gtkTabsMapMethod(Ihandle* ih)
@@ -905,9 +824,6 @@ static int gtkTabsMapMethod(Ihandle* ih)
   ih->handle = gtk_notebook_new();
   if (!ih->handle)
     return IUP_ERROR;
-
-  /* Start with scrollable=FALSE, will be enabled dynamically if needed in size-allocate */
-  gtk_notebook_set_scrollable((GtkNotebook*)ih->handle, FALSE);
 
   gtkTabsUpdateTabType(ih);
 
@@ -925,7 +841,6 @@ static int gtkTabsMapMethod(Ihandle* ih)
 
   g_signal_connect(G_OBJECT(ih->handle), "switch-page",         G_CALLBACK(gtkTabsSwitchPage), ih);
   g_signal_connect(G_OBJECT(ih->handle), "page-reordered",      G_CALLBACK(gtkTabsPageReordered), ih);
-  g_signal_connect(G_OBJECT(ih->handle), "size-allocate",       G_CALLBACK(gtkTabsSizeAllocateCallback), ih);
 
   gtk_widget_realize(ih->handle);
 
@@ -1083,6 +998,7 @@ IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = gtkTabsMapMethod;
+  ic->LayoutUpdate = gtkTabsLayoutUpdateMethod;
   ic->ChildAdded     = gtkTabsChildAddedMethod;
   ic->ChildRemoved   = gtkTabsChildRemovedMethod;
 

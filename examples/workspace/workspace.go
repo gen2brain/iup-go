@@ -82,7 +82,7 @@ func main() {
 
 	status := iup.Label("").SetAttributes("EXPAND=HORIZONTAL, PADDING=8x4").SetHandle("ws_status")
 
-	dlg := iup.Dialog(iup.Vbox(toolbar, panes, status).SetAttributes("NGAP=2"))
+	dlg := iup.Dialog(iup.Vbox(toolbar, panes, status).SetAttributes("NGAP=2")).SetAttribute("SHRINK", "YES")
 	dlg.SetAttribute("TITLE", "Workspace")
 
 	openFile("docs", "README.md")
