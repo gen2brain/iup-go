@@ -429,9 +429,7 @@ static void sniAppendMenuItemProperties(DBusMessageIter* dict_iter, Ihandle* ite
     const char* value_attr = iupAttribGet(item, "VALUE");
     int is_checkable = 0;
 
-    if (value_attr)
-      is_checkable = 1;
-    else if (hidemark && !iupStrBoolean(hidemark))
+    if (value_attr || (hidemark && !iupStrBoolean(hidemark)))
       is_checkable = 1;
 
     if (is_checkable)
@@ -571,7 +569,6 @@ static DBusHandlerResult sniDBusMenuHandler(DBusConnection* connection, DBusMess
 {
   IupUnixSNI* sni = (IupUnixSNI*)user_data;
   const char* interface = dbus_message_get_interface(message);
-  const char* member = dbus_message_get_member(message);
 
   if (dbus_message_is_method_call(message, "org.freedesktop.DBus.Introspectable", "Introspect"))
   {
@@ -583,8 +580,8 @@ static DBusHandlerResult sniDBusMenuHandler(DBusConnection* connection, DBusMess
     return DBUS_HANDLER_RESULT_HANDLED;
   }
 
-  if (strcmp(interface, DBUSMENU_INTERFACE) != 0 &&
-      strcmp(interface, "org.freedesktop.DBus.Properties") != 0)
+  if (!interface || (strcmp(interface, DBUSMENU_INTERFACE) != 0 &&
+      strcmp(interface, "org.freedesktop.DBus.Properties") != 0))
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
   if (dbus_message_is_method_call(message, DBUSMENU_INTERFACE, "GetLayout"))
@@ -861,8 +858,8 @@ static DBusHandlerResult sniMessageHandler(DBusConnection* connection, DBusMessa
     return DBUS_HANDLER_RESULT_HANDLED;
   }
 
-  if (strcmp(interface, SNI_ITEM_INTERFACE) != 0 &&
-      strcmp(interface, "org.freedesktop.DBus.Properties") != 0)
+  if (!interface || (strcmp(interface, SNI_ITEM_INTERFACE) != 0 &&
+      strcmp(interface, "org.freedesktop.DBus.Properties") != 0))
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
   if (dbus_message_is_method_call(message, SNI_ITEM_INTERFACE, "Activate"))

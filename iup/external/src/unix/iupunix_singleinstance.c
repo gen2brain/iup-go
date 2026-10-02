@@ -56,9 +56,7 @@ static void iupUnixSIBuildBusName(const char* name, char* bus_name, int max_len)
   for (i = 0; i < name_len && j < max_len - 1; i++)
   {
     char c = name[i];
-    if (isalnum((unsigned char)c))
-      bus_name[j++] = c;
-    else if (c == '.' || c == '-' || c == '_')
+    if (isalnum((unsigned char)c) || c == '.' || c == '-' || c == '_')
       bus_name[j++] = c;
     else
       bus_name[j++] = '_';

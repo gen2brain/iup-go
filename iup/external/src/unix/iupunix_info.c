@@ -129,7 +129,7 @@ IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)
 IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
 {
   size_t size = 256;
-  char* buffer = (char*)iupStrGetMemory(size);
+  char* buffer = iupStrGetMemory(size);
 
   for (;;)
   {
@@ -137,13 +137,10 @@ IUP_SDK_API char* iupdrvGetCurrentDirectory(void)
       return buffer;
 
     if (errno != ERANGE)
-    {
-      free(buffer);
       return NULL;
-    }
 
     size += size;
-    buffer = (char*)iupStrGetMemory(size);
+    buffer = iupStrGetMemory(size);
   }
 
   return NULL;
