@@ -257,6 +257,7 @@ Default: NO.
 **CONTEXTMENU** [macOS Only] (non-inheritable): Sets a custom context (right-click) menu for the control. The value is an IUP menu handle.
 Set to a menu handle to replace the default system context menu, or set to NULL to disable the context menu entirely.
 If never set, the default system context menu (Cut/Copy/Paste) is shown.
+The menu is destroyed when the control is unmapped or destroyed, so a menu cannot be shared between controls.
 
 > 
 >

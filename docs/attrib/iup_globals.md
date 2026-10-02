@@ -205,7 +205,7 @@ On Android single instance is enforced by the Activity launchMode in the manifes
 ### CURSORPOS
 
 Controls and returns the cursor position in absolute coordinates relative to the origin of the main screen.
-The origin of the main screen is at the top-left corner, in Windows it is affected by the position of the Start Menu when it is at the top or left side of the screen.
+The origin of the main screen is at the top-left corner, in Windows it is affected by the position of the Start Menu when it is at the top or left side of the screen, and in macOS it is below the menu bar.
 Accept values in the format "X**x**Y" (in C "%dx%d), example "200x200".
 In GTK and Motif also generates mouse motion messages.
 On Wayland it returns the position relative to the top-left corner of the contents of the dialog under the cursor, below the title bar.
@@ -531,9 +531,11 @@ Only available after a dialog has been created, since the engine is selected at 
 
 Sets the active GNUstep theme. Can be set before or after creating dialogs.
 Can also be set via the environment variable `IUP_GNUSTEPTHEME`.
-The value is a theme name (e.g. `"Silver"`, `"Neos"`) or an absolute path to a `.theme` bundle. Setting NULL or empty reverts to the built-in theme.
+The value is a theme name (e.g. `"Silver"`, `"Neos"`) or an absolute path to a `.theme` bundle.
+The theme applies to the running application only and is not saved in the user defaults.
+Setting NULL or empty restores the theme from the user defaults, or the built-in theme when none is set.
 
-When read, returns the current theme name, or NULL if the default theme is active.
+When read, returns the current theme name; the built-in theme is `"GNUstep"`.
 
 ### WINUIVERSION (read-only) [WinUI Only]
 

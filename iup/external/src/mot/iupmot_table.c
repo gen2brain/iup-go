@@ -11,6 +11,7 @@
 #include <Xm/Text.h>
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
+#include <X11/cursorfont.h>
 #include <X11/XKBlib.h>
 #include <X11/extensions/Xrender.h>
 
@@ -96,6 +97,17 @@ typedef struct _ImotTableData
   int row_dragging;          /* 1 once past the drag threshold */
   int drag_start_x;
   int drag_start_y;
+
+  /* Column drag-reorder state (ALLOWREORDER) */
+  int drag_source_col;       /* Header column where the drag started (1-based, 0=none) */
+  int drag_target_col;       /* Insert-before index while dragging (0-based, -1=none) */
+  int col_dragging;          /* 1 once past the drag threshold */
+
+  /* Column resize state (USERRESIZE) */
+  int resize_col;            /* Column whose right divider is dragged (1-based, 0=none) */
+  int resize_start_width;
+  Cursor resize_cursor;
+  int resize_cursor_shown;
 
   ImotTableCell** cells;     /* [num_lin][num_col] */
   char** col_titles;         /* [num_col] -> string */
@@ -418,7 +430,6 @@ static void motTablePixelToCell(Ihandle* ih, int px, int py, int* lin, int* col)
   int x, c, row;
 
   px += mot_data->scroll_x;
-  py += mot_data->scroll_y;
 
   *col = 0;
   x = 0;
@@ -439,6 +450,7 @@ static void motTablePixelToCell(Ihandle* ih, int px, int py, int* lin, int* col)
   }
   else
   {
+    py += mot_data->scroll_y;
     row = (py - mot_data->header_height) / mot_data->row_height;
     if (row >= 0 && row < ih->data->num_lin)
       *lin = row + 1;
@@ -482,10 +494,151 @@ static void motTableMoveRow(Ihandle* ih, int from, int to)
       mot_data->cells[l] = mot_data->cells[l - 1];
   mot_data->cells[to - 1] = row;
 
+  if (mot_data->row_selected && mot_data->row_selected_size >= num_lin)
+  {
+    char selected = mot_data->row_selected[from - 1];
+    if (from < to)
+      for (l = from - 1; l < to - 1; l++)
+        mot_data->row_selected[l] = mot_data->row_selected[l + 1];
+    else
+      for (l = from - 1; l > to - 1; l--)
+        mot_data->row_selected[l] = mot_data->row_selected[l - 1];
+    mot_data->row_selected[to - 1] = selected;
+  }
+
   iupTableMoveLinAttribs(ih, from, to);
 
   mot_data->current_row = to;
   motTableRedraw(ih);
+}
+
+static int motTableHeaderDivider(Ihandle* ih, int px, int py)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  int c, x = -mot_data->scroll_x;
+
+  if (py < 0 || py >= mot_data->header_height)
+    return 0;
+
+  for (c = 0; c < ih->data->num_col; c++)
+  {
+    x += mot_data->col_widths[c];
+    if (px >= x - 3 && px <= x + 3)
+      return c + 1;
+  }
+  return 0;
+}
+
+static int motTableFindTargetCol(Ihandle* ih, int px)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  int c, x = -mot_data->scroll_x;
+
+  for (c = 0; c < ih->data->num_col; c++)
+  {
+    if (px < x + mot_data->col_widths[c] / 2)
+      return c;
+    x += mot_data->col_widths[c];
+  }
+  return ih->data->num_col;
+}
+
+static void motTableMoveCol(Ihandle* ih, int from, int to)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  int num_col = ih->data->num_col;
+  int step = (from < to) ? 1 : -1;
+  int c, lin, width, natural, width_set;
+  char sign;
+  char* title;
+
+  if (from == to || from < 1 || to < 1 || from > num_col || to > num_col)
+    return;
+
+  width = mot_data->col_widths[from - 1];
+  natural = mot_data->col_natural_widths[from - 1];
+  width_set = mot_data->col_width_set[from - 1];
+  sign = mot_data->sort_signs[from - 1];
+  title = mot_data->col_titles[from - 1];
+  for (c = from - 1; c != to - 1; c += step)
+  {
+    mot_data->col_widths[c] = mot_data->col_widths[c + step];
+    mot_data->col_natural_widths[c] = mot_data->col_natural_widths[c + step];
+    mot_data->col_width_set[c] = mot_data->col_width_set[c + step];
+    mot_data->sort_signs[c] = mot_data->sort_signs[c + step];
+    mot_data->col_titles[c] = mot_data->col_titles[c + step];
+  }
+  mot_data->col_widths[to - 1] = width;
+  mot_data->col_natural_widths[to - 1] = natural;
+  mot_data->col_width_set[to - 1] = width_set;
+  mot_data->sort_signs[to - 1] = sign;
+  mot_data->col_titles[to - 1] = title;
+
+  for (lin = 0; mot_data->cells && lin < ih->data->num_lin; lin++)
+  {
+    ImotTableCell cell = mot_data->cells[lin][from - 1];
+    for (c = from - 1; c != to - 1; c += step)
+      mot_data->cells[lin][c] = mot_data->cells[lin][c + step];
+    mot_data->cells[lin][to - 1] = cell;
+  }
+
+  iupTableMoveColAttribs(ih, from, to);
+
+  if (mot_data->sort_column > 0)
+    mot_data->sort_column = iupTableMoveColPos(mot_data->sort_column, from, to);
+  if (mot_data->current_col > 0)
+    mot_data->current_col = iupTableMoveColPos(mot_data->current_col, from, to);
+
+  motTableUpdateScrollbars(ih);
+  motTableRedraw(ih);
+}
+
+static void motTableHeaderSort(Ihandle* ih, int col)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  int sign = (mot_data->sort_column == col && mot_data->sort_signs[col-1] == 1) ? -1 : 1;
+
+  IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
+  if (sort_cb && sort_cb(ih, col) == IUP_IGNORE)
+    return;
+
+  if (mot_data->sort_column > 0 && mot_data->sort_column <= ih->data->num_col)
+    mot_data->sort_signs[mot_data->sort_column - 1] = 0;
+
+  mot_data->sort_column = col;
+  mot_data->sort_signs[col-1] = sign;
+
+  if (!IupGetCallback(ih, "VALUE_CB"))
+    motTableSortRows(ih, col, (sign == 1));
+
+  motTableRedraw(ih);
+}
+
+static void motTableHeaderPointerMotion(Widget w, XtPointer client_data, XEvent* event, Boolean* cont)
+{
+  Ihandle* ih = (Ihandle*)client_data;
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  XMotionEvent* motion = (XMotionEvent*)event;
+  int show;
+
+  (void)cont;
+
+  if (!mot_data || mot_data->resize_col || mot_data->drag_source_col)
+    return;
+
+  show = ih->data->user_resize && motTableHeaderDivider(ih, motion->x, motion->y);
+  if (show == mot_data->resize_cursor_shown)
+    return;
+
+  if (show)
+  {
+    if (!mot_data->resize_cursor)
+      mot_data->resize_cursor = XCreateFontCursor(iupmot_display, XC_sb_h_double_arrow);
+    XDefineCursor(iupmot_display, XtWindow(w), mot_data->resize_cursor);
+  }
+  else
+    XUndefineCursor(iupmot_display, XtWindow(w));
+  mot_data->resize_cursor_shown = show;
 }
 
 static void motTableRowDragMotion(Widget w, XtPointer client_data, XEvent* event, Boolean* cont)
@@ -497,6 +650,40 @@ static void motTableRowDragMotion(Widget w, XtPointer client_data, XEvent* event
 
   (void)w;
   (void)cont;
+
+  if (mot_data && mot_data->resize_col)
+  {
+    int width = mot_data->resize_start_width + motion->x - mot_data->drag_start_x;
+    int col = mot_data->resize_col;
+    if (width < 10)
+      width = 10;
+    mot_data->col_widths[col - 1] = width;
+    mot_data->col_natural_widths[col - 1] = width;
+    mot_data->col_width_set[col - 1] = 1;
+    motTableUpdateScrollbars(ih);
+    motTableRedraw(ih);
+    return;
+  }
+
+  if (mot_data && mot_data->drag_source_col)
+  {
+    if (!mot_data->col_dragging)
+    {
+      int dx = motion->x - mot_data->drag_start_x;
+      int dy = motion->y - mot_data->drag_start_y;
+      if (dx * dx + dy * dy < 25)
+        return;
+      mot_data->col_dragging = 1;
+    }
+
+    target = motTableFindTargetCol(ih, motion->x);
+    if (target != mot_data->drag_target_col)
+    {
+      mot_data->drag_target_col = target;
+      motTableRedraw(ih);
+    }
+    return;
+  }
 
   if (mot_data && iupTableCellsMode(ih))
   {
@@ -1052,6 +1239,19 @@ static void motTableDrawTable(Ihandle* ih)
     XDrawLine(display, window, mot_data->gc, 0, ly, width, ly);
     XSetLineAttributes(display, mot_data->gc, 1, LineSolid, CapButt, JoinMiter);
   }
+
+  if (mot_data->col_dragging && mot_data->drag_target_col >= 0 &&
+      mot_data->drag_target_col != mot_data->drag_source_col - 1 &&
+      mot_data->drag_target_col != mot_data->drag_source_col)
+  {
+    int lx = -mot_data->scroll_x;
+    for (col = 0; col < mot_data->drag_target_col; col++)
+      lx += mot_data->col_widths[col];
+    XSetForeground(display, mot_data->gc, iupmotColorGetPixel(0, 120, 215));
+    XSetLineAttributes(display, mot_data->gc, 2, LineSolid, CapButt, JoinMiter);
+    XDrawLine(display, window, mot_data->gc, lx, 0, lx, height);
+    XSetLineAttributes(display, mot_data->gc, 1, LineSolid, CapButt, JoinMiter);
+  }
 }
 
 static void motTableRedraw(Ihandle* ih)
@@ -1275,29 +1475,32 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
       return;
     }
 
+    if (button_event->button == Button1 && ih->data->user_resize)
+    {
+      int divider = motTableHeaderDivider(ih, button_event->x, button_event->y);
+      if (divider)
+      {
+        mot_data->resize_col = divider;
+        mot_data->resize_start_width = mot_data->col_widths[divider - 1];
+        mot_data->drag_start_x = button_event->x;
+        return;
+      }
+    }
+
     motTablePixelToCell(ih, button_event->x, button_event->y, &lin, &col);
 
     if (lin == 0 && col > 0)
     {
-      if (ih->data->sortable)
+      if (ih->data->allow_reorder && button_event->button == Button1)
       {
-        int sign = (mot_data->sort_column == col && mot_data->sort_signs[col-1] == 1) ? -1 : 1;
-
-        IFni sort_cb = (IFni)IupGetCallback(ih, "SORT_CB");
-        if (sort_cb && sort_cb(ih, col) == IUP_IGNORE)
-          return;
-
-        if (mot_data->sort_column > 0 && mot_data->sort_column <= ih->data->num_col)
-          mot_data->sort_signs[mot_data->sort_column - 1] = 0;
-
-        mot_data->sort_column = col;
-        mot_data->sort_signs[col-1] = sign;
-
-        if (!IupGetCallback(ih, "VALUE_CB"))
-          motTableSortRows(ih, col, (sign == 1));
-
-        motTableRedraw(ih);
+        mot_data->drag_source_col = col;
+        mot_data->drag_target_col = -1;
+        mot_data->col_dragging = 0;
+        mot_data->drag_start_x = button_event->x;
+        mot_data->drag_start_y = button_event->y;
       }
+      else if (ih->data->sortable)
+        motTableHeaderSort(ih, col);
     }
     else if (lin > 0 && col > 0)
     {
@@ -1401,6 +1604,41 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
   else if (event->type == ButtonRelease)
   {
     XButtonEvent* button_event = (XButtonEvent*)event;
+
+    if (button_event->button == Button1 && mot_data->resize_col)
+    {
+      mot_data->resize_col = 0;
+      return;
+    }
+
+    if (button_event->button == Button1 && mot_data->drag_source_col)
+    {
+      int src = mot_data->drag_source_col;
+      int tgt = mot_data->drag_target_col;
+      int was_dragging = mot_data->col_dragging;
+
+      mot_data->drag_source_col = 0;
+      mot_data->drag_target_col = -1;
+      mot_data->col_dragging = 0;
+
+      if (was_dragging && tgt >= 0 && tgt != src - 1 && tgt != src)
+      {
+        int dst = (tgt < src - 1) ? tgt + 1 : tgt;
+        IFnii reorder_cb = (IFnii)IupGetCallback(ih, "REORDER_CB");
+        int ret = reorder_cb ? reorder_cb(ih, src, dst) : IUP_DEFAULT;
+        if (!iupObjectCheck(ih))
+          return;
+        if (ret != IUP_IGNORE)
+          motTableMoveCol(ih, src, dst);
+        if (ret == IUP_CLOSE)
+          IupExitLoop();
+      }
+      else if (!was_dragging && ih->data->sortable)
+        motTableHeaderSort(ih, src);
+
+      motTableRedraw(ih);
+      return;
+    }
 
     if (button_event->button == Button1 && mot_data->drag_source_row >= 1)
     {
@@ -1873,6 +2111,7 @@ static int motTableMapMethod(Ihandle* ih)
 
   XtAddEventHandler(mot_data->drawing_area, KeyPressMask, False, (XtEventHandler)motTableKeyPressCallback, (XtPointer)ih);
   XtAddEventHandler(mot_data->drawing_area, Button1MotionMask, False, (XtEventHandler)motTableRowDragMotion, (XtPointer)ih);
+  XtAddEventHandler(mot_data->drawing_area, PointerMotionMask, False, (XtEventHandler)motTableHeaderPointerMotion, (XtPointer)ih);
   XtAddEventHandler(mot_data->drawing_area, FocusChangeMask, False, (XtEventHandler)iupmotFocusChangeEvent, (XtPointer)ih);
   XtAddEventHandler(mot_data->drawing_area, EnterWindowMask, False, (XtEventHandler)iupmotEnterLeaveWindowEvent, (XtPointer)ih);
   XtAddEventHandler(mot_data->drawing_area, LeaveWindowMask, False, (XtEventHandler)iupmotEnterLeaveWindowEvent, (XtPointer)ih);
@@ -2004,6 +2243,9 @@ static void motTableUnMapMethod(Ihandle* ih)
 
   if (mot_data->gc)
     XFreeGC(iupmot_display, mot_data->gc);
+
+  if (mot_data->resize_cursor)
+    XFreeCursor(iupmot_display, mot_data->resize_cursor);
 
 #ifdef IUP_USE_XFT
   if (mot_data->xft_draw)
@@ -2748,9 +2990,6 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->Map = motTableMapMethod;
   ic->UnMap = motTableUnMapMethod;
   ic->LayoutUpdate = motTableLayoutUpdateMethod;
-
-  iupClassRegisterAttribute(ic, "ALLOWREORDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "USERRESIZE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, motTableSetSortableAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", iupBaseGetActiveAttrib, motTableSetActiveAttrib);
