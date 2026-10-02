@@ -230,6 +230,20 @@ static int iMdIsSetextUnderline(const char* line, int len)
   return c == '=' ? 1 : 2;
 }
 
+#define IMD_TASK_OPEN "\xe2\x98\x90"
+#define IMD_TASK_DONE "\xe2\x98\x91"
+
+static int iMdTaskMarker(const char* line, int len)
+{
+  if (len < 4 || line[0] != '[' || line[2] != ']' || line[3] != ' ')
+    return 0;
+  if (line[1] == ' ')
+    return 1;
+  if (line[1] == 'x' || line[1] == 'X')
+    return 2;
+  return 0;
+}
+
 static int iMdListIndent(const char* line, int len, int* start)
 {
   int i = 0;
@@ -897,7 +911,7 @@ static void iMdListIndentText(iMdState* s, int depth)
 
 static void iMdParseUnorderedList(iMdState* s, const char* line, int len, int depth)
 {
-  int start;
+  int start, task;
 
   iMdListIndent(line, len, &start);
   line += start + 2;
@@ -906,13 +920,23 @@ static void iMdParseUnorderedList(iMdState* s, const char* line, int len, int de
   iMdBlockSeparator(s);
 
   iMdListIndentText(s, depth);
-  iMdBufAppendStr(&s->text, "\xe2\x80\xa2 ");
+
+  task = iMdTaskMarker(line, len);
+  if (task)
+  {
+    iMdBufAppendStr(&s->text, task == 2 ? IMD_TASK_DONE " " : IMD_TASK_OPEN " ");
+    line += 4;
+    len -= 4;
+  }
+  else
+    iMdBufAppendStr(&s->text, "\xe2\x80\xa2 ");
+
   iMdParseInline(s, line, len);
 }
 
 static void iMdParseOrderedList(iMdState* s, const char* line, int len, int num_end, int depth)
 {
-  int start;
+  int start, task;
 
   iMdListIndent(line, len, &start);
 
@@ -920,6 +944,14 @@ static void iMdParseOrderedList(iMdState* s, const char* line, int len, int num_
 
   iMdListIndentText(s, depth);
   iMdBufAppend(&s->text, line + start, num_end - start);
+
+  task = iMdTaskMarker(line + num_end, len - num_end);
+  if (task)
+  {
+    iMdBufAppendStr(&s->text, task == 2 ? IMD_TASK_DONE " " : IMD_TASK_OPEN " ");
+    num_end += 4;
+  }
+
   iMdParseInline(s, line + num_end, len - num_end);
 }
 
@@ -1864,6 +1896,17 @@ static int iMdCharIsByte(const char* text, const int* choff, int c, char b)
   return (choff[c + 1] - choff[c]) == 1 && text[choff[c]] == b;
 }
 
+static int iMdTaskGlyph(const char* text, const int* choff, int c, int c1)
+{
+  if (c < 0 || c >= c1 - 1 || !iMdCharIsByte(text, choff, c + 1, ' '))
+    return 0;
+  if (iMdCharIs(text, choff, c, IMD_TASK_OPEN, 3))
+    return 1;
+  if (iMdCharIs(text, choff, c, IMD_TASK_DONE, 3))
+    return 2;
+  return 0;
+}
+
 static int iMdLineKind(const char* text, const int* choff, const iMdFmt* fmt, int c0, int c1, int* level, int* content)
 {
   int i, blank = 1, all_mono = 1, all_bold = 1, all_quote = 1, all_rule = 1, count = 0;
@@ -1961,7 +2004,8 @@ static int iMdLineKind(const char* text, const int* choff, const iMdFmt* fmt, in
   if (*level < 0)
     *level = 0;
 
-  if (i < c1 - 1 && iMdCharIs(text, choff, i, "\xe2\x80\xa2", 3) && iMdCharIsByte(text, choff, i + 1, ' '))
+  if (i < c1 - 1 && iMdCharIsByte(text, choff, i + 1, ' ') &&
+      (iMdCharIs(text, choff, i, "\xe2\x80\xa2", 3) || iMdCharIs(text, choff, i, IMD_TASK_OPEN, 3) || iMdCharIs(text, choff, i, IMD_TASK_DONE, 3)))
   {
     *content = i + 2;
     return IMD_ULIST;
@@ -2294,7 +2338,7 @@ char* iupMarkdownGetValue(Ihandle* ih)
   iMdFmt* fmt;
   iMdBuf out;
   Ihandle* bulk;
-  int blen, charlen, base_size = 0, i, c;
+  int blen, charlen, base_size = 0, i, c, task;
   int in_code = 0, prev_kind = IMD_BLANK;
   int tbl_aligns[64], tbl_col = 0, tbl_header = 0, tbl_boxed = 0;
 
@@ -2418,12 +2462,26 @@ char* iupMarkdownGetValue(Ihandle* ih)
       for (c = 0; c < level * 2; c++)
         iMdBufAppendChar(&out, ' ');
       iMdBufAppendStr(&out, "- ");
+      task = iMdTaskGlyph(value, choff, content - 2, trim);
+      if (task)
+        iMdBufAppendStr(&out, task == 2 ? "[x] " : "[ ] ");
       iMdEmitInline(ih, &out, value, choff, fmt, content, trim, 0, 0, 0);
       break;
     case IMD_OLIST:
       for (c = 0; c < level * 2; c++)
         iMdBufAppendChar(&out, ' ');
-      iMdEmitInline(ih, &out, value, choff, fmt, content, trim, 0, 0, 0);
+      c = content;
+      while (c < trim && (choff[c + 1] - choff[c]) == 1 && iup_isdigit(value[choff[c]]))
+        c++;
+      task = iMdTaskGlyph(value, choff, c + 2, trim);
+      if (task)
+      {
+        iMdBufAppend(&out, value + choff[content], choff[c + 2] - choff[content]);
+        iMdBufAppendStr(&out, task == 2 ? "[x] " : "[ ] ");
+        iMdEmitInline(ih, &out, value, choff, fmt, c + 4, trim, 0, 0, 0);
+      }
+      else
+        iMdEmitInline(ih, &out, value, choff, fmt, content, trim, 0, 0, 0);
       break;
     case IMD_TROW:
       if (prev_kind != IMD_TROW && prev_kind != IMD_TSEP && prev_kind != IMD_TBORDER)
