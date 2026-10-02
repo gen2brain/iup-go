@@ -412,7 +412,7 @@ IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
   *h += iupgtk_list_item_space;
 }
 
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
   static int dropdown_border_x = -1;
@@ -460,8 +460,8 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
   }
 
   /* Use measured border for Y, keep 10px for X (horizontal padding) */
-  (*x) += 10;
-  (*y) += scrolled_window_border;
+  (*w) += 10;
+  (*h) += scrolled_window_border;
 
   if (editbox_border_y == -1)
   {
@@ -504,9 +504,9 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
       gtk_widget_size_request(ih->handle, &rnat);
 #endif
       gtk_widget_set_size_request(ih->handle, req_w, req_h);
-      *x = rnat.width - sb_size;
-      if (*x < 0) *x = 0;
-      *y = rnat.height;
+      *w = rnat.width - sb_size;
+      if (*w < 0) *w = 0;
+      *h = rnat.height;
       return;
     }
 
@@ -595,18 +595,18 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
     }
 
     /* Dropdown doesn't use scrolled_window, remove those base borders */
-    (*x) -= 10;
-    (*y) -= scrolled_window_border;
+    (*w) -= 10;
+    (*h) -= scrolled_window_border;
 
     if (ih->data->has_editbox)
     {
-      (*x) += dropdown_editbox_border_x;
-      (*y) += dropdown_editbox_border_y;
+      (*w) += dropdown_editbox_border_x;
+      (*h) += dropdown_editbox_border_y;
     }
     else
     {
-      (*x) += dropdown_border_x;
-      (*y) += dropdown_border_y;
+      (*w) += dropdown_border_x;
+      (*h) += dropdown_border_y;
     }
   }
   else
@@ -622,16 +622,16 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
         iupdrvFontGetCharSize(ih, &char_width, &char_height);
         int item_height = char_height;
         iupdrvListAddItemSpace(ih, &item_height);
-        (*y) -= item_height;
+        (*h) -= item_height;
       }
 
-      (*y) += editbox_border_y;
+      (*h) += editbox_border_y;
       if (ih->data->sb && !visiblelines)
-        (*y) += iupdrvGetScrollbarSize();
+        (*h) += iupdrvGetScrollbarSize();
     }
     else if (ih->data->sb && !visiblelines)
     {
-      (*y) += iupdrvGetScrollbarSize();
+      (*h) += iupdrvGetScrollbarSize();
     }
   }
 }
@@ -1177,7 +1177,7 @@ static char* gtkListGetSelectionAttrib(Ihandle* ih)
   {
     start++; /* IUP starts at 1 */
     end++;
-    return iupStrReturnIntInt((int)start, (int)end, ':');
+    return iupStrReturnIntInt(start, end, ':');
   }
 
   return NULL;
@@ -1223,7 +1223,7 @@ static char* gtkListGetSelectionPosAttrib(Ihandle* ih)
 
   entry = (GtkEntry*)iupAttribGet(ih, "_IUPGTK_ENTRY");
   if (gtk_editable_get_selection_bounds(GTK_EDITABLE(entry), &start, &end))
-    return iupStrReturnIntInt((int)start, (int)end, ':');
+    return iupStrReturnIntInt(start, end, ':');
 
   return NULL;
 }
@@ -1295,7 +1295,7 @@ static char* gtkListGetCaretAttrib(Ihandle* ih)
     GtkEntry* entry = (GtkEntry*)iupAttribGet(ih, "_IUPGTK_ENTRY");
     int pos = gtk_editable_get_position(GTK_EDITABLE(entry));
     pos++; /* IUP starts at 1 */
-    return iupStrReturnInt((int)pos);
+    return iupStrReturnInt(pos);
   }
   else
     return NULL;
@@ -1325,7 +1325,7 @@ static char* gtkListGetCaretPosAttrib(Ihandle* ih)
   {
     GtkEntry* entry = (GtkEntry*)iupAttribGet(ih, "_IUPGTK_ENTRY");
     int pos = gtk_editable_get_position(GTK_EDITABLE(entry));
-    return iupStrReturnInt((int)pos);
+    return iupStrReturnInt(pos);
   }
   else
     return NULL;

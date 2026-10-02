@@ -17,10 +17,10 @@
 
 /* Sometimes GTK decides to invert the buttons position because of the GNOME Guidelines.
    To avoid that we define different Ids for the buttons. */
-#define IUP_RESPONSE_1 -100
-#define IUP_RESPONSE_2 -200
-#define IUP_RESPONSE_3 -300
-#define IUP_RESPONSE_HELP -400
+#define IUP_RESPONSE_1 (-100)
+#define IUP_RESPONSE_2 (-200)
+#define IUP_RESPONSE_3 (-300)
+#define IUP_RESPONSE_HELP (-400)
 
 #ifndef GTK_MESSAGE_OTHER
 #define GTK_MESSAGE_OTHER GTK_MESSAGE_INFO

@@ -693,7 +693,7 @@ static int gtkToggleSetFgColorAttrib(Ihandle* ih, const char* value)
   if (iupAttribGetBoolean(ih, "SWITCH"))
     return 0; /* Switch does not have an internal label */
 
-  label = (GtkWidget*)gtk_button_get_image((GtkButton*)ih->handle);
+  label = gtk_button_get_image((GtkButton*)ih->handle);
   if (!label) return 0;
 
   if (!iupStrToRGB(value, &r, &g, &b))
