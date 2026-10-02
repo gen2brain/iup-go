@@ -2206,6 +2206,14 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
           [tempButton addItemWithTitle:@"WWWWWWWWWW"];
 
           NSSize intrinsic_size = [tempButton intrinsicContentSize];
+#ifndef GNUSTEP
+          {
+            /* macOS 11 reports an intrinsic width that truncates the title */
+            NSSize fitting_size = [tempButton fittingSize];
+            if (fitting_size.width > intrinsic_size.width)
+              intrinsic_size.width = fitting_size.width;
+          }
+#endif
           popup_decor_h = (int)lroundf(intrinsic_size.height);
 
           int text_width = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
