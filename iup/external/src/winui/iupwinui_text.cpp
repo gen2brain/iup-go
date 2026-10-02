@@ -26,6 +26,7 @@ extern "C" {
 #include "iup_image.h"
 #include "iup_focus.h"
 #include "iup_drvinfo.h"
+#include "iup_key.h"
 }
 
 #include "iupwinui_drv.h"
@@ -1464,6 +1465,24 @@ static int winuiTextMapMethod(Ihandle* ih)
   }
 
   winuiSetAux(ih, IUPWINUI_TEXT_AUX, aux);
+
+  winuiGetHandle<UIElement>(ih).AddHandler(UIElement::PointerWheelChangedEvent(), winrt::box_value(
+    PointerEventHandler([ih](IInspectable const& sender, PointerRoutedEventArgs const& args) {
+      auto cb = reinterpret_cast<IFnfiis>(IupGetCallback(ih, "WHEEL_CB"));
+      if (!cb)
+        return;
+      auto point = args.GetCurrentPoint(sender.as<UIElement>());
+      int delta = point.Properties().MouseWheelDelta();
+      if (delta == 0 || point.Properties().IsHorizontalMouseWheel())
+        return;
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), 0, status, 0);
+      args.Handled(true);
+      if (cb(ih, static_cast<float>(delta) / 120.0f, x, y, status) == IUP_CLOSE)
+        IupExitLoop();
+    })), true);
 
   if (ih->data->has_formatting)
   {

@@ -213,13 +213,54 @@ private:
   Ihandle* fIhandle;
 };
 
+static bool haikuTextWheel(Ihandle* ih, BView* view, BMessage* msg)
+{
+  auto cb = reinterpret_cast<IFnfiis>(IupGetCallback(ih, "WHEEL_CB"));
+  float dy = 0.0f;
+  if (!cb || msg->FindFloat("be:wheel_delta_y", &dy) != B_OK || dy == 0.0f)
+    return false;
+
+  int32 mods = 0;
+  if (msg->FindInt32("modifiers", &mods) != B_OK)
+    mods = static_cast<int32>(modifiers());
+
+  BPoint pt;
+  uint32 buttons = 0;
+  view->GetMouse(&pt, &buttons, false);
+
+  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+  iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), buttons, 0, status, 0);
+  if (cb(ih, -dy, static_cast<int>(pt.x), static_cast<int>(pt.y), status) == IUP_CLOSE)
+    IupExitLoop();
+  return true;
+}
+
+class IupHaikuTextWheelFilter : public BMessageFilter
+{
+public:
+  explicit IupHaikuTextWheelFilter(Ihandle* ih)
+    : BMessageFilter(B_ANY_DELIVERY, B_ANY_SOURCE, B_MOUSE_WHEEL_CHANGED),
+      fIhandle(ih) {}
+
+  filter_result Filter(BMessage* msg, BHandler** target) override
+  {
+    auto* view = dynamic_cast<BView*>(*target);
+    if (!view || !fIhandle || !fIhandle->handle)
+      return B_DISPATCH_MESSAGE;
+    return haikuTextWheel(fIhandle, view, msg) ? B_SKIP_MESSAGE : B_DISPATCH_MESSAGE;
+  }
+
+private:
+  Ihandle* fIhandle;
+};
+
 class IupHaikuTextControl : public BTextControl
 {
 public:
   explicit IupHaikuTextControl(Ihandle* ih)
     : BTextControl(BRect(0, 0, 0, 0), "iup_text", nullptr, "",
                    nullptr, B_FOLLOW_NONE),
-      fIhandle(ih), fKeyFilter(nullptr), fUndoFilter(nullptr), fMute(false)
+      fIhandle(ih), fKeyFilter(nullptr), fUndoFilter(nullptr), fWheelFilter(nullptr), fMute(false)
   {
     BTextControl::SetDivider(0);
     /* Keep B_NAVIGABLE: SetFlags syncs it to the inner view, else Tab skips it. */
@@ -234,6 +275,9 @@ public:
     if (fUndoFilter && TextView())
       TextView()->RemoveFilter(fUndoFilter);
     delete fUndoFilter;
+    if (fWheelFilter && TextView())
+      TextView()->RemoveFilter(fWheelFilter);
+    delete fWheelFilter;
   }
 
   void AttachedToWindow() override
@@ -250,6 +294,8 @@ public:
       TextView()->AddFilter(fKeyFilter);
       fUndoFilter = new IupHaikuTextUndoFilter(fIhandle);
       TextView()->AddFilter(fUndoFilter);
+      fWheelFilter = new IupHaikuTextWheelFilter(fIhandle);
+      TextView()->AddFilter(fWheelFilter);
     }
   }
 
@@ -354,6 +400,7 @@ private:
   Ihandle* fIhandle;
   IupHaikuTextKeyFilter* fKeyFilter;
   IupHaikuTextUndoFilter* fUndoFilter;
+  IupHaikuTextWheelFilter* fWheelFilter;
   bool fMute;
   bool fLastFocus = false;
 };
@@ -412,6 +459,13 @@ public:
     BRect b = Bounds();
     BRect tr(b.left + 2, b.top + 2, b.right - 2, b.bottom - 2);
     if (tr.IsValid() && tr != TextRect()) SetTextRect(tr);
+  }
+
+  void MessageReceived(BMessage* msg) override
+  {
+    if (msg->what == B_MOUSE_WHEEL_CHANGED && fIhandle && haikuTextWheel(fIhandle, this, msg))
+      return;
+    BTextView::MessageReceived(msg);
   }
 
   void MakeFocus(bool focused = true) override

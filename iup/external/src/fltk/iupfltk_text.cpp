@@ -27,6 +27,7 @@ extern "C" {
 #include "iup_drvfont.h"
 #include "iup_array.h"
 #include "iup_text.h"
+#include "iup_key.h"
 }
 
 #include "iupfltk_drv.h"
@@ -292,6 +293,19 @@ static void fltkInputDrawCue(Fl_Input* input, Ihandle* ih)
   fl_pop_clip();
 }
 
+static int fltkTextWheelEvent(Fl_Widget* w, Ihandle* ih)
+{
+  auto wcb = reinterpret_cast<IFnfiis>(IupGetCallback(ih, "WHEEL_CB"));
+  if (!wcb || Fl::event_dy() == 0)
+    return 0;
+
+  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+  iupfltkButtonKeySetStatus(Fl::event_state(), 0, status, 0);
+  if (wcb(ih, static_cast<float>(-Fl::event_dy()), Fl::event_x() - w->x(), Fl::event_y() - w->y(), status) == IUP_CLOSE)
+    IupExitLoop();
+  return 1;
+}
+
 class IupFltkInput : public Fl_Input
 {
 public:
@@ -309,6 +323,8 @@ public:
   int handle(int event) override
   {
     if (event == FL_PASTE && iupfltkHandleDropFiles(iup_handle))
+      return 1;
+    if (event == FL_MOUSEWHEEL && fltkTextWheelEvent(this, iup_handle))
       return 1;
 
     switch (event)
@@ -366,6 +382,8 @@ public:
   int handle(int event) override
   {
     if (event == FL_PASTE && iupfltkHandleDropFiles(iup_handle))
+      return 1;
+    if (event == FL_MOUSEWHEEL && fltkTextWheelEvent(this, iup_handle))
       return 1;
 
     switch (event)
@@ -436,6 +454,8 @@ public:
   int handle(int event) override
   {
     if (event == FL_PASTE && iupfltkHandleDropFiles(iup_handle))
+      return 1;
+    if (event == FL_MOUSEWHEEL && fltkTextWheelEvent(this, iup_handle))
       return 1;
 
     switch (event)
@@ -594,6 +614,8 @@ public:
 
   int handle(int event) override
   {
+    if (event == FL_MOUSEWHEEL && fltkTextWheelEvent(this, iup_handle))
+      return 1;
     if (event == FL_FOCUS && !iup_focused)
     {
       iup_focused = true;

@@ -13,6 +13,7 @@
 #include <QScrollBar>
 #include <QDoubleSpinBox>
 #include <QWidget>
+#include <QWheelEvent>
 #include <QString>
 #include <QFont>
 #include <QColor>
@@ -40,6 +41,7 @@ extern "C" {
 #include "iup_drvfont.h"
 #include "iup_array.h"
 #include "iup_text.h"
+#include "iup_key.h"
 }
 
 #include "iupqt_drv.h"
@@ -52,6 +54,31 @@ extern "C" {
 static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt);
 static void qtTextArbitrateHistory(Ihandle* ih, int redo);
 static int qtTextArbitrateClipboard(Ihandle* ih, int cut);
+
+static bool qtTextWheelEvent(Ihandle* ih, QWheelEvent* event)
+{
+  if (!ih)
+    return false;
+
+  auto cb = reinterpret_cast<IFnfiis>(IupGetCallback(ih, "WHEEL_CB"));
+  if (!cb || event->angleDelta().y() == 0)
+    return false;
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+  int x = static_cast<int>(event->position().x());
+  int y = static_cast<int>(event->position().y());
+#else
+  int x = event->x();
+  int y = event->y();
+#endif
+
+  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+  iupqtButtonKeySetStatus(event->modifiers(), event->buttons(), 0, status, 0);
+  event->accept();
+  if (cb(ih, event->angleDelta().y() / 120.0f, x, y, status) == IUP_CLOSE)
+    IupExitLoop();
+  return true;
+}
 
 class IupQtLineEdit : public QLineEdit
 {
@@ -77,6 +104,12 @@ public:
   }
 
 protected:
+  void wheelEvent(QWheelEvent* event) override
+  {
+    if (!qtTextWheelEvent(ih, event))
+      QLineEdit::wheelEvent(event);
+  }
+
   void keyPressEvent(QKeyEvent* event) override
   {
     if (event->key() == Qt::Key_Insert && event->modifiers() == Qt::NoModifier)
@@ -180,6 +213,12 @@ protected:
     return QSpinBox::validate(input, pos);
   }
 
+  void wheelEvent(QWheelEvent* event) override
+  {
+    if (!qtTextWheelEvent(ih, event))
+      QSpinBox::wheelEvent(event);
+  }
+
   void keyPressEvent(QKeyEvent* event) override
   {
     if (ih && qtTextKeyPress(ih, event))
@@ -220,6 +259,12 @@ public:
   bool isIupOverwriteMode() const { return overwrite_mode; }
 
 protected:
+  void wheelEvent(QWheelEvent* event) override
+  {
+    if (!qtTextWheelEvent(ih, event))
+      QTextEdit::wheelEvent(event);
+  }
+
   void keyPressEvent(QKeyEvent* event) override
   {
     if (event->key() == Qt::Key_Insert && event->modifiers() == Qt::NoModifier)

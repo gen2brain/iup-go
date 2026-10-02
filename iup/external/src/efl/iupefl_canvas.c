@@ -399,7 +399,7 @@ static void eflCanvasWheelCallback(void* data, const Efl_Event* ev)
   cb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
   if (cb)
   {
-    float delta = (float)wheel_delta;
+    float delta = (float)-wheel_delta;
     cb(ih, delta, pos.x - canvas_pos.x, pos.y - canvas_pos.y, status);
   }
 }

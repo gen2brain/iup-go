@@ -17,6 +17,7 @@
 #include "iup_image.h"
 #include "iup_mask.h"
 #include "iup_drvfont.h"
+#include "iup_key.h"
 #include "iup_array.h"
 #include "iup_text.h"
 
@@ -424,6 +425,27 @@ static gboolean gtk4TextKeyReleaseEvent(GtkEventControllerKey* controller, guint
   }
 
   return FALSE;
+}
+
+static gboolean gtk4TextScrollEvent(GtkEventControllerScroll* controller, double dx, double dy, Ihandle* ih)
+{
+  IFnfiis wcb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
+  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+  GdkEvent* event;
+  double x = 0, y = 0;
+  (void)dx;
+
+  if (!wcb || dy == 0)
+    return FALSE;
+
+  iupgtk4ButtonKeySetStatus(gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(controller)), dy < 0 ? 4 : 5, status, 0);
+  event = gtk_event_controller_get_current_event(GTK_EVENT_CONTROLLER(controller));
+  if (event)
+    gdk_event_get_position(event, &x, &y);
+
+  if (wcb(ih, (float)-dy, (int)x, (int)y, status) == IUP_CLOSE)
+    IupExitLoop();
+  return TRUE;
 }
 
 static gboolean gtk4TextButtonEvent(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih)
@@ -1848,6 +1870,10 @@ static int gtk4TextMapMethod(Ihandle* ih)
   GtkGesture* click_gesture = gtk_gesture_click_new();
   gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(click_gesture));
   g_signal_connect(click_gesture, "released", G_CALLBACK(gtk4TextButtonEvent), ih);
+
+  GtkEventController* scroll_controller = gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL);
+  gtk_widget_add_controller(ih->handle, scroll_controller);
+  g_signal_connect(scroll_controller, "scroll", G_CALLBACK(gtk4TextScrollEvent), ih);
 
   iupgtk4SetupMotionEvents(ih->handle, ih);
 
