@@ -1,5 +1,5 @@
 /** \file
- * \brief XDG Desktop Portal Support - FileChooser and OpenURI
+ * \brief XDG Desktop Portal Support - FileChooser, OpenURI and Settings
  *
  * See Copyright Notice in "iup.h"
  */
@@ -18,12 +18,23 @@ extern "C" {
 static int iupUnixPortalAvailable(void) { return 0; }
 static int iupUnixPortalFileDialog(Ihandle* ih) { (void)ih; return IUP_ERROR; }
 static int iupUnixPortalHelp(const char* url) { (void)url; return -1; }
+static int iupUnixPortalSettingsOpen(void) { return -1; }
+static void iupUnixPortalSettingsClose(void) { }
+static int iupUnixPortalSettingsDispatch(void) { return 0; }
+static int iupUnixPortalGetDarkMode(int fallback) { return fallback; }
+static void iupUnixPortalSetAccentColor(void) { }
 
 #else
 
 int iupUnixPortalAvailable(void);
 int iupUnixPortalFileDialog(Ihandle* ih);
 int iupUnixPortalHelp(const char* url);
+
+int iupUnixPortalSettingsOpen(void);
+void iupUnixPortalSettingsClose(void);
+int iupUnixPortalSettingsDispatch(void);
+int iupUnixPortalGetDarkMode(int fallback);
+void iupUnixPortalSetAccentColor(void);
 
 #endif
 

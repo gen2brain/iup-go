@@ -333,6 +333,7 @@ Can be: "SYSTEM" (follow the system setting), "LIGHT" or "DARK". Default: "SYSTE
 Re-seeds the global palette (DLGBGCOLOR, TXTBGCOLOR, MENUBGCOLOR and their foregrounds), applies the appearance to the native controls and re-applies the palette to every element that did not set its own BGCOLOR or FGCOLOR. Can be set before or after IupOpen. Set it before creating dialogs for a fully consistent result, some native controls pick their theme when they are created.
 
 In Win32 the native file, font and month-calendar dialogs are not affected. In Qt it needs Qt 6.8 or newer for the platform theme, older versions only get the palette. In GTK and GTK 4 it selects the dark variant of the current theme, so a theme without one keeps its colors. In EFL and GNUstep only the IUP palette follows it, the widgets keep the toolkit theme. In Haiku the controls and menus of the IUP dialogs draw with the palette; the native dialogs, tooltips and the window frame keep the system colors.
+In GTK 3, Motif, FLTK, EFL and GNUstep on Linux and BSD, SYSTEM follows the color-scheme setting of the XDG Desktop Portal when the portal reports one.
 
 The [dialog](../dlg/iup_dialog.md) THEMECHANGED_CB is called when the appearance changes, whether from a live system switch or from this attribute.
 
@@ -674,6 +675,7 @@ UI elements. Unlike TXTHLCOLOR (which is the text selection background), this
 reflects the toolkit's notion of the platform accent.
 Setting it colors the fill of IupProgressBar elements without FGCOLOR and the track of IupToggle with SWITCH=YES, including existing elements.
 In Android and WebAssembly setting it replaces the theme accent.
+In Motif, FLTK, EFL and GNUstep on Linux and BSD the default is the accent-color setting of the XDG Desktop Portal when the portal reports one.
 Setting it is not supported in macOS, iOS, Motif, FLTK, EFL and Haiku.
 In GTK 2 setting it colors only the switch track.
 

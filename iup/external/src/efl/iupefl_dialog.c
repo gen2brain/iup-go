@@ -225,7 +225,7 @@ static void eflDialogThemeChangedCallback(void* data, const Efl_Event* ev)
   if (!iupObjectCheck(ih))
     return;
 
-  iupeflSetGlobalColors();
+  iupdrvSetAppearance(iupGlobalGetAppearance());
 
   iupGlobalNotifyThemeChanged();
 }

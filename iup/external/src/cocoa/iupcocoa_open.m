@@ -13,6 +13,9 @@
 #include "iup_object.h"
 
 #include "iupcocoa_drv.h"
+#ifdef GNUSTEP
+#include "iupunix_portal.h"
+#endif
 
 #ifdef GNUSTEP
 @interface IupGnustepApplicationDelegate : NSObject
@@ -34,6 +37,50 @@
 @end
 
 static IupGnustepApplicationDelegate* cocoa_gnustep_app_delegate = nil;
+
+@interface IupGnustepPortalSettings : NSObject
+{
+  NSFileHandle* handle;
+}
+- (id)initWithFileDescriptor:(int)fd;
+- (void)stop;
+@end
+
+@implementation IupGnustepPortalSettings
+- (id)initWithFileDescriptor:(int)fd
+{
+  self = [super init];
+  if (self)
+  {
+    handle = [[NSFileHandle alloc] initWithFileDescriptor:fd closeOnDealloc:NO];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(dataAvailable:) name:NSFileHandleDataAvailableNotification object:handle];
+    [handle waitForDataInBackgroundAndNotify];
+  }
+  return self;
+}
+
+- (void)dataAvailable:(NSNotification*)notification
+{
+  (void)notification;
+  if (iupUnixPortalSettingsDispatch())
+    [handle waitForDataInBackgroundAndNotify];
+}
+
+- (void)stop
+{
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
+  [handle release];
+  handle = nil;
+}
+
+- (void)dealloc
+{
+  [self stop];
+  [super dealloc];
+}
+@end
+
+static IupGnustepPortalSettings* cocoa_gnustep_portal_settings = nil;
 #endif
 
 
@@ -97,8 +144,17 @@ static void cocoaSetAppearance(int appearance)
 
 #ifdef GNUSTEP
   {
-    int dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
-    if (appearance != IUP_APPEARANCE_SYSTEM && iupdrvIsSystemDarkMode() != dark)
+    int dark, forced;
+
+    if (appearance == IUP_APPEARANCE_SYSTEM)
+      dark = iupUnixPortalGetDarkMode(iupdrvIsSystemDarkMode());
+    else
+      dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
+
+    forced = (iupdrvIsSystemDarkMode() != dark);
+    iupGlobalSetPaletteForced(forced);
+
+    if (forced)
       iupGlobalSetAppearanceColors(dark);
   }
 #endif
@@ -136,6 +192,9 @@ static void cocoaUpdateGlobalColors(void)
     if (cocoaGetByteRGBAFromNSColor(accent, &r, &g, &b, &a))
       iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", r, g, b);
   }
+#ifdef GNUSTEP
+  iupUnixPortalSetAccentColor();
+#endif
 
   if (cocoaGetByteRGBAFromNSColor([NSColor linkColor], &r, &g, &b, &a))
     iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", r, g, b);
@@ -273,7 +332,17 @@ static int cocoaOpen(void)
   IupSetGlobal("WINDOWING", "QUARTZ");
 #endif
 
+#ifdef GNUSTEP
+  {
+    int fd = iupUnixPortalSettingsOpen();
+    if (fd >= 0)
+      cocoa_gnustep_portal_settings = [[IupGnustepPortalSettings alloc] initWithFileDescriptor:fd];
+  }
+
+  cocoaSetAppearance(IUP_APPEARANCE_SYSTEM);
+#else
   iupcocoaSetGlobalColors();
+#endif
   IupSetGlobal("_IUP_RESET_GLOBALCOLORS", "YES");
 
   IupSetInt(NULL, "UTF8MODE", 1);
@@ -335,6 +404,14 @@ IUP_SDK_API void iupdrvClose(void)
   }
 
 #ifdef GNUSTEP
+  if (cocoa_gnustep_portal_settings)
+  {
+    [cocoa_gnustep_portal_settings stop];
+    [cocoa_gnustep_portal_settings release];
+    cocoa_gnustep_portal_settings = nil;
+  }
+  iupUnixPortalSettingsClose();
+
   if (cocoa_gnustep_app_delegate)
   {
     if ([NSApp delegate] == cocoa_gnustep_app_delegate)

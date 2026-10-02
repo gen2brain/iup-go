@@ -156,6 +156,10 @@ static const char* (*iupdbus_message_get_path)(DBusMessage*);
 static void (*iupdbus_bus_remove_match)(DBusConnection*, const char*, DBusError*);
 static dbus_bool_t (*iupdbus_bus_name_has_owner)(DBusConnection*, const char*, DBusError*);
 static void (*iupdbus_free_string_array)(char**);
+static DBusConnection* (*iupdbus_bus_get_private)(DBusBusType, DBusError*);
+static dbus_bool_t (*iupdbus_connection_get_unix_fd)(DBusConnection*, int*);
+static void (*iupdbus_connection_set_exit_on_disconnect)(DBusConnection*, dbus_bool_t);
+static dbus_bool_t (*iupdbus_connection_get_is_connected)(DBusConnection*);
 
 #define dbus_error_init iupdbus_error_init
 #define dbus_error_is_set iupdbus_error_is_set
@@ -200,6 +204,10 @@ static void (*iupdbus_free_string_array)(char**);
 #define dbus_bus_remove_match iupdbus_bus_remove_match
 #define dbus_bus_name_has_owner iupdbus_bus_name_has_owner
 #define dbus_free_string_array iupdbus_free_string_array
+#define dbus_bus_get_private iupdbus_bus_get_private
+#define dbus_connection_get_unix_fd iupdbus_connection_get_unix_fd
+#define dbus_connection_set_exit_on_disconnect iupdbus_connection_set_exit_on_disconnect
+#define dbus_connection_get_is_connected iupdbus_connection_get_is_connected
 
 static inline int iupDBusOpen(void)
 {
@@ -256,6 +264,10 @@ static inline int iupDBusOpen(void)
   iupdbus_bus_remove_match = dlsym(iupdbus_handle, "dbus_bus_remove_match");
   iupdbus_bus_name_has_owner = dlsym(iupdbus_handle, "dbus_bus_name_has_owner");
   iupdbus_free_string_array = dlsym(iupdbus_handle, "dbus_free_string_array");
+  iupdbus_bus_get_private = dlsym(iupdbus_handle, "dbus_bus_get_private");
+  iupdbus_connection_get_unix_fd = dlsym(iupdbus_handle, "dbus_connection_get_unix_fd");
+  iupdbus_connection_set_exit_on_disconnect = dlsym(iupdbus_handle, "dbus_connection_set_exit_on_disconnect");
+  iupdbus_connection_get_is_connected = dlsym(iupdbus_handle, "dbus_connection_get_is_connected");
 
   if (!iupdbus_error_init || !iupdbus_bus_get || !iupdbus_connection_send)
   {

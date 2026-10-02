@@ -39,6 +39,7 @@
 #include "iup_str.h"
 
 #include "iupefl_drv.h"
+#include "iupunix_portal.h"
 
 
 static int efl_open_count = 0;
@@ -248,11 +249,19 @@ static void eflSetGlobalAttrib(void)
 
 IUP_SDK_API void iupdrvSetAppearance(int appearance)
 {
-  int dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
+  int dark, forced;
 
   iupeflSetGlobalColors();
 
-  if (appearance != IUP_APPEARANCE_SYSTEM && iupdrvIsSystemDarkMode() != dark)
+  if (appearance == IUP_APPEARANCE_SYSTEM)
+    dark = iupUnixPortalGetDarkMode(iupdrvIsSystemDarkMode());
+  else
+    dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
+
+  forced = (iupdrvIsSystemDarkMode() != dark);
+  iupGlobalSetPaletteForced(forced);
+
+  if (forced)
     iupGlobalSetAppearanceColors(dark);
 }
 
@@ -278,6 +287,7 @@ IUP_DRV_API void iupeflSetGlobalColors(void)
     iupGlobalSetDefaultColorAttrib("TXTFGCOLOR", fg_r, fg_g, fg_b);
     iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", hl_r, hl_g, hl_b);
     iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", hl_r, hl_g, hl_b);
+    iupUnixPortalSetAccentColor();
     iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", bg_r, bg_g, bg_b);
     iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", fg_r, fg_g, fg_b);
     iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
@@ -370,6 +380,7 @@ IUP_DRV_API void iupeflSetGlobalColors(void)
   iupGlobalSetDefaultColorAttrib("TXTFGCOLOR", fg_r, fg_g, fg_b);
   iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", hl_r, hl_g, hl_b);
   iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", hl_r, hl_g, hl_b);
+  iupUnixPortalSetAccentColor();
   iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", bg_r, bg_g, bg_b);
   iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", fg_r, fg_g, fg_b);
   iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
@@ -378,6 +389,22 @@ IUP_DRV_API void iupeflSetGlobalColors(void)
 /****************************************************************************
  * Driver Open/Close
  ****************************************************************************/
+
+static Ecore_Fd_Handler* efl_portal_handler = NULL;
+
+static Eina_Bool eflPortalSettingsHandler(void* data, Ecore_Fd_Handler* handler)
+{
+  (void)data;
+  (void)handler;
+
+  if (!iupUnixPortalSettingsDispatch())
+  {
+    efl_portal_handler = NULL;
+    return ECORE_CALLBACK_CANCEL;
+  }
+
+  return ECORE_CALLBACK_RENEW;
+}
 
 IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
@@ -420,7 +447,14 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
     IupStoreGlobal("ARGV0", (*argv)[0]);
 
   eflSetGlobalAttrib();
-  iupeflSetGlobalColors();
+
+  {
+    int fd = iupUnixPortalSettingsOpen();
+    if (fd >= 0)
+      efl_portal_handler = ecore_main_fd_handler_add(fd, ECORE_FD_READ, eflPortalSettingsHandler, NULL, NULL, NULL);
+  }
+
+  iupdrvSetAppearance(IUP_APPEARANCE_SYSTEM);
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");
 
@@ -481,6 +515,13 @@ IUP_SDK_API void iupdrvClose(void)
 
   if (efl_open_count > 0)
     return;
+
+  if (efl_portal_handler)
+  {
+    ecore_main_fd_handler_del(efl_portal_handler);
+    efl_portal_handler = NULL;
+  }
+  iupUnixPortalSettingsClose();
 
   iupeflLoopCleanup();
 

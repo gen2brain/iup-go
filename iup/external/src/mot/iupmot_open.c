@@ -19,6 +19,7 @@
 
 #include "iupmot_drv.h"
 #include "iupmot_color.h"
+#include "iupunix_portal.h"
 
 
 /* global variables */
@@ -80,18 +81,41 @@ IUP_DRV_API void iupmotSetGlobalColors(void)
   iupmotSetGlobalColorFromXrm("*foreground", "*Foreground", "TXTFGCOLOR", 0, 0, 0);
   iupmotSetGlobalColorFromXrm("*highlightColor", "*HighlightColor", "TXTHLCOLOR", 128, 128, 128);
   iupmotSetGlobalColorFromXrm("*highlightColor", "*HighlightColor", "ACCENTCOLOR", 128, 128, 128);
+  iupUnixPortalSetAccentColor();
 
   iupGlobalSetDefaultColorAttrib("LINKFGCOLOR", 0, 0, 238);
 }
 
 IUP_SDK_API void iupdrvSetAppearance(int appearance)
 {
-  int dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
+  int dark, forced;
 
   iupmotSetGlobalColors();
 
-  if (appearance != IUP_APPEARANCE_SYSTEM && iupdrvIsSystemDarkMode() != dark)
+  if (appearance == IUP_APPEARANCE_SYSTEM)
+    dark = iupUnixPortalGetDarkMode(iupdrvIsSystemDarkMode());
+  else
+    dark = (appearance == IUP_APPEARANCE_DARK)? 1: 0;
+
+  forced = (iupdrvIsSystemDarkMode() != dark);
+  iupGlobalSetPaletteForced(forced);
+
+  if (forced)
     iupGlobalSetAppearanceColors(dark);
+}
+
+static XtInputId mot_portal_input = 0;
+
+static void motPortalSettingsInput(XtPointer client_data, int* source, XtInputId* id)
+{
+  (void)client_data;
+  (void)source;
+
+  if (!iupUnixPortalSettingsDispatch())
+  {
+    XtRemoveInput(*id);
+    mot_portal_input = 0;
+  }
 }
 
 IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
@@ -160,7 +184,13 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 
   iupmotColorInit();
 
-  iupmotSetGlobalColors();
+  {
+    int fd = iupUnixPortalSettingsOpen();
+    if (fd >= 0)
+      mot_portal_input = XtAppAddInput(iupmot_appcontext, fd, (XtPointer)XtInputReadMask, motPortalSettingsInput, NULL);
+  }
+
+  iupdrvSetAppearance(IUP_APPEARANCE_SYSTEM);
 
   /* enable alternative DnD icons as default */
   XtVaSetValues(XmGetXmDisplay(iupmot_display), XmNenableDragIcon, True, NULL);
@@ -197,6 +227,12 @@ IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 
 IUP_SDK_API void iupdrvClose(void)
 {
+  if (mot_portal_input)
+  {
+    XtRemoveInput(mot_portal_input);
+    mot_portal_input = 0;
+  }
+  iupUnixPortalSettingsClose();
   iupmotColorFinish();
   iupmotTipsFinish();
   iupmotStrRelease();
