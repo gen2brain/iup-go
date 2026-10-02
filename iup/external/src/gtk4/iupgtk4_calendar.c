@@ -36,8 +36,16 @@ static void gtk4CalendarSetDate(GtkCalendar* calendar, GDateTime* dt)
 #endif
 }
 
+static void gtk4CalendarDaySelected(GtkCalendar* calendar, Ihandle* ih)
+{
+  iupBaseCallValueChangedCb(ih);
+  (void)calendar;
+}
+
 static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
+  g_signal_handlers_block_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtk4CalendarDaySelected), ih);
+
   if (iupStrEqualNoCase(value, "TODAY"))
   {
     struct tm * timeinfo;
@@ -75,6 +83,9 @@ static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
       }
     }
   }
+
+  g_signal_handlers_unblock_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtk4CalendarDaySelected), ih);
+
   return 0; /* do not store value in hash table */
 }
 
@@ -130,12 +141,6 @@ static void gtk4CalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, in
 
   *w = nat_w;
   *h = nat_h;
-}
-
-static void gtk4CalendarDaySelected(GtkCalendar* calendar, Ihandle* ih)
-{
-  iupBaseCallValueChangedCb(ih);
-  (void)calendar;
 }
 
 static int gtk4CalendarMapMethod(Ihandle* ih)

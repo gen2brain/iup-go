@@ -158,6 +158,8 @@ static int qtCalendarSetValueAttrib(Ihandle* ih, const char* value)
   if (!calendar)
     return 0;
 
+  bool blocked = calendar->blockSignals(true);
+
   if (iupStrEqualNoCase(value, "TODAY"))
   {
     QDate today = QDate::currentDate();
@@ -178,6 +180,8 @@ static int qtCalendarSetValueAttrib(Ihandle* ih, const char* value)
         calendar->setSelectedDate(date);
     }
   }
+
+  calendar->blockSignals(blocked);
 
   return 0;
 }

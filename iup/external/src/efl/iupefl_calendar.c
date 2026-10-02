@@ -51,8 +51,8 @@ static int eflCalendarSetValueAttrib(Ihandle* ih, const char* value)
     time_t timer;
     time(&timer);
     timeinfo = localtime(&timer);
-
-    efl_ui_calendar_date_set(calendar, *timeinfo);
+    if (timeinfo)
+      efl_ui_calendar_date_set(calendar, *timeinfo);
   }
   else
   {
@@ -74,6 +74,8 @@ static int eflCalendarSetValueAttrib(Ihandle* ih, const char* value)
       efl_ui_calendar_date_set(calendar, selected_time);
     }
   }
+
+  iupAttribSetInt(ih, "_IUP_OLD_DAY", efl_ui_calendar_date_get(calendar).tm_mday);
 
   return 0;
 }

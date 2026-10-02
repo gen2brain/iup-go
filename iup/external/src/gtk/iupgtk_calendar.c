@@ -40,20 +40,51 @@ static int gtkCalendarSetWeekNumbersAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int gtkCalendarGetDateKey(GtkCalendar* calendar)
+{
+  guint year, month, day;
+  gtk_calendar_get_date(calendar, &year, &month, &day);
+  return (int)(year * 10000 + (month + 1) * 100 + day);
+}
+
+static void gtkCalendarNavigate(GtkCalendar* calendar, Ihandle* ih)
+{
+  (void)calendar;
+  iupAttribSet(ih, "_IUPGTK_CAL_NAVIGATE", "1");
+}
+
+static void gtkCalendarDaySelected(GtkCalendar* calendar, Ihandle* ih)
+{
+  int date = gtkCalendarGetDateKey(calendar);
+
+  if (iupAttribGet(ih, "_IUPGTK_CAL_NAVIGATE"))
+  {
+    iupAttribSet(ih, "_IUPGTK_CAL_NAVIGATE", NULL);
+    return;
+  }
+
+  if (date != iupAttribGetInt(ih, "_IUP_OLD_DATE"))
+  {
+    iupAttribSetInt(ih, "_IUP_OLD_DATE", date);
+    iupBaseCallValueChangedCb(ih);
+  }
+}
+
 static int gtkCalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
+  g_signal_handlers_block_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkCalendarDaySelected), ih);
+
   if (iupStrEqualNoCase(value, "TODAY"))
   {
     struct tm * timeinfo;
     time_t timer;
     time(&timer);
     timeinfo = localtime(&timer);
-    if (!timeinfo)
-      return 0;
-
-    gtk_calendar_select_month(GTK_CALENDAR(ih->handle), timeinfo->tm_mon, timeinfo->tm_year + 1900);
-    gtk_calendar_select_day(GTK_CALENDAR(ih->handle), timeinfo->tm_mday);
-
+    if (timeinfo)
+    {
+      gtk_calendar_select_month(GTK_CALENDAR(ih->handle), timeinfo->tm_mon, timeinfo->tm_year + 1900);
+      gtk_calendar_select_day(GTK_CALENDAR(ih->handle), timeinfo->tm_mday);
+    }
   }
   else
   {
@@ -70,6 +101,11 @@ static int gtkCalendarSetValueAttrib(Ihandle* ih, const char* value)
       gtk_calendar_select_day(GTK_CALENDAR(ih->handle), day);
     }
   }
+
+  g_signal_handlers_unblock_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkCalendarDaySelected), ih);
+
+  iupAttribSetInt(ih, "_IUP_OLD_DATE", gtkCalendarGetDateKey(GTK_CALENDAR(ih->handle)));
+
   return 0; /* do not store value in hash table */
 }
 
@@ -108,22 +144,6 @@ static void gtkCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int
   iupdrvTextAddBorders(ih, w, h);
 }
 
-static void gtkCalendarDaySelected(GtkCalendar* calendar, Ihandle* ih)
-{
-  guint year, month, day;
-  int old_day;
-
-  gtk_calendar_get_date(calendar, &year, &month, &day);
-
-  old_day = iupAttribGetInt(ih, "_IUP_OLD_DAY");
-
-  if ((int)day != old_day)
-  {
-    iupAttribSetInt(ih, "_IUP_OLD_DAY", (int)day);
-    iupBaseCallValueChangedCb(ih);
-  }
-}
-
 static int gtkCalendarMapMethod(Ihandle* ih)
 {
   ih->handle = gtk_calendar_new();
@@ -143,6 +163,10 @@ static int gtkCalendarMapMethod(Ihandle* ih)
   g_signal_connect(G_OBJECT(ih->handle), "show-help", G_CALLBACK(iupgtkShowHelp), ih);
   g_signal_connect(G_OBJECT(ih->handle), "key-press-event", G_CALLBACK(iupgtkKeyPressEvent), ih);
 
+  g_signal_connect(G_OBJECT(ih->handle), "prev-month", G_CALLBACK(gtkCalendarNavigate), ih);
+  g_signal_connect(G_OBJECT(ih->handle), "next-month", G_CALLBACK(gtkCalendarNavigate), ih);
+  g_signal_connect(G_OBJECT(ih->handle), "prev-year", G_CALLBACK(gtkCalendarNavigate), ih);
+  g_signal_connect(G_OBJECT(ih->handle), "next-year", G_CALLBACK(gtkCalendarNavigate), ih);
   g_signal_connect(G_OBJECT(ih->handle), "day-selected", G_CALLBACK(gtkCalendarDaySelected), ih);
 
   gtk_widget_realize(ih->handle);
