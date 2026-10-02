@@ -254,13 +254,19 @@ static long iappleCameraScore(AVCaptureDeviceFormat* format, int req_width, int 
   if (!image || CVPixelBufferGetPixelFormatType(image) != kCVPixelFormatType_32BGRA)
     return;
 
-  CVPixelBufferLockBaseAddress(image, kCVPixelBufferLock_ReadOnly);
+  if (CVPixelBufferLockBaseAddress(image, kCVPixelBufferLock_ReadOnly) != kCVReturnSuccess)
+    return;
   w = CVPixelBufferGetWidth(image);
   h = CVPixelBufferGetHeight(image);
   stride = CVPixelBufferGetBytesPerRow(image);
   base = (const unsigned char*)CVPixelBufferGetBaseAddress(image);
+  if (!base)
+  {
+    CVPixelBufferUnlockBaseAddress(image, kCVPixelBufferLock_ReadOnly);
+    return;
+  }
 
-  if ((int)w != width || (int)h != height || !rgb)
+  if ((int)w != width || (int)h != height || !rgb || (rotation && !rotated))
   {
     free(rgb);
     free(rotated);
@@ -268,6 +274,12 @@ static long iappleCameraScore(AVCaptureDeviceFormat* format, int req_width, int 
     rotated = rotation ? (unsigned char*)malloc(w * h * 3) : NULL;
     width = (int)w;
     height = (int)h;
+  }
+
+  if (!rgb || (rotation && !rotated))
+  {
+    CVPixelBufferUnlockBaseAddress(image, kCVPixelBufferLock_ReadOnly);
+    return;
   }
 
   dst = rgb;

@@ -35,7 +35,7 @@ int iupandroidMediaPermissionState(const char* permission)
   if (!cls)
     return -1;
 
-  name = (*jni_env)->NewStringUTF(jni_env, permission);
+  name = iupAndroid_NewStringUTF(jni_env, permission);
   m = (*jni_env)->GetStaticMethodID(jni_env, cls, "permissionState", "(Ljava/lang/String;)I");
   state = (*jni_env)->CallStaticIntMethod(jni_env, cls, m, name);
   iupAndroid_CheckException(jni_env, "IupPermissionHelper.permissionState");
@@ -54,7 +54,7 @@ void iupandroidMediaRequestPermission(const char* permission, Ihandle* ih)
   if (!cls)
     return;
 
-  name = (*jni_env)->NewStringUTF(jni_env, permission);
+  name = iupAndroid_NewStringUTF(jni_env, permission);
   m = (*jni_env)->GetStaticMethodID(jni_env, cls, "requestPermission", "(Ljava/lang/String;J)V");
   (*jni_env)->CallStaticVoidMethod(jni_env, cls, m, name, (jlong)(intptr_t)ih);
   iupAndroid_CheckException(jni_env, "IupPermissionHelper.requestPermission");
