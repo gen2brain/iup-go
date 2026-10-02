@@ -1167,9 +1167,6 @@ static int winTabsWmNotify(Ihandle* ih, NMHDR* msg_info, int* result)
     int pos = iupdrvTabsGetCurrentTab(ih);
     int prev_pos = iupAttribGetInt(ih, "_IUPWINTABS_PREV_CHILD_POS");
 
-    HWND tab_container = winTabsGetPageWindow(ih, pos);
-    HWND prev_tab_container = winTabsGetPageWindow(ih, prev_pos);
-
     /* Call the callback first, before showing/hiding windows */
     if (cb)
     {

@@ -325,8 +325,8 @@ IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
   if (h) *h = dc->h;
 }
 
-#define iupInt2Float(_x) ((float)_x)
-#define iupInt2FloatW(_x) ((float)_x)
+#define iupInt2Float(_x) ((float)(_x))
+#define iupInt2FloatW(_x) ((float)(_x))
 #define iupColor2ARGB(_c) WD_ARGB(iupDrawAlpha(_c), iupDrawRed(_c), iupDrawGreen(_c), iupDrawBlue(_c))
 
 static int iStrokeEqual(const IupDrawStroke* a, const IupDrawStroke* b)
@@ -965,7 +965,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   WD_HBRUSH brush = wdCreateSolidBrush(dc->hCanvas, iupColor2ARGB(color));
   int layout_center = flags & IUP_DRAW_LAYOUTCENTER;
 
-  HFONT hFont = (HFONT)iupwinGetHFont(NULL, font);
+  HFONT hFont = iupwinGetHFont(NULL, font);
   WD_HFONT wdFont = wdCreateFontWithGdiHandle(hFont);
   WD_HPATH clip_path = NULL;
   int layout_w = w, layout_h = h;

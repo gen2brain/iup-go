@@ -528,7 +528,7 @@ IUP_DRV_API int iupwinBaseMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, L
       HELPINFO* help_info = (HELPINFO*)lp;
 
       if (help_info->iContextType == HELPINFO_MENUITEM)
-        child = iupwinMenuGetItemHandle((HMENU)help_info->hItemHandle, (int)help_info->iCtrlId);
+        child = iupwinMenuGetItemHandle((HMENU)help_info->hItemHandle, help_info->iCtrlId);
       else
         child = iupwinHandleGet((HWND)help_info->hItemHandle);
 
@@ -988,9 +988,9 @@ IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
 {
-  ShowWindow(ih->handle, visible? SW_SHOWNORMAL: SW_HIDE);
+  ShowWindow(ih->handle, enable? SW_SHOWNORMAL: SW_HIDE);
 }
 
 IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)

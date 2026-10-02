@@ -38,23 +38,23 @@
 #define  EM_SETCUEBANNER      (ECM_FIRST + 1)
 #endif
 
-#define WM_IUPCARET WM_APP+1   /* Custom IUP message */
+#define WM_IUPCARET (WM_APP+1)   /* Custom IUP message */
 
-#define WIN_GETCOUNT(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_GETCOUNT: LB_GETCOUNT)
-#define WIN_GETTEXTLEN(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_GETLBTEXTLEN: LB_GETTEXTLEN)
-#define WIN_GETTEXT(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_GETLBTEXT: LB_GETTEXT)
-#define WIN_ADDSTRING(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_ADDSTRING: LB_ADDSTRING)
-#define WIN_DELETESTRING(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_DELETESTRING: LB_DELETESTRING)
-#define WIN_INSERTSTRING(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_INSERTSTRING: LB_INSERTSTRING)
-#define WIN_RESETCONTENT(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_RESETCONTENT: LB_RESETCONTENT)
-#define WIN_SETCURSEL(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_SETCURSEL: LB_SETCURSEL)
-#define WIN_GETCURSEL(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_GETCURSEL: LB_GETCURSEL)
-#define WIN_SETHORIZONTALEXTENT(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_SETHORIZONTALEXTENT: LB_SETHORIZONTALEXTENT)
-#define WIN_GETHORIZONTALEXTENT(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_GETHORIZONTALEXTENT: LB_GETHORIZONTALEXTENT)
-#define WIN_SETITEMDATA(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_SETITEMDATA: LB_SETITEMDATA)
-#define WIN_GETITEMDATA(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_GETITEMDATA: LB_GETITEMDATA)
-#define WIN_SETTOPINDEX(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_SETTOPINDEX: LB_SETTOPINDEX)
-#define WIN_SETITEMHEIGHT(_ih) ((_ih->data->is_dropdown || _ih->data->has_editbox)? CB_SETITEMHEIGHT: LB_SETITEMHEIGHT)
+#define WIN_GETCOUNT(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_GETCOUNT: LB_GETCOUNT)
+#define WIN_GETTEXTLEN(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_GETLBTEXTLEN: LB_GETTEXTLEN)
+#define WIN_GETTEXT(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_GETLBTEXT: LB_GETTEXT)
+#define WIN_ADDSTRING(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_ADDSTRING: LB_ADDSTRING)
+#define WIN_DELETESTRING(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_DELETESTRING: LB_DELETESTRING)
+#define WIN_INSERTSTRING(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_INSERTSTRING: LB_INSERTSTRING)
+#define WIN_RESETCONTENT(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_RESETCONTENT: LB_RESETCONTENT)
+#define WIN_SETCURSEL(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_SETCURSEL: LB_SETCURSEL)
+#define WIN_GETCURSEL(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_GETCURSEL: LB_GETCURSEL)
+#define WIN_SETHORIZONTALEXTENT(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_SETHORIZONTALEXTENT: LB_SETHORIZONTALEXTENT)
+#define WIN_GETHORIZONTALEXTENT(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_GETHORIZONTALEXTENT: LB_GETHORIZONTALEXTENT)
+#define WIN_SETITEMDATA(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_SETITEMDATA: LB_SETITEMDATA)
+#define WIN_GETITEMDATA(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_GETITEMDATA: LB_GETITEMDATA)
+#define WIN_SETTOPINDEX(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_SETTOPINDEX: LB_SETTOPINDEX)
+#define WIN_SETITEMHEIGHT(_ih) (((_ih)->data->is_dropdown || (_ih)->data->has_editbox)? CB_SETITEMHEIGHT: LB_SETITEMHEIGHT)
 
 
 typedef struct _winListItemData
@@ -68,7 +68,7 @@ static void winListUpdateShowImageItemHeight(Ihandle* ih, winListItemData* itemd
 
 static winListItemData* winListGetItemData(Ihandle* ih, int pos)
 {
-  LRESULT ret = (LRESULT)SendMessage(ih->handle, WIN_GETITEMDATA(ih), pos, 0);
+  LRESULT ret = SendMessage(ih->handle, WIN_GETITEMDATA(ih), pos, 0);
   if (ret == CB_ERR)
     return NULL;
   else
@@ -94,7 +94,7 @@ static void winListSetItemData(Ihandle* ih, int pos, const char* str, HBITMAP hB
 
   if (!itemdata)
   {
-    itemdata = malloc(sizeof(winListItemData));
+    itemdata = calloc(1, sizeof(winListItemData));
     SendMessage(ih->handle, WIN_SETITEMDATA(ih), pos, (LPARAM)itemdata);
   }
 
@@ -175,16 +175,16 @@ IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
   (void)h;
 }
 
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
   /* LAYOUT_DECORATION_ESTIMATE */
   int border_size = 2 * 4;
-  (*x) += border_size;
-  (*y) += border_size;
+  (*w) += border_size;
+  (*h) += border_size;
 
   if (ih->data->is_dropdown)
   {
-    (*x) += 3; /* extra space for the dropdown button */
+    (*w) += 3; /* extra space for the dropdown button */
 
     /* IMPORTANT: In Windows the DROPDOWN box is always sized by the system
        to have the height just right to include the borders and the text.
@@ -193,7 +193,7 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
   else
   {
     if (ih->data->has_editbox)
-      (*y) += 2*3; /* internal border between editbox and list */
+      (*h) += 2*3; /* internal border between editbox and list */
   }
 }
 
@@ -1533,7 +1533,7 @@ static int winListEditProc(Ihandle* ih, HWND cbedit, UINT msg, WPARAM wp, LPARAM
         CallWindowProc(oldProc, cbedit, WM_UNDO, 0, 0);
 
         value = winListGetValueAttrib(ih);
-        cb(ih, 0, (char*)value);
+        cb(ih, 0, value);
 
         ret = 1;
       }
@@ -1916,7 +1916,6 @@ static int winListVirtualNotifyCallback(Ihandle* ih, void* msg_info, int* result
         if (cb)
         {
           int pos = pnmv->iItem + 1;  /* 1-based */
-          char* text = iupListGetItemValueCb(ih, pos);
           iupListSingleCallActionCb(ih, cb, pos);
         }
         iupBaseCallValueChangedCb(ih);

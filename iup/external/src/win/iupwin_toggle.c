@@ -143,7 +143,6 @@ static void winSwitchCustomDraw(Ihandle* ih, HDC hDC, RECT* rect, UINT itemState
 
   wdBeginPaint(canvas);
 
-  int is_checked = (switch_data->checked_state == BST_CHECKED);
   int is_disabled = (itemState & ODS_DISABLED) != 0;
 
   COLORREF track_color_ref, thumb_color_ref;
@@ -1099,7 +1098,6 @@ static int winToggleMapMethod(Ihandle* ih)
 
     ih->data->type = IUP_TOGGLE_TEXT;
     dwStyle |= BS_OWNERDRAW | BS_CHECKBOX;
-    ownerdraw = 1;
 
     if (iupAttribGetBoolean(ih, "CANFOCUS"))
       dwStyle |= WS_TABSTOP;

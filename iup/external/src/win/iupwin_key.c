@@ -232,11 +232,11 @@ IUP_DRV_API int iupwinKeyIsExtended(int code)
   return 0;
 }
 
-IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* wincode, unsigned int* state)
+IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int* keyval, unsigned int* state)
 {
-  int i, iupcode = iup_XkeyBase(code);
+  int i, iupcode = iup_XkeyBase(key);
 
-  *wincode = 0;
+  *keyval = 0;
 
   switch (iupcode)
   {
@@ -259,32 +259,32 @@ IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* wincode, unsigned int* 
   {
     if (winkey_map[i].iupcode == iupcode)
     {
-      *wincode = i;
+      *keyval = i;
       break;
     }
     if (winkey_map[i].shift_iupcode == iupcode)
     {
-      *wincode = i;
-      code = iup_XkeyShift(code);  /* add Shift */
+      *keyval = i;
+      key = iup_XkeyShift(key);  /* add Shift */
       break;
     }
     if (winkey_map[i].altgr_iupcode == iupcode)
     {
-      *wincode = i;
-      code = iup_XkeyCtrl(code);  /* add Ctrl */
-      code = iup_XkeyAlt(code);   /* add Alt */
+      *keyval = i;
+      key = iup_XkeyCtrl(key);  /* add Ctrl */
+      key = iup_XkeyAlt(key);   /* add Alt */
       break;
     }
   }
 
   *state = 0;
-  if (iup_isShiftXkey(code))
+  if (iup_isShiftXkey(key))
     *state = VK_SHIFT;
-  else if (iup_isCtrlXkey(code))
+  else if (iup_isCtrlXkey(key))
     *state = VK_CONTROL;
-  else if (iup_isAltXkey(code))
+  else if (iup_isAltXkey(key))
     *state = VK_MENU;
-  else if (iup_isSysXkey(code))
+  else if (iup_isSysXkey(key))
     *state = VK_LWIN;
 }
 
@@ -327,7 +327,7 @@ static int winKeyMap2Iup(int wincode)
   return code;
 }
 
-#define win_ischar(_c)  (_c >= 0x41 && _c <= 0x5A)
+#define win_ischar(_c)  ((_c) >= 0x41 && (_c) <= 0x5A)
 
 static int winKeyAdjust(int wincode)
 {

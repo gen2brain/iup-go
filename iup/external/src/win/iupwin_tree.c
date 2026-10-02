@@ -129,10 +129,10 @@ static void winTreeChildCountRec(Ihandle* ih, HTREEITEM hItem, int* count)
   }
 }
 
-IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, HTREEITEM hItem)
+IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, HTREEITEM node_handle)
 {
   int count = 0;
-  winTreeChildCountRec(ih, hItem, &count);
+  winTreeChildCountRec(ih, node_handle, &count);
   return count;
 }
 
