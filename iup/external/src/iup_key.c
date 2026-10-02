@@ -248,13 +248,13 @@ static const char* iKeyBaseCodeToName(int code, unsigned char* mod)
   return NULL;
 }
 
-#define iStrUpper(_c)  ((_c >= 'a' && _c <= 'z')? (_c - 'a') + 'A': _c)
+#define iStrUpper(_c)  (((_c) >= 'a' && (_c) <= 'z')? ((_c) - 'a') + 'A': (_c))
 
 #define iKeyMakeXName(_name, _prefix, _base_name) \
 {                                                 \
   iupStrCopyN(_name, sizeof(_name), _prefix);     \
-  _name[3] = iStrUpper(_base_name[2]);            \
-  iupStrCopyN(_name+4, sizeof(_name)-4, _base_name+3); \
+  (_name)[3] = iStrUpper((_base_name)[2]);            \
+  iupStrCopyN((_name)+4, sizeof(_name)-4, (_base_name)+3); \
 }
 
 #define iKeyReturnXName(_prefix, _base_name) \

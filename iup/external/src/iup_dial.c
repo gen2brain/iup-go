@@ -824,10 +824,10 @@ Iclass* iupDialNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupDial(const char* orientation)
+IUP_API Ihandle* IupDial(const char* type)
 {
   void* params[2];
-  params[0] = (void*)orientation;
+  params[0] = (void*)type;
   params[1] = NULL;
   return IupCreatev("dial", params);
 }

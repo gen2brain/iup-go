@@ -275,7 +275,7 @@ static int iMenuCreateMethod(Ihandle* ih, void** params)
     Ihandle** iparams = (Ihandle**)params;
     while (*iparams)
     {
-      Ihandle* child = (Ihandle*)(*iparams);
+      Ihandle* child = *iparams;
       if (child->iclass->nativetype == IUP_TYPEMENU)
         IupAppend(ih, child);
       iparams++;

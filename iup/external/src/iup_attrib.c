@@ -20,16 +20,16 @@
 #include "iup_varg.h"
 
 
-#define iupATTRIB_LANGUAGE_STRING(_v)  (_v && _v[0] == '_' && _v[1] == '@')
+#define iupATTRIB_LANGUAGE_STRING(_v)  ((_v) && (_v)[0] == '_' && (_v)[1] == '@')
 #define iupATTRIB_LANGUAGE_SHIFT 2
 
 #define iupATTRIB_GET_LANGUAGE_STRING(_v, _s)                              \
   {                                                                        \
-    char* new_value = IupGetLanguageString(_v+iupATTRIB_LANGUAGE_SHIFT);   \
-    if (new_value != _v+iupATTRIB_LANGUAGE_SHIFT)                          \
+    char* new_value = IupGetLanguageString((_v)+iupATTRIB_LANGUAGE_SHIFT); \
+    if (new_value != (_v)+iupATTRIB_LANGUAGE_SHIFT)                        \
     {                                                                      \
-      _v = new_value;                                                      \
-      _s = 0;  /* no need to store it again, already stored internally */  \
+      (_v) = new_value;                                                    \
+      (_s) = 0;  /* no need to store it again, already stored internally */ \
     }                                                                      \
   }
 
@@ -1412,7 +1412,7 @@ static void iAttribCapture(char* env_buffer, char* dlm)
   int c;
   do
   {
-    c = *env_str; ++env_str;
+    c = (unsigned char)*env_str; ++env_str;
     if (i < 256)
       env_buffer[i++] = (char) c;
   } while (c && !strchr(dlm,c));
@@ -1424,11 +1424,11 @@ static void iAttribSkipComment(void)
   int c;
   do
   {
-    c = *env_str; ++env_str;
+    c = (unsigned char)*env_str; ++env_str;
   } while ((c > 0) && (c != '\n'));
 }
 
-#define IATTRIB_TK_END    -1
+#define IATTRIB_TK_END    (-1)
 #define IATTRIB_TK_SET     7
 #define IATTRIB_TK_COMMA   8
 #define IATTRIB_TK_NAME    5
@@ -1437,7 +1437,7 @@ static int iAttribToken(char* env_buffer)
 {
   for (;;)
   {
-    int c = *env_str; ++env_str;
+    int c = (unsigned char)*env_str; ++env_str;
     switch (c)
     {
     case 0:

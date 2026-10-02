@@ -177,21 +177,21 @@ void iupListMultipleCallActionCb(Ihandle* ih, IFnsii cb, IFns multi_cb, int* pos
   free(str);
 }
 
-int iupListGetPosAttrib(Ihandle* ih, int pos)
+int iupListGetPosAttrib(Ihandle* ih, int id)
 {
   int count;
 
-  pos--; /* IUP items start at 1 */
+  id--; /* IUP items start at 1 */
 
-  if (pos < 0)
+  if (id < 0)
     return -1;
 
   count = iupdrvListGetCount(ih);
 
-  if (pos == count) return -2;
-  if (pos > count) return -1;
+  if (id == count) return -2;
+  if (id > count) return -1;
 
-  return pos;
+  return id;
 }
 
 void iupListSetInitialItems(Ihandle* ih)
@@ -231,27 +231,27 @@ char* iupListGetNCAttrib(Ihandle* ih)
     return NULL;
 }
 
-int iupListSetIdValueAttrib(Ihandle* ih, int pos, const char* value)
+int iupListSetIdValueAttrib(Ihandle* ih, int id, const char* value)
 {
   int count = iupdrvListGetCount(ih);
 
-  pos--; /* IUP starts at 1 */
+  id--; /* IUP starts at 1 */
 
   if (!value)
   {
-    if (pos >= 0 && pos <= count-1)
+    if (id >= 0 && id <= count-1)
     {
-      if (pos == 0)
+      if (id == 0)
       {
         iupdrvListRemoveAllItems(ih);
         iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
       }
       else
       {
-        int i = pos;
+        int i = id;
         while (i < count)
         {
-          iupdrvListRemoveItem(ih, pos);
+          iupdrvListRemoveItem(ih, id);
           i++;
         }
       }
@@ -259,12 +259,12 @@ int iupListSetIdValueAttrib(Ihandle* ih, int pos, const char* value)
   }
   else
   {
-    if (pos >= 0 && pos <= count-1)
+    if (id >= 0 && id <= count-1)
     {
-      iupdrvListRemoveItem(ih, pos);
-      iupdrvListInsertItem(ih, pos, value);
+      iupdrvListRemoveItem(ih, id);
+      iupdrvListInsertItem(ih, id, value);
     }
-    else if (pos == count)
+    else if (id == count)
       iupdrvListAppendItem(ih, value);
   }
   return 0;

@@ -190,7 +190,7 @@ IUP_SDK_API const iGlobalRegEntry* iupGlobalRegFind(const char* name)
 }
 
 
-IUP_API int IupGetAllGlobals(char** list, int n)
+IUP_API int IupGetAllGlobals(char** names, int n)
 {
   int total, user_count, i, written;
   char** user_names = NULL;
@@ -212,7 +212,7 @@ IUP_API int IupGetAllGlobals(char** list, int n)
       total++;
   }
 
-  if (!list || n == 0 || n == -1)
+  if (!names || n == 0 || n == -1)
   {
     free(user_names);
     return total;
@@ -220,11 +220,11 @@ IUP_API int IupGetAllGlobals(char** list, int n)
 
   written = 0;
   for (i = 0; i < REG_COUNT && written < n; i++)
-    list[written++] = (char*)registry[i].name;
+    names[written++] = (char*)registry[i].name;
   for (i = 0; i < user_count && written < n; i++)
   {
     if (!iupGlobalRegFind(user_names[i]))
-      list[written++] = user_names[i];
+      names[written++] = user_names[i];
   }
 
   free(user_names);

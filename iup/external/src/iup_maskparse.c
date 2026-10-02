@@ -40,9 +40,9 @@ static char imask_parse_chars[] = "|*+()[]-^/.?^${}~";
 
 #define SPC2_CH  '\\'    /* Special 2 character */
 
-#define isvalid(c) (c != 0 && c != OR_CH && c != OPGR_CH && c != CLGR_CH &&\
-                         c != CL_CH && c != OPCL_CH && c != CLCL_CH &&\
-                         c != CAP_OPEN_CH && c != CAP_CLOSE_CH && c != OOM_CH)
+#define isvalid(c) ((c) != 0 && (c) != OR_CH && (c) != OPGR_CH && (c) != CLGR_CH &&\
+                         (c) != CL_CH && (c) != OPCL_CH && (c) != CLCL_CH &&\
+                         (c) != CAP_OPEN_CH && (c) != CAP_CLOSE_CH && (c) != OOM_CH)
 
 #define STATE_BLOCK        30
 
@@ -79,7 +79,7 @@ int iupMaskSetChar (int char_number, char new_char)
      * the finite state machines (fsm) built from the pattern.
      */
 
-int iupMaskParse(const char* text, ImaskParsed ** fsm)
+int iupMaskParse(const char* mask, ImaskParsed ** imk)
 {
   int t;
   ImaskParseVars vars;
@@ -91,7 +91,7 @@ int iupMaskParse(const char* text, ImaskParsed ** fsm)
   vars.num_states = 0;
   vars.size = 0;
   vars.nextcap = 0;
-  vars.string = text;
+  vars.string = mask;
 
   if ((vars.fsm = (ImaskParsed*) malloc (STATE_BLOCK * sizeof (ImaskParsed))) == NULL)
     return IMASK_MEM_ERROR;
@@ -119,7 +119,7 @@ int iupMaskParse(const char* text, ImaskParsed ** fsm)
   iMaskParseSetState (&vars, 0, vars.fsm[0].ch, IMASK_NULL_CMD, t, vars.state + 1);
   iMaskParseSetState (&vars, vars.state, 0, IMASK_NULL_CMD, 0, 0);
 
-  *fsm = vars.fsm;
+  *imk = vars.fsm;
 
   return IMASK_PARSE_OK;
 }

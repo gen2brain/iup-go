@@ -22,23 +22,23 @@ struct _Iarray
   int start_count;
 };
 
-IUP_SDK_API Iarray* iupArrayCreate(int start_count, int elem_size)
+IUP_SDK_API Iarray* iupArrayCreate(int start_max_count, int elem_size)
 {
   Iarray* iarray = (Iarray*)malloc(sizeof(Iarray));
   if (!iarray)
     return NULL;
   iarray->count = 0;
   iarray->elem_size = elem_size;
-  iarray->max_count = start_count;
-  iarray->start_count = start_count;
-  iarray->data = malloc(elem_size*start_count);
+  iarray->max_count = start_max_count;
+  iarray->start_count = start_max_count;
+  iarray->data = malloc(elem_size*start_max_count);
   iupASSERT(iarray->data!=NULL);
   if (!iarray->data)
   {
     free(iarray);
     return NULL;
   }
-  memset(iarray->data, 0, elem_size*start_count);
+  memset(iarray->data, 0, elem_size*start_max_count);
   return iarray;
 }
 

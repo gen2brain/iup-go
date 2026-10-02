@@ -28,7 +28,7 @@ extern "C" {
 
 /** Returns true if the attribute name if in the internal format "_IUP...".
  * \ingroup attrib */
-#define iupATTRIB_ISINTERNAL(_name) ((_name[0] == '_' && _name[1] == 'I' && _name[2] == 'U' && _name[3] == 'P')? 1: 0)
+#define iupATTRIB_ISINTERNAL(_name) (((_name)[0] == '_' && (_name)[1] == 'I' && (_name)[2] == 'U' && (_name)[3] == 'P')? 1: 0)
 
 /** Returns true if the attribute name is a known pointer. \n
  * \ingroup attrib */

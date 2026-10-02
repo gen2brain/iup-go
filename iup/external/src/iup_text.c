@@ -83,7 +83,7 @@ int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int sta
   }
 
   if (insert_value && insert_value[0]!=0 && insert_value[1]==0)
-    key = insert_value[0];
+    key = (unsigned char)insert_value[0];
 
   if (!new_value)
     return ret;
@@ -104,7 +104,7 @@ int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int sta
 
   if (cb)
   {
-    int cb_ret = cb(ih, key, (char*)new_value);
+    int cb_ret = cb(ih, key, new_value);
     if (cb_ret==IUP_IGNORE)
       ret = 0; /* abort */
     else if (cb_ret==IUP_CLOSE)

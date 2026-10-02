@@ -561,7 +561,7 @@ static long iMaskMatchLocal (const char* text, ImaskParsed * fsm, long start, ch
   }
 }
 
-int iupMaskMatch (const char* text, ImaskParsed * fsm, long start, iMaskMatchFunc function, void* user, char* addchar, int icase)
+int iupMaskMatch (const char* text, ImaskParsed * imk, long start, iMaskMatchFunc mask_func, void* user, char* addchar, int icase)
 {
   long ret;
   short tested[10000];  /* to be eliminated */
@@ -569,17 +569,17 @@ int iupMaskMatch (const char* text, ImaskParsed * fsm, long start, iMaskMatchFun
 
   /* use recursive only for standard capture */
 
-  if (fsm[0].ch == IMASK_NOCAPTURE)
-    return iMaskMatchLocal (text, fsm, start, addchar, icase);
+  if (imk[0].ch == IMASK_NOCAPTURE)
+    return iMaskMatchLocal (text, imk, start, addchar, icase);
 
   vars.text = text;
-  vars.fsm = fsm;
+  vars.fsm = imk;
   vars.tested = tested;
   vars.tested_end = tested + (sizeof(tested) / sizeof(tested[0]));
-  vars.function = function;
+  vars.function = mask_func;
   vars.user = user;
 
-  ret = iMaskMatchRecursive (&vars, start, fsm[0].next1, NULL, 0);
+  ret = iMaskMatchRecursive (&vars, start, imk[0].next1, NULL, 0);
 
   return (int)((ret >= start) ? ret - start : ret);
 }

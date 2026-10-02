@@ -28,8 +28,8 @@
 #define ICOLORBAR_NO_COLOR 0xff000000   /* no color                */
 #define ICOLORBAR_PREVIEW_DELTA 5       /* preview margin          */
 #define ICOLORBAR_DELTA 2               /* cell margin             */
-#define ICOLORBAR_PRIMARY -1
-#define ICOLORBAR_SECONDARY -2
+#define ICOLORBAR_PRIMARY (-1)
+#define ICOLORBAR_SECONDARY (-2)
 
 
 struct _IcontrolData

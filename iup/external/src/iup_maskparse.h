@@ -34,10 +34,10 @@ int iupMaskSetChar(int char_number, char new_char);
 
 /* iupMaskMatch return codes */
 #define IMASK_PARSE_OK     0    /* No error      */
-#define IMASK_NOMATCH     -1    /* no match      */
-#define IMASK_MEM_ERROR   -2    /* memory error  */
-#define IMASK_PARSE_ERROR -3    /* parser error  */
-#define IMASK_PARTIALMATCH -4   /* partial match */
+#define IMASK_NOMATCH     (-1)    /* no match      */
+#define IMASK_MEM_ERROR   (-2)    /* memory error  */
+#define IMASK_PARSE_ERROR (-3)    /* parser error  */
+#define IMASK_PARTIALMATCH (-4)   /* partial match */
 
 
 #ifdef __cplusplus

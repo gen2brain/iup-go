@@ -184,10 +184,10 @@ Iclass* iupScrollbarNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupScrollbar(const char* orientation)
+IUP_API Ihandle* IupScrollbar(const char* type)
 {
   void* params[2];
-  params[0] = (void*)orientation;
+  params[0] = (void*)type;
   params[1] = NULL;
   return IupCreatev("scrollbar", params);
 }

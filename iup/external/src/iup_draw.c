@@ -745,7 +745,7 @@ static int iDrawGetStyle(Ihandle* ih)
   if (!style)
     return IUP_DRAW_STROKE;
   if (style[0] >= '0' && style[0] <= '5')
-    return (int)(style[0] - '0');
+    return style[0] - '0';
   if (iupStrEqualNoCase(style, "FILL"))
     return IUP_DRAW_FILL;
   else if (iupStrEqualNoCase(style, "STROKE_DASH"))
@@ -1372,14 +1372,14 @@ IUP_API Ihandle* IupDrawPathCreate(void)
   return IupCreate("drawpath");
 }
 
-IUP_API void IupDrawPathClear(Ihandle* ih)
+IUP_API void IupDrawPathClear(Ihandle* path)
 {
-  iupASSERT(iupObjectCheck(ih));
-  if (!iupObjectCheck(ih) || !iDrawPathTarget(ih))
+  iupASSERT(iupObjectCheck(path));
+  if (!iupObjectCheck(path) || !iDrawPathTarget(path))
     return;
 
-  iDrawPathFree(ih);
-  (void)iDrawPathGet(ih);
+  iDrawPathFree(path);
+  (void)iDrawPathGet(path);
 }
 
 IUP_API void IupDrawSetPath(Ihandle* ih, Ihandle* path_ih)
@@ -1833,17 +1833,17 @@ static int iSvgPathParse(Ihandle* ih, const char* data)
   return 1;
 }
 
-IUP_API int IupDrawPathSetSvg(Ihandle* ih, const char* data)
+IUP_API int IupDrawPathSetSvg(Ihandle* path, const char* data)
 {
-  iupASSERT(iupObjectCheck(ih));
-  if (!iupObjectCheck(ih) || !data || !iDrawPathTarget(ih))
+  iupASSERT(iupObjectCheck(path));
+  if (!iupObjectCheck(path) || !data || !iDrawPathTarget(path))
     return 0;
 
-  IupDrawPathClear(ih);
+  IupDrawPathClear(path);
 
-  if (!iSvgPathParse(ih, data))
+  if (!iSvgPathParse(path, data))
   {
-    IupDrawPathClear(ih);
+    IupDrawPathClear(path);
     return 0;
   }
 
@@ -2076,13 +2076,13 @@ static void iDrawGetTextBounds(int w, int h, double text_orientation, int* o_w, 
   if (o_h) *o_h = ymax - ymin + 1;
 }
 
-IUP_SDK_API char* iupDrawGetTextSize(Ihandle* ih, const char* text, int len, int* w, int* h, double text_orientation)
+IUP_SDK_API char* iupDrawGetTextSize(Ihandle* ih, const char* str, int len, int* w, int* h, double text_orientation)
 {
   char*font = iupAttribGetStr(ih, "DRAWFONT");
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!text)
+  if (!str)
   {
     if (w) *w = 0;
     if (h) *h = 0;
@@ -2090,7 +2090,7 @@ IUP_SDK_API char* iupDrawGetTextSize(Ihandle* ih, const char* text, int len, int
   }
 
   if (len == 0 || len == -1)
-    len = (int)strlen(text);
+    len = (int)strlen(str);
 
   if (len == 0)
   {
@@ -2102,16 +2102,16 @@ IUP_SDK_API char* iupDrawGetTextSize(Ihandle* ih, const char* text, int len, int
   if (text_orientation)
   {
     if (text_orientation == 90)
-      iupdrvFontGetTextSize(font, text, len, h, w);
+      iupdrvFontGetTextSize(font, str, len, h, w);
     else
     {
       int txt_w, txt_h;
-      iupdrvFontGetTextSize(font, text, len, &txt_w, &txt_h);
+      iupdrvFontGetTextSize(font, str, len, &txt_w, &txt_h);
       iDrawGetTextBounds(txt_w, txt_h, text_orientation, w, h);
     }
   }
   else
-    iupdrvFontGetTextSize(font, text, len, w, h);
+    iupdrvFontGetTextSize(font, str, len, w, h);
 
   return font;
 }

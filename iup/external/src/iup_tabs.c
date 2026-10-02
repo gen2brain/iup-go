@@ -771,9 +771,9 @@ Iclass* iupTabsNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupTabsv(Ihandle** params)
+IUP_API Ihandle* IupTabsv(Ihandle** children)
 {
-  return IupCreatev("tabs", (void**)params);
+  return IupCreatev("tabs", (void**)children);
 }
 
 IUP_API Ihandle* IupTabsV(Ihandle* child, va_list arglist)

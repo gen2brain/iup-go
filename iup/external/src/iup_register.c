@@ -36,18 +36,18 @@ void iupRegisterFinish(void)
   iregister_table = NULL;
 }
 
-IUP_API int IupGetAllClasses(char** list, int n)
+IUP_API int IupGetAllClasses(char** names, int n)
 {
   int i = 0;
   char* name;
 
-  if (!list || n==0 || n==-1)
+  if (!names || n==0 || n==-1)
     return iupTableCount(iregister_table);
 
   name = iupTableFirst(iregister_table);
   while (name)
   {
-    list[i] = name;
+    names[i] = name;
     i++;
     if (i == n)
       break;

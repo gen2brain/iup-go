@@ -31,7 +31,7 @@ enum{ IUP_DRAW_FILL, IUP_DRAW_STROKE, IUP_DRAW_STROKE_DASH, IUP_DRAW_STROKE_DOT,
 
 enum{ IUP_DRAW_IMAGE_NEAREST, IUP_DRAW_IMAGE_LINEAR };
 
-#define IUP_DRAW_NO_TINT -1L  /* outside the iupDrawColor range */
+#define IUP_DRAW_NO_TINT (-1L)  /* outside the iupDrawColor range */
 
 /** Creates a draw canvas based on an IupCanvas.
  * This will create an image for offscreen drawing.
