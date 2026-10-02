@@ -51,7 +51,6 @@ static int motGetFontSize(const char* font_name)
     i++;
   }
 
-  *((char*)strchr(font_name, '-')) = 0;
   { int val = 0; iupStrToInt(font_name, &val); return val; }
 }
 

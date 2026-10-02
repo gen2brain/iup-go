@@ -351,10 +351,10 @@ static void motTreeChildCountRec(Ihandle* ih, Widget wItem, int* count)
   if (itemChildList) XtFree((char*)itemChildList);
 }
 
-IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, Widget wItem)
+IUP_SDK_API int iupdrvTreeTotalChildCount(Ihandle* ih, Widget node_handle)
 {
   int count = 0;
-  motTreeChildCountRec(ih, wItem, &count);
+  motTreeChildCountRec(ih, node_handle, &count);
   return count;
 }
 
@@ -2114,7 +2114,7 @@ static void motTreeShowEditField(Ihandle* ih, Widget wItem)
 
   XmProcessTraversal(cbEdit, XmTRAVERSE_CURRENT);
 
-  XmTextSetSelection(cbEdit, (XmTextPosition)0, (XmTextPosition)XmTextGetLastPosition(cbEdit), CurrentTime);
+  XmTextSetSelection(cbEdit, (XmTextPosition)0, XmTextGetLastPosition(cbEdit), CurrentTime);
 
   value = iupAttribGetStr(ih, "RENAMECARET");
   if (value)

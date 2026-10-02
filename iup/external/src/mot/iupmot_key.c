@@ -105,28 +105,28 @@ static Imot2iupkey other_remap[] = {
   { XK_dead_diaeresis,  K_diaeresis },
 };
 
-IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keycode, unsigned int* state)
+IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int* keyval, unsigned int* state)
 {
-  KeySym motcode = (KeySym)iup_XkeyBase(code);
+  KeySym motcode = (KeySym)iup_XkeyBase(key);
 
   /* Only need to un-remap these */
   if (motcode == K_BS)  motcode = XK_BackSpace;
   else if (motcode == K_TAB) motcode = XK_Tab;
   else if (motcode == K_CR)  motcode = XK_Return;
 
-  *keycode = (unsigned int)XKeysymToKeycode(iupmot_display, motcode);
+  *keyval = (unsigned int)XKeysymToKeycode(iupmot_display, motcode);
 
   *state = 0;
-  if (iup_isCtrlXkey(code))
+  if (iup_isCtrlXkey(key))
     *state |= ControlMask;
 
-  if (iup_isAltXkey(code))
+  if (iup_isAltXkey(key))
     *state |= Mod1Mask;
 
-  if (iup_isSysXkey(code))
+  if (iup_isSysXkey(key))
     *state |= Mod4Mask;
 
-  if (iup_isShiftXkey(code))
+  if (iup_isShiftXkey(key))
     *state |= ShiftMask;
 }
 

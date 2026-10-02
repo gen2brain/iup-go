@@ -53,8 +53,8 @@ static Boolean motMotionNotifyEventDispatchProc(XEvent* evt)
   {
     XMotionEvent* evt_motion = (XMotionEvent*)evt;
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    int x = (int)evt_motion->x;
-    int y = (int)evt_motion->y;
+    int x = evt_motion->x;
+    int y = evt_motion->y;
     Window child;
 
     XTranslateCoordinates(iupmot_display, evt_motion->window,
@@ -75,8 +75,8 @@ static Boolean motButtonEventDispatchProc(XEvent* evt)
     XButtonEvent* evt_button = (XButtonEvent*)evt;
     static Time last = 0;
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    int x = (int)evt_button->x;
-    int y = (int)evt_button->y;
+    int x = evt_button->x;
+    int y = evt_button->y;
     Window child;
     int doubleclick = 0;
     int b = IUP_BUTTON1+(evt_button->button-1);

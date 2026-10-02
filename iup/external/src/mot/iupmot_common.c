@@ -128,8 +128,6 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
   }
 }
 
-extern void XtMoveWidget(Widget, _XtPosition, _XtPosition);
-
 IUP_DRV_API void iupmotSetPosition(Widget widget, int x, int y)
 {
   /* avoid setting both at the same time,
@@ -170,6 +168,8 @@ IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 {
   Widget widget = (Widget)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (!widget) widget = ih->handle;
+
+  iupmotDestroyDragDrop(ih);
 
   XtUnrealizeWidget(widget); /* To match the call to XtRealizeWidget */
   XtDestroyWidget(widget);   /* To match the call to XtCreateManagedWidget */
@@ -287,12 +287,12 @@ IUP_SDK_API int iupdrvBaseSetZorderAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int visible)
+IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
 {
   Widget widget = (Widget)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   if (!widget) widget = ih->handle;
 
-  if (visible)
+  if (enable)
   {
     XtMapWidget(widget);
     iupAttribSet(ih, "_IUPMOT_UNMAPPED", NULL);

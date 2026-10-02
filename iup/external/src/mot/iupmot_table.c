@@ -130,7 +130,7 @@ typedef struct _ImotTableData
 
 } ImotTableData;
 
-#define IMOT_TABLE_DATA(ih) ((ImotTableData*)(ih->data->native_data))
+#define IMOT_TABLE_DATA(ih) ((ImotTableData*)((ih)->data->native_data))
 
 typedef struct _ImotTableFont
 {
@@ -151,7 +151,6 @@ static void motTableEditKeyPressCallback(Widget w, XtPointer client_data, XEvent
 static void motTableEndCellEdit(Ihandle* ih, int apply);
 static void motTablePixelToCell(Ihandle* ih, int px, int py, int* lin, int* col);
 static void motTableStartCellEdit(Ihandle* ih, int lin, int col);
-static void motTableEndCellEdit(Ihandle* ih, int apply);
 static int motTableFindTargetRow(Ihandle* ih, int py);
 static void motTableMoveRow(Ihandle* ih, int from, int to);
 static void motTableRowDragMotion(Widget w, XtPointer client_data, XEvent* event, Boolean* cont);
@@ -1315,7 +1314,7 @@ static void motTableStartCellEdit(Ihandle* ih, int lin, int col)
   XtVaSetValues(mot_data->edit_text, XmNx, x, XmNy, y, XmNwidth, w, XmNheight, h, NULL);
 
   value = motTableGetCellValueInternal(ih, lin, col);
-  XmTextSetString(mot_data->edit_text, (char*)(value ? value : ""));
+  XmTextSetString(mot_data->edit_text, iupmotStrConvertToSystem(value ? value : ""));
 
   XtManageChild(mot_data->edit_text);
   XmProcessTraversal(mot_data->edit_text, XmTRAVERSE_CURRENT);
@@ -2234,6 +2233,8 @@ static void motTableUnMapMethod(Ihandle* ih)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   int i, c;
+
+  iupmotDestroyDragDrop(ih);
 
   if (!mot_data)
     return;

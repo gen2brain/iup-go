@@ -219,7 +219,7 @@ static int motTextSetInsertAttrib(Ihandle* ih, const char* value)
   /* disable callbacks */
   ih->data->disable_callbacks = 1;
   XmTextRemove(ih->handle);
-  XmTextInsert(ih->handle, XmTextGetInsertionPosition(ih->handle), (char*)value);
+  XmTextInsert(ih->handle, XmTextGetInsertionPosition(ih->handle), iupmotStrConvertToSystem(value));
   ih->data->disable_callbacks = 0;
 
   return 0;
@@ -236,7 +236,7 @@ static int motTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
   {
     /* disable callbacks */
     ih->data->disable_callbacks = 1;
-    XmTextReplace(ih->handle, start, end, (char*)value);
+    XmTextReplace(ih->handle, start, end, iupmotStrConvertToSystem(value));
     ih->data->disable_callbacks = 0;
   }
 
@@ -283,7 +283,7 @@ static int motTextSetAppendAttrib(Ihandle* ih, const char* value)
     pos++;
   }
   if (value)
-    XmTextInsert(ih->handle, pos, (char*)value);
+    XmTextInsert(ih->handle, pos, iupmotStrConvertToSystem(value));
 
   if (ih->data->append_scroll)
   {
@@ -307,7 +307,7 @@ static int motTextSetSelectionAttrib(Ihandle* ih, const char* value)
 
   if (iupStrEqualNoCase(value, "ALL"))
   {
-    XmTextSetSelection(ih->handle, (XmTextPosition)0, (XmTextPosition)XmTextGetLastPosition(ih->handle), CurrentTime);
+    XmTextSetSelection(ih->handle, (XmTextPosition)0, XmTextGetLastPosition(ih->handle), CurrentTime);
     return 0;
   }
 
@@ -379,7 +379,7 @@ static int motTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
 
   if (iupStrEqualNoCase(value, "ALL"))
   {
-    XmTextSetSelection(ih->handle, (XmTextPosition)0, (XmTextPosition)XmTextGetLastPosition(ih->handle), CurrentTime);
+    XmTextSetSelection(ih->handle, (XmTextPosition)0, XmTextGetLastPosition(ih->handle), CurrentTime);
     return 0;
   }
 
@@ -603,7 +603,7 @@ static int motTextSetClipboardAttrib(Ihandle* ih, const char* value)
     else
       ih->data->disable_callbacks = 1;
     XmTextRemove(ih->handle);
-    XmTextInsert(ih->handle, XmTextGetInsertionPosition(ih->handle), str);
+    XmTextInsert(ih->handle, XmTextGetInsertionPosition(ih->handle), iupmotStrConvertToSystem(str));
     ih->data->disable_callbacks = 0;
   }
   else if (iupStrEqualNoCase(value, "CLEAR"))

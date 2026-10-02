@@ -63,11 +63,11 @@ IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
     *h += 3;
 }
 
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
   int border_size = 2*4;
-  (*x) += border_size;
-  (*y) += border_size;
+  (*w) += border_size;
+  (*h) += border_size;
 
   if (ih->data->is_dropdown)
   {
@@ -75,16 +75,16 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
     {
       /* extra border for the editbox */
       int internal_border_size = 2*2;
-      (*x) += internal_border_size;
-      (*y) += internal_border_size;
+      (*w) += internal_border_size;
+      (*h) += internal_border_size;
     }
   }
   else
   {
     if (ih->data->has_editbox)
-      (*y) += 2*2; /* internal border between editbox and list */
+      (*h) += 2*2; /* internal border between editbox and list */
     else
-      (*x) += 2; /* extra border for the simple list */
+      (*w) += 2; /* extra border for the simple list */
   }
 }
 
@@ -617,7 +617,7 @@ static int motListSetInsertAttrib(Ihandle* ih, const char* value)
     XtVaGetValues(ih->handle, XmNtextField, &cbedit, NULL);
     iupAttribSet(ih, "_IUPMOT_DISABLE_TEXT_CB", "1"); /* disable callbacks */
     XmTextFieldRemove(cbedit);
-    XmTextFieldInsert(cbedit, XmTextFieldGetInsertionPosition(cbedit), (char*)value);
+    XmTextFieldInsert(cbedit, XmTextFieldGetInsertionPosition(cbedit), iupmotStrConvertToSystem(value));
     iupAttribSet(ih, "_IUPMOT_DISABLE_TEXT_CB", NULL);
   }
 
@@ -638,7 +638,7 @@ static int motListSetSelectedTextAttrib(Ihandle* ih, const char* value)
   if (XmTextFieldGetSelectionPosition(cbedit, &start, &end) && start!=end)
   {
     iupAttribSet(ih, "_IUPMOT_DISABLE_TEXT_CB", "1"); /* disable callbacks */
-    XmTextFieldReplace(cbedit, start, end, (char*)value);
+    XmTextFieldReplace(cbedit, start, end, iupmotStrConvertToSystem(value));
     iupAttribSet(ih, "_IUPMOT_DISABLE_TEXT_CB", NULL);
   }
 
@@ -670,7 +670,7 @@ static int motListSetAppendAttrib(Ihandle* ih, const char* value)
     XtVaGetValues(ih->handle, XmNtextField, &cbedit, NULL);
     pos = XmTextFieldGetLastPosition(cbedit);
     iupAttribSet(ih, "_IUPMOT_DISABLE_TEXT_CB", "1"); /* disable callbacks */
-    XmTextFieldInsert(cbedit, pos+1, (char*)value);
+    XmTextFieldInsert(cbedit, pos+1, iupmotStrConvertToSystem(value));
     iupAttribSet(ih, "_IUPMOT_DISABLE_TEXT_CB", NULL);
   }
   return 0;
@@ -693,7 +693,7 @@ static int motListSetSelectionAttrib(Ihandle* ih, const char* value)
   if (iupStrEqualNoCase(value, "ALL"))
   {
     XtVaGetValues(ih->handle, XmNtextField, &cbedit, NULL);
-    XmTextFieldSetSelection(cbedit, (XmTextPosition)0, (XmTextPosition)XmTextFieldGetLastPosition(cbedit), CurrentTime);
+    XmTextFieldSetSelection(cbedit, (XmTextPosition)0, XmTextFieldGetLastPosition(cbedit), CurrentTime);
     return 0;
   }
 
@@ -751,7 +751,7 @@ static int motListSetSelectionPosAttrib(Ihandle* ih, const char* value)
   if (iupStrEqualNoCase(value, "ALL"))
   {
     XtVaGetValues(ih->handle, XmNtextField, &cbedit, NULL);
-    XmTextFieldSetSelection(cbedit, (XmTextPosition)0, (XmTextPosition)XmTextFieldGetLastPosition(cbedit), CurrentTime);
+    XmTextFieldSetSelection(cbedit, (XmTextPosition)0, XmTextFieldGetLastPosition(cbedit), CurrentTime);
     return 0;
   }
 
@@ -962,7 +962,7 @@ static int motListSetClipboardAttrib(Ihandle* ih, const char* value)
     /* disable callbacks */
     iupAttribSet(ih, "_IUPMOT_DISABLE_TEXT_CB", "1");
     XmTextFieldRemove(cbedit);
-    XmTextFieldInsert(cbedit, XmTextFieldGetInsertionPosition(cbedit), str);
+    XmTextFieldInsert(cbedit, XmTextFieldGetInsertionPosition(cbedit), iupmotStrConvertToSystem(str));
     iupAttribSet(ih, "_IUPMOT_DISABLE_TEXT_CB", NULL);
   }
   else if (iupStrEqualNoCase(value, "CLEAR"))

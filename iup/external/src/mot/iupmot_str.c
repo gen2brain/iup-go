@@ -68,6 +68,86 @@ static int motStrIsLocaleUTF8(void)
           iupStrEqualNoCase(charset, "UTF8"));
 }
 
+static int motStrUTF8SequenceLength(const unsigned char* s)
+{
+  unsigned char c = s[0];
+  int len, i;
+
+  if (c < 0x80)
+    return 1;
+  if (c >= 0xC2 && c <= 0xDF)
+    len = 2;
+  else if (c >= 0xE0 && c <= 0xEF)
+    len = 3;
+  else if (c >= 0xF0 && c <= 0xF4)
+    len = 4;
+  else
+    return 0;
+
+  for (i = 1; i < len; i++)
+  {
+    if ((s[i] & 0xC0) != 0x80)
+      return 0;
+  }
+
+  if ((c == 0xE0 && s[1] < 0xA0) || (c == 0xED && s[1] > 0x9F) ||
+      (c == 0xF0 && s[1] < 0x90) || (c == 0xF4 && s[1] > 0x8F))
+    return 0;
+
+  return len;
+}
+
+static char* motStrValidUTF8(const char* str)
+{
+  const unsigned char* s = (const unsigned char*)str;
+  char* valid;
+  char* d;
+
+  if (!s)
+    return NULL;
+
+  while (*s)
+  {
+    int len = motStrUTF8SequenceLength(s);
+    if (!len)
+      break;
+    s += len;
+  }
+
+  if (!*s)
+    return (char*)str;
+
+  valid = (char*)malloc(strlen(str) * 3 + 1);
+  if (!valid)
+    return (char*)"";
+
+  s = (const unsigned char*)str;
+  d = valid;
+  while (*s)
+  {
+    int len = motStrUTF8SequenceLength(s);
+    if (len)
+    {
+      memcpy(d, s, len);
+      d += len;
+      s += len;
+    }
+    else
+    {
+      memcpy(d, "\xef\xbf\xbd", 3);
+      d += 3;
+      s++;
+    }
+  }
+  *d = 0;
+
+  if (motLastConvertUTF8)
+    free(motLastConvertUTF8);
+  motLastConvertUTF8 = valid;
+
+  return motLastConvertUTF8;
+}
+
 #ifdef IUP_USE_ICONV
 static char* motStrToUTF8(const char* str, int len, const char* charset)
 {
@@ -185,11 +265,8 @@ IUP_DRV_API char* iupmotStrConvertToSystem(const char* str)
   if (!iupmot_utf8mode)
     return (char*)str;
 
-  if (motStrCheckUTF8Support())
-    return (char*)str;
-
-  if (motStrIsLocaleUTF8())
-    return (char*)str;
+  if (motStrCheckUTF8Support() || motStrIsLocaleUTF8())
+    return motStrValidUTF8(str);
 
   if (iupStrIsAscii(str))
     return (char*)str;
@@ -394,7 +471,7 @@ IUP_DRV_API XmString iupmotStringCreate(const char* value)
 
   if (use_utf8 && motStrCheckUTF8Support())
   {
-    return XmStringGenerate((XtPointer)value, "UTF-8", XmCHARSET_TEXT, NULL);
+    return XmStringGenerate((XtPointer)motStrValidUTF8(value), "UTF-8", XmCHARSET_TEXT, NULL);
   }
   else
   {
@@ -405,6 +482,7 @@ IUP_DRV_API XmString iupmotStringCreate(const char* value)
 
 IUP_DRV_API void iupmotSetTitle(Widget w, const char* value)
 {
+  value = iupmotStrConvertToSystem(value);
   XtVaSetValues(w, XmNtitle, value,
                    XmNiconName, value,
                    NULL);
