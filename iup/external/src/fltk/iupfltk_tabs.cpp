@@ -13,6 +13,7 @@
 #include <FL/Fl_Group.H>
 #include <FL/fl_draw.H>
 
+#include <cstdlib>
 #include <cstring>
 
 extern "C" {
