@@ -1769,7 +1769,6 @@ static int eflListMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUPEFL_DROPDOWN_BUTTON", (char*)arrow_button);
 
     ih->handle = (InativeHandle*)hbox;
-    list = dropdown_list;
 
     efl_event_callback_add(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflListEditChangedCallback, ih);
     efl_event_callback_add(efl_text_interactive_main_cursor_get(entry), EFL_TEXT_CURSOR_OBJECT_EVENT_CHANGED, eflListEditCursorChangedCallback, ih);
@@ -1921,7 +1920,6 @@ static int eflListMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUPEFL_DROPDOWN_LIST", (char*)dropdown_list);
 
     ih->handle = (InativeHandle*)button;
-    list = dropdown_list;
   }
   else if (ih->data->is_virtual)
   {

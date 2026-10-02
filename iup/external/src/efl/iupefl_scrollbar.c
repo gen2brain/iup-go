@@ -125,8 +125,6 @@ static int eflScrollbarSetValueAttrib(Ihandle* ih, const char* value)
 
 static int eflScrollbarSetLineStepAttrib(Ihandle* ih, const char* value)
 {
-  Eo* slider = iupeflGetWidget(ih);
-
   if (iupStrToDoubleDef(value, &(ih->data->linestep), 0.01))
     iupdrvScrollbarUpdate(ih);
 
