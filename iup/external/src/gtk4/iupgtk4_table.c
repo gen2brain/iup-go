@@ -402,7 +402,7 @@ typedef struct _Igtk4TableData
   GtkWidget* drop_highlight_row;
 } Igtk4TableData;
 
-#define IGTK4_TABLE_DATA(ih) ((Igtk4TableData*)(ih->data->native_data))
+#define IGTK4_TABLE_DATA(ih) ((Igtk4TableData*)((ih)->data->native_data))
 
 /* the sort model reorders the view, so a store row_index is not the position the selection uses */
 static guint gtk4TableViewPos(Igtk4TableData* gtk_data, int lin)

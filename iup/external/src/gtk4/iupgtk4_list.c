@@ -379,7 +379,7 @@ IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
   *h += gtk4_list_item_spacing;
 }
 
-IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
   static int editbox_border_x = -1, editbox_border_y = -1, editbox_entry_natural_height = -1;
   static int dropdown_border_x = -1, dropdown_border_y = -1, dropdown_natural_height = -1;
@@ -400,20 +400,20 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
     css_frame_border_compensation = 2;  /* 1px top + 1px bottom */
   }
 
-  (*x) += border_size;
+  (*w) += border_size;
 
   if (!ih->data->is_dropdown && !ih->data->has_editbox && visiblelines > 0)
   {
-    (*y) += css_frame_border_compensation;
+    (*h) += css_frame_border_compensation;
   }
   else
   {
-    (*y) += border_size;
+    (*h) += border_size;
   }
 
   /* GtkBox with 4px spacing between image and text */
   if (ih->data->show_image)
-    (*x) += 4;
+    (*w) += 4;
 
   if (ih->data->is_dropdown)
   {
@@ -423,9 +423,9 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
       int rnat_w = 0, rnat_h = 0, sb_size = iupdrvGetScrollbarSize();
       gtk_widget_measure(ih->handle, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &rnat_w, NULL, NULL);
       gtk_widget_measure(ih->handle, GTK_ORIENTATION_VERTICAL, -1, NULL, &rnat_h, NULL, NULL);
-      *x = rnat_w - sb_size;
-      if (*x < 0) *x = 0;
-      *y = rnat_h;
+      *w = rnat_w - sb_size;
+      if (*w < 0) *w = 0;
+      *h = rnat_h;
       return;
     }
 
@@ -489,13 +489,13 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
         g_object_ref_sink(temp_vbox);
         g_object_unref(temp_vbox);
       }
-      (*x) += dropdown_editbox_border_x;
-      (*y) += dropdown_editbox_border_y;
+      (*w) += dropdown_editbox_border_x;
+      (*h) += dropdown_editbox_border_y;
     }
     else
     {
-      (*x) += dropdown_border_x;
-      (*y) += dropdown_border_y;
+      (*w) += dropdown_border_x;
+      (*h) += dropdown_border_y;
     }
   }
   else
@@ -523,7 +523,7 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
         g_object_unref(temp_entry);
       }
 
-      (*x) += editbox_border_x;
+      (*w) += editbox_border_x;
 
       if (visiblelines > 0)
       {
@@ -545,21 +545,21 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
         int current_total = iup_total + border_size;
         int adjustment = needed_total - current_total;
 
-        (*y) += adjustment;
+        (*h) += adjustment;
       }
       else
       {
-        (*y) += editbox_border_y;
+        (*h) += editbox_border_y;
       }
 
       if (ih->data->sb && !visiblelines)
       {
-        (*y) += iupdrvGetScrollbarSize();
+        (*h) += iupdrvGetScrollbarSize();
       }
     }
     else if (ih->data->sb && !visiblelines)
     {
-      (*y) += iupdrvGetScrollbarSize();
+      (*h) += iupdrvGetScrollbarSize();
     }
   }
 }
@@ -1230,7 +1230,7 @@ static char* gtk4ListGetCaretAttrib(Ihandle* ih)
     GtkEntry* entry = (GtkEntry*)iupAttribGet(ih, "_IUPGTK4_ENTRY");
     int pos = gtk_editable_get_position(GTK_EDITABLE(entry));
     pos++;
-    return iupStrReturnInt((int)pos);
+    return iupStrReturnInt(pos);
   }
   else
     return NULL;
@@ -1260,7 +1260,7 @@ static char* gtk4ListGetCaretPosAttrib(Ihandle* ih)
   {
     GtkEntry* entry = (GtkEntry*)iupAttribGet(ih, "_IUPGTK4_ENTRY");
     int pos = gtk_editable_get_position(GTK_EDITABLE(entry));
-    return iupStrReturnInt((int)pos);
+    return iupStrReturnInt(pos);
   }
   else
     return NULL;
@@ -2276,7 +2276,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
   if (ih->data->is_dropdown)
   {
-    ih->handle = (GtkWidget*)gtk_drop_down_new(list_model, NULL);
+    ih->handle = gtk_drop_down_new(list_model, NULL);
 
     if (!ih->handle)
       return IUP_ERROR;
@@ -2423,7 +2423,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
 
     gtk4ListSetSelectionModel(ih, selection_model);
 
-    ih->handle = (GtkWidget*)gtk_list_view_new(selection_model, factory);
+    ih->handle = gtk_list_view_new(selection_model, factory);
 
     if (!ih->handle)
       return IUP_ERROR;

@@ -48,25 +48,25 @@ static Igtk2iupkey other_remap[] = {
   { GDK_KEY_dead_diaeresis,  K_diaeresis},
 };
 
-IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* keyval, unsigned int* state)
+IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int* keyval, unsigned int* state)
 {
-  *keyval = (unsigned int)iup_XkeyBase(code);
+  *keyval = (unsigned int)iup_XkeyBase(key);
 
   if (*keyval == K_BS)  *keyval = GDK_KEY_BackSpace;
   if (*keyval == K_TAB) *keyval = GDK_KEY_Tab;
   if (*keyval == K_CR)  *keyval = GDK_KEY_Return;
 
   *state = 0;
-  if (iup_isCtrlXkey(code))
+  if (iup_isCtrlXkey(key))
     *state |= GDK_CONTROL_MASK;
 
-  if (iup_isAltXkey(code))
+  if (iup_isAltXkey(key))
     *state |= GDK_ALT_MASK;
 
-  if (iup_isSysXkey(code))
+  if (iup_isSysXkey(key))
     *state |= GDK_SUPER_MASK;
 
-  if (iup_isShiftXkey(code))
+  if (iup_isShiftXkey(key))
     *state |= GDK_SHIFT_MASK;
 }
 

@@ -659,7 +659,7 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 
 IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
-  PangoLayout* fontlayout = (PangoLayout*)iupgtk4GetPangoLayout(font);
+  PangoLayout* fontlayout = iupgtk4GetPangoLayout(font);
   PangoAlignment alignment = PANGO_ALIGN_LEFT;
   int layout_w = w, layout_h = h;
   int layout_center = flags & IUP_DRAW_LAYOUTCENTER;
@@ -702,9 +702,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 
   cairo_set_source_rgba(dc->image_cr, iupgtk4ColorToDouble(iupDrawRed(color)), iupgtk4ColorToDouble(iupDrawGreen(color)), iupgtk4ColorToDouble(iupDrawBlue(color)), iupgtk4ColorToDouble(iupDrawAlpha(color)));
 
-  if (flags & IUP_DRAW_CLIP)
-    cairo_save(dc->image_cr);
-  else if (text_orientation)
+  if ((flags & IUP_DRAW_CLIP) || text_orientation)
     cairo_save(dc->image_cr);
 
   if (flags & IUP_DRAW_CLIP)

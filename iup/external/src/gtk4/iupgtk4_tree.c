@@ -834,14 +834,7 @@ iupgtk4TreeLabelClickPressed(GtkGestureClick* gesture, int n_press, double x, do
   {
     gboolean is_selected = gtk_list_item_get_selected(list_item);
 
-    if (is_selected && n_press == 1)
-    {
-      gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
-      iupgtk4TreeStartRenameEditing(list_item);
-      g_object_unref(item);
-      return;
-    }
-    else if (n_press == 2)
+    if ((is_selected && n_press == 1) || n_press == 2)
     {
       gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
       iupgtk4TreeStartRenameEditing(list_item);
@@ -1769,16 +1762,16 @@ static int gtkTreeMapMethod(Ihandle* ih)
 
   iupgtk4TreeSetupEventControllers(ih);
 
-  iupgtk4SetupEnterLeaveEvents((GtkWidget*)scrolled_window, ih);
-  iupgtk4SetupFocusEvents((GtkWidget*)scrolled_window, ih);
-  iupgtk4SetupMotionEvents((GtkWidget*)scrolled_window, ih);
+  iupgtk4SetupEnterLeaveEvents(scrolled_window, ih);
+  iupgtk4SetupFocusEvents(scrolled_window, ih);
+  iupgtk4SetupMotionEvents(scrolled_window, ih);
 
   iupgtk4AddToParent(ih);
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
     iupgtk4SetCanFocus(listview, 0);
 
-  gtk_widget_realize((GtkWidget*)scrolled_window);
+  gtk_widget_realize(scrolled_window);
   gtk_widget_realize(listview);
 
   iupgtk4TreeInitDefaultImages(ih);

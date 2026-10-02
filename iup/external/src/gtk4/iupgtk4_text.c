@@ -204,7 +204,7 @@ static int gtk4TextColumnAdjust(Ihandle* ih, int visiblecolumns)
   return visiblecolumns * adjust;
 }
 
-IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
+IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 {
   gtk4TextMeasureEntryBorders();
 
@@ -230,7 +230,7 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
 
     gtk4TextMeasureMultilineMetrics();
 
-    (*x) += gtk4_multiline_border_width - gtk4TextColumnAdjust(ih, visiblecolumns);
+    (*w) += gtk4_multiline_border_width - gtk4TextColumnAdjust(ih, visiblecolumns);
 
     if (visiblelines > 0)
     {
@@ -241,29 +241,29 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
       int gtk_content_h = gtk4_multiline_line_height * visiblelines;
       int line_diff = iup_content_h - gtk_content_h;
 
-      (*y) += gtk4_multiline_border_height;
-      (*y) -= line_diff;
+      (*h) += gtk4_multiline_border_height;
+      (*h) -= line_diff;
     }
     else
     {
-      (*y) += gtk4_multiline_border_height;
+      (*h) += gtk4_multiline_border_height;
     }
   }
   else
   {
     int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-    (*x) += gtk4_entry_css_dec_x - gtk4TextColumnAdjust(ih, visiblecolumns);
+    (*w) += gtk4_entry_css_dec_x - gtk4TextColumnAdjust(ih, visiblecolumns);
 
     if (iupAttribGetBoolean(ih, "SPIN"))
     {
-      int before = *y;
+      int before = *h;
       int add = spin_natural_height - before;
       if (add < 0) add = 0;
-      (*y) += add;
+      (*h) += add;
     }
     else
     {
-      (*y) += gtk4_entry_border_y;
+      (*h) += gtk4_entry_border_y;
     }
   }
 }

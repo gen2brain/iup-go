@@ -1062,7 +1062,7 @@ IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 
 static int gtk4MenuItemSetValueAttrib(Ihandle* ih, const char* value)
 {
-  char* radio_action_name = (char*)iupAttribGet(ih, "_IUPGTK4_RADIO_ACTION_NAME");
+  char* radio_action_name = iupAttribGet(ih, "_IUPGTK4_RADIO_ACTION_NAME");
   if (radio_action_name)
   {
     if (iupStrBoolean(value))
@@ -1081,7 +1081,7 @@ static int gtk4MenuItemSetValueAttrib(Ihandle* ih, const char* value)
   }
 
   /* GMenu-based system: check state is stored in GAction, not widget */
-  char* action_name = (char*)iupAttribGet(ih, "_IUPGTK4_ACTION_NAME");
+  char* action_name = iupAttribGet(ih, "_IUPGTK4_ACTION_NAME");
 
   if (action_name && iupAttribGet(ih, "_IUPGTK4_CHECKABLE"))
   {
@@ -1108,7 +1108,7 @@ static int gtk4MenuItemSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* gtk4MenuItemGetValueAttrib(Ihandle* ih)
 {
-  char* radio_action_name = (char*)iupAttribGet(ih, "_IUPGTK4_RADIO_ACTION_NAME");
+  char* radio_action_name = iupAttribGet(ih, "_IUPGTK4_RADIO_ACTION_NAME");
   if (radio_action_name)
   {
     const char* target = iupAttribGet(ih, "_IUPGTK4_RADIO_TARGET");
@@ -1133,7 +1133,7 @@ static char* gtk4MenuItemGetValueAttrib(Ihandle* ih)
   }
 
   /* GMenu-based system: check state is stored in GAction, not widget */
-  char* action_name = (char*)iupAttribGet(ih, "_IUPGTK4_ACTION_NAME");
+  char* action_name = iupAttribGet(ih, "_IUPGTK4_ACTION_NAME");
 
   if (action_name && iupAttribGet(ih, "_IUPGTK4_CHECKABLE"))
   {
