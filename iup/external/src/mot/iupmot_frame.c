@@ -56,6 +56,14 @@ IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
   return 0;
 }
 
+/* the frame natural width reserves one character on each side of the title */
+static void motFrameUpdateTitleSpacing(Ihandle* ih, Widget title_label)
+{
+  int charwidth;
+  iupdrvFontGetCharSize(ih, &charwidth, NULL);
+  XtVaSetValues(title_label, XmNchildHorizontalSpacing, (Dimension)charwidth, NULL);
+}
+
 static int motFrameSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   Pixel color;
@@ -159,6 +167,7 @@ static int motFrameSetFontAttrib(Ihandle* ih, const char* value)
 
     fontlist = (XmFontList)iupmotGetFontListAttrib(ih);
     XtVaSetValues(title_label, XmNrenderTable, fontlist, NULL);
+    motFrameUpdateTitleSpacing(ih, title_label);
   }
 
   return 1;
@@ -251,6 +260,7 @@ static int motFrameMapMethod(Ihandle* ih)
     iupMOT_SETARG(args, num_args, XmNchildType, XmFRAME_TITLE_CHILD);
     title_label = XtCreateManagedWidget("title_label", xmLabelWidgetClass, ih->handle, args, num_args);
     iupmotSetXmString(title_label, XmNlabelString, title);
+    motFrameUpdateTitleSpacing(ih, title_label);
 
     iupAttribSet(ih, "_IUPMOT_FRAMELABEL", (char*)title_label);
   }

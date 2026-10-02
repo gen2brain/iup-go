@@ -40,6 +40,7 @@ When CROSSTITLE is used TITLELINE and TITLEALIGNMENT are ignored, the title line
 Default: 2.
 
 [TITLE](../attrib/iup_title.md) (non-inheritable): Text the user will see at the top of the frame.
+The natural width of the frame is at least the width of the title.
 
 **TITLECOLOR** (non-inheritable): title text color. Default: the global attribute DLGFGCOLOR.
 
