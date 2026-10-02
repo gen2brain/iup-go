@@ -20,7 +20,7 @@
 #include "iup_flatscrollbar.h"
 
 
-#define SB_NONE -1
+#define SB_NONE (-1)
 
 static Ihandle* iFlatScrollBarGetVertical(Ihandle* ih)
 {

@@ -28,15 +28,15 @@
 #define ITABS_CLOSE_SIZE 13
 #define ITABS_CLOSE_SPACING 12
 #define ITABS_CLOSE_BORDER 8
-#define ITABS_NONE -1
-#define ITABS_SB_TOP -2
-#define ITABS_SB_BOTTOM -3
-#define ITABS_SB_LEFT -4
-#define ITABS_SB_RIGHT -5
-#define ITABS_EXTRABUTTON1 -6
+#define ITABS_NONE (-1)
+#define ITABS_SB_TOP (-2)
+#define ITABS_SB_BOTTOM (-3)
+#define ITABS_SB_LEFT (-4)
+#define ITABS_SB_RIGHT (-5)
+#define ITABS_EXTRABUTTON1 (-6)
 
-#define ITABS_TABID2EXTRABUT(_id) (ITABS_EXTRABUTTON1 - _id + 1)
-#define ITABS_EXTRABUT2TABID(_id) (ITABS_EXTRABUTTON1 - _id + 1) /* equal to the above, the conversion is symmetric */
+#define ITABS_TABID2EXTRABUT(_id) (ITABS_EXTRABUTTON1 - (_id) + 1)
+#define ITABS_EXTRABUT2TABID(_id) (ITABS_EXTRABUTTON1 - (_id) + 1) /* equal to the above, the conversion is symmetric */
 
 typedef enum
 {
@@ -1356,7 +1356,6 @@ static void iFlatTabsGetExtraButtonBox(Ihandle* ih, int tabType, int extra_butto
       if (i == id)
       {
         extra_x = draw_w - total_extra_size - extra_w;
-        extra_y = title_y_pos;
         *xmin = extra_x + horiz_padding / 2;
         *xmax = extra_x + extra_w - horiz_padding / 2;
         *ymin = title_y_pos + vert_padding / 2;
@@ -1372,7 +1371,6 @@ static void iFlatTabsGetExtraButtonBox(Ihandle* ih, int tabType, int extra_butto
       if (i == id)
       {
         extra_y = draw_h - total_extra_size - extra_h;
-        extra_x = title_x_pos;
         *xmin = title_x_pos + horiz_padding / 2;
         *xmax = title_x_pos + title_width - 1 - horiz_padding / 2;
         *ymin = extra_y + vert_padding / 2;

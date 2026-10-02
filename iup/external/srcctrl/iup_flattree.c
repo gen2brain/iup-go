@@ -3255,7 +3255,7 @@ static int iFlatTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* valu
 
 static char* iFlatTreeGetUserDataAttrib(Ihandle* ih, int id)
 {
-  iFlatTreeNode* node = (iFlatTreeNode*)iFlatTreeGetNode(ih, id);
+  iFlatTreeNode* node = iFlatTreeGetNode(ih, id);
   if (!node)
     return NULL;
 
@@ -3264,7 +3264,7 @@ static char* iFlatTreeGetUserDataAttrib(Ihandle* ih, int id)
 
 static int iFlatTreeSetUserDataAttrib(Ihandle* ih, int id, const char* value)
 {
-  iFlatTreeNode* node = (iFlatTreeNode*)iFlatTreeGetNode(ih, id);
+  iFlatTreeNode* node = iFlatTreeGetNode(ih, id);
   if (!node)
     return 0;
 
@@ -4031,7 +4031,7 @@ static int iFlatTreeSetExtraTextWidthAttrib(Ihandle* ih, const char* value)
 }
 static char* iFlatTreeGetExtraTextAttrib(Ihandle* ih, int id)
 {
-  iFlatTreeNode* node = (iFlatTreeNode*)iFlatTreeGetNode(ih, id);
+  iFlatTreeNode* node = iFlatTreeGetNode(ih, id);
   if (!node)
     return NULL;
 
@@ -4040,7 +4040,7 @@ static char* iFlatTreeGetExtraTextAttrib(Ihandle* ih, int id)
 
 static int iFlatTreeSetExtraTextAttrib(Ihandle* ih, int id, const char* value)
 {
-  iFlatTreeNode* node = (iFlatTreeNode*)iFlatTreeGetNode(ih, id);
+  iFlatTreeNode* node = iFlatTreeGetNode(ih, id);
   if (!node)
     return 0;
 
