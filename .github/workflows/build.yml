@@ -390,7 +390,7 @@ jobs:
     - name: Install dependencies
       run: brew install gtk+3
     - name: Build
-      run: go build -tags gtk
+      run: go build -tags gtk3
       working-directory: iup
 
   macos-gtk4:
@@ -515,7 +515,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     - name: Build
-      run: go build -tags gtk
+      run: go build -tags gtk3
       working-directory: iup
 
   windows-gtk4:

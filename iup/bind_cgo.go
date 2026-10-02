@@ -22,7 +22,7 @@ package iup
 #cgo !windows,!darwin,!android,!haiku CXXFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
 
 #cgo !windows,!darwin,!android,!haiku,!qt,!qml,!efl,!motif,!fltk,!gnustep CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
-#cgo gtk,gtk2,gtk4 CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
+#cgo windows,gtk3 windows,gtk4 darwin,gtk3 darwin,gtk4 CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 
 #cgo !windows,!darwin,!android,!haiku,!motif,!qt,!qml,!gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
 #cgo !windows,!darwin,!android,!haiku,!motif,!qt,!qml,!gtk2,gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
@@ -59,15 +59,15 @@ package iup
 #cgo motif CFLAGS: -Iexternal/src/mot -DIUP_USE_MOTIF -DIUP_USE_ICONV
 
 #cgo windows,!winui CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl
-#cgo windows,!gtk,!gtk4,!qt,!qml,!winui,!efl,!fltk CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
+#cgo windows,!gtk3,!gtk4,!qt,!qml,!winui,!efl,!fltk CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
 #cgo windows,!winui LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32
 #cgo windows,gl LDFLAGS: -lopengl32
 #cgo windows,media LDFLAGS: -lmfuuid -lole32
-#cgo windows,!gtk,!gtk4,!qt,!qml,!winui,!efl,!fltk,web LDFLAGS: -static-libgcc -static-libstdc++
-#cgo windows,!gtk,!gtk4,!qt,!qml,!winui,!efl,!fltk,plot LDFLAGS: -static-libgcc -static-libstdc++
+#cgo windows,!gtk3,!gtk4,!qt,!qml,!winui,!efl,!fltk,web LDFLAGS: -static-libgcc -static-libstdc++
+#cgo windows,!gtk3,!gtk4,!qt,!qml,!winui,!efl,!fltk,plot LDFLAGS: -static-libgcc -static-libstdc++
 
-#cgo windows,gtk CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3
-#cgo windows,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
+#cgo windows,gtk3 CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3
+#cgo windows,gtk3,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
 
 #cgo windows,gtk4 CFLAGS: -Iexternal/src/gtk4 -Iexternal/src/unix -DIUP_USE_GTK4
 #cgo windows,gtk4,!nopkgconfig pkg-config: gtk4
@@ -79,12 +79,12 @@ package iup
 #cgo darwin,!ios CFLAGS: -Iexternal/src/cocoa -x objective-c
 #cgo darwin,!ios LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications -framework CoreLocation
 #cgo darwin,!ios,gl LDFLAGS: -framework OpenGL
-#cgo darwin,!ios,!gtk,!gtk4,!qt,!qml,web LDFLAGS: -framework WebKit
+#cgo darwin,!ios,!gtk3,!gtk4,!qt,!qml,web LDFLAGS: -framework WebKit
 #cgo darwin,!ios,media LDFLAGS: -framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo
 
-#cgo darwin,!ios,gtk CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3 -x objective-c
-#cgo darwin,!ios,gtk,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
-#cgo darwin,!ios,gtk,web CFLAGS: -DIUPWEB_USE_DLOPEN
+#cgo darwin,!ios,gtk3 CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3 -x objective-c
+#cgo darwin,!ios,gtk3,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
+#cgo darwin,!ios,gtk3,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
 #cgo darwin,!ios,gtk4 CFLAGS: -Iexternal/src/gtk4 -Iexternal/src/unix -DIUP_USE_GTK4 -x objective-c
 #cgo darwin,!ios,gtk4,!nopkgconfig pkg-config: gtk4

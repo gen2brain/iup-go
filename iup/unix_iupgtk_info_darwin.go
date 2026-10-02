@@ -1,4 +1,4 @@
-//go:build darwin && gtk && !gtk4
+//go:build darwin && gtk3 && !gtk4
 
 package iup
 

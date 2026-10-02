@@ -358,7 +358,7 @@ func (c *config) pgpSigner() (pgp.Signer, error) {
 	return pgp.Load(c.sign)
 }
 
-var driverTags = []string{"winui", "gtk", "gtk2", "gtk4", "qt", "qt5", "motif", "fltk", "efl", "gnustep"}
+var driverTags = []string{"winui", "gtk3", "gtk2", "gtk4", "qt", "qt5", "qml", "motif", "fltk", "efl", "gnustep"}
 
 func appleSigner(c *config) (*apple.Signer, error) {
 	if c.sign == "" {
