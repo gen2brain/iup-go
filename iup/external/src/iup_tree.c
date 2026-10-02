@@ -26,7 +26,7 @@
 
 typedef int (*IFnv)(Ihandle*, void*);
 
-IUP_API int IupTreeGetId(Ihandle* ih, void* userdata)
+IUP_API int IupTreeGetId(Ihandle* ih, void* userid)
 {
   IFnv find_userdata_cb;
 
@@ -36,10 +36,10 @@ IUP_API int IupTreeGetId(Ihandle* ih, void* userdata)
 
   find_userdata_cb = (IFnv)IupGetCallback(ih, "_IUPTREE_FIND_USERDATA_CB");
 
-  return find_userdata_cb(ih, userdata);
+  return find_userdata_cb(ih, userid);
 }
 
-IUP_API int IupTreeSetUserId(Ihandle* ih, int id, void* userdata)
+IUP_API int IupTreeSetUserId(Ihandle* ih, int id, void* userid)
 {
   int count;
 
@@ -50,7 +50,7 @@ IUP_API int IupTreeSetUserId(Ihandle* ih, int id, void* userdata)
   count = IupGetInt(ih, "COUNT");
   if (id >= 0 && id < count)
   {
-    IupSetAttributeId(ih, "USERDATA", id, (char*)userdata);
+    IupSetAttributeId(ih, "USERDATA", id, (char*)userid);
     return 1;
   }
 
@@ -72,9 +72,9 @@ IUP_API void* IupTreeGetUserId(Ihandle* ih, int id)
   return NULL;
 }
 
-IUP_API void IupTreeSetAttributeHandle(Ihandle* ih, const char* a, int id, Ihandle* ih_named)
+IUP_API void IupTreeSetAttributeHandle(Ihandle* ih, const char* name, int id, Ihandle* ih_named)
 {
-  IupSetAttributeHandleId(ih, a, id, ih_named);
+  IupSetAttributeHandleId(ih, name, id, ih_named);
 }
 
 /************************************************************************************/
@@ -262,7 +262,7 @@ void iupTreeDelFromCache(Ihandle* ih, int id, int count)
   memset(ih->data->node_cache+ih->data->node_count, 0, count*sizeof(InodeData));
 }
 
-void iupTreeCopyMoveCache(Ihandle* ih, int id_src, int id_dst, int count, int is_copy)
+void iupTreeCopyMoveCache(Ihandle* ih, int id_src, int id_new, int count, int is_copy)
 {
   int remain_count;
 
@@ -270,13 +270,13 @@ void iupTreeCopyMoveCache(Ihandle* ih, int id_src, int id_dst, int count, int is
   if (id_src < 0 || id_src >= ih->data->node_count)
     return;
 
-  iupASSERT(id_dst >= 0 && id_dst < ih->data->node_count);
-  if (id_dst < 0 || id_dst >= ih->data->node_count)
+  iupASSERT(id_new >= 0 && id_new < ih->data->node_count);
+  if (id_new < 0 || id_new >= ih->data->node_count)
     return;
 
   /* dst can NOT be inside src+count area */
-  iupASSERT(id_dst < id_src || id_dst > id_src+count);
-  if (id_dst >= id_src && id_dst <= id_src+count)
+  iupASSERT(id_new < id_src || id_new > id_src+count);
+  if (id_new >= id_src && id_new <= id_src+count)
     return;
 
   /* id_dst here points to the final position for a copy operation */
@@ -285,22 +285,22 @@ void iupTreeCopyMoveCache(Ihandle* ih, int id_src, int id_dst, int count, int is
   iupTreeIncCacheMem(ih);
 
   /* add space for new nodes */
-  remain_count = ih->data->node_count - (id_dst + count);
-  memmove(ih->data->node_cache + id_dst+count, ih->data->node_cache + id_dst, remain_count * sizeof(InodeData));
+  remain_count = ih->data->node_count - (id_new + count);
+  memmove(ih->data->node_cache + id_new+count, ih->data->node_cache + id_new, remain_count * sizeof(InodeData));
 
   if (is_copy)
   {
     /* during a copy, the userdata is not reused, so clear it */
-    memset(ih->data->node_cache+id_dst, 0, count*sizeof(InodeData));
+    memset(ih->data->node_cache+id_new, 0, count*sizeof(InodeData));
   }
   else /* move = copy + delete */
   {
     /* compensate because we added space for new nodes */
-    if (id_src > id_dst)
+    if (id_src > id_new)
       id_src += count;
 
     /* copy userdata from src to dst */
-    memcpy(ih->data->node_cache+id_dst, ih->data->node_cache+id_src, count*sizeof(InodeData));
+    memcpy(ih->data->node_cache+id_new, ih->data->node_cache+id_src, count*sizeof(InodeData));
 
     /* remove the src */
     remain_count = ih->data->node_count - (id_src + count);

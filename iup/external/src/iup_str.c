@@ -23,23 +23,23 @@
 
 #define IUP_STR_EQUAL(str1, str2)      \
 {                                      \
-  if (str1 == str2)                    \
+  if ((str1) == (str2))                \
     return 1;                          \
                                        \
-  if (!str1 || !str2)                  \
+  if (!(str1) || !(str2))              \
     return 0;                          \
                                        \
-  while(*str1 && *str2 &&              \
-        SF(*str1) == SF(*str2))        \
+  while(*(str1) && *(str2) &&          \
+        SF(*(str1)) == SF(*(str2)))    \
   {                                    \
     EXTRAINC(str1);                    \
     EXTRAINC(str2);                    \
-    str1++;                            \
-    str2++;                            \
+    (str1)++;                          \
+    (str2)++;                          \
   }                                    \
                                        \
   /* check also for terminator */      \
-  if (*str1 == *str2) return 1;        \
+  if (*(str1) == *(str2)) return 1;    \
 }
 
 IUP_SDK_API int iupStrEqual(const char* str1, const char* str2)
@@ -88,7 +88,7 @@ IUP_SDK_API int iupStrEqualNoCasePartial(const char* str1, const char* str2)
 
 IUP_SDK_API int iupStrEqualNoCaseNoSpace(const char* str1, const char* str2)
 {
-#define EXTRAINC(_x) { if (*_x == ' ') _x++; }  /* also ignore spaces */
+#define EXTRAINC(_x) { if (*(_x) == ' ') (_x)++; }  /* also ignore spaces */
 #define SF(_x) iup_tolower(_x)
   IUP_STR_EQUAL(str1, str2);
 #undef SF
@@ -680,19 +680,19 @@ IUP_SDK_API char* iupStrReturnStr(const char* str)
     return NULL;
 }
 
-IUP_SDK_API char* iupStrReturnBoolean(int b)
+IUP_SDK_API char* iupStrReturnBoolean(int i)
 {
-  if (b)
+  if (i)
     return "YES";
   else
     return "NO";
 }
 
-IUP_SDK_API char* iupStrReturnChecked(int check)
+IUP_SDK_API char* iupStrReturnChecked(int i)
 {
-  if (check == -1)
+  if (i == -1)
     return "NOTDEF";
-  else if (check)
+  else if (i)
     return "ON";
   else
     return "OFF";
@@ -1403,7 +1403,7 @@ IUP_SDK_API char* iupStrToDos(const char* str)
   return newstr;
 }
 
-#define IUP_ISRESERVED(_c) (_c=='\n' || _c=='\r' || _c=='\t' || _c=='\\')
+#define IUP_ISRESERVED(_c) ((_c)=='\n' || (_c)=='\r' || (_c)=='\t' || (_c)=='\\')
 
 IUP_SDK_API char* iupStrConvertToC(const char* str)
 {
@@ -1560,7 +1560,7 @@ static void iStrInitLatin1_map(void)
 
 memset(map, 0, 256);
 
-#define mm(_x) (map[(unsigned char)_x])
+#define mm(_x) (map[(unsigned char)(_x)])
 
   /* these characters are sorted in the same order as Excel would sort them */
 
@@ -1583,7 +1583,7 @@ memset(map, 0, 256);
 
 #undef mm
 
-#define mm(_x) (map_nocase[(unsigned char)_x])
+#define mm(_x) (map_nocase[(unsigned char)(_x)])
 
   /* here case differences use the same code */
   mm(  0)=  0;  /* */ mm(  1)=  1; /* */ mm(  2)=  2; /* */ mm(  3)=  3; /* */ mm(  4)=  4; /* */ mm(  5)=  5; /* */ mm(  6)=  6; /* */ mm(  7)=  7;  /* */ mm(  8)=  8; /* */ mm(  9)=  9; /* */ mm( 10)= 10; /* */ mm( 11)= 11; /* */ mm( 12)= 12; /* */ mm( 13)= 13; /* */ mm( 14)= 14; /* */ mm( 15)= 15; /* */
@@ -1694,31 +1694,31 @@ downloaded from the Dave Koelle page and implemented by Dirk Jagdmann.
 It was modified to the C language and simplified to IUP needs.
 */
 
-IUP_SDK_API int iupStrCompare(const char* l, const char* r, int casesensitive, int utf8)
+IUP_SDK_API int iupStrCompare(const char* str1, const char* str2, int casesensitive, int utf8)
 {
   enum mode_t { STRING, NUMBER } mode=STRING;
 
-  if (l == r)
+  if (str1 == str2)
     return 0;
 
-  if (!l && r)
+  if (!str1 && str2)
     return -1;
 
-  if (l && !r)
+  if (str1 && !str2)
     return 1;
 
   if (!Latin1_map)
     iStrInitLatin1_map();
 
-  while(*l && *r)
+  while(*str1 && *str2)
   {
     if (mode == STRING)
     {
-      while((*l) && (*r))
+      while((*str1) && (*str2))
       {
         int diff;
-        char l_char = *l,
-             r_char = *r;
+        char l_char = *str1,
+             r_char = *str2;
 
         int l_digit = iup_isdigit(l_char),
             r_digit = iup_isdigit(r_char);
@@ -1738,8 +1738,8 @@ IUP_SDK_API int iupStrCompare(const char* l, const char* r, int casesensitive, i
 
         if (utf8)
         {
-          l_char = iStrUTF8toLatin1(&l);  /* increment n-1 an utf8 character */
-          r_char = iStrUTF8toLatin1(&r);
+          l_char = iStrUTF8toLatin1(&str1);  /* increment n-1 an utf8 character */
+          r_char = iStrUTF8toLatin1(&str2);
         }
 
         /* compute the difference of both characters */
@@ -1752,23 +1752,23 @@ IUP_SDK_API int iupStrCompare(const char* l, const char* r, int casesensitive, i
         if(diff != 0) return diff;
 
         /* otherwise process the next characters */
-        ++l;
-        ++r;
+        ++str1;
+        ++str2;
       }
     }
     else /* mode==NUMBER */
     {
-      const char* l_start = l, *r_start = r;
+      const char* l_start = str1, *r_start = str2;
       int l_len = 0, r_len = 0;
 
-      while (*l == '0') { ++l; }
-      while (*r == '0') { ++r; }
+      while (*str1 == '0') { ++str1; }
+      while (*str2 == '0') { ++str2; }
 
       /* count significant digits */
-      l_start = l;
-      while (*l && iup_isdigit(*l)) { ++l; l_len++; }
-      r_start = r;
-      while (*r && iup_isdigit(*r)) { ++r; r_len++; }
+      l_start = str1;
+      while (*str1 && iup_isdigit(*str1)) { ++str1; l_len++; }
+      r_start = str2;
+      while (*str2 && iup_isdigit(*str2)) { ++str2; r_len++; }
 
       /* longer number is larger */
       if (l_len != r_len)
@@ -1789,29 +1789,29 @@ IUP_SDK_API int iupStrCompare(const char* l, const char* r, int casesensitive, i
     }
   }
 
-  if (*r) return -1;
-  if (*l) return +1;
+  if (*str2) return -1;
+  if (*str1) return +1;
   return 0;
 }
 
-IUP_SDK_API int iupStrCompareEqual(const char* l, const char* r, int casesensitive, int utf8, int partial)
+IUP_SDK_API int iupStrCompareEqual(const char* str1, const char* str2, int casesensitive, int utf8, int partial)
 {
-  if (!l || !r)
+  if (!str1 || !str2)
     return 0;
 
   if (!Latin1_map)
     iStrInitLatin1_map();
 
-  while(*l && *r)
+  while(*str1 && *str2)
   {
     int diff;
-    char l_char = *l,
-         r_char = *r;
+    char l_char = *str1,
+         r_char = *str2;
 
     if (utf8)
     {
-      l_char = iStrUTF8toLatin1(&l);  /* increment n-1 an utf8 character */
-      r_char = iStrUTF8toLatin1(&r);
+      l_char = iStrUTF8toLatin1(&str1);  /* increment n-1 an utf8 character */
+      r_char = iStrUTF8toLatin1(&str2);
     }
 
     /* compute the difference of both characters */
@@ -1825,15 +1825,15 @@ IUP_SDK_API int iupStrCompareEqual(const char* l, const char* r, int casesensiti
       return 0;
 
     /* otherwise process the next characters */
-    ++l;
-    ++r;
+    ++str1;
+    ++str2;
   }
 
   /* check also for terminator */
-  if (*l == *r)
+  if (*str1 == *str2)
     return 1;
 
-  if (partial && *r == 0)
+  if (partial && *str2 == 0)
     return 1;  /* if second string is at terminator, then it is partially equal */
 
   return 0;
@@ -1973,15 +1973,15 @@ static int iStrIncUTF8(const char* str)
   return 1;
 }
 
-IUP_SDK_API int iupStrCompareFind(const char* l, const char* r, int casesensitive, int utf8)
+IUP_SDK_API int iupStrCompareFind(const char* str1, const char* str2, int casesensitive, int utf8)
 {
   int i, inc, l_len, r_len, count;
 
-  if (!l || !r)
+  if (!str1 || !str2)
     return 0;
 
-  l_len = (int)strlen(l);
-  r_len = (int)strlen(r);
+  l_len = (int)strlen(str1);
+  r_len = (int)strlen(str2);
   count = l_len - r_len;
   if (count < 0)
     return 0;
@@ -1990,17 +1990,17 @@ IUP_SDK_API int iupStrCompareFind(const char* l, const char* r, int casesensitiv
 
   for (i=0; i<count; i++)
   {
-    if (iupStrCompareEqual(l, r, casesensitive, utf8, 1))
+    if (iupStrCompareEqual(str1, str2, casesensitive, utf8, 1))
       return 1;
 
     if (utf8)
     {
-      inc = iStrIncUTF8(l);
-      l += inc;
+      inc = iStrIncUTF8(str1);
+      str1 += inc;
       i += inc-1;
     }
     else
-      l++;
+      str1++;
   }
 
   return 0;
@@ -2037,11 +2037,11 @@ static void iStrFixPosUTF8(const char* str, int* start, int* end)
     *end = i;
 }
 
-IUP_SDK_API void iupStrRemove(char* str, int start, int end, int dir, int utf8)
+IUP_SDK_API void iupStrRemove(char* value, int start, int end, int dir, int utf8)
 {
   int len;
 
-  if (end < start || !str || str[0] == 0)
+  if (end < start || !value || value[0] == 0)
     return;
 
   if (start == end)
@@ -2058,41 +2058,41 @@ IUP_SDK_API void iupStrRemove(char* str, int start, int end, int dir, int utf8)
   }
 
   if (utf8)
-    iStrFixPosUTF8(str, &start, &end);
+    iStrFixPosUTF8(value, &start, &end);
 
   /* from "start" remove up to "end", but not including "end" */
-  len = (int)strlen(str);
+  len = (int)strlen(value);
   if (start >= len) { start = len - 1; end = len; }
   if (end > len) end = len;
 
-  memmove(str + start, str + end, len - end + 1);
+  memmove(value + start, value + end, len - end + 1);
 }
 
-IUP_SDK_API char* iupStrInsert(const char* str, const char* insert_str, int start, int end, int utf8)
+IUP_SDK_API char* iupStrInsert(const char* value, const char* insert_value, int start, int end, int utf8)
 {
-  char* new_str = (char*)str;
+  char* new_str = (char*)value;
   int insert_len, len;
 
-  if (!str || !insert_str)
+  if (!value || !insert_value)
     return NULL;
 
-  insert_len = (int)strlen(insert_str);
-  len = (int)strlen(str);
+  insert_len = (int)strlen(insert_value);
+  len = (int)strlen(value);
 
   if (utf8)
-    iStrFixPosUTF8(str, &start, &end);
+    iStrFixPosUTF8(value, &start, &end);
 
   if (end == start || insert_len > end - start)
   {
     new_str = malloc(len - (end - start) + insert_len + 1);
-    memcpy(new_str, str, start);
-    memcpy(new_str + start, insert_str, insert_len);
-    memcpy(new_str + start + insert_len, str + end, len - end + 1);
+    memcpy(new_str, value, start);
+    memcpy(new_str + start, insert_value, insert_len);
+    memcpy(new_str + start + insert_len, value + end, len - end + 1);
   }
   else
   {
-    memcpy(new_str + start, insert_str, insert_len);
-    memcpy(new_str + start + insert_len, str + end, len - end + 1);
+    memcpy(new_str + start, insert_value, insert_len);
+    memcpy(new_str + start + insert_len, value + end, len - end + 1);
   }
 
   return new_str;

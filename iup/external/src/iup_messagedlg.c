@@ -53,12 +53,12 @@ Iclass* iupMessageDlgNewClass(void)
   return ic;
 }
 
-IUP_API void IupMessage(const char* title, const char* message)
+IUP_API void IupMessage(const char* title, const char* msg)
 {
   Ihandle* dlg = IupCreate("messagedlg");
 
   IupSetAttribute(dlg, "TITLE", (char*)title);
-  IupSetAttribute(dlg, "VALUE", (char*)message);
+  IupSetAttribute(dlg, "VALUE", (char*)msg);
   IupSetAttribute(dlg, "PARENTDIALOG", IupGetGlobal("PARENTDIALOG"));
 
   IupPopup(dlg, IUP_CENTER, IUP_CENTER);

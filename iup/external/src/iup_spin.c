@@ -376,10 +376,10 @@ Iclass* iupSpinboxNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupSpinbox(Ihandle* ctrl)
+IUP_API Ihandle* IupSpinbox(Ihandle* child)
 {
   void* children[2];
-  children[0] = (void*)ctrl;
+  children[0] = (void*)child;
   children[1] = NULL;
   return IupCreatev("spinbox", children);
 }

@@ -468,7 +468,7 @@ IUP_SDK_API void iupImageColorMakeInactive(unsigned char* r, unsigned char* g, u
       ib = (bg_b*i) / bg_i;
     }
 
-#define LIGHTER(_c) ((255 + _c)/2)
+#define LIGHTER(_c) ((255 + (_c))/2)
     ir = LIGHTER(ir);
     ig = LIGHTER(ig);
     ib = LIGHTER(ib);
@@ -1521,32 +1521,32 @@ IUP_SDK_API unsigned char* iupImageWriteBMP(unsigned char* imgdata, int width, i
 
 /******************************************************************************/
 
-IUP_API Ihandle* IupImage(int width, int height, const unsigned char* imgdata)
+IUP_API Ihandle* IupImage(int width, int height, const unsigned char* pixels)
 {
   void* params[4];
   params[0] = (void*)(intptr_t)width;
   params[1] = (void*)(intptr_t)height;
-  params[2] = imgdata ? (void*)imgdata : (void*)(intptr_t)-1;
+  params[2] = pixels ? (void*)pixels : (void*)(intptr_t)-1;
   params[3] = (void*)(intptr_t)-1;
   return IupCreatev("image", params);
 }
 
-IUP_API Ihandle* IupImageRGB(int width, int height, const unsigned char* imgdata)
+IUP_API Ihandle* IupImageRGB(int width, int height, const unsigned char* pixels)
 {
   void* params[4];
   params[0] = (void*)(intptr_t)width;
   params[1] = (void*)(intptr_t)height;
-  params[2] = imgdata ? (void*)imgdata : (void*)(intptr_t)-1;
+  params[2] = pixels ? (void*)pixels : (void*)(intptr_t)-1;
   params[3] = (void*)(intptr_t)-1;
   return IupCreatev("imagergb", params);
 }
 
-IUP_API Ihandle* IupImageRGBA(int width, int height, const unsigned char* imgdata)
+IUP_API Ihandle* IupImageRGBA(int width, int height, const unsigned char* pixels)
 {
   void* params[4];
   params[0] = (void*)(intptr_t)width;
   params[1] = (void*)(intptr_t)height;
-  params[2] = imgdata ? (void*)imgdata : (void*)(intptr_t)-1;
+  params[2] = pixels ? (void*)pixels : (void*)(intptr_t)-1;
   params[3] = (void*)(intptr_t)-1;
   return IupCreatev("imagergba", params);
 }

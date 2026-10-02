@@ -237,18 +237,18 @@ IUP_API int IupAlarm(const char* title, const char* msg, const char* b1, const c
   return bt;
 }
 
-IUP_API int IupGetFile(char* filename)
+IUP_API int IupGetFile(char* arq)
 {
   Ihandle* dlg = 0;
   int ret;
   char filter[4096] = "*.*";
   static char dir[4096] = "";  /* static will make the dir persist from one call to another if not defined */
 
-  if (!filename) return -1;
+  if (!arq) return -1;
 
   dlg = IupFileDlg();
 
-  iupStrFileNameSplit(filename, dir, sizeof(dir), filter, sizeof(filter));
+  iupStrFileNameSplit(arq, dir, sizeof(dir), filter, sizeof(filter));
 
   IupSetAttribute(dlg, "FILTER", filter);
   IupSetAttribute(dlg, "DIRECTORY", dir);
@@ -265,8 +265,8 @@ IUP_API int IupGetFile(char* filename)
     char* value = IupGetAttribute(dlg, "VALUE");
     if (value)
     {
-      iupStrCopyN(filename, 4096, value);
-      iupStrFileNameSplit(filename, dir, sizeof(dir), NULL, 0);
+      iupStrCopyN(arq, 4096, value);
+      iupStrFileNameSplit(arq, dir, sizeof(dir), NULL, 0);
     }
   }
 

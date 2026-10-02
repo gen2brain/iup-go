@@ -45,92 +45,92 @@ static IfontNameMap ifont_name_map[IFONT_NAME_MAP_SIZE] = {
   {"serif",     "times",                  "times new roman",     "Times New Roman",  "serif"}
 };
 
-const char* iupFontGetPangoName(const char* name)
+const char* iupFontGetPangoName(const char* typeface)
 {
   int i;
-  if (!name)
+  if (!typeface)
     return NULL;
   for (i=0; i<IFONT_NAME_MAP_SIZE; i++)
   {
-    if (iupStrEqualNoCase(ifont_name_map[i].win, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].win, typeface))
       return ifont_name_map[i].pango;
-    if (iupStrEqualNoCase(ifont_name_map[i].x, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].x, typeface))
       return ifont_name_map[i].pango;
-    if (iupStrEqualNoCase(ifont_name_map[i].mac, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].mac, typeface))
       return ifont_name_map[i].pango;
   }
 
   return NULL;
 }
 
-const char* iupFontGetWinName(const char* name)
+const char* iupFontGetWinName(const char* typeface)
 {
   int i;
-  if (!name)
+  if (!typeface)
     return NULL;
   for (i=0; i<IFONT_NAME_MAP_SIZE; i++)
   {
-    if (iupStrEqualNoCase(ifont_name_map[i].pango, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].pango, typeface))
       return ifont_name_map[i].win;
-    if (iupStrEqualNoCase(ifont_name_map[i].x, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].x, typeface))
       return ifont_name_map[i].win;
-    if (iupStrEqualNoCase(ifont_name_map[i].mac, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].mac, typeface))
       return ifont_name_map[i].win;
   }
 
   return NULL;
 }
 
-const char* iupFontGetXName(const char* name)
+const char* iupFontGetXName(const char* typeface)
 {
   int i;
-  if (!name)
+  if (!typeface)
     return NULL;
   for (i=0; i<IFONT_NAME_MAP_SIZE; i++)
   {
-    if (iupStrEqualNoCase(ifont_name_map[i].win, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].win, typeface))
       return ifont_name_map[i].x;
-    if (iupStrEqualNoCase(ifont_name_map[i].pango, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].pango, typeface))
       return ifont_name_map[i].x;
-    if (iupStrEqualNoCase(ifont_name_map[i].mac, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].mac, typeface))
       return ifont_name_map[i].x;
   }
 
   return NULL;
 }
 
-const char* iupFontGetMacName(const char* name)
+const char* iupFontGetMacName(const char* typeface)
 {
   int i;
-  if (!name)
+  if (!typeface)
     return NULL;
   for (i=0; i<IFONT_NAME_MAP_SIZE; i++)
   {
-    if (iupStrEqualNoCase(ifont_name_map[i].win, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].win, typeface))
       return ifont_name_map[i].mac;
-    if (iupStrEqualNoCase(ifont_name_map[i].pango, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].pango, typeface))
       return ifont_name_map[i].mac;
-  if (iupStrEqualNoCase(ifont_name_map[i].x, name))
+  if (iupStrEqualNoCase(ifont_name_map[i].x, typeface))
       return ifont_name_map[i].mac;
   }
 
   return NULL;
 }
 
-const char* iupFontGetAndroidName(const char* name)
+const char* iupFontGetAndroidName(const char* typeface)
 {
   int i;
-  if (!name)
+  if (!typeface)
     return NULL;
   for (i=0; i<IFONT_NAME_MAP_SIZE; i++)
   {
-    if (iupStrEqualNoCase(ifont_name_map[i].pango, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].pango, typeface))
       return ifont_name_map[i].android;
-    if (iupStrEqualNoCase(ifont_name_map[i].x, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].x, typeface))
       return ifont_name_map[i].android;
-    if (iupStrEqualNoCase(ifont_name_map[i].win, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].win, typeface))
       return ifont_name_map[i].android;
-    if (iupStrEqualNoCase(ifont_name_map[i].mac, name))
+    if (iupStrEqualNoCase(ifont_name_map[i].mac, typeface))
       return ifont_name_map[i].android;
   }
 
@@ -434,8 +434,6 @@ void iupSetDefaultFontSizeGlobalAttrib(const char* value)
     return;
 
   IupSetfAttribute(NULL, "DEFAULTFONT", "%s, %s%s%s%s %s", typeface, is_bold?"Bold ":"", is_italic?"Italic ":"", is_underline?"Underline ":"", is_strikeout?"Strikeout ":"", value);
-
-  return;
 }
 
 char* iupGetDefaultFontSizeGlobalAttrib(void)
@@ -514,7 +512,7 @@ static int iFontFindStyleName(const char* name, int len, int* style)
   return 0;
 }
 
-#define is_style_sep(_x) (_x == ' ' || _x == ',' || _x == '_')
+#define is_style_sep(_x) ((_x) == ' ' || (_x) == ',' || (_x) == '_')
 
 static const char * iFontGetStyleWord(const char* str, const char* last, int* wordlen)
 {
@@ -532,17 +530,17 @@ static const char * iFontGetStyleWord(const char* str, const char* last, int* wo
   return result;
 }
 
-IUP_SDK_API int iupFontParsePango(const char* font, char* typeface, int* size, int* bold, int* italic, int* underline, int* strikeout)
+IUP_SDK_API int iupFontParsePango(const char* value, char* typeface, int* size, int* bold, int* italic, int* underline, int* strikeout)
 {
   const char* p, *last;
   int len, wordlen, style;
 
-  if (font[0] == '-')  /* X font, abort */
+  if (value[0] == '-')  /* X font, abort */
     return 0;
 
-  len = (int)strlen(font);
-  last = font + len;
-  p = iFontGetStyleWord(font, last, &wordlen);
+  len = (int)strlen(value);
+  last = value + len;
+  p = iFontGetStyleWord(value, last, &wordlen);
 
   /* Look for a size at the end of the string */
   if (wordlen != 0)
@@ -558,7 +556,7 @@ IUP_SDK_API int iupFontParsePango(const char* font, char* typeface, int* size, i
 
   /* Now parse style words */
   style = 0;
-  p = iFontGetStyleWord(font, last, &wordlen);
+  p = iFontGetStyleWord(value, last, &wordlen);
   while (wordlen != 0)
   {
     int new_style = 0;
@@ -570,7 +568,7 @@ IUP_SDK_API int iupFontParsePango(const char* font, char* typeface, int* size, i
       style |= new_style;
 
       last = p;
-      p = iFontGetStyleWord(font, last, &wordlen);
+      p = iFontGetStyleWord(value, last, &wordlen);
     }
   }
 
@@ -591,18 +589,18 @@ IUP_SDK_API int iupFontParsePango(const char* font, char* typeface, int* size, i
   /* Remainder is font family list. */
 
   /* Trim off trailing separators */
-  while (last > font && is_style_sep(*(last - 1)))
+  while (last > value && is_style_sep(*(last - 1)))
     last--;
 
   /* Trim off leading separators */
-  while (last > font && is_style_sep(*font))
-    font++;
+  while (last > value && is_style_sep(*value))
+    value++;
 
-  if (font != last)
+  if (value != last)
   {
-    len = (int)(last - font);
+    len = (int)(last - value);
     if (len > 255) len = 255;
-    strncpy(typeface, font, len);
+    strncpy(typeface, value, len);
     typeface[len] = 0;
     return 1;
   }
@@ -689,17 +687,17 @@ IUP_SDK_API int iupFontParseWin(const char* value, char* typeface, int* size, in
   return 1;
 }
 
-IUP_SDK_API int iupFontParseX(const char* font, char* typeface, int typeface_size, int* size, int* bold, int* italic, int* underline, int* strikeout)
+IUP_SDK_API int iupFontParseX(const char* value, char* typeface, int typeface_size, int* size, int* bold, int* italic, int* underline, int* strikeout)
 {
   char style1[30], style2[30];
   char* token;
   char* save;
   char xfont[1024];
 
-  if (font[0] != '-')
+  if (value[0] != '-')
     return 0;
 
-  iupStrCopyN(xfont, sizeof(xfont), font+1);  /* skip first '-' */
+  iupStrCopyN(xfont, sizeof(xfont), value+1);  /* skip first '-' */
 
   *bold = 0;
   *italic = 0;

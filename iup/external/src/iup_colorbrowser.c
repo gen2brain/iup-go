@@ -28,7 +28,7 @@
 #include "iup_colorhsi.h"
 
 #ifndef min
-#define min(a, b) ( (a < b) ? (a) : (b) )
+#define min(a, b) ( ((a) < (b)) ? (a) : (b) )
 #endif
 
 #define IUP_RAD2DEG  57.295779513   /* radians to degrees (deg = IUP_RAD2DEG * rad) */
@@ -560,7 +560,7 @@ static int iColorBrowserRedraw_CB(Ihandle* ih)
 
     x1 = (double)(ih->data->xc - ih->data->R + ICB_SPACE);
     y1 = (double)ih->data->yc;
-    x2 = (double)(x1 + ICB_HUEWIDTH / 2);
+    x2 = x1 + ICB_HUEWIDTH / 2;
     y2 = (double)ih->data->yc;
 
     IupDrawLine(ih, (int)x1, (int)y1, (int)x2, (int)y2);

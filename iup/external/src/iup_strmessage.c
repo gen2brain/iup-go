@@ -74,9 +74,9 @@ IUP_API void IupSetLanguagePack(Ihandle* ih)
   }
 }
 
-IUP_API void IupSetLanguage(const char* language)
+IUP_API void IupSetLanguage(const char* lng)
 {
-  IupStoreGlobal("LANGUAGE", language);
+  IupStoreGlobal("LANGUAGE", lng);
 }
 
 IUP_API char* IupGetLanguage(void)

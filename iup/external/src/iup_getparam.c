@@ -1336,7 +1336,7 @@ static void iParamStrSetFileOptions(char* extra, Ihandle* param)
   filter = iParamStrGetNextItem(extra, '|', &count);  extra += count;
   directory = iParamStrGetNextItem(extra, '|', &count);  extra += count;
   nochangedir = iParamStrGetNextItem(extra, '|', &count);  extra += count;
-  nooverwriteprompt = iParamStrGetNextItem(extra, '|', &count);  extra += count;
+  nooverwriteprompt = iParamStrGetNextItem(extra, '|', &count);
 
   iupAttribSetStr(param, "DIALOGTYPE", type);
   iupAttribSetStr(param, "FILTER", filter);
@@ -1363,7 +1363,7 @@ static void iParamStrSetButtonNames(char* extra, Ihandle* param)
 
   button1 = iParamStrGetNextItem(extra, ',', &count);  extra += count;
   button2 = iParamStrGetNextItem(extra, ',', &count);  extra += count;
-  button3 = iParamStrGetNextItem(extra, ',', &count);  extra += count;
+  button3 = iParamStrGetNextItem(extra, ',', &count);
 
   iupAttribSetStr(param, "BUTTON1", button1);
   iupAttribSetStr(param, "BUTTON2", button2);
@@ -1840,7 +1840,7 @@ IUP_API int IupGetParamV(const char* title, Iparamcb action, void* user_data, co
 
   for (i = 0; i < param_count; i++)
   {
-    param_data[i] = (void*)(va_arg(arglist, void*));
+    param_data[i] = va_arg(arglist, void*);
   }
 
   ret = IupGetParamv(title, action, user_data, format, param_count, param_extra, param_data);
@@ -1924,23 +1924,23 @@ Iclass* iupParamNewClass(void)
   return ic;
 }
 
-IUP_API Ihandle* IupParamBoxv(Ihandle** children)
+IUP_API Ihandle* IupParamBoxv(Ihandle** param_array)
 {
-  return IupCreatev("parambox", (void**)children);
+  return IupCreatev("parambox", (void**)param_array);
 }
 
-IUP_API Ihandle* IupParamBoxV(Ihandle* child, va_list arglist)
+IUP_API Ihandle* IupParamBoxV(Ihandle* param, va_list arglist)
 {
-  return IupCreateV("parambox", child, arglist);
+  return IupCreateV("parambox", param, arglist);
 }
 
-IUP_API Ihandle* IupParamBox(Ihandle * child, ...)
+IUP_API Ihandle* IupParamBox(Ihandle * param, ...)
 {
   Ihandle* ih;
 
   va_list arglist;
-  va_start(arglist, child);
-  ih = IupCreateV("parambox", child, arglist);
+  va_start(arglist, param);
+  ih = IupCreateV("parambox", param, arglist);
   va_end(arglist);
 
   return ih;

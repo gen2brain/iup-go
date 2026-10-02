@@ -30,10 +30,10 @@ static char* iLayoutGetName(Ihandle* ih)
   return name;
 }
 
-IUP_SDK_API char* iupLayoutGetElementTitle(Ihandle* ih)
+IUP_SDK_API char* iupLayoutGetElementTitle(Ihandle* elem)
 {
-  char* title = iupAttribGetLocal(ih, "TITLE");
-  char* name = iLayoutGetName(ih);
+  char* title = iupAttribGetLocal(elem, "TITLE");
+  char* name = iLayoutGetName(elem);
   char* str = iupStrGetMemory(200);
   if (title)
   {
@@ -49,22 +49,22 @@ IUP_SDK_API char* iupLayoutGetElementTitle(Ihandle* ih)
     }
 
     if (name)
-      snprintf(str, 200, "[%s] \"%.50s\" (%.50s)", IupGetClassName(ih), title, name);
+      snprintf(str, 200, "[%s] \"%.50s\" (%.50s)", IupGetClassName(elem), title, name);
     else
-      snprintf(str, 200, "[%s] \"%.50s\"", IupGetClassName(ih), title);
+      snprintf(str, 200, "[%s] \"%.50s\"", IupGetClassName(elem), title);
   }
   else
   {
     if (name)
-      snprintf(str, 200, "[%s] (%.50s)", IupGetClassName(ih), name);
+      snprintf(str, 200, "[%s] (%.50s)", IupGetClassName(elem), name);
     else
-      snprintf(str, 200, "[%s]", IupGetClassName(ih));
+      snprintf(str, 200, "[%s]", IupGetClassName(elem));
   }
 
   return str;
 }
 
-IUP_SDK_API int iupLayoutAttributeHasChanged(Ihandle* ih, const char* name, const char* value, const char* def_value, int flags)
+IUP_SDK_API int iupLayoutAttributeHasChanged(Ihandle* elem, const char* name, const char* value, const char* def_value, int flags)
 {
   if ((flags&IUPAF_NO_STRING) ||
       (flags&IUPAF_HAS_ID) ||
@@ -74,7 +74,7 @@ IUP_SDK_API int iupLayoutAttributeHasChanged(Ihandle* ih, const char* name, cons
   if (!value || value[0] == 0 || iupATTRIB_ISINTERNAL(value))
     return 0;
 
-  if ((flags&IUPAF_NO_SAVE) && iupBaseNoSaveCheck(ih, name))
+  if ((flags&IUPAF_NO_SAVE) && iupBaseNoSaveCheck(elem, name))
     return 0;
 
   if (def_value && iupStrEqualNoCase(def_value, value))
@@ -83,9 +83,9 @@ IUP_SDK_API int iupLayoutAttributeHasChanged(Ihandle* ih, const char* name, cons
   if (!def_value && iupStrFalse(value))
     return 0;
 
-  if (!(flags&IUPAF_NO_INHERIT) && ih->parent)
+  if (!(flags&IUPAF_NO_INHERIT) && elem->parent)
   {
-    char* parent_value = iupAttribGetInherit(ih->parent, name);
+    char* parent_value = iupAttribGetInherit(elem->parent, name);
     if (parent_value && iupStrEqualNoCase(value, parent_value))
       return 0;
   }
@@ -99,9 +99,9 @@ static int iLayoutPropertiesClose_CB(Ihandle* ih)
   return IUP_DEFAULT;
 }
 
-IUP_SDK_API void iupLayoutPropertiesUpdate(Ihandle* properties, Ihandle* ih)
+IUP_SDK_API void iupLayoutPropertiesUpdate(Ihandle* properties, Ihandle* elem)
 {
-  int i, j, attr_count, cb_count, total_count = IupGetClassAttributes(ih->iclass->name, NULL, 0);
+  int i, j, attr_count, cb_count, total_count = IupGetClassAttributes(elem->iclass->name, NULL, 0);
   char** attr_names = (char**)malloc(total_count * sizeof(char*));
   Ihandle* list1;
   if (!attr_names)
@@ -127,16 +127,16 @@ IUP_SDK_API void iupLayoutPropertiesUpdate(Ihandle* properties, Ihandle* ih)
   IupSetAttribute(IupGetDialogChild(properties, "IDTEXT"), "ACTIVE", "No");
   IupSetAttribute(IupGetDialogChild(properties, "IDLABEL"), "ACTIVE", "No");
 
-  attr_count = IupGetClassAttributes(ih->iclass->name, attr_names, total_count);
+  attr_count = IupGetClassAttributes(elem->iclass->name, attr_names, total_count);
   for (i = 0; i < attr_count; i++)
     IupSetAttributeId(list1, "", i + 1, attr_names[i]);
 
   cb_count = total_count - attr_count;
-  IupGetClassCallbacks(ih->iclass->name, attr_names, cb_count);
+  IupGetClassCallbacks(elem->iclass->name, attr_names, cb_count);
   for (i = 0; i<cb_count; i++)
     IupSetAttributeId(list3, "", i + 1, attr_names[i]);
 
-  attr_count = IupGetAllAttributes(ih, NULL, 0);
+  attr_count = IupGetAllAttributes(elem, NULL, 0);
   if (attr_count > total_count)
   {
     char** new_attr_names = (char**)realloc(attr_names, attr_count * sizeof(char*));
@@ -148,23 +148,23 @@ IUP_SDK_API void iupLayoutPropertiesUpdate(Ihandle* properties, Ihandle* ih)
     attr_names = new_attr_names;
   }
 
-  attr_count = IupGetAllAttributes(ih, attr_names, attr_count);
+  attr_count = IupGetAllAttributes(elem, attr_names, attr_count);
   for (i = 0, j = 1; i < attr_count; i++)
   {
-    if (!iupClassAttribIsRegistered(ih->iclass, attr_names[i]))
+    if (!iupClassAttribIsRegistered(elem->iclass, attr_names[i]))
     {
       IupSetAttributeId(list2, "", j, attr_names[i]);
       j++;
     }
   }
 
-  iupAttribSet(properties, "_IUP_PROPELEMENT", (char*)ih);
+  iupAttribSet(properties, "_IUP_PROPELEMENT", (char*)elem);
 
-  IupStoreAttribute(IupGetDialogChild(properties, "ELEMTITLE"), "VALUE", iupLayoutGetElementTitle(ih));
+  IupStoreAttribute(IupGetDialogChild(properties, "ELEMTITLE"), "VALUE", iupLayoutGetElementTitle(elem));
 
-  if (ih->iclass->nativetype == IUP_TYPEIMAGE)
+  if (elem->iclass->nativetype == IUP_TYPEIMAGE)
   {
-    IupSetAttributeHandle(IupGetDialogChild(properties, "ELEMIMAGE"), "IMAGE", ih);
+    IupSetAttributeHandle(IupGetDialogChild(properties, "ELEMIMAGE"), "IMAGE", elem);
     IupSetAttribute(IupGetDialogChild(properties, "ELEMIMAGE"), "VISIBLE", "Yes");
   }
   else

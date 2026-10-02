@@ -139,22 +139,22 @@ IUP_SDK_API char* iupStrLanguageTagFromEnv(void);
 
 /** Checks if the character is a digit.
  * \ingroup str */
-#define iup_isdigit(_c) (_c>='0' && _c<='9')
+#define iup_isdigit(_c) ((_c)>='0' && (_c)<='9')
 
-#define iup_isnumber(_c) ((_c>='0' && _c<='9') || \
-                          _c == '.'  || _c == ',' || \
-                          _c == '-' || _c == '+' || \
-                          _c == 'e' || _c == 'E')
+#define iup_isnumber(_c) (((_c)>='0' && (_c)<='9') || \
+                          (_c) == '.'  || (_c) == ',' || \
+                          (_c) == '-' || (_c) == '+' || \
+                          (_c) == 'e' || (_c) == 'E')
 
 /** Converts a character into upper case. \n
  * It will work only for character codes <128.
  * \ingroup str */
-#define iup_toupper(_c)  ((_c >= 'a' && _c <= 'z')? (_c - 'a') + 'A': _c)
+#define iup_toupper(_c)  (((_c) >= 'a' && (_c) <= 'z')? ((_c) - 'a') + 'A': (_c))
 
 /** Converts a character into lower case. \n
  * It will work only for character codes <128.
  * \ingroup str */
-#define iup_tolower(_c)  ((_c >= 'A' && _c <= 'Z')? (_c - 'A') + 'a': _c)
+#define iup_tolower(_c)  (((_c) >= 'A' && (_c) <= 'Z')? ((_c) - 'A') + 'a': (_c))
 
 /** Checks if the string has only ASCII codes.
  * \ingroup str */

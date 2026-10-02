@@ -58,16 +58,16 @@ void iupKeyInit(void);
 
 #define IUPKEY_STATUS_SIZE 11 /* 10 chars + null */
 #define IUPKEY_STATUS_INIT "          "  /* 10 spaces */
-#define iupKEY_SETSHIFT(_s)    (_s[0]='S')
-#define iupKEY_SETCONTROL(_s)  (_s[1]='C')
-#define iupKEY_SETBUTTON1(_s)  (_s[2]='1')
-#define iupKEY_SETBUTTON2(_s)  (_s[3]='2')
-#define iupKEY_SETBUTTON3(_s)  (_s[4]='3')
-#define iupKEY_SETDOUBLE(_s)   (_s[5]='D')
-#define iupKEY_SETALT(_s)      (_s[6]='A')
-#define iupKEY_SETSYS(_s)      (_s[7]='Y')
-#define iupKEY_SETBUTTON4(_s)  (_s[8]='4')
-#define iupKEY_SETBUTTON5(_s)  (_s[9]='5')
+#define iupKEY_SETSHIFT(_s)    ((_s)[0]='S')
+#define iupKEY_SETCONTROL(_s)  ((_s)[1]='C')
+#define iupKEY_SETBUTTON1(_s)  ((_s)[2]='1')
+#define iupKEY_SETBUTTON2(_s)  ((_s)[3]='2')
+#define iupKEY_SETBUTTON3(_s)  ((_s)[4]='3')
+#define iupKEY_SETDOUBLE(_s)   ((_s)[5]='D')
+#define iupKEY_SETALT(_s)      ((_s)[6]='A')
+#define iupKEY_SETSYS(_s)      ((_s)[7]='Y')
+#define iupKEY_SETBUTTON4(_s)  ((_s)[8]='4')
+#define iupKEY_SETBUTTON5(_s)  ((_s)[9]='5')
 
 
 #ifdef __cplusplus

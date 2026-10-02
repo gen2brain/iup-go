@@ -192,7 +192,7 @@ static void iColorRGB2HSI(double r, double g, double b, double* h, double* s, do
 
     *h = H * rad2deg;
 
-    ImaxS = iColorHSI_ImaxS((double)H, cosH, sinH);
+    ImaxS = iColorHSI_ImaxS(H, cosH, sinH);
   }
 
   /* must convert I from linear scale to non-linear scale. USED ONLY FOR THE COLORBROWSER */

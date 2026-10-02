@@ -160,12 +160,12 @@ static int iChildTreeCount(Ihandle* ih)
   return num;
 }
 
-IUP_API Ihandle* IupInsert(Ihandle* parent, Ihandle* ref_child, Ihandle* child)
+IUP_API Ihandle* IupInsert(Ihandle* ih, Ihandle* ref_child, Ihandle* child)
 {
   /* ref_child can be NULL */
 
-  iupASSERT(iupObjectCheck(parent));
-  if (!iupObjectCheck(parent))
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
     return NULL;
 
   iupASSERT(iupObjectCheck(child));
@@ -174,7 +174,7 @@ IUP_API Ihandle* IupInsert(Ihandle* parent, Ihandle* ref_child, Ihandle* child)
 
   iupASSERT(iupObjectCheck(child));
 
-  if (child->parent != NULL && child->parent != parent)
+  if (child->parent != NULL && child->parent != ih)
   {
 #ifdef IUP_ASSERT
     iupError("Child Already Inside a Parent!\n"
@@ -183,23 +183,23 @@ IUP_API Ihandle* IupInsert(Ihandle* parent, Ihandle* ref_child, Ihandle* child)
              "  parent = type(%s) - name(%s)",
              child->iclass->name, IupGetName(child),
              child->parent->iclass->name, IupGetName(child->parent),
-             parent->iclass->name, IupGetName(parent)
+             ih->iclass->name, IupGetName(ih)
              );
 #endif
     return NULL;
   }
 
-  if (parent->iclass->childtype == IUP_CHILDNONE)
+  if (ih->iclass->childtype == IUP_CHILDNONE)
     return NULL;
-  if (parent->iclass->childtype > IUP_CHILDMANY && iChildTreeCount(parent) == parent->iclass->childtype-IUP_CHILDMANY)
+  if (ih->iclass->childtype > IUP_CHILDMANY && iChildTreeCount(ih) == ih->iclass->childtype-IUP_CHILDMANY)
     return NULL;
 
 
   /* if already at the parent box, allow to move even if mapped */
-  if (parent->iclass->nativetype == IUP_TYPEVOID && iChildTreeFind(parent, child))
+  if (ih->iclass->nativetype == IUP_TYPEVOID && iChildTreeFind(ih, child))
   {
-    iChildTreeDetach(parent, child);
-    iChildTreeInsert(parent, ref_child, child);
+    iChildTreeDetach(ih, child);
+    iChildTreeInsert(ih, ref_child, child);
   }
   else
   {
@@ -207,11 +207,11 @@ IUP_API Ihandle* IupInsert(Ihandle* parent, Ihandle* ref_child, Ihandle* child)
     if (child->handle)
       return NULL;
 
-    iChildTreeInsert(parent, ref_child, child);
-    iupClassObjectChildAdded(parent, child);
+    iChildTreeInsert(ih, ref_child, child);
+    iupClassObjectChildAdded(ih, child);
   }
 
-  return parent;
+  return ih;
 }
 
 IUP_SDK_API void iupChildTreeAppend(Ihandle* parent, Ihandle* child)
@@ -229,17 +229,17 @@ IUP_SDK_API void iupChildTreeAppend(Ihandle* parent, Ihandle* child)
   }
 }
 
-IUP_API Ihandle* IupAppend(Ihandle* parent, Ihandle* child)
+IUP_API Ihandle* IupAppend(Ihandle* ih, Ihandle* child)
 {
-  iupASSERT(iupObjectCheck(parent));
-  if (!iupObjectCheck(parent))
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
     return NULL;
 
   iupASSERT(iupObjectCheck(child));
   if (!iupObjectCheck(child))
     return NULL;
 
-  if (child->parent != NULL && child->parent != parent)
+  if (child->parent != NULL && child->parent != ih)
   {
 #ifdef IUP_ASSERT
     iupError("Child Already Inside a Parent!\n"
@@ -248,22 +248,22 @@ IUP_API Ihandle* IupAppend(Ihandle* parent, Ihandle* child)
              "  parent = type(%s) - name(%s)",
              child->iclass->name, IupGetName(child),
              child->parent->iclass->name, IupGetName(child->parent),
-             parent->iclass->name, IupGetName(parent)
+             ih->iclass->name, IupGetName(ih)
              );
 #endif
     return NULL;
   }
 
-  if (parent->iclass->childtype == IUP_CHILDNONE)
+  if (ih->iclass->childtype == IUP_CHILDNONE)
     return NULL;
-  if (parent->iclass->childtype > IUP_CHILDMANY && iChildTreeCount(parent) == parent->iclass->childtype-IUP_CHILDMANY)
+  if (ih->iclass->childtype > IUP_CHILDMANY && iChildTreeCount(ih) == ih->iclass->childtype-IUP_CHILDMANY)
     return NULL;
 
   /* if already at the parent box, allow to move even if mapped */
-  if (parent->iclass->nativetype == IUP_TYPEVOID && iChildTreeFind(parent, child))
+  if (ih->iclass->nativetype == IUP_TYPEVOID && iChildTreeFind(ih, child))
   {
-    iChildTreeDetach(parent, child);
-    iupChildTreeAppend(parent, child);
+    iChildTreeDetach(ih, child);
+    iupChildTreeAppend(ih, child);
   }
   else
   {
@@ -271,11 +271,11 @@ IUP_API Ihandle* IupAppend(Ihandle* parent, Ihandle* child)
     if (child->handle)
       return NULL;
 
-    iupChildTreeAppend(parent, child);
-    iupClassObjectChildAdded(parent, child);
+    iupChildTreeAppend(ih, child);
+    iupClassObjectChildAdded(ih, child);
   }
 
-  return parent;
+  return ih;
 }
 
 static void iChildTreeReparent(Ihandle* child, Ihandle* new_parent)
@@ -293,7 +293,7 @@ static void iChildTreeReparent(Ihandle* child, Ihandle* new_parent)
   }
 }
 
-IUP_API int IupReparent(Ihandle* child, Ihandle* parent, Ihandle* ref_child)
+IUP_API int IupReparent(Ihandle* ih, Ihandle* parent, Ihandle* ref_child)
 {
   Ihandle* old_parent;
   int pos;
@@ -302,8 +302,8 @@ IUP_API int IupReparent(Ihandle* child, Ihandle* parent, Ihandle* ref_child)
   if (!iupObjectCheck(parent))
     return IUP_ERROR;
 
-  iupASSERT(iupObjectCheck(child));
-  if (!iupObjectCheck(child))
+  iupASSERT(iupObjectCheck(ih));
+  if (!iupObjectCheck(ih))
     return IUP_ERROR;
 
   if (ref_child)
@@ -315,11 +315,11 @@ IUP_API int IupReparent(Ihandle* child, Ihandle* parent, Ihandle* ref_child)
   }
 
   /* can not be at the same place */
-  if (parent == child->parent && (ref_child == child || (ref_child == NULL && child->brother == NULL)))
+  if (parent == ih->parent && (ref_child == ih || (ref_child == NULL && ih->brother == NULL)))
     return IUP_ERROR;
 
   /* child can not be grandparent of parent */
-  if (iupChildTreeIsParent(child, parent))
+  if (iupChildTreeIsParent(ih, parent))
     return IUP_ERROR;
 
   if (parent->iclass->childtype == IUP_CHILDNONE)
@@ -328,32 +328,32 @@ IUP_API int IupReparent(Ihandle* child, Ihandle* parent, Ihandle* ref_child)
     return IUP_ERROR;
 
   /* both must be already mapped or both unmapped */
-  if ((!parent->handle &&  child->handle) ||
-      ( parent->handle && !child->handle))
+  if ((!parent->handle &&  ih->handle) ||
+      ( parent->handle && !ih->handle))
     return IUP_ERROR;
 
   /* detach from old parent */
-  old_parent = child->parent;
+  old_parent = ih->parent;
 
-  pos = IupGetChildPos(old_parent, child);
+  pos = IupGetChildPos(old_parent, ih);
 
-  iChildTreeDetach(old_parent, child);
-  iupClassObjectChildRemoved(old_parent, child, pos);
+  iChildTreeDetach(old_parent, ih);
+  iupClassObjectChildRemoved(old_parent, ih, pos);
 
   /* attach to new parent */
   if (ref_child)
-    iChildTreeInsert(parent, ref_child, child);
+    iChildTreeInsert(parent, ref_child, ih);
   else
-    iupChildTreeAppend(parent, child);
-  iupClassObjectChildAdded(parent, child);
+    iupChildTreeAppend(parent, ih);
+  iupClassObjectChildAdded(parent, ih);
 
   /* no need to remap, just notify the native system */
-  if (child->handle && parent->handle)
+  if (ih->handle && parent->handle)
   {
-    if (child->iclass->nativetype != IUP_TYPEVOID)
-      iupdrvReparent(child);
+    if (ih->iclass->nativetype != IUP_TYPEVOID)
+      iupdrvReparent(ih);
     else
-      iChildTreeReparent(child, parent);
+      iChildTreeReparent(ih, parent);
   }
 
   return IUP_NOERROR;
