@@ -741,7 +741,7 @@ static int xGLCanvasIgnoreError(Display* param1, XErrorEvent* param2)
   return 0;
 }
 
-#define iglxColorScale(c)  (unsigned short)(c * 65535.0 + 0.5)
+#define iglxColorScale(c)  ((unsigned short)((c) * 65535.0 + 0.5))
 
 IUPGL_API void IupGLPalette(Ihandle* ih, int index, float r, float g, float b)
 {
