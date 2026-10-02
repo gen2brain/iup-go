@@ -269,7 +269,7 @@ static char* motMenuGetAccel(Ihandle* ih, const char* title)
   if (keysym == K_BS)  keysym = XK_BackSpace;
   else if (keysym == K_TAB) keysym = XK_Tab;
   else if (keysym == K_CR)  keysym = XK_Return;
-  else if (keysym >= K_A && keysym <= K_Z) keysym = (KeySym)iup_tolower(keysym);
+  else if (keysym >= K_A && keysym <= K_Z) keysym = iup_tolower(keysym);
 
   name = XKeysymToString(keysym);
   if (!name)

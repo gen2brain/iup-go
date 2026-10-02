@@ -1883,14 +1883,14 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
           iDrawTextXft(&local, text, len, x - m.ox, y - m.oy, w, h, iupDrawColor(255, 255, 255, 255), xftfont, flags, text_orientation, 1);
         else
         {
-          XFontStruct* xfont = (XFontStruct*)iupmotGetFontStruct(font);
+          XFontStruct* xfont = iupmotGetFontStruct(font);
           if (xfont)
             iDrawTextX11(&local, text, len, x - m.ox, y - m.oy, w, h, iupDrawColor(255, 255, 255, 255), xfont, flags, text_orientation);
         }
       }
 #else
       {
-        XFontStruct* xfont = (XFontStruct*)iupmotGetFontStruct(font);
+        XFontStruct* xfont = iupmotGetFontStruct(font);
         if (xfont)
           iDrawTextX11(&local, text, len, x - m.ox, y - m.oy, w, h, iupDrawColor(255, 255, 255, 255), xfont, flags, text_orientation);
       }
@@ -1912,7 +1912,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 #endif
 
   {
-    XFontStruct* xfont = (XFontStruct*)iupmotGetFontStruct(font);
+    XFontStruct* xfont = iupmotGetFontStruct(font);
     if (xfont)
       iDrawTextX11(dc, text, len, x, y, w, h, color, xfont, flags, text_orientation);
   }
@@ -2930,7 +2930,7 @@ IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, 
     for (i = 0; i < fcount; i++)
     {
       int tx, ty;
-      motDrawTransformPoint(dc, (double)flat[i].x1 / m.scale, (double)flat[i].y1 / m.scale, &tx, &ty);
+      motDrawTransformPoint(dc, flat[i].x1 / m.scale, flat[i].y1 / m.scale, &tx, &ty);
       flat[i].x1 = tx;
       flat[i].y1 = ty;
     }

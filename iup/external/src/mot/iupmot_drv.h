@@ -84,6 +84,7 @@ IUP_DRV_API void iupmotEnterLeaveWindowEvent(Widget w, Ihandle* ih, XEvent* evt,
 IUP_DRV_API void iupmotHelpCallback(Widget w, Ihandle* ih, XtPointer call_data);
 IUP_DRV_API void iupmotDisableDragSource(Widget w);
 IUP_DRV_API void iupmotDragAddFinishLeave(Widget dragContext);
+IUP_DRV_API void iupmotDestroyDragDrop(Ihandle* ih);
 IUP_DRV_API void iupmotSetPixmap(Ihandle* ih, const char* name, const char* prop, int make_inactive);
 IUP_DRV_API void iupmotSetGlobalColorAttrib(Widget w, const char* xmname, const char* name);
 IUP_DRV_API void iupmotSetBgColor(Widget w, Pixel color);

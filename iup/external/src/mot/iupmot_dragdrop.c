@@ -813,7 +813,7 @@ static void motXdndSendFinished(IupmotXdndState* state, Window target_window, in
     reply.xclient.format = 32;
     reply.xclient.data.l[0] = (long)target_window;
     reply.xclient.data.l[1] = success ? 1 : 0;
-    reply.xclient.data.l[2] = success ? (long)xdnd_atoms.XdndActionCopy : (long)None;
+    reply.xclient.data.l[2] = success ? (long)xdnd_atoms.XdndActionCopy : None;
 
     XSendEvent(iupmot_display, state->source, False, NoEventMask, &reply);
     XFlush(iupmot_display);
@@ -911,7 +911,7 @@ static void motXdndHandlePosition(Ihandle* ih, Widget w, XClientMessageEvent* ev
   reply.xclient.data.l[1] = (state->format != None) ? 1 : 0;
   reply.xclient.data.l[2] = 0;
   reply.xclient.data.l[3] = 0;
-  reply.xclient.data.l[4] = (state->format != None && state->version >= 2) ? (long)xdnd_atoms.XdndActionCopy : (long)None;
+  reply.xclient.data.l[4] = (state->format != None && state->version >= 2) ? (long)xdnd_atoms.XdndActionCopy : None;
 
   XSendEvent(iupmot_display, state->source, False, NoEventMask, &reply);
   XFlush(iupmot_display);
@@ -1087,6 +1087,35 @@ static int motSetDropFilesTargetAttrib(Ihandle* ih, const char* value)
 }
 
 /******************************************************************************************/
+
+IUP_DRV_API void iupmotDestroyDragDrop(Ihandle* ih)
+{
+  IupmotXdndState* state;
+
+  Atom* targetlist = (Atom*)iupAttribGet(ih, "_IUPMOT_DRAG_TARGETLIST");
+  if (targetlist)
+  {
+    XtFree((char*)targetlist);
+    iupAttribSet(ih, "_IUPMOT_DRAG_TARGETLIST", NULL);
+    iupAttribSet(ih, "_IUPMOT_DRAG_TARGETLIST_COUNT", NULL);
+  }
+
+  targetlist = (Atom*)iupAttribGet(ih, "_IUPMOT_DROP_TARGETLIST");
+  if (targetlist)
+  {
+    XtFree((char*)targetlist);
+    iupAttribSet(ih, "_IUPMOT_DROP_TARGETLIST", NULL);
+    iupAttribSet(ih, "_IUPMOT_DROP_TARGETLIST_COUNT", NULL);
+  }
+
+  state = (IupmotXdndState*)iupAttribGet(ih, "_IUPMOT_XDND_STATE");
+  if (state)
+  {
+    XtRemoveEventHandler(state->shell, NoEventMask, True, motXdndEventHandler, (XtPointer)ih);
+    free(state);
+    iupAttribSet(ih, "_IUPMOT_XDND_STATE", NULL);
+  }
+}
 
 IUP_SDK_API void iupdrvRegisterDragDropAttrib(Iclass* ic)
 {
