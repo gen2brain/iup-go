@@ -197,8 +197,22 @@ a:hover { text-decoration: underline; }
 .content th { background: var(--bg-soft); text-align: left; }
 .content tr:nth-child(even) td { background: var(--bg-soft); }
 .content img { max-width: 100%; height: auto; }
+.content img.zoomable { cursor: zoom-in; }
 .content hr { border: 0; border-top: 1px solid var(--border); margin: 2em 0; }
 .content blockquote { margin: 1em 0; padding: .2em 1em; color: var(--fg-muted); border-left: 3px solid var(--border); }
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+  background: rgba(0, 0, 0, .8);
+  cursor: zoom-out;
+}
+.lightbox img { margin: auto; max-width: none; box-shadow: 0 4px 32px rgba(0, 0, 0, .5); }
 
 .toc {
   position: sticky;
