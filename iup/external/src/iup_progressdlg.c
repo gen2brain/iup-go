@@ -7,13 +7,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "iup.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_drv.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
 #include "iup_childtree.h"
@@ -27,14 +27,15 @@ typedef struct _IprogressDlgData
   int state,          /* flag indicating if it was interrupted */
       percent,         /* current percent value */
       count, total_count,
-      last_clock, last_percent,      /* last time it was updated */
-      min_percent, min_clock;
+      last_percent,
+      min_percent;
+  unsigned int last_clock, min_clock;  /* last time it was updated */
 } IprogressDlgData;
 
 
 static void iProgressDlgSetPercent(IprogressDlgData* progress_data, int percent)
 {
-  int cur_clock;
+  unsigned int cur_clock;
 
   if (progress_data->state == 0)  /* from IDLE */
     progress_data->state = 1;  /* to PROCESSING */
@@ -42,7 +43,7 @@ static void iProgressDlgSetPercent(IprogressDlgData* progress_data, int percent)
   if (progress_data->state != 1)
     return;
 
-  cur_clock = (int)clock();
+  cur_clock = iupdrvGetTickCount();
   if (cur_clock - progress_data->last_clock > progress_data->min_clock ||  /* significant amount of time */
       percent - progress_data->last_percent > progress_data->min_percent)  /* minimum percentage */
   {
@@ -51,7 +52,7 @@ static void iProgressDlgSetPercent(IprogressDlgData* progress_data, int percent)
     {
       IupSetInt(progress_data->progress, "VALUE", percent);
       IupFlush();
-      progress_data->last_clock = (int)clock();
+      progress_data->last_clock = iupdrvGetTickCount();
       progress_data->last_percent = percent;
     }
   }
@@ -302,7 +303,7 @@ static int iProgressDlgCreateMethod(Ihandle* ih, void** params)
   progress_data->description = lbl;
 
   progress_data->total_count = 1;
-  progress_data->last_clock = clock();
+  progress_data->last_clock = iupdrvGetTickCount();
   progress_data->last_percent = 0;
 
   progress_data->min_clock = 250;

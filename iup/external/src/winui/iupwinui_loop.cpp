@@ -375,3 +375,8 @@ extern "C" IUP_SDK_API void iupdrvSleep(int time)
 {
   Sleep(time);
 }
+
+extern "C" IUP_SDK_API unsigned int iupdrvGetTickCount(void)
+{
+  return static_cast<unsigned int>(GetTickCount());
+}

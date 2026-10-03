@@ -1582,6 +1582,11 @@ IUP_SDK_API void iupdrvSleep(int time)
   Sleep(time);
 }
 
+IUP_SDK_API unsigned int iupdrvGetTickCount(void)
+{
+  return (unsigned int)GetTickCount();
+}
+
 IUP_DRV_API void iupwinDrawFocusRect(HDC hDC, int x, int y, int w, int h)
 {
   RECT rect;

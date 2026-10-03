@@ -9,7 +9,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -1068,7 +1067,7 @@ static int iMatrixListEdition_CB(Ihandle* ih, int lin, int col, int mode, int up
     {
       /* turn off drawing, but prepare for delete */
       if (update && ih->data->edit_hidden_byfocus)
-        iupAttribSetInt(ih, "_IUPMTXLIST_DELETE", (int)clock());
+        iupAttribSetInt(ih, "_IUPMTXLIST_DELETE", (int)iupdrvGetTickCount());
 
       IupSetAttributeId(ih, "LINEDELETE", lin, NULL);
     }
@@ -1103,9 +1102,10 @@ static int iMatrixListCheckDelete(Ihandle* ih)
     char* value = iupAttribGet(ih, "_IUPMTXLIST_DELETE");
     if (value)
     {
-      int t, diff;
+      int t;
+      unsigned int diff;
       iupStrToInt(value, &t);
-      diff = (int)clock() - t;
+      diff = iupdrvGetTickCount() - (unsigned int)t;
 
       iupAttribSet(ih, "_IUPMTXLIST_DELETE", NULL);
 

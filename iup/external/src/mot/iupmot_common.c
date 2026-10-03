@@ -700,15 +700,28 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 
 #ifndef WIN32
 #include <unistd.h>
+#include <time.h>
 IUP_SDK_API void iupdrvSleep(int time)
 {
   usleep(time*1000);  /* milli to micro */
+}
+
+IUP_SDK_API unsigned int iupdrvGetTickCount(void)
+{
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (unsigned int)((unsigned long long)ts.tv_sec * 1000 + (unsigned long long)ts.tv_nsec / 1000000);
 }
 #else
 IUP_SDK_API void iupdrvSleep(int time)
 {
   clock_t goal = (clock_t)(time*CLOCKS_PER_SEC)/1000 + clock();
   while(goal > clock());
+}
+
+IUP_SDK_API unsigned int iupdrvGetTickCount(void)
+{
+  return (unsigned int)(((unsigned long long)clock() * 1000) / CLOCKS_PER_SEC);
 }
 #endif
 

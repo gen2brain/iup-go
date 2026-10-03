@@ -551,6 +551,11 @@ extern "C" IUP_SDK_API void iupdrvSleep(int time)
   snooze(static_cast<bigtime_t>(time) * 1000);
 }
 
+extern "C" IUP_SDK_API unsigned int iupdrvGetTickCount(void)
+{
+  return static_cast<unsigned int>(system_time() / 1000);
+}
+
 extern "C" IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   (void)ih;

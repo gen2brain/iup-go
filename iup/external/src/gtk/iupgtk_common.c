@@ -1066,6 +1066,11 @@ IUP_SDK_API void iupdrvSleep(int time)
   g_usleep(time*1000);  /* milli to micro */
 }
 
+IUP_SDK_API unsigned int iupdrvGetTickCount(void)
+{
+  return (unsigned int)(g_get_monotonic_time() / 1000);
+}
+
 IUP_DRV_API GdkWindow* iupgtkGetWindow(GtkWidget* widget)
 {
 #if GTK_CHECK_VERSION(2, 14, 0)

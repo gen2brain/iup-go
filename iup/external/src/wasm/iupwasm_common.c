@@ -801,6 +801,11 @@ IUP_SDK_API void iupdrvSleep(int time)
   (void)time;
 }
 
+IUP_SDK_API unsigned int iupdrvGetTickCount(void)
+{
+  return (unsigned int)(unsigned long long)emscripten_get_now();
+}
+
 EM_JS(int, iupwasmJsScrollVisible, (int id), {
   if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'scrollvisible', id: id });
   var el = globalThis.__iup.els[id];

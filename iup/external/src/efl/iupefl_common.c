@@ -1521,3 +1521,8 @@ IUP_SDK_API void iupdrvSleep(int time)
   usleep((useconds_t)(time * 1000));
 #endif
 }
+
+IUP_SDK_API unsigned int iupdrvGetTickCount(void)
+{
+  return (unsigned int)(unsigned long long)(ecore_time_get() * 1000.0);
+}

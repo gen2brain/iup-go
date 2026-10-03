@@ -15,6 +15,7 @@
 #include <QPalette>
 #include <QCursor>
 #include <QThread>
+#include <QElapsedTimer>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QHelpEvent>
@@ -736,6 +737,13 @@ extern "C" IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 extern "C" IUP_SDK_API void iupdrvSleep(int time)
 {
   QThread::msleep(time);
+}
+
+extern "C" IUP_SDK_API unsigned int iupdrvGetTickCount(void)
+{
+  QElapsedTimer timer;
+  timer.start();
+  return static_cast<unsigned int>(timer.msecsSinceReference());
 }
 
 /* App-local synthesis via QCoreApplication::postEvent: events fire IUP callbacks but the OS cursor is not moved. */
