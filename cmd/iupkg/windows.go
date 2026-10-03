@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"image"
+	"io/fs"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -75,6 +76,9 @@ func packageWindows(c *config) error {
 	if !c.console {
 		ldflags = append(ldflags, "-H=windowsgui")
 	}
+	if c.qtBundle() {
+		return packageQtWindows(c, img, ldflags)
+	}
 	out := filepath.Join(c.out, c.exe+".exe")
 	if err := goBuild(c, c.goarch, out, []string{"nomanifest"}, ldflags); err != nil {
 		return err
@@ -87,7 +91,7 @@ func packageWindows(c *config) error {
 	}
 	fmt.Fprintln(os.Stderr, out)
 	if slices.Contains(c.formats, "msix") {
-		return packageMSIX(c, out, img, ldflags)
+		return packageMSIX(c, out, "", img, ldflags)
 	}
 	if len(c.files) > 0 {
 		fmt.Fprintln(os.Stderr, "iupkg: --data is packaged only into the .msix (--format msix)")
@@ -111,7 +115,40 @@ var msixCapabilities = map[string]string{
 	"location":   `<DeviceCapability Name="location"/>`,
 }
 
-func packageMSIX(c *config, exe string, img image.Image, ldflags []string) error {
+func packageQtWindows(c *config, img image.Image, ldflags []string) error {
+	tmp, err := os.MkdirTemp("", "iupkg-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmp)
+	stage := filepath.Join(tmp, c.exe)
+	exe := filepath.Join(stage, c.exe+".exe")
+	if err := goBuild(c, c.goarch, exe, []string{"nomanifest"}, ldflags); err != nil {
+		return err
+	}
+	if c.sign != "" {
+		if err := signWindows(c, exe); err != nil {
+			return err
+		}
+	}
+	if err := deployQtWindows(c, stage, exe); err != nil {
+		return err
+	}
+	if err := c.writeData(stage); err != nil {
+		return err
+	}
+	archive := filepath.Join(c.out, fmt.Sprintf("%s-%s-windows-%s.zip", c.exe, c.version, c.goarch))
+	if err := zipDir(archive, stage); err != nil {
+		return err
+	}
+	fmt.Fprintln(os.Stderr, archive)
+	if slices.Contains(c.formats, "msix") {
+		return packageMSIX(c, exe, stage, img, ldflags)
+	}
+	return nil
+}
+
+func packageMSIX(c *config, exe, stage string, img image.Image, ldflags []string) error {
 	arch, ok := msixArch[c.goarch]
 	if !ok {
 		return fmt.Errorf("no MSIX architecture for %s", c.goarch)
@@ -144,7 +181,23 @@ func packageMSIX(c *config, exe string, img image.Image, ldflags []string) error
 	}
 
 	var files []msix.File
-	if !c.cgo {
+	if stage != "" {
+		err := filepath.WalkDir(stage, func(path string, d fs.DirEntry, err error) error {
+			if err != nil || d.IsDir() || path == exe {
+				return err
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			rel, _ := filepath.Rel(stage, path)
+			files = append(files, msix.File{Name: filepath.ToSlash(rel), Data: data})
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	} else if !c.cgo {
 		tmp, err := os.MkdirTemp("", "iupkg-")
 		if err != nil {
 			return err
@@ -179,13 +232,15 @@ func packageMSIX(c *config, exe string, img image.Image, ldflags []string) error
 		}
 		files = append(files, msix.File{Name: "Assets/" + logo.name + ".png", Data: png})
 	}
-	for _, f := range c.files {
-		for _, existing := range files {
-			if strings.EqualFold(existing.Name, f.name) {
-				return fmt.Errorf("--data: %s is already in the package", f.name)
+	if stage == "" {
+		for _, f := range c.files {
+			for _, existing := range files {
+				if strings.EqualFold(existing.Name, f.name) {
+					return fmt.Errorf("--data: %s is already in the package", f.name)
+				}
 			}
+			files = append(files, msix.File{Name: f.name, Data: f.data})
 		}
-		files = append(files, msix.File{Name: f.name, Data: f.data})
 	}
 	pkg, err := msix.Write(msixManifest(c, arch, publisher), files, signer)
 	if err != nil {

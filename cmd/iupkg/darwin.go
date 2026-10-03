@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -30,6 +31,9 @@ var optionalLibs = map[string]string{
 }
 
 func packageDarwin(c *config) error {
+	if c.qtBundle() && c.signer != "codesign" {
+		return errors.New("a Qt application bundle needs --signer codesign")
+	}
 	archs := []string{c.goarch}
 	if c.goarch == "universal" {
 		archs = []string{"amd64", "arm64"}
@@ -93,6 +97,11 @@ func packageDarwin(c *config) error {
 	}
 	if err := os.WriteFile(filepath.Join(contents, "Resources", c.exe+".icns"), icns, 0o644); err != nil {
 		return err
+	}
+	if c.qtBundle() {
+		if err := deployQtDarwin(c, app, tmp); err != nil {
+			return err
+		}
 	}
 	if err := c.writeData(filepath.Join(contents, "Resources")); err != nil {
 		return err
@@ -347,6 +356,40 @@ func notarizeDarwin(c *config, app, tmp string, cdhash []byte) error {
 	return apple.Staple(app, cdhash)
 }
 
+func nestedCode(app, exe string) ([]string, error) {
+	contents := filepath.Join(app, "Contents")
+	mainExe := filepath.Join(contents, "MacOS", exe)
+	var nested []string
+	err := filepath.WalkDir(contents, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() && (strings.HasSuffix(d.Name(), ".framework") || strings.HasSuffix(d.Name(), ".app")) {
+			nested = append(nested, path)
+			return nil
+		}
+		if !d.Type().IsRegular() || path == mainExe {
+			return nil
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		var magic [4]byte
+		_, rerr := f.Read(magic[:])
+		f.Close()
+		if rerr == nil && apple.IsMachO(magic[:]) {
+			nested = append(nested, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	sort.SliceStable(nested, func(i, j int) bool { return len(nested[i]) > len(nested[j]) })
+	return nested, nil
+}
+
 func codesign(c *config, app, tmp, entitlements string, notarize bool) error {
 	identity := c.sign
 	if identity == "" {
@@ -357,9 +400,19 @@ func codesign(c *config, app, tmp, entitlements string, notarize bool) error {
 		args = append(args, "--timestamp", "--options", "runtime")
 	}
 
-	libs, _ := filepath.Glob(filepath.Join(app, "Contents", "Frameworks", "*.dylib"))
-	for _, lib := range libs {
-		if err := run("codesign", append(slices.Clone(args), lib)...); err != nil {
+	nested, err := nestedCode(app, c.exe)
+	if err != nil {
+		return err
+	}
+	for _, path := range nested {
+		sub := slices.Clone(args)
+		if name, ok := strings.CutSuffix(filepath.Base(path), ".app"); ok {
+			own := filepath.Join(path, "Contents", "Resources", name+".entitlements")
+			if _, err := os.Stat(own); err == nil {
+				sub = append(sub, "--entitlements", own)
+			}
+		}
+		if err := run("codesign", append(sub, path)...); err != nil {
 			return err
 		}
 	}
@@ -412,6 +465,18 @@ func zipDir(archive, dir string) error {
 		if d.IsDir() {
 			hdr.Name += "/"
 			_, err = zw.CreateHeader(hdr)
+			return err
+		}
+		if d.Type()&fs.ModeSymlink != 0 {
+			target, err := os.Readlink(path)
+			if err != nil {
+				return err
+			}
+			w, err := zw.CreateHeader(hdr)
+			if err != nil {
+				return err
+			}
+			_, err = io.WriteString(w, target)
 			return err
 		}
 		hdr.Method = zip.Deflate
