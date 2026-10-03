@@ -61,9 +61,10 @@ static const char* qmlWebBrowserQml =
   "import QtWebEngine\n"
   "WebEngineView { id: web\n"
   "  property bool iupOpenNewWindow: true\n"
+  "  property bool iupAllowNavigate: true\n"
   "  signal iupLoading(int status, string url)\n"
   "  signal iupNewWindow(string url)\n"
-  "  signal iupCloseRequested()\n"
+  "  signal iupNavigate(string url)\n"
   "  signal iupResult(int id, var result)\n"
   "  settings.javascriptEnabled: true\n"
   "  settings.localStorageEnabled: true\n"
@@ -77,12 +78,13 @@ static const char* qmlWebBrowserQml =
   "    triggerWebAction(actions[name])\n"
   "  }\n"
   "  onLoadingChanged: (info) => web.iupLoading(info.status === WebEngineView.LoadStartedStatus ? 0 : info.status === WebEngineView.LoadSucceededStatus ? 1 : info.status === WebEngineView.LoadFailedStatus ? 2 : 3, info.url.toString())\n"
+  "  onNavigationRequested: (request) => { if (!request.isMainFrame) return; web.iupAllowNavigate = true; web.iupNavigate(request.url.toString()); if (!web.iupAllowNavigate) request.reject() }\n"
   "  onNewWindowRequested: (request) => { web.iupOpenNewWindow = true; web.iupNewWindow(request.requestedUrl.toString()); if (web.iupOpenNewWindow) request.openIn(web) }\n"
-  "  onWindowCloseRequested: web.iupCloseRequested()\n"
   "}";
 
 static const char* qmlWebBrowserInitScript =
   "(function() {"
+  "  if (window.iupGetDirtyFlag) return;"
   "  var iupSavedRange = null;"
   "  var iupDirtyFlag = false;"
   "  document.addEventListener('selectionchange', function() {"
@@ -100,6 +102,7 @@ static const char* qmlWebBrowserInitScript =
   "    if (document.body.contentEditable == 'true' && iupSavedRange) {"
   "      try {"
   "        var sel = window.getSelection();"
+  "        if (!sel.isCollapsed && document.body.contains(sel.anchorNode)) return;"
   "        sel.removeAllRanges();"
   "        sel.addRange(iupSavedRange);"
   "      } catch (e) {}"
@@ -616,7 +619,10 @@ static int qmlWebBrowserTriggerAction(Ihandle* ih, const char* name)
 {
   IupQmlWebData* data = qmlWebBrowserGetData(ih);
   if (data)
+  {
+    data->view->forceActiveFocus();
     iupqmlCallMethod(data->view, "iupAction", QString::fromUtf8(name));
+  }
   return 0;
 }
 
@@ -675,6 +681,7 @@ static int qmlWebBrowserExecCommandAttrib(Ihandle* ih, const char* value)
 
   free(escaped);
 
+  data->view->forceActiveFocus();
   iupqmlCallMethod(data->view, "iupRun", -1, js);
   return 0;
 }
@@ -694,6 +701,7 @@ static int qmlWebBrowserExecCommandWithParamAttrib(Ihandle* ih, const char* cmd,
 
   free(escaped_param);
 
+  data->view->forceActiveFocus();
   iupqmlCallMethod(data->view, "iupRun", -1, js);
   return 0;
 }
@@ -1026,8 +1034,7 @@ static char* qmlWebBrowserGetCommandStateAttrib(Ihandle* ih)
   if (cmd)
   {
     char* result = qmlWebBrowserQueryCommandState(ih, qmlWebBrowserMapCommandName(cmd));
-    if (result)
-      return result;
+    return iupStrReturnBoolean(result && strcmp(result, "true") == 0);
   }
   return iupStrReturnBoolean(0);
 }
@@ -1038,8 +1045,7 @@ static char* qmlWebBrowserGetCommandEnabledAttrib(Ihandle* ih)
   if (cmd)
   {
     char* result = qmlWebBrowserQueryCommandEnabled(ih, qmlWebBrowserMapCommandName(cmd));
-    if (result)
-      return result;
+    return iupStrReturnBoolean(result && strcmp(result, "true") == 0);
   }
   return iupStrReturnBoolean(0);
 }
@@ -1162,11 +1168,6 @@ static void qmlWebBrowserLoading(Ihandle* ih, int status, const QString& url)
   if (status == 0)
   {
     iupAttribSet(ih, "_IUPQML_WEB_STATUS", "LOADING");
-
-    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NAVIGATE_CB"));
-    if (cb && cb(ih, const_cast<char*>(url_str.constData())) == IUP_IGNORE)
-      iupqmlCallMethod(data->view, "stop");
-
     qmlWebBrowserUpdateHistory(ih);
     return;
   }
@@ -1177,6 +1178,7 @@ static void qmlWebBrowserLoading(Ihandle* ih, int status, const QString& url)
 
   if (status == 1)
   {
+    qmlWebBrowserRunJavaScript(ih, "%s", qmlWebBrowserInitScript);
     qmlWebBrowserRunJavaScript(ih, "document.body.contentEditable = '%s';", iupAttribGet(ih, "_IUPWEB_EDITABLE") ? "true" : "false");
 
     IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "COMPLETED_CB"));
@@ -1195,6 +1197,17 @@ static void qmlWebBrowserLoading(Ihandle* ih, int status, const QString& url)
   IFn update_cb = static_cast<IFn>(IupGetCallback(ih, "UPDATE_CB"));
   if (update_cb)
     update_cb(ih);
+}
+
+static void qmlWebBrowserNavigate(Ihandle* ih, const QString& url)
+{
+  IupQmlWebData* data = qmlWebBrowserGetData(ih);
+  if (!data)
+    return;
+
+  IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NAVIGATE_CB"));
+  if (cb && cb(ih, const_cast<char*>(url.toUtf8().constData())) == IUP_IGNORE)
+    data->view->setProperty("iupAllowNavigate", false);
 }
 
 static void qmlWebBrowserNewWindow(Ihandle* ih, const QString& url)
@@ -1240,15 +1253,12 @@ static int qmlWebBrowserMapMethod(Ihandle* ih)
     qmlWebBrowserLoading(ih, *static_cast<int*>(args[1]), *static_cast<QString*>(args[2]));
   });
 
-  iupqmlConnect(view, "iupNewWindow(QString)", [ih](void** args) {
-    qmlWebBrowserNewWindow(ih, *static_cast<QString*>(args[1]));
+  iupqmlConnect(view, "iupNavigate(QString)", [ih](void** args) {
+    qmlWebBrowserNavigate(ih, *static_cast<QString*>(args[1]));
   });
 
-  iupqmlConnect(view, "iupCloseRequested()", [ih](void**) {
-    IupQmlWebData* d = qmlWebBrowserGetData(ih);
-    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NEWWINDOW_CB"));
-    if (d && cb)
-      cb(ih, const_cast<char*>(d->view->property("url").toUrl().toString().toUtf8().constData()));
+  iupqmlConnect(view, "iupNewWindow(QString)", [ih](void** args) {
+    qmlWebBrowserNewWindow(ih, *static_cast<QString*>(args[1]));
   });
 
   iupqmlConnect(view, "iupResult(int,QVariant)", [ih](void** args) {
@@ -1314,6 +1324,7 @@ extern "C" Iclass* iupWebBrowserNewClass(void)
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
+  ic->has_attrib_id = 1;
 
   ic->New = iupWebBrowserNewClass;
   ic->Create = qmlWebBrowserCreateMethod;

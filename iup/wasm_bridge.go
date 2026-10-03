@@ -166,9 +166,15 @@ func init() {
 	}))
 	js.Global().Set("iupGoExitLoop", js.FuncOf(func(js.Value, []js.Value) interface{} {
 		exitOnce.Do(func() {
-			if exitCh != nil {
-				close(exitCh)
-			}
+			var fn js.Func
+			fn = js.FuncOf(func(js.Value, []js.Value) interface{} {
+				fn.Release()
+				if exitCh != nil {
+					close(exitCh)
+				}
+				return nil
+			})
+			js.Global().Call("setTimeout", fn, 0)
 		})
 		return nil
 	}))

@@ -116,7 +116,6 @@ public final class IupWebBrowserHelper
     public static void loadUrl(View view, String url)
     {
         if (!(view instanceof IupWebView wv) || url == null) return;
-        wv.setIgnoreNavigate(true);
         wv.setStatus(STATUS_LOADING);
         wv.loadUrl(url);
     }
@@ -139,7 +138,6 @@ public final class IupWebBrowserHelper
     public static void reload(View view)
     {
         if (!(view instanceof IupWebView wv)) return;
-        wv.setIgnoreNavigate(true);
         wv.setStatus(STATUS_LOADING);
         wv.reload();
     }
@@ -154,33 +152,21 @@ public final class IupWebBrowserHelper
     public static void goBack(View view)
     {
         if (!(view instanceof IupWebView wv)) return;
-        if (wv.canGoBack())
-        {
-            wv.setIgnoreNavigate(true);
-            wv.goBack();
-        }
+        if (wv.canGoBack()) wv.goBack();
     }
 
     @Keep
     public static void goForward(View view)
     {
         if (!(view instanceof IupWebView wv)) return;
-        if (wv.canGoForward())
-        {
-            wv.setIgnoreNavigate(true);
-            wv.goForward();
-        }
+        if (wv.canGoForward()) wv.goForward();
     }
 
     @Keep
     public static void goBackOrForward(View view, int steps)
     {
         if (!(view instanceof IupWebView wv)) return;
-        if (wv.canGoBackOrForward(steps))
-        {
-            wv.setIgnoreNavigate(true);
-            wv.goBackOrForward(steps);
-        }
+        if (wv.canGoBackOrForward(steps)) wv.goBackOrForward(steps);
     }
 
     @Keep
@@ -228,7 +214,6 @@ public final class IupWebBrowserHelper
     public static void loadHtml(View view, String html)
     {
         if (!(view instanceof IupWebView wv) || html == null) return;
-        wv.setIgnoreNavigate(true);
         wv.setStatus(STATUS_LOADING);
         /* Base "" so relative URLs resolve against about:blank, not assets/. */
         wv.loadDataWithBaseURL("", html, "text/html", "UTF-8", null);
@@ -271,7 +256,6 @@ public final class IupWebBrowserHelper
     public static void newDoc(View view)
     {
         if (!(view instanceof IupWebView wv)) return;
-        wv.setIgnoreNavigate(true);
         wv.loadDataWithBaseURL("", "<html><body></body></html>", "text/html", "UTF-8", null);
     }
 
@@ -279,7 +263,6 @@ public final class IupWebBrowserHelper
     public static void openFile(View view, String path)
     {
         if (!(view instanceof IupWebView wv) || path == null) return;
-        wv.setIgnoreNavigate(true);
         wv.loadUrl("file://" + path);
     }
 
@@ -456,7 +439,6 @@ public final class IupWebBrowserHelper
     {
         private final long ihandlePtr;
         private String status = STATUS_COMPLETED;
-        private boolean ignoreNavigate;
         private boolean editable;
 
         public IupWebView(ContextThemeWrapper ctx, long ihandlePtr)
@@ -468,15 +450,6 @@ public final class IupWebBrowserHelper
         public long getIhandlePtr() { return ihandlePtr; }
         public String getStatus() { return status; }
         public void setStatus(String s) { this.status = s; }
-
-        /* One-shot flag consumed by shouldOverrideUrlLoading. */
-        public boolean consumeIgnoreNavigate()
-        {
-            boolean v = ignoreNavigate;
-            ignoreNavigate = false;
-            return v;
-        }
-        public void setIgnoreNavigate(boolean v) { this.ignoreNavigate = v; }
 
         public boolean getEditable() { return editable; }
         public void setEditable(boolean v) { this.editable = v; }
@@ -504,7 +477,8 @@ public final class IupWebBrowserHelper
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req)
         {
-            Uri uri = (req != null) ? req.getUrl() : null;
+            if (req == null || !req.isForMainFrame()) return false;
+            Uri uri = req.getUrl();
             return dispatchOverride(view, uri != null ? uri.toString() : "");
         }
 
@@ -517,8 +491,7 @@ public final class IupWebBrowserHelper
 
         private boolean dispatchOverride(WebView view, String url)
         {
-            if (!(view instanceof IupWebView wv)) return false;
-            if (wv.consumeIgnoreNavigate()) return false;
+            if (!(view instanceof IupWebView)) return false;
             return dispatchNavigate(ihandlePtr, url) == -1;
         }
 

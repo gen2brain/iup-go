@@ -874,9 +874,9 @@ static char* appleWKWebBrowserGetCommandStateAttrib(Ihandle* ih)
 	{
 		NSString* cmd_js = appleWKWebBrowserEscapeJavaScript(cmd);
 		NSString* js_query = [NSString stringWithFormat:@"document.queryCommandState(%@);", cmd_js];
-		return appleWKWebBrowserRunJavaScriptSync(ih, js_query);
+		return iupStrReturnBoolean(iupStrBoolean(appleWKWebBrowserRunJavaScriptSync(ih, js_query)));
 	}
-	return NULL;
+	return iupStrReturnBoolean(0);
 }
 
 static char* appleWKWebBrowserGetCommandEnabledAttrib(Ihandle* ih)
@@ -886,9 +886,9 @@ static char* appleWKWebBrowserGetCommandEnabledAttrib(Ihandle* ih)
 	{
 		NSString* cmd_js = appleWKWebBrowserEscapeJavaScript(cmd);
 		NSString* js_query = [NSString stringWithFormat:@"document.queryCommandEnabled(%@);", cmd_js];
-		return appleWKWebBrowserRunJavaScriptSync(ih, js_query);
+		return iupStrReturnBoolean(iupStrBoolean(appleWKWebBrowserRunJavaScriptSync(ih, js_query)));
 	}
-	return NULL;
+	return iupStrReturnBoolean(0);
 }
 
 static char* appleWKWebBrowserGetCommandTextAttrib(Ihandle* ih)
@@ -1137,6 +1137,7 @@ static int appleWKWebBrowserMapMethod(Ihandle* ih)
 		 "    if (document.body.contentEditable == 'true' && iupSavedRange) {"
 		 "      try {"
 		 "        var sel = window.getSelection();"
+		 "        if (!sel.isCollapsed && document.body.contains(sel.anchorNode)) return;"
 		 "        sel.removeAllRanges();"
 		 "        sel.addRange(iupSavedRange);"
 		 "      } catch (e) {}"
