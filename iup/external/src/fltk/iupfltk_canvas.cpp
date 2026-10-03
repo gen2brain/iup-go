@@ -15,6 +15,7 @@
 #include <cstring>
 #include <climits>
 #include <cstdlib>
+#include <vector>
 
 extern "C" {
 #include "iup.h"
@@ -50,12 +51,27 @@ protected:
     auto* canvas = reinterpret_cast<Fl_Widget*>(iup_handle->handle);
     if (canvas)
     {
-      fl_push_clip(canvas->x(), canvas->y(), canvas->w(), canvas->h());
-      Base::draw();
-      fl_pop_clip();
-
       auto* sb_h = reinterpret_cast<Fl_Scrollbar*>(iupAttribGet(iup_handle, "_IUPFLTK_SBHORIZ"));
       auto* sb_v = reinterpret_cast<Fl_Scrollbar*>(iupAttribGet(iup_handle, "_IUPFLTK_SBVERT"));
+      int overdraw = canvas->damage() && !(this->damage() & ~FL_DAMAGE_CHILD);
+      std::vector<Fl_Widget*> covered;
+
+      if (overdraw)
+      {
+        for (int i = 0; i < this->children(); i++)
+        {
+          Fl_Widget* child = this->child(i);
+          if (child != canvas && child != sb_h && child != sb_v && child->visible() && !child->damage())
+            covered.push_back(child);
+        }
+      }
+
+      fl_push_clip(canvas->x(), canvas->y(), canvas->w(), canvas->h());
+      Base::draw();
+      for (Fl_Widget* child : covered)
+        this->draw_child(*child);
+      fl_pop_clip();
+
       if (sb_h && sb_h->visible()) this->draw_child(*sb_h);
       if (sb_v && sb_v->visible()) this->draw_child(*sb_v);
     }

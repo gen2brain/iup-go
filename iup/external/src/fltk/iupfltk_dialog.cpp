@@ -279,6 +279,11 @@ public:
     else
       iupAttribSet(iup_handle, "_IUPFLTK_FIRSTLAYOUT", "1");
 
+    relayout(w, h);
+  }
+
+  void relayout(int w, int h)
+  {
     int border = 0, caption = 0, menu = 0;
     iupdrvDialogGetDecoration(iup_handle, &border, &caption, &menu);
 
@@ -490,6 +495,14 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   if (visible)
   {
     dialog->show();
+
+#ifdef __APPLE__
+    if (dialog->visible() && !iupAttribGet(ih, "_IUPFLTK_FIRSTLAYOUT"))
+    {
+      iupAttribSet(ih, "_IUPFLTK_FIRSTLAYOUT", "1");
+      dialog->relayout(dialog->w(), dialog->h());
+    }
+#endif
 
     if (ih->data->show_state == IUP_MAXIMIZE && !dialog->maximize_active())
       dialog->maximize();
