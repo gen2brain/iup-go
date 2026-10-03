@@ -637,7 +637,7 @@ IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* maccode, unsigned int* 
   int iup_base_key = iup_XkeyBase(code);
   const size_t array_length = sizeof(s_macKeyMap) / sizeof(s_macKeyMap[0]);
 
-  *maccode = 0;
+  *maccode = IUPCOCOA_NOKEYCODE;
   *state = 0;
 
   for (i = 0; i < array_length; i++)
@@ -649,7 +649,7 @@ IUP_SDK_API void iupdrvKeyEncode(int code, unsigned int* maccode, unsigned int* 
     }
   }
 
-  if (*maccode == 0)
+  if (*maccode == IUPCOCOA_NOKEYCODE)
     return;
 
   if (iup_isShiftXkey(code))
