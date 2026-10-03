@@ -66,7 +66,7 @@ static int gtk4ProgressBarTimeCb(Ihandle* timer)
 
 static int gtk4ProgressBarSetMarqueeAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->marquee)
+  if (!ih->data->marquee || !ih->data->timer)
     return 0;
 
   if (iupStrBoolean(value))
@@ -163,6 +163,18 @@ static int gtk4ProgressBarSetDashedAttrib(Ihandle* ih, const char* value)
 
 static int gtk4ProgressBarMapMethod(Ihandle* ih)
 {
+  if (iupAttribGetBoolean(ih, "CIRCULAR"))
+  {
+    ih->handle = gtk_spinner_new();
+    if (!ih->handle)
+      return IUP_ERROR;
+
+    iupgtk4AddToParent(ih);
+    gtk_spinner_start(GTK_SPINNER(ih->handle));
+    ih->data->marquee = 1;
+    return IUP_NOERROR;
+  }
+
   ih->handle = gtk_progress_bar_new();
   if (!ih->handle)
     return IUP_ERROR;

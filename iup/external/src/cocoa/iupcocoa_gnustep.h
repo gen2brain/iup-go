@@ -47,6 +47,7 @@
 #define NSBitmapImageFileTypeBMP                    NSBMPFileType
 
 #define NSProgressIndicatorStyleBar                 NSProgressIndicatorBarStyle
+#define NSProgressIndicatorStyleSpinning            NSProgressIndicatorSpinningStyle
 
 #define NSTickMarkPositionAbove                     NSTickMarkAbove
 #define NSTickMarkPositionBelow                     NSTickMarkBelow

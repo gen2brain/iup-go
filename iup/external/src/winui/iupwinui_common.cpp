@@ -125,6 +125,9 @@ IUP_DRV_API void iupwinuiApplyAccent(Ihandle* ih)
     auto pb = winuiGetHandle<ProgressBar>(ih);
     if (pb && !iupAttribGet(ih, "FGCOLOR"))
       pb.Foreground(SolidColorBrush(color));
+    auto ring = winuiGetHandle<ProgressRing>(ih);
+    if (ring && !iupAttribGet(ih, "FGCOLOR"))
+      ring.Foreground(SolidColorBrush(color));
   }
   else if (IupClassMatch(ih, "toggle") && iupAttribGetBoolean(ih, "SWITCH"))
   {
