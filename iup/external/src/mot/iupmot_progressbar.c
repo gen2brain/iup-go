@@ -239,4 +239,5 @@ IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 
   /* NOT supported */
   iupClassRegisterAttribute(ic, "DASHED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED);
+  iupClassRegisterAttribute(ic, "CIRCULAR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }

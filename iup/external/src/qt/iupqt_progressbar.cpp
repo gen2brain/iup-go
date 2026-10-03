@@ -420,6 +420,7 @@ extern "C" IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MIN", qtProgressBarGetMinAttrib, qtProgressBarSetMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAX", qtProgressBarGetMaxAttrib, qtProgressBarSetMaxAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DASHED", iProgressBarGetDashedAttrib, qtProgressBarSetDashedAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CIRCULAR", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORIENTATION", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARQUEE", nullptr, qtProgressBarSetMarqueeAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 

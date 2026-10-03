@@ -111,7 +111,7 @@ public:
 
     layoutContent();
 
-    if (ih->data->ignore_resize)
+    if (ih->data->ignore_resize || !isVisible())
       return;
 
     int border = 0, caption = 0, menu = 0;
