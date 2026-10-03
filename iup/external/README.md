@@ -88,6 +88,7 @@ IDEs automatically pick up both files. See [example](https://gist.github.com/gen
 | `IUP_BUILD_EXAMPLES` | `OFF`            | Build example programs (C and C++)                              |
 | `IUP_USE_XEMBED`     | `OFF`            | Use XEmbed tray protocol instead of SNI (GTK3/GTK2/Motif)       |
 | `IUP_USE_XFT`        | `OFF`            | Use Xft for font rendering (Motif)                              |
+| `IUP_USE_WEBENGINE`  | `OFF`            | Use QtWebEngine for `iupweb` with Qt/QML on Windows and macOS   |
 | `IUP_EMBED_MANIFEST` | `ON`             | Embed the application manifest into built executables (Windows) |
 | `BUILD_SHARED_LIBS`  | `OFF`            | Build shared libraries instead of static                        |
 
