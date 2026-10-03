@@ -3628,19 +3628,13 @@ IUP_SDK_API const char* iupFlatGetImageNameId(Ihandle* ih, const char* baseattri
 
 IUP_SDK_API char* iupFlatGetDarkerBgColor(Ihandle* ih)
 {
-  char* value = iupAttribGet(ih, "DARK_DLGBGCOLOR");
-  if (!value)
-  {
-    unsigned char r, g, b;
-    iupStrToRGB(IupGetGlobal("DLGBGCOLOR"), &r, &g, &b);
-    r = (r * 90) / 100;
-    g = (g * 90) / 100;
-    b = (b * 90) / 100;
-    iupAttribSetStrf(ih, "DARK_DLGBGCOLOR", "%d %d %d", r, g, b);
-    return iupAttribGet(ih, "DARK_DLGBGCOLOR");
-  }
-  else
-    return value;
+  unsigned char r, g, b;
+  iupStrToRGB(IupGetGlobal("DLGBGCOLOR"), &r, &g, &b);
+  r = (r * 90) / 100;
+  g = (g * 90) / 100;
+  b = (b * 90) / 100;
+  iupAttribSetStrf(ih, "DARK_DLGBGCOLOR", "%d %d %d", r, g, b);
+  return iupAttribGet(ih, "DARK_DLGBGCOLOR");
 }
 
 IUP_SDK_API int iupFlatSetActiveAttrib(Ihandle* ih, const char* value)
