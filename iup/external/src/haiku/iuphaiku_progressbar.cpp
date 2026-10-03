@@ -270,4 +270,5 @@ extern "C" IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "MARQUEE", nullptr, haikuPbSetMarqueeAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DASHED", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CIRCULAR", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 }
