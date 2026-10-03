@@ -33,6 +33,8 @@ static Eo* efl_drag_win = NULL;
 static unsigned int efl_drag_seat = 0;
 static int efl_drag_is_move = 0;
 static int efl_drag_accepted = 0;
+static int efl_drag_local_pending = 0;
+static int efl_drag_end_deferred = 0;
 
 static void eflDragCleanup(void)
 {
@@ -40,6 +42,8 @@ static void eflDragCleanup(void)
   efl_drag_win = NULL;
   efl_drag_is_move = 0;
   efl_drag_accepted = 0;
+  efl_drag_local_pending = 0;
+  efl_drag_end_deferred = 0;
 }
 
 static Eina_Bool eflDragEndIdleCb(void* data)
@@ -49,6 +53,12 @@ static Eina_Bool eflDragEndIdleCb(void* data)
   if (!iupObjectCheck(ih))
   {
     eflDragCleanup();
+    return ECORE_CALLBACK_CANCEL;
+  }
+
+  if (efl_drag_local_pending)
+  {
+    efl_drag_end_deferred = 1;
     return ECORE_CALLBACK_CANCEL;
   }
 
@@ -218,6 +228,7 @@ typedef struct {
   Ihandle* ih;
   int x, y;
   int local;
+  int delivered;
   char type[64];
 } eflDropRequest;
 
@@ -240,11 +251,30 @@ static Eina_Value eflDropDataSelectionCb(Eo* obj, void* data, const Eina_Value v
       cbDropData(ih, req->type, (void*)slice.mem, (int)slice.len, req->x, req->y);
   }
 
-  if (req->local && iupeflIsWayland())
-    eflDragCompleteLocal();
+  req->delivered = content != NULL;
+  return value;
+}
+
+static void eflDropDataFreeCb(Eo* obj, void* data, const Eina_Future* dead_future)
+{
+  eflDropRequest* req = (eflDropRequest*)data;
+
+  (void)obj;
+  (void)dead_future;
+
+  if (req->local)
+  {
+    efl_drag_local_pending = 0;
+    if (!req->delivered)
+      efl_drag_accepted = 0;
+
+    if (iupeflIsWayland())
+      eflDragCompleteLocal();
+    else if (efl_drag_end_deferred && efl_drag_source_ih)
+      eflDragEndIdleCb(efl_drag_source_ih);
+  }
 
   free(req);
-  return value;
 }
 
 static Eina_Value eflDropFilesSelectionCb(Eo* obj, void* data, const Eina_Value value)
@@ -391,7 +421,8 @@ static void eflDropDroppedCb(void* data, const Efl_Event* ev)
           req->y = drop_y;
           req->local = efl_drag_source_ih != NULL;
           strcpy(req->type, type);
-          efl_future_then(ev->object, future, .success = eflDropDataSelectionCb, .data = req);
+          efl_drag_local_pending = req->local;
+          efl_future_then(ev->object, future, .success = eflDropDataSelectionCb, .free = eflDropDataFreeCb, .data = req);
         }
       }
       eina_array_free(mimes);
@@ -573,6 +604,8 @@ static void eflStartDrag(Ihandle* ih, int x, int y)
 
   if (iupAttribGet(ih, "_IUPEFL_DRAG_ACTIVE"))
     return;
+
+  efl_drag_local_pending = 0;
 
 #ifdef HAVE_ECORE_X
   if (efl_drag_x11_finished_handler)
