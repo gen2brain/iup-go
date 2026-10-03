@@ -27,7 +27,6 @@ struct IupWinUITimer
 {
   DispatcherQueueTimer timer;
   event_token tickToken;
-  std::chrono::steady_clock::time_point startTime;
   Ihandle* ih;
   bool stopped;
   bool in_tick;  /* IupFlush() inside ACTION_CB pumps the dispatcher queue and can re-enter Tick */
@@ -52,10 +51,6 @@ static void winuiTimerProc(IupWinUITimer* timer_data)
   Icallback cb = IupGetCallback(ih, "ACTION_CB");
   if (cb)
   {
-    auto now = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - timer_data->startTime).count();
-    iupAttribSetInt(ih, "ELAPSEDTIME", static_cast<int>(elapsed));
-
     timer_data->in_tick = true;
     int ret = cb(ih);
     timer_data->in_tick = false;
@@ -104,7 +99,6 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
       winuiTimerProc(timer_data);
     });
 
-    timer_data->startTime = std::chrono::steady_clock::now();
     timer_data->timer.Start();
 
     ih->serial = 1;

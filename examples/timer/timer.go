@@ -33,9 +33,9 @@ func main() {
 
 func timerCb(ih iup.Ihandle) int {
 	if ih == timer1 {
-		println("timer1 called")
+		println("timer1 called, elapsed", iup.GetInt(ih, "ELAPSEDTIME"))
 	} else if ih == timer2 {
-		println("timer2 called")
+		println("timer2 called, elapsed", iup.GetInt(ih, "ELAPSEDTIME"))
 		return iup.CLOSE
 	}
 

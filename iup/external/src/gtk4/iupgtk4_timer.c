@@ -27,10 +27,6 @@ static gboolean gtk4TimerProc(gpointer data)
   cb = IupGetCallback(ih, "ACTION_CB");
   if (cb)
   {
-    GTimer* g_timer = (GTimer*)iupAttribGet(ih, "G_TIMER");
-    gdouble elapsed = g_timer_elapsed(g_timer, NULL);
-    iupAttribSetInt(ih, "ELAPSEDTIME", (int)(elapsed * 1000));
-
     if (cb(ih) == IUP_CLOSE)
       IupExitLoop();
   }
@@ -48,15 +44,10 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
   time_ms = iupAttribGetInt(ih, "TIME");
   if (time_ms > 0)
   {
-    GTimer* g_timer;
-
     if (iupAttribGetBoolean(ih, "PRIORITY_HIGH"))
       ih->serial = g_timeout_add_full(G_PRIORITY_HIGH, time_ms, gtk4TimerProc, (gpointer)ih, NULL);
     else
       ih->serial = g_timeout_add(time_ms, gtk4TimerProc, (gpointer)ih);
-
-    g_timer = g_timer_new();
-    iupAttribSet(ih, "G_TIMER", (char*)g_timer);
   }
 }
 
@@ -64,13 +55,6 @@ IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
 {
   if (ih->serial > 0)
   {
-    GTimer* g_timer = (GTimer*)iupAttribGet(ih, "G_TIMER");
-    if (g_timer)
-    {
-      g_timer_destroy(g_timer);
-      iupAttribSet(ih, "G_TIMER", NULL);
-    }
-
     g_source_remove(ih->serial);
     ih->serial = -1;
   }

@@ -5,7 +5,6 @@
  */
 
 #include <QTimer>
-#include <QElapsedTimer>
 
 extern "C" {
 #include "iup.h"
@@ -20,7 +19,6 @@ extern "C" {
 typedef struct _IupQtTimer
 {
   QTimer* qtimer;
-  QElapsedTimer* elapsed_timer;
   Ihandle* ih;
 } IupQtTimer;
 
@@ -39,9 +37,6 @@ static void qtTimerProc(IupQtTimer* timer_data)
   cb = IupGetCallback(ih, "ACTION_CB");
   if (cb)
   {
-    qint64 elapsed = timer_data->elapsed_timer->elapsed();
-    iupAttribSetInt(ih, "ELAPSEDTIME", static_cast<int>(elapsed));
-
     if (cb(ih) == IUP_CLOSE)
       IupExitLoop();
   }
@@ -65,7 +60,6 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 
     timer_data->ih = ih;
     timer_data->qtimer = new QTimer();
-    timer_data->elapsed_timer = new QElapsedTimer();
 
     timer_data->qtimer->setInterval(time_ms);
 
@@ -78,7 +72,6 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
       qtTimerProc(timer_data);
     });
 
-    timer_data->elapsed_timer->start();
     timer_data->qtimer->start();
 
     ih->serial = 1;
@@ -99,8 +92,6 @@ extern "C" IUP_SDK_API void iupdrvTimerStop(Ihandle* ih)
         timer_data->qtimer->stop();
         delete timer_data->qtimer;
       }
-
-      delete timer_data->elapsed_timer;
 
       delete timer_data;
 

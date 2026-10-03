@@ -29,9 +29,6 @@ static void eflTimerTickCallback(void* data, const Efl_Event* ev)
   cb = IupGetCallback(ih, "ACTION_CB");
   if (cb)
   {
-    double start = iupAttribGetDouble(ih, "_IUP_EFL_TIMER_START");
-    iupAttribSetInt(ih, "ELAPSEDTIME", (int)((ecore_time_get() - start) * 1000));
-
     if (cb(ih) == IUP_CLOSE)
       IupExitLoop();
   }
@@ -59,7 +56,6 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
     if (timer)
     {
       iupAttribSet(ih, "_IUP_EFL_TIMER", (char*)timer);
-      iupAttribSetDouble(ih, "_IUP_EFL_TIMER_START", ecore_time_get());
       ih->serial = 1;
     }
   }

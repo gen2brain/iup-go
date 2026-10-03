@@ -16,6 +16,9 @@ Each timer should be destroyed using [IupDestroy](../func/iup_destroy.md).
 **RUN**: Starts and stops the timer. Possible values: "YES" or "NO". Returns the current timer state.
 If you have multiple threads start the timer in the main thread.
 
+**ELAPSEDTIME** (read-only): Returns the time elapsed since the timer was started, in milliseconds.
+Returns NULL if not running.
+
 **WID** (read-only): Returns the native serial number of the timer. Returns -1 if not running.
 A timer is mapped only when it is running.
 
@@ -23,7 +26,6 @@ A timer is mapped only when it is running.
 
 **ACTION_CB**: Called every time the defined time interval is reached.
 To stop the callback from being called simply stop de timer with RUN=NO.
-Inside the callback the attribute ELAPSEDTIME returns the time elapsed since the timer was started in milliseconds.
 
     int function(Ihandle *ih);
 

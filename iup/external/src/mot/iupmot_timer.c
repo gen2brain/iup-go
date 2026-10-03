@@ -4,8 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <time.h>
-
 #include <Xm/Xm.h>
 
 #include "iup.h"
@@ -16,13 +14,6 @@
 
 #include "iupmot_drv.h"
 
-
-static long long motTimerNow(void)
-{
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
-}
 
 static void motTimerProc(XtPointer client_data, XtIntervalId* id)
 {
@@ -47,9 +38,6 @@ static void motTimerProc(XtPointer client_data, XtIntervalId* id)
   cb = IupGetCallback(ih, "ACTION_CB");
   if (cb)
   {
-    long long start = iupTimerGetLongLong(ih, "STARTCOUNT");
-    iupAttribSetInt(ih, "ELAPSEDTIME", (int)(motTimerNow() - start));
-
     if (cb(ih) == IUP_CLOSE)
       IupExitLoop();
   }
@@ -67,7 +55,6 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
   {
     ih->serial = 1;
     iupAttribSet(ih, "_IUPMOT_TIMERID", (char*)XtAppAddTimeOut(iupmot_appcontext, time_ms, motTimerProc, (XtPointer)ih));
-    iupAttribSetStrf(ih, "STARTCOUNT", "%lld", motTimerNow());
   }
 }
 

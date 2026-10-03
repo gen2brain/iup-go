@@ -17,7 +17,6 @@
 
 
 @interface IupCocoaTouchTimerController : NSObject
-@property(assign) CFTimeInterval startTime;
 @property(retain) NSTimer* theTimer;
 - (void)onTimerCallback:(NSTimer*)timer;
 @end
@@ -37,8 +36,6 @@
 	{
 		return;
 	}
-	NSUInteger elapsed_ms = (NSUInteger)(((CACurrentMediaTime() - [self startTime]) * 1000.0) + 0.5);
-	iupAttribSetInt(ih, "ELAPSEDTIME", (int)elapsed_ms);
 	if (cb(ih) == IUP_CLOSE)
 	{
 		IupExitLoop();
@@ -67,7 +64,6 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 	}
 
 	IupCocoaTouchTimerController* controller = [[IupCocoaTouchTimerController alloc] init];
-	[controller setStartTime:CACurrentMediaTime()];
 
 	NSTimer* timer = [NSTimer timerWithTimeInterval:(time_ms/1000.0)
 		target:controller

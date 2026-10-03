@@ -21,7 +21,6 @@ typedef struct _IupFltkTimer
   Ihandle* ih;
   double interval_sec;
   int active;
-  Fl_Timestamp start_time;
 } IupFltkTimer;
 
 static void fltkTimerProc(void* data)
@@ -33,9 +32,6 @@ static void fltkTimerProc(void* data)
   Ihandle* ih = timer_data->ih;
   if (!iupObjectCheck(ih))
     return;
-
-  double elapsed = Fl::seconds_since(timer_data->start_time);
-  iupAttribSetInt(ih, "ELAPSEDTIME", static_cast<int>(elapsed * 1000));
 
   Icallback cb = IupGetCallback(ih, "ACTION_CB");
   if (cb)
@@ -71,7 +67,6 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
     timer_data->ih = ih;
     timer_data->interval_sec = time_ms / 1000.0;
     timer_data->active = 1;
-    timer_data->start_time = Fl::now();
 
     Fl::add_timeout(timer_data->interval_sec, fltkTimerProc, reinterpret_cast<void*>(timer_data));
 
