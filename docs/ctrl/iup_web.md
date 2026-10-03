@@ -11,12 +11,14 @@ The WebKit library is loaded dynamically at runtime.
 
 In Windows, the implementation uses [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/), the Chromium-based web control from Microsoft Edge.
 The WebView2 runtime is detected and loaded automatically.
+GTK 3, GTK 4 and FLTK in Windows also use WebView2.
 
 In macOS, the implementation uses WKWebView from the WebKit framework.
 
-In Qt, the implementation uses QWebEngineView from QtWebEngine (Chromium-based).
+In Qt, the implementation uses WebView2 in Windows and WKWebView in macOS, inside a native child window, and QWebEngineView from QtWebEngine (Chromium-based) elsewhere.
 
-In QML, the implementation uses WebEngineView from QtWebEngine Quick (Chromium-based).
+In QML, the implementation uses WebView2 in Windows and WKWebView in macOS, placed over the Qt Quick scene, and WebEngineView from QtWebEngine Quick (Chromium-based) elsewhere.
+Items drawn inside the scene, such as tooltips, are hidden where they overlap the web view.
 
 In Haiku, the implementation uses BWebView from the system Legacy WebKit library (libWebKitLegacy).
 

@@ -46,9 +46,13 @@ package iup
 #cgo qt,qt5,!nopkgconfig pkg-config: Qt5Core Qt5Gui Qt5Widgets
 #cgo qt,!qt5,web,!windows,!darwin,!nopkgconfig qt,!qt5,web,webengine,!nopkgconfig pkg-config: Qt6WebEngineCore Qt6WebEngineWidgets
 #cgo qt,qt5,web,!windows,!darwin,!nopkgconfig qt,qt5,web,webengine,!nopkgconfig pkg-config: Qt5WebEngineCore  Qt5WebEngineWidgets
+#cgo windows,qt,web,!webengine CXXFLAGS: -DIUPWEB_HOSTED
+#cgo darwin,!ios,qt,web,!webengine LDFLAGS: -framework WebKit
 
 #cgo qml,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Qml Qt6Quick Qt6QuickControls2
 #cgo qml,web,!windows,!darwin,!nopkgconfig qml,web,webengine,!nopkgconfig pkg-config: Qt6WebEngineQuick Qt6WebEngineCore
+#cgo windows,qml,web,!webengine CXXFLAGS: -DIUPWEB_HOSTED
+#cgo darwin,!ios,qml,web,!webengine LDFLAGS: -framework WebKit
 
 #cgo motif LDFLAGS: -lXm -lXmu -lXt -lXext -lXrender -lX11
 #cgo linux,!android,motif LDFLAGS: -lXpm
@@ -68,9 +72,13 @@ package iup
 
 #cgo windows,gtk3 CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3
 #cgo windows,gtk3,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
+#cgo windows,gtk3,web CXXFLAGS: -DIUPWEB_HOSTED
+#cgo windows,gtk3,web LDFLAGS: -static-libstdc++
 
 #cgo windows,gtk4 CFLAGS: -Iexternal/src/gtk4 -Iexternal/src/unix -DIUP_USE_GTK4
 #cgo windows,gtk4,!nopkgconfig pkg-config: gtk4
+#cgo windows,gtk4,web CXXFLAGS: -DIUPWEB_HOSTED
+#cgo windows,gtk4,web LDFLAGS: -static-libstdc++
 
 #cgo winui CFLAGS: -Iexternal/src/winui -DIUP_USE_WINUI -DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0A00 -DNTDDI_VERSION=0x0A000000
 #cgo winui CXXFLAGS: -Iexternal/src/winui -DIUP_USE_WINUI -D_WIN32_WINNT=0x0A00 -DNTDDI_VERSION=0x0A000000 -DUNICODE -D_UNICODE -std=c++20 -stdlib=libc++
@@ -79,7 +87,7 @@ package iup
 #cgo darwin,!ios CFLAGS: -Iexternal/src/cocoa -x objective-c
 #cgo darwin,!ios LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications -framework CoreLocation
 #cgo darwin,!ios,gl LDFLAGS: -framework OpenGL
-#cgo darwin,!ios,!gtk3,!gtk4,!qt,!qml,web darwin,!ios,qt,web,!webengine darwin,!ios,qml,web,!webengine LDFLAGS: -framework WebKit
+#cgo darwin,!ios,!gtk3,!gtk4,!qt,!qml,web LDFLAGS: -framework WebKit
 #cgo darwin,!ios,media LDFLAGS: -framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo
 
 #cgo darwin,!ios,gtk3 CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3 -x objective-c
@@ -109,6 +117,8 @@ package iup
 #cgo fltk CFLAGS: -Iexternal/src/fltk -Iexternal/src/unix -DIUP_USE_FLTK
 #cgo fltk CXXFLAGS: -Iexternal/src/fltk -Iexternal/src/unix -DIUP_USE_FLTK -std=c++17
 #cgo fltk LDFLAGS: -lfltk -lfltk_images
+#cgo windows,fltk LDFLAGS: -static-libgcc -static-libstdc++
+#cgo windows,fltk,web CXXFLAGS: -DIUPWEB_HOSTED
 #cgo fltk,gl,!windows,!darwin,!android,!nopkgconfig pkg-config: wayland-egl egl gl
 
 #cgo gnustep CFLAGS: -Iexternal/src/cocoa -Iexternal/src/unix -x objective-c -DIUP_USE_COCOA -DGNUSTEP

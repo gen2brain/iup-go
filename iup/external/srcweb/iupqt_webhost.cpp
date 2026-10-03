@@ -39,10 +39,11 @@ public:
 
 #ifdef Q_OS_WIN
     qreal scale = devicePixelRatioF();
-    iupwebHostSetBounds(ih, 0, 0, qCeil(width() * scale), qCeil(height() * scale), 1);
+    int w = qCeil(width() * scale), h = qCeil(height() * scale);
 #else
-    iupwebHostSetBounds(ih, 0, 0, width(), height(), 1);
+    int w = width(), h = height();
 #endif
+    iupwebHostSetBounds(ih, 0, 0, w, h, 0, 0, w, h);
   }
 
 protected:
