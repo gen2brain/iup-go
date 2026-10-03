@@ -59,14 +59,16 @@ static int winuiProgressBarSetValueAttrib(Ihandle* ih, const char* value)
 
   if (!ih->data->marquee)
   {
+    double range = ih->data->vmax - ih->data->vmin;
+    double pos = (range != 0) ? ((ih->data->value - ih->data->vmin) / range) * WINUI_PB_MAX : 0;
     auto pb = winuiGetHandle<ProgressBar>(ih);
     if (pb)
+      pb.Value(pos);
+    else
     {
-      double range = ih->data->vmax - ih->data->vmin;
-      if (range != 0)
-        pb.Value(((ih->data->value - ih->data->vmin) / range) * WINUI_PB_MAX);
-      else
-        pb.Value(0);
+      auto ring = winuiGetHandle<ProgressRing>(ih);
+      if (ring)
+        ring.Value(pos);
     }
   }
 
@@ -80,11 +82,37 @@ static int winuiProgressBarSetMarqueeAttrib(Ihandle* ih, const char* value)
   auto pb = winuiGetHandle<ProgressBar>(ih);
   if (pb)
     pb.IsIndeterminate(ih->data->marquee ? true : false);
+  else
+  {
+    auto ring = winuiGetHandle<ProgressRing>(ih);
+    if (ring)
+      ring.IsIndeterminate(ih->data->marquee ? true : false);
+  }
   return 1;
 }
 
 static int winuiProgressBarMapMethod(Ihandle* ih)
 {
+  if (iupAttribGetBoolean(ih, "CIRCULAR"))
+  {
+    ProgressRing ring = ProgressRing();
+    ring.HorizontalAlignment(HorizontalAlignment::Left);
+    ring.VerticalAlignment(VerticalAlignment::Top);
+    ring.Maximum(WINUI_PB_MAX);
+    ring.Value(0);
+    ring.IsActive(true);
+    ih->data->marquee = iupAttribGetBoolean(ih, "MARQUEE");
+    ring.IsIndeterminate(ih->data->marquee ? true : false);
+
+    Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
+    if (parentCanvas)
+      parentCanvas.Children().Append(ring);
+
+    winuiStoreHandle(ih, ring);
+    iupwinuiApplyAccent(ih);
+    return IUP_NOERROR;
+  }
+
   ProgressBar pb = ProgressBar();
   pb.HorizontalAlignment(HorizontalAlignment::Left);
   pb.VerticalAlignment(VerticalAlignment::Top);
@@ -118,11 +146,21 @@ static void winuiProgressBarLayoutUpdateMethod(Ihandle* ih)
   if (!ih || !ih->handle)
     return;
 
+  double scale = iupwinuiGetScale(ih);
+
+  auto ring = winuiGetHandle<ProgressRing>(ih);
+  if (ring)
+  {
+    Canvas::SetLeft(ring, ih->x / scale);
+    Canvas::SetTop(ring, ih->y / scale);
+    ring.Width(ih->currentwidth / scale);
+    ring.Height(ih->currentheight / scale);
+    return;
+  }
+
   auto pb = winuiGetHandle<ProgressBar>(ih);
   if (!pb)
     return;
-
-  double scale = iupwinuiGetScale(ih);
 
   if (iupAttribGet(ih, "_IUPWINUI_PB_VERTICAL"))
   {

@@ -57,7 +57,7 @@ static void qmlProgressBarLayout(Ihandle* ih)
 
   int w = ih->currentwidth, h = ih->currentheight;
 
-  if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
+  if (!iupAttribGet(ih, "_IUPQML_CIRCULAR") && iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
   {
     bar->setSize(QSizeF(h, w));
     bar->setProperty("rotation", -90.0);
@@ -84,7 +84,7 @@ static void qmlProgressBarUpdateValue(Ihandle* ih)
 
 static int qmlProgressBarSetMarqueeAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->marquee)
+  if (!ih->data->marquee || iupAttribGet(ih, "_IUPQML_CIRCULAR"))
     return 0;
 
   QQuickItem* bar = qmlProgressBarGet(ih);
@@ -180,8 +180,9 @@ static int qmlProgressBarSetFgColorAttrib(Ihandle* ih, const char* value)
 
 static int qmlProgressBarMapMethod(Ihandle* ih)
 {
+  int circular = iupAttribGetBoolean(ih, "CIRCULAR");
   QQuickItem* wrapper = iupqmlCreateItem("import QtQuick\nItem { }");
-  QQuickItem* bar = iupqmlCreateItem(IUPQML_IMPORTS "ProgressBar { }");
+  QQuickItem* bar = iupqmlCreateItem(circular ? IUPQML_IMPORTS "BusyIndicator { }" : IUPQML_IMPORTS "ProgressBar { }");
   if (!wrapper || !bar)
     return IUP_ERROR;
 
@@ -189,6 +190,16 @@ static int qmlProgressBarMapMethod(Ihandle* ih)
   bar->setParent(wrapper);
   iupAttribSet(ih, "_IUPQML_PROGRESSBAR", reinterpret_cast<char*>(bar));
   ih->handle = reinterpret_cast<InativeHandle*>(wrapper);
+
+  if (circular)
+  {
+    iupAttribSet(ih, "_IUPQML_CIRCULAR", "1");
+    ih->data->marquee = 1;
+    iupqmlAddToParent(ih);
+    iupqmlInstallFilter(ih, wrapper);
+    iupqmlSetCanFocus(bar, 0);
+    return IUP_NOERROR;
+  }
 
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
   {
@@ -226,6 +237,7 @@ static int qmlProgressBarMapMethod(Ihandle* ih)
 static void qmlProgressBarUnMapMethod(Ihandle* ih)
 {
   iupAttribSet(ih, "_IUPQML_PROGRESSBAR", nullptr);
+  iupAttribSet(ih, "_IUPQML_CIRCULAR", nullptr);
   iupqmlTipsDestroy(ih);
   iupdrvBaseUnMapMethod(ih);
 }

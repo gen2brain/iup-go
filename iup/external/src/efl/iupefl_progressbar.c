@@ -81,7 +81,7 @@ static int eflProgressBarSetMarqueeAttrib(Ihandle* ih, const char* value)
 {
   Eo* pbar = iupeflGetWidget(ih);
 
-  if (!pbar)
+  if (!pbar || iupAttribGet(ih, "_IUPEFL_CIRCULAR"))
     return 0;
 
   if (iupStrBoolean(value))
@@ -139,6 +139,25 @@ static int eflProgressBarMapMethod(Ihandle* ih)
   parent = iupeflGetParentWidget(ih);
   if (!parent)
     return IUP_ERROR;
+
+  iupAttribSet(ih, "_IUPEFL_CIRCULAR", NULL);
+
+  if (iupAttribGetBoolean(ih, "CIRCULAR"))
+  {
+    pbar = efl_add(EFL_UI_PROGRESSBAR_CLASS, parent,
+                   efl_ui_widget_style_set(efl_added, "wheel"));
+    if (!pbar)
+      return IUP_ERROR;
+
+    ih->handle = (InativeHandle*)pbar;
+    iupAttribSet(ih, "_IUPEFL_CIRCULAR", "1");
+    ih->data->marquee = 1;
+    efl_ui_progressbar_show_progress_label_set(pbar, EINA_FALSE);
+    efl_ui_progressbar_infinite_mode_set(pbar, EINA_TRUE);
+    iupeflBaseAddCallbacks(ih, pbar);
+    iupeflAddToParent(ih);
+    return IUP_NOERROR;
+  }
 
   pbar = efl_add(EFL_UI_PROGRESSBAR_CLASS, parent);
   if (!pbar)
