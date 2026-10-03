@@ -427,6 +427,22 @@ static int winuiGetDialogMenuHeight(Ihandle* dialog)
   return 0;
 }
 
+static bool winuiElementClientOrigin(Ihandle* ih, POINT* origin)
+{
+  if (winuiHandleIsHWND(ih))
+    return false;
+
+  UIElement elem = winuiGetHandle<UIElement>(ih);
+  if (!elem || !elem.XamlRoot())
+    return false;
+
+  double scale = iupwinuiGetScale(ih);
+  Windows::Foundation::Point p = elem.TransformToVisual(nullptr).TransformPoint(Windows::Foundation::Point{0, 0});
+  origin->x = static_cast<LONG>(floor(p.X * scale + 0.5));
+  origin->y = static_cast<LONG>(floor(p.Y * scale + 0.5));
+  return true;
+}
+
 extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 {
   if (!ih || !ih->handle)
@@ -444,8 +460,17 @@ extern "C" IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 
   if (ih != dialog)
   {
-    p.x -= ih->x;
-    p.y -= ih->y + winuiGetDialogMenuHeight(dialog);
+    POINT origin;
+    if (winuiElementClientOrigin(ih, &origin))
+    {
+      p.x -= origin.x;
+      p.y -= origin.y;
+    }
+    else
+    {
+      p.x -= ih->x;
+      p.y -= ih->y + winuiGetDialogMenuHeight(dialog);
+    }
   }
 
   *x = p.x;
@@ -463,8 +488,14 @@ extern "C" IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
 
   HWND hwnd = reinterpret_cast<HWND>(dialog->handle);
   POINT p;
+  POINT origin;
 
-  if (ih != dialog)
+  if (ih != dialog && winuiElementClientOrigin(ih, &origin))
+  {
+    p.x = origin.x + *x;
+    p.y = origin.y + *y;
+  }
+  else if (ih != dialog)
   {
     p.x = ih->x + *x;
     p.y = ih->y + *y + winuiGetDialogMenuHeight(dialog);
