@@ -17,7 +17,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -235,7 +234,7 @@ static void motTreeContainerDeselectAll(Ihandle* ih)
   ev.display = XtDisplay(ih->handle);
   ev.send_event = True;
   ev.root = RootWindow(iupmot_display, iupmot_screen);
-  ev.time = clock()*CLOCKS_PER_SEC;
+  ev.time = XtLastTimestampProcessed(iupmot_display);
   ev.window = XtWindow(ih->handle);
   ev.state = ControlMask;
   ev.keycode = XK_backslash;
@@ -253,7 +252,7 @@ static void motTreeContainerSelectAll(Ihandle* ih)
   ev.display = XtDisplay(ih->handle);
   ev.send_event = True;
   ev.root = RootWindow(iupmot_display, iupmot_screen);
-  ev.time = clock()*CLOCKS_PER_SEC;
+  ev.time = XtLastTimestampProcessed(iupmot_display);
   ev.window = XtWindow(ih->handle);
   ev.state = ControlMask;
   ev.keycode = XK_slash;
