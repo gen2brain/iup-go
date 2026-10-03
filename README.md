@@ -33,10 +33,10 @@ For Win32, you need a C compiler, like [MinGW-w64](https://mingw-w64.org) or [TD
 You can also build a binary in the [MSYS2](https://msys2.github.io/) shell.
 
 * For MSYS2, install `pacman -S mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config`.
-* You can build for Qt, with the `qt` build tag. Install deps with `pacman -S mingw-w64-x86_64-qt6-base`.
-* You can build for Qt Quick, with the `qml` build tag. Install deps with `pacman -S mingw-w64-x86_64-qt6-declarative`.
+* You can build for Qt, with the `qt/qml` build tags. Install deps with `pacman -S mingw-w64-x86_64-qt6-base / -qt6-declarative`.
 * You can build for GTK, with the `gtk3/gtk4` build tags. Install deps with `pacman -S mingw-w64-x86_64-gtk3 / -gtk4`.
 * You can build for FLTK, with the `fltk` build tag. Install deps with `pacman -S mingw-w64-x86_64-fltk`.
+* The `WebBrowser` control uses WebView2 with every backend.
 
 [<img src="examples/sample/sample_win32.png" width="700"/>](examples/sample/sample_win32.png)
 
@@ -61,10 +61,10 @@ On macOS, you need Command Line Tools for Xcode (if you have `brew`, you already
 
 To create an `.app` bundle, see [Packaging](#packaging).
 
-* You can build for Qt, with the `qt` build tag. Install deps with `brew install qt`.
-* You can build for Qt Quick, with the `qml` build tag. Install deps with `brew install qt`.
+* You can build for Qt, with the `qt/qml` build tags. Install deps with `brew install qt`.
 * You can build for GTK, with the `gtk3/gtk4` build tags. Install deps with `brew install gtk+3 / gtk4`.
 * You can build for FLTK, with the `fltk` build tag. Install deps with `brew install fltk`.
+* The `WebBrowser` control uses WKWebView with every backend.
 
 [<img src="examples/sample/sample_cocoa.png" width="700"/>](examples/sample/sample_cocoa.png)
 
@@ -104,14 +104,14 @@ For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
 * Debian/Ubuntu: `apt-get install qt5base-dev`
 * RedHat/Fedora: `dnf install qt5-qtbase-devel`
 
+For the `WebBrowser` control, install `qt6-webengine-dev` or `qt6-qtwebengine-devel`.
+
 [<img src="examples/sample/sample_qt6.png" width="700"/>](examples/sample/sample_qt6.png)
 
 ###### Qt Quick
 
 * Debian/Ubuntu: `apt-get install qt6-declarative-dev`
 * RedHat/Fedora: `dnf install qt6-qtdeclarative-devel`
-
-For the `WebBrowser` control, install `qt6-webengine-dev` or `qt6-qtwebengine-devel`.
 
 For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
 
@@ -165,7 +165,7 @@ This relies on the modern Objective-C stack, not the legacy GCC runtime.
 **Required combo**:
 
 * `Clang` as the compiler (`GCC` won't do)
-* `libobjc2` - the Apple-compatible Objective-C runtime, NOT the legacy `libobjc` from gcc.
+* `libobjc2` - the Apple-compatible Objective-C runtime, not the legacy `libobjc` from gcc.
 * `libdispatch` (GCD) - Apple's mainline `libdispatch`.
 * `libs-opal` - Apple CoreGraphics-compatible drawing layer built on Cairo.
 * `libs-corebase` - CoreFoundation.
@@ -228,7 +228,7 @@ For a one-command `.apk` without the Gradle project, see [Packaging](#packaging)
 
 ##### iOS
 
-The Go binary IS the iOS executable; the Cocoa Touch driver calls `UIApplicationMain` itself.
+The Go binary is the iOS executable; the Cocoa Touch driver calls `UIApplicationMain` itself.
 
 See [iup/external/ios/README.md](iup/external/ios/README.md) for prerequisites, signing, and distribution.
 
@@ -244,6 +244,7 @@ For a one-command `.ipa`, see [Packaging](#packaging).
 * `media` - build with support for `Audio`, `Camera` and `Microphone` controls
 * `plot` - build with support for `Plot` control
 * `ctrl` - build with support for `Matrix`, `Cells`, and `Flat*` controls
+
 * `gtk3` - build for GTK3 on macOS or Windows (default on Linux/BSD)
 * `gtk4` - build for GTK4, default is GTK3
 * `gtk2` - build for GTK2 (Linux/BSD)
@@ -254,8 +255,10 @@ For a one-command `.ipa`, see [Packaging](#packaging).
 * `efl` - build for EFL (Enlightenment Foundation Libraries)
 * `motif` - build for X11/Motif 2.x environment
 * `gnustep` - build for GNUstep (Linux/BSD)
+
 * `xft` - build with Xft support (X FreeType interface) (used with `motif`)
 * `xembed` - use XEmbed tray protocol instead of SNI (GTK3/GTK2 and Motif)
+* `webengine` - use QtWebEngine for `WebBrowser` on Windows and macOS (used with `qt`/`qml`)
 * `nomanifest` - do not include manifest in Windows build
 * `nopkgconfig` - do not use pkg-config for compile and link flags
 * `extlib` - load the system IUP library instead of the bundled one (used with `CGO_ENABLED=0`)
@@ -286,19 +289,19 @@ See [cmd/iupkg/README.md](cmd/iupkg/README.md) for every target, flag, and the s
 ### Documentation
 
 API reference documentation is available at [gen2brain.github.io/iup-go](https://gen2brain.github.io/iup-go/), generated from the [docs](docs/README.md) directory. Each Go function links to its corresponding documentation page.
-Start with the guides on [Attributes](docs/attrib.md), [Callbacks](docs/call.md), [Layout](docs/layout.md) and [Keyboard](docs/keyboard.md).
+Start with the guides on [Attributes](https://gen2brain.github.io/iup-go/attrib.html), [Callbacks](https://gen2brain.github.io/iup-go/call.html), [Layout](https://gen2brain.github.io/iup-go/layout.html) and [Keyboard](https://gen2brain.github.io/iup-go/keyboard.html).
 Also check [Go Reference](https://pkg.go.dev/github.com/gen2brain/iup-go/iup) and [Examples](examples/).
 
 ### Thread-Safety
 
 User interfaces (and OpenGL) are usually not thread-safe, and IUP is not either. Most platforms enforce running UI on the main thread.
 
-The secondary threads (goroutines) should not directly update the UI; instead, use [PostMessage](docs/func/iup_postmessage.md), which is expected to be thread-safe.
+The secondary threads (goroutines) should not directly update the UI; instead, use [PostMessage](https://gen2brain.github.io/iup-go/func/iup_postmessage.html), which is expected to be thread-safe.
 See [example](examples/postmessage/postmessage.go) that uses `PostMessage` to send data to an element, which will be received by a callback when the main loop regains control.
-You can also use [Idle](docs/call/iup_idle_action.md) and [Timer](docs/elem/iup_timer.md).
+You can also use [Idle](https://gen2brain.github.io/iup-go/call/iup_idle_action.html) and [Timer](https://gen2brain.github.io/iup-go/elem/iup_timer.html).
 
-Once [MainLoop](docs/func/iup_mainloop.md) is running, an attribute call from another goroutine panics instead of crashing inside the toolkit.
-Callbacks of [IupThread](docs/elem/iup_thread.md) are exempt, they run on a thread IUP started itself.
+Once [MainLoop](https://gen2brain.github.io/iup-go/func/iup_mainloop.html) is running, an attribute call from another goroutine panics instead of crashing inside the toolkit.
+Callbacks of [IupThread](https://gen2brain.github.io/iup-go/elem/iup_thread.html) are exempt, they run on a thread IUP started itself.
 
 ### Cross-compile (Linux cgo)
 
