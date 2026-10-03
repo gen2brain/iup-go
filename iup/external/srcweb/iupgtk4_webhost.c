@@ -8,7 +8,11 @@
 #include <string.h>
 
 #include <gtk/gtk.h>
+#ifdef GDK_WINDOWING_WIN32
 #include <gdk/win32/gdkwin32.h>
+#else
+#include <gdk/macos/gdkmacos.h>
+#endif
 
 #include "iup.h"
 
@@ -31,10 +35,12 @@ typedef struct _IgtkWebHost
   int clip[4];
 } IgtkWebHost;
 
-static HWND gtk4WebHostParent(GtkWidget* widget)
+static void* gtk4WebHostParent(GtkWidget* widget)
 {
   GtkNative* native = gtk_widget_get_native(widget);
   GdkSurface* surface = native ? gtk_native_get_surface(native) : NULL;
+
+#ifdef GDK_WINDOWING_WIN32
   HWND hwnd;
 
   if (!surface || !GDK_IS_WIN32_SURFACE(surface))
@@ -44,6 +50,12 @@ static HWND gtk4WebHostParent(GtkWidget* widget)
   if (hwnd)
     SetWindowLongPtr(hwnd, GWL_STYLE, GetWindowLongPtr(hwnd, GWL_STYLE) | WS_CLIPCHILDREN);
   return hwnd;
+#else
+  if (!surface || !GDK_IS_MACOS_SURFACE(surface))
+    return NULL;
+
+  return gdk_macos_surface_get_native_window((GdkMacosSurface*)surface);
+#endif
 }
 
 static void gtk4WebHostToNative(const graphene_rect_t* r, double sx, double sy, int scale, int* out)
@@ -67,7 +79,11 @@ static void gtk4WebHostPlace(IgtkWebHost* host)
     Ihandle* parent;
     graphene_rect_t area;
     double sx, sy;
+#ifdef GDK_WINDOWING_WIN32
     int scale = gdk_surface_get_scale_factor(gtk_native_get_surface(native));
+#else
+    int scale = 1;
+#endif
     int shown = 1;
 
     visible = bounds;
@@ -109,9 +125,9 @@ static void gtk4WebHostMapped(GtkWidget* widget, IgtkWebHost* host)
 
 static void gtk4WebHostRealize(GtkWidget* widget, IgtkWebHost* host)
 {
-  HWND hwnd = gtk4WebHostParent(widget);
-  if (hwnd)
-    iupwebHostSetParent(host->ih, hwnd);
+  void* parent = gtk4WebHostParent(widget);
+  if (parent)
+    iupwebHostSetParent(host->ih, parent);
 
   host->clock = gtk_widget_get_frame_clock(widget);
   if (host->clock)

@@ -87,16 +87,16 @@ package iup
 #cgo darwin,!ios CFLAGS: -Iexternal/src/cocoa -x objective-c
 #cgo darwin,!ios LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications -framework CoreLocation
 #cgo darwin,!ios,gl LDFLAGS: -framework OpenGL
-#cgo darwin,!ios,!gtk3,!gtk4,!qt,!qml,web LDFLAGS: -framework WebKit
+#cgo darwin,!ios,!gtk3,!gtk4,!qt,!qml,!fltk,web LDFLAGS: -framework WebKit
 #cgo darwin,!ios,media LDFLAGS: -framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo
 
 #cgo darwin,!ios,gtk3 CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3 -x objective-c
 #cgo darwin,!ios,gtk3,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
-#cgo darwin,!ios,gtk3,web CFLAGS: -DIUPWEB_USE_DLOPEN
+#cgo darwin,!ios,gtk3,web LDFLAGS: -framework WebKit
 
 #cgo darwin,!ios,gtk4 CFLAGS: -Iexternal/src/gtk4 -Iexternal/src/unix -DIUP_USE_GTK4 -x objective-c
 #cgo darwin,!ios,gtk4,!nopkgconfig pkg-config: gtk4
-#cgo darwin,!ios,gtk4,web CFLAGS: -DIUPWEB_USE_DLOPEN
+#cgo darwin,!ios,gtk4,web LDFLAGS: -framework WebKit
 
 #cgo ios CFLAGS: -Iexternal/src/cocoatouch -x objective-c -DIUP_USE_COCOATOUCH
 #cgo ios LDFLAGS: -framework Foundation -framework UIKit -framework CoreGraphics -framework CoreText -framework QuartzCore -framework ImageIO -framework UserNotifications -framework UniformTypeIdentifiers -framework CoreLocation -framework CoreMotion
@@ -119,6 +119,7 @@ package iup
 #cgo fltk LDFLAGS: -lfltk -lfltk_images
 #cgo windows,fltk LDFLAGS: -static-libgcc -static-libstdc++
 #cgo windows,fltk,web CXXFLAGS: -DIUPWEB_HOSTED
+#cgo darwin,!ios,fltk,web LDFLAGS: -framework WebKit
 #cgo fltk,gl,!windows,!darwin,!android,!nopkgconfig pkg-config: wayland-egl egl gl
 
 #cgo gnustep CFLAGS: -Iexternal/src/cocoa -Iexternal/src/unix -x objective-c -DIUP_USE_COCOA -DGNUSTEP

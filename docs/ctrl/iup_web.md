@@ -11,9 +11,10 @@ The WebKit library is loaded dynamically at runtime.
 
 In Windows, the implementation uses [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/), the Chromium-based web control from Microsoft Edge.
 The WebView2 runtime is detected and loaded automatically.
-GTK 3, GTK 4 and FLTK in Windows also use WebView2.
 
 In macOS, the implementation uses WKWebView from the WebKit framework.
+
+In GTK 3, GTK 4 and FLTK, the implementation uses WebView2 in Windows and WKWebView in macOS.
 
 In Qt, the implementation uses WebView2 in Windows and WKWebView in macOS, inside a native child window, and QWebEngineView from QtWebEngine (Chromium-based) elsewhere.
 

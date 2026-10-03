@@ -4,6 +4,8 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <cstring>
+
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Group.H>
@@ -19,6 +21,97 @@ extern "C" {
 #include "iupfltk_drv.h"
 #include "iupweb_host.h"
 
+
+#ifdef __APPLE__
+class IupFltkWebHost : public Fl_Widget
+{
+public:
+  Ihandle* ih;
+  int rect[4] = {0, 0, 0, 0};
+  int clip[4] = {0, 0, -1, 0};
+
+  explicit IupFltkWebHost(Ihandle* handle) : Fl_Widget(0, 0, 1, 1), ih(handle)
+  {
+  }
+
+  int handle(int event) override
+  {
+    int ret = Fl_Widget::handle(event);
+    if (event == FL_SHOW || event == FL_HIDE)
+      place();
+    return ret;
+  }
+
+  void resize(int x, int y, int w, int h) override
+  {
+    Fl_Widget::resize(x, y, w, h);
+    place();
+  }
+
+  void draw() override
+  {
+  }
+
+  void place()
+  {
+    int r[4] = {0, 0, 0, 0};
+    int c[4] = {0, 0, 0, 0};
+    int ox, oy;
+    Fl_Window* top;
+
+    if (!ih)
+      return;
+
+    top = top_window_offset(ox, oy);
+    if (!top || !top->shown())
+    {
+      iupwebHostSetParent(ih, nullptr);
+      return;
+    }
+
+    iupwebHostSetParent(ih, fl_mac_xid(top));
+
+    if (visible_r())
+    {
+      float scale = Fl::screen_scale(top->screen_num());
+      int x1 = ox > 0 ? ox : 0, y1 = oy > 0 ? oy : 0;
+      int x2 = ox + w() < top->w() ? ox + w() : top->w();
+      int y2 = oy + h() < top->h() ? oy + h() : top->h();
+
+      for (Ihandle* parent = ih->parent; parent && parent->iclass->nativetype != IUP_TYPEDIALOG; parent = parent->parent)
+      {
+        auto* widget = reinterpret_cast<Fl_Widget*>(parent->handle);
+        int px, py;
+
+        if (parent->iclass->nativetype == IUP_TYPEVOID || !widget)
+          continue;
+
+        widget->top_window_offset(px, py);
+        if (px > x1) x1 = px;
+        if (py > y1) y1 = py;
+        if (px + widget->w() < x2) x2 = px + widget->w();
+        if (py + widget->h() < y2) y2 = py + widget->h();
+      }
+
+      r[0] = (int)(ox * scale); r[1] = (int)(oy * scale);
+      r[2] = (int)(w() * scale); r[3] = (int)(h() * scale);
+      if (x2 > x1 && y2 > y1)
+      {
+        c[0] = (int)(x1 * scale); c[1] = (int)(y1 * scale);
+        c[2] = (int)((x2 - x1) * scale); c[3] = (int)((y2 - y1) * scale);
+      }
+    }
+
+    if (memcmp(r, rect, sizeof(r)) == 0 && memcmp(c, clip, sizeof(c)) == 0)
+      return;
+
+    memcpy(rect, r, sizeof(r));
+    memcpy(clip, c, sizeof(c));
+    iupwebHostSetBounds(ih, r[0], r[1], r[2], r[3], c[0], c[1], c[2], c[3]);
+  }
+};
+
+#else
 
 class IupFltkWebHost : public Fl_Window
 {
@@ -102,6 +195,8 @@ public:
   }
 };
 
+#endif
+
 extern "C" void* iupwebHostMap(Ihandle* ih)
 {
   Fl_Group::current(nullptr);
@@ -110,10 +205,18 @@ extern "C" void* iupwebHostMap(Ihandle* ih)
 
   iupfltkAddToParent(ih);
 
+#ifdef __APPLE__
+  Fl_Window* top = host->top_window();
+  if (!top || !top->shown())
+    return nullptr;
+
+  return reinterpret_cast<void*>(fl_mac_xid(top));
+#else
   if (!host->shown())
     return nullptr;
 
   return reinterpret_cast<void*>(fl_xid(host));
+#endif
 }
 
 extern "C" void iupwebHostLayoutUpdate(Ihandle* ih)

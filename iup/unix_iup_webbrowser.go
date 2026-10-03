@@ -1,4 +1,4 @@
-//go:build ((aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) || (darwin && gtk3)) && web && !motif && !qt && !qml && !gnustep && !android
+//go:build (aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) && web && !motif && !qt && !qml && !gnustep && !android
 
 package iup
 

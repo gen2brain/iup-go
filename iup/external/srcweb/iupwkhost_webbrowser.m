@@ -1,5 +1,5 @@
 /** \file
- * \brief WKWebView Web Browser Control (macOS Qt and Qt Quick shim).
+ * \brief WKWebView Web Browser Control (macOS host shim for other toolkits).
  *
  * See Copyright Notice in "iup.h"
  */
@@ -17,32 +17,42 @@
 
 #define iupAppleWKBaseView NSView
 
-@interface IupQtWKClipView : NSView
+@interface IupWKHostClipView : NSView
 @end
 
-@implementation IupQtWKClipView
+@implementation IupWKHostClipView
 - (BOOL)isFlipped
 {
 	return YES;
 }
 @end
 
-static NSView* iupQtWKClipView(Ihandle* ih)
+static NSView* iupWKHostClipView(Ihandle* ih)
 {
 	return (NSView*)iupAttribGet(ih, "_IUPWEB_CLIPVIEW");
 }
 
+static NSView* iupWKHostParentView(void* parent)
+{
+	id obj = (id)parent;
+	if ([obj isKindOfClass:[NSWindow class]])
+		return [(NSWindow*)obj contentView];
+	return (NSView*)obj;
+}
+
 static inline int iupAppleWKAddToParent(Ihandle* ih, WKWebView* v)
 {
-	NSView* parent = (NSView*)iupwebHostMap(ih);
-	IupQtWKClipView* clip;
+	NSView* parent = iupWKHostParentView(iupwebHostMap(ih));
+	IupWKHostClipView* clip;
 
 	if (!parent && !ih->handle)
 		return 0;
 
-	clip = [[IupQtWKClipView alloc] initWithFrame:NSZeroRect];
+	clip = [[IupWKHostClipView alloc] initWithFrame:NSZeroRect];
 	if ([clip respondsToSelector:@selector(setClipsToBounds:)])
 		[clip setClipsToBounds:YES];
+	[clip setWantsLayer:YES];
+	[[clip layer] setZPosition:1];
 	[clip setHidden:YES];
 	[clip addSubview:v];
 	iupAttribSet(ih, "_IUPWEB_CLIPVIEW", (char*)clip);
@@ -54,7 +64,7 @@ static inline int iupAppleWKAddToParent(Ihandle* ih, WKWebView* v)
 
 static inline void iupAppleWKRemoveFromParent(Ihandle* ih, WKWebView* v)
 {
-	NSView* clip = iupQtWKClipView(ih);
+	NSView* clip = iupWKHostClipView(ih);
 	iupAttribSet(ih, "_IUPWEB_CLIPVIEW", NULL);
 
 	[v removeFromSuperview];
@@ -110,22 +120,33 @@ static inline void iupAppleWKRunPrint(Ihandle* ih, WKWebView* v)
 void iupwebHostSetBounds(Ihandle* ih, int x, int y, int width, int height, int clip_x, int clip_y, int clip_width, int clip_height)
 {
 	WKWebView* v = ih->data ? ih->data->web_view : nil;
-	NSView* clip = iupQtWKClipView(ih);
+	NSView* clip = iupWKHostClipView(ih);
 	if (!v || !clip)
 		return;
 
-	[clip setFrame:NSMakeRect(clip_x, clip_y, clip_width, clip_height)];
+	NSView* parent = [clip superview];
+	int frame_y = clip_y;
+	if (parent && ![parent isFlipped])
+	{
+		frame_y = (int)[parent bounds].size.height - clip_y - clip_height;
+		[clip setAutoresizingMask:NSViewMinYMargin];
+	}
+	else
+		[clip setAutoresizingMask:NSViewNotSizable];
+
+	[clip setFrame:NSMakeRect(clip_x, frame_y, clip_width, clip_height)];
 	[v setFrame:NSMakeRect(x - clip_x, y - clip_y, width, height)];
 	[clip setHidden:(clip_width > 0 && clip_height > 0) ? NO : YES];
 }
 
 void iupwebHostSetParent(Ihandle* ih, void* parent)
 {
-	NSView* clip = iupQtWKClipView(ih);
-	if (!clip || [clip superview] == (NSView*)parent)
+	NSView* clip = iupWKHostClipView(ih);
+	NSView* view = iupWKHostParentView(parent);
+	if (!clip || [clip superview] == view)
 		return;
 
 	[clip removeFromSuperview];
-	if (parent)
-		[(NSView*)parent addSubview:clip];
+	if (view)
+		[view addSubview:clip];
 }
