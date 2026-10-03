@@ -24,8 +24,7 @@
 
 #include "iupwin_webbrowser.h"
 
-#if defined(IUP_USE_QT) || defined(IUP_USE_QML)
-#define IUPWEB_HOSTED
+#if defined(IUPWEB_HOSTED)
 #include "iupweb_host.h"
 #elif defined(IUP_USE_WINUI)
 extern "C" IUP_DRV_API void iupwinuiHwndHostRemove(Ihandle* ih);
@@ -328,29 +327,32 @@ struct _IcontrolData
   EventRegistrationToken webMessageReceivedToken;
   WebViewLoadStatus loadStatus;
   HWND hwnd;
+  RECT viewBounds;
+  int hasViewBounds;
   WNDPROC oldWndProc;
 };
+
+static void winWebBrowserApplyBounds(Ihandle* ih)
+{
+  RECT bounds;
+
+  if (!ih->data->webviewController || !ih->data->hwnd)
+    return;
+
+  if (ih->data->hasViewBounds)
+    bounds = ih->data->viewBounds;
+  else
+    GetClientRect(ih->data->hwnd, &bounds);
+
+  ih->data->webviewController->put_Bounds(bounds);
+}
 
 static LRESULT CALLBACK WebBrowserWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
   auto* ih = static_cast<Ihandle*>(GetProp(hwnd, TEXT("IUP_WEBBROWSER_IH")));
 
-  if (msg == WM_SIZE)
-  {
-    WORD width = LOWORD(lParam);
-    WORD height = HIWORD(lParam);
-
-    if (ih && ih->data && ih->data->webviewController)
-    {
-      RECT bounds;
-      bounds.left = 0;
-      bounds.top = 0;
-      bounds.right = width;
-      bounds.bottom = height;
-
-      ih->data->webviewController->put_Bounds(bounds);
-    }
-  }
+  if (msg == WM_SIZE && ih && ih->data)
+    winWebBrowserApplyBounds(ih);
 
   if (ih && ih->data && ih->data->oldWndProc)
     return CallWindowProc(ih->data->oldWndProc, hwnd, msg, wParam, lParam);
@@ -598,11 +600,10 @@ public:
 class CreateWebViewHandler : public EventHandler<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler, CreateWebViewHandler>
 {
 private:
-  HWND hwnd;
   WinInitState* state;
 
 public:
-  CreateWebViewHandler(Ihandle* handle, HWND window, WinInitState* init) : EventHandler(handle), hwnd(window), state(init) {}
+  CreateWebViewHandler(Ihandle* handle, WinInitState* init) : EventHandler(handle), state(init) {}
 
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT result, ICoreWebView2Controller* controller) noexcept override;
 };
@@ -630,7 +631,7 @@ public:
       return result;
     }
 
-    auto* handler = new CreateWebViewHandler(ih, hwnd, state);
+    auto* handler = new CreateWebViewHandler(ih, state);
     HRESULT hr = env->CreateCoreWebView2Controller(hwnd, handler);
     handler->Release();
 
@@ -762,9 +763,7 @@ HRESULT CreateWebViewHandler::Invoke(HRESULT result, ICoreWebView2Controller* co
   if (ih->data->webviewWindow)
     ih->data->webviewWindow->AddRef();
 
-  RECT bounds;
-  GetClientRect(hwnd, &bounds);
-  controller->put_Bounds(bounds);
+  winWebBrowserApplyBounds(ih);
   controller->put_IsVisible(TRUE);
 
   ICoreWebView2* webview = ih->data->webviewWindow;
@@ -2027,13 +2026,49 @@ static void winWebBrowserReleaseHost(Ihandle* ih)
 }
 
 #ifdef IUPWEB_HOSTED
-extern "C" void iupwebHostSetBounds(Ihandle* ih, int x, int y, int width, int height, int visible)
+static HWND winWebBrowserParkingWindow(void)
+{
+  static HWND parking = nullptr;
+  if (!parking)
+    parking = CreateWindowEx(0, TEXT("STATIC"), TEXT(""), WS_POPUP, 0, 0, 0, 0,
+                             nullptr, nullptr, static_cast<HINSTANCE>(GetModuleHandle(nullptr)), nullptr);
+  return parking;
+}
+
+extern "C" void iupwebHostSetParent(Ihandle* ih, void* parent)
 {
   if (!ih->data || !ih->data->hwnd)
     return;
 
-  SetWindowPos(ih->data->hwnd, nullptr, x, y, width, height,
+  HWND hwnd = parent ? static_cast<HWND>(parent) : winWebBrowserParkingWindow();
+  if (GetParent(ih->data->hwnd) == hwnd)
+    return;
+
+  if (!parent)
+    ShowWindow(ih->data->hwnd, SW_HIDE);
+
+  SetParent(ih->data->hwnd, hwnd);
+
+  if (ih->data->webviewController)
+    ih->data->webviewController->NotifyParentWindowPositionChanged();
+}
+
+extern "C" void iupwebHostSetBounds(Ihandle* ih, int x, int y, int width, int height, int clip_x, int clip_y, int clip_width, int clip_height)
+{
+  int visible = clip_width > 0 && clip_height > 0;
+
+  if (!ih->data || !ih->data->hwnd)
+    return;
+
+  ih->data->viewBounds.left = x - clip_x;
+  ih->data->viewBounds.top = y - clip_y;
+  ih->data->viewBounds.right = x - clip_x + width;
+  ih->data->viewBounds.bottom = y - clip_y + height;
+  ih->data->hasViewBounds = 1;
+
+  SetWindowPos(ih->data->hwnd, nullptr, clip_x, clip_y, clip_width, clip_height,
                SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER | (visible ? SWP_SHOWWINDOW : SWP_HIDEWINDOW));
+  winWebBrowserApplyBounds(ih);
 }
 #endif
 
@@ -2058,6 +2093,8 @@ static int winWebBrowserMapMethod(Ihandle* ih)
 
 #if defined(IUPWEB_HOSTED)
   HWND parent = static_cast<HWND>(iupwebHostMap(ih));
+  if (!parent && ih->handle)
+    parent = winWebBrowserParkingWindow();
   DWORD style = WS_CHILD;
 #elif defined(IUP_USE_WINUI)
   Ihandle* dialog = IupGetDialog(ih);
@@ -2216,19 +2253,7 @@ static void winWebBrowserLayoutUpdateMethod(Ihandle* ih)
   iupdrvBaseLayoutUpdateMethod(ih);
 #endif
 
-  if (ih->data->webviewController && ih->data->hwnd)
-  {
-    RECT clientRect;
-    GetClientRect(ih->data->hwnd, &clientRect);
-
-    RECT bounds;
-    bounds.left = 0;
-    bounds.top = 0;
-    bounds.right = clientRect.right;
-    bounds.bottom = clientRect.bottom;
-
-    ih->data->webviewController->put_Bounds(bounds);
-  }
+  winWebBrowserApplyBounds(ih);
 }
 
 static int winWebBrowserCreateMethod(Ihandle* ih, void** params)
@@ -2240,6 +2265,7 @@ static int winWebBrowserCreateMethod(Ihandle* ih, void** params)
   ih->data->webviewWindow = nullptr;
   ih->data->loadStatus = WEBVIEW_STATUS_COMPLETED;
   ih->data->hwnd = nullptr;
+  ih->data->hasViewBounds = 0;
   ih->data->oldWndProc = nullptr;
 
   IupSetAttribute(ih, "BORDER", "NO");

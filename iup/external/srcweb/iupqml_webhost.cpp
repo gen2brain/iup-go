@@ -27,7 +27,7 @@ public:
   QPointer<QQuickItem> item;
   QPointer<QQuickWindow> window;
   QRect bounds;
-  int visible = -1;
+  QRect clip;
 
   IupQmlWebHost(Ihandle* handle, QQuickItem* host_item) : QObject(host_item), ih(handle), item(host_item), window(host_item->window())
   {
@@ -37,29 +37,45 @@ public:
     connect(item, &QQuickItem::windowChanged, this, &IupQmlWebHost::place);
   }
 
+  QRect toNative(const QRectF& r) const
+  {
+#ifdef Q_OS_WIN
+    qreal scale = window ? window->devicePixelRatio() : 1.0;
+    int x = qRound(r.left() * scale);
+    int y = qRound(r.top() * scale);
+    return QRect(x, y, qRound(r.right() * scale) - x, qRound(r.bottom() * scale) - y);
+#else
+    return r.toAlignedRect();
+#endif
+  }
+
   void place()
   {
     if (!ih || !item)
       return;
 
-    int show = window && item->window() == window && item->isVisible() && item->width() > 0 && item->height() > 0;
     QRectF scene = item->mapRectToScene(QRectF(0, 0, item->width(), item->height()));
+    QRectF visible;
 
-#ifdef Q_OS_WIN
-    qreal scale = window ? window->devicePixelRatio() : 1.0;
-    int x = qRound(scene.left() * scale);
-    int y = qRound(scene.top() * scale);
-    QRect rect(x, y, qRound(scene.right() * scale) - x, qRound(scene.bottom() * scale) - y);
-#else
-    QRect rect = scene.toAlignedRect();
-#endif
+    if (window && item->window() == window && item->isVisible())
+    {
+      visible = scene & QRectF(0, 0, window->width(), window->height());
+      for (QQuickItem* p = item->parentItem(); p; p = p->parentItem())
+      {
+        if (p->clip())
+          visible &= p->mapRectToScene(QRectF(0, 0, p->width(), p->height()));
+      }
+    }
 
-    if (rect == bounds && show == visible)
+    QRect rect = toNative(scene);
+    QRect area = visible.isEmpty() ? QRect() : toNative(visible);
+
+    if (rect == bounds && area == clip)
       return;
 
     bounds = rect;
-    visible = show;
-    iupwebHostSetBounds(ih, rect.x(), rect.y(), rect.width(), rect.height(), show);
+    clip = area;
+    iupwebHostSetBounds(ih, rect.x(), rect.y(), rect.width(), rect.height(), area.x(), area.y(), area.width(), area.height());
   }
 };
 
@@ -74,7 +90,10 @@ extern "C" void* iupwebHostMap(Ihandle* ih)
 
   QQuickWindow* window = item->window();
   if (!window)
+  {
+    iupdrvBaseUnMapMethod(ih);
     return nullptr;
+  }
 
   auto* host = new IupQmlWebHost(ih, item);
   iupAttribSet(ih, "_IUPQML_WEBHOST", reinterpret_cast<char*>(host));

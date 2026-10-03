@@ -9,6 +9,7 @@
 
 #include "iup.h"
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_classbase.h"
 
 #include "iupweb_host.h"
@@ -16,23 +17,49 @@
 
 #define iupAppleWKBaseView NSView
 
+@interface IupQtWKClipView : NSView
+@end
+
+@implementation IupQtWKClipView
+- (BOOL)isFlipped
+{
+	return YES;
+}
+@end
+
+static NSView* iupQtWKClipView(Ihandle* ih)
+{
+	return (NSView*)iupAttribGet(ih, "_IUPWEB_CLIPVIEW");
+}
+
 static inline int iupAppleWKAddToParent(Ihandle* ih, WKWebView* v)
 {
 	NSView* parent = (NSView*)iupwebHostMap(ih);
-	if (!parent)
-	{
-		iupwebHostUnMap(ih);
-		return 0;
-	}
+	IupQtWKClipView* clip;
 
-	[v setHidden:YES];
-	[parent addSubview:v];
+	if (!parent && !ih->handle)
+		return 0;
+
+	clip = [[IupQtWKClipView alloc] initWithFrame:NSZeroRect];
+	if ([clip respondsToSelector:@selector(setClipsToBounds:)])
+		[clip setClipsToBounds:YES];
+	[clip setHidden:YES];
+	[clip addSubview:v];
+	iupAttribSet(ih, "_IUPWEB_CLIPVIEW", (char*)clip);
+
+	if (parent)
+		[parent addSubview:clip];
 	return 1;
 }
 
 static inline void iupAppleWKRemoveFromParent(Ihandle* ih, WKWebView* v)
 {
+	NSView* clip = iupQtWKClipView(ih);
+	iupAttribSet(ih, "_IUPWEB_CLIPVIEW", NULL);
+
 	[v removeFromSuperview];
+	[clip removeFromSuperview];
+	[clip release];
 	iupwebHostUnMap(ih);
 }
 
@@ -80,12 +107,25 @@ static inline void iupAppleWKRunPrint(Ihandle* ih, WKWebView* v)
 #include "iupapplewk_webbrowser.m"
 
 
-void iupwebHostSetBounds(Ihandle* ih, int x, int y, int width, int height, int visible)
+void iupwebHostSetBounds(Ihandle* ih, int x, int y, int width, int height, int clip_x, int clip_y, int clip_width, int clip_height)
 {
 	WKWebView* v = ih->data ? ih->data->web_view : nil;
-	if (!v)
+	NSView* clip = iupQtWKClipView(ih);
+	if (!v || !clip)
 		return;
 
-	[v setFrame:NSMakeRect(x, y, width, height)];
-	[v setHidden:visible ? NO : YES];
+	[clip setFrame:NSMakeRect(clip_x, clip_y, clip_width, clip_height)];
+	[v setFrame:NSMakeRect(x - clip_x, y - clip_y, width, height)];
+	[clip setHidden:(clip_width > 0 && clip_height > 0) ? NO : YES];
+}
+
+void iupwebHostSetParent(Ihandle* ih, void* parent)
+{
+	NSView* clip = iupQtWKClipView(ih);
+	if (!clip || [clip superview] == (NSView*)parent)
+		return;
+
+	[clip removeFromSuperview];
+	if (parent)
+		[(NSView*)parent addSubview:clip];
 }
