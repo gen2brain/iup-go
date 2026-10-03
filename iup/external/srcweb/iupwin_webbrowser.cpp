@@ -826,6 +826,7 @@ HRESULT CreateWebViewHandler::Invoke(HRESULT result, ICoreWebView2Controller* co
     L"  window.iupRestoreSelection = function() {"
     L"    if (document.body.contentEditable == 'true' && iupSavedRange) {"
     L"      var sel = window.getSelection();"
+    L"      if (!sel.isCollapsed && document.body.contains(sel.anchorNode)) return;"
     L"      sel.removeAllRanges();"
     L"      sel.addRange(iupSavedRange);"
     L"    }"
@@ -1687,9 +1688,9 @@ static char* winWebBrowserGetCommandStateAttrib(Ihandle* ih)
     char* result = winWebBrowserQueryCommandState(ih, js_cmd);
     if (result)
     {
-      char* ret = iupStrReturnStr(result);
+      int val = strcmp(result, "true") == 0;
       free(result);
-      return ret;
+      return iupStrReturnBoolean(val);
     }
   }
   return iupStrReturnBoolean(0);
@@ -1716,9 +1717,9 @@ static char* winWebBrowserGetCommandEnabledAttrib(Ihandle* ih)
     char* result = winWebBrowserQueryCommandEnabled(ih, js_cmd);
     if (result)
     {
-      char* ret = iupStrReturnStr(result);
+      int val = strcmp(result, "true") == 0;
       free(result);
-      return ret;
+      return iupStrReturnBoolean(val);
     }
   }
   return iupStrReturnBoolean(0);

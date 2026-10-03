@@ -59,6 +59,7 @@ extern "C" {
 
 #define IUPHAIKU_JS_EXEC_MSG 'IuJX'  /* sync JS eval hop to the WebPage looper */
 #define IUPHAIKU_JS_TIMEOUT  5000000
+#define IUPHAIKU_EDIT_MSG    'IuED'  /* editor action hop to the WebPage looper */
 #define IUPHAIKU_WEB_MAP_MSG 'IuWM'  /* deferred bind of BWebView once the dialog window is up */
 
 typedef enum {
@@ -76,8 +77,8 @@ struct _IcontrolData
 class IupHaikuWebHandler : public BHandler
 {
 public:
-  explicit IupHaikuWebHandler(Ihandle* ih)
-    : BHandler("iup_webhandler"), fIhandle(ih), fStatus(IUP_WEB_LOAD_COMPLETED),
+  explicit IupHaikuWebHandler(Ihandle* ih, BWebView* popup = nullptr)
+    : BHandler("iup_webhandler"), fIhandle(ih), fPopup(popup), fStatus(IUP_WEB_LOAD_COMPLETED),
       fCanBack(false), fCanForward(false)
   {
   }
@@ -90,7 +91,10 @@ public:
   void MessageReceived(BMessage* msg) override;
 
 private:
+  void PopupReceived(BMessage* msg);
+
   Ihandle* fIhandle;
+  BWebView* fPopup;
   IupHaikuWebLoadStatus fStatus;
   bool fCanBack;
   bool fCanForward;
@@ -118,23 +122,6 @@ static void iuphaikuWebBrowserInit()
   }
 }
 
-static void haikuWebBrowserBindView(Ihandle* ih, BWebView* view)
-{
-  ih->handle = reinterpret_cast<InativeHandle*>(view);
-
-  auto* handler = new IupHaikuWebHandler(ih);
-  BWindow* win = view->Window();
-  {
-    LooperLockGuard guard(win);
-    if (win) win->AddHandler(handler);
-  }
-  iupAttribSet(ih, "_IUPWEB_HANDLER", reinterpret_cast<char*>(handler));
-  view->WebPage()->SetListener(BMessenger(handler));
-
-  iupAttribSet(ih, "_IUPWEB_READY", "1");
-  iupAttribUpdate(ih);
-}
-
 static IupHaikuWebHandler* haikuWebBrowserHandler(Ihandle* ih)
 {
   return reinterpret_cast<IupHaikuWebHandler*>(iupAttribGet(ih, "_IUPWEB_HANDLER"));
@@ -146,15 +133,6 @@ static BWebView* haikuWebBrowserView(Ihandle* ih)
   return reinterpret_cast<BWebView*>(ih->handle);
 }
 
-static BWebFrame* haikuWebBrowserFrame(Ihandle* ih)
-{
-  BWebView* view = haikuWebBrowserView(ih);
-  if (!view) return nullptr;
-  BWebPage* page = view->WebPage();
-  if (!page) return nullptr;
-  return page->MainFrame();
-}
-
 class IupHaikuJSExecHandler : public BHandler
 {
 public:
@@ -162,17 +140,25 @@ public:
 
   void MessageReceived(BMessage* msg) override
   {
-    if (msg->what != IUPHAIKU_JS_EXEC_MSG) { BHandler::MessageReceived(msg); return; }
+    if (msg->what != IUPHAIKU_JS_EXEC_MSG && msg->what != IUPHAIKU_EDIT_MSG) { BHandler::MessageReceived(msg); return; }
 
     void* page_ptr = nullptr;
-    const char* script = nullptr;
     msg->FindPointer("page", &page_ptr);
-    msg->FindString("script", &script);
 
-    BMessage reply(IUPHAIKU_JS_EXEC_MSG);
+    BMessage reply(msg->what);
 
     auto* page = static_cast<BWebPage*>(page_ptr);
     BWebFrame* frame = page ? page->MainFrame() : nullptr;
+
+    if (msg->what == IUPHAIKU_EDIT_MSG)
+    {
+      Edit(frame, msg->GetString("action", ""), reply);
+      msg->SendReply(&reply);
+      return;
+    }
+
+    const char* script = nullptr;
+    msg->FindString("script", &script);
     JSGlobalContextRef ctx = frame ? frame->GlobalContext() : nullptr;
 
     if (ctx && script)
@@ -202,6 +188,20 @@ public:
     }
     msg->SendReply(&reply);
   }
+
+private:
+  static void Edit(BWebFrame* frame, const char* action, BMessage& reply)
+  {
+    if (!frame) return;
+
+    if (strcmp(action, "Copy") == 0) frame->Copy();
+    else if (strcmp(action, "Cut") == 0) frame->Cut();
+    else if (strcmp(action, "Paste") == 0) frame->Paste();
+    else if (strcmp(action, "Undo") == 0) frame->Undo();
+    else if (strcmp(action, "Redo") == 0) frame->Redo();
+    else if (strcmp(action, "CanPaste") == 0) reply.AddString("result", frame->CanPaste() ? "1" : "0");
+    else if (strcmp(action, "AsMarkup") == 0) reply.AddString("result", frame->AsMarkup());
+  }
 };
 
 static BMessenger haikuWebBrowserJSExecMessenger(Ihandle* ih, BWebPage* page)
@@ -225,6 +225,24 @@ static BMessenger haikuWebBrowserJSExecMessenger(Ihandle* ih, BWebPage* page)
   return {handler};
 }
 
+static void haikuWebBrowserBindView(Ihandle* ih, BWebView* view)
+{
+  ih->handle = reinterpret_cast<InativeHandle*>(view);
+
+  auto* handler = new IupHaikuWebHandler(ih);
+  BWindow* win = view->Window();
+  {
+    LooperLockGuard guard(win);
+    if (win) win->AddHandler(handler);
+  }
+  iupAttribSet(ih, "_IUPWEB_HANDLER", reinterpret_cast<char*>(handler));
+  view->WebPage()->SetListener(BMessenger(handler));
+  haikuWebBrowserJSExecMessenger(ih, view->WebPage());
+
+  iupAttribSet(ih, "_IUPWEB_READY", "1");
+  iupAttribUpdate(ih);
+}
+
 static void haikuWebBrowserDestroyJSExecHandler(Ihandle* ih)
 {
   auto* handler = reinterpret_cast<IupHaikuJSExecHandler*>(iupAttribGet(ih, "_IUPWEB_JSHANDLER"));
@@ -240,10 +258,10 @@ static void haikuWebBrowserDestroyJSExecHandler(Ihandle* ih)
   iupAttribSet(ih, "_IUPWEB_JSHANDLER", nullptr);
 }
 
-static char* haikuWebBrowserRunJSSync(Ihandle* ih, const char* script)
+static char* haikuWebBrowserPageCall(Ihandle* ih, BMessage& msg)
 {
   BWebView* view = haikuWebBrowserView(ih);
-  if (!view || !script) return nullptr;
+  if (!view) return nullptr;
 
   BWebPage* page = view->WebPage();
   if (!page) return nullptr;
@@ -251,9 +269,7 @@ static char* haikuWebBrowserRunJSSync(Ihandle* ih, const char* script)
   BMessenger msgr = haikuWebBrowserJSExecMessenger(ih, page);
   if (!msgr.IsValid()) return nullptr;
 
-  BMessage msg(IUPHAIKU_JS_EXEC_MSG);
   msg.AddPointer("page", page);
-  msg.AddString("script", script);
   BMessage reply;
 
   /* the page thread needs this looper to reach the view, and we are about to
@@ -274,6 +290,21 @@ static char* haikuWebBrowserRunJSSync(Ihandle* ih, const char* script)
   const char* result = nullptr;
   if (reply.FindString("result", &result) != B_OK || !result) return nullptr;
   return iupStrReturnStr(result);
+}
+
+static char* haikuWebBrowserRunJSSync(Ihandle* ih, const char* script)
+{
+  if (!script) return nullptr;
+  BMessage msg(IUPHAIKU_JS_EXEC_MSG);
+  msg.AddString("script", script);
+  return haikuWebBrowserPageCall(ih, msg);
+}
+
+static char* haikuWebBrowserEdit(Ihandle* ih, const char* action)
+{
+  BMessage msg(IUPHAIKU_EDIT_MSG);
+  msg.AddString("action", action);
+  return haikuWebBrowserPageCall(ih, msg);
 }
 
 static void haikuWebBrowserRunJSAsync(Ihandle* ih, const char* script)
@@ -361,8 +392,51 @@ static void haikuWebBrowserJSExecCommand(Ihandle* ih, const char* command, const
   haikuWebBrowserRunJSAsync(ih, js.String());
 }
 
+static const char* haikuWebBrowserInitScript =
+  "(function() {"
+  "  if (window.iupGetDirtyFlag) return;"
+  "  var iupDirtyFlag = false;"
+  "  document.addEventListener('input', function(e) {"
+  "    if (document.body.contentEditable == 'true') {"
+  "      iupDirtyFlag = true;"
+  "    }"
+  "  });"
+  "  window.iupGetDirtyFlag = function() {"
+  "    return iupDirtyFlag;"
+  "  };"
+  "})();";
+
+void IupHaikuWebHandler::PopupReceived(BMessage* msg)
+{
+  int opener = fIhandle && iupObjectCheck(fIhandle);
+  BString url;
+
+  if (opener)
+  {
+    if (msg->what != NAVIGATION_REQUESTED || msg->FindString("url", &url) != B_OK ||
+        url.IsEmpty() || url == "about:blank")
+      return;
+
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(fIhandle, "NEWWINDOW_CB"));
+    BWebView* view = haikuWebBrowserView(fIhandle);
+    if ((!cb || cb(fIhandle, const_cast<char*>(url.String())) != IUP_IGNORE) && view)
+      view->LoadURL(url.String());
+  }
+
+  fPopup->WebPage()->SetListener(BMessenger());
+  fPopup->Shutdown();
+  Looper()->RemoveHandler(this);
+  delete this;
+}
+
 void IupHaikuWebHandler::MessageReceived(BMessage* msg)
 {
+  if (fPopup)
+  {
+    PopupReceived(msg);
+    return;
+  }
+
   if (!fIhandle || !iupObjectCheck(fIhandle))
   {
     BHandler::MessageReceived(msg);
@@ -371,19 +445,21 @@ void IupHaikuWebHandler::MessageReceived(BMessage* msg)
 
   switch (msg->what)
   {
-    case LOAD_NEGOTIATING:
-    case LOAD_STARTED:
+    case NAVIGATION_REQUESTED:
     {
-      fStatus = IUP_WEB_LOAD_LOADING;
       BString url;
       msg->FindString("url", &url);
-      if (!iupAttribGet(fIhandle, "_IUPWEB_IGNORE_NAVIGATE"))
+      IFns cb = reinterpret_cast<IFns>(IupGetCallback(fIhandle, "NAVIGATE_CB"));
+      if (cb && cb(fIhandle, const_cast<char*>(url.String())) == IUP_IGNORE)
       {
-        IFns cb = reinterpret_cast<IFns>(IupGetCallback(fIhandle, "NAVIGATE_CB"));
-        if (cb) cb(fIhandle, const_cast<char*>(url.String()));
+        haikuWebBrowserRunJSAsync(fIhandle, "window.stop();");
       }
       break;
     }
+    case LOAD_NEGOTIATING:
+    case LOAD_STARTED:
+      fStatus = IUP_WEB_LOAD_LOADING;
+      break;
     case LOAD_FAILED:
     {
       fStatus = IUP_WEB_LOAD_FAILED;
@@ -398,10 +474,21 @@ void IupHaikuWebHandler::MessageReceived(BMessage* msg)
       fStatus = IUP_WEB_LOAD_COMPLETED;
       BString url;
       msg->FindString("url", &url);
+      haikuWebBrowserRunJSAsync(fIhandle, haikuWebBrowserInitScript);
       if (iupAttribGet(fIhandle, "_IUPWEB_EDITABLE"))
         haikuWebBrowserRunJSAsync(fIhandle, "document.body.contentEditable = 'true';");
       IFns cb = reinterpret_cast<IFns>(IupGetCallback(fIhandle, "COMPLETED_CB"));
       if (cb) cb(fIhandle, const_cast<char*>(url.String()));
+      break;
+    }
+    case NEW_PAGE_CREATED:
+    {
+      BWebView* popup = nullptr;
+      if (msg->FindPointer("view", reinterpret_cast<void**>(&popup)) != B_OK || !popup)
+        break;
+      auto* handler = new IupHaikuWebHandler(fIhandle, popup);
+      Looper()->AddHandler(handler);
+      popup->WebPage()->SetListener(BMessenger(handler));
       break;
     }
     case NEW_WINDOW_REQUESTED:
@@ -433,8 +520,6 @@ static int haikuWebBrowserSetValueAttrib(Ihandle* ih, const char* value)
   BWebView* view = haikuWebBrowserView(ih);
   if (!view) return 1;
 
-  iupAttribSet(ih, "_IUPWEB_DIRTY", nullptr);
-
   BString url(value);
   if (!iupStrEqualPartial(value, "http://") && !iupStrEqualPartial(value, "https://")
       && !iupStrEqualPartial(value, "ftp://") && !iupStrEqualPartial(value, "file://")
@@ -446,9 +531,7 @@ static int haikuWebBrowserSetValueAttrib(Ihandle* ih, const char* value)
   }
 
   LooperLockGuard guard(view->Looper());
-  iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", "1");
   view->LoadURL(url.String());
-  iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", nullptr);
   return 0;
 }
 
@@ -492,23 +575,15 @@ static int haikuWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
   haikuWebBrowserBase64Encode(url, value, strlen(value));
 
   LooperLockGuard guard(view->Looper());
-  iupAttribSet(ih, "_IUPWEB_DIRTY", nullptr);
-  iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", "1");
   view->LoadURL(url.String());
-  iupAttribSet(ih, "_IUPWEB_IGNORE_NAVIGATE", nullptr);
   return 0;
 }
 
 static char* haikuWebBrowserGetHTMLAttrib(Ihandle* ih)
 {
-  BWebFrame* frame = haikuWebBrowserFrame(ih);
-  if (!frame) return nullptr;
-
-  BWebView* view = haikuWebBrowserView(ih);
-  LooperLockGuard guard(view->Looper());
-  BString markup = frame->AsMarkup();
-  if (markup.Length() == 0) return nullptr;
-  return iupStrReturnStr(markup.String());
+  char* markup = haikuWebBrowserEdit(ih, "AsMarkup");
+  if (!markup || !markup[0]) return nullptr;
+  return markup;
 }
 
 static int haikuWebBrowserSetReloadAttrib(Ihandle* ih, const char* value)
@@ -629,64 +704,40 @@ static int haikuWebBrowserSetFindAttrib(Ihandle* ih, const char* value)
 static int haikuWebBrowserSetCopyAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  BWebFrame* frame = haikuWebBrowserFrame(ih);
-  if (!frame) return 0;
-  BWebView* view = haikuWebBrowserView(ih);
-  LooperLockGuard guard(view->Looper());
-  frame->Copy();
+  haikuWebBrowserEdit(ih, "Copy");
   return 0;
 }
 
 static int haikuWebBrowserSetCutAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  BWebFrame* frame = haikuWebBrowserFrame(ih);
-  if (!frame) return 0;
-  BWebView* view = haikuWebBrowserView(ih);
-  LooperLockGuard guard(view->Looper());
-  frame->Cut();
+  haikuWebBrowserEdit(ih, "Cut");
   return 0;
 }
 
 static int haikuWebBrowserSetPasteAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  BWebFrame* frame = haikuWebBrowserFrame(ih);
-  if (!frame) return 0;
-  BWebView* view = haikuWebBrowserView(ih);
-  LooperLockGuard guard(view->Looper());
-  frame->Paste();
+  haikuWebBrowserEdit(ih, "Paste");
   return 0;
 }
 
 static char* haikuWebBrowserGetPasteAttrib(Ihandle* ih)
 {
-  BWebFrame* frame = haikuWebBrowserFrame(ih);
-  if (!frame) return iupStrReturnBoolean(0);
-  BWebView* view = haikuWebBrowserView(ih);
-  LooperLockGuard guard(view->Looper());
-  return iupStrReturnBoolean(frame->CanPaste());
+  return iupStrReturnBoolean(iupStrBoolean(haikuWebBrowserEdit(ih, "CanPaste")));
 }
 
 static int haikuWebBrowserSetUndoAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  BWebFrame* frame = haikuWebBrowserFrame(ih);
-  if (!frame) return 0;
-  BWebView* view = haikuWebBrowserView(ih);
-  LooperLockGuard guard(view->Looper());
-  frame->Undo();
+  haikuWebBrowserEdit(ih, "Undo");
   return 0;
 }
 
 static int haikuWebBrowserSetRedoAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  BWebFrame* frame = haikuWebBrowserFrame(ih);
-  if (!frame) return 0;
-  BWebView* view = haikuWebBrowserView(ih);
-  LooperLockGuard guard(view->Looper());
-  frame->Redo();
+  haikuWebBrowserEdit(ih, "Redo");
   return 0;
 }
 
@@ -718,7 +769,6 @@ static char* haikuWebBrowserGetEditableAttrib(Ihandle* ih)
 static int haikuWebBrowserSetNewAttrib(Ihandle* ih, const char* value)
 {
   (void)value;
-  iupAttribSet(ih, "_IUPWEB_DIRTY", nullptr);
   haikuWebBrowserSetHTMLAttrib(ih, "<html><body></body></html>");
   haikuWebBrowserSetEditableAttrib(ih, "Yes");
   return 0;
@@ -729,7 +779,6 @@ static int haikuWebBrowserSetOpenFileAttrib(Ihandle* ih, const char* value)
   if (!value) return 0;
   char* url = iupStrFileMakeURL(value);
   if (!url) return 0;
-  iupAttribSet(ih, "_IUPWEB_DIRTY", nullptr);
   haikuWebBrowserSetValueAttrib(ih, url);
   free(url);
   return 0;
@@ -842,12 +891,14 @@ static char* haikuWebBrowserGetBackColorAttrib(Ihandle* ih)
 
 static char* haikuWebBrowserGetCommandStateAttrib(Ihandle* ih)
 {
-  return haikuWebBrowserJSQueryCommand(ih, "queryCommandState", iupAttribGet(ih, "COMMAND"));
+  char* result = haikuWebBrowserJSQueryCommand(ih, "queryCommandState", iupAttribGet(ih, "COMMAND"));
+  return iupStrReturnBoolean(result && strcmp(result, "true") == 0);
 }
 
 static char* haikuWebBrowserGetCommandEnabledAttrib(Ihandle* ih)
 {
-  return haikuWebBrowserJSQueryCommand(ih, "queryCommandEnabled", iupAttribGet(ih, "COMMAND"));
+  char* result = haikuWebBrowserJSQueryCommand(ih, "queryCommandEnabled", iupAttribGet(ih, "COMMAND"));
+  return iupStrReturnBoolean(result && strcmp(result, "true") == 0);
 }
 
 static char* haikuWebBrowserGetCommandValueAttrib(Ihandle* ih)
@@ -924,7 +975,11 @@ static char* haikuWebBrowserGetJavascriptAttrib(Ihandle* ih)
 
 static char* haikuWebBrowserGetDirtyAttrib(Ihandle* ih)
 {
-  return iupStrReturnBoolean(iupAttribGet(ih, "_IUPWEB_DIRTY") != nullptr);
+  if (!iupAttribGet(ih, "_IUPWEB_EDITABLE"))
+    return iupStrReturnBoolean(0);
+
+  char* result = haikuWebBrowserRunJSSync(ih, "window.iupGetDirtyFlag ? window.iupGetDirtyFlag() : false;");
+  return iupStrReturnBoolean(result && strcmp(result, "true") == 0);
 }
 
 static void haikuWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)

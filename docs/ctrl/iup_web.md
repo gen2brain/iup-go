@@ -22,6 +22,7 @@ In QML, the implementation uses WebView2 in Windows and WKWebView in macOS, plac
 Items drawn inside the scene, such as tooltips, are hidden where they overlap the web view.
 
 In Haiku, the implementation uses BWebView from the system Legacy WebKit library (libWebKitLegacy).
+Not supported in Haiku: BACKCOUNT, FORWARDCOUNT, ITEMHISTORY, COMMANDTEXT, PRINT and PRINTPREVIEW.
 
 In Android, the implementation uses the system WebView.
 
@@ -29,6 +30,7 @@ In WebAssembly, the implementation uses an HTML `<iframe>`. Cross-origin pages c
 A page loaded with VALUE is sandboxed and has a unique origin, with scripts, forms and popups allowed.
 Content loaded with HTML is not sandboxed and uses the origin of the application page.
 The `javascript:` and `vbscript:` schemes are rejected in VALUE.
+NAVIGATE_CB and NEWWINDOW_CB are not called for navigations started inside a page loaded with VALUE.
 
 Not supported: BACKCOUNT, FORWARDCOUNT, CANGOBACK, CANGOFORWARD, ITEMHISTORY, OPENFILE, SAVEFILE and PRINTPREVIEW.
 

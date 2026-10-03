@@ -880,6 +880,7 @@ static void gtkWebBrowserInitSelectionTracking(Ihandle* ih)
       "    if (document.body.contentEditable == 'true' && iupSavedRange) {"
       "      try {"
       "        var sel = window.getSelection();"
+      "        if (!sel.isCollapsed && document.body.contains(sel.anchorNode)) return;"
       "        sel.removeAllRanges();"
       "        sel.addRange(iupSavedRange);"
       "      } catch (e) {}"
@@ -922,6 +923,7 @@ static void gtkWebBrowserInitSelectionTracking(Ihandle* ih)
       "    if (document.body.contentEditable == 'true' && iupSavedRange) {"
       "      try {"
       "        var sel = window.getSelection();"
+      "        if (!sel.isCollapsed && document.body.contains(sel.anchorNode)) return;"
       "        sel.removeAllRanges();"
       "        sel.addRange(iupSavedRange);"
       "      } catch (e) {}"
@@ -962,6 +964,7 @@ static void gtkWebBrowserInitSelectionTracking(Ihandle* ih)
     "    if (document.body.contentEditable == 'true' && iupSavedRange) {"
     "      try {"
     "        var sel = window.getSelection();"
+    "        if (!sel.isCollapsed && document.body.contains(sel.anchorNode)) return;"
     "        sel.removeAllRanges();"
     "        sel.addRange(iupSavedRange);"
     "      } catch (e) {}"
@@ -1003,6 +1006,7 @@ static void gtkWebBrowserInitSelectionTracking(Ihandle* ih)
     "    if (document.body.contentEditable == 'true' && iupSavedRange) {"
     "      try {"
     "        var sel = window.getSelection();"
+    "        if (!sel.isCollapsed && document.body.contains(sel.anchorNode)) return;"
     "        sel.removeAllRanges();"
     "        sel.addRange(iupSavedRange);"
     "      } catch (e) {}"
@@ -1895,9 +1899,9 @@ static char* gtkWebBrowserGetCommandStateAttrib(Ihandle* ih)
     char* result = gtkWebBrowserQueryCommandState(ih, js_cmd);
     if (result)
     {
-      char* ret = iupStrReturnStr(result);
+      int val = strcmp(result, "true") == 0;
       free(result);
-      return ret;
+      return iupStrReturnBoolean(val);
     }
   }
   return iupStrReturnBoolean(0);
@@ -1924,9 +1928,9 @@ static char* gtkWebBrowserGetCommandEnabledAttrib(Ihandle* ih)
     char* result = gtkWebBrowserQueryCommandEnabled(ih, js_cmd);
     if (result)
     {
-      char* ret = iupStrReturnStr(result);
+      int val = strcmp(result, "true") == 0;
       free(result);
-      return ret;
+      return iupStrReturnBoolean(val);
     }
   }
   return iupStrReturnBoolean(0);
@@ -2235,7 +2239,10 @@ static gboolean gtkWebBrowserNavigate_WK2(WebKitWebView* web_view, WebKitPolicyD
     const gchar* uri = webkit_uri_request_get_uri(request);
 
     if (cb(ih, (char*)uri) == IUP_IGNORE)
+    {
+      webkit_policy_decision_ignore(decision);
       return TRUE;
+    }
   }
 
   (void)web_view;
@@ -2254,13 +2261,15 @@ static gboolean gtkWebBrowserNavigate_WK1(WebKitWebView* web_view, WebKitWebFram
   if (cb)
   {
     if (cb(ih, (char*)webkit_network_request_get_uri(request)) == IUP_IGNORE)
+    {
+      webkit_web_policy_decision_ignore(policy_decision);
       return TRUE;
+    }
   }
 
   (void)web_view;
   (void)frame;
   (void)navigation_action;
-  (void)policy_decision;
   return FALSE;
 }
 #endif

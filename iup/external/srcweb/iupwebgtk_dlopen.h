@@ -163,6 +163,7 @@ static JSValueRef (*webkit_javascript_result_get_value)(WebKitJavascriptResult* 
 static JSCValue* (*webkit_javascript_result_get_js_value)(WebKitJavascriptResult* js_result);
 static void (*webkit_javascript_result_unref)(WebKitJavascriptResult* js_result);
 static WebKitNavigationAction* (*webkit_navigation_policy_decision_get_navigation_action)(WebKitNavigationPolicyDecision* decision);
+static void (*webkit_policy_decision_ignore)(WebKitPolicyDecision* decision);
 static WebKitURIRequest* (*webkit_navigation_action_get_request)(WebKitNavigationAction* navigation);
 static const gchar* (*webkit_uri_request_get_uri)(WebKitURIRequest* request);
 static WebKitUserContentManager* (*webkit_user_content_manager_new)(void);
@@ -227,6 +228,7 @@ static void (*webkit_web_view_go_back_or_forward)(WebKitWebView* web_view, gint 
 static void (*webkit_web_view_execute_script)(WebKitWebView* web_view, const gchar* script);
 static const gchar* (*webkit_web_frame_get_uri)(WebKitWebFrame* frame);
 static WebKitWebNavigationAction* (*webkit_web_policy_decision_get_navigation_action)(WebKitWebPolicyDecision* policy_decision);
+static void (*webkit_web_policy_decision_ignore)(WebKitWebPolicyDecision* policy_decision);
 
 
 static void iupgtkWebBrowser_ClearDLSymbols()
@@ -270,6 +272,7 @@ static void iupgtkWebBrowser_ClearDLSymbols()
   webkit_javascript_result_get_js_value = NULL;
   webkit_javascript_result_unref = NULL;
   webkit_navigation_policy_decision_get_navigation_action = NULL;
+  webkit_policy_decision_ignore = NULL;
   webkit_navigation_action_get_request = NULL;
   webkit_uri_request_get_uri = NULL;
 
@@ -320,6 +323,7 @@ static void iupgtkWebBrowser_ClearDLSymbols()
   webkit_web_view_execute_script = NULL;
   webkit_web_frame_get_uri = NULL;
   webkit_web_policy_decision_get_navigation_action = NULL;
+  webkit_web_policy_decision_ignore = NULL;
 }
 
 static int iupgtkWebBrowser_SetDLSymbolsWK2(void* webkit_library)
@@ -363,6 +367,7 @@ static int iupgtkWebBrowser_SetDLSymbolsWK2(void* webkit_library)
   webkit_javascript_result_get_js_value = (JSCValue* (*)(WebKitJavascriptResult*))dlsym(webkit_library, "webkit_javascript_result_get_js_value");
   webkit_javascript_result_unref = (void (*)(WebKitJavascriptResult*))dlsym(webkit_library, "webkit_javascript_result_unref");
   webkit_navigation_policy_decision_get_navigation_action = (WebKitNavigationAction* (*)(WebKitNavigationPolicyDecision*))dlsym(webkit_library, "webkit_navigation_policy_decision_get_navigation_action");
+  webkit_policy_decision_ignore = (void (*)(WebKitPolicyDecision*))dlsym(webkit_library, "webkit_policy_decision_ignore");
   webkit_navigation_action_get_request = (WebKitURIRequest* (*)(WebKitNavigationAction*))dlsym(webkit_library, "webkit_navigation_action_get_request");
   webkit_uri_request_get_uri = (const gchar* (*)(WebKitURIRequest*))dlsym(webkit_library, "webkit_uri_request_get_uri");
   webkit_user_content_manager_new = (WebKitUserContentManager* (*)(void))dlsym(webkit_library, "webkit_user_content_manager_new");
@@ -391,7 +396,8 @@ static int iupgtkWebBrowser_SetDLSymbolsWK2(void* webkit_library)
   JSValueIsUndefined = (int (*)(JSGlobalContextRef, JSValueRef))dlsym(webkit_library, "JSValueIsUndefined");
 
   if (!webkit_web_view_new || !webkit_web_view_load_html ||
-      !webkit_navigation_policy_decision_get_navigation_action || !webkit_navigation_action_get_request || !webkit_uri_request_get_uri)
+      !webkit_navigation_policy_decision_get_navigation_action || !webkit_navigation_action_get_request || !webkit_uri_request_get_uri ||
+      !webkit_policy_decision_ignore)
     return 0;
 
   return 1;
@@ -436,6 +442,7 @@ static int iupgtkWebBrowser_SetDLSymbolsWK1(void* webkit_library)
   webkit_web_view_execute_script = (void (*)(WebKitWebView*, const gchar*))dlsym(webkit_library, "webkit_web_view_execute_script");
   webkit_web_frame_get_uri = (const gchar* (*)(WebKitWebFrame*))dlsym(webkit_library, "webkit_web_frame_get_uri");
   webkit_web_policy_decision_get_navigation_action = (WebKitWebNavigationAction* (*)(WebKitWebPolicyDecision*))dlsym(webkit_library, "webkit_web_policy_decision_get_navigation_action");
+  webkit_web_policy_decision_ignore = (void (*)(WebKitWebPolicyDecision*))dlsym(webkit_library, "webkit_web_policy_decision_ignore");
 
   webkit_web_frame_get_global_context = (JSGlobalContextRef (*)(WebKitWebFrame*))dlsym(webkit_library, "webkit_web_frame_get_global_context");
   JSStringCreateWithUTF8CString = (JSStringRef (*)(const char*))dlsym(webkit_library, "JSStringCreateWithUTF8CString");
@@ -447,7 +454,8 @@ static int iupgtkWebBrowser_SetDLSymbolsWK1(void* webkit_library)
   JSValueIsNull = (int (*)(JSGlobalContextRef, JSValueRef))dlsym(webkit_library, "JSValueIsNull");
   JSValueIsUndefined = (int (*)(JSGlobalContextRef, JSValueRef))dlsym(webkit_library, "JSValueIsUndefined");
 
-  if (!webkit_web_view_new || !webkit_web_view_load_string || !webkit_web_view_get_main_frame)
+  if (!webkit_web_view_new || !webkit_web_view_load_string || !webkit_web_view_get_main_frame ||
+      !webkit_web_policy_decision_ignore)
     return 0;
 
   return 1;
@@ -487,6 +495,7 @@ static int iupgtkWebBrowser_SetDLSymbolsWK6(void* webkit_library)
   webkit_print_operation_print = (void (*)(WebKitPrintOperation*))dlsym(webkit_library, "webkit_print_operation_print");
   webkit_web_view_is_loading = (gboolean (*)(WebKitWebView*))dlsym(webkit_library, "webkit_web_view_is_loading");
   webkit_navigation_policy_decision_get_navigation_action = (WebKitNavigationAction* (*)(WebKitNavigationPolicyDecision*))dlsym(webkit_library, "webkit_navigation_policy_decision_get_navigation_action");
+  webkit_policy_decision_ignore = (void (*)(WebKitPolicyDecision*))dlsym(webkit_library, "webkit_policy_decision_ignore");
   webkit_navigation_action_get_request = (WebKitURIRequest* (*)(WebKitNavigationAction*))dlsym(webkit_library, "webkit_navigation_action_get_request");
   webkit_uri_request_get_uri = (const gchar* (*)(WebKitURIRequest*))dlsym(webkit_library, "webkit_uri_request_get_uri");
   webkit_user_content_manager_new = (WebKitUserContentManager* (*)(void))dlsym(webkit_library, "webkit_user_content_manager_new");
@@ -513,7 +522,8 @@ static int iupgtkWebBrowser_SetDLSymbolsWK6(void* webkit_library)
 
   if (!webkit_web_view_new || !webkit_web_view_load_html ||
       !webkit_web_view_evaluate_javascript || !jsc_value_to_string ||
-      !webkit_navigation_policy_decision_get_navigation_action || !webkit_navigation_action_get_request || !webkit_uri_request_get_uri)
+      !webkit_navigation_policy_decision_get_navigation_action || !webkit_navigation_action_get_request || !webkit_uri_request_get_uri ||
+      !webkit_policy_decision_ignore)
     return 0;
 
   return 1;

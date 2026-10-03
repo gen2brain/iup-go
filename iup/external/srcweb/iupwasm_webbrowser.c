@@ -73,7 +73,7 @@ EM_JS(void, iupwasmJsWebDesignMode, (int id, int on), { globalThis.__iupApply({ 
 EM_JS(int, iupwasmJsWebGetDesignMode, (int id), {
   if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'webdesignmodeget', id: id });
   var el = globalThis.__iup.els[id];
-  try { return (el.contentDocument.designMode === "on") ? 1 : 0; } catch (e) { return 0; }
+  return (el && el.__iupEdit) ? 1 : 0;
 })
 
 EM_JS(int, iupwasmJsWebGetDirty, (int id), {
@@ -119,7 +119,20 @@ EM_JS(void, iupwasmJsWebSetAttr, (int id, const char* elemId, const char* name, 
 
 EM_JS(void, iupwasmJsWebFind, (int id), { globalThis.__iupApply({ op: 'webfind', id: id }); })
 
-EMSCRIPTEN_KEEPALIVE void iupwasmWebOnLoad(int id)
+EM_JS(void, iupwasmJsWebNavigate, (int id, const char* url), {
+  globalThis.__iupApply({ op: 'webnavigate', id: id, url: UTF8ToString(url) });
+})
+
+static int wasmWebIsScriptUrl(const char* url)
+{
+  while (*url == ' ' || *url == '\t' || *url == '\n' || *url == '\r' || *url == '\f')
+    url++;
+
+  return iupStrEqualNoCasePartial(url, "javascript:") ||
+         iupStrEqualNoCasePartial(url, "vbscript:");
+}
+
+EMSCRIPTEN_KEEPALIVE void iupwasmWebOnLoad(int id, const char* url)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
   wasmWebUrlCb cb;
@@ -132,21 +145,42 @@ EMSCRIPTEN_KEEPALIVE void iupwasmWebOnLoad(int id)
 
   iupAttribSet(ih, "_IUPWEB_STATUS", "COMPLETED");
 
+  if (!url || !*url)
+    url = iupAttribGet(ih, "_IUPWEB_URL");
+
   cb = (wasmWebUrlCb)IupGetCallback(ih, "COMPLETED_CB");
   if (cb)
-  {
-    char* url = iupAttribGet(ih, "_IUPWEB_URL");
-    cb(ih, url ? url : (char*)"");
-  }
+    cb(ih, url ? (char*)url : (char*)"");
 }
 
-static int wasmWebIsScriptUrl(const char* url)
+EMSCRIPTEN_KEEPALIVE void iupwasmWebOnNavigate(int id, const char* url)
 {
-  while (*url == ' ' || *url == '\t' || *url == '\n' || *url == '\r' || *url == '\f')
-    url++;
+  Ihandle* ih = iupwasmHandleFromId(id);
+  wasmWebUrlCb cb;
+  if (!ih || !url || wasmWebIsScriptUrl(url))
+    return;
 
-  return iupStrEqualNoCasePartial(url, "javascript:") ||
-         iupStrEqualNoCasePartial(url, "vbscript:");
+  cb = (wasmWebUrlCb)IupGetCallback(ih, "NAVIGATE_CB");
+  if (cb && cb(ih, (char*)url) == IUP_IGNORE)
+    return;
+
+  iupAttribSetStr(ih, "_IUPWEB_URL", url);
+  iupAttribSet(ih, "_IUPWEB_STATUS", "LOADING");
+  iupwasmJsWebNavigate(id, url);
+}
+
+EMSCRIPTEN_KEEPALIVE void iupwasmWebOnNewWindow(int id, const char* url)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  wasmWebUrlCb cb;
+  if (!ih || !url)
+    return;
+
+  cb = (wasmWebUrlCb)IupGetCallback(ih, "NEWWINDOW_CB");
+  if (cb && cb(ih, (char*)url) == IUP_IGNORE)
+    return;
+
+  IupSetStrAttribute(ih, "VALUE", url);
 }
 
 static int wasmWebSetValueAttrib(Ihandle* ih, const char* value)
@@ -381,8 +415,8 @@ static char* wasmWebQuery(Ihandle* ih, int kind)
   return r;
 }
 
-static char* wasmWebGetCommandStateAttrib(Ihandle* ih)   { return wasmWebQuery(ih, 0); }
-static char* wasmWebGetCommandEnabledAttrib(Ihandle* ih) { return wasmWebQuery(ih, 1); }
+static char* wasmWebGetCommandStateAttrib(Ihandle* ih)   { return iupStrReturnBoolean(iupStrBoolean(wasmWebQuery(ih, 0))); }
+static char* wasmWebGetCommandEnabledAttrib(Ihandle* ih) { return iupStrReturnBoolean(iupStrBoolean(wasmWebQuery(ih, 1))); }
 static char* wasmWebGetCommandValueAttrib(Ihandle* ih)   { return wasmWebQuery(ih, 2); }
 
 static int wasmWebSetInnerTextAttrib(Ihandle* ih, const char* value)

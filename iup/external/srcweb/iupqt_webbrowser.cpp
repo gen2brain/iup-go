@@ -227,7 +227,7 @@ static char* qtWebBrowserGetItemHistoryAttrib(Ihandle* ih, int id)
   if (!history)
     return nullptr;
 
-  QWebEngineHistoryItem item = history->itemAt(id);
+  QWebEngineHistoryItem item = history->itemAt(history->currentItemIndex() + id);
   if (!item.isValid())
     return nullptr;
 
@@ -699,13 +699,7 @@ static char* qtWebBrowserGetEditableAttrib(Ihandle* ih)
     return nullptr;
 
   char* result = qtWebBrowserRunJavaScriptSync(ih, "document.body.contentEditable == 'true';");
-  if (result)
-  {
-    int val = strcmp(result, "true") == 0;
-    free(result);
-    return iupStrReturnBoolean(val);
-  }
-  return iupStrReturnBoolean(0);
+  return iupStrReturnBoolean(result && strcmp(result, "true") == 0);
 }
 
 /****************************************************************************
@@ -719,6 +713,7 @@ static int qtWebBrowserSetCopyAttrib(Ihandle* ih, const char* value)
   if (!webview)
     return 0;
 
+  webview->setFocus();
   webview->page()->triggerAction(QWebEnginePage::Copy);
   return 0;
 }
@@ -730,6 +725,7 @@ static int qtWebBrowserSetCutAttrib(Ihandle* ih, const char* value)
   if (!webview)
     return 0;
 
+  webview->setFocus();
   webview->page()->triggerAction(QWebEnginePage::Cut);
   return 0;
 }
@@ -741,6 +737,7 @@ static int qtWebBrowserSetPasteAttrib(Ihandle* ih, const char* value)
   if (!webview)
     return 0;
 
+  webview->setFocus();
   webview->page()->triggerAction(QWebEnginePage::Paste);
   return 0;
 }
@@ -752,6 +749,7 @@ static int qtWebBrowserSetSelectAllAttrib(Ihandle* ih, const char* value)
   if (!webview)
     return 0;
 
+  webview->setFocus();
   webview->page()->triggerAction(QWebEnginePage::SelectAll);
   return 0;
 }
@@ -763,6 +761,7 @@ static int qtWebBrowserSetUndoAttrib(Ihandle* ih, const char* value)
   if (!webview)
     return 0;
 
+  webview->setFocus();
   webview->page()->triggerAction(QWebEnginePage::Undo);
   return 0;
 }
@@ -774,6 +773,7 @@ static int qtWebBrowserSetRedoAttrib(Ihandle* ih, const char* value)
   if (!webview)
     return 0;
 
+  webview->setFocus();
   webview->page()->triggerAction(QWebEnginePage::Redo);
   return 0;
 }
@@ -799,6 +799,7 @@ static int qtWebBrowserExecCommandAttrib(Ihandle* ih, const char* value)
 
   free(escaped);
 
+  webview->setFocus();
   webview->page()->runJavaScript(js);
   return 0;
 }
@@ -820,6 +821,7 @@ static int qtWebBrowserExecCommandWithParamAttrib(Ihandle* ih, const char* cmd, 
   if (escaped_param)
     free(escaped_param);
 
+  webview->setFocus();
   webview->page()->runJavaScript(js);
   return 0;
 }
@@ -1073,7 +1075,8 @@ static int qtWebBrowserSetCreateLinkAttrib(Ihandle* ih, const char* value)
 
 static int qtWebBrowserSetInsertTextAttrib(Ihandle* ih, const char* value)
 {
-  if (!value)
+  auto* webview = reinterpret_cast<QWebEngineView*>(ih->handle);
+  if (!webview || !value)
     return 0;
 
   char* escaped = qtWebBrowserEscapeJavaScript(value);
@@ -1082,6 +1085,7 @@ static int qtWebBrowserSetInsertTextAttrib(Ihandle* ih, const char* value)
     "if (window.iupRestoreSelection) window.iupRestoreSelection(); "
     "document.execCommand('insertText', false, %s);",
     escaped);
+  webview->setFocus();
   qtWebBrowserRunJavaScript(ih, "%s", js);
   free(escaped);
 
@@ -1174,12 +1178,7 @@ static char* qtWebBrowserGetCommandStateAttrib(Ihandle* ih)
   {
     const char* js_cmd = qtWebBrowserMapCommandName(cmd);
     char* result = qtWebBrowserQueryCommandState(ih, js_cmd);
-    if (result)
-    {
-      char* ret = iupStrReturnStr(result);
-      free(result);
-      return ret;
-    }
+    return iupStrReturnBoolean(result && strcmp(result, "true") == 0);
   }
   return iupStrReturnBoolean(0);
 }
@@ -1191,12 +1190,7 @@ static char* qtWebBrowserGetCommandEnabledAttrib(Ihandle* ih)
   {
     const char* js_cmd = qtWebBrowserMapCommandName(cmd);
     char* result = qtWebBrowserQueryCommandEnabled(ih, js_cmd);
-    if (result)
-    {
-      char* ret = iupStrReturnStr(result);
-      free(result);
-      return ret;
-    }
+    return iupStrReturnBoolean(result && strcmp(result, "true") == 0);
   }
   return iupStrReturnBoolean(0);
 }
@@ -1209,11 +1203,7 @@ static char* qtWebBrowserGetCommandValueAttrib(Ihandle* ih)
     const char* js_cmd = qtWebBrowserMapCommandName(cmd);
     char* result = qtWebBrowserQueryCommandValue(ih, js_cmd);
     if (result)
-    {
-      char* ret = iupStrReturnStr(result);
-      free(result);
-      return ret;
-    }
+      return result;
   }
   return iupStrReturnStr("");
 }
@@ -1297,6 +1287,41 @@ static int qtWebBrowserSetFindAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static const char* qtWebBrowserInitScript =
+  "(function() {"
+  "  if (window.iupGetDirtyFlag) return;"
+  "  var iupSavedRange = null;"
+  "  var iupDirtyFlag = false;"
+  "  document.addEventListener('selectionchange', function() {"
+  "    var sel = window.getSelection();"
+  "    if (sel.rangeCount > 0) {"
+  "      iupSavedRange = sel.getRangeAt(0).cloneRange();"
+  "    }"
+  "  });"
+  "  document.addEventListener('input', function(e) {"
+  "    if (document.body.contentEditable == 'true') {"
+  "      iupDirtyFlag = true;"
+  "    }"
+  "  });"
+  "  window.iupRestoreSelection = function() {"
+  "    if (document.body.contentEditable == 'true' && iupSavedRange) {"
+  "      try {"
+  "        var sel = window.getSelection();"
+  "        if (!sel.isCollapsed && document.body.contains(sel.anchorNode)) return;"
+  "        sel.removeAllRanges();"
+  "        sel.addRange(iupSavedRange);"
+  "      } catch (e) {}"
+  "    }"
+  "  };"
+  "  window.iupGetDirtyFlag = function() {"
+  "    return iupDirtyFlag;"
+  "  };"
+  "  window.iupClearDirtyFlag = function() {"
+  "    iupDirtyFlag = false;"
+  "  };"
+  "  document.body.style.overflow = 'auto';"
+  "})();";
+
 /****************************************************************************
  * Dirty Flag Support
  ****************************************************************************/
@@ -1328,8 +1353,6 @@ public:
     connect(this, &QWebEngineView::loadFinished, this, &IupQtWebBrowser::onLoadFinished);
     connect(this, &QWebEngineView::loadProgress, this, &IupQtWebBrowser::onLoadProgress);
     connect(this, &QWebEngineView::urlChanged, this, &IupQtWebBrowser::onUrlChanged);
-
-    connect(page(), &QWebEnginePage::windowCloseRequested, this, &IupQtWebBrowser::onWindowCloseRequested);
   }
 
 private:
@@ -1339,19 +1362,6 @@ private:
       return;
 
     iupAttribSet(ih, "_IUPQT_WEB_LOADING", "YES");
-
-    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NAVIGATE_CB"));
-    if (cb)
-    {
-      QUrl url = this->url();
-      QString url_str = url.toString();
-
-      int result = cb(ih, const_cast<char*>(url_str.toUtf8().constData()));
-      if (result == IUP_IGNORE)
-      {
-        this->stop();
-      }
-    }
 
     qtWebBrowserUpdateHistory(ih);
   }
@@ -1365,6 +1375,7 @@ private:
 
     if (ok)
     {
+      page()->runJavaScript(QString::fromUtf8(qtWebBrowserInitScript));
       if (iupAttribGet(ih, "_IUPWEB_EDITABLE"))
         page()->runJavaScript("document.body.contentEditable = 'true';");
       else
@@ -1406,17 +1417,6 @@ private:
     (void)url;
     qtWebBrowserUpdateHistory(ih);
   }
-
-  void onWindowCloseRequested()
-  {
-    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NEWWINDOW_CB"));
-    if (cb)
-    {
-      QUrl url = this->url();
-      QString url_str = url.toString();
-      cb(ih, const_cast<char*>(url_str.toUtf8().constData()));
-    }
-  }
 };
 
 /****************************************************************************
@@ -1427,6 +1427,7 @@ class IupQtWebPage : public QWebEnginePage
 {
 public:
   Ihandle* ih;
+  QPointer<IupQtWebPage> opener;
 
   IupQtWebPage(QWebEngineProfile* profile, Ihandle* ih_param)
     : QWebEnginePage(profile), ih(ih_param)
@@ -1434,24 +1435,40 @@ public:
   }
 
 protected:
+  bool acceptNavigationRequest(const QUrl& url, QWebEnginePage::NavigationType type, bool isMainFrame) override
+  {
+    if (opener)
+    {
+      Ihandle* opener_ih = opener->ih;
+      if (opener_ih)
+      {
+        IFns cb = reinterpret_cast<IFns>(IupGetCallback(opener_ih, "NEWWINDOW_CB"));
+        if (!cb || cb(opener_ih, const_cast<char*>(url.toString().toUtf8().constData())) != IUP_IGNORE)
+          opener->setUrl(url);
+      }
+      opener = nullptr;
+      deleteLater();
+      return false;
+    }
+
+    if (ih && isMainFrame && !iupAttribGet(ih, "_IUPWEB_IGNORE_NAVIGATE"))
+    {
+      IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NAVIGATE_CB"));
+      if (cb && cb(ih, const_cast<char*>(url.toString().toUtf8().constData())) == IUP_IGNORE)
+        return false;
+    }
+
+    return QWebEnginePage::acceptNavigationRequest(url, type, isMainFrame);
+  }
+
   QWebEnginePage* createWindow(QWebEnginePage::WebWindowType type) override
   {
     (void)type;
 
-    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NEWWINDOW_CB"));
-    if (cb)
-    {
-      QUrl url = this->url();
-      QString url_str = url.toString();
-
-      int result = cb(ih, const_cast<char*>(url_str.toUtf8().constData()));
-      if (result == IUP_IGNORE)
-      {
-        return nullptr;
-      }
-    }
-
-    return this;
+    auto* popup = new IupQtWebPage(profile(), nullptr);
+    popup->setParent(this);
+    popup->opener = this;
+    return popup;
   }
 };
 
@@ -1471,42 +1488,9 @@ static int qtWebBrowserMapMethod(Ihandle* ih)
   settings->setAttribute(QWebEngineSettings::LocalStorageEnabled, true);
   settings->setAttribute(QWebEngineSettings::PluginsEnabled, true);
 
-  const char* init_script =
-    "(function() {"
-    "  var iupSavedRange = null;"
-    "  var iupDirtyFlag = false;"
-    "  document.addEventListener('selectionchange', function() {"
-    "    var sel = window.getSelection();"
-    "    if (sel.rangeCount > 0) {"
-    "      iupSavedRange = sel.getRangeAt(0).cloneRange();"
-    "    }"
-    "  });"
-    "  document.addEventListener('input', function(e) {"
-    "    if (document.body.contentEditable == 'true') {"
-    "      iupDirtyFlag = true;"
-    "    }"
-    "  });"
-    "  window.iupRestoreSelection = function() {"
-    "    if (document.body.contentEditable == 'true' && iupSavedRange) {"
-    "      try {"
-    "        var sel = window.getSelection();"
-    "        sel.removeAllRanges();"
-    "        sel.addRange(iupSavedRange);"
-    "      } catch (e) {}"
-    "    }"
-    "  };"
-    "  window.iupGetDirtyFlag = function() {"
-    "    return iupDirtyFlag;"
-    "  };"
-    "  window.iupClearDirtyFlag = function() {"
-    "    iupDirtyFlag = false;"
-    "  };"
-    "  document.body.style.overflow = 'auto';"
-    "})();";
-
   QWebEngineScript script;
   script.setName("IupEditorInit");
-  script.setSourceCode(QString::fromUtf8(init_script));
+  script.setSourceCode(QString::fromUtf8(qtWebBrowserInitScript));
   script.setInjectionPoint(QWebEngineScript::DocumentReady);
   script.setRunsOnSubFrames(false);
   script.setWorldId(QWebEngineScript::MainWorld);
@@ -1601,6 +1585,7 @@ extern "C" Iclass* iupWebBrowserNewClass(void)
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
+  ic->has_attrib_id = 1;
 
   /* Class functions */
   ic->New = iupWebBrowserNewClass;

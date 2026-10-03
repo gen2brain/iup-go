@@ -213,22 +213,21 @@ static char* androidWebBrowserCallString(Ihandle* ih, jmethodID* cache_slot, con
 static int androidWebBrowserSetValueAttrib(Ihandle* ih, const char* value)
 {
   static jmethodID s_loadUrl = 0;
+  IFns cb;
+  char* url;
   if (!value) return 0;
 
   if (iupStrEqualPartial(value, "http://") || iupStrEqualPartial(value, "https://") ||
       iupStrEqualPartial(value, "file://") || iupStrEqualPartial(value, "ftp://"))
-  {
-    androidWebBrowserCallVoidStr(ih, &s_loadUrl, "loadUrl", "(Landroid/view/View;Ljava/lang/String;)V", value);
-  }
+    url = iupStrDup(value);
   else
-  {
-    char* url = iupStrFileMakeURL(value);
-    if (url)
-    {
-      androidWebBrowserCallVoidStr(ih, &s_loadUrl, "loadUrl", "(Landroid/view/View;Ljava/lang/String;)V", url);
-      free(url);
-    }
-  }
+    url = iupStrFileMakeURL(value);
+  if (!url) return 0;
+
+  cb = (IFns)IupGetCallback(ih, "NAVIGATE_CB");
+  if (!cb || cb(ih, url) != IUP_IGNORE)
+    androidWebBrowserCallVoidStr(ih, &s_loadUrl, "loadUrl", "(Landroid/view/View;Ljava/lang/String;)V", url);
+  free(url);
   return 0;
 }
 
@@ -682,15 +681,19 @@ static int androidWebBrowserSetInsertHtmlAttrib(Ihandle* ih, const char* value)
 static char* androidWebBrowserGetCommandStateAttrib(Ihandle* ih)
 {
   const char* cmd = iupAttribGet(ih, "COMMAND");
-  if (!cmd) return NULL;
-  return androidWebBrowserQueryCommand(ih, "State", cmd);
+  char* result;
+  if (!cmd) return iupStrReturnBoolean(0);
+  result = androidWebBrowserQueryCommand(ih, "State", cmd);
+  return iupStrReturnBoolean(result && strcmp(result, "true") == 0);
 }
 
 static char* androidWebBrowserGetCommandEnabledAttrib(Ihandle* ih)
 {
   const char* cmd = iupAttribGet(ih, "COMMAND");
-  if (!cmd) return NULL;
-  return androidWebBrowserQueryCommand(ih, "Enabled", cmd);
+  char* result;
+  if (!cmd) return iupStrReturnBoolean(0);
+  result = androidWebBrowserQueryCommand(ih, "Enabled", cmd);
+  return iupStrReturnBoolean(result && strcmp(result, "true") == 0);
 }
 
 static char* androidWebBrowserGetCommandValueAttrib(Ihandle* ih)
