@@ -328,48 +328,104 @@ static void cocoaToggleDeselectRadio(Ihandle* radio, Ihandle* ih)
 
 IUP_SDK_API void iupdrvToggleAddBorders(Ihandle* ih, int* x, int* y)
 {
-  static int border = -1;
-  (void)ih;
+  static int border[4] = {-1, -1, -1, -1};
+  NSControlSize size = ih ? iupcocoaGetControlSize(ih) : NSControlSizeRegular;
 
-  if (border == -1)
+  if (border[size] == -1)
   {
     NSButton* temp_button = [[NSButton alloc] initWithFrame:NSZeroRect];
     NSImage* temp_image = [[NSImage alloc] initWithSize:NSMakeSize(16, 16)];
 
     [temp_button setButtonType:NSButtonTypePushOnPushOff];
     [temp_button setBezelStyle:IUPCOCOA_PUSH_BEZEL];
+    iupcocoaSetViewControlSize(temp_button, size);
     [temp_button setImage:temp_image];
     [temp_button setImagePosition:NSImageOnly];
 
-    border = (int)lroundf([temp_button fittingSize].height) - 16;
-    if (border < 0) border = 0;
+    border[size] = (int)lroundf([temp_button fittingSize].height) - 16;
+    if (border[size] < 0) border[size] = 0;
 
     [temp_image release];
     [temp_button release];
   }
 
-  *x += border;
-  *y += border;
+  *x += border[size];
+  *y += border[size];
 }
+
+#ifndef GNUSTEP
+static NSSize cocoaToggleSwitchDrawnSize(NSControlSize size)
+{
+  NSSwitch* temp_switch = [[NSSwitch alloc] initWithFrame:NSZeroRect];
+  NSSize frame_size = [temp_switch intrinsicContentSize];
+  NSSize drawn = frame_size;
+  NSBitmapImageRep* rep;
+  NSInteger px_w, px_h, px, py;
+  NSInteger x0, y0, x1, y1;
+  CGFloat scale;
+
+  [temp_switch setFrame:NSMakeRect(0, 0, frame_size.width, frame_size.height)];
+  [temp_switch setControlSize:size];
+  [temp_switch setState:NSControlStateValueOn];
+
+  rep = [temp_switch bitmapImageRepForCachingDisplayInRect:[temp_switch bounds]];
+  [temp_switch cacheDisplayInRect:[temp_switch bounds] toBitmapImageRep:rep];
+
+  px_w = [rep pixelsWide];
+  px_h = [rep pixelsHigh];
+  x0 = px_w; y0 = px_h; x1 = -1; y1 = -1;
+  for (py = 0; py < px_h; py++)
+  {
+    for (px = 0; px < px_w; px++)
+    {
+      if ([[rep colorAtX:px y:py] alphaComponent] > 0.03)
+      {
+        if (px < x0) x0 = px;
+        if (py < y0) y0 = py;
+        if (px > x1) x1 = px;
+        if (py > y1) y1 = py;
+      }
+    }
+  }
+
+  scale = (frame_size.width > 0) ? (CGFloat)px_w / frame_size.width : 1;
+  if (x1 >= x0 && y1 >= y0 && scale > 0)
+  {
+    drawn.width = (x1 - x0 + 1) / scale;
+    drawn.height = (y1 - y0 + 1) / scale;
+  }
+
+  [temp_switch release];
+  return drawn;
+}
+#endif
 
 IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* str)
 {
-  static int switch_w = -1;
-  static int switch_h = -1;
-  (void)ih;
+  static int switch_w[4] = {-1, -1, -1, -1};
+  static int switch_h[4];
+  NSControlSize control_size = ih ? iupcocoaGetControlSize(ih) : NSControlSizeRegular;
 
-  if (switch_w < 0)
+  if (switch_w[control_size] < 0)
   {
-    NSSwitch* temp_switch = [[NSSwitch alloc] initWithFrame:NSZeroRect];
-    NSSize size = [temp_switch intrinsicContentSize];
-    [temp_switch release];
+    NSSize size;
+#ifndef GNUSTEP
+    if (control_size != NSControlSizeRegular)
+      size = cocoaToggleSwitchDrawnSize(control_size);
+    else
+#endif
+    {
+      NSSwitch* temp_switch = [[NSSwitch alloc] initWithFrame:NSZeroRect];
+      size = [temp_switch intrinsicContentSize];
+      [temp_switch release];
+    }
 
-    switch_w = (size.width > 0) ? (int)ceilf(size.width) : 38;
-    switch_h = (size.height > 0) ? (int)ceilf(size.height) : 21;
+    switch_w[control_size] = (size.width > 0) ? (int)ceilf(size.width) : 38;
+    switch_h[control_size] = (size.height > 0) ? (int)ceilf(size.height) : 21;
   }
 
-  *x += 2 + switch_w + 2;
-  if ((*y) < 2 + switch_h + 2) *y = 2 + switch_h + 2;
+  *x += 2 + switch_w[control_size] + 2;
+  if ((*y) < 2 + switch_h[control_size] + 2) *y = 2 + switch_h[control_size] + 2;
   else *y += 2+2;
 
   if (str && str[0])
@@ -378,24 +434,29 @@ IUP_SDK_API void iupdrvToggleAddSwitch(Ihandle* ih, int* x, int* y, const char* 
 
 IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y, const char* str)
 {
-  static int check_w = -1;
-  static int check_h = -1;
-  (void)ih;
+  static int check_w[4] = {-1, -1, -1, -1};
+  static int check_h[4];
+  NSControlSize size = ih ? iupcocoaGetControlSize(ih) : NSControlSizeRegular;
 
-  if (check_w < 0)
+  if (check_w[size] < 0)
   {
     NSButton* temp_button = [[NSButton alloc] initWithFrame:NSZeroRect];
     [temp_button setButtonType:NSButtonTypeSwitch];
+    if (size != NSControlSizeRegular)
+    {
+      iupcocoaSetViewControlSize(temp_button, size);
+      [temp_button setFont:iupcocoaGetControlSizeFont(size)];
+    }
     [temp_button setTitle:@""];
-    NSSize size = [temp_button intrinsicContentSize];
+    NSSize nsize = [temp_button intrinsicContentSize];
     [temp_button release];
 
-    check_w = (size.width > 0) ? (int)ceilf(size.width) : 18;
-    check_h = (size.height > 0) ? (int)ceilf(size.height) : 18;
+    check_w[size] = (nsize.width > 0) ? (int)ceilf(nsize.width) : 18;
+    check_h[size] = (nsize.height > 0) ? (int)ceilf(nsize.height) : 18;
   }
 
-  *x += check_w;
-  if (*y < check_h) *y = check_h;
+  *x += check_w[size];
+  if (*y < check_h[size]) *y = check_h[size];
 
   *x += 4;
   *y += 4;

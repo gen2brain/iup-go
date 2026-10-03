@@ -891,14 +891,16 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
 
 IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
-  static int spin_arrow_width = -1;
+  static int spin_arrow_widths[4] = {-1, -1, -1, -1};
+  NSControlSize size = ih ? iupcocoaGetControlSize(ih) : NSControlSizeRegular;
+  int spin_arrow_width = spin_arrow_widths[size];
 
   (void)h;
-  (void)ih;
 
   if (spin_arrow_width < 0)
   {
     NSStepper* temp_stepper = [[NSStepper alloc] initWithFrame:NSZeroRect];
+    iupcocoaSetViewControlSize(temp_stepper, size);
     [temp_stepper setMinValue:0];
     [temp_stepper setMaxValue:100];
     [temp_stepper setIncrement:1];
@@ -907,6 +909,7 @@ IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
     int stepper_width = (int)ceilf(fittingSize.width);
     int spacing = 4;
     spin_arrow_width = stepper_width + spacing;
+    spin_arrow_widths[size] = spin_arrow_width;
 
     [temp_stepper release];
   }
@@ -916,12 +919,13 @@ IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 
 IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
 {
-  static int cocoa_textfield_border_w = -1;
-  static int cocoa_textfield_border_h = -1;
+  static int cocoa_textfield_border_ws[4] = {-1, -1, -1, -1};
+  static int cocoa_textfield_border_hs[4];
   static int cocoa_scrollview_border_w = -1;
   static int cocoa_scrollview_border_h = -1;
 
   IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
+  NSControlSize size = iupcocoaGetControlSize(ih);
 
   switch(sub_type)
   {
@@ -965,9 +969,7 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
         int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
         if (visiblelines > 0)
         {
-          static CGFloat cocoa_line_height = -1.0;
-
-          if (cocoa_line_height < 0.0)
+          CGFloat cocoa_line_height;
           {
             IupCocoaFont* iup_font = iupcocoaGetFont(ih);
             NSFont* font = [iup_font nativeFont];
@@ -1000,11 +1002,17 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
     case IUPCOCOATEXTSUBTYPE_FIELD:
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
-        if (cocoa_textfield_border_w < 0)
+        if (cocoa_textfield_border_ws[size] < 0)
         {
+          int cocoa_textfield_border_w, cocoa_textfield_border_h;
           NSTextField* temp_field = [[NSTextField alloc] initWithFrame:NSZeroRect];
           [temp_field setBordered:YES];
           [temp_field setBezeled:YES];
+          if (size != NSControlSizeRegular)
+          {
+            iupcocoaSetViewControlSize(temp_field, size);
+            [temp_field setFont:iupcocoaGetControlSizeFont(size)];
+          }
           [temp_field setStringValue:@"W"];
 
           NSFont* font = [temp_field font];
@@ -1022,11 +1030,14 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
           if (cocoa_textfield_border_w < 0) cocoa_textfield_border_w = 6;
           if (cocoa_textfield_border_h < 0) cocoa_textfield_border_h = 6;
 
+          cocoa_textfield_border_ws[size] = cocoa_textfield_border_w;
+          cocoa_textfield_border_hs[size] = cocoa_textfield_border_h;
+
           [temp_field release];
         }
 
-        *x += cocoa_textfield_border_w;
-        *y += cocoa_textfield_border_h;
+        *x += cocoa_textfield_border_ws[size];
+        *y += cocoa_textfield_border_hs[size];
         break;
       }
     default:
@@ -1038,13 +1049,24 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
 
 IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
 {
-  static int cocoa_textfield_extra_w = -1;
-  static int cocoa_textfield_extra_h = -1;
+  static int cocoa_textfield_extra_ws[4] = {-1, -1, -1, -1};
+  static int cocoa_textfield_extra_hs[4];
+  NSControlSize size = ih ? iupcocoaGetControlSize(ih) : NSControlSizeRegular;
+  int cocoa_textfield_extra_w = cocoa_textfield_extra_ws[size];
+  int cocoa_textfield_extra_h = cocoa_textfield_extra_hs[size];
 
   if (cocoa_textfield_extra_w < 0)
   {
     NSTextField* temp_bordered = [[NSTextField alloc] initWithFrame:NSZeroRect];
     NSTextField* temp_noframe = [[NSTextField alloc] initWithFrame:NSZeroRect];
+
+    if (size != NSControlSizeRegular)
+    {
+      iupcocoaSetViewControlSize(temp_bordered, size);
+      iupcocoaSetViewControlSize(temp_noframe, size);
+      [temp_bordered setFont:iupcocoaGetControlSizeFont(size)];
+      [temp_noframe setFont:iupcocoaGetControlSizeFont(size)];
+    }
 
     [temp_bordered setBordered:YES];
     [temp_bordered setBezeled:YES];
@@ -1084,11 +1106,13 @@ IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
     if (cocoa_textfield_extra_w < 0) cocoa_textfield_extra_w = 0;
     if (cocoa_textfield_extra_h < 0) cocoa_textfield_extra_h = 0;
 
+    cocoa_textfield_extra_ws[size] = cocoa_textfield_extra_w;
+    cocoa_textfield_extra_hs[size] = cocoa_textfield_extra_h;
+
     [temp_bordered release];
     [temp_noframe release];
   }
 
-  (void)ih;
   if (w) *w += cocoa_textfield_extra_w;
   if (h) *h += cocoa_textfield_extra_h;
 }
@@ -5463,6 +5487,7 @@ static int cocoaTextMapMethod(Ihandle* ih)
     NSTextField* text_field = [[IupCocoaTextField alloc] initWithFrame:NSZeroRect];
     NSStepper* stepper_view = [[NSStepper alloc] initWithFrame:NSZeroRect];
 
+    iupcocoaSetViewControlSize(stepper_view, iupcocoaGetControlSize(ih));
     [stepper_view sizeToFit];
     CGFloat stepper_width = NSWidth([stepper_view frame]);
     CGFloat stepper_height = NSHeight([stepper_view frame]);
