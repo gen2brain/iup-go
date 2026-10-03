@@ -119,6 +119,11 @@ IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int* keyval, unsigned int* st
  * \ingroup drv */
 IUP_SDK_API void iupdrvSleep(int time);
 
+/** Returns a monotonic time in milliseconds, for measuring intervals.
+ * Wraps around; compute differences with unsigned arithmetic.
+ * \ingroup drv */
+IUP_SDK_API unsigned int iupdrvGetTickCount(void);
+
 /** Sets the accessibility text for screen readers.
  * \ingroup drv */
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title);

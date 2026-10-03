@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <chrono>
 
 #include <FL/Fl.H>
 #include <FL/platform.H>
@@ -268,6 +269,12 @@ extern "C" IUP_SDK_API void iupdrvSleep(int time)
     double wait = (remaining > 0.1) ? 0.1 : remaining;
     Fl::wait(wait);
   }
+}
+
+extern "C" IUP_SDK_API unsigned int iupdrvGetTickCount(void)
+{
+  auto now = std::chrono::steady_clock::now().time_since_epoch();
+  return static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
 }
 
 /****************************************************************************

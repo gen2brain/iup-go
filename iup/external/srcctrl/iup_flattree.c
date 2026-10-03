@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "iup.h"
 #include "iupcontrols.h"
@@ -82,7 +81,7 @@ struct _IcontrolData
   int has_focus, focus_id;
   int last_selected_id;
   int dragover_id, dragged_id;  /* internal drag&drop */
-  clock_t last_clock;
+  unsigned int last_click;
 
   /* attributes */
   int add_expanded;
@@ -2204,9 +2203,8 @@ static int iFlatTreeButton_CB(Ihandle* ih, int button, int pressed, int x, int y
       {
         if (ih->data->show_rename && id == ih->data->focus_id && x > xmin + img_w + ih->data->icon_spacing)
         {
-          clock_t current_clock = clock();
-          clock_t diff_clock = current_clock - ih->data->last_clock;
-          if (diff_clock < 1000)
+          unsigned int current_click = iupdrvGetTickCount();
+          if (ih->data->last_click && current_click - ih->data->last_click < 1000)
           {
             IFni cb = (IFni)IupGetCallback(ih, "SHOWRENAME_CB");
             if (cb)
@@ -2218,7 +2216,7 @@ static int iFlatTreeButton_CB(Ihandle* ih, int button, int pressed, int x, int y
             return iFlatTreeRenameNode(ih, x - (xmin + img_w + ih->data->icon_spacing));
           }
 
-          ih->data->last_clock = current_clock;
+          ih->data->last_click = current_click;
         }
 
         /* single click in the image+title area */

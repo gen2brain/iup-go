@@ -1606,6 +1606,13 @@ IUP_SDK_API void iupdrvSleep(int time)
   usleep(time * 1000);
 }
 
+IUP_SDK_API unsigned int iupdrvGetTickCount(void)
+{
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (unsigned int)((unsigned long long)ts.tv_sec * 1000 + (unsigned long long)ts.tv_nsec / 1000000);
+}
+
 static void cocoaWarpPointer(int x, int y)
 {
 #ifndef GNUSTEP

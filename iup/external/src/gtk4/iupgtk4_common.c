@@ -867,6 +867,11 @@ IUP_SDK_API void iupdrvSleep(int time)
   g_usleep(time*1000);
 }
 
+IUP_SDK_API unsigned int iupdrvGetTickCount(void)
+{
+  return (unsigned int)(g_get_monotonic_time() / 1000);
+}
+
 IUP_SDK_API void iupdrvSetAccessibleTitle(Ihandle* ih, const char* title)
 {
   GtkWidget* widget = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");

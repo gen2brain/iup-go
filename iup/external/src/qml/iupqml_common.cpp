@@ -13,6 +13,7 @@
 #include <QCoreApplication>
 #include <QCursor>
 #include <QThread>
+#include <QElapsedTimer>
 #include <QEvent>
 #include <QMouseEvent>
 #include <QPalette>
@@ -823,6 +824,13 @@ extern "C" IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 extern "C" IUP_SDK_API void iupdrvSleep(int time)
 {
   QThread::msleep(time);
+}
+
+extern "C" IUP_SDK_API unsigned int iupdrvGetTickCount(void)
+{
+  QElapsedTimer timer;
+  timer.start();
+  return static_cast<unsigned int>(timer.msecsSinceReference());
 }
 
 extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
