@@ -35,7 +35,7 @@ The attributes marked with <sup>(*)</sup> are exclusive to the IupFlatTree and a
 
 #### [General](iup_flattree_attrib.md#general)
 
-AUTOREDRAW, BGCOLOR, BORDERCOLOR<sup>(*)</sup>, BORDERWIDTH<sup>(*)</sup>, COUNT, EXPAND, EXTRATEXTWIDTH<sup>(*)</sup>, FGCOLOR, HLCOLOR, HLCOLORALPHA<sup>(*)</sup>, PSCOLOR<sup>(*)</sup>, TEXTPSCOLOR<sup>(*)</sup>, ICONSPACING<sup>(*)</sup>, INDENTATION, RASTERSIZE, SPACING, TOPITEM
+AUTOREDRAW, BGCOLOR, BORDERCOLOR<sup>(*)</sup>, BORDERWIDTH<sup>(*)</sup>, COUNT, EXPAND, EXTRATEXTWIDTH<sup>(*)</sup>, FGCOLOR, HLCOLOR, HLCOLORALPHA<sup>(*)</sup>, PSCOLOR<sup>(*)</sup>, TEXTPSCOLOR<sup>(*)</sup>, ICONSPACING<sup>(*)</sup>, INDENTATION, RASTERSIZE, SPACING, TOPITEM, VISIBLECOLUMNS, VISIBLELINES
 
 #### [Expanders](iup_flattree_attrib.md)
 

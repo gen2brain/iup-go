@@ -4054,6 +4054,50 @@ static int iFlatTreeSetExtraTextAttrib(Ihandle* ih, int id, const char* value)
 
 /*********************************  Methods  ************************************/
 
+static void iFlatTreeComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
+{
+  const char* images[3] = {"IMAGELEAF", "IMAGEBRANCHCOLLAPSED", "IMAGEBRANCHEXPANDED"};
+  int i, char_h, img_w = 0, img_h = 0, line_h, sb;
+  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+  int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
+  (void)children_expand;
+
+  if (visiblecolumns <= 0) visiblecolumns = 20;
+  if (visiblelines <= 0) visiblelines = 8;
+
+  for (i = 0; i < 3; i++)
+  {
+    int image_w = 0, image_h = 0;
+    iupImageGetInfo(iupAttribGetStr(ih, images[i]), &image_w, &image_h, NULL);
+    img_w = iupMAX(img_w, image_w);
+    img_h = iupMAX(img_h, image_h);
+  }
+
+  iupdrvFontGetCharSize(ih, NULL, &char_h);
+  if (iupAttribGetBoolean(ih, "CANFOCUS") && iupAttribGetBoolean(ih, "FOCUSFEEDBACK"))
+    char_h += 2 * 2;
+  line_h = iupMAX(img_h, char_h) + ih->data->spacing;
+
+  *w = (visiblecolumns * iupdrvFontGetStringWidth(ih, "WWWWWWWWWW")) / 10;
+  *w += ih->data->indentation + img_w + ih->data->icon_spacing + ih->data->extratext_width;
+  if (ih->data->show_toggle)
+    *w += ih->data->toggle_size;
+  *h = visiblelines * line_h;
+
+  sb = iFlatTreeGetScrollbar(ih);
+  if (sb & IUP_SB_VERT)
+    *w += iFlatTreeGetScrollbarSize(ih);
+
+  *w += 2 * ih->data->border_width;
+  *h += 2 * ih->data->border_width;
+
+  if (iupAttribGetBoolean(ih, "BORDER")) /* native border around scrollbars */
+  {
+    *w += 2;
+    *h += 2;
+  }
+}
+
 static void iFlatTreeSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
 {
   if (iupFlatScrollBarGet(ih) != IUP_SB_NONE)
@@ -4194,6 +4238,7 @@ Iclass* iupFlatTreeNewClass(void)
   ic->New = iupFlatTreeNewClass;
   ic->Create = iFlatTreeCreateMethod;
   ic->Destroy = iFlatTreeDestroyMethod;
+  ic->ComputeNaturalSize = iFlatTreeComputeNaturalSizeMethod;
   ic->SetChildrenCurrentSize = iFlatTreeSetChildrenCurrentSizeMethod;
   ic->SetChildrenPosition = iFlatTreeSetChildrenPositionMethod;
 
@@ -4226,6 +4271,8 @@ Iclass* iupFlatTreeNewClass(void)
   iupClassRegisterAttribute(ic, "HLCOLORALPHA", NULL, NULL, IUPAF_SAMEASSYSTEM, "128", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PSCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* selection, not pressed */
   iupClassRegisterAttribute(ic, "TEXTPSCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* selection, not pressed */
+  iupClassRegisterAttribute(ic, "VISIBLECOLUMNS", NULL, NULL, IUPAF_SAMEASSYSTEM, "20", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VISIBLELINES", NULL, NULL, IUPAF_SAMEASSYSTEM, "8", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INDENTATION", iFlatTreeGetIndentationAttrib, iFlatTreeSetIndentationAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", iFlatTreeGetSpacingAttrib, iFlatTreeSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT | IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "CSPACING", iupBaseGetCSpacingAttrib, iupBaseSetCSpacingAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
