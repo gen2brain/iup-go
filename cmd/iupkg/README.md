@@ -70,7 +70,13 @@ iupkg staple <app>
 Without `--cgo` the program is built with `CGO_ENABLED=0` and the purego backend, so the desktop targets build from any host with only Go installed.
 With `--cgo` the IUP C library is compiled into the executable; cross builds then need the matching C toolchain in `CC` and `CXX`.
 
-`--data` files go to `Contents/Resources` (darwin), the `.app` root (ios), `assets/resources` (android, copied out on first start), `/usr/share/<exe>` (deb, rpm), `share/<exe>` (targz, installed by its Makefile), `data/<exe>` (haiku), the package root (msix) and `resources/` with a `resources.json` list (js, copied in when the page starts). They are not copied next to a plain `.exe`.
+`--data` files go to `Contents/Resources` (darwin), the `.app` root (ios), `assets/resources` (android, copied out on first start), `/usr/share/<exe>` (deb, rpm), `share/<exe>` (targz, installed by its Makefile),
+`data/<exe>` (haiku), the package root (msix) and `resources/` with a `resources.json` list (js, copied in when the page starts). They are not copied next to a plain `.exe`.
+
+With the `qt` or `qml` tag, darwin and windows packages carry the Qt runtime, made by `macdeployqt` or `windeployqt` of the Qt that `qtpaths6` (`qtpaths` for `qt5`) reports.
+The `.app` holds only the QML modules the driver imports and the frameworks they load, and is signed with `codesign`.
+Windows writes `<exe>-<version>-windows-<arch>.zip` with the executable, the Qt runtime, the DLLs Qt loads from its bin directory and a `qt.conf`; `--format msix` packages the same files.
+
 Android, iOS and Haiku are always cgo builds.
 
 ### Targets
