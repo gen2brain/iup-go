@@ -931,6 +931,13 @@ static void igtkSendKey(GdkWindow* window, GdkEventType type, guint keyval, guin
   evt->key.state = state;
   evt->key.hardware_keycode = (guint16)keycode;
   evt->key.group = (guint8)group;
+#if GTK_CHECK_VERSION(3, 20, 0)
+  {
+    GdkDevice* keyboard = gdk_seat_get_keyboard(gdk_display_get_default_seat(gdk_display_get_default()));
+    gdk_event_set_device(evt, keyboard);
+    gdk_event_set_source_device(evt, keyboard);
+  }
+#endif
 
   gtk_main_do_event(evt);
   gdk_event_free(evt);
@@ -982,6 +989,106 @@ IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 #endif
 }
 
+#if GTK_CHECK_VERSION(3, 20, 0)
+static GdkWindow* gtk_send_mouse_window = NULL;
+
+static void gtkSendMouseEvent(GdkEventType type, GdkWindow* window, int x, int y, guint state, guint button)
+{
+  GdkDevice* device = gdk_seat_get_pointer(gdk_display_get_default_seat(gdk_display_get_default()));
+  GdkEvent* evt;
+  gint origin_x, origin_y;
+
+  if (gdk_window_is_destroyed(window))
+    return;
+
+  evt = gdk_event_new(type);
+  gdk_window_get_origin(window, &origin_x, &origin_y);
+
+  if (type == GDK_MOTION_NOTIFY)
+  {
+    evt->motion.window = g_object_ref(window);
+    evt->motion.send_event = TRUE;
+    evt->motion.time = GDK_CURRENT_TIME;
+    evt->motion.x = x - origin_x;
+    evt->motion.y = y - origin_y;
+    evt->motion.x_root = x;
+    evt->motion.y_root = y;
+    evt->motion.state = state;
+  }
+  else
+  {
+    evt->button.window = g_object_ref(window);
+    evt->button.send_event = TRUE;
+    evt->button.time = GDK_CURRENT_TIME;
+    evt->button.x = x - origin_x;
+    evt->button.y = y - origin_y;
+    evt->button.x_root = x;
+    evt->button.y_root = y;
+    evt->button.state = state;
+    evt->button.button = button;
+  }
+
+  gdk_event_set_device(evt, device);
+  gdk_event_set_source_device(evt, device);
+  gdk_event_put(evt);
+  gdk_event_free(evt);
+}
+
+IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
+{
+  guint button = (bt >= IUP_BUTTON1 && bt <= IUP_BUTTON5) ? (guint)(bt - IUP_BUTTON1 + 1) : 0;
+  guint mask = button ? (guint)(GDK_BUTTON1_MASK << (button - 1)) : 0;
+
+  if (status == -1)
+  {
+    if (button && gtk_send_mouse_window)
+      gtkSendMouseEvent(GDK_MOTION_NOTIFY, gtk_send_mouse_window, x, y, mask, 0);
+    else
+      iupdrvWarpPointer(x, y);
+    return;
+  }
+
+  if (!button)
+    return;
+
+  if (status == 0)
+  {
+    if (gtk_send_mouse_window)
+    {
+      gtkSendMouseEvent(GDK_BUTTON_RELEASE, gtk_send_mouse_window, x, y, mask, button);
+      g_object_unref(gtk_send_mouse_window);
+      gtk_send_mouse_window = NULL;
+    }
+    iupdrvWarpPointer(x, y);
+  }
+  else
+  {
+    GtkWidget* grab_widget;
+    GdkWindow* window;
+
+    iupdrvWarpPointer(x, y);
+    gdk_display_sync(gdk_display_get_default());
+    while (gtk_events_pending())
+      gtk_main_iteration_do(FALSE);
+
+    grab_widget = gtk_grab_get_current();
+    if (grab_widget)
+      window = iupgtkGetWindow(grab_widget);
+    else
+      window = gdk_device_get_window_at_position(gdk_seat_get_pointer(gdk_display_get_default_seat(gdk_display_get_default())), NULL, NULL);
+    if (!window)
+      return;
+
+    if (gtk_send_mouse_window)
+      g_object_unref(gtk_send_mouse_window);
+    gtk_send_mouse_window = g_object_ref(window);
+
+    gtkSendMouseEvent(GDK_BUTTON_PRESS, window, x, y, 0, button);
+    if (status == 2)
+      gtkSendMouseEvent(GDK_2BUTTON_PRESS, window, x, y, 0, button);
+  }
+}
+#else
 IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
 {
   /* always update cursor */
@@ -994,10 +1101,7 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
     GtkWidget* grab_widget;
     gint origin_x, origin_y;
 
-#if GTK_CHECK_VERSION(3, 20, 0)
-    GdkSeat* seat = gdk_display_get_default_seat(gdk_display_get_default());
-    GdkDevice* device = gdk_seat_get_pointer(seat);
-#elif GTK_CHECK_VERSION(3, 0, 0)
+#if GTK_CHECK_VERSION(3, 0, 0)
     GdkDeviceManager* device_manager = gdk_display_get_device_manager(gdk_display_get_default());
     GdkDevice* device = gdk_device_manager_get_client_pointer(device_manager);
 #endif
@@ -1060,6 +1164,7 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
     gdk_event_put((GdkEvent*)&evt);
   }
 }
+#endif
 
 IUP_SDK_API void iupdrvSleep(int time)
 {
