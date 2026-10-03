@@ -40,8 +40,7 @@ static int fltkGlobalButton(int b)
   }
 }
 
-/* Returning 0 lets FLTK continue its normal widget-tree dispatch. */
-static int fltkGlobalEventHandler(int event)
+static void fltkGlobalEventHandler(int event)
 {
   switch (event)
   {
@@ -99,10 +98,25 @@ static int fltkGlobalEventHandler(int event)
   default:
     break;
   }
-  return 0;
 }
 
-static int fltk_global_handler_installed = 0;
+static int fltk_input_callbacks = 0;
+
+static int fltkEventDispatch(int event, Fl_Window* window)
+{
+  if (fltk_input_callbacks)
+    fltkGlobalEventHandler(event);
+
+  int ret = Fl::handle_(event, window);
+  iupfltkTipsEvent(event);
+  return ret;
+}
+
+IUP_DRV_API void iupfltkEventDispatchInstall(void)
+{
+  if (Fl::event_dispatch() != fltkEventDispatch)
+    Fl::event_dispatch(fltkEventDispatch);
+}
 
 extern "C" IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
@@ -114,22 +128,9 @@ extern "C" IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 
   if (iupStrEqual(name, "INPUTCALLBACKS"))
   {
-    if (iupStrBoolean(value))
-    {
-      if (!fltk_global_handler_installed)
-      {
-        Fl::add_handler(fltkGlobalEventHandler);
-        fltk_global_handler_installed = 1;
-      }
-    }
-    else
-    {
-      if (fltk_global_handler_installed)
-      {
-        Fl::remove_handler(fltkGlobalEventHandler);
-        fltk_global_handler_installed = 0;
-      }
-    }
+    fltk_input_callbacks = iupStrBoolean(value);
+    if (fltk_input_callbacks)
+      iupfltkEventDispatchInstall();
     return 1;
   }
 
