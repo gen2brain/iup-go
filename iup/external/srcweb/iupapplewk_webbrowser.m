@@ -36,11 +36,11 @@
 
 /* Required macros the including shim must define:
      iupAppleWKBaseView           - native base UIView/NSView type name
-     iupAppleWKAddToParent(ih)    - add ih->handle to its parent
-     iupAppleWKRemoveFromParent(ih)
+     iupAppleWKAddToParent(ih, v) - set ih->handle and add v to its parent, 0 on failure
+     iupAppleWKRemoveFromParent(ih, v) - remove v and release ih->handle
+     iupAppleWKLayoutUpdate(ih, v) - place ih->handle after a layout
      iupAppleWKApplyAutoresize(v) - apply full-bleed autoresize mask to v
      iupAppleWKFocusForExec(v)    - make v first responder (no-op on iOS)
-     iupAppleWKSetAssociatedViews(ih, v) - track main/root views (no-op on iOS)
      iupAppleWKRunPrint(ih, v)    - platform print dialog
 */
 
@@ -56,6 +56,7 @@ static void appleWKWebBrowserUpdateHistory(Ihandle* ih);
 struct _IcontrolData
 {
   int sb;
+  WKWebView* web_view;
 };
 
 typedef NS_ENUM(NSInteger, IupAppleWKWebViewLoadStatus)
@@ -246,7 +247,7 @@ typedef NS_ENUM(NSInteger, IupAppleWKWebViewLoadStatus)
 
 static void appleWKWebBrowserUpdateHistory(Ihandle* ih)
 {
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	if (!web_view)
 		return;
 
@@ -286,7 +287,7 @@ static NSString* appleWKWebBrowserEscapeJavaScript(const char* c_str)
 
 static char* appleWKWebBrowserRunJavaScriptSync(Ihandle* ih, NSString* js_string)
 {
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	__block char* ret_str = NULL;
 	__block BOOL finished = NO;
 
@@ -412,7 +413,7 @@ static char* appleWKWebBrowserFileToDataURI(const char* filename)
 
 static void appleWKWebBrowserExecCommand(Ihandle* ih, const char* cmd)
 {
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 
 	NSString* cmd_js = appleWKWebBrowserEscapeJavaScript(cmd);
 	NSString* js_cmd = [NSString stringWithFormat:@"document.body.focus(); if (window.iupRestoreSelection) window.iupRestoreSelection(); document.execCommand(%@, false, null);", cmd_js];
@@ -433,7 +434,7 @@ static void appleWKWebBrowserExecCommand(Ihandle* ih, const char* cmd)
 
 static void appleWKWebBrowserExecCommandParam(Ihandle* ih, const char* cmd, const char* param)
 {
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	NSString* cmd_js = appleWKWebBrowserEscapeJavaScript(cmd);
 	NSString* param_js = appleWKWebBrowserEscapeJavaScript(param);
 	NSString* js_cmd = [NSString stringWithFormat:@"document.body.focus(); if (window.iupRestoreSelection) window.iupRestoreSelection(); document.execCommand(%@, false, %@);", cmd_js, param_js];
@@ -457,7 +458,7 @@ static int appleWKWebBrowserSetBackForwardAttrib(Ihandle* ih, const char* value)
 	int val;
 	if (iupStrToInt(value, &val))
 	{
-		WKWebView* web_view = (WKWebView*)ih->handle;
+		WKWebView* web_view = ih->data->web_view;
 		if (val != 0)
 		{
 			WKBackForwardList* back_forward_list = [web_view backForwardList];
@@ -474,7 +475,7 @@ static int appleWKWebBrowserSetStopAttrib(Ihandle* ih, const char* value)
 {
 	(void)value;
 
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	[web_view stopLoading];
 
 	return 0;
@@ -484,7 +485,7 @@ static int appleWKWebBrowserSetReloadAttrib(Ihandle* ih, const char* value)
 {
 	(void)value;
 
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	[web_view reload];
 
 	return 0;
@@ -492,7 +493,7 @@ static int appleWKWebBrowserSetReloadAttrib(Ihandle* ih, const char* value)
 
 static char* appleWKWebBrowserGetHTMLAttrib(Ihandle* ih)
 {
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	__block char* ret_str = NULL;
 	__block BOOL finished = NO;
 
@@ -533,7 +534,7 @@ static int appleWKWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
 {
 	if (value)
 	{
-		WKWebView* web_view = (WKWebView*)ih->handle;
+		WKWebView* web_view = ih->data->web_view;
 		NSString* html_string = [NSString stringWithUTF8String:value];
 		if (!html_string)
 			return 0;
@@ -547,7 +548,7 @@ static int appleWKWebBrowserSetHTMLAttrib(Ihandle* ih, const char* value)
 
 static char* appleWKWebBrowserGetStatusAttrib(Ihandle* ih)
 {
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	IupAppleWKWebViewDelegate* delegate = (IupAppleWKWebViewDelegate*)objc_getAssociatedObject(web_view, IUP_APPLEWKWEBVIEW_WEBVIEW_DELEGATE_OBJ_KEY);
 
 	if (delegate)
@@ -569,14 +570,14 @@ static char* appleWKWebBrowserGetStatusAttrib(Ihandle* ih)
 static int appleWKWebBrowserSetPrintAttrib(Ihandle* ih, const char* value)
 {
 	(void)value;
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	iupAppleWKRunPrint(ih, web_view);
 	return 0;
 }
 
 static char* appleWKWebBrowserGetZoomAttrib(Ihandle* ih)
 {
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	int zoom = (int)([web_view pageZoom] * 100);
 	return iupStrReturnInt(zoom);
 }
@@ -586,7 +587,7 @@ static int appleWKWebBrowserSetZoomAttrib(Ihandle* ih, const char* value)
 	int zoom;
 	if (iupStrToInt(value, &zoom))
 	{
-		WKWebView* web_view = (WKWebView*)ih->handle;
+		WKWebView* web_view = ih->data->web_view;
 		[web_view setPageZoom:(CGFloat)zoom / 100.0];
 	}
 	return 0;
@@ -596,7 +597,7 @@ static int appleWKWebBrowserSetGoBackAttrib(Ihandle* ih, const char* value)
 {
 	(void)value;
 
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	[web_view goBack];
 
 	return 0;
@@ -606,7 +607,7 @@ static int appleWKWebBrowserSetGoForwardAttrib(Ihandle* ih, const char* value)
 {
 	(void)value;
 
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	[web_view goForward];
 
 	return 0;
@@ -614,13 +615,13 @@ static int appleWKWebBrowserSetGoForwardAttrib(Ihandle* ih, const char* value)
 
 static char* appleWKWebBrowserGetCanGoBackAttrib(Ihandle* ih)
 {
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	return iupStrReturnBoolean([web_view canGoBack]);
 }
 
 static char* appleWKWebBrowserGetCanGoForwardAttrib(Ihandle* ih)
 {
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	return iupStrReturnBoolean([web_view canGoForward]);
 }
 
@@ -669,7 +670,7 @@ static int appleWKWebBrowserSetEditableAttrib(Ihandle* ih, const char* value)
 		iupAttribSet(ih, "_IUPWEB_EDITABLE", NULL);
 	}
 
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	if (iupAttribGet(ih, "_IUPWEB_EDITABLE"))
 	{
 		[web_view evaluateJavaScript:@"document.body.contentEditable = 'true';" completionHandler:nil];
@@ -916,7 +917,7 @@ static char* appleWKWebBrowserGetCommandValueAttrib(Ihandle* ih)
 
 static char* appleWKWebBrowserGetValueAttrib(Ihandle* ih)
 {
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	NSURL* current_url = [web_view URL];
 	if (current_url)
 		return iupStrReturnStr([[current_url absoluteString] UTF8String]);
@@ -930,7 +931,7 @@ static int appleWKWebBrowserSetInnerTextAttrib(Ihandle* ih, const char* value)
 		char* element_id = iupAttribGet(ih, "ELEMENT_ID");
 		if (element_id)
 		{
-			WKWebView* web_view = (WKWebView*)ih->handle;
+			WKWebView* web_view = ih->data->web_view;
 			NSString* element_id_js = appleWKWebBrowserEscapeJavaScript(element_id);
 			NSString* value_js = appleWKWebBrowserEscapeJavaScript(value);
 			NSString* js_cmd = [NSString stringWithFormat:@"document.getElementById(%@).innerText = %@;", element_id_js, value_js];
@@ -981,7 +982,7 @@ static int appleWKWebBrowserSetAttributeAttrib(Ihandle* ih, const char* value)
 
 		if (element_id && attribute_name)
 		{
-			WKWebView* web_view = (WKWebView*)ih->handle;
+			WKWebView* web_view = ih->data->web_view;
 			NSString* element_id_js = appleWKWebBrowserEscapeJavaScript(element_id);
 			NSString* attribute_name_js = appleWKWebBrowserEscapeJavaScript(attribute_name);
 			NSString* value_js = appleWKWebBrowserEscapeJavaScript(value);
@@ -1009,7 +1010,7 @@ static char* appleWKWebBrowserGetAttributeAttrib(Ihandle* ih)
 
 static char* appleWKWebBrowserGetBackCountAttrib(Ihandle* ih)
 {
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	WKBackForwardList* list = [web_view backForwardList];
 	NSArray* back_list = [list backList];
 	return iupStrReturnInt((int)[back_list count]);
@@ -1017,7 +1018,7 @@ static char* appleWKWebBrowserGetBackCountAttrib(Ihandle* ih)
 
 static char* appleWKWebBrowserGetForwardCountAttrib(Ihandle* ih)
 {
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	WKBackForwardList* list = [web_view backForwardList];
 	NSArray* forward_list = [list forwardList];
 	return iupStrReturnInt((int)[forward_list count]);
@@ -1025,7 +1026,7 @@ static char* appleWKWebBrowserGetForwardCountAttrib(Ihandle* ih)
 
 static char* appleWKWebBrowserGetItemHistoryAttrib(Ihandle* ih, int id)
 {
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	WKBackForwardList* list = [web_view backForwardList];
 	WKBackForwardListItem* item = [list itemAtIndex:id];
 
@@ -1044,7 +1045,7 @@ static char* appleWKWebBrowserGetDirtyAttrib(Ihandle* ih)
 	if (iupAttribGet(ih, "_IUPWEB_DIRTY"))
 		return "YES";
 
-	WKWebView* web_view = (WKWebView*)ih->handle;
+	WKWebView* web_view = ih->data->web_view;
 	char* result = appleWKWebBrowserRunJavaScriptSync(ih, @"window.iupGetDirtyFlag ? window.iupGetDirtyFlag() : false;");
 	if (result)
 	{
@@ -1063,7 +1064,7 @@ static int appleWKWebBrowserSetFindAttrib(Ihandle* ih, const char* value)
 {
 	if (value)
 	{
-		WKWebView* web_view = (WKWebView*)ih->handle;
+		WKWebView* web_view = ih->data->web_view;
 		NSString* value_js = appleWKWebBrowserEscapeJavaScript(value);
 		NSString* js_cmd = [NSString stringWithFormat:@"window.find(%@);", value_js];
 		[web_view evaluateJavaScript:js_cmd completionHandler:nil];
@@ -1079,7 +1080,29 @@ static int appleWKWebBrowserSetPrintPreviewAttrib(Ihandle* ih, const char* value
 
 static void appleWKWebBrowserLayoutUpdateMethod(Ihandle* ih)
 {
-	iupdrvBaseLayoutUpdateMethod(ih);
+	iupAppleWKLayoutUpdate(ih, ih->data->web_view);
+}
+
+static void appleWKWebBrowserReleaseView(Ihandle* ih)
+{
+	WKWebView* web_view = ih->data->web_view;
+	if (!web_view)
+		return;
+
+	IupAppleWKWebViewDelegate* delegate = (IupAppleWKWebViewDelegate*)objc_getAssociatedObject(web_view, IUP_APPLEWKWEBVIEW_WEBVIEW_DELEGATE_OBJ_KEY);
+	if (delegate)
+		[delegate setIhandle:NULL];
+
+	[web_view setNavigationDelegate:nil];
+	[web_view setUIDelegate:nil];
+	[web_view stopLoading];
+
+	WKUserContentController* user_content_controller = [[web_view configuration] userContentController];
+	[user_content_controller removeScriptMessageHandlerForName:IupUpdateCbMessageHandlerName];
+	[user_content_controller removeScriptMessageHandlerForName:IupDirtyFlagMessageHandlerName];
+
+	[web_view release];
+	ih->data->web_view = nil;
 }
 
 static int appleWKWebBrowserMapMethod(Ihandle* ih)
@@ -1156,39 +1179,22 @@ static int appleWKWebBrowserMapMethod(Ihandle* ih)
 	[web_view setNavigationDelegate:webview_delegate];
 	[web_view setUIDelegate:webview_delegate];
 
-	ih->handle = web_view;
-	iupAppleWKSetAssociatedViews(ih, web_view);
-
-	iupAppleWKAddToParent(ih);
-
-	[web_view release];
+	ih->data->web_view = web_view;
+	if (!iupAppleWKAddToParent(ih, web_view))
+	{
+		appleWKWebBrowserReleaseView(ih);
+		return IUP_ERROR;
+	}
 
 	return IUP_NOERROR;
 }
 
 static void appleWKWebBrowserUnMapMethod(Ihandle* ih)
 {
-	if (!ih || !ih->handle)
-		return;
+	if (ih->data->web_view)
+		iupAppleWKRemoveFromParent(ih, ih->data->web_view);
 
-	WKWebView* web_view = (WKWebView*)ih->handle;
-
-	if (web_view)
-	{
-		IupAppleWKWebViewDelegate* delegate = (IupAppleWKWebViewDelegate*)objc_getAssociatedObject(web_view, IUP_APPLEWKWEBVIEW_WEBVIEW_DELEGATE_OBJ_KEY);
-		if (delegate)
-			[delegate setIhandle:NULL];
-
-		[web_view setNavigationDelegate:nil];
-		[web_view setUIDelegate:nil];
-		[web_view stopLoading];
-
-		WKUserContentController* user_content_controller = [[web_view configuration] userContentController];
-		[user_content_controller removeScriptMessageHandlerForName:IupUpdateCbMessageHandlerName];
-		[user_content_controller removeScriptMessageHandlerForName:IupDirtyFlagMessageHandlerName];
-	}
-
-	iupdrvBaseUnMapMethod(ih);
+	appleWKWebBrowserReleaseView(ih);
 }
 
 static void appleWKWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
@@ -1217,7 +1223,7 @@ static int appleWKWebBrowserSetValueAttrib(Ihandle* ih, const char* value)
 {
 	if (value)
 	{
-		WKWebView* web_view = (WKWebView*)ih->handle;
+		WKWebView* web_view = ih->data->web_view;
 		iupAttribSet(ih, "_IUPWEB_DIRTY", NULL);
 		if (iupStrEqualPartial(value, "http://") || iupStrEqualPartial(value, "https://") ||
 		    iupStrEqualPartial(value, "ftp://"))

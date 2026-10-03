@@ -9,13 +9,31 @@
 
 #include "iup.h"
 #include "iup_object.h"
+#include "iup_classbase.h"
 
 #include "iupcocoatouch_drv.h"
 
 
 #define iupAppleWKBaseView UIView
-#define iupAppleWKAddToParent(ih)      iupCocoaTouchAddToParent(ih)
-#define iupAppleWKRemoveFromParent(ih) iupCocoaTouchRemoveFromParent(ih)
+
+static inline int iupAppleWKAddToParent(Ihandle* ih, WKWebView* v)
+{
+	ih->handle = [v retain];
+	iupCocoaTouchAddToParent(ih);
+	return 1;
+}
+
+static inline void iupAppleWKRemoveFromParent(Ihandle* ih, WKWebView* v)
+{
+	(void)v;
+	iupdrvBaseUnMapMethod(ih);
+}
+
+static inline void iupAppleWKLayoutUpdate(Ihandle* ih, WKWebView* v)
+{
+	(void)v;
+	iupdrvBaseLayoutUpdateMethod(ih);
+}
 
 /* autoresize trips WKWebView's out-of-process renderer mid-rotation */
 static inline void iupAppleWKApplyAutoresize(WKWebView* v)
@@ -28,12 +46,6 @@ static inline void iupAppleWKApplyAutoresize(WKWebView* v)
 static inline void iupAppleWKFocusForExec(WKWebView* v)
 {
 	(void)v;
-}
-
-/* Cocoa driver tracks main+root views; cocoatouch driver has a single handle. */
-static inline void iupAppleWKSetAssociatedViews(Ihandle* ih, WKWebView* v)
-{
-	(void)ih; (void)v;
 }
 
 static inline void iupAppleWKRunPrint(Ihandle* ih, WKWebView* v)

@@ -1,5 +1,5 @@
 /** \file
- * \brief WKWebView Web Browser Control (macOS Cocoa shim).
+ * \brief WKWebView Web Browser Control (macOS Qt and Qt Quick shim).
  *
  * See Copyright Notice in "iup.h"
  */
@@ -11,34 +11,40 @@
 #include "iup_object.h"
 #include "iup_classbase.h"
 
-#include "iupcocoa_drv.h"
+#include "iupweb_host.h"
 
 
 #define iupAppleWKBaseView NSView
 
 static inline int iupAppleWKAddToParent(Ihandle* ih, WKWebView* v)
 {
-	ih->handle = [v retain];
-	iupcocoaSetAssociatedViews(ih, v, v);
-	iupcocoaAddToParent(ih);
+	NSView* parent = (NSView*)iupwebHostMap(ih);
+	if (!parent)
+	{
+		iupwebHostUnMap(ih);
+		return 0;
+	}
+
+	[v setHidden:YES];
+	[parent addSubview:v];
 	return 1;
 }
 
 static inline void iupAppleWKRemoveFromParent(Ihandle* ih, WKWebView* v)
 {
-	(void)v;
-	iupdrvBaseUnMapMethod(ih);
+	[v removeFromSuperview];
+	iupwebHostUnMap(ih);
 }
 
 static inline void iupAppleWKLayoutUpdate(Ihandle* ih, WKWebView* v)
 {
 	(void)v;
-	iupdrvBaseLayoutUpdateMethod(ih);
+	iupwebHostLayoutUpdate(ih);
 }
 
 static inline void iupAppleWKApplyAutoresize(WKWebView* v)
 {
-	[v setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+	[v setAutoresizingMask:NSViewNotSizable];
 }
 
 static inline void iupAppleWKFocusForExec(WKWebView* v)
@@ -49,6 +55,7 @@ static inline void iupAppleWKFocusForExec(WKWebView* v)
 
 static inline void iupAppleWKRunPrint(Ihandle* ih, WKWebView* v)
 {
+	(void)ih;
 	NSPrintInfo* print_info = [[NSPrintInfo sharedPrintInfo] copy];
 	[print_info setHorizontalPagination:NSPrintingPaginationModeAutomatic];
 	[print_info setVerticalPagination:NSPrintingPaginationModeAutomatic];
@@ -62,9 +69,7 @@ static inline void iupAppleWKRunPrint(Ihandle* ih, WKWebView* v)
 
 	[[print_operation printPanel] setOptions:NSPrintPanelShowsCopies | NSPrintPanelShowsPageRange | NSPrintPanelShowsPaperSize | NSPrintPanelShowsOrientation];
 
-	Ihandle* dlg = IupGetDialog(ih);
-	NSWindow* parent_window = (dlg && dlg->handle) ? (NSWindow*)dlg->handle : nil;
-
+	NSWindow* parent_window = [v window];
 	if (parent_window)
 		[print_operation runOperationModalForWindow:parent_window delegate:nil didRunSelector:NULL contextInfo:NULL];
 	else
@@ -73,3 +78,14 @@ static inline void iupAppleWKRunPrint(Ihandle* ih, WKWebView* v)
 
 
 #include "iupapplewk_webbrowser.m"
+
+
+void iupwebHostSetBounds(Ihandle* ih, int x, int y, int width, int height, int visible)
+{
+	WKWebView* v = ih->data ? ih->data->web_view : nil;
+	if (!v)
+		return;
+
+	[v setFrame:NSMakeRect(x, y, width, height)];
+	[v setHidden:visible ? NO : YES];
+}
