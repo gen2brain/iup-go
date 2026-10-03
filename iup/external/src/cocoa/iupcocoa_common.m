@@ -1449,7 +1449,7 @@ static void cocoaSendKey(int key, int press)
 {
   unsigned int maccode, state;
   iupdrvKeyEncode(key, &maccode, &state);
-  if (!maccode) return;
+  if (maccode == IUPCOCOA_NOKEYCODE) return;
 
   NSWindow* win = [NSApp keyWindow];
   if (!win) win = [NSApp mainWindow];
@@ -1458,12 +1458,18 @@ static void cocoaSendKey(int key, int press)
   NSTimeInterval ts = [[NSProcessInfo processInfo] systemUptime];
   NSEventModifierFlags mods = (NSEventModifierFlags)state;
   NSInteger win_num = [win windowNumber];
+  NSString* text = @"";
+  if (iup_isprint(iup_XkeyBase(key)))
+  {
+    unichar c = (unichar)iup_XkeyBase(key);
+    text = [NSString stringWithCharacters:&c length:1];
+  }
 
   if (press & 0x01)
   {
     NSEvent* ev = [NSEvent keyEventWithType:NSEventTypeKeyDown location:NSZeroPoint
                               modifierFlags:mods timestamp:ts windowNumber:win_num context:nil
-                                 characters:@"" charactersIgnoringModifiers:@""
+                                 characters:text charactersIgnoringModifiers:text
                                   isARepeat:NO keyCode:(unsigned short)maccode];
     if (ev) [NSApp postEvent:ev atStart:NO];
   }
@@ -1471,7 +1477,7 @@ static void cocoaSendKey(int key, int press)
   {
     NSEvent* ev = [NSEvent keyEventWithType:NSEventTypeKeyUp location:NSZeroPoint
                               modifierFlags:mods timestamp:ts windowNumber:win_num context:nil
-                                 characters:@"" charactersIgnoringModifiers:@""
+                                 characters:text charactersIgnoringModifiers:text
                                   isARepeat:NO keyCode:(unsigned short)maccode];
     if (ev) [NSApp postEvent:ev atStart:NO];
   }

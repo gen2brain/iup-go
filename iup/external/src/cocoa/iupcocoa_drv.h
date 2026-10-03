@@ -90,6 +90,7 @@ IUP_DRV_API void iupcocoaCommonBaseSetContextMenuForWidget(Ihandle* ih, id ih_wi
 IUP_DRV_API char* iupcocoaCommonBaseGetContextMenuAttrib(Ihandle* ih);
 IUP_DRV_API void iupcocoaCommonBaseDestroyContextMenu(Ihandle* ih);
 
+#define IUPCOCOA_NOKEYCODE 0xFFFFu
 IUP_DRV_API bool iupcocoaKeyEvent(Ihandle* ih, NSEvent* ns_event, int mac_key_code, bool is_pressed);
 IUP_DRV_API int iupcocoaKeyDecodeEvent(NSEvent* ns_event, int mac_key_code);
 IUP_DRV_API bool iupcocoaModifierEvent(Ihandle* ih, NSEvent* ns_event, int mac_key_code);
