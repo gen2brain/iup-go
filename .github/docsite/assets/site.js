@@ -29,8 +29,12 @@ new PagefindUI({ element: "#search", showSubResults: true, showImages: false, re
     img.classList.toggle("zoomable", scaled && !img.closest("a"));
   }
   var images = document.querySelectorAll(".content img");
+  var observer = new ResizeObserver(function (entries) {
+    entries.forEach(function (e) { markZoomable(e.target); });
+  });
   images.forEach(function (img) {
-    if (img.complete) markZoomable(img); else img.addEventListener("load", function () { markZoomable(img); });
+    observer.observe(img);
+    img.addEventListener("load", function () { markZoomable(img); });
     img.addEventListener("click", function () {
       if (!img.classList.contains("zoomable")) return;
       var box = document.createElement("div");
@@ -46,7 +50,6 @@ new PagefindUI({ element: "#search", showSubResults: true, showImages: false, re
       document.body.appendChild(box);
     });
   });
-  addEventListener("resize", function () { images.forEach(markZoomable); });
 
   document.querySelector(".menu-toggle").addEventListener("click", function () {
     document.body.classList.toggle("nav-open");
