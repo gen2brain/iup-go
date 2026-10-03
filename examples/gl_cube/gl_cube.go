@@ -28,7 +28,7 @@ func main() {
 	canvas.SetCallback("ACTION", iup.ActionFunc(redraw))
 	canvas.SetCallback("MAP_CB", iup.MapFunc(mapCb))
 
-	iup.SetFunction("IDLE_ACTION", iup.IdleFunc(func() int {
+	iup.SetIdleFunc(func() int {
 		// Prepare for the next frame
 		rotationAngle += 0.5
 		if rotationAngle > 360 {
@@ -37,7 +37,7 @@ func main() {
 
 		redraw(canvas)
 		return iup.DEFAULT
-	}))
+	})
 
 	hbox := iup.Hbox(
 		iup.Fill(),
@@ -48,7 +48,7 @@ func main() {
 	dlg := iup.Dialog(hbox).SetAttribute("TITLE", "OpenGL Canvas")
 
 	dlg.SetCallback("CLOSE_CB", iup.CloseFunc(func(ih iup.Ihandle) int {
-		iup.SetFunction("IDLE_ACTION", nil)
+		iup.SetIdleFunc(nil)
 		return iup.DEFAULT
 	}))
 

@@ -71,7 +71,7 @@ func startIdleCb(ih iup.Ihandle) int {
 	idleRunning = true
 
 	iup.SetAttribute(statusLabel, "TITLE", "Status: Idle RUNNING")
-	iup.SetFunction("IDLE_ACTION", iup.IdleFunc(idleFunction))
+	iup.SetIdleFunc(idleFunction)
 
 	fmt.Println("Idle started")
 	return iup.DEFAULT
@@ -82,7 +82,7 @@ func stopIdleCb(ih iup.Ihandle) int {
 		return iup.DEFAULT
 	}
 
-	iup.SetFunction("IDLE_ACTION", nil)
+	iup.SetIdleFunc(nil)
 	idleRunning = false
 	iup.SetAttribute(statusLabel, "TITLE", "Status: Idle stopped")
 
@@ -99,7 +99,7 @@ func testEventCb(ih iup.Ihandle) int {
 
 func closeCb(ih iup.Ihandle) int {
 	fmt.Println("CLOSE_CB called, stopping idle...")
-	iup.SetFunction("IDLE_ACTION", nil)
+	iup.SetIdleFunc(nil)
 	idleRunning = false
 	fmt.Println("Idle stopped, returning DEFAULT to close")
 	return iup.DEFAULT

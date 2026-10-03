@@ -239,3 +239,63 @@ func (ih Ihandle) SetBytes(name string, data []byte) Ihandle {
 	SetBytes(ih, name, data)
 	return ih
 }
+
+func setTypedFunction(name string, fn any, unset bool) {
+	if unset {
+		SetFunction(name, nil)
+		return
+	}
+	SetFunction(name, fn)
+}
+
+// SetIdleFunc sets the IDLE_ACTION global callback. A nil fn removes it.
+//
+// https://gen2brain.github.io/iup-go/call/iup_idle_action.html
+func SetIdleFunc(fn IdleFunc) { setTypedFunction("IDLE_ACTION", fn, fn == nil) }
+
+// SetExitFunc sets the EXIT_CB global callback. A nil fn removes it.
+//
+// https://gen2brain.github.io/iup-go/call/iup_exit_cb.html
+func SetExitFunc(fn ExitFunc) { setTypedFunction("EXIT_CB", fn, fn == nil) }
+
+// SetGlobalKeyPressFunc sets the GLOBALKEYPRESS_CB global callback. A nil fn removes it.
+// The callback is called only when the INPUTCALLBACKS global attribute is YES.
+//
+// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#inputcallbacks
+func SetGlobalKeyPressFunc(fn GlobalKeyPressFunc) {
+	setTypedFunction("GLOBALKEYPRESS_CB", fn, fn == nil)
+}
+
+// SetGlobalButtonFunc sets the GLOBALBUTTON_CB global callback. A nil fn removes it.
+// The callback is called only when the INPUTCALLBACKS global attribute is YES.
+//
+// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#inputcallbacks
+func SetGlobalButtonFunc(fn GlobalButtonFunc) {
+	setTypedFunction("GLOBALBUTTON_CB", fn, fn == nil)
+}
+
+// SetGlobalMotionFunc sets the GLOBALMOTION_CB global callback. A nil fn removes it.
+// The callback is called only when the INPUTCALLBACKS global attribute is YES.
+//
+// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#inputcallbacks
+func SetGlobalMotionFunc(fn GlobalMotionFunc) {
+	setTypedFunction("GLOBALMOTION_CB", fn, fn == nil)
+}
+
+// SetGlobalWheelFunc sets the GLOBALWHEEL_CB global callback. A nil fn removes it.
+// The callback is called only when the INPUTCALLBACKS global attribute is YES.
+//
+// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#inputcallbacks
+func SetGlobalWheelFunc(fn GlobalWheelFunc) {
+	setTypedFunction("GLOBALWHEEL_CB", fn, fn == nil)
+}
+
+// SetGlobalEnterModalFunc sets the GLOBALENTERMODAL_CB global callback. A nil fn removes it.
+func SetGlobalEnterModalFunc(fn GlobalEnterModalFunc) {
+	setTypedFunction("GLOBALENTERMODAL_CB", fn, fn == nil)
+}
+
+// SetGlobalLeaveModalFunc sets the GLOBALLEAVEMODAL_CB global callback. A nil fn removes it.
+func SetGlobalLeaveModalFunc(fn GlobalLeaveModalFunc) {
+	setTypedFunction("GLOBALLEAVEMODAL_CB", fn, fn == nil)
+}

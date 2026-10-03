@@ -20,6 +20,13 @@ var (
 	globalIdleHandle  goHandle
 	globalEntryHandle goHandle
 	globalExitHandle  goHandle
+
+	globalKeyPressHandle   goHandle
+	globalButtonHandle     goHandle
+	globalMotionHandle     goHandle
+	globalWheelHandle      goHandle
+	globalEnterModalHandle goHandle
+	globalLeaveModalHandle goHandle
 )
 
 type goHandle uintptr
@@ -188,6 +195,116 @@ func goIupExitCB() {
 func setExitFunc(f ExitFunc) {
 	setGlobalHandle(&globalExitHandle, f)
 	C.goIupSetExitFunc()
+}
+
+//--------------------
+
+// GlobalKeyPressFunc for GLOBALKEYPRESS_CB callback.
+// Same as KeyPressFunc, without the Ihandle. Needs the INPUTCALLBACKS global attribute.
+//
+// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#inputcallbacks
+type GlobalKeyPressFunc func(c, press int) int
+
+//export goIupGlobalKeyPressCB
+func goIupGlobalKeyPressCB(c, press C.int) C.int {
+	f := globalKeyPressHandle.Value().(GlobalKeyPressFunc)
+	return C.int(f(int(c), int(press)))
+}
+
+func setGlobalKeyPressFunc(f GlobalKeyPressFunc) {
+	setGlobalHandle(&globalKeyPressHandle, f)
+	C.goIupSetGlobalKeyPressFunc()
+}
+
+//--------------------
+
+// GlobalButtonFunc for GLOBALBUTTON_CB callback.
+// Same as ButtonFunc, without the Ihandle. Needs the INPUTCALLBACKS global attribute.
+//
+// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#inputcallbacks
+type GlobalButtonFunc func(button, pressed, x, y int, status string) int
+
+//export goIupGlobalButtonCB
+func goIupGlobalButtonCB(button, pressed, x, y C.int, status *C.char) C.int {
+	f := globalButtonHandle.Value().(GlobalButtonFunc)
+	return C.int(f(int(button), int(pressed), int(x), int(y), C.GoString(status)))
+}
+
+func setGlobalButtonFunc(f GlobalButtonFunc) {
+	setGlobalHandle(&globalButtonHandle, f)
+	C.goIupSetGlobalButtonFunc()
+}
+
+//--------------------
+
+// GlobalMotionFunc for GLOBALMOTION_CB callback.
+// Same as MotionFunc, without the Ihandle. Needs the INPUTCALLBACKS global attribute.
+//
+// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#inputcallbacks
+type GlobalMotionFunc func(x, y int, status string) int
+
+//export goIupGlobalMotionCB
+func goIupGlobalMotionCB(x, y C.int, status *C.char) C.int {
+	f := globalMotionHandle.Value().(GlobalMotionFunc)
+	return C.int(f(int(x), int(y), C.GoString(status)))
+}
+
+func setGlobalMotionFunc(f GlobalMotionFunc) {
+	setGlobalHandle(&globalMotionHandle, f)
+	C.goIupSetGlobalMotionFunc()
+}
+
+//--------------------
+
+// GlobalWheelFunc for GLOBALWHEEL_CB callback.
+// Same as WheelFunc, without the Ihandle. Needs the INPUTCALLBACKS global attribute.
+//
+// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#inputcallbacks
+type GlobalWheelFunc func(delta float64, x, y int, status string) int
+
+//export goIupGlobalWheelCB
+func goIupGlobalWheelCB(delta C.float, x, y C.int, status *C.char) C.int {
+	f := globalWheelHandle.Value().(GlobalWheelFunc)
+	return C.int(f(float64(delta), int(x), int(y), C.GoString(status)))
+}
+
+func setGlobalWheelFunc(f GlobalWheelFunc) {
+	setGlobalHandle(&globalWheelHandle, f)
+	C.goIupSetGlobalWheelFunc()
+}
+
+//--------------------
+
+// GlobalEnterModalFunc for GLOBALENTERMODAL_CB callback.
+// Called when a dialog becomes modal, with the modal level.
+type GlobalEnterModalFunc func(level int) int
+
+//export goIupGlobalEnterModalCB
+func goIupGlobalEnterModalCB(level C.int) C.int {
+	f := globalEnterModalHandle.Value().(GlobalEnterModalFunc)
+	return C.int(f(int(level)))
+}
+
+func setGlobalEnterModalFunc(f GlobalEnterModalFunc) {
+	setGlobalHandle(&globalEnterModalHandle, f)
+	C.goIupSetGlobalEnterModalFunc()
+}
+
+//--------------------
+
+// GlobalLeaveModalFunc for GLOBALLEAVEMODAL_CB callback.
+// Called when a modal dialog is closed, with the modal level.
+type GlobalLeaveModalFunc func(level int) int
+
+//export goIupGlobalLeaveModalCB
+func goIupGlobalLeaveModalCB(level C.int) C.int {
+	f := globalLeaveModalHandle.Value().(GlobalLeaveModalFunc)
+	return C.int(f(int(level)))
+}
+
+func setGlobalLeaveModalFunc(f GlobalLeaveModalFunc) {
+	setGlobalHandle(&globalLeaveModalHandle, f)
+	C.goIupSetGlobalLeaveModalFunc()
 }
 
 //--------------------

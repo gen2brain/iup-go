@@ -51,6 +51,7 @@ type cookbook struct {
 	themeButton, actions, info              iup.Ihandle
 	popups                                  []iup.Ihandle
 	selected, portions, themeIndex          int
+	extraWidth                              int
 	nodes                                   map[int]int
 	updating, applyingTheme, empty          bool
 }
@@ -158,6 +159,16 @@ func (app *cookbook) build() {
 		app.rebuildTree()
 		return iup.DEFAULT
 	}))
+	times := iup.FlatToggle("Show cooking times").SetAttributes("SWITCH=YES, VALUE=ON")
+	times.SetCallback("FLAT_ACTION", iup.FlatToggleActionFunc(func(_ iup.Ihandle, state int) int {
+		width := 0
+		if state == 1 {
+			width = app.extraWidth
+		}
+		app.tree.SetAttribute("EXTRATEXTWIDTH", width)
+		iup.Refresh(app.dialog)
+		return iup.DEFAULT
+	}))
 
 	app.hero = iup.Canvas().SetAttributes("EXPAND=YES, BORDER=NO")
 	app.hero.SetCallback("ACTION", iup.ActionFunc(app.drawHero))
@@ -202,7 +213,7 @@ func (app *cookbook) build() {
 	}))
 	app.status = iup.FlatLabel("").SetAttributes("EXPAND=HORIZONTAL, TEXTELLIPSIS=YES")
 
-	left := iup.Vbox(iup.FlatLabel("THE RECIPE BOOK").SetAttributes("FONTSTYLE=Bold, PADDING=0x5"), app.search, app.tree).
+	left := iup.Vbox(iup.FlatLabel("THE RECIPE BOOK").SetAttributes("FONTSTYLE=Bold, PADDING=0x5"), app.search, times, app.tree).
 		SetAttributes("NGAP=8, NMARGIN=12x12, EXPAND=VERTICAL")
 	app.info = iup.Hbox(
 		iup.Vbox(iup.FlatLabel("INGREDIENTS").SetAttribute("FONTSTYLE", "Bold"), iup.BackgroundBox(app.ingredients)).SetAttributes("NGAP=5, EXPAND=YES"),
@@ -254,12 +265,13 @@ func (app *cookbook) build() {
 		}
 		return iup.DEFAULT
 	}))
-	extraWidth, _ := iup.DrawGetTextSize(app.tree, fmt.Sprintf("%d", len(app.recipes)))
+	app.extraWidth, _ = iup.DrawGetTextSize(app.tree, fmt.Sprintf("%d", len(app.recipes)))
 	for _, r := range app.recipes {
 		width, _ := iup.DrawGetTextSize(app.tree, r.time)
-		extraWidth = max(extraWidth, width)
+		app.extraWidth = max(app.extraWidth, width)
 	}
-	app.tree.SetAttribute("EXTRATEXTWIDTH", extraWidth+20)
+	app.extraWidth += 20
+	app.tree.SetAttribute("EXTRATEXTWIDTH", app.extraWidth)
 	app.rebuildTree()
 }
 
@@ -382,6 +394,9 @@ func (app *cookbook) visitTheme(ih iup.Ihandle, s scheme, card bool) {
 		setColor(ih, "HLCOLOR", s.accent)
 	case app.shopping:
 		setColor(ih, "FOCUSCOLOR", s.focus)
+	}
+	if iup.GetClassName(ih) == "flattoggle" {
+		setColor(ih, "SWITCHONCOLOR", s.accent)
 	}
 	for i := 0; i < iup.GetChildCount(ih); i++ {
 		app.visitTheme(iup.GetChild(ih, i), s, card)
