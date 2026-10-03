@@ -51,6 +51,9 @@ IUP_DRV_API extern const void* ROOTVIEW_ASSOCIATED_OBJ_KEY;
 
 IUP_DRV_API NSView* iupcocoaGetRootView(Ihandle* ih);
 IUP_DRV_API NSView* iupcocoaGetMainView(Ihandle* ih);
+IUP_DRV_API NSControlSize iupcocoaGetControlSize(Ihandle* ih);
+IUP_DRV_API NSFont* iupcocoaGetControlSizeFont(NSControlSize size);
+IUP_DRV_API void iupcocoaSetViewControlSize(NSView* view, NSControlSize size);
 IUP_DRV_API void iupcocoaSetAssociatedViews(Ihandle* ih, NSView* main_view, NSView* root_view);
 
 IUP_DRV_API void iupcocoaAddToParent(Ihandle* ih);

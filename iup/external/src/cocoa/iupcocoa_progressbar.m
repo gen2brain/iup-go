@@ -63,7 +63,7 @@ static NSProgressIndicator* cocoaProgressBarGetProgressIndicator(Ihandle* ih)
   if (!ih || !ih->handle)
     return nil;
 
-  if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
+  if (![(id)ih->handle isKindOfClass:[NSProgressIndicator class]])
   {
     NSView* container_view = (NSView*)ih->handle;
     NSProgressIndicator* progress_bar = (NSProgressIndicator*)[[container_view subviews] firstObject];
@@ -95,15 +95,26 @@ static void cocoaProgressBarUpdateVerticalLayout(NSView* container_view, NSProgr
   [progress_bar setFrameCenterRotation:90.0];
 }
 
+static void cocoaProgressBarUpdateCircularLayout(NSView* container_view, NSProgressIndicator* spinner)
+{
+  NSRect bounds = [container_view bounds];
+  NSSize size = [spinner fittingSize];
+  [spinner setFrame:NSMakeRect(floor((bounds.size.width - size.width) / 2.0), floor((bounds.size.height - size.height) / 2.0), size.width, size.height)];
+}
+
 static void cocoaProgressBarLayoutUpdateMethod(Ihandle* ih)
 {
   iupdrvBaseLayoutUpdateMethod(ih);
 
-  if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
+  if (ih->handle && ![(id)ih->handle isKindOfClass:[NSProgressIndicator class]])
   {
     NSView* container_view = (NSView*)ih->handle;
     NSProgressIndicator* progress_bar = cocoaProgressBarGetProgressIndicator(ih);
-    if (container_view && progress_bar)
+    if (!progress_bar)
+      return;
+    if ([progress_bar style] == NSProgressIndicatorStyleSpinning)
+      cocoaProgressBarUpdateCircularLayout(container_view, progress_bar);
+    else
       cocoaProgressBarUpdateVerticalLayout(container_view, progress_bar);
   }
 }
@@ -141,6 +152,11 @@ static int cocoaProgressBarSetMarqueeAttrib(Ihandle* ih, const char* value)
   if (!progress_bar)
     return 0;
 
+#ifdef GNUSTEP
+  if ([progress_bar style] == NSProgressIndicatorStyleSpinning)
+    return 0;
+#endif
+
   if (iupStrBoolean(value))
     [progress_bar startAnimation:nil];
   else
@@ -176,7 +192,26 @@ static int cocoaProgressBarMapMethod(Ihandle* ih)
     [progress_indicator setIndeterminate:NO];
   }
 
-  if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
+  if (iupAttribGetBoolean(ih, "CIRCULAR"))
+  {
+    NSView* container_view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, initial_width, initial_height)];
+
+    [progress_indicator setStyle:NSProgressIndicatorStyleSpinning];
+    [progress_indicator setControlSize:NSControlSizeRegular];
+#ifdef GNUSTEP
+    [progress_indicator setIndeterminate:YES];
+    [progress_indicator startAnimation:nil];
+    ih->data->marquee = 1;
+#endif
+    [container_view addSubview:progress_indicator];
+    [progress_indicator release];
+
+    cocoaProgressBarUpdateCircularLayout(container_view, progress_indicator);
+
+    ih->handle = container_view;
+    iupcocoaSetAssociatedViews(ih, progress_indicator, container_view);
+  }
+  else if (iupStrEqualNoCase(iupAttribGetStr(ih, "ORIENTATION"), "VERTICAL"))
   {
     NSView* container_view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, initial_width, initial_height)];
 

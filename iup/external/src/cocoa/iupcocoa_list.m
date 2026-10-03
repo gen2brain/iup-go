@@ -2188,18 +2188,21 @@ IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
 {
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
+  NSControlSize size = iupcocoaGetControlSize(ih);
 
   switch(sub_type)
   {
     case IUPCOCOALISTSUBTYPE_DROPDOWN:
       {
-        static int popup_decor_w = -1;
-        static int popup_decor_h = -1;
+        static int popup_decor_ws[4] = {-1, -1, -1, -1};
+        static int popup_decor_hs[4];
 
-        if (popup_decor_w == -1)
+        if (popup_decor_ws[size] == -1)
         {
+          int popup_decor_w, popup_decor_h;
           NSPopUpButton* tempButton = [[NSPopUpButton alloc] initWithFrame:NSZeroRect pullsDown:NO];
           NSFont* font = cocoaGetNativeFont(ih);
+          iupcocoaSetViewControlSize(tempButton, size);
           if (font)
             [tempButton setFont:font];
 
@@ -2233,25 +2236,30 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
           if (popup_decor_w < 22) popup_decor_w = 22;
 #endif
 
+          popup_decor_ws[size] = popup_decor_w;
+          popup_decor_hs[size] = popup_decor_h;
+
           [tempButton release];
         }
 
-        if (*y < popup_decor_h)
-          *y = popup_decor_h;
+        if (*y < popup_decor_hs[size])
+          *y = popup_decor_hs[size];
 
-        *x += popup_decor_w;
+        *x += popup_decor_ws[size];
 
         break;
       }
     case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
       {
-        static int combo_decor_w = -1;
-        static int combo_decor_h = -1;
+        static int combo_decor_ws[4] = {-1, -1, -1, -1};
+        static int combo_decor_hs[4];
 
-        if (combo_decor_w == -1)
+        if (combo_decor_ws[size] == -1)
         {
+          int combo_decor_w, combo_decor_h;
           NSComboBox* tempComboBox = [[NSComboBox alloc] initWithFrame:NSZeroRect];
           NSFont* font = cocoaGetNativeFont(ih);
+          iupcocoaSetViewControlSize(tempComboBox, size);
           if (font)
             [tempComboBox setFont:font];
 
@@ -2276,13 +2284,16 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
           if (combo_decor_w < 22) combo_decor_w = 22;
 #endif
 
+          combo_decor_ws[size] = combo_decor_w;
+          combo_decor_hs[size] = combo_decor_h;
+
           [tempComboBox release];
         }
 
-        if (*y < combo_decor_h)
-          *y = combo_decor_h;
+        if (*y < combo_decor_hs[size])
+          *y = combo_decor_hs[size];
 
-        *x += combo_decor_w;
+        *x += combo_decor_ws[size];
 
         break;
       }
@@ -2334,6 +2345,11 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
             *y -= item_height;
 
             NSTextField* temp_text = [[NSTextField alloc] initWithFrame:NSZeroRect];
+            if (size != NSControlSizeRegular)
+            {
+              iupcocoaSetViewControlSize(temp_text, size);
+              [temp_text setFont:iupcocoaGetControlSizeFont(size)];
+            }
 #ifdef GNUSTEP
             int text_height = iupcocoaGnustepIntrinsicHeight(temp_text, 22);
 #else

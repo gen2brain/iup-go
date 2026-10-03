@@ -21,6 +21,7 @@
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
+#include "iup_drvfont.h"
 #include "iup_markup.h"
 
 #include "iupcocoa_drv.h"
@@ -286,6 +287,92 @@ IUP_DRV_API void iupcocoaSetAssociatedViews(Ihandle* ih, NSView* main_view, NSVi
   objc_setAssociatedObject((id)ih->handle, ROOTVIEW_ASSOCIATED_OBJ_KEY, root_view, OBJC_ASSOCIATION_ASSIGN);
 }
 
+IUP_DRV_API NSControlSize iupcocoaGetControlSize(Ihandle* ih)
+{
+  const char* value = iupAttribGetStr(ih, "CONTROLSIZE");
+  if (iupStrEqualNoCase(value, "MINI"))
+    return NSControlSizeMini;
+  if (iupStrEqualNoCase(value, "SMALL"))
+    return NSControlSizeSmall;
+#ifndef GNUSTEP
+  if (iupStrEqualNoCase(value, "LARGE"))
+    return NSControlSizeLarge;
+#endif
+  return NSControlSizeRegular;
+}
+
+IUP_DRV_API NSFont* iupcocoaGetControlSizeFont(NSControlSize size)
+{
+  if (size == NSControlSizeRegular)
+    return [NSFont systemFontOfSize:0];
+  return [NSFont systemFontOfSize:[NSFont systemFontSizeForControlSize:size]];
+}
+
+IUP_DRV_API void iupcocoaSetViewControlSize(NSView* view, NSControlSize size)
+{
+  if (!view)
+    return;
+  if ([view respondsToSelector:@selector(setControlSize:)])
+    [(NSControl*)view setControlSize:size];
+  else if ([view isKindOfClass:[NSControl class]] && [[(NSControl*)view cell] respondsToSelector:@selector(setControlSize:)])
+    [[(NSControl*)view cell] setControlSize:size];
+}
+
+static int cocoaHasFont(Ihandle* ih)
+{
+  while (ih)
+  {
+    char* font = iupAttribGet(ih, "FONT");
+    if (font && !iupStrEqual(font, iupAttribGet(ih, "_IUPCOCOA_SIZEFONT")))
+      return 1;
+    ih = ih->parent;
+  }
+  return 0;
+}
+
+static void cocoaApplyControlSize(Ihandle* ih)
+{
+  NSControlSize size = iupcocoaGetControlSize(ih);
+  NSView* main_view = iupcocoaGetMainView(ih);
+  char* size_font = iupAttribGet(ih, "_IUPCOCOA_SIZEFONT");
+  char typeface[1024];
+  int font_size, is_bold, is_italic, is_underline, is_strikeout;
+  int point_size;
+
+  if (size_font)
+  {
+    if (iupStrEqual(iupAttribGet(ih, "FONT"), size_font))
+      IupSetAttribute(ih, "FONT", NULL);
+    iupAttribSet(ih, "_IUPCOCOA_SIZEFONT", NULL);
+  }
+
+  if (size == NSControlSizeRegular)
+    return;
+
+  if (!IupClassMatch(ih, "label"))
+    iupcocoaSetViewControlSize(main_view, size);
+
+  if (cocoaHasFont(ih))
+    return;
+
+  if (!iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), typeface, &font_size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+    return;
+
+  point_size = (int)lroundf([NSFont systemFontSizeForControlSize:size]);
+  if (point_size == font_size)
+    return;
+
+  IupSetfAttribute(ih, "FONT", "%s, %d", typeface, point_size);
+  iupAttribSetStr(ih, "_IUPCOCOA_SIZEFONT", iupAttribGet(ih, "FONT"));
+
+  if (main_view && main_view != (NSView*)ih->handle && [main_view respondsToSelector:@selector(setFont:)])
+  {
+    IupCocoaFont* iup_font = iupcocoaGetFont(ih);
+    if (iup_font)
+      [(id)main_view setFont:[iup_font nativeFont]];
+  }
+}
+
 IUP_DRV_API void iupcocoaAddToParent(Ihandle* ih)
 {
   NSView* parent_view = iupcocoaCommonBaseLayoutGetParentView(ih);
@@ -296,6 +383,8 @@ IUP_DRV_API void iupcocoaAddToParent(Ihandle* ih)
 
   [child_view setAutoresizingMask:NSViewMaxXMargin | NSViewMinYMargin];
   [parent_view addSubview:child_view];
+
+  cocoaApplyControlSize(ih);
 }
 
 IUP_DRV_API void iupcocoaRemoveFromParent(Ihandle* ih)
@@ -1247,6 +1336,7 @@ IUP_SDK_API void iupdrvBaseRegisterCommonAttrib(Iclass* ic)
 IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 {
   iupClassRegisterAttribute(ic, "TIPICON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "CONTROLSIZE", NULL, NULL, IUPAF_SAMEASSYSTEM, "REGULAR", IUPAF_NOT_MAPPED|IUPAF_DEFAULT);
 }
 
 IUP_DRV_API NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihandle* ih, const char* value)

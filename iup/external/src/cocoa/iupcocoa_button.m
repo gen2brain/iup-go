@@ -366,16 +366,17 @@ static NSCellImagePosition cocoaButtonGetImagePosition(int img_position)
   }
 }
 
-static int text_border_x = -1, text_border_y = -1;
-static int image_border_x = -1, image_border_y = -1;
-static int image_text_border_x = -1, image_text_border_y = -1;
-static int default_extra_x = -1, default_extra_y = -1;
+static int text_border_x[4] = {-1, -1, -1, -1}, text_border_y[4];
+static int image_border_x[4] = {-1, -1, -1, -1}, image_border_y[4];
+static int image_text_border_x[4] = {-1, -1, -1, -1}, image_text_border_y[4];
+static int default_extra_x[4] = {-1, -1, -1, -1}, default_extra_y[4];
 
-static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, int* border_x, int* border_y)
+static void cocoaButtonMeasureBorders(Ihandle* ih, NSControlSize size, int has_image, int has_text, int* border_x, int* border_y)
 {
   NSButton* temp_button = [[NSButton alloc] initWithFrame:NSZeroRect];
   [temp_button setBezelStyle:IUPCOCOA_PUSH_BEZEL];
-  [temp_button setFont:[NSFont systemFontOfSize:0]];
+  iupcocoaSetViewControlSize(temp_button, size);
+  [temp_button setFont:iupcocoaGetControlSizeFont(size)];
   [temp_button setBordered:YES];
 
   if (has_image)
@@ -439,11 +440,12 @@ static void cocoaButtonMeasureBorders(Ihandle* ih, int has_image, int has_text, 
   [temp_button release];
 }
 
-static void cocoaButtonMeasureDefaultExtra(int* extra_x, int* extra_y)
+static void cocoaButtonMeasureDefaultExtra(NSControlSize size, int* extra_x, int* extra_y)
 {
   NSButton* temp_button = [[NSButton alloc] initWithFrame:NSZeroRect];
   [temp_button setBezelStyle:IUPCOCOA_PUSH_BEZEL];
-  [temp_button setFont:[NSFont systemFontOfSize:0]];
+  iupcocoaSetViewControlSize(temp_button, size);
+  [temp_button setFont:iupcocoaGetControlSizeFont(size)];
   [temp_button setBordered:YES];
   [temp_button setTitle:@"WWWWWWWWWW"];
 
@@ -461,6 +463,7 @@ static void cocoaButtonMeasureDefaultExtra(int* extra_x, int* extra_y)
 
 IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
+  NSControlSize size = ih ? iupcocoaGetControlSize(ih) : NSControlSizeRegular;
   int border_x = 0, border_y = 0;
   int has_image = 0;
   int has_text = 0;
@@ -488,27 +491,27 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 
   if (has_image && has_text)
   {
-    if (image_text_border_x == -1)
-      cocoaButtonMeasureBorders(ih, 1, 1, &image_text_border_x, &image_text_border_y);
+    if (image_text_border_x[size] == -1)
+      cocoaButtonMeasureBorders(ih, size, 1, 1, &image_text_border_x[size], &image_text_border_y[size]);
 
-    border_x = image_text_border_x;
-    border_y = image_text_border_y;
+    border_x = image_text_border_x[size];
+    border_y = image_text_border_y[size];
   }
   else if (has_image)
   {
-    if (image_border_x == -1)
-      cocoaButtonMeasureBorders(ih, 1, 0, &image_border_x, &image_border_y);
+    if (image_border_x[size] == -1)
+      cocoaButtonMeasureBorders(ih, size, 1, 0, &image_border_x[size], &image_border_y[size]);
 
-    border_x = image_border_x;
-    border_y = image_border_y;
+    border_x = image_border_x[size];
+    border_y = image_border_y[size];
   }
   else
   {
-    if (text_border_x == -1)
-      cocoaButtonMeasureBorders(ih, 0, 1, &text_border_x, &text_border_y);
+    if (text_border_x[size] == -1)
+      cocoaButtonMeasureBorders(ih, size, 0, 1, &text_border_x[size], &text_border_y[size]);
 
-    border_x = text_border_x;
-    border_y = text_border_y;
+    border_x = text_border_x[size];
+    border_y = text_border_y[size];
   }
 
   /* user PADDING replaces the theme padding; keep only the bezel frame */
@@ -518,11 +521,11 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   /* the theme may add an image to a default button, as GNUstep does */
   if (ih && !has_image && iupAttribGetBoolean(ih, "SHOWASDEFAULT"))
   {
-    if (default_extra_x == -1)
-      cocoaButtonMeasureDefaultExtra(&default_extra_x, &default_extra_y);
+    if (default_extra_x[size] == -1)
+      cocoaButtonMeasureDefaultExtra(size, &default_extra_x[size], &default_extra_y[size]);
 
-    border_x += default_extra_x;
-    border_y += default_extra_y;
+    border_x += default_extra_x[size];
+    border_y += default_extra_y[size];
   }
 
   *x += border_x;
