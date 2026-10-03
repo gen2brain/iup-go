@@ -215,6 +215,26 @@ static int gtkProgressBarSetDashedAttrib(Ihandle* ih, const char* value)
 }
 #endif
 
+#if GTK_CHECK_VERSION(3, 20, 0)
+static void gtkProgressBarSpinnerCheckIcon(GtkWidget* spinner)
+{
+  GtkIconTheme* theme = gtk_icon_theme_get_for_screen(gtk_widget_get_screen(spinner));
+  GtkIconInfo* info = gtk_icon_theme_lookup_icon(theme, "process-working-symbolic", 48, GTK_ICON_LOOKUP_USE_BUILTIN);
+  const char* filename = info ? gtk_icon_info_get_filename(info) : NULL;
+
+  if (!filename || !g_str_has_suffix(filename, ".svg"))
+  {
+    GtkCssProvider* provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(provider, "spinner { -gtk-icon-source: builtin; }", -1, NULL);
+    gtk_style_context_add_provider(gtk_widget_get_style_context(spinner), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref(provider);
+  }
+
+  if (info)
+    g_object_unref(info);
+}
+#endif
+
 static int gtkProgressBarMapMethod(Ihandle* ih)
 {
   if (iupAttribGetBoolean(ih, "CIRCULAR"))
@@ -222,6 +242,10 @@ static int gtkProgressBarMapMethod(Ihandle* ih)
     ih->handle = gtk_spinner_new();
     if (!ih->handle)
       return IUP_ERROR;
+
+#if GTK_CHECK_VERSION(3, 20, 0)
+    gtkProgressBarSpinnerCheckIcon(ih->handle);
+#endif
 
     iupgtkAddToParent(ih);
     gtk_widget_realize(ih->handle);
