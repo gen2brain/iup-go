@@ -580,6 +580,13 @@ var (
 	globalIdle  IdleFunc
 	globalEntry EntryPointFunc
 	globalExit  ExitFunc
+
+	globalKeyPress   GlobalKeyPressFunc
+	globalButton     GlobalButtonFunc
+	globalMotion     GlobalMotionFunc
+	globalWheel      GlobalWheelFunc
+	globalEnterModal GlobalEnterModalFunc
+	globalLeaveModal GlobalLeaveModalFunc
 )
 
 type IdleFunc func() int
@@ -609,6 +616,72 @@ var exitCB = purego.NewCallback(func() int {
 	return 0
 })
 
+type GlobalKeyPressFunc func(c, press int) int
+
+var globalKeyPressCB = sync.OnceValue(func() uintptr {
+	return purego.NewCallback(func(c, press int32) int {
+		if globalKeyPress != nil {
+			return globalKeyPress(int(c), int(press))
+		}
+		return 0
+	})
+})
+
+type GlobalButtonFunc func(button, pressed, x, y int, status string) int
+
+var globalButtonCB = sync.OnceValue(func() uintptr {
+	return purego.NewCallback(func(button, pressed, x, y int32, status uintptr) int {
+		if globalButton != nil {
+			return globalButton(int(button), int(pressed), int(x), int(y), goString(status))
+		}
+		return 0
+	})
+})
+
+type GlobalMotionFunc func(x, y int, status string) int
+
+var globalMotionCB = sync.OnceValue(func() uintptr {
+	return purego.NewCallback(func(x, y int32, status uintptr) int {
+		if globalMotion != nil {
+			return globalMotion(int(x), int(y), goString(status))
+		}
+		return 0
+	})
+})
+
+type GlobalWheelFunc func(delta float64, x, y int, status string) int
+
+var globalWheelCB = sync.OnceValue(func() uintptr {
+	return newFloatCallback(func(delta float32, x, y int32, status uintptr) int {
+		if globalWheel != nil {
+			return globalWheel(float64(delta), int(x), int(y), goString(status))
+		}
+		return 0
+	})
+})
+
+type GlobalEnterModalFunc func(level int) int
+
+var globalEnterModalCB = sync.OnceValue(func() uintptr {
+	return purego.NewCallback(func(level int32) int {
+		if globalEnterModal != nil {
+			return globalEnterModal(int(level))
+		}
+		return 0
+	})
+})
+
+type GlobalLeaveModalFunc func(level int) int
+
+var globalLeaveModalCB = sync.OnceValue(func() uintptr {
+	return purego.NewCallback(func(level int32) int {
+		if globalLeaveModal != nil {
+			return globalLeaveModal(int(level))
+		}
+		return 0
+	})
+})
+
 func GetFunction(name string) uintptr {
 	return iupGetFunction(name)
 }
@@ -622,6 +695,18 @@ func SetFunction(name string, fn interface{}) {
 			globalEntry = nil
 		case "EXIT_CB":
 			globalExit = nil
+		case "GLOBALKEYPRESS_CB":
+			globalKeyPress = nil
+		case "GLOBALBUTTON_CB":
+			globalButton = nil
+		case "GLOBALMOTION_CB":
+			globalMotion = nil
+		case "GLOBALWHEEL_CB":
+			globalWheel = nil
+		case "GLOBALENTERMODAL_CB":
+			globalEnterModal = nil
+		case "GLOBALLEAVEMODAL_CB":
+			globalLeaveModal = nil
 		}
 		iupSetFunction(name, 0)
 		return
@@ -637,6 +722,24 @@ func SetFunction(name string, fn interface{}) {
 	case "EXIT_CB":
 		globalExit = fn.(ExitFunc)
 		iupSetFunction("EXIT_CB", exitCB)
+	case "GLOBALKEYPRESS_CB":
+		globalKeyPress = fn.(GlobalKeyPressFunc)
+		iupSetFunction("GLOBALKEYPRESS_CB", globalKeyPressCB())
+	case "GLOBALBUTTON_CB":
+		globalButton = fn.(GlobalButtonFunc)
+		iupSetFunction("GLOBALBUTTON_CB", globalButtonCB())
+	case "GLOBALMOTION_CB":
+		globalMotion = fn.(GlobalMotionFunc)
+		iupSetFunction("GLOBALMOTION_CB", globalMotionCB())
+	case "GLOBALWHEEL_CB":
+		globalWheel = fn.(GlobalWheelFunc)
+		iupSetFunction("GLOBALWHEEL_CB", globalWheelCB())
+	case "GLOBALENTERMODAL_CB":
+		globalEnterModal = fn.(GlobalEnterModalFunc)
+		iupSetFunction("GLOBALENTERMODAL_CB", globalEnterModalCB())
+	case "GLOBALLEAVEMODAL_CB":
+		globalLeaveModal = fn.(GlobalLeaveModalFunc)
+		iupSetFunction("GLOBALLEAVEMODAL_CB", globalLeaveModalCB())
 	}
 }
 

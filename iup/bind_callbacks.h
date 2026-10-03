@@ -36,6 +36,36 @@ static void goIupSetExitFunc() {
 	IupSetFunction("EXIT_CB", (Icallback) goIupExitCB);
 }
 
+CGO_EXPORT extern int goIupGlobalKeyPressCB(int, int);
+static void goIupSetGlobalKeyPressFunc() {
+	IupSetFunction("GLOBALKEYPRESS_CB", (Icallback) goIupGlobalKeyPressCB);
+}
+
+CGO_EXPORT extern int goIupGlobalButtonCB(int, int, int, int, char *);
+static void goIupSetGlobalButtonFunc() {
+	IupSetFunction("GLOBALBUTTON_CB", (Icallback) goIupGlobalButtonCB);
+}
+
+CGO_EXPORT extern int goIupGlobalMotionCB(int, int, char *);
+static void goIupSetGlobalMotionFunc() {
+	IupSetFunction("GLOBALMOTION_CB", (Icallback) goIupGlobalMotionCB);
+}
+
+CGO_EXPORT extern int goIupGlobalWheelCB(float, int, int, char *);
+static void goIupSetGlobalWheelFunc() {
+	IupSetFunction("GLOBALWHEEL_CB", (Icallback) goIupGlobalWheelCB);
+}
+
+CGO_EXPORT extern int goIupGlobalEnterModalCB(int);
+static void goIupSetGlobalEnterModalFunc() {
+	IupSetFunction("GLOBALENTERMODAL_CB", (Icallback) goIupGlobalEnterModalCB);
+}
+
+CGO_EXPORT extern int goIupGlobalLeaveModalCB(int);
+static void goIupSetGlobalLeaveModalFunc() {
+	IupSetFunction("GLOBALLEAVEMODAL_CB", (Icallback) goIupGlobalLeaveModalCB);
+}
+
 CGO_EXPORT extern int goIupMapCB(void *);
 static void goIupSetMapFunc(Ihandle *ih) {
 	IupSetCallback(ih, "MAP_CB", (Icallback) goIupMapCB);

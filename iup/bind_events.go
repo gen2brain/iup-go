@@ -598,6 +598,18 @@ func SetFunction(name string, fn interface{}) {
 			clearGlobalHandle(&globalEntryHandle)
 		case "EXIT_CB":
 			clearGlobalHandle(&globalExitHandle)
+		case "GLOBALKEYPRESS_CB":
+			clearGlobalHandle(&globalKeyPressHandle)
+		case "GLOBALBUTTON_CB":
+			clearGlobalHandle(&globalButtonHandle)
+		case "GLOBALMOTION_CB":
+			clearGlobalHandle(&globalMotionHandle)
+		case "GLOBALWHEEL_CB":
+			clearGlobalHandle(&globalWheelHandle)
+		case "GLOBALENTERMODAL_CB":
+			clearGlobalHandle(&globalEnterModalHandle)
+		case "GLOBALLEAVEMODAL_CB":
+			clearGlobalHandle(&globalLeaveModalHandle)
 		}
 
 		C.IupSetFunction(cName, nil)
@@ -611,6 +623,18 @@ func SetFunction(name string, fn interface{}) {
 		setEntryPointFunc(fn.(EntryPointFunc))
 	case "EXIT_CB":
 		setExitFunc(fn.(ExitFunc))
+	case "GLOBALKEYPRESS_CB":
+		setGlobalKeyPressFunc(fn.(GlobalKeyPressFunc))
+	case "GLOBALBUTTON_CB":
+		setGlobalButtonFunc(fn.(GlobalButtonFunc))
+	case "GLOBALMOTION_CB":
+		setGlobalMotionFunc(fn.(GlobalMotionFunc))
+	case "GLOBALWHEEL_CB":
+		setGlobalWheelFunc(fn.(GlobalWheelFunc))
+	case "GLOBALENTERMODAL_CB":
+		setGlobalEnterModalFunc(fn.(GlobalEnterModalFunc))
+	case "GLOBALLEAVEMODAL_CB":
+		setGlobalLeaveModalFunc(fn.(GlobalLeaveModalFunc))
 	}
 }
 

@@ -36,6 +36,12 @@ type FlatToggleActionFunc func(ih Ihandle, state int) int
 type FocusFunc func(Ihandle, int) int
 type GestureFunc func(ih Ihandle, gesture, state, x, y int, v1, v2 float64) int
 type GetParamFunc func(dialog Ihandle, paramIndex int) int
+type GlobalButtonFunc func(button, pressed, x, y int, status string) int
+type GlobalEnterModalFunc func(level int) int
+type GlobalKeyPressFunc func(c, press int) int
+type GlobalLeaveModalFunc func(level int) int
+type GlobalMotionFunc func(x, y int, status string) int
+type GlobalWheelFunc func(delta float64, x, y int, status string) int
 type HeightFunc func(ih Ihandle, i int) int
 type HelpFunc func(Ihandle) int
 type HSpanFunc func(ih Ihandle, i, j int) int

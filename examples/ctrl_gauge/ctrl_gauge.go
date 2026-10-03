@@ -20,7 +20,7 @@ func main() {
 		gauge,
 	).SetAttribute("TITLE", "Gauge")
 
-	iup.SetFunction("IDLE_ACTION", iup.IdleFunc(idleFunction))
+	iup.SetIdleFunc(idleFunction)
 
 	iup.Show(dlg)
 	iup.MainLoop()

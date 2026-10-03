@@ -39,7 +39,7 @@ func main() {
 	iup.SetGlobal("UTF8MODE", "YES")
 
 	root = sandbox()
-	iup.SetFunction("EXIT_CB", iup.ExitFunc(func() { os.RemoveAll(root) }))
+	iup.SetExitFunc(func() { os.RemoveAll(root) })
 	current = root
 
 	makeIcons()
