@@ -874,7 +874,10 @@ extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
     case IUP_BUTTON1: button = Qt::LeftButton;   break;
     case IUP_BUTTON2: button = Qt::MiddleButton; break;
     case IUP_BUTTON3: button = Qt::RightButton;  break;
-    default: return;
+    default:
+      if (status != -1)
+        return;
+      break;
   }
 
   QEvent::Type type;
@@ -882,6 +885,8 @@ extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
   if (status == -1)
   {
     type = QEvent::MouseMove;
+    buttons = button;
+    button = Qt::NoButton;
   }
   else if (status == 0)
   {
