@@ -344,6 +344,19 @@ static BWindow* haikuWindowAtPoint(BPoint screen)
 
 IUP_DRV_API void iuphaikuFireGlobalInputCB(BMessage* msg)
 {
+  static uint32 last_what = 0;
+  static bigtime_t last_when = -1;
+  static int32 held_buttons = 0;
+  bigtime_t when = 0;
+
+  if (msg->FindInt64("when", &when) == B_OK)
+  {
+    if (when == last_when && msg->what == last_what)
+      return;
+    last_when = when;
+    last_what = msg->what;
+  }
+
   switch (msg->what)
   {
     case B_MOUSE_DOWN:
@@ -357,10 +370,13 @@ IUP_DRV_API void iuphaikuFireGlobalInputCB(BMessage* msg)
       msg->FindInt32("buttons", &buttons);
       msg->FindInt32("modifiers", &mods);
       msg->FindInt32("clicks", &clicks);
+      int32 changed = (msg->what == B_MOUSE_DOWN) ? buttons : (held_buttons & ~buttons);
+      held_buttons = buttons;
       int btn = 0;
-      if      (buttons & B_PRIMARY_MOUSE_BUTTON)   btn = IUP_BUTTON1;
-      else if (buttons & B_SECONDARY_MOUSE_BUTTON) btn = IUP_BUTTON3;
-      else if (buttons & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
+      if      (changed & B_PRIMARY_MOUSE_BUTTON)   btn = IUP_BUTTON1;
+      else if (changed & B_SECONDARY_MOUSE_BUTTON) btn = IUP_BUTTON3;
+      else if (changed & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
+      if (!btn) return;
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, clicks == 2 ? 1 : 0);
       cb(btn, msg->what == B_MOUSE_DOWN ? 1 : 0, static_cast<int>(where.x), static_cast<int>(where.y), status);
@@ -400,12 +416,13 @@ IUP_DRV_API void iuphaikuFireGlobalInputCB(BMessage* msg)
     {
       IFii cb = reinterpret_cast<IFii>(IupGetFunction("GLOBALKEYPRESS_CB"));
       if (!cb) return;
-      int32 byte_val = 0, raw_char = 0, mods = 0, raw_key = 0;
-      msg->FindInt32("byte", &byte_val);
+      int8 byte_val = 0;
+      int32 raw_char = 0, mods = 0, raw_key = 0;
+      msg->FindInt8("byte", &byte_val);
       msg->FindInt32("raw_char", &raw_char);
       msg->FindInt32("key", &raw_key);
       msg->FindInt32("modifiers", &mods);
-      int code = iuphaikuKeyDecode(static_cast<int>(byte_val), static_cast<int>(raw_char), static_cast<int>(raw_key), static_cast<unsigned>(mods));
+      int code = iuphaikuKeyDecode(static_cast<int>(static_cast<uint8>(byte_val)), static_cast<int>(raw_char), static_cast<int>(raw_key), static_cast<unsigned>(mods));
       if (code) cb(code, msg->what == B_KEY_DOWN ? 1 : 0);
       break;
     }
@@ -448,7 +465,7 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
     msg.AddString("bytes", buf);
     msg.AddInt32("raw_char", static_cast<int32>(byte_val));
     msg.AddInt32("key", scancode? static_cast<int32>(scancode): static_cast<int32>(byte_val));
-    BMessenger(target).SendMessage(&msg);
+    BMessenger(nullptr, target->Window()).SendMessage(&msg);
   }
   if (press & 0x02)
   {
@@ -459,7 +476,7 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
     msg.AddString("bytes", buf);
     msg.AddInt32("raw_char", static_cast<int32>(byte_val));
     msg.AddInt32("key", scancode? static_cast<int32>(scancode): static_cast<int32>(byte_val));
-    BMessenger(target).SendMessage(&msg);
+    BMessenger(nullptr, target->Window()).SendMessage(&msg);
   }
 }
 
