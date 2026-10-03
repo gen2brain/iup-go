@@ -54,7 +54,7 @@ static int androidWebBrowserMapMethod(Ihandle* ih)
   if (!view)
     return IUP_ERROR;
 
-  ih->handle = (jobject)((*jni_env)->NewGlobalRef(jni_env, view));
+  ih->handle = (*jni_env)->NewGlobalRef(jni_env, view);
   (*jni_env)->DeleteLocalRef(jni_env, view);
 
   iupAndroid_AddWidgetToParent(jni_env, ih);
@@ -82,7 +82,7 @@ static void androidWebBrowserCallVoidStr(Ihandle* ih, jmethodID* cache_slot, con
 
   if (*cache_slot)
   {
-    jstring j_value = value ? (*jni_env)->NewStringUTF(jni_env, value) : NULL;
+    jstring j_value = value ? iupAndroid_NewStringUTF(jni_env, value) : NULL;
     (*jni_env)->CallStaticVoidMethod(jni_env, java_class, *cache_slot, ih->handle, j_value);
     iupAndroid_CheckException(jni_env, method_name);
     if (j_value) (*jni_env)->DeleteLocalRef(jni_env, j_value);
@@ -313,7 +313,7 @@ static char* androidWebBrowserEvalJS(Ihandle* ih, const char* js)
 
   if (s_evalJs)
   {
-    jstring j_js = (*jni_env)->NewStringUTF(jni_env, js);
+    jstring j_js = iupAndroid_NewStringUTF(jni_env, js);
     jstring j_result = (jstring)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, s_evalJs, ih->handle, j_js);
     iupAndroid_CheckException(jni_env, "IupWebBrowserHelper.evalJs");
     if (j_js) (*jni_env)->DeleteLocalRef(jni_env, j_js);
@@ -645,7 +645,7 @@ static int androidWebBrowserSetInsertImageFileAttrib(Ihandle* ih, const char* va
 
   if (s_imageFileToDataUri)
   {
-    jstring j_path = (*jni_env)->NewStringUTF(jni_env, value);
+    jstring j_path = iupAndroid_NewStringUTF(jni_env, value);
     jstring j_uri = (jstring)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, s_imageFileToDataUri, j_path);
     iupAndroid_CheckException(jni_env, "imageFileToDataUri");
     if (j_path) (*jni_env)->DeleteLocalRef(jni_env, j_path);
@@ -743,7 +743,7 @@ static int androidWebBrowserSetSaveFileAttrib(Ihandle* ih, const char* value)
     s_save = (*jni_env)->GetStaticMethodID(jni_env, java_class, "saveFile", "(Landroid/view/View;Ljava/lang/String;)Z");
   if (s_save)
   {
-    jstring j_path = (*jni_env)->NewStringUTF(jni_env, value);
+    jstring j_path = iupAndroid_NewStringUTF(jni_env, value);
     (*jni_env)->CallStaticBooleanMethod(jni_env, java_class, s_save, ih->handle, j_path);
     iupAndroid_CheckException(jni_env, "saveFile");
     if (j_path) (*jni_env)->DeleteLocalRef(jni_env, j_path);

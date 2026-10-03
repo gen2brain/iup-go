@@ -44,11 +44,11 @@ package iup
 
 #cgo qt,!qt5,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Widgets
 #cgo qt,qt5,!nopkgconfig pkg-config: Qt5Core Qt5Gui Qt5Widgets
-#cgo qt,!qt5,web,!nopkgconfig pkg-config: Qt6WebEngineCore Qt6WebEngineWidgets
-#cgo qt,qt5,web,!nopkgconfig pkg-config: Qt5WebEngineCore  Qt5WebEngineWidgets
+#cgo qt,!qt5,web,!windows,!darwin,!nopkgconfig qt,!qt5,web,webengine,!nopkgconfig pkg-config: Qt6WebEngineCore Qt6WebEngineWidgets
+#cgo qt,qt5,web,!windows,!darwin,!nopkgconfig qt,qt5,web,webengine,!nopkgconfig pkg-config: Qt5WebEngineCore  Qt5WebEngineWidgets
 
 #cgo qml,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Qml Qt6Quick Qt6QuickControls2
-#cgo qml,web,!nopkgconfig pkg-config: Qt6WebEngineQuick Qt6WebEngineCore
+#cgo qml,web,!windows,!darwin,!nopkgconfig qml,web,webengine,!nopkgconfig pkg-config: Qt6WebEngineQuick Qt6WebEngineCore
 
 #cgo motif LDFLAGS: -lXm -lXmu -lXt -lXext -lXrender -lX11
 #cgo linux,!android,motif LDFLAGS: -lXpm
@@ -79,7 +79,7 @@ package iup
 #cgo darwin,!ios CFLAGS: -Iexternal/src/cocoa -x objective-c
 #cgo darwin,!ios LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications -framework CoreLocation
 #cgo darwin,!ios,gl LDFLAGS: -framework OpenGL
-#cgo darwin,!ios,!gtk3,!gtk4,!qt,!qml,web LDFLAGS: -framework WebKit
+#cgo darwin,!ios,!gtk3,!gtk4,!qt,!qml,web darwin,!ios,qt,web,!webengine darwin,!ios,qml,web,!webengine LDFLAGS: -framework WebKit
 #cgo darwin,!ios,media LDFLAGS: -framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo
 
 #cgo darwin,!ios,gtk3 CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3 -x objective-c

@@ -24,7 +24,10 @@
 
 #include "iupwin_webbrowser.h"
 
-#ifdef IUP_USE_WINUI
+#if defined(IUP_USE_QT) || defined(IUP_USE_QML)
+#define IUPWEB_HOSTED
+#include "iupweb_host.h"
+#elif defined(IUP_USE_WINUI)
 extern "C" IUP_DRV_API void iupwinuiHwndHostRemove(Ihandle* ih);
 #endif
 
@@ -324,6 +327,7 @@ struct _IcontrolData
   EventRegistrationToken historyChangedToken;
   EventRegistrationToken webMessageReceivedToken;
   WebViewLoadStatus loadStatus;
+  HWND hwnd;
   WNDPROC oldWndProc;
 };
 
@@ -2007,6 +2011,32 @@ static int winWebBrowserSetPrintPreviewAttrib(Ihandle* ih, const char* value)
   return winWebBrowserSetPrintAttrib(ih, nullptr);
 }
 
+static void winWebBrowserReleaseHost(Ihandle* ih)
+{
+  if (ih->data->hwnd)
+  {
+    DestroyWindow(ih->data->hwnd);
+    ih->data->hwnd = nullptr;
+  }
+
+#ifdef IUPWEB_HOSTED
+  iupwebHostUnMap(ih);
+#else
+  ih->handle = nullptr;
+#endif
+}
+
+#ifdef IUPWEB_HOSTED
+extern "C" void iupwebHostSetBounds(Ihandle* ih, int x, int y, int width, int height, int visible)
+{
+  if (!ih->data || !ih->data->hwnd)
+    return;
+
+  SetWindowPos(ih->data->hwnd, nullptr, x, y, width, height,
+               SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER | (visible ? SWP_SHOWWINDOW : SWP_HIDEWINDOW));
+}
+#endif
+
 static int winWebBrowserMapMethod(Ihandle* ih)
 {
   if (!g_comInitialized)
@@ -2026,24 +2056,37 @@ static int winWebBrowserMapMethod(Ihandle* ih)
     }
   }
 
-#ifdef IUP_USE_WINUI
+#if defined(IUPWEB_HOSTED)
+  HWND parent = static_cast<HWND>(iupwebHostMap(ih));
+  DWORD style = WS_CHILD;
+#elif defined(IUP_USE_WINUI)
   Ihandle* dialog = IupGetDialog(ih);
   HWND parent = dialog ? static_cast<HWND>(dialog->handle) : nullptr;
+  DWORD style = WS_CHILD | WS_VISIBLE;
 #else
   HWND parent = static_cast<HWND>(iupChildTreeGetNativeParentHandle(ih));
+  DWORD style = WS_CHILD | WS_VISIBLE;
 #endif
   if (!parent)
+  {
+    winWebBrowserReleaseHost(ih);
     return IUP_ERROR;
+  }
 
-  HWND hwnd = CreateWindowEx(0, TEXT("STATIC"), TEXT(""),
-                              WS_CHILD | WS_VISIBLE,
+  HWND hwnd = CreateWindowEx(0, TEXT("STATIC"), TEXT(""), style,
                               ih->x, ih->y, ih->currentwidth, ih->currentheight,
                               parent, nullptr, static_cast<HINSTANCE>(GetModuleHandle(nullptr)), nullptr);
 
   if (!hwnd)
+  {
+    winWebBrowserReleaseHost(ih);
     return IUP_ERROR;
+  }
 
+  ih->data->hwnd = hwnd;
+#ifndef IUPWEB_HOSTED
   ih->handle = hwnd;
+#endif
 
   SetProp(hwnd, TEXT("IUP_WEBBROWSER_IH"), reinterpret_cast<HANDLE>(ih));
   ih->data->oldWndProc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(WebBrowserWndProc)));
@@ -2051,16 +2094,14 @@ static int winWebBrowserMapMethod(Ihandle* ih)
   HRESULT hr = IupWebView2LoaderInit();
   if (FAILED(hr))
   {
-    DestroyWindow(hwnd);
-    ih->handle = nullptr;
+    winWebBrowserReleaseHost(ih);
     return IUP_ERROR;
   }
 
   CreateCoreWebView2EnvironmentWithOptionsFunc createEnvFunc = IupWebView2LoaderGetCreateEnvironmentFunc();
   if (!createEnvFunc)
   {
-    DestroyWindow(hwnd);
-    ih->handle = nullptr;
+    winWebBrowserReleaseHost(ih);
     return IUP_ERROR;
   }
 
@@ -2077,8 +2118,7 @@ static int winWebBrowserMapMethod(Ihandle* ih)
   if (FAILED(hr))
   {
     delete state;
-    DestroyWindow(hwnd);
-    ih->handle = nullptr;
+    winWebBrowserReleaseHost(ih);
     return IUP_ERROR;
   }
 
@@ -2101,16 +2141,14 @@ static int winWebBrowserMapMethod(Ihandle* ih)
   if (state->complete == 0)
   {
     state->abandoned = 1;
-    DestroyWindow(hwnd);
-    ih->handle = nullptr;
+    winWebBrowserReleaseHost(ih);
     return IUP_ERROR;
   }
 
   if (state->complete < 0)
   {
     delete state;
-    DestroyWindow(hwnd);
-    ih->handle = nullptr;
+    winWebBrowserReleaseHost(ih);
     return IUP_ERROR;
   }
 
@@ -2148,17 +2186,15 @@ static void winWebBrowserUnMapMethod(Ihandle* ih)
     ih->data->webviewController = nullptr;
   }
 
-  if (ih->handle)
+  if (ih->data->hwnd && ih->data->oldWndProc)
   {
-    if (ih->data->oldWndProc)
-    {
-      SetWindowLongPtr(static_cast<HWND>(ih->handle), GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(ih->data->oldWndProc));
-      ih->data->oldWndProc = nullptr;
-    }
-    RemoveProp(static_cast<HWND>(ih->handle), TEXT("IUP_WEBBROWSER_IH"));
-    DestroyWindow(static_cast<HWND>(ih->handle));
-    ih->handle = nullptr;
+    SetWindowLongPtr(ih->data->hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(ih->data->oldWndProc));
+    ih->data->oldWndProc = nullptr;
   }
+  if (ih->data->hwnd)
+    RemoveProp(ih->data->hwnd, TEXT("IUP_WEBBROWSER_IH"));
+
+  winWebBrowserReleaseHost(ih);
 }
 
 static void winWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
@@ -2174,12 +2210,16 @@ static void winWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, i
 
 static void winWebBrowserLayoutUpdateMethod(Ihandle* ih)
 {
+#ifdef IUPWEB_HOSTED
+  iupwebHostLayoutUpdate(ih);
+#else
   iupdrvBaseLayoutUpdateMethod(ih);
+#endif
 
-  if (ih->data->webviewController && ih->handle)
+  if (ih->data->webviewController && ih->data->hwnd)
   {
     RECT clientRect;
-    GetClientRect(static_cast<HWND>(ih->handle), &clientRect);
+    GetClientRect(ih->data->hwnd, &clientRect);
 
     RECT bounds;
     bounds.left = 0;
@@ -2199,6 +2239,7 @@ static int winWebBrowserCreateMethod(Ihandle* ih, void** params)
   ih->data->webviewController = nullptr;
   ih->data->webviewWindow = nullptr;
   ih->data->loadStatus = WEBVIEW_STATUS_COMPLETED;
+  ih->data->hwnd = nullptr;
   ih->data->oldWndProc = nullptr;
 
   IupSetAttribute(ih, "BORDER", "NO");
@@ -2213,7 +2254,7 @@ static void winWebBrowserDestroyMethod(Ihandle* ih)
 {
   if (ih->data)
   {
-    if (ih->handle)
+    if (ih->data->hwnd)
       winWebBrowserUnMapMethod(ih);
   }
 }

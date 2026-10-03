@@ -9,13 +9,32 @@
 
 #include "iup.h"
 #include "iup_object.h"
+#include "iup_classbase.h"
 
 #include "iupcocoa_drv.h"
 
 
 #define iupAppleWKBaseView NSView
-#define iupAppleWKAddToParent(ih)      iupcocoaAddToParent(ih)
-#define iupAppleWKRemoveFromParent(ih) iupcocoaRemoveFromParent(ih)
+
+static inline int iupAppleWKAddToParent(Ihandle* ih, WKWebView* v)
+{
+	ih->handle = [v retain];
+	iupcocoaSetAssociatedViews(ih, v, v);
+	iupcocoaAddToParent(ih);
+	return 1;
+}
+
+static inline void iupAppleWKRemoveFromParent(Ihandle* ih, WKWebView* v)
+{
+	(void)v;
+	iupdrvBaseUnMapMethod(ih);
+}
+
+static inline void iupAppleWKLayoutUpdate(Ihandle* ih, WKWebView* v)
+{
+	(void)v;
+	iupdrvBaseLayoutUpdateMethod(ih);
+}
 
 static inline void iupAppleWKApplyAutoresize(WKWebView* v)
 {
@@ -26,11 +45,6 @@ static inline void iupAppleWKFocusForExec(WKWebView* v)
 {
 	NSWindow* win = [v window];
 	if (win) [win makeFirstResponder:v];
-}
-
-static inline void iupAppleWKSetAssociatedViews(Ihandle* ih, WKWebView* v)
-{
-	iupcocoaSetAssociatedViews(ih, v, v);
 }
 
 static inline void iupAppleWKRunPrint(Ihandle* ih, WKWebView* v)
