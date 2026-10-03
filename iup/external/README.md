@@ -5,7 +5,7 @@ It uses native interface elements for high performance and platform-consistent l
 
 This is a fork maintained as part of [IUP-Go](https://github.com/gen2brain/iup-go) with additional backends (Cocoa, WinUI, Qt, Qt Quick, GTK4, FLTK, EFL, Android, Cocoa Touch, Haiku, WebAssembly) and features.
 
-API reference documentation is available in the [docs](https://github.com/gen2brain/iup-go/tree/main/docs) directory.
+API reference documentation is available at [gen2brain.github.io/iup-go](https://gen2brain.github.io/iup-go/), generated from the [docs](https://github.com/gen2brain/iup-go/tree/main/docs) directory.
 
 ## Building
 
