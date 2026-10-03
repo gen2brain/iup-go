@@ -152,7 +152,7 @@ static void iup_gtk4_fixed_layout_measure(GtkWidget* widget, GtkOrientation orie
 
   (void)for_size;
 
-  if (fixed->ih && iupStrEqual(fixed->ih->iclass->name, "dialog"))
+  if (fixed->ih && (iupStrEqual(fixed->ih->iclass->name, "dialog") || fixed->ih->iclass->nativetype == IUP_TYPECANVAS))
   {
     *minimum = 1;
     *natural = 1;

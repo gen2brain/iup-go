@@ -48,6 +48,11 @@ static void gtk4CanvasUpdateChildLayout(Ihandle* ih, int flush)
   /* Canvas at (0,0) - border is drawn by container snapshot, not by offsetting canvas */
   iupgtk4FixedMove(sb_win, ih->handle, 0, 0);
 
+  if (sb_vert)
+    gtk_widget_insert_before(sb_vert, GTK_WIDGET(sb_win), NULL);
+  if (sb_horiz)
+    gtk_widget_insert_before(sb_horiz, GTK_WIDGET(sb_win), NULL);
+
   if (flush)
     IupFlush();
 }
@@ -1121,6 +1126,7 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
     return IUP_ERROR;
 
   iupgtk4NativeContainerAdd(sb_win, ih->handle);
+  iupgtk4NativeContainerSetIhandle(sb_win, ih);
 
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)sb_win);
 
@@ -1136,10 +1142,6 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
   gtk_widget_add_controller(ih->handle, scroll_controller);
   g_signal_connect(scroll_controller, "scroll", G_CALLBACK(gtk4CanvasScrollEvent), ih);
 
-  GtkGesture* click_gesture = gtk_gesture_click_new();
-  gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(click_gesture));
-  g_signal_connect(click_gesture, "pressed", G_CALLBACK(gtk4CanvasButtonPressed), ih);
-
   gtk4CanvasSetupGestures(ih);
 
   {
@@ -1150,6 +1152,12 @@ static int gtk4CanvasMapMethod(Ihandle* ih)
 
   iupgtk4SetupButtonEvents(ih->handle, ih);
   iupgtk4SetupMotionEvents(ih->handle, ih);
+
+  {
+    GtkGesture* click_gesture = gtk_gesture_click_new();
+    gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(click_gesture));
+    g_signal_connect(click_gesture, "pressed", G_CALLBACK(gtk4CanvasButtonPressed), ih);
+  }
 
   g_signal_connect(G_OBJECT(ih->handle), "resize", G_CALLBACK(gtk4CanvasSizeAllocate), ih);
 
