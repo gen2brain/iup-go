@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/time.h>
 #include <unistd.h>
 
 #ifdef IUPDBUS_USE_DLOPEN
@@ -26,6 +25,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_drv.h"
 #include "iup_class.h"
 #include "iup_image.h"
 #include "iup_tray.h"
@@ -199,7 +199,7 @@ typedef struct _IupUnixSNI {
   char* tooltip;
   int visible;
   int registered;
-  struct timeval last_click_time;
+  unsigned int last_click_time;
   int last_button;
   int cleanup_in_progress;
   int ref_count;
@@ -221,10 +221,7 @@ static int g_sni_initialized = 0;
 
 static int sniDoubleClick(IupUnixSNI* sni, int button)
 {
-  struct timeval now;
-  long diff_ms;
-
-  gettimeofday(&now, NULL);
+  unsigned int now = iupdrvGetTickCount();
 
   if (sni->last_button == -1 || sni->last_button != button)
   {
@@ -233,10 +230,7 @@ static int sniDoubleClick(IupUnixSNI* sni, int button)
     return 0;
   }
 
-  diff_ms = (now.tv_sec - sni->last_click_time.tv_sec) * 1000 +
-            (now.tv_usec - sni->last_click_time.tv_usec) / 1000;
-
-  if (diff_ms < 400)
+  if (now - sni->last_click_time < 400)
   {
     sni->last_button = -1;
     return 1;

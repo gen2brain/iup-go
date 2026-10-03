@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
 
 #include "iup.h"
 
@@ -16,13 +15,8 @@
 
 
 static FILE* irec_file = NULL;
-static int irec_lastclock = 0;
+static unsigned int irec_lastclock = 0;
 static int irec_mode = 0;
-
-static int iRecClock(void)
-{
-  return (int)((clock()*1000)/CLOCKS_PER_SEC); /* time in milliseconds */
-}
 
 static void iRecWriteInt(FILE* file, int value, int mode)
 {
@@ -69,14 +63,14 @@ static void iRecInputWheelCB(float delta, int x, int y, char* status)
   (void)status;
   if (irec_file)
   {
-    int time = iRecClock() - irec_lastclock;
+    int time = (int)(iupdrvGetTickCount() - irec_lastclock);
     iRecWriteStr(irec_file, "WHE", irec_mode);
     iRecWriteInt(irec_file, time, irec_mode);
     iRecWriteFloat(irec_file, delta, irec_mode);
     iRecWriteInt(irec_file, x, irec_mode);
     iRecWriteInt(irec_file, y, irec_mode);
     iRecWriteByte(irec_file, '\n', IUP_RECBINARY);  /* no space after */
-    irec_lastclock = iRecClock();
+    irec_lastclock = iupdrvGetTickCount();
   }
 }
 
@@ -84,7 +78,7 @@ static void iRecInputButtonCB(int button, int pressed, int x, int y, char* statu
 {
   if (irec_file)
   {
-    int time = iRecClock() - irec_lastclock;
+    int time = (int)(iupdrvGetTickCount() - irec_lastclock);
     if (pressed && iup_isdouble(status)) pressed = 2;
     iRecWriteStr(irec_file, "BUT", irec_mode);
     iRecWriteInt(irec_file, time, irec_mode);
@@ -93,7 +87,7 @@ static void iRecInputButtonCB(int button, int pressed, int x, int y, char* statu
     iRecWriteInt(irec_file, x, irec_mode);
     iRecWriteInt(irec_file, y, irec_mode);
     iRecWriteByte(irec_file, '\n', IUP_RECBINARY);  /* no space after */
-    irec_lastclock = iRecClock();
+    irec_lastclock = iupdrvGetTickCount();
   }
 }
 
@@ -102,7 +96,7 @@ static void iRecInputMotionCB(int x, int y, char* status)
   if (irec_file)
   {
     char button = '0';
-    int time = iRecClock() - irec_lastclock;
+    int time = (int)(iupdrvGetTickCount() - irec_lastclock);
     iRecWriteStr(irec_file, "MOV", irec_mode);
     iRecWriteInt(irec_file, time, irec_mode);
     iRecWriteInt(irec_file, x, irec_mode);
@@ -114,7 +108,7 @@ static void iRecInputMotionCB(int x, int y, char* status)
     if (iup_isbutton5(status)) button = '5';
     iRecWriteChar(irec_file, button, irec_mode);
     iRecWriteByte(irec_file, '\n', IUP_RECBINARY);  /* no space after */
-    irec_lastclock = iRecClock();
+    irec_lastclock = iupdrvGetTickCount();
   }
 }
 
@@ -122,13 +116,13 @@ static void iRecInputKeyPressCB(int key, int pressed)
 {
   if (irec_file)
   {
-    int time = iRecClock() - irec_lastclock;
+    int time = (int)(iupdrvGetTickCount() - irec_lastclock);
     iRecWriteStr(irec_file, "KEY", irec_mode);
     iRecWriteInt(irec_file, time, irec_mode);
     iRecWriteInt(irec_file, key, irec_mode);
     iRecWriteByte(irec_file, (char)pressed, irec_mode);
     iRecWriteByte(irec_file, '\n', IUP_RECBINARY);  /* no space after */
-    irec_lastclock = iRecClock();
+    irec_lastclock = iupdrvGetTickCount();
   }
 }
 
@@ -153,7 +147,7 @@ IUP_API int IupRecordInput(const char* filename, int mode)
     iRecWriteStr(irec_file, "IUPINPUT", IUP_RECTEXT);  /* add space after, even for non text mode */
     iRecWriteStr(irec_file, mode_str[irec_mode], IUP_RECBINARY); /* no space after */
     iRecWriteByte(irec_file, '\n', IUP_RECBINARY);  /* no space after */
-    irec_lastclock = iRecClock();
+    irec_lastclock = iupdrvGetTickCount();
 
     IupSetGlobal("INPUTCALLBACKS", "Yes");
     IupSetFunction("GLOBALWHEEL_CB", (Icallback)iRecInputWheelCB);
@@ -257,7 +251,7 @@ static int iPlayAction(FILE* file, int mode)
   iPlayReadInt(file, &time, mode);
   if (ferror(file)) return -1;
 
-  time -= iRecClock() - irec_lastclock;
+  time -= (int)(iupdrvGetTickCount() - irec_lastclock);
   if (time < 0) time = 0;
   if (time)
     iupdrvSleep(time);
@@ -335,7 +329,7 @@ static int iPlayAction(FILE* file, int mode)
       return -1;
   }
 
-  irec_lastclock = iRecClock();
+  irec_lastclock = iupdrvGetTickCount();
   return last_pressed;
 }
 
@@ -430,7 +424,7 @@ IUP_API int IupPlayInput(const char* filename)
   if (iupStrEqual(mode_str, "TXT"))
     mode = IUP_RECTEXT;
 
-  irec_lastclock = iRecClock();
+  irec_lastclock = iupdrvGetTickCount();
 
   timer = IupTimer();
   IupSetCallback(timer, "ACTION_CB", (Icallback)iPlayTimer_CB);
