@@ -27,6 +27,9 @@
 ### macOS Cocoa Dark
 [<img src="sample_cocoa_dark.png" width="700" title="macOS Cocoa Dark" alt="macOS Cocoa Dark" />](sample_cocoa_dark.png)
 
+### macOS 11 Cocoa
+[<img src="sample_cocoa_11.png" width="700" title="macOS 11 Cocoa" alt="macOS 11 Cocoa" />](sample_cocoa_11.png)
+
 ### Linux GTK2
 [<img src="sample_gtk2.png" width="700" title="Linux GTK2" alt="Linux GTK2" />](sample_gtk2.png)
 

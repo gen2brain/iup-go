@@ -14,6 +14,9 @@ func setBars(value float32) {
 	iup.GetHandle("progDashed").SetAttribute("VALUE", v)
 	iup.GetHandle("progColored").SetAttribute("VALUE", v)
 	iup.GetHandle("progVert").SetAttribute("VALUE", fmt.Sprintf("%g", value*50))
+	if circ := iup.GetHandle("progCircularValue"); circ != 0 {
+		circ.SetAttribute("VALUE", v)
+	}
 }
 
 func timeCb(ih iup.Ihandle) int {
@@ -86,14 +89,20 @@ func main() {
 		SetAttribute("MAX", "50").
 		SetAttribute("VALUE", "0")
 
-	/* CIRCULAR is honored only on Android (Material CircularProgressIndicator) and iOS (UIActivityIndicatorView). */
 	driver := iup.GetGlobal("DRIVER")
-	hasCircular := driver == "Android" || driver == "CocoaTouch"
+	hasCircular := false
+	switch driver {
+	case "Android", "CocoaTouch", "Cocoa", "GTK", "GTK4", "QML", "EFL", "WinUI":
+		hasCircular = true
+	}
 	if hasCircular {
 		iup.ProgressBar().
 			SetHandle("progCircular").
 			SetAttribute("CIRCULAR", "YES").
 			SetAttribute("MARQUEE", "YES")
+		iup.ProgressBar().
+			SetHandle("progCircularValue").
+			SetAttribute("CIRCULAR", "YES")
 	}
 
 	iup.Button("Pause").
@@ -126,7 +135,7 @@ func main() {
 		wrap("Colored (MIN/MAX/FGCOLOR/BGCOLOR)", "progColored"),
 	}
 	if hasCircular {
-		horizontalChildren = append(horizontalChildren, wrap("Circular", "progCircular"))
+		horizontalChildren = append(horizontalChildren, iup.Hbox(wrap("Circular", "progCircular"), wrap("Circular value", "progCircularValue")).SetAttributes("NGAP=10"))
 	}
 	horizontalStack := iup.Vbox(horizontalChildren...).SetAttributes("NGAP=10")
 
