@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-/* host toolkit: sets ih->handle, returns the native parent (HWND or NSView*),
+/* host toolkit: sets ih->handle, returns the native parent (HWND, NSView* or NSWindow*),
    or NULL with ih->handle set when the parent comes later through iupwebHostSetParent */
 void* iupwebHostMap(Ihandle* ih);
 void iupwebHostUnMap(Ihandle* ih);

@@ -1,4 +1,4 @@
-//go:build windows && gtk3 && web
+//go:build (windows || (darwin && !ios)) && gtk3 && web
 
 package iup
 
