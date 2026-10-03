@@ -19,8 +19,6 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih);
 IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic);
 /** @} */
 
-long long iupTimerGetLongLong(Ihandle* ih, const char* name);
-
 
 #ifdef __cplusplus
 }

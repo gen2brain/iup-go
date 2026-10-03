@@ -4,7 +4,6 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #include "iup.h"
@@ -14,24 +13,19 @@
 #include "iup_stdcontrols.h"
 #include "iup_timer.h"
 #include "iup_attrib.h"
+#include "iup_drv.h"
 
-
-long long iupTimerGetLongLong(Ihandle* ih, const char* name)
-{
-  long long i = 0;
-  char* value = iupAttribGetStr(ih, name);
-  if (value)
-  {
-    if (sscanf(value, "%lld", &i) != 1)
-      return 0;
-  }
-  return i;
-}
 
 static int iTimerSetRunAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
+  {
+    int was_running = ih->serial > 0;
+    unsigned int start = iupdrvGetTickCount();
     iupdrvTimerRun(ih);
+    if (!was_running && ih->serial > 0)
+      iupAttribSetInt(ih, "_IUP_TIMER_START", (int)start);
+  }
   else
     iupdrvTimerStop(ih);
 
@@ -41,6 +35,15 @@ static int iTimerSetRunAttrib(Ihandle* ih, const char* value)
 static char* iTimerGetRunAttrib(Ihandle* ih)
 {
   return iupStrReturnBoolean (ih->serial > 0);
+}
+
+static char* iTimerGetElapsedTimeAttrib(Ihandle* ih)
+{
+  unsigned int start;
+  if (ih->serial <= 0)
+    return NULL;
+  start = (unsigned int)iupAttribGetInt(ih, "_IUP_TIMER_START");
+  return iupStrReturnInt((int)(iupdrvGetTickCount() - start));
 }
 
 static char* iTimerGetWidAttrib(Ihandle* ih)
@@ -80,6 +83,7 @@ Iclass* iupTimerNewClass(void)
   /* Attribute functions */
   iupClassRegisterAttribute(ic, "WID", iTimerGetWidAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RUN", iTimerGetRunAttrib, iTimerSetRunAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ELAPSEDTIME", iTimerGetElapsedTimeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TIME", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupdrvTimerInitClass(ic);

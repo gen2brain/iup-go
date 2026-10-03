@@ -2,7 +2,6 @@ package io.github.gen2brain.iupgo;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.os.SystemClock;
 import androidx.annotation.Keep;
 
 
@@ -39,19 +38,12 @@ public final class IupTimerHelper
     }
 
 
-    /* uptimeMillis is monotonic and pauses in deep sleep, right for animation timers. */
     public static final class IupTimer extends Handler
     {
         private boolean isStarted;
-        private long startTime;
         private Runnable runnableCode;
 
         public IupTimer() { super(Looper.getMainLooper()); }
-
-        public long getElapsedTime()
-        {
-            return SystemClock.uptimeMillis() - startTime;
-        }
 
         public void start(final long ihandlePtr, final long intervalPeriod)
         {
@@ -63,13 +55,11 @@ public final class IupTimerHelper
                 public void run()
                 {
                     IupTimer.this.postDelayed(this, intervalPeriod);
-                    IupCommon.iupAttribSetInt(ihandlePtr, "ELAPSEDTIME", (int) getElapsedTime());
                     IupCommon.handleIupCallback(ihandlePtr, "ACTION_CB");
                 }
             };
 
             runnableCode = runnable;
-            startTime = SystemClock.uptimeMillis();
             postDelayed(runnable, intervalPeriod);
             isStarted = true;
             sRunning.add(this);

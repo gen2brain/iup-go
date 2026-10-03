@@ -69,15 +69,13 @@ Ihandle* iuphaikuTimerFromSerial(int serial)
 class IupHaikuTimer : public BHandler
 {
 public:
-  explicit IupHaikuTimer(Ihandle* ih) : BHandler("iup_timer"), fIhandle(ih), fRunner(nullptr), fStart(0) {}
+  explicit IupHaikuTimer(Ihandle* ih) : BHandler("iup_timer"), fIhandle(ih), fRunner(nullptr) {}
   ~IupHaikuTimer() override { delete fRunner; }
 
   void MessageReceived(BMessage* msg) override
   {
     if (msg && msg->what == IUPHAIKU_TIMER_TICK && fIhandle)
     {
-      iupAttribSetInt(fIhandle, "ELAPSEDTIME", static_cast<int>((system_time() - fStart) / 1000));
-
       /* the play timer stays on be_app because its sleep would freeze the dialog */
       BWindow* target = nullptr;
       if (!iupAttribGet(fIhandle, "_IUP_PLAYFILE"))
@@ -120,7 +118,6 @@ public:
       app_looper->AddHandler(this);
     }
     BMessage tick(IUPHAIKU_TIMER_TICK);
-    fStart = system_time();
     fRunner = new BMessageRunner(BMessenger(this), &tick, interval_us);
   }
 
@@ -133,7 +130,6 @@ public:
 private:
   Ihandle* fIhandle;
   BMessageRunner* fRunner;
-  bigtime_t fStart;
 };
 
 

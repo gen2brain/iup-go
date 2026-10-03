@@ -17,18 +17,7 @@
 #include "iup_timer.h"
 
 
-static ULONGLONG(WINAPI* winTimerGetTickCount64) (void) = NULL;
-
 static Itable* wintimer_id_table = NULL; /* table indexed by ID containing Ihandle* address */
-
-static long long winTimerGetTickCount(void)
-{
-  /* both have 10 ms precision only */
-  if (winTimerGetTickCount64)
-    return (long long)winTimerGetTickCount64();
-  else
-    return (long long)GetTickCount();
-}
 
 static VOID CALLBACK winTimerFunc(HWND hwnd, UINT msg, UINT_PTR wid, DWORD time)
 {
@@ -47,10 +36,6 @@ static VOID CALLBACK winTimerFunc(HWND hwnd, UINT msg, UINT_PTR wid, DWORD time)
   cb = IupGetCallback(ih, "ACTION_CB");
   if(cb)
   {
-    long long end = winTimerGetTickCount();
-    long long start = iupTimerGetLongLong(ih, "STARTCOUNT");
-    iupAttribSetInt(ih, "ELAPSEDTIME", (int)(end - start));
-
     if (cb(ih) == IUP_CLOSE)
       IupExitLoop();
   }
@@ -66,13 +51,8 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
   time_ms = iupAttribGetInt(ih, "TIME");
   if (time_ms > 0)
   {
-    long long start;
-
     ih->serial = (int)SetTimer(NULL, 0, time_ms, winTimerFunc);  /* minimum is 10 ms */
     iupTableSet(wintimer_id_table, (const char*)(intptr_t)ih->serial, ih, IUPTABLE_POINTER);
-
-    start = winTimerGetTickCount();
-    iupAttribSetStrf(ih, "STARTCOUNT", "%lld", start);
   }
 }
 
@@ -103,9 +83,4 @@ IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
 
   if (!wintimer_id_table)
     wintimer_id_table = iupTableCreate(IUPTABLE_POINTERINDEXED);
-
-  {
-    HMODULE kernel32 = GetModuleHandle(TEXT("KERNEL32.DLL"));
-    winTimerGetTickCount64 = (ULONGLONG(WINAPI*)(void))GetProcAddress(kernel32, "GetTickCount64");
-  }
 }

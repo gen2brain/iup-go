@@ -7,17 +7,6 @@
 #include <stdio.h>
 #include <limits.h>
 
-#ifdef GNUSTEP
-#include <time.h>
-static inline double CACurrentMediaTime(void) {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (double)ts.tv_sec + (double)ts.tv_nsec / 1e9;
-}
-#else
-#import <QuartzCore/QuartzCore.h>
-#endif
-
 #import <Cocoa/Cocoa.h>
 
 #include "iup.h"
@@ -31,7 +20,6 @@ static inline double CACurrentMediaTime(void) {
 
 
 @interface IupCocoaTimerController : NSObject
-@property (assign) CFTimeInterval startTime;
 @property (retain) NSTimer* nsTimer;
 - (void) onTimerCallback:(NSTimer*)timer;
 @end
@@ -59,11 +47,6 @@ static inline double CACurrentMediaTime(void) {
   Icallback action_cb = IupGetCallback(ih, "ACTION_CB");
   if (action_cb)
   {
-    CFTimeInterval start_time = [self startTime];
-    double current_time = CACurrentMediaTime();
-    int elapsed_time_ms = (int)(((current_time - start_time) * 1000.0) + 0.5);
-    iupAttribSetInt(ih, "ELAPSEDTIME", elapsed_time_ms);
-
     if (action_cb(ih) == IUP_CLOSE)
     {
       IupExitLoop();
@@ -102,8 +85,6 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
   {
     IupCocoaTimerController* timer_controller = [[IupCocoaTimerController alloc] init];
 
-    CFTimeInterval start_time = CACurrentMediaTime();
-
     NSTimer* ns_timer = [NSTimer timerWithTimeInterval:(time_ms / 1000.0)
                                                 target:timer_controller
                                               selector:@selector(onTimerCallback:)
@@ -124,7 +105,6 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 #endif
 
     [timer_controller setNsTimer:ns_timer];
-    [timer_controller setStartTime:start_time];
 
     ih->handle = timer_controller;
     ih->serial = cocoaTimerNextSerial();
