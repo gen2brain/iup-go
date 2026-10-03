@@ -239,29 +239,42 @@ For a one-command `.ipa`, see [Packaging](#packaging).
 
 ### Build tags
 
-* `gl` - build with support for `GLCanvas` control
-* `web` - build with support for `WebBrowser` control
-* `media` - build with support for `Audio`, `Camera` and `Microphone` controls
-* `plot` - build with support for `Plot` control
-* `ctrl` - build with support for `Matrix`, `Cells`, and `Flat*` controls
+Controls:
 
-* `gtk3` - build for GTK3 on macOS or Windows (default on Linux/BSD)
-* `gtk4` - build for GTK4, default is GTK3
-* `gtk2` - build for GTK2 (Linux/BSD)
-* `qt` - build for the Qt framework
-* `qt5` - build for Qt5 version, default is Qt6 (used with `qt`)
-* `qml` - build for Qt Quick (Qt 6.8+)
-* `fltk` - build for FLTK (Fast Light Toolkit)
-* `efl` - build for EFL (Enlightenment Foundation Libraries)
-* `motif` - build for X11/Motif 2.x environment
-* `gnustep` - build for GNUstep (Linux/BSD)
+| Tag     | Description                                 |
+|---------|---------------------------------------------|
+| `gl`    | `GLCanvas` control                          |
+| `web`   | `WebBrowser` control                        |
+| `media` | `Audio`, `Camera` and `Microphone` controls |
+| `plot`  | `Plot` control                              |
+| `ctrl`  | `Matrix`, `Cells` and `Flat*` controls      |
 
-* `xft` - build with Xft support (X FreeType interface) (used with `motif`)
-* `xembed` - use XEmbed tray protocol instead of SNI (GTK3/GTK2 and Motif)
-* `webengine` - use QtWebEngine for `WebBrowser` on Windows and macOS (used with `qt`/`qml`)
-* `nomanifest` - do not include manifest in Windows build
-* `nopkgconfig` - do not use pkg-config for compile and link flags
-* `extlib` - load the system IUP library instead of the bundled one (used with `CGO_ENABLED=0`)
+Drivers:
+
+| Tag       | Description                                     |
+|-----------|-------------------------------------------------|
+| `winui`   | WinUI 3 (Windows)                               |
+| `gtk3`    | GTK3 on macOS or Windows (default on Linux/BSD) |
+| `gtk4`    | GTK4, default is GTK3                           |
+| `gtk2`    | GTK2 (Linux/BSD)                                |
+| `qt`      | Qt framework                                    |
+| `qt5`     | Qt5 version, default is Qt6 (used with `qt`)    |
+| `qml`     | Qt Quick (Qt 6.8+)                              |
+| `fltk`    | FLTK (Fast Light Toolkit)                       |
+| `efl`     | EFL (Enlightenment Foundation Libraries)        |
+| `motif`   | X11/Motif 2.x environment                       |
+| `gnustep` | GNUstep (Linux/BSD)                             |
+
+Options:
+
+| Tag           | Description                                                                        |
+|---------------|------------------------------------------------------------------------------------|
+| `xft`         | Xft support (X FreeType interface) (used with `motif`)                             |
+| `xembed`      | XEmbed tray protocol instead of SNI (GTK3/GTK2 and Motif)                          |
+| `webengine`   | QtWebEngine for `WebBrowser` on Windows and macOS (used with `qt`/`qml`)           |
+| `nomanifest`  | Do not include manifest in Windows build                                           |
+| `nopkgconfig` | Do not use pkg-config for compile and link flags                                   |
+| `extlib`      | Load the system IUP library instead of the bundled one (used with `CGO_ENABLED=0`) |
 
 ### Compiler flags
 
@@ -269,7 +282,7 @@ You can provide explicit compiler and linker flags instead of using the defaults
 For example, if dependencies are in a non-standard location:
 
 ```
-CGO_CFLAGS="-I<include path> ..." CGO_LDFLAGS="-L<dir> -llib ..." go build -tags nopkconfig
+CGO_CFLAGS="-I<include path> ..." CGO_LDFLAGS="-L<dir> -llib ..." go build -tags nopkgconfig
 ```
 
 You can also point `PKG_CONFIG_LIBDIR` to some local directory with custom modified `.pc` files.
