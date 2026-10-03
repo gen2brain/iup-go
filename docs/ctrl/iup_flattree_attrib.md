@@ -40,7 +40,7 @@ If not defined FORECOLORid will be used.
 **INDENTATION**: sets the indentation level in pixels.
 Default: 16 for standard resolution, 24 for high resolution display
 
-[RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): there is no fixed initial size; set SIZE or RASTERSIZE.
+[RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): the initial size is computed from VISIBLELINES and VISIBLECOLUMNS.
 Set to NULL to allow the automatic layout use smaller values.
 
 **SPACING**: vertical space between nodes. Notice that this is not the same as the IupTree.
@@ -50,6 +50,10 @@ It will actually set the SPACING attribute.
 
 **TOPITEM** (write-only): position the given node identifier at the top of the tree or near to make it visible.
 If any parent node is collapsed then they are automatically expanded.
+
+**VISIBLECOLUMNS** (non-inheritable): number of visible columns of the natural size. Default: 20
+
+**VISIBLELINES** (non-inheritable): number of visible lines of the natural size. Default: 8
 
 > 
 >
