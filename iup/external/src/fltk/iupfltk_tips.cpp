@@ -87,12 +87,10 @@ static void fltkTipUpdateRect()
     Fl_Tooltip::enter_area(widget, 0, 0, 0, 0, nullptr);
 }
 
-static int fltkTipDispatch(int event, Fl_Window* window)
+IUP_DRV_API void iupfltkTipsEvent(int event)
 {
-  int ret = Fl::handle_(event, window);
   if (event == FL_MOVE || event == FL_ENTER)
     fltkTipUpdateRect();
-  return ret;
 }
 
 IUP_DRV_API void iupfltkTipsRemove(Ihandle* ih)
@@ -117,8 +115,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
   {
     widget->copy_tooltip(value);
     fltk_tip_owners[widget] = ih;
-    if (!Fl::event_dispatch())
-      Fl::event_dispatch(fltkTipDispatch);
+    iupfltkEventDispatchInstall();
   }
 
   const char* delay = iupAttribGet(ih, "TIPDELAY");

@@ -385,13 +385,26 @@ extern "C" IUP_SDK_API void iupdrvSendKey(int key, int press)
   Fl_Window* win = Fl::focus() ? Fl::focus()->window() : Fl::first_window();
   if (!win) return;
 
+  static char text[2];
+  text[0] = 0;
+  if (iup_isprint(iup_XkeyBase(key)) && !iup_isCtrlXkey(key) && !iup_isAltXkey(key) && !iup_isSysXkey(key))
+    text[0] = static_cast<char>(iup_XkeyBase(key));
+
   Fl::e_keysym = static_cast<int>(keyval);
   Fl::e_state = static_cast<int>(state);
-  Fl::e_text = const_cast<char*>("");
-  Fl::e_length = 0;
 
-  if (press & 0x01) Fl::handle(FL_KEYDOWN, win);
-  if (press & 0x02) Fl::handle(FL_KEYUP, win);
+  if (press & 0x01)
+  {
+    Fl::e_text = text;
+    Fl::e_length = text[0] ? 1 : 0;
+    Fl::handle(FL_KEYDOWN, win);
+  }
+  if (press & 0x02)
+  {
+    Fl::e_text = const_cast<char*>("");
+    Fl::e_length = 0;
+    Fl::handle(FL_KEYUP, win);
+  }
 }
 
 extern "C" IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
