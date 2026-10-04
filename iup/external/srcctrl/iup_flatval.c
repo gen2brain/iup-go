@@ -974,7 +974,7 @@ Iclass* iupFlatValNewClass(void)
   iupClassRegisterAttribute(ic, "HLCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);  /* inheritable */
   iupClassRegisterAttribute(ic, "PSCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);  /* inheritable */
   iupClassRegisterAttribute(ic, "SLIDERBORDERCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "160 160 160", IUPAF_DEFAULT);  /* inheritable */
-  iupClassRegisterAttribute(ic, "INACTIVEOPACITY", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "INACTIVEOPACITY", NULL, iFlatValSetAttribPostRedraw, NULL, NULL, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "SLIDERFILLCOLOR", NULL, iFlatValSetAttribPostRedraw, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CORNERRADIUS", NULL, iFlatValSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SLIDERCOLOR", NULL, iFlatValSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "220 220 220", IUPAF_DEFAULT);  /* inheritable */
