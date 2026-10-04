@@ -21,7 +21,7 @@
 
 
 enum { ISEPARATOR_VERT, ISEPARATOR_HORIZ };
-enum { ISEPARATOR_FILL, ISEPARATOR_LINE, ISEPARATOR_SUNKENLINE, ISEPARATOR_DUALLINES, ISEPARATOR_GRIP, ISEPARATOR_EMPTY };
+enum { ISEPARATOR_FILL, ISEPARATOR_LINE, ISEPARATOR_SUNKENLINE, ISEPARATOR_DUALLINES, ISEPARATOR_GRIP, ISEPARATOR_EMPTY, ISEPARATOR_DASHED, ISEPARATOR_DOTTED };
 
 struct _IcontrolData
 {
@@ -142,19 +142,25 @@ static int iSeparatorRedraw_CB(Ihandle* ih)
         iupdrvDrawLine(dc, 0, y + 1, w - 1, y + 1, sunken_color, IUP_DRAW_STROKE, 1);
       }
     }
-    else /* ISEPARATOR_LINE */
+    else /* ISEPARATOR_LINE, ISEPARATOR_DASHED, ISEPARATOR_DOTTED */
     {
+      int line_style = IUP_DRAW_STROKE;
+      if (ih->data->style == ISEPARATOR_DASHED)
+        line_style = IUP_DRAW_STROKE_DASH;
+      else if (ih->data->style == ISEPARATOR_DOTTED)
+        line_style = IUP_DRAW_STROKE_DOT;
+
       if (ih->data->orientation == ISEPARATOR_VERT)
       {
         x = w / 2;
 
-        iupdrvDrawLine(dc, x, 0, x, h - 1, color, IUP_DRAW_STROKE, 1);
+        iupdrvDrawLine(dc, x, 0, x, h - 1, color, line_style, 1);
       }
       else
       {
         y = h / 2;
 
-        iupdrvDrawLine(dc, 0, y, w - 1, y, color, IUP_DRAW_STROKE, 1);
+        iupdrvDrawLine(dc, 0, y, w - 1, y, color, line_style, 1);
       }
     }
   }
@@ -203,7 +209,7 @@ static char* iSeparatorGetOrientationAttrib(Ihandle* ih)
 
 static char* iSeparatorGetStyleAttrib(Ihandle* ih)
 {
-  const char* style_str[] = { "FILL", "LINE", "SUNKENLINE", "DUALLINES", "GRIP", "EMPTY" };
+  const char* style_str[] = { "FILL", "LINE", "SUNKENLINE", "DUALLINES", "GRIP", "EMPTY", "DASHED", "DOTTED" };
   return (char*)style_str[ih->data->style];
 }
 
@@ -219,6 +225,10 @@ static int iSeparatorSetStyleAttrib(Ihandle* ih, const char* value)
     ih->data->style = ISEPARATOR_EMPTY;
   else if (iupStrEqualNoCase(value, "GRIP"))
     ih->data->style = ISEPARATOR_GRIP;
+  else if (iupStrEqualNoCase(value, "DASHED"))
+    ih->data->style = ISEPARATOR_DASHED;
+  else if (iupStrEqualNoCase(value, "DOTTED"))
+    ih->data->style = ISEPARATOR_DOTTED;
   else
     ih->data->style = ISEPARATOR_SUNKENLINE;
   IupUpdate(ih);
