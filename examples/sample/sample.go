@@ -288,7 +288,7 @@ func main() {
 		iup.DrawRectangle(ih, cx-15, cy+25, cx-1, cy+40)
 		iup.DrawRectangle(ih, cx+1, cy+25, cx+15, cy+40)
 
-		ih.SetAttributes(`DRAWCOLOR="` + textColor + `", DRAWFONT="Helvetica, Bold 16"`)
+		ih.SetAttributes(`DRAWCOLOR="` + textColor + `", DRAWFONT="Helvetica, Bold -21"`)
 		iup.DrawText(ih, "Hello from IUP-Go!", w/2-80, h/2+40, -1, -1)
 
 		return iup.DEFAULT
