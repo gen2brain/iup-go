@@ -809,7 +809,7 @@ Iclass* iupFlatButtonNewClass(void)
   iupClassRegisterAttribute(ic, "BADGE", NULL, iFlatButtonSetAttribPostRedraw, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BADGECOLOR", NULL, iFlatButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "220 50 50", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BADGETEXTCOLOR", NULL, iFlatButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "255 255 255", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INACTIVEOPACITY", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "INACTIVEOPACITY", NULL, iFlatButtonSetAttribPostRedraw, NULL, NULL, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "IMAGETINT", NULL, iFlatButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", iFlatButtonGetImagePositionAttrib, iFlatButtonSetImagePositionAttrib, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);

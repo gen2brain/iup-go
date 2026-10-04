@@ -362,8 +362,11 @@ static int iFlatScrollBarAction_CB(Ihandle* sb_ih)
   int is_vert_scrollbar = 0;
   int has_vert_scroll = 0;
   int has_horiz_scroll = 0;
+  int inactive_alpha;
 
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(sb_ih);
+
+  inactive_alpha = iupFlatDrawBeginInactive(sb_ih->parent, dc, &active);
 
   if (!bgcolor)
     bgcolor = iupBaseNativeParentGetBgColorAttrib(sb_ih);
@@ -390,6 +393,8 @@ static int iFlatScrollBarAction_CB(Ihandle* sb_ih)
     if (has_horiz_scroll)
       iFlatScrollBarDrawHorizontal(sb_ih, dc, active, fgcolor, bgcolor, pressed, highlight, xmax, dx, sb_size, has_vert_scroll);
   }
+
+  iupFlatDrawEndInactive(dc, inactive_alpha);
 
   iupdrvDrawFlush(dc);
 
