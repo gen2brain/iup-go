@@ -101,6 +101,11 @@ IUP_SDK_API const char* iupFlatGetImageNameId(Ihandle* ih, const char* baseattri
 IUP_SDK_API void iupFlatDrawBorder(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int border_width, const char* color, const char* bgcolor, int active);
 IUP_SDK_API void iupFlatDrawRoundedBorder(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int border_width, int corner_radius, const char* color, const char* bgcolor, int active);
 
+IUP_SDK_API void iupFlatDrawFocusRect(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius);
+IUP_SDK_API int iupFlatDrawBeginInactive(Ihandle* ih, IdrawCanvas* dc, int* active);
+IUP_SDK_API void iupFlatDrawEndInactive(IdrawCanvas* dc, int alpha);
+IUP_SDK_API void iupFlatDrawBadge(Ihandle* ih, IdrawCanvas* dc, int xmax, int ymin, const char* text);
+
 IUP_SDK_API void iupFlatDrawBox(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, const char* color, const char* bgcolor, int active);
 IUP_SDK_API void iupFlatDrawRoundedBox(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius, const char* color, const char* bgcolor, int active);
 IUP_SDK_API void iupFlatDrawGradientBox(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius, float angle, const char* color1, const char* color2, const char* bgcolor, int active);

@@ -34,6 +34,9 @@ When CROSSTITLE is used TITLELINE and TITLEALIGNMENT are ignored, the title line
 
 **FRAMECOLOR** (non-inheritable): frame line color. Default: "160 160 160" (changed in 3.28).
 
+**CORNERRADIUS** (non-inheritable): radius of the rounded corners for the frame line and background.
+Default: "0" (no rounding).
+
 **FRAMEWIDTH** (non-inheritable): frame line width. Default: 1.
 
 **FRAMESPACE** (non-inheritable): spacing between frame line and child area. Used only when FRAME=YES.
@@ -57,6 +60,10 @@ Horizontal line that separates the title area from the child area. Default: YES.
 **TITLEIMAGE** (non-inheritable): image name to be used in title.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](../elem/iup_image.md).
+
+**INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
+
+**IMAGETINT** (non-inheritable): when "YES", the title image is drawn recolored with the current text color, keeping its alpha channel. Default: "NO".
 
 **TITLEIMAGEINACTIVE** (non-inheritable): image used in title when inactive.
 If it is not defined then the TITLEIMAGE is used and its colors will be replaced by a modified version creating the disabled effect.

@@ -26,7 +26,8 @@ Possible values are "VERTICAL" or "HORIZONTAL". Default: "VERTICAL".
 It will expand in the direction of the separator, but occupying only the available space.
 
 **STYLE** (non-inheritable): The separator appearance.
-Can be: "LINE", "SUNKENLINE", "DUALLINES", "GRIP", "FILL" or "EMPTY". Default: SUNKENLINE.
+Can be: "LINE", "DASHED", "DOTTED", "SUNKENLINE", "DUALLINES", "GRIP", "FILL" or "EMPTY". Default: SUNKENLINE.
+DASHED and DOTTED are a LINE drawn with a dash or dot pattern.
 FILL is a rectangle filled with COLOR. EMPTY uses the parent background color only, COLOR is ignored.
 GRIP is a short mark centered on the bar, drawn only while the cursor is over it.
 

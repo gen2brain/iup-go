@@ -271,6 +271,7 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
   char* image = iupAttribGet(ih, "IMAGE");
   char* title = iupAttribGet(ih, "TITLE");
   int active = IupGetInt(ih, "ACTIVE");  /* native implementation */
+  int inactive_alpha;
   int selected = ih->data->value;
   char* fgcolor = iupAttribGetStr(ih, "FGCOLOR");
   char* bgcolor = iupAttribGet(ih, "BGCOLOR");
@@ -290,6 +291,7 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
   int draw_w, draw_h;
 
   iupdrvDrawGetSize(dc, &draw_w, &draw_h);
+  inactive_alpha = iupFlatDrawBeginInactive(ih, dc, &active);
 
   iupDrawParentBackground(dc, ih);
 
@@ -367,9 +369,14 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
         bordercolor = hlcolor;
     }
 
-    iupFlatDrawBorder(dc, 0, draw_w - 1,
-                          0, draw_h - 1,
-                          border_width, bordercolor, bgcolor, active);
+    if (iupAttribGetInt(ih, "CORNERRADIUS") > 0)
+      iupFlatDrawRoundedBorder(dc, 0, draw_w - 1,
+                                   0, draw_h - 1,
+                                   border_width, iupAttribGetInt(ih, "CORNERRADIUS"), bordercolor, bgcolor, active);
+    else
+      iupFlatDrawBorder(dc, 0, draw_w - 1,
+                            0, draw_h - 1,
+                            border_width, bordercolor, bgcolor, active);
   }
 
   /* simulate pressed when selected and has images (but colors and borders are not included) */
@@ -387,6 +394,39 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
     else
       iupdrvDrawImage(dc, draw_image, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, border_width, border_width, -1, -1, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);
   }
+  else if (!ih->data->check_size && iupAttribGet(ih, "GRADIENT"))
+  {
+    char* gradient = iupAttribGet(ih, "GRADIENT");
+    float angle = iupAttribGetFloat(ih, "GRADIENTANGLE");
+    int radius = iupAttribGetInt(ih, "CORNERRADIUS");
+    int shade = 0;
+
+    if ((ih->data->pressed && ih->data->highlighted) || (selected && !ih->data->highlighted))
+    {
+      char* pressgrad = iupAttribGet(ih, "GRADIENTPS");
+      if (pressgrad)
+        gradient = pressgrad;
+      else
+        shade = -20;
+    }
+    else if (ih->data->highlighted)
+    {
+      char* hlgrad = iupAttribGet(ih, "GRADIENTHL");
+      if (hlgrad)
+        gradient = hlgrad;
+      else
+        shade = 30;
+    }
+
+    if (angle == 0) angle = 90;
+    iupFlatDrawGradientBoxStops(dc, border_width, draw_w - 1 - border_width,
+                                border_width, draw_h - 1 - border_width,
+                                radius > border_width ? radius - border_width : 0, angle, gradient, bgcolor, 1, shade);
+  }
+  else if (iupAttribGetInt(ih, "CORNERRADIUS") > border_width)
+    iupFlatDrawRoundedBox(dc, border_width, draw_w - 1 - border_width,
+                              border_width, draw_h - 1 - border_width,
+                              iupAttribGetInt(ih, "CORNERRADIUS") - border_width, bgcolor, NULL, 1);  /* background is always active */
   else
     iupFlatDrawBox(dc, border_width, draw_w - 1 - border_width,
                        border_width, draw_h - 1 - border_width,
@@ -430,6 +470,7 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
     int check_ymin = (draw_h - ih->data->check_size) / 2 + ITOGGLE_MARGIN;
     int check_size = ih->data->check_size - 2 * ITOGGLE_MARGIN;
     char* check_image = iupAttribGet(ih, "CHECKIMAGE");
+    int check_radius = iupAttribGetInt(ih, "CHECKCORNERRADIUS");
 
     if (check_alig == IUP_ALIGN_ABOTTOM)
     {
@@ -496,6 +537,10 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
       /* check background */
       if (radio)
         iupFlatDrawDrawCircle(dc, xc, yc, radius, 1, 1, check_bgcolor, bgcolor, active);
+      else if (check_radius > 0)
+        iupFlatDrawRoundedBox(dc, check_xmin, check_xmin + check_size,
+                                  check_ymin, check_ymin + check_size,
+                                  check_radius, check_bgcolor, bgcolor, active);
       else
         iupFlatDrawBox(dc, check_xmin, check_xmin + check_size,
                            check_ymin, check_ymin + check_size,
@@ -504,6 +549,10 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
       /* check border */
       if (radio)
         iupFlatDrawDrawCircle(dc, xc, yc, radius, 0, ITOGGLE_BORDER, check_fgcolor, bgcolor, active);
+      else if (check_radius > 0)
+        iupFlatDrawRoundedBorder(dc, check_xmin, check_xmin + check_size,
+                                     check_ymin, check_ymin + check_size,
+                                     ITOGGLE_BORDER, check_radius, check_fgcolor, bgcolor, active);
       else
         iupFlatDrawBorder(dc, check_xmin, check_xmin + check_size,
                               check_ymin, check_ymin + check_size,
@@ -528,10 +577,13 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
 
   if (ih->data->has_focus && focus_feedback)
   {
+    int focus_radius = iupAttribGetInt(ih, "CORNERRADIUS");
     border_width--;
-    iupdrvDrawFocusRect(dc, border_width + icon_left, border_width,
-                        icon_right - border_width, draw_h - 1 - border_width);
+    iupFlatDrawFocusRect(dc, border_width + icon_left, icon_right - border_width, border_width, draw_h - 1 - border_width,
+                         focus_radius > border_width ? focus_radius - border_width : 0);
   }
+
+  iupFlatDrawEndInactive(dc, inactive_alpha);
 
   iupdrvDrawFlush(dc);
 
@@ -1123,6 +1175,8 @@ Iclass* iupFlatToggleNewClass(void)
   iupClassRegisterAttribute(ic, "IMAGEHIGHLIGHT", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "INACTIVEOPACITY", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMAGETINT", NULL, iFlatToggleSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", iFlatToggleGetImagePositionAttrib, iFlatToggleSetImagePositionAttrib, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTWRAP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
@@ -1176,6 +1230,12 @@ Iclass* iupFlatToggleNewClass(void)
   iupClassRegisterAttribute(ic, "SWITCHONHLCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SWITCHONPSCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SWITCHBORDERCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CORNERRADIUS", NULL, iFlatToggleSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENT", NULL, iFlatToggleSetAttribPostRedraw, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENTHL", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENTPS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENTANGLE", NULL, iFlatToggleSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "90", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CHECKCORNERRADIUS", NULL, iFlatToggleSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SWITCHCORNERRADIUS", NULL, iFlatToggleSetAttribPostRedraw, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SWITCHTRACKGRADIENT", NULL, iFlatToggleSetAttribPostRedraw, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SWITCHTRACKONGRADIENT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

@@ -212,16 +212,37 @@ static int iFlatValHandlerPos(Ihandle* ih)
   return p1 + iupRound((p2 - p1) * percent);
 }
 
+static void iFlatValDrawBox(IdrawCanvas* dc, int x1, int x2, int y1, int y2, int radius, const char* color, const char* bgcolor, int active)
+{
+  if (radius > 0)
+    iupFlatDrawRoundedBox(dc, x1, x2, y1, y2, radius, color, bgcolor, active);
+  else
+    iupFlatDrawBox(dc, x1, x2, y1, y2, color, bgcolor, active);
+}
+
+static void iFlatValDrawBorder(IdrawCanvas* dc, int x1, int x2, int y1, int y2, int border_width, int radius, const char* color, const char* bgcolor, int active)
+{
+  if (radius > 0)
+    iupFlatDrawRoundedBorder(dc, x1, x2, y1, y2, border_width, radius, color, bgcolor, active);
+  else
+    iupFlatDrawBorder(dc, x1, x2, y1, y2, border_width, color, bgcolor, active);
+}
+
 static int iFlatValRedraw_CB(Ihandle* ih)
 {
   char* bordercolor = iupAttribGetStr(ih, "BORDERCOLOR");
   char* sliderbordercolor = iupAttribGetStr(ih, "SLIDERBORDERCOLOR");
   char* slidercolor = iupAttribGetStr(ih, "SLIDERCOLOR");
   int active = IupGetInt(ih, "ACTIVE");
+  int inactive_alpha;
   char* bgcolor = iupBaseNativeParentGetBgColorAttrib(ih);
   int slider_size = iupAttribGetInt(ih, "SLIDERSIZE");
   int border_width = iupAttribGetInt(ih, "BORDERWIDTH");
   int focus_feedback = iupAttribGetBoolean(ih, "FOCUSFEEDBACK");
+  int corner_radius = iupAttribGetInt(ih, "CORNERRADIUS");
+  char* sliderfillcolor = iupAttribGet(ih, "SLIDERFILLCOLOR");
+  int slider_radius = corner_radius > 0 ? slider_size / 2 : 0;
+  int handler_radius = 0;
   int is_horizontal = ih->data->orientation == IFLATVAL_HORIZONTAL;
   int handler_width, handler_height;
   char* image = iupAttribGet(ih, "IMAGE");
@@ -233,6 +254,7 @@ static int iFlatValRedraw_CB(Ihandle* ih)
   int x1, y1, x2, y2;
 
   iupdrvDrawGetSize(dc, &draw_w, &draw_h);
+  inactive_alpha = iupFlatDrawBeginInactive(ih, dc, &active);
   currentwidth = draw_w - (2 * ih->data->focus_width);
   currentheight = draw_h - (2 * ih->data->focus_width);
 
@@ -267,14 +289,17 @@ static int iFlatValRedraw_CB(Ihandle* ih)
   }
 
   /* draw slider background */
-  iupFlatDrawBox(dc, x1, x2, y1, y2, slidercolor, NULL, active);
+  iFlatValDrawBox(dc, x1, x2, y1, y2, slider_radius, slidercolor, NULL, active);
 
   /* draw slider border - can be disabled setting bwidth=0 */
-  iupFlatDrawBorder(dc, x1, x2, y1, y2, 1, sliderbordercolor, bgcolor, active);
+  iFlatValDrawBorder(dc, x1, x2, y1, y2, 1, slider_radius, sliderbordercolor, bgcolor, active);
 
   if (is_horizontal)
   {
     int xmid = x1 + iupRound((x2 - x1) * percent);
+
+    if (sliderfillcolor && xmid > x1)
+      iFlatValDrawBox(dc, x1, xmid, y1, y2, slider_radius, sliderfillcolor, bgcolor, active);
 
     x1 = xmid - handler_width / 2;  if (x1 < ih->data->focus_width) x1 = ih->data->focus_width;
     x2 = xmid + handler_width / 2;  if (x2 > ih->data->focus_width + currentwidth - 1) x2 = ih->data->focus_width + currentwidth - 1;
@@ -284,6 +309,9 @@ static int iFlatValRedraw_CB(Ihandle* ih)
   else
   {
     int ymid = y1 + iupRound((y2 - y1) * (1.0 - percent));
+
+    if (sliderfillcolor && ymid < y2)
+      iFlatValDrawBox(dc, x1, x2, ymid, y2, slider_radius, sliderfillcolor, bgcolor, active);
 
     y1 = ymid - handler_height / 2;  if (y1 < ih->data->focus_width) y1 = ih->data->focus_width;
     y2 = ymid + handler_height / 2;  if (y2 > ih->data->focus_width + currentheight - 1) y2 = ih->data->focus_width + currentheight - 1;
@@ -322,9 +350,15 @@ static int iFlatValRedraw_CB(Ihandle* ih)
         fgcolor = hlcolor;
     }
 
+    if (corner_radius > 0)
+    {
+      int half = ((x2 - x1 < y2 - y1) ? x2 - x1 : y2 - y1) / 2;
+      handler_radius = corner_radius < half ? corner_radius : half;
+    }
+
     /* draw handler foreground */
-    iupFlatDrawBox(dc, x1 + border_width, x2 - border_width, y1 + border_width, y2 - border_width,
-                   fgcolor, bgcolor, active);
+    iFlatValDrawBox(dc, x1 + border_width, x2 - border_width, y1 + border_width, y2 - border_width,
+                    handler_radius > border_width ? handler_radius - border_width : 0, fgcolor, bgcolor, active);
 
     if (ih->data->pressed)
     {
@@ -341,12 +375,14 @@ static int iFlatValRedraw_CB(Ihandle* ih)
 
     /* draw handler border - can still be disabled setting bwidth=0
     after the background because of the round rect */
-    iupFlatDrawBorder(dc, x1, x2, y1, y2,
-                      border_width, bordercolor, bgcolor, active);
+    iFlatValDrawBorder(dc, x1, x2, y1, y2,
+                       border_width, handler_radius, bordercolor, bgcolor, active);
   }
 
   if (ih->data->has_focus && focus_feedback)
     iupdrvDrawFocusRect(dc, 0, 0, draw_w - 1, draw_h - 1);
+
+  iupFlatDrawEndInactive(dc, inactive_alpha);
 
   iupdrvDrawFlush(dc);
 
@@ -938,6 +974,9 @@ Iclass* iupFlatValNewClass(void)
   iupClassRegisterAttribute(ic, "HLCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);  /* inheritable */
   iupClassRegisterAttribute(ic, "PSCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);  /* inheritable */
   iupClassRegisterAttribute(ic, "SLIDERBORDERCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "160 160 160", IUPAF_DEFAULT);  /* inheritable */
+  iupClassRegisterAttribute(ic, "INACTIVEOPACITY", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "SLIDERFILLCOLOR", NULL, iFlatValSetAttribPostRedraw, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CORNERRADIUS", NULL, iFlatValSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SLIDERCOLOR", NULL, iFlatValSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "220 220 220", IUPAF_DEFAULT);  /* inheritable */
 
   iupClassRegisterAttribute(ic, "IMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);

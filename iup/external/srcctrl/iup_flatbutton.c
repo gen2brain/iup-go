@@ -54,6 +54,7 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
   char* image = iupAttribGet(ih, "IMAGE");
   char* title = iupAttribGet(ih, "TITLE");
   int active = IupGetInt(ih, "ACTIVE");  /* native implementation */
+  int inactive_alpha;
   int selected = ih->data->value;
   char* fgcolor = iupAttribGetStr(ih, "FGCOLOR");
   char* bgcolor = iupAttribGet(ih, "BGCOLOR");  /* don't get with default value, if NULL will use from parent */
@@ -71,6 +72,7 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
   int draw_w, draw_h;
 
   iupdrvDrawGetSize(dc, &draw_w, &draw_h);
+  inactive_alpha = iupFlatDrawBeginInactive(ih, dc, &active);
 
   iupDrawParentBackground(dc, ih);
 
@@ -221,11 +223,16 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
   }
 
 
+  iupFlatDrawBadge(ih, dc, draw_w - 2 - ih->data->border_width, ih->data->border_width + 1, iupAttribGet(ih, "BADGE"));
+
   if (ih->data->has_focus && focus_feedback)
   {
+    int focus_radius = iupAttribGetInt(ih, "CORNERRADIUS");
     border_width--;
-    iupdrvDrawFocusRect(dc, border_width, border_width, draw_w - 1 - border_width, draw_h - 1 - border_width);
+    iupFlatDrawFocusRect(dc, border_width, draw_w - 1 - border_width, border_width, draw_h - 1 - border_width, focus_radius > border_width ? focus_radius - border_width : 0);
   }
+
+  iupFlatDrawEndInactive(dc, inactive_alpha);
 
   iupdrvDrawFlush(dc);
 
@@ -799,6 +806,11 @@ Iclass* iupFlatButtonNewClass(void)
   iupClassRegisterAttribute(ic, "IMAGEHIGHLIGHT", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "BADGE", NULL, iFlatButtonSetAttribPostRedraw, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BADGECOLOR", NULL, iFlatButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "220 50 50", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BADGETEXTCOLOR", NULL, iFlatButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "255 255 255", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INACTIVEOPACITY", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMAGETINT", NULL, iFlatButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", iFlatButtonGetImagePositionAttrib, iFlatButtonSetImagePositionAttrib, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTWRAP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
