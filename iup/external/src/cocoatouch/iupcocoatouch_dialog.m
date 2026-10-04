@@ -76,13 +76,18 @@ static IupViewController* cocoaTouchDialogVC(Ihandle* ih)
 	return [h isKindOfClass:[IupViewController class]] ? (IupViewController*)h : nil;
 }
 
+static int cocoaTouchDialogIsPresented(UIViewController* presenter)
+{
+	return presenter.presentingViewController.presentedViewController == presenter;
+}
+
 static int cocoaTouchDialogIsVisible(Ihandle* ih)
 {
 	IupViewController* vc = cocoaTouchDialogVC(ih);
 	if (!vc) return 0;
 	UIViewController* presenter = vc.navigationController ?: vc;
 	if (presenter.isBeingDismissed) return 0;
-	if (presenter.presentingViewController || presenter.view.window) return 1;
+	if (cocoaTouchDialogIsPresented(presenter) || presenter.view.window) return 1;
 	return [iupCocoaTouchFindCurrentWindow() rootViewController] == presenter;
 }
 
@@ -134,9 +139,9 @@ static void cocoaTouchDialogPrepareSheet(UINavigationController* nav, id<UIAdapt
 	}
 }
 
-static void cocoaTouchDialogShowNav(UIViewController* vc, UINavigationController* nav)
+static void cocoaTouchDialogShowNav(Ihandle* ih, UIViewController* vc, UINavigationController* nav)
 {
-	if (nav.view.window || nav.presentingViewController) return;
+	if (nav.view.window || cocoaTouchDialogIsPresented(nav)) return;
 	UIWindow* window = iupCocoaTouchFindCurrentWindow();
 	if (!window) return;
 	UIViewController* root = [window rootViewController];
@@ -147,7 +152,10 @@ static void cocoaTouchDialogShowNav(UIViewController* vc, UINavigationController
 	}
 	cocoaTouchDialogPrepareSheet(nav, objc_getAssociatedObject(vc, IUPCOCOATOUCH_DIALOG_DELEGATE_KEY));
 	UIViewController* top = iupCocoaTouchFindTopPresentedViewController();
-	[(top ?: root) presentViewController:nav animated:YES completion:nil];
+	iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", "1");
+	[(top ?: root) presentViewController:nav animated:YES completion:^{
+		if (iupObjectCheck(ih)) iupDialogDeferDestroyDone(ih);
+	}];
 }
 
 /* visible=0 dismisses + pumps until the animation completes, so a deferred Destroy doesn't race UIKit */
@@ -163,7 +171,7 @@ static void cocoaTouchDialogSetVisible(Ihandle* ih, int visible)
 		UINavigationController* nav = objc_getAssociatedObject(vc, IUPCOCOATOUCH_DIALOG_NAV_KEY);
 		if (!nav) return;
 		iupAttribSet(ih, "_IUPCOCOA_SHEET_GONE", NULL);
-		cocoaTouchDialogShowNav(vc, nav);
+		cocoaTouchDialogShowNav(ih, vc, nav);
 		return;
 	}
 
@@ -171,7 +179,7 @@ static void cocoaTouchDialogSetVisible(Ihandle* ih, int visible)
 
 	UIViewController* presenter = vc.navigationController ?: vc;
 
-	if (presenter.presentingViewController == nil)
+	if (!cocoaTouchDialogIsPresented(presenter))
 	{
 		UIWindow* window = presenter.view.window;
 		if (window && [window rootViewController] == presenter)
@@ -631,27 +639,7 @@ static int cocoaTouchDialogMapMethod(Ihandle* ih)
 	[nav setModalPresentationStyle:style];
 	cocoaTouchDialogPrepareSheet(nav, delegate);
 
-	if (!presenting)
-	{
-		[window setRootViewController:nav];
-		[nav release];
-		IFni cb = (IFni)IupGetCallback(ih, "SHOW_CB");
-		if (cb) cb(ih, IUP_SHOW);
-	}
-	else
-	{
-		UIViewController* top = iupCocoaTouchFindTopPresentedViewController();
-		if (top == nil) top = root;
-		Ihandle* ih_ref = ih;
-		iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", "1");
-		[top presentViewController:nav animated:YES completion:^{
-			if (!iupObjectCheck(ih_ref)) return;
-			if (iupDialogDeferDestroyDone(ih_ref)) return;
-			IFni cb = (IFni)IupGetCallback(ih_ref, "SHOW_CB");
-			if (cb) cb(ih_ref, IUP_SHOW);
-		}];
-		[nav release];
-	}
+	[nav release];
 
 	return IUP_NOERROR;
 }
@@ -672,7 +660,7 @@ static void cocoaTouchDialogUnMapMethod(Ihandle* ih)
 
 		objc_setAssociatedObject(vc, IUPCOCOATOUCH_DIALOG_DELEGATE_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
-		if (presenter.presentingViewController != nil && !presenter.isBeingDismissed)
+		if (cocoaTouchDialogIsPresented(presenter) && !presenter.isBeingDismissed)
 		{
 			[presenter dismissViewControllerAnimated:NO completion:nil];
 		}
@@ -683,6 +671,21 @@ static void cocoaTouchDialogUnMapMethod(Ihandle* ih)
 	}
 	[(id)vc release];
 	ih->handle = NULL;
+}
+
+static void (*cocoatouch_dialog_set_children_current_size)(Ihandle* ih, int shrink) = NULL;
+
+/* the dialog always fills the screen, so a dialog size set by the application does not apply */
+static void cocoaTouchDialogSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
+{
+	if (iupAttribGet(ih, "_IUPCOCOATOUCH_VIEW_W"))
+	{
+		int view_h = iupAttribGetInt(ih, "_IUPCOCOATOUCH_VIEW_H");
+		ih->currentwidth = iupAttribGetInt(ih, "_IUPCOCOATOUCH_VIEW_W");
+		ih->currentheight = ih->naturalheight > view_h ? ih->naturalheight : view_h;
+	}
+
+	cocoatouch_dialog_set_children_current_size(ih, shrink);
 }
 
 static void cocoaTouchDialogLayoutUpdateMethod(Ihandle* ih)
@@ -696,6 +699,8 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 	ic->Map          = cocoaTouchDialogMapMethod;
 	ic->UnMap        = cocoaTouchDialogUnMapMethod;
 	ic->LayoutUpdate = cocoaTouchDialogLayoutUpdateMethod;
+	cocoatouch_dialog_set_children_current_size = ic->SetChildrenCurrentSize;
+	ic->SetChildrenCurrentSize = cocoaTouchDialogSetChildrenCurrentSizeMethod;
 
 	/* shrink to viewport + suppress auto-focus so the keyboard doesn't pop on map */
 	iupClassRegisterReplaceAttribDef(ic, "SHRINK", "YES", NULL);

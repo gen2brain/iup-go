@@ -142,6 +142,7 @@ typedef union _XEvent {
 #define PPosition         (1L << 2)
 #define USPosition        (1L << 0)
 #define PMinSize          (1L << 4)
+#define PMaxSize          (1L << 5)
 #define PResizeInc        (1L << 6)
 #define PBaseSize         (1L << 8)
 
@@ -166,6 +167,7 @@ static int (*iupx11_XDefaultScreen)(Display*) = NULL;
 static char* (*iupx11_XServerVendor)(Display*) = NULL;
 static int (*iupx11_XVendorRelease)(Display*) = NULL;
 static int (*iupx11_XMoveWindow)(Display*, Window, int, int) = NULL;
+static int (*iupx11_XResizeWindow)(Display*, Window, unsigned int, unsigned int) = NULL;
 static int (*iupx11_XSync)(Display*, int) = NULL;
 static Atom (*iupx11_XInternAtom)(Display*, const char*, int) = NULL;
 static int (*iupx11_XSetWMNormalHints)(Display*, Window, XSizeHints*) = NULL;
@@ -190,6 +192,7 @@ static int (*iupx11_XFree)(void*) = NULL;
 #define XServerVendor iupx11_XServerVendor
 #define XVendorRelease iupx11_XVendorRelease
 #define XMoveWindow iupx11_XMoveWindow
+#define XResizeWindow iupx11_XResizeWindow
 #define XSync iupx11_XSync
 #define XInternAtom iupx11_XInternAtom
 #define XSetWMNormalHints iupx11_XSetWMNormalHints
@@ -226,6 +229,7 @@ static int iupX11Open(void)
   iupx11_XServerVendor = (char* (*)(Display*))dlsym(iupx11_handle, "XServerVendor");
   iupx11_XVendorRelease = (int (*)(Display*))dlsym(iupx11_handle, "XVendorRelease");
   iupx11_XMoveWindow = (int (*)(Display*, Window, int, int))dlsym(iupx11_handle, "XMoveWindow");
+  iupx11_XResizeWindow = (int (*)(Display*, Window, unsigned int, unsigned int))dlsym(iupx11_handle, "XResizeWindow");
   iupx11_XSync = (int (*)(Display*, int))dlsym(iupx11_handle, "XSync");
   iupx11_XInternAtom = (Atom (*)(Display*, const char*, int))dlsym(iupx11_handle, "XInternAtom");
   iupx11_XSetWMNormalHints = (int (*)(Display*, Window, XSizeHints*))dlsym(iupx11_handle, "XSetWMNormalHints");

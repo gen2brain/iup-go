@@ -119,16 +119,26 @@ static int fltkDialogReadFrameExtents(Fl_Window* window, int* left, int* top)
 }
 
 /* FLTK windows use StaticGravity, their position is the client area, IUP positions the frame */
-static void fltkDialogGetFrameOffset(Ihandle* ih, int* dx, int* dy)
+static void fltkDialogGetFrameOffset(Ihandle* ih, Fl_Window* window, int* dx, int* dy)
 {
   int border, caption, menu;
 
-  if (fltkDialogReadFrameExtents(reinterpret_cast<Fl_Window*>(ih->handle), dx, dy))
+  if (fltkDialogReadFrameExtents(window, dx, dy))
   {
-    iupAttribSetInt(ih, "_IUPFLTK_FRAME_LEFT", *dx);
-    iupAttribSetInt(ih, "_IUPFLTK_FRAME_TOP", *dy);
+    if (ih)
+    {
+      iupAttribSetInt(ih, "_IUPFLTK_FRAME_LEFT", *dx);
+      iupAttribSetInt(ih, "_IUPFLTK_FRAME_TOP", *dy);
+    }
     fltk_frame_left = *dx;
     fltk_frame_top = *dy;
+    return;
+  }
+
+  if (!ih)
+  {
+    *dx = fltk_frame_left >= 0 ? fltk_frame_left : 0;
+    *dy = fltk_frame_left >= 0 ? fltk_frame_top : 0;
     return;
   }
 
@@ -250,7 +260,7 @@ public:
       int dx, dy;
       int place_x = iupAttribGetInt(iup_handle, "_IUPFLTK_PLACEX");
       int place_y = iupAttribGetInt(iup_handle, "_IUPFLTK_PLACEY");
-      fltkDialogGetFrameOffset(iup_handle, &dx, &dy);
+      fltkDialogGetFrameOffset(iup_handle, this, &dx, &dy);
       iupAttribSet(iup_handle, "_IUPFLTK_PLACEX", nullptr);
       if (dx != iupAttribGetInt(iup_handle, "_IUPFLTK_PLACEDX") || dy != iupAttribGetInt(iup_handle, "_IUPFLTK_PLACEDY"))
       {
@@ -265,8 +275,12 @@ public:
       if (move_cb)
       {
         int dx, dy;
-        fltkDialogGetFrameOffset(iup_handle, &dx, &dy);
-        move_cb(iup_handle, x_root() - dx, y_root() - dy);
+        int cb_x, cb_y;
+        fltkDialogGetFrameOffset(iup_handle, this, &dx, &dy);
+        cb_x = x_root() - dx;
+        cb_y = y_root() - dy;
+        iupdrvAddScreenOffset(&cb_x, &cb_y, -1);
+        move_cb(iup_handle, cb_x, cb_y);
       }
     }
 
@@ -336,6 +350,33 @@ IUP_DRV_API void iupfltkX11SetSkipTaskbar(Fl_Window* window, int skip)
 #endif
 }
 
+static void fltkDialogActivateX11(Fl_Window* window)
+{
+#if defined(FLTK_USE_X11)
+  if (!window || !iupfltkIsX11() || !fl_xid(window))
+    return;
+#ifdef IUPX11_USE_DLOPEN
+  if (!iupX11Open())
+    return;
+#endif
+
+  Atom net_active = XInternAtom(fl_display, "_NET_ACTIVE_WINDOW", 0);
+  Window root = XRootWindow(fl_display, fl_screen);
+
+  XEvent xev;
+  memset(&xev, 0, sizeof(xev));
+  xev.xclient.type = ClientMessage;
+  xev.xclient.window = fl_xid(window);
+  xev.xclient.message_type = net_active;
+  xev.xclient.format = 32;
+  xev.xclient.data.l[0] = 1;
+
+  XSendEvent(fl_display, root, 0, SubstructureNotifyMask | SubstructureRedirectMask, &xev);
+#else
+  (void)window;
+#endif
+}
+
 static int fltkDialogGetMenuSize(Ihandle* ih)
 {
   if (ih->data->menu)
@@ -343,10 +384,13 @@ static int fltkDialogGetMenuSize(Ihandle* ih)
   return 0;
 }
 
+static int fltk_last_border = -1, fltk_last_caption = -1;
+
 extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   /* Estimate used until the native window frame can be measured. */
-  const int est_border = 1, est_caption = 25;
+  const int est_border = fltk_last_border >= 0 ? fltk_last_border : 1;
+  const int est_caption = fltk_last_caption >= 0 ? fltk_last_caption : 25;
 
   *menu = fltkDialogGetMenuSize(ih);
 
@@ -378,6 +422,11 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
     {
       iupAttribSetInt(ih, "_IUPFLTK_DECOR_BORDER", dw / 2);
       iupAttribSetInt(ih, "_IUPFLTK_DECOR_CAPTION", dh - dw > 0 ? dh - dw : 0);
+      if (has_border && has_titlebar && !dialog->maximize_active())
+      {
+        fltk_last_border = dw / 2;
+        fltk_last_caption = dh - dw > 0 ? dh - dw : 0;
+      }
     }
   }
 
@@ -409,9 +458,10 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
   else if (dialog)
   {
     int dx, dy;
-    fltkDialogGetFrameOffset(ih, &dx, &dy);
+    fltkDialogGetFrameOffset(ih, dialog, &dx, &dy);
     if (x) *x = dialog->x_root() - dx;
     if (y) *y = dialog->y_root() - dy;
+    iupdrvAddScreenOffset(x, y, -1);
   }
 }
 
@@ -421,7 +471,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
   if (dialog)
   {
     int dx, dy;
-    fltkDialogGetFrameOffset(ih, &dx, &dy);
+    fltkDialogGetFrameOffset(ih, dialog, &dx, &dy);
     dialog->placeAt(x + dx, y + dy);
 
     if (!dialog->visible())
@@ -494,7 +544,9 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 
   if (visible)
   {
-    dialog->show();
+    /* show() would bring a minimized window back */
+    if (!(ih->data->show_state == IUP_MINIMIZE && dialog->shown()))
+      dialog->show();
 
 #ifdef __APPLE__
     if (dialog->visible() && !iupAttribGet(ih, "_IUPFLTK_FIRSTLAYOUT"))
@@ -567,6 +619,8 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   char* placement;
   int old_state = ih->data->show_state;
 
+  int was_minimized = iupAttribGetBoolean(ih, "MINIMIZED");
+
   ih->data->show_state = IUP_SHOW;
   iupAttribSet(ih, "MAXIMIZED", nullptr);
   iupAttribSet(ih, "MINIMIZED", nullptr);
@@ -581,14 +635,22 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   placement = iupAttribGet(ih, "PLACEMENT");
   if (!placement)
   {
-    if (old_state == IUP_MAXIMIZE && dialog->maximize_active())
+    int restore = 0;
+
+    if (dialog->maximize_active())
     {
       dialog->un_maximize();
-      ih->data->show_state = IUP_RESTORE;
+      restore = 1;
     }
-    else if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
+    if (was_minimized)
+    {
+      dialog->show();
+      restore = 1;
+    }
+
+    if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
-    return 0;
+    return restore;
   }
 
   if (iupStrEqualNoCase(placement, "MINIMIZED"))
@@ -616,16 +678,27 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     int width, height;
     int border, caption, menu, dx, dy;
     iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
-    fltkDialogGetFrameOffset(ih, &dx, &dy);
+    fltkDialogGetFrameOffset(ih, dialog, &dx, &dy);
 
+#ifdef __APPLE__
+    /* macOS keeps windows below the menu bar, FULL fills the visible area */
+    int fx = 0, fy = 0;
+    iupdrvGetScreenSize(&width, &height);
+    width -= 2 * border;
+    height -= 2 * border + caption;
+    iupdrvAddScreenOffset(&fx, &fy, 1);
+    (void)dx;
+    (void)dy;
+#else
     int fx = -dx;
     int fy = -(dy + menu);
 
     iupdrvGetFullSize(&width, &height);
     height += menu;
+#endif
 
-    iupdrvDialogSetPosition(ih, fx, fy);
     dialog->size(width, height);
+    iupdrvDialogSetPosition(ih, fx, fy);
 
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
@@ -768,13 +841,50 @@ static int fltkDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static char* fltkDialogGetActiveWindowAttrib(Ihandle* ih)
+{
+  auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
+  if (!dialog || !dialog->shown())
+    return iupStrReturnBoolean(0);
+
+#if defined(FLTK_USE_X11)
+  if (iupfltkIsX11() && fl_xid(dialog)
+#ifdef IUPX11_USE_DLOPEN
+      && iupX11Open()
+#endif
+      )
+  {
+    Atom net_active = XInternAtom(fl_display, "_NET_ACTIVE_WINDOW", 1);
+    Atom type;
+    int format, active = 0;
+    unsigned long count, after;
+    unsigned char* data = nullptr;
+
+    if (net_active && XGetWindowProperty(fl_display, XRootWindow(fl_display, fl_screen), net_active, 0, 1, 0, AnyPropertyType,
+                                         &type, &format, &count, &after, &data) == Success && data)
+    {
+      if (format == 32 && count == 1)
+        active = (*reinterpret_cast<Window*>(data) == fl_xid(dialog));
+      XFree(data);
+      return iupStrReturnBoolean(active);
+    }
+  }
+#endif
+
+  Fl_Widget* focus = Fl::focus();
+  return iupStrReturnBoolean(focus && (focus == dialog || focus->top_window() == dialog));
+}
+
 static int fltkDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
     auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
     if (dialog)
+    {
       dialog->show();
+      fltkDialogActivateX11(dialog);
+    }
   }
   return 0;
 }
@@ -1003,7 +1113,10 @@ static int fltkDialogMapMethod(Ihandle* ih)
   dialog->inner_group = inner;
 
   if (iupAttribGetBoolean(ih, "RESIZE"))
+  {
     dialog->resizable(inner);
+    dialog->size_range(1, 1);
+  }
   else
     dialog->resizable(nullptr);
 
@@ -1155,6 +1268,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, iupfltkGetNativeWindowHandleName(), iupfltkGetNativeWindowHandleAttrib, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT | IUPAF_NO_STRING);
 
   iupClassRegisterAttribute(ic, "BRINGFRONT", nullptr, fltkDialogSetBringFrontAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVEWINDOW", fltkDialogGetActiveWindowAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TASKBARBUTTON", nullptr, fltkDialogSetTaskBarButtonAttrib, IUPAF_SAMEASSYSTEM, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OPACITY", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
@@ -1162,8 +1276,6 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", nullptr, fltkDialogSetHideTitleBarAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MAXIMIZED", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINIMIZED", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAVEUNDER", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMPOSITED", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CONTROL", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);

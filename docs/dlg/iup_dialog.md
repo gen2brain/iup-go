@@ -50,6 +50,8 @@ Additionally, the following values can also be defined for width and/or height:
 - "QUARTER": Defines the dialog’s width (or height) equal to 1/4 of the screen's width (or height)
 - "EIGHTH": Defines the dialog’s width (or height) equal to 1/8 of the screen's width (or height)
 
+In Android and iOS the dialog fills the screen, SIZE and RASTERSIZE do not change it.
+
 The dialog **Natural** size is only considered when the **User** size is not defined or when it is bigger than the **Current** size.
 This behavior is different from a control that goes inside the dialog.
 Because of that, when SIZE or RASTERSIZE are set (changing the **User** size), the **Current** size is internally reset to 0x0, so the **Natural** size can be considered when re-computing the **Current** size of the dialog.
@@ -129,6 +131,7 @@ In Windows MAXBOX is hidden only if MINBOX is hidden as well, or else it will be
 **MAXSIZE**: Maximum size for the dialog in raster units (pixels).
 The windowing system will not be able to change the size beyond this limit.
 Default: 65535x65535.
+In GTK 4 it requires X11.
 
 **MENU**: Name of a menu. Associates a menu to the dialog as a menu bar. The previous menu, if any, is unmapped.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate a menu to a name.
@@ -165,7 +168,10 @@ Default: NORMAL. After **IupShow**/**IupPopup** the attribute is set back to "NO
 FULL is similar to FULLSCREEN, but only the dialog client area covers the screen area, menu and decorations will be there but out of the screen.
 In UNIX there is a chance that the placement won't work correctly, that depends on the Window Manager.
 In WebAssembly FULL and MAXIMIZED both fill the browser viewport, and MINIMIZED has no effect.
+On Wayland a minimized dialog is restored only by the user.
+In macOS FULL fills the screen below the menu bar and the title bar stays visible.
 The SHOWNOACTIVATE attribute can be set to YES to prevent the window from being activated [Win32, WinUI, Qt, QML and Cocoa].
+With SHOWNOACTIVATE=YES no control receives the focus after the dialog is shown.
 The SHOWMINIMIZENEXT attribute can be set to YES to activate the next top-level window in the Z order when minimizing [Win32 and WinUI].
 
 **RESIZE** (creation-only): Allows interactively changing the dialog’s size. Default: YES.
@@ -183,13 +189,14 @@ Default: NO. Android and iOS default to YES.
 **STARTFOCUS**: Name of the element that must receive the focus right after the dialog is shown using **IupShow** or **IupPopup**.
 If not defined then the first control than can receive the focus is selected (same effect of calling [IupNextField](../func/iup_nextfield.md) for the dialog).
 Updated after SHOW_CB is called and only if the focus was not changed during the callback.
+Ignored when SHOWNOFOCUS or SHOWNOACTIVATE is YES.
 
 **SHOWNOFOCUS**: do not set focus after show.
 On Android and iOS defaults to YES; touch UIs don't autofocus controls on launch.
 
 **ACTIVEWINDOW** (read-only): informs if the dialog is the active window (the window with focus).
 Can be YES or NO.
-Not supported in Motif, Android and iOS.
+Not supported in Android and iOS.
 
 **BRINGFRONT** (write-only): makes the dialog the foreground window.
 Use "YES" to activate it. Useful for multithreaded applications.
@@ -212,11 +219,11 @@ In Motif the result depends on the window manager honoring `_MOTIF_WM_HINTS` (mo
 
 **MAXIMIZED** (read-only): indicates if the dialog is maximized.
 Can be YES or NO.
-Not supported in Motif, Android and iOS.
+Not supported in Android and iOS.
 
 **MINIMIZED** (read-only): indicates if the dialog is minimized.
 Can be YES or NO.
-Not supported in Motif, Android, iOS and WebAssembly.
+Not supported in Android, iOS and WebAssembly, and on Wayland.
 
 **OPACITY**: sets the dialog transparency alpha value.
 Valid values range from 0 (completely transparent) to 255 (opaque).

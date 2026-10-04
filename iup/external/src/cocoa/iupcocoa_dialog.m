@@ -1206,7 +1206,7 @@ static int cocoaDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSetStr(ih, "MAXBOX", iupAttribGet(ih, "_IUPCOCOA_FS_MAXBOX"));
       iupAttribSetStr(ih, "MINBOX", iupAttribGet(ih, "_IUPCOCOA_FS_MINBOX"));
       iupAttribSetStr(ih, "MENUBOX",iupAttribGet(ih, "_IUPCOCOA_FS_MENUBOX"));
-      IupSetAttribute(ih, "TITLE", iupAttribGet(ih, "_IUPCOCOA_FS_TITLE"));
+      IupSetStrAttribute(ih, "TITLE", iupAttribGet(ih, "_IUPCOCOA_FS_TITLE"));
       iupAttribSetStr(ih, "RESIZE", iupAttribGet(ih, "_IUPCOCOA_FS_RESIZE"));
       iupAttribSetStr(ih, "BORDER", iupAttribGet(ih, "_IUPCOCOA_FS_BORDER"));
 

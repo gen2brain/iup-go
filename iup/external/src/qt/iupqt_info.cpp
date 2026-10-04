@@ -47,9 +47,23 @@
 
 extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
+#if defined(Q_OS_MACOS) || defined(Q_OS_WIN)
+  /* the main screen origin is the work area, below the macOS menu bar or beside a top/left Windows taskbar */
+  QScreen* screen = QGuiApplication::primaryScreen();
+  if (!screen || add == 0)
+    return;
+
+  QPoint offset = screen->availableGeometry().topLeft() - screen->geometry().topLeft();
+  if (add < 0)
+    offset = -offset;
+
+  if (x) *x += offset.x();
+  if (y) *y += offset.y();
+#else
   (void)x;
   (void)y;
   (void)add;
+#endif
 }
 
 extern "C" IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
@@ -122,6 +136,8 @@ extern "C" IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 
   if (x) *x = pos.x();
   if (y) *y = pos.y();
+
+  iupdrvAddScreenOffset(x, y, -1);
 }
 
 extern "C" IUP_SDK_API void iupdrvGetKeyState(char* key)

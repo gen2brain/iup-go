@@ -109,7 +109,7 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   }
 }
 
-static int motDialogGetFrameExtents(Widget shell, int* left, int* top)
+static int motDialogGetFrameExtents(Widget shell, int* left, int* top, int* right, int* bottom)
 {
   static Atom net_frame_extents = 0;
   Atom type;
@@ -130,7 +130,9 @@ static int motDialogGetFrameExtents(Widget shell, int* left, int* top)
     {
       long* extents = (long*)data;
       *left = (int)extents[0];
+      if (right) *right = (int)extents[1];
       *top = (int)extents[2];
+      if (bottom) *bottom = (int)extents[3];
       found = 1;
     }
     if (data)
@@ -150,7 +152,7 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
                         XmNy, &cur_y,
                         NULL);
 
-  if (motDialogGetFrameExtents((Widget)handle, &left, &top))
+  if (motDialogGetFrameExtents((Widget)handle, &left, &top, NULL, NULL))
   {
     cur_x -= (Position)left;
     cur_y -= (Position)top;
@@ -232,6 +234,20 @@ static int motDialogGetWindowDecor(Ihandle* ih, int* border, int* caption)
     *border = iupAttribGetInt(ih, "_IUPMOT_DECOR_BORDER");
     *caption = iupAttribGetInt(ih, "_IUPMOT_DECOR_CAPTION");
     return iupAttribGetInt(ih, "_IUPMOT_DECOR_FOUND");
+  }
+
+  {
+    int left, top, right, bottom;
+    if (motDialogGetFrameExtents(ih->handle, &left, &top, &right, &bottom) && (left || top))
+    {
+      *border = left;
+      *caption = top + bottom - 2 * left;
+      iupAttribSet(ih, "_IUPMOT_DECOR_VALID", "1");
+      iupAttribSetInt(ih, "_IUPMOT_DECOR_BORDER", *border);
+      iupAttribSetInt(ih, "_IUPMOT_DECOR_CAPTION", *caption);
+      iupAttribSetInt(ih, "_IUPMOT_DECOR_FOUND", 1);
+      return 1;
+    }
   }
 
   wa.x = 0; wa.y = 0;
@@ -529,6 +545,36 @@ static int motDialogSetFullScreen(Ihandle* ih, int fullscreen)
   return 0;
 }
 
+static int motDialogHasNetState(Ihandle* ih, Atom state1, Atom state2)
+{
+  Atom actual_type;
+  int actual_format;
+  unsigned long nitems, bytes_after, i;
+  unsigned char* data = NULL;
+  int found1 = 0, found2 = state2 ? 0 : 1;
+  static Atom wmstate = 0;
+
+  if (!ih->handle || !XtWindow(ih->handle))
+    return 0;
+
+  if (!wmstate)
+    wmstate = XInternAtom(iupmot_display, "_NET_WM_STATE", False);
+
+  if (XGetWindowProperty(iupmot_display, XtWindow(ih->handle), wmstate, 0, 1024, False, XA_ATOM,
+                         &actual_type, &actual_format, &nitems, &bytes_after, &data) == Success && data)
+  {
+    Atom* atoms = (Atom*)data;
+    for (i = 0; i < nitems; i++)
+    {
+      if (atoms[i] == state1) found1 = 1;
+      if (state2 && atoms[i] == state2) found2 = 1;
+    }
+    XFree(data);
+  }
+
+  return found1 && found2;
+}
+
 IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
   char* placement;
@@ -541,8 +587,24 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   placement = iupAttribGet(ih, "PLACEMENT");
   if (!placement)
   {
+    static Atom restore_atoms[3] = {0, 0, 0};
+    int maximized, minimized;
+    if (!restore_atoms[0])
+    {
+      restore_atoms[0] = XInternAtom(iupmot_display, "_NET_WM_STATE_MAXIMIZED_VERT", False);
+      restore_atoms[1] = XInternAtom(iupmot_display, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+      restore_atoms[2] = XInternAtom(iupmot_display, "_NET_WM_STATE_HIDDEN", False);
+    }
+    maximized = motDialogHasNetState(ih, restore_atoms[0], restore_atoms[1]);
+    minimized = motDialogHasNetState(ih, restore_atoms[2], 0);
+
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
+
+    if (maximized)
+      motDialogChangeWMState(ih, restore_atoms[0], restore_atoms[1], 0);
+    if (minimized)
+      XMapRaised(iupmot_display, XtWindow(ih->handle));
 
     if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupDialogCustomFrameRestore(ih))
     {
@@ -550,7 +612,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
       return 1;
     }
 
-    return 0;
+    return maximized || minimized;
   }
 
   if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupStrEqualNoCase(placement, "MAXIMIZED"))
@@ -852,7 +914,7 @@ static int motDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
         iupAttribSetStr(ih, "MAXBOX", iupAttribGet(ih, "_IUPMOT_FS_MAXBOX"));
         iupAttribSetStr(ih, "MINBOX", iupAttribGet(ih, "_IUPMOT_FS_MINBOX"));
         iupAttribSetStr(ih, "MENUBOX",iupAttribGet(ih, "_IUPMOT_FS_MENUBOX"));
-        IupSetAttribute(ih, "TITLE",  iupAttribGet(ih, "_IUPMOT_FS_TITLE"));   /* must use IupSetAttribute to update the native implementation */
+        IupSetStrAttribute(ih, "TITLE", iupAttribGet(ih, "_IUPMOT_FS_TITLE"));   /* must use IupSetStrAttribute to update the native implementation */
         iupAttribSetStr(ih, "RESIZE", iupAttribGet(ih, "_IUPMOT_FS_RESIZE"));
         iupAttribSetStr(ih, "BORDER", iupAttribGet(ih, "_IUPMOT_FS_BORDER"));
 
@@ -920,38 +982,48 @@ static int motDialogSetOpacityAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* motDialogGetMaximizedAttrib(Ihandle* ih)
+static char* motDialogGetActiveWindowAttrib(Ihandle* ih)
 {
-  Atom actual_type;
-  int actual_format;
-  unsigned long nitems, bytes_after, i;
+  static Atom net_active = 0;
+  Atom type;
+  int format, active = 0;
+  unsigned long nitems, bytes_after;
   unsigned char* data = NULL;
-  int vert = 0, horz = 0;
-  static Atom wmstate = 0, maxv = 0, maxh = 0;
 
-  if (!ih->handle || !XtWindow(ih->handle))
-    return "NO";
+  if (!ih->handle || !XtIsRealized(ih->handle))
+    return iupStrReturnBoolean(0);
 
-  if (!wmstate)
+  if (!net_active)
+    net_active = XInternAtom(iupmot_display, "_NET_ACTIVE_WINDOW", False);
+
+  if (XGetWindowProperty(iupmot_display, RootWindow(iupmot_display, iupmot_screen), net_active, 0, 1, False, XA_WINDOW,
+                         &type, &format, &nitems, &bytes_after, &data) == Success && data)
   {
-    wmstate = XInternAtom(iupmot_display, "_NET_WM_STATE", False);
-    maxv = XInternAtom(iupmot_display, "_NET_WM_STATE_MAXIMIZED_VERT", False);
-    maxh = XInternAtom(iupmot_display, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
-  }
-
-  if (XGetWindowProperty(iupmot_display, XtWindow(ih->handle), wmstate, 0, 1024, False, XA_ATOM,
-                         &actual_type, &actual_format, &nitems, &bytes_after, &data) == Success && data)
-  {
-    Atom* atoms = (Atom*)data;
-    for (i = 0; i < nitems; i++)
-    {
-      if (atoms[i] == maxv) vert = 1;
-      if (atoms[i] == maxh) horz = 1;
-    }
+    if (format == 32 && nitems == 1)
+      active = (*(Window*)data == XtWindow(ih->handle));
     XFree(data);
   }
 
-  return iupStrReturnBoolean(vert && horz);
+  return iupStrReturnBoolean(active);
+}
+
+static char* motDialogGetMaximizedAttrib(Ihandle* ih)
+{
+  static Atom maxv = 0, maxh = 0;
+  if (!maxv)
+  {
+    maxv = XInternAtom(iupmot_display, "_NET_WM_STATE_MAXIMIZED_VERT", False);
+    maxh = XInternAtom(iupmot_display, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+  }
+  return iupStrReturnBoolean(motDialogHasNetState(ih, maxv, maxh));
+}
+
+static char* motDialogGetMinimizedAttrib(Ihandle* ih)
+{
+  static Atom hidden = 0;
+  if (!hidden)
+    hidden = XInternAtom(iupmot_display, "_NET_WM_STATE_HIDDEN", False);
+  return iupStrReturnBoolean(motDialogHasNetState(ih, hidden, 0));
 }
 
 static int motDialogSetBringFrontAttrib(Ihandle* ih, const char* value)
@@ -1430,6 +1502,8 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "DIALOGHINT", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BRINGFRONT", NULL, motDialogSetBringFrontAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXIMIZED", motDialogGetMaximizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINIMIZED", motDialogGetMinimizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ACTIVEWINDOW", motDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMPOSITED", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CONTROL", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HELPBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);

@@ -675,13 +675,13 @@ IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 
 IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 {
-  (void)ih;
-  return 1;
+  return iupAttribGet(ih, "_IUPWASM_INACTIVE") ? 0 : 1;
 }
 
 IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 {
   int id = iupwasmIdOf(ih);
+  iupAttribSet(ih, "_IUPWASM_INACTIVE", enable ? NULL : "1");
   if (id)
     iupwasmJsSetActive(id, enable);
 }

@@ -172,7 +172,7 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 
   ShowWindow(ih->handle, visible? ih->data->cmd_show: SW_HIDE);
 
-  if (visible)
+  if (visible && !iupAttribGetBoolean(ih, "SHOWNOACTIVATE"))
     iupwinBringWindowToForeground(ih->handle);
 }
 
@@ -1746,7 +1746,7 @@ static int winDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSetStr(ih, "MAXBOX", iupAttribGet(ih, "_IUPWIN_FS_MAXBOX"));
       iupAttribSetStr(ih, "MINBOX", iupAttribGet(ih, "_IUPWIN_FS_MINBOX"));
       iupAttribSetStr(ih, "MENUBOX",iupAttribGet(ih, "_IUPWIN_FS_MENUBOX"));
-      IupSetAttribute(ih, "TITLE",  iupAttribGet(ih, "_IUPWIN_FS_TITLE"));  /* must use IupSetAttribute to update the native implementation */
+      IupSetStrAttribute(ih, "TITLE", iupAttribGet(ih, "_IUPWIN_FS_TITLE"));  /* must use IupSetStrAttribute to update the native implementation */
       iupAttribSetStr(ih, "RESIZE", iupAttribGet(ih, "_IUPWIN_FS_RESIZE"));
       iupAttribSetStr(ih, "BORDER", iupAttribGet(ih, "_IUPWIN_FS_BORDER"));
 

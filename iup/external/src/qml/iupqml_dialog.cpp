@@ -89,6 +89,15 @@ public:
       else
         iup_state = IUP_RESTORE;
 
+      /* leaving fullscreen on macOS does not restore the previous position */
+      if (iup_state == IUP_RESTORE && iupAttribGet(ih, "_IUPQML_FS_X") && !iupAttribGet(ih, "_IUPQML_FS_STYLE"))
+      {
+        QPoint old_pos(iupAttribGetInt(ih, "_IUPQML_FS_X"), iupAttribGetInt(ih, "_IUPQML_FS_Y"));
+        iupAttribSet(ih, "_IUPQML_FS_X", nullptr);
+        iupAttribSet(ih, "_IUPQML_FS_Y", nullptr);
+        QTimer::singleShot(0, this, [this, old_pos]() { setFramePosition(old_pos); });
+      }
+
       if (ih->data->show_state != iup_state)
       {
         IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "SHOW_CB"));
@@ -223,7 +232,11 @@ protected:
 
     auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "MOVE_CB"));
     if (cb)
-      cb(ih, pos.x(), pos.y());
+    {
+      int cb_x = pos.x(), cb_y = pos.y();
+      iupdrvAddScreenOffset(&cb_x, &cb_y, -1);
+      cb(ih, cb_x, cb_y);
+    }
 
     iupAttribSetInt(ih, "_IUPQML_OLD_X", pos.x());
     iupAttribSetInt(ih, "_IUPQML_OLD_Y", pos.y());
@@ -446,6 +459,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   {
     if (visible)
     {
+      window->setProperty("_q_showWithoutActivating", QVariant(iupAttribGetBoolean(ih, "SHOWNOACTIVATE") != 0));
       window->setVisible(true);
       iupqmlMnemonicUpdate(window->contentItem());
 
@@ -505,6 +519,9 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
     if (x) *x = iupAttribGetInt(ih, "_IUPQML_OLD_X");
     if (y) *y = iupAttribGetInt(ih, "_IUPQML_OLD_Y");
   }
+
+  if (QGuiApplication::platformName() != "wayland")
+    iupdrvAddScreenOffset(x, y, -1);
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
@@ -513,16 +530,27 @@ extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 
   if (window)
   {
-    window->setFramePosition(QPoint(x, y));
+    /* until the frame is known, setFramePosition() does not place the frame */
+    if (!window->isVisible() && window->frameMargins().isNull())
+    {
+      int border, caption, menu;
+      iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+      window->setPosition(QPoint(x + border, y + border + caption));
+    }
+    else
+      window->setFramePosition(QPoint(x, y));
 
     iupAttribSetInt(ih, "_IUPQML_OLD_X", x);
     iupAttribSetInt(ih, "_IUPQML_OLD_Y", y);
   }
 }
 
+static int qml_last_border = 0, qml_last_caption = 0;
+
 extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
-  const int est_border = 5, est_caption = 25;
+  const int est_border = qml_last_caption ? qml_last_border : 5;
+  const int est_caption = qml_last_caption ? qml_last_caption : 25;
 
   *menu = qmlDialogGetMenuSize(ih);
 
@@ -546,7 +574,10 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
                    iupAttribGetBoolean(ih, "RESIZE") ||
                    iupAttribGetBoolean(ih, "BORDER");
 
-  if (native_border > 0 && native_caption > 0)
+  auto* state_window = ih->handle ? reinterpret_cast<QWindow*>(ih->handle) : nullptr;
+  bool state_frame = state_window && (state_window->windowStates() & (Qt::WindowMaximized | Qt::WindowFullScreen));
+
+  if (native_border > 0 && native_caption > 0 && !state_frame)
   {
     *border = has_border ? native_border : 0;
     *caption = has_titlebar ? native_caption : 0;
@@ -561,12 +592,15 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
     if (!margins.isNull())
     {
       int win_border = (margins.left() + margins.right()) / 2;
-      int win_caption = margins.top() + margins.bottom() - win_border;
+      int win_caption = margins.top() + margins.bottom() - 2 * win_border;
 
       if (win_border >= 0 && win_border < 100 && win_caption >= 0 && win_caption < 200)
       {
         *border = has_border ? win_border : 0;
         *caption = has_titlebar ? win_caption : 0;
+
+        if (state_frame)
+          return;
 
         if (!native_border && !native_caption && ih->currentheight > 0)
         {
@@ -579,6 +613,11 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
           iupAttribSetInt(ih, "_IUPQML_NATIVE_BORDER", win_border);
         if (win_caption > 0)
           iupAttribSetInt(ih, "_IUPQML_NATIVE_CAPTION", win_caption);
+        if (win_caption > 0 && has_border && has_titlebar)
+        {
+          qml_last_border = win_border;
+          qml_last_caption = win_caption;
+        }
 
         return;
       }
@@ -628,6 +667,8 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   placement = iupAttribGet(ih, "PLACEMENT");
   if (!placement)
   {
+    bool restore = window->isVisible() && (window->windowStates() & (Qt::WindowMaximized | Qt::WindowMinimized));
+
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
 
@@ -640,7 +681,7 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
       return 1;
     }
 
-    return 0;
+    return restore ? 1 : 0;
   }
 
   if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupStrEqualNoCase(placement, "MAXIMIZED"))
@@ -674,8 +715,8 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 
     height += menu;
 
-    iupdrvDialogSetPosition(ih, x, y);
     window->resize(width, height);
+    iupdrvDialogSetPosition(ih, x, y);
 
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
@@ -883,6 +924,10 @@ static int qmlDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSet(ih, "RESIZE", "NO");
       iupAttribSet(ih, "BORDER", "NO");
 
+#ifdef Q_OS_MACOS
+      iupAttribSetInt(ih, "_IUPQML_FS_X", window->framePosition().x());
+      iupAttribSetInt(ih, "_IUPQML_FS_Y", window->framePosition().y());
+#endif
       window->setWindowState(Qt::WindowFullScreen);
 
       iupAttribSet(ih, "_IUPQML_FS_STYLE", "YES");
@@ -897,7 +942,7 @@ static int qmlDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSetStr(ih, "MAXBOX", iupAttribGet(ih, "_IUPQML_FS_MAXBOX"));
       iupAttribSetStr(ih, "MINBOX", iupAttribGet(ih, "_IUPQML_FS_MINBOX"));
       iupAttribSetStr(ih, "MENUBOX", iupAttribGet(ih, "_IUPQML_FS_MENUBOX"));
-      IupSetAttribute(ih, "TITLE", iupAttribGet(ih, "_IUPQML_FS_TITLE"));
+      IupSetStrAttribute(ih, "TITLE", iupAttribGet(ih, "_IUPQML_FS_TITLE"));
       iupAttribSetStr(ih, "RESIZE", iupAttribGet(ih, "_IUPQML_FS_RESIZE"));
       iupAttribSetStr(ih, "BORDER", iupAttribGet(ih, "_IUPQML_FS_BORDER"));
 

@@ -214,7 +214,7 @@ public:
 
   bool QuitRequested() override
   {
-    if (!fIhandle || !iupObjectCheck(fIhandle))
+    if (!fIhandle || !iupObjectCheck(fIhandle) || !iupdrvIsActive(fIhandle))
       return false;
 
     Icallback cb = IupGetCallback(fIhandle, "CLOSE_CB");
@@ -229,6 +229,12 @@ public:
 
   void MessageReceived(BMessage* msg) override
   {
+    if (msg && msg->what == IUPHAIKU_WINDOW_QUIT)
+    {
+      Quit();
+      return;
+    }
+
     if (msg && msg->what == IUPHAIKU_MOVE_SETTLED)
     {
       delete fMoveRunner;
@@ -519,7 +525,14 @@ static void haikuDialogUnMapMethod(Ihandle* ih)
     }
   }
 
-  if (win && win->Lock())
+  if (win && win->Thread() == find_thread(nullptr))
+  {
+    /* Quit() from the window's own thread never returns, so the callback running here would be cut off */
+    win->SetIhandle(nullptr);
+    win->Hide();
+    win->PostMessage(IUPHAIKU_WINDOW_QUIT);
+  }
+  else if (win && win->Lock())
   {
     win->SetIhandle(nullptr);
     win->Quit();
@@ -1077,7 +1090,6 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CLIENTSIZE", haikuDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", iupBaseGetClientOffsetAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MAXIMIZED", nullptr, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINIMIZED", haikuDialogGetMinimizedAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", haikuDialogGetActiveWindowAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
 

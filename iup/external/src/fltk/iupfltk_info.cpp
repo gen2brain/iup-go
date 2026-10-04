@@ -27,9 +27,29 @@ extern "C" {
 
 extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
+#if defined(__APPLE__) || defined(_WIN32)
+  /* the main screen origin is the work area, below the macOS menu bar or beside a top/left Windows taskbar */
+  int wx, wy, ww, wh, sx, sy, sw, sh;
+  if (add == 0)
+    return;
+
+  Fl::screen_work_area(wx, wy, ww, wh, 0);
+  Fl::screen_xywh(sx, sy, sw, sh, 0);
+  if (add < 0)
+  {
+    wx = -wx;
+    wy = -wy;
+    sx = -sx;
+    sy = -sy;
+  }
+
+  if (x) *x += wx - sx;
+  if (y) *y += wy - sy;
+#else
   (void)x;
   (void)y;
   (void)add;
+#endif
 }
 
 extern "C" IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
@@ -76,6 +96,7 @@ extern "C" IUP_SDK_API void* iupdrvGetDisplay(void)
 extern "C" IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   Fl::get_mouse(*x, *y);
+  iupdrvAddScreenOffset(x, y, -1);
 }
 
 extern "C" IUP_SDK_API void iupdrvGetKeyState(char* key)

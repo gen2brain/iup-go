@@ -590,6 +590,7 @@ extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
       auto* dlgaux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
       if (dlgaux && dlgaux->rootPanel)
         dlgaux->rootPanel.IsHitTestVisible(enable ? true : false);
+      EnableWindow(reinterpret_cast<HWND>(ih->handle), enable);
       return;
     }
 

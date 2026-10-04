@@ -499,6 +499,21 @@ static void androidDialogUnMapMethod(Ihandle* ih)
   }
 }
 
+static void (*android_dialog_set_children_current_size)(Ihandle* ih, int shrink) = NULL;
+
+/* the Activity always fills the screen, so a dialog size set by the application does not apply */
+static void androidDialogSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink)
+{
+  if (iupAttribGet(ih, "_IUPANDROID_VIEW_W"))
+  {
+    int view_h = iupAttribGetInt(ih, "_IUPANDROID_VIEW_H");
+    ih->currentwidth = iupAttribGetInt(ih, "_IUPANDROID_VIEW_W");
+    ih->currentheight = ih->naturalheight > view_h ? ih->naturalheight : view_h;
+  }
+
+  android_dialog_set_children_current_size(ih, shrink);
+}
+
 static void androidDialogLayoutUpdateMethod(Ihandle* ih)
 {
   /* Android owns window sizing via the Activity; no native resize to drive. */
@@ -510,6 +525,8 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->Map = androidDialogMapMethod;
   ic->UnMap = androidDialogUnMapMethod;
   ic->LayoutUpdate = androidDialogLayoutUpdateMethod;
+  android_dialog_set_children_current_size = ic->SetChildrenCurrentSize;
+  ic->SetChildrenCurrentSize = androidDialogSetChildrenCurrentSizeMethod;
 
   /* Touch-UI defaults: shrink to viewport width; no auto-focus so requestFocus cannot land on a text field. */
   iupClassRegisterReplaceAttribDef(ic, "SHRINK", "YES", NULL);
