@@ -1028,6 +1028,27 @@ iupgtk4TreeSetupCb(GtkListItemFactory* factory, GtkListItem* list_item, gpointer
   (void)factory;
 }
 
+/* the ring marks the focus node only where the selection does not already show it */
+static int
+iupgtk4TreeFocusRingVisible(Ihandle* ih, IupGtk4TreeNode* node, GtkTreeListRow* row)
+{
+  GtkSelectionModel* selection = GTK_SELECTION_MODEL(iupAttribGet(ih, "_IUPGTK4_SELECTION"));
+  GtkBitset* selected;
+  int visible;
+
+  if (!iupAttribGet(ih, "_IUPGTK4_TREE_HASFOCUS") ||
+      iupgtk4TreeFindNodeId(ih, node) != iupAttribGetInt(ih, "_IUPGTK4_FOCUS_ID"))
+    return 0;
+
+  if (!selection)
+    return 1;
+
+  selected = gtk_selection_model_get_selection(selection);
+  visible = gtk_bitset_get_size(selected) > 1 || !gtk_bitset_contains(selected, gtk_tree_list_row_get_position(row));
+  gtk_bitset_unref(selected);
+  return visible;
+}
+
 static void
 iupgtk4TreeUpdateItemWidgets(Ihandle* ih, IupGtk4TreeItemWidgets* widgets, IupGtk4TreeNode* node, GtkTreeListRow* row)
 {
@@ -1096,7 +1117,7 @@ iupgtk4TreeUpdateItemWidgets(Ihandle* ih, IupGtk4TreeItemWidgets* widgets, IupGt
       gtk_check_button_set_inconsistent(GTK_CHECK_BUTTON(widgets->check), node->three_state);
   }
 
-  if (iupgtk4TreeFindNodeId(ih, node) == iupAttribGetInt(ih, "_IUPGTK4_FOCUS_ID"))
+  if (iupgtk4TreeFocusRingVisible(ih, node, row))
     gtk_widget_add_css_class(widgets->box, "iup-tree-focus");
   else
     gtk_widget_remove_css_class(widgets->box, "iup-tree-focus");
@@ -1124,6 +1145,30 @@ iupgtk4TreeNotifyNodeChanged(Ihandle* ih, IupGtk4TreeNode* node)
 
   if (widgets->check_toggled_handler)
     g_signal_handler_unblock(widgets->check, widgets->check_toggled_handler);
+}
+
+static void
+iupgtk4TreeUpdateFocusRing(Ihandle* ih)
+{
+  IupGtk4TreeNode* node = iupgtk4TreeGetNodeFromId(ih, iupAttribGetInt(ih, "_IUPGTK4_FOCUS_ID"));
+  if (node)
+    iupgtk4TreeNotifyNodeChanged(ih, node);
+}
+
+static void
+iupgtk4TreeFocusEnter(GtkEventControllerFocus* controller, Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPGTK4_TREE_HASFOCUS", "1");
+  iupgtk4TreeUpdateFocusRing(ih);
+  (void)controller;
+}
+
+static void
+iupgtk4TreeFocusLeave(GtkEventControllerFocus* controller, Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPGTK4_TREE_HASFOCUS", NULL);
+  iupgtk4TreeUpdateFocusRing(ih);
+  (void)controller;
 }
 
 static void
@@ -1247,7 +1292,10 @@ iupgtk4TreeSelectionChanged(GtkSelectionModel* selection, guint position, guint 
   guint i;
 
   if (iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB"))
+  {
+    iupgtk4TreeUpdateFocusRing(ih);
     return;
+  }
 
   tree_model = GTK_TREE_LIST_MODEL(iupAttribGet(ih, "_IUPGTK4_TREE_MODEL"));
   if (!tree_model)
@@ -1288,6 +1336,8 @@ iupgtk4TreeSelectionChanged(GtkSelectionModel* selection, guint position, guint 
     iupgtk4TreeSetFocusId(ih, focus_id);
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
   }
+
+  iupgtk4TreeUpdateFocusRing(ih);
 }
 
 /*****************************************************************************/
@@ -1405,6 +1455,11 @@ iupgtk4TreeSetupEventControllers(Ihandle* ih)
   GtkEventController* key_controller = gtk_event_controller_key_new();
   gtk_widget_add_controller(listview, key_controller);
   g_signal_connect(key_controller, "key-pressed", G_CALLBACK(iupgtk4TreeKeyPressed), ih);
+
+  GtkEventController* focus_controller = gtk_event_controller_focus_new();
+  gtk_widget_add_controller(listview, focus_controller);
+  g_signal_connect(focus_controller, "enter", G_CALLBACK(iupgtk4TreeFocusEnter), ih);
+  g_signal_connect(focus_controller, "leave", G_CALLBACK(iupgtk4TreeFocusLeave), ih);
 }
 
 /*****************************************************************************/
