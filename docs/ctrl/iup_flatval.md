@@ -100,6 +100,13 @@ Default: 5. Ignored when BACKIMAGE is used.
 
 **SLIDERCOLOR**: slider background color. Default: "220 220 220".
 
+**INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
+
+**SLIDERFILLCOLOR** (non-inheritable): color of the slider part between the minimum and the handler. Default: NULL (not drawn).
+
+**CORNERRADIUS** (non-inheritable): radius of the rounded corners for the handler. When set, the slider ends are also rounded.
+Default: "0" (no rounding).
+
 **STEP** (non-inheritable**)**: Controls the increment for keyboard control and the mouse wheel.
 It is not the size of the increment. The increment size is "step*(max-min)", so it must be 0<step<1.
 Default is "0.01".

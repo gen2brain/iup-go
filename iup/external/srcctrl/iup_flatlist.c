@@ -207,7 +207,6 @@ static void iFlatListUpdateScrollBar(Ihandle* ih)
 
   iFlatListCalcItemMaxSize(ih, items, count, &max_w, &max_h);
 
-  ih->data->line_width = iupMAX(max_w, canvas_width);
   ih->data->line_height = max_h;
 
   view_width = max_w;
@@ -273,6 +272,8 @@ static void iFlatListUpdateScrollBar(Ihandle* ih)
     IupSetAttribute(ih, "DX", "0");
     IupSetAttribute(ih, "DY", "0");
   }
+
+  ih->data->line_width = iupMAX(max_w, canvas_width);
 }
 
 /*******************************************************************************************************/
@@ -290,12 +291,15 @@ static int iFlatListRedraw_CB(Ihandle* ih)
   int i, x, y, make_inactive = 0;
   int border_width = ih->data->border_width;
   int active = IupGetInt(ih, "ACTIVE");  /* native implementation */
+  int inactive_alpha;
   int focus_feedback = iupAttribGetBoolean(ih, "FOCUSFEEDBACK");
+  int item_radius = iupAttribGetInt(ih, "ITEMCORNERRADIUS");
   int width, height;
 
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
 
   iupdrvDrawGetSize(dc, &width, &height);
+  inactive_alpha = iupFlatDrawBeginInactive(ih, dc, &active);
 
   iupFlatDrawBox(dc, border_width, width - border_width - 1, border_width, height - border_width - 1, background_color, background_color, 1);
 
@@ -330,7 +334,10 @@ static int iFlatListRedraw_CB(Ihandle* ih)
     }
 
     /* item background */
-    iupFlatDrawBox(dc, x, x + ih->data->line_width - 1, y, y + ih->data->line_height - 1, bgcolor, bgcolor, 1);
+    if (item_radius > 0)
+      iupFlatDrawRoundedBox(dc, x, x + ih->data->line_width - 1, y, y + ih->data->line_height - 1, item_radius, bgcolor, bgcolor, 1);
+    else
+      iupFlatDrawBox(dc, x, x + ih->data->line_width - 1, y, y + ih->data->line_height - 1, bgcolor, bgcolor, 1);
 
     iFlatListSetItemFont(ih, items[i].font);
 
@@ -354,12 +361,18 @@ static int iFlatListRedraw_CB(Ihandle* ih)
         iupStrToRGB(hlcolor, &red, &green, &blue);
         selcolor = iupDrawColor(red, green, blue, a);
 
-        iupdrvDrawRectangle(dc, x, y, x + ih->data->line_width - 1, y + ih->data->line_height - 1, selcolor, IUP_DRAW_FILL, 1);
+        if (item_radius > 0)
+        {
+          int half = (ih->data->line_width < ih->data->line_height ? ih->data->line_width : ih->data->line_height) / 2;
+          iupdrvDrawRoundedRectangle(dc, x, y, x + ih->data->line_width - 1, y + ih->data->line_height - 1, item_radius > half ? half : item_radius, selcolor, IUP_DRAW_FILL, 1);
+        }
+        else
+          iupdrvDrawRectangle(dc, x, y, x + ih->data->line_width - 1, y + ih->data->line_height - 1, selcolor, IUP_DRAW_FILL, 1);
       }
     }
 
     if (ih->data->has_focus && ih->data->focus_pos == i+1 && focus_feedback)
-      iupdrvDrawFocusRect(dc, x, y, x + width - border_width - 1, y + ih->data->line_height - 1);
+      iupFlatDrawFocusRect(dc, x, x + ih->data->line_width - 1, y, y + ih->data->line_height - 1, item_radius);
 
     y += ih->data->line_height + ih->data->spacing;
   }
@@ -371,6 +384,8 @@ static int iFlatListRedraw_CB(Ihandle* ih)
                           0, height - 1,
                           border_width, bordercolor, background_color, active);
   }
+
+  iupFlatDrawEndInactive(dc, inactive_alpha);
 
   iupdrvDrawFlush(dc);
 
@@ -1981,6 +1996,7 @@ Iclass* iupFlatListNewClass(void)
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iFlatListSetAttribPostRedraw, IUP_FLAT_BACKCOLOR, NULL, IUPAF_NOT_MAPPED);  /* force the new default value */
   iupClassRegisterAttribute(ic, "HLCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "TXTHLCOLOR", IUPAF_NO_INHERIT);  /* selection box, not highlight */
   iupClassRegisterAttribute(ic, "HLCOLORALPHA", NULL, NULL, IUPAF_SAMEASSYSTEM, "128", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ITEMCORNERRADIUS", NULL, iFlatListSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PSCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* selection, not pressed */
   iupClassRegisterAttribute(ic, "TEXTPSCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* selection, not pressed */
   iupClassRegisterAttributeId(ic, "ITEMFGCOLOR", iFlatListGetItemFGColorAttrib, iFlatListSetItemFGColorAttrib, IUPAF_NO_INHERIT | IUPAF_NOT_MAPPED);
@@ -2003,6 +2019,8 @@ Iclass* iupFlatListNewClass(void)
 
   iupClassRegisterAttributeId(ic, "IMAGE", iFlatListGetImageAttribId, iFlatListSetImageAttribId, IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", iFlatListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING | IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INACTIVEOPACITY", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMAGETINT", NULL, iFlatListSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", iFlatListGetImagePositionAttrib, iFlatListSetImagePositionAttrib, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ICONSPACING", iFlatListGetIconSpacingAttrib, iFlatListSetIconSpacingAttrib, IUPAF_SAMEASSYSTEM, "2", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);

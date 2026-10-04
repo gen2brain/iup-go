@@ -92,7 +92,7 @@ Default use BORDERCOLOR.
 Any borders can be hidden by simply setting this value to 0.
 This is for the **IupFlatButton** drawn border.
 
-**CORNERRADIUS** (non-inheritable): radius of the rounded corners for the button background and border.
+**CORNERRADIUS** (non-inheritable): radius of the rounded corners for the button background, border and focus feedback.
 Default: "0" (no rounding).
 
 **SHOWBORDER**: by default borders are drawn only when the button is highlighted, if SHOWBORDER=YES borders are always show.
@@ -150,6 +150,16 @@ If it is not defined then the IMAGE is used and its colors will be replaced by a
 
 **IMAGEPRESS** (non-inheritable): Image name of the element in pressed state.
 If it is not defined then the IMAGE is used.
+
+**BADGE** (non-inheritable): text drawn in a small pill at the top right corner of the button, over its contents. Default: NULL.
+
+**BADGECOLOR** (non-inheritable): background color of the badge. Default: "220 50 50".
+
+**BADGETEXTCOLOR** (non-inheritable): text color of the badge. Default: "255 255 255".
+
+**INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
+
+**IMAGETINT** (non-inheritable): when "YES", the image is drawn recolored with the current text color, keeping its alpha channel. Default: "NO".
 
 **IMAGEPOSITION** (non-inheritable): Position of the image relative to the text when both are displayed.
 Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.

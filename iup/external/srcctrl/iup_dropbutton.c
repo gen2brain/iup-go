@@ -59,6 +59,7 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
   const char* image = iupAttribGet(ih, "IMAGE");
   char* title = iupAttribGet(ih, "TITLE");
   int active = IupGetInt(ih, "ACTIVE");  /* native implementation */
+  int inactive_alpha;
   char* fgcolor = iupAttribGetStr(ih, "FGCOLOR");
   char* bgcolor = iupAttribGet(ih, "BGCOLOR");  /* don't get with default value, if NULL will use from parent */
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
@@ -73,12 +74,14 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
   int arrow_active = iupAttribGetBoolean(ih, "ARROWACTIVE");
   int arrow_images = iupAttribGetInt(ih, "ARROWIMAGES");
   int focus_feedback = iupAttribGetBoolean(ih, "FOCUSFEEDBACK");
+  int corner_radius = iupAttribGetInt(ih, "CORNERRADIUS");
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
   int make_inactive = 0, arrow_x, arrow_y;
   char* bgcolor_button, *bgcolor_arrow, *arrow_align;
   int draw_w, draw_h;
 
   iupdrvDrawGetSize(dc, &draw_w, &draw_h);
+  inactive_alpha = iupFlatDrawBeginInactive(ih, dc, &active);
 
   iupDrawParentBackground(dc, ih);
 
@@ -154,7 +157,17 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
         bordercolor = hlcolor;
     }
 
-    if (drop_onarrow)
+    if (corner_radius > 0)
+    {
+      iupFlatDrawRoundedBorder(dc, 0, draw_w - 1,
+                                   0, draw_h - 1,
+                                   border_width, corner_radius, bordercolor, bgcolor_button, active);
+      if (drop_onarrow)
+        iupFlatDrawBox(dc, draw_w - 1 - ih->data->arrow_size - border_width, draw_w - 1 - ih->data->arrow_size,
+                           border_width, draw_h - 1 - border_width,
+                           bordercolor, bgcolor_arrow, active);
+    }
+    else if (drop_onarrow)
     {
       iupFlatDrawBorder(dc, 0, draw_w - 1 - ih->data->arrow_size,
                             0, draw_h - 1,
@@ -188,7 +201,48 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
   }
   else
   {
-    if (drop_onarrow)
+    char* gradient = iupAttribGet(ih, "GRADIENT");
+    int shade = 0;
+
+    if ((ih->data->pressed && ih->data->highlighted) || (ih->data->dropped && !ih->data->highlighted))
+    {
+      char* pressgrad = iupAttribGet(ih, "GRADIENTPS");
+      if (pressgrad)
+        gradient = pressgrad;
+      else
+        shade = -20;
+    }
+    else if (ih->data->highlighted)
+    {
+      char* hlgrad = iupAttribGet(ih, "GRADIENTHL");
+      if (hlgrad)
+        gradient = hlgrad;
+      else
+        shade = 30;
+    }
+
+    if (corner_radius > border_width)
+      iupdrvDrawSetClipRoundedRect(dc, border_width, border_width, draw_w - 1 - border_width, draw_h - 1 - border_width, corner_radius - border_width);
+
+    if (gradient)
+    {
+      float angle = iupAttribGetFloat(ih, "GRADIENTANGLE");
+      if (angle == 0) angle = 90;
+      if (drop_onarrow)
+      {
+        iupFlatDrawGradientBoxStops(dc, border_width, draw_w - 1 - border_width - ih->data->arrow_size,
+                                    border_width, draw_h - 1 - border_width,
+                                    0, angle, gradient, bgcolor, 1, shade);
+        iupFlatDrawGradientBoxStops(dc, draw_w - 1 - ih->data->arrow_size + border_width, draw_w - 1 - border_width,
+                                    border_width, draw_h - 1 - border_width,
+                                    0, angle, gradient, bgcolor, 1, shade);
+      }
+      else
+        iupFlatDrawGradientBoxStops(dc, border_width, draw_w - 1 - border_width,
+                                    border_width, draw_h - 1 - border_width,
+                                    0, angle, gradient, bgcolor, 1, shade);
+    }
+    else if (drop_onarrow)
     {
       iupFlatDrawBox(dc, border_width, draw_w - 1 - border_width - ih->data->arrow_size,
                          border_width, draw_h - 1 - border_width,
@@ -202,6 +256,9 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
       iupFlatDrawBox(dc, border_width, draw_w - 1 - border_width,
                          border_width, draw_h - 1 - border_width,
                          bgcolor_button, NULL, 1);  /* background is always active */
+
+    if (corner_radius > border_width)
+      iupdrvDrawResetClip(dc);
   }
 
   /* reserve space for focus feedback (after background draw) */
@@ -259,8 +316,10 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
   if (ih->data->has_focus && focus_feedback)
   {
     border_width--;
-    iupdrvDrawFocusRect(dc, border_width, border_width, draw_w - 1 - border_width, draw_h - 1 - border_width);
+    iupFlatDrawFocusRect(dc, border_width, draw_w - 1 - border_width, border_width, draw_h - 1 - border_width, corner_radius > border_width ? corner_radius - border_width : 0);
   }
+
+  iupFlatDrawEndInactive(dc, inactive_alpha);
 
   iupdrvDrawFlush(dc);
 
@@ -946,6 +1005,11 @@ Iclass* iupDropButtonNewClass(void)
   iupClassRegisterAttribute(ic, "BORDERCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, IUP_FLAT_BORDERCOLOR, IUPAF_DEFAULT);  /* inheritable */
   iupClassRegisterAttribute(ic, "BORDERPSCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);  /* inheritable */
   iupClassRegisterAttribute(ic, "BORDERHLCOLOR", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);  /* inheritable */
+  iupClassRegisterAttribute(ic, "CORNERRADIUS", NULL, iDropButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENT", NULL, iDropButtonSetAttribPostRedraw, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENTHL", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENTPS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENTANGLE", NULL, iDropButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "90", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BORDERWIDTH", iDropButtonGetBorderWidthAttrib, iDropButtonSetBorderWidthAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED);  /* inheritable */
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, "DLGFGCOLOR", NULL, IUPAF_DEFAULT);  /* force the new default value */
   iupClassRegisterAttribute(ic, "BGCOLOR", iDropButtonGetBgColorAttrib, iDropButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NOT_MAPPED | IUPAF_NO_SAVE);
@@ -959,6 +1023,8 @@ Iclass* iupDropButtonNewClass(void)
   iupClassRegisterAttribute(ic, "IMAGEHIGHLIGHT", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "INACTIVEOPACITY", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMAGETINT", NULL, iDropButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", iDropButtonGetImagePositionAttrib, iDropButtonSetImagePositionAttrib, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTWRAP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

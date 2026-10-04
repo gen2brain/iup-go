@@ -12,6 +12,8 @@ By default, it will inherit from BGCOLOR.
 **SB_FORECOLOR** (non-inheritable): handler and arrow color. Default: "220 220 220".
 Used instead of FGCOLOR to avoid inheritance problems.
 
+**SB_CORNERRADIUS** (non-inheritable): radius of the rounded corners for the handler. Default: "0" (no rounding).
+
 **SB_HIGHCOLOR** (non-inheritable): handler and arrow color when highlight. Default: "132 132 132".
 
 **SB_PRESSCOLOR** (non-inheritable): handler and arrow color when pressed. Default: "96 96 96".

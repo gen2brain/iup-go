@@ -38,6 +38,7 @@ static int iFlatLabelRedraw_CB(Ihandle* ih)
   char* image = iupAttribGet(ih, "IMAGE");
   char* title = iupAttribGet(ih, "TITLE");
   int active = IupGetInt(ih, "ACTIVE");  /* native implementation */
+  int inactive_alpha;
   char* fgcolor = iupAttribGetStr(ih, "FGCOLOR");
   char* bgcolor = NULL; /* always use the parent background color */
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
@@ -55,6 +56,7 @@ static int iFlatLabelRedraw_CB(Ihandle* ih)
     return IUP_DEFAULT;
 
   iupdrvDrawGetSize(dc, &draw_w, &draw_h);
+  inactive_alpha = iupFlatDrawBeginInactive(ih, dc, &active);
 
   iupDrawParentBackground(dc, ih);
 
@@ -98,6 +100,8 @@ static int iFlatLabelRedraw_CB(Ihandle* ih)
                            space, draw_h - 1 - space,
                            fgcolor, bgcolor, active);
   }
+
+  iupFlatDrawEndInactive(dc, inactive_alpha);
 
   iupdrvDrawFlush(dc);
 
@@ -265,6 +269,8 @@ Iclass* iupFlatLabelNewClass(void)
   iupClassRegisterAttribute(ic, "IMAGE", NULL, iFlatLabelSetAttribPostRedraw, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEINACTIVE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
+  iupClassRegisterAttribute(ic, "INACTIVEOPACITY", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMAGETINT", NULL, iFlatLabelSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", iFlatLabelGetImagePositionAttrib, iFlatLabelSetImagePositionAttrib, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TEXTWRAP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

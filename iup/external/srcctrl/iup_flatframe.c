@@ -53,36 +53,51 @@ static int iFlatFrameRedraw_CB(Ihandle* ih)
   char* backcolor = iupAttribGet(ih, "BGCOLOR");  /* don't get with default value, if NULL will use from parent */
   int frame_width = iupAttribGetInt(ih, "FRAMEWIDTH");
   int frame = iFlatFrameGetFrame(ih);
+  int corner_radius = iupAttribGetInt(ih, "CORNERRADIUS");
+  int frame_top = 0;
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
   int text_flags = iupDrawGetTextFlags(ih, "TITLETEXTALIGNMENT", "TITLETEXTWRAP", "TITLETEXTELLIPSIS");
   double text_orientation = iupAttribGetDouble(ih, "TITLETEXTORIENTATION");
   int active = IupGetInt(ih, "ACTIVE");
+  int inactive_alpha;
   int title_w, title_h;
   int draw_w, draw_h;
 
   iupdrvDrawGetSize(dc, &draw_w, &draw_h);
+  inactive_alpha = iupFlatDrawBeginInactive(ih, dc, &active);
 
   if (!backcolor)
     backcolor = iupBaseNativeParentGetBgColorAttrib(ih);
 
-  /* draw background */
-  iupFlatDrawBox(dc, 0, draw_w - 1,
-                 0, draw_h - 1, backcolor, NULL, 1);  /* background is always active */
-
   iFlatFrameGetTitleSize(ih, frame, &title_w, &title_h);
+
+  if (frame == 2 && title_h)
+    frame_top = frame_width + title_h/2;
+
+  /* draw background */
+  if (corner_radius > 0)
+  {
+    iupDrawParentBackground(dc, ih);
+    iupFlatDrawRoundedBox(dc, 0, draw_w - 1,
+                          frame_top, draw_h - 1, corner_radius, backcolor, NULL, 1);  /* background is always active */
+  }
+  else
+    iupFlatDrawBox(dc, 0, draw_w - 1,
+                   0, draw_h - 1, backcolor, NULL, 1);  /* background is always active */
 
   /* draw border - can still be disabled setting frame_width=0 */
   if (frame != 0)
   {
     char* frame_color = iupAttribGetStr(ih, "FRAMECOLOR");
-    int frame_top = 0;
 
-    if (frame == 2 && title_h)
-      frame_top = frame_width + title_h/2;
-
-    iupFlatDrawBorder(dc, 0,         draw_w - 1,
-                          frame_top, draw_h - 1,
-                          frame_width, frame_color, NULL, active);
+    if (corner_radius > 0)
+      iupFlatDrawRoundedBorder(dc, 0,         draw_w - 1,
+                                   frame_top, draw_h - 1,
+                                   frame_width, corner_radius, frame_color, NULL, active);
+    else
+      iupFlatDrawBorder(dc, 0,         draw_w - 1,
+                            frame_top, draw_h - 1,
+                            frame_width, frame_color, NULL, active);
   }
   else
     frame_width = 0;
@@ -121,8 +136,16 @@ static int iFlatFrameRedraw_CB(Ihandle* ih)
                          frame_width, frame_width + title_h - 1 - title_line, backcolor, NULL, 1); /* background is always active */
     }
     else if (titlebgcolor)
+    {
+      if (corner_radius > frame_width)
+        iupdrvDrawSetClipRoundedRect(dc, frame_width, frame_width, draw_w - 1 - frame_width, draw_h - 1 - frame_width, corner_radius - frame_width);
+
       iupFlatDrawBox(dc, frame_width, draw_w - 1 - frame_width,
                          frame_width, frame_width + title_h - 1 - title_line, titlebgcolor, NULL, 1); /* background is always active */
+
+      if (corner_radius > frame_width)
+        iupdrvDrawResetClip(dc);
+    }
 
     if (frame != 2 && iupAttribGetBoolean(ih, "TITLELINE"))
     {
@@ -142,6 +165,8 @@ static int iFlatFrameRedraw_CB(Ihandle* ih)
                     img_position, spacing, title_alignment, IUP_ALIGN_ATOP, horiz_padding, vert_padding,
                     titleimage, make_inactive, title, text_flags, text_orientation, titlecolor, backcolor, active);
   }
+
+  iupFlatDrawEndInactive(dc, inactive_alpha);
 
   iupdrvDrawFlush(dc);
 
@@ -272,6 +297,8 @@ Iclass* iupFlatFrameNewClass(void)
   iupClassRegisterAttribute(ic, "TITLELINE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLELINECOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLELINEWIDTH", NULL, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INACTIVEOPACITY", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMAGETINT", NULL, iFlatFrameSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGE", NULL, NULL, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGEPOSITION", NULL, NULL, IUPAF_SAMEASSYSTEM, "LEFT",  IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLEIMAGESPACING", NULL, NULL, IUPAF_SAMEASSYSTEM, "2", IUPAF_NO_INHERIT);
@@ -287,6 +314,7 @@ Iclass* iupFlatFrameNewClass(void)
   iupClassRegisterAttribute(ic, "FRAMECOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "160 160 160", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FRAMEWIDTH", NULL, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FRAMESPACE", NULL, NULL, IUPAF_SAMEASSYSTEM, "2", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CORNERRADIUS", NULL, iFlatFrameSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   return ic;
 }

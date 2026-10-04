@@ -3020,6 +3020,13 @@ IUP_SDK_API void iupFlatDrawBox(IdrawCanvas* dc, int xmin, int xmax, int ymin, i
   iupdrvDrawRectangle(dc, xmin, ymin, xmax, ymax, color, IUP_DRAW_FILL, 1);
 }
 
+static int iFlatDrawClampRadius(int corner_radius, int xmin, int xmax, int ymin, int ymax)
+{
+  int w = xmax - xmin, h = ymax - ymin;
+  int half = (w < h ? w : h) / 2;
+  return corner_radius > half ? half : corner_radius;
+}
+
 IUP_SDK_API void iupFlatDrawRoundedBorder(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int border_width, int corner_radius, const char* fgcolor, const char* bgcolor, int active)
 {
   long color = 0;
@@ -3034,6 +3041,8 @@ IUP_SDK_API void iupFlatDrawRoundedBorder(IdrawCanvas* dc, int xmin, int xmax, i
   if (!active)
     color = iFlatDrawColorMakeInactive(color, bgcolor);
 
+  corner_radius = iFlatDrawClampRadius(corner_radius, xmin, xmax, ymin, ymax);
+
   iupdrvDrawRoundedRectangle(dc, xmin, ymin, xmax, ymax, corner_radius, color, IUP_DRAW_STROKE, 1);
   while (border_width > 1)
   {
@@ -3041,7 +3050,7 @@ IUP_SDK_API void iupFlatDrawRoundedBorder(IdrawCanvas* dc, int xmin, int xmax, i
     iupdrvDrawRoundedRectangle(dc, xmin + border_width,
                                 ymin + border_width,
                                 xmax - border_width,
-                                ymax - border_width, corner_radius, color, IUP_DRAW_STROKE, 1);
+                                ymax - border_width, corner_radius > border_width ? corner_radius - border_width : 0, color, IUP_DRAW_STROKE, 1);
   }
 }
 
@@ -3059,7 +3068,79 @@ IUP_SDK_API void iupFlatDrawRoundedBox(IdrawCanvas* dc, int xmin, int xmax, int 
   if (!active)
     color = iFlatDrawColorMakeInactive(color, bgcolor);
 
+  corner_radius = iFlatDrawClampRadius(corner_radius, xmin, xmax, ymin, ymax);
+
   iupdrvDrawRoundedRectangle(dc, xmin, ymin, xmax, ymax, corner_radius, color, IUP_DRAW_FILL, 1);
+}
+
+IUP_SDK_API void iupFlatDrawFocusRect(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius)
+{
+  iupDrawCheckSwapCoord(xmin, xmax);
+  iupDrawCheckSwapCoord(ymin, ymax);
+
+  corner_radius = iFlatDrawClampRadius(corner_radius, xmin, xmax, ymin, ymax);
+
+  if (corner_radius > 0)
+    iupdrvDrawRoundedRectangle(dc, xmin, ymin, xmax, ymax, corner_radius, iupDrawColor(0, 0, 0, 224), IUP_DRAW_STROKE_DOT, 1);
+  else
+    iupdrvDrawFocusRect(dc, xmin, ymin, xmax, ymax);
+}
+
+IUP_SDK_API int iupFlatDrawBeginInactive(Ihandle* ih, IdrawCanvas* dc, int* active)
+{
+  int alpha;
+
+  if (*active)
+    return 0;
+
+  alpha = iupAttribGetInt(ih, "INACTIVEOPACITY");
+  if (alpha <= 0 || alpha >= 255)
+    return 0;
+
+  iupDrawParentBackground(dc, ih);
+
+  if (!iupdrvDrawBeginLayer(dc, alpha))
+    return 0;
+
+  *active = 1;
+  return alpha;
+}
+
+IUP_SDK_API void iupFlatDrawEndInactive(IdrawCanvas* dc, int alpha)
+{
+  if (alpha)
+    iupdrvDrawEndLayer(dc, alpha);
+}
+
+IUP_SDK_API void iupFlatDrawBadge(Ihandle* ih, IdrawCanvas* dc, int xmax, int ymin, const char* text)
+{
+  char typeface[1024], font[1100];
+  int size = 0, is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
+  int len, w, h, width, height;
+  long bgcolor, fgcolor;
+
+  if (!text || text[0] == 0)
+    return;
+
+  if (!iupGetFontInfo(IupGetAttribute(ih, "FONT"), typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+    return;
+
+  size = (size * 4) / 5;
+  snprintf(font, sizeof(font), "%s, Bold %d", typeface, size);
+
+  len = (int)strlen(text);
+  iupdrvFontGetTextSize(font, text, len, &w, &h);
+
+  height = h + 2;
+  width = w + 2 * (h / 3);
+  if (width < height)
+    width = height;
+
+  bgcolor = iupDrawStrToColor(iupAttribGetStr(ih, "BADGECOLOR"), iupDrawColor(220, 50, 50, 255));
+  fgcolor = iupDrawStrToColor(iupAttribGetStr(ih, "BADGETEXTCOLOR"), iupDrawColor(255, 255, 255, 255));
+
+  iupdrvDrawRoundedRectangle(dc, xmax - width + 1, ymin, xmax, ymin + height - 1, height / 2, bgcolor, IUP_DRAW_FILL, 1);
+  iupdrvDrawText(dc, text, len, xmax - width + 1 + (width - w) / 2, ymin + (height - h) / 2, w, h, fgcolor, font, 0, 0);
 }
 
 IUP_SDK_API void iupFlatDrawGradientBox(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius, float angle, const char* color1, const char* color2, const char* bgcolor, int active)
@@ -3327,6 +3408,15 @@ IUP_SDK_API void iupFlatDrawIcon(Ihandle* ih, IdrawCanvas* dc, int icon_x, int i
   int txt_width, txt_height;
   char* font;
   int clip_x1, clip_y1, clip_x2, clip_y2;
+  long tint = IUP_DRAW_NO_TINT;
+
+  if (imagename && fgcolor && iupAttribGetBoolean(ih, "IMAGETINT"))
+  {
+    tint = iupDrawStrToColor(fgcolor, 0);
+    if (!active)
+      tint = iFlatDrawColorMakeInactive(tint, bgcolor);
+    make_inactive = 0;
+  }
 
   iupdrvDrawGetClipRect(dc, &clip_x1, &clip_y1, &clip_x2, &clip_y2);
   if (clip_x1 != 0 || clip_y1 != 0 || clip_x2 != 0 || clip_y2)
@@ -3389,7 +3479,7 @@ IUP_SDK_API void iupFlatDrawIcon(Ihandle* ih, IdrawCanvas* dc, int icon_x, int i
                                 img_width, img_height, txt_width, txt_height,
                                 &img_x, &img_y, &txt_x, &txt_y);
 
-      iupdrvDrawImage(dc, imagename, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, icon_x + img_x, icon_y + img_y, img_width, img_height, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);  /* no zoom */
+      iupdrvDrawImage(dc, imagename, make_inactive, bgcolor, tint, 255, icon_x + img_x, icon_y + img_y, img_width, img_height, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);  /* no zoom */
       iFlatDrawText(dc, icon_x + txt_x, icon_y + txt_y, txt_width, txt_height, title, font, text_flags, text_orientation, fgcolor, bgcolor, active);
     }
     else
@@ -3400,7 +3490,7 @@ IUP_SDK_API void iupFlatDrawIcon(Ihandle* ih, IdrawCanvas* dc, int icon_x, int i
 
       iFlatGetIconPosition(icon_width, icon_height, &x, &y, width, height, horiz_alignment, vert_alignment);
 
-      iupdrvDrawImage(dc, imagename, make_inactive, bgcolor, IUP_DRAW_NO_TINT, 255, icon_x + x, icon_y + y, img_width, img_height, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);  /* no zoom */
+      iupdrvDrawImage(dc, imagename, make_inactive, bgcolor, tint, 255, icon_x + x, icon_y + y, img_width, img_height, 0, 0, -1, -1, IUP_DRAW_IMAGE_LINEAR);  /* no zoom */
     }
   }
   else if (title)
@@ -3459,72 +3549,78 @@ IUP_SDK_API int iupFlatGetImagePosition(const char* value)
 
 IUP_SDK_API void iupFlatDrawArrow(IdrawCanvas* dc, int x, int y, int size, const char* color_str, const char* bgcolor, int active, int dir)
 {
-  int points[6];
-
-  int off1 = iupRound((double)size * 0.13);
-  int off2 = iupRound((double)size * 0.87);
-  int half = size / 2;
+  IupPathSeg segs[3];
+  IupDrawSource src;
+  double a = 0.04 * size, b = 0.96 * size;   /* chevron ends, along the wide side */
+  double c = 0.27 * size, d = 0.73 * size;   /* ends and tip, along the pointing side */
+  double half = 0.5 * size;
 
   long color = iupDrawStrToColor(color_str, 0);
   if (!active)
     color = iFlatDrawColorMakeInactive(color, bgcolor);
 
+  memset(segs, 0, sizeof(segs));
+  segs[0].op = IUP_PATHSEG_MOVE_TO;
+  segs[1].op = IUP_PATHSEG_LINE_TO;
+  segs[2].op = IUP_PATHSEG_LINE_TO;
+
   switch (dir)
   {
-  case IUPDRAW_ARROW_LEFT:  /* arrow points left */
-    points[0] = x + off2;
-    points[1] = y;
-    points[2] = x + off2;
-    points[3] = y + size;
-    points[4] = x + off1;
-    points[5] = y + half;
+  case IUPDRAW_ARROW_LEFT:
+    segs[0].x1 = x + d;    segs[0].y1 = y + a;
+    segs[1].x1 = x + c;    segs[1].y1 = y + half;
+    segs[2].x1 = x + d;    segs[2].y1 = y + b;
     break;
-  case IUPDRAW_ARROW_TOP:    /* arrow points top */
-    points[0] = x;
-    points[1] = y + off2;
-    points[2] = x + size;
-    points[3] = y + off2;
-    points[4] = x + half;
-    points[5] = y + off1;
+  case IUPDRAW_ARROW_TOP:
+    segs[0].x1 = x + a;    segs[0].y1 = y + d;
+    segs[1].x1 = x + half; segs[1].y1 = y + c;
+    segs[2].x1 = x + b;    segs[2].y1 = y + d;
     break;
-  case IUPDRAW_ARROW_RIGHT:  /* arrow points right */
-    points[0] = x + off1;
-    points[1] = y;
-    points[2] = x + off1;
-    points[3] = y + size;
-    points[4] = x + size - off1;
-    points[5] = y + half;
+  case IUPDRAW_ARROW_RIGHT:
+    segs[0].x1 = x + c;    segs[0].y1 = y + a;
+    segs[1].x1 = x + d;    segs[1].y1 = y + half;
+    segs[2].x1 = x + c;    segs[2].y1 = y + b;
     break;
-  case IUPDRAW_ARROW_BOTTOM:  /* arrow points bottom */
-    points[0] = x;
-    points[1] = y + off1;
-    points[2] = x + size;
-    points[3] = y + off1;
-    points[4] = x + half;
-    points[5] = y + size - off1;
+  default:
+    segs[0].x1 = x + a;    segs[0].y1 = y + c;
+    segs[1].x1 = x + half; segs[1].y1 = y + d;
+    segs[2].x1 = x + b;    segs[2].y1 = y + c;
     break;
   }
 
-  iupdrvDrawPolygon(dc, points, 3, color, IUP_DRAW_FILL, 1);
-  iupdrvDrawPolygon(dc, points, 3, color, IUP_DRAW_STROKE, 1);
+  memset(&src, 0, sizeof(src));
+  src.type = IUP_SOURCE_SOLID;
+  src.color = color;
+
+  iupdrvDrawPathStroke(dc, segs, 3, &src, IUP_DRAW_STROKE, size < 6 ? 1 : 2);
 }
 
 IUP_SDK_API void iupFlatDrawCheckMark(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, const char* color_str, const char* bgcolor, int active)
 {
-  int points[6];
+  IupPathSeg segs[3];
+  IupDrawSource src;
+  double w = xmax - xmin, h = ymax - ymin;
 
   long color = iupDrawStrToColor(color_str, 0);
   if (!active)
     color = iFlatDrawColorMakeInactive(color, bgcolor);
 
-  points[0] = xmin;
-  points[1] = (ymax + ymin) / 2;
-  points[2] = (xmax + xmin) / 2;
-  points[3] = ymax;
-  points[4] = xmax;
-  points[5] = ymin;
+  memset(segs, 0, sizeof(segs));
+  segs[0].op = IUP_PATHSEG_MOVE_TO;
+  segs[0].x1 = xmin + 0.08 * w;
+  segs[0].y1 = ymin + 0.52 * h;
+  segs[1].op = IUP_PATHSEG_LINE_TO;
+  segs[1].x1 = xmin + 0.38 * w;
+  segs[1].y1 = ymin + 0.82 * h;
+  segs[2].op = IUP_PATHSEG_LINE_TO;
+  segs[2].x1 = xmin + 0.92 * w;
+  segs[2].y1 = ymin + 0.18 * h;
 
-  iupdrvDrawPolygon(dc, points, 3, color, IUP_DRAW_STROKE, 2);
+  memset(&src, 0, sizeof(src));
+  src.type = IUP_SOURCE_SOLID;
+  src.color = color;
+
+  iupdrvDrawPathStroke(dc, segs, 3, &src, IUP_DRAW_STROKE, 2);
 }
 
 IUP_SDK_API void iupFlatDrawDrawCircle(IdrawCanvas* dc, int xc, int yc, int radius, int fill, int line_width, char* fgcolor, char* bgcolor, int active)

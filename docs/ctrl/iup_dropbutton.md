@@ -102,6 +102,11 @@ This is for the **IupDropButton** drawn border.
 Any borders can be hidden by simply setting this value to 0.
 This is for the **IupDropButton** drawn border.
 
+**GRADIENT**, **GRADIENTHL**, **GRADIENTPS**, **GRADIENTANGLE** (non-inheritable): gradient background, same as in [IupFlatButton](iup_flatbutton.md).
+
+**CORNERRADIUS** (non-inheritable): radius of the rounded corners for the button background, border and focus feedback.
+Default: "0" (no rounding).
+
 **SHOWBORDER**: by default borders are drawn only when the button is highlighted, if SHOWBORDER=YES borders are always shown.
 When SHOWBORDER=YES and BGCOLOR is not defined, the actual BGCOLOR will be a darker version of the background color of the native parent.
 
@@ -174,6 +179,10 @@ If it is not defined then the IMAGE is used and its colors will be replaced by a
 
 **IMAGEPRESS** (non-inheritable): Image name of the element in pressed state.
 If it is not defined then the IMAGE is used.
+
+**INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
+
+**IMAGETINT** (non-inheritable): when "YES", the image is drawn recolored with the current text color, keeping its alpha channel. Default: "NO".
 
 **IMAGEPOSITION** (non-inheritable): Position of the image relative to the text when both are displayed.
 Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.

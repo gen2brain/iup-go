@@ -35,6 +35,13 @@ If not defined BACKCOLORid will be used.
 **TEXTPSCOLOR**: foreground color of a selected node.
 If not defined FORECOLORid will be used.
 
+**ITEMCORNERRADIUS** (non-inheritable): radius of the rounded corners for the node background, selection and focus feedback.
+Default: "0" (no rounding).
+
+**INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
+
+**IMAGETINT** (non-inheritable): when "YES", the node image is drawn recolored with the current text color, keeping its alpha channel. Default: "NO".
+
 **ICONSPACING** (non-inheritable): spacing between the image and the text. Default: "2".
 
 **INDENTATION**: sets the indentation level in pixels.
@@ -77,6 +84,8 @@ If any parent node is collapsed then they are automatically expanded.
 
 **BUTTONSIZE**: size of the expander button square.
 Default: 9 for standard resolution, 16 for high resolution display
+
+**BUTTONSTYLE** (non-inheritable): style of the drawn expander button. Can be "BOX", a square with a "+" or "-" sign, or "CHEVRON", a chevron drawn in BUTTONFGCOLOR that points right when collapsed and down when expanded. Default: "BOX".
 
 **BUTTONPLUSIMAGE**: the image name that will be shown for all expander button when collapsed.
 By default, the button is drawn. The "IMGPLUS" pre-defined image is a 9x9 image that can be used.

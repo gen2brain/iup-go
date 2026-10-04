@@ -569,6 +569,81 @@ static void iFlatTabsGetCloseRect(int x, int y, int w, int h, double text_orient
     }
 }
 
+static void iFlatTabsPathCorner(IupPathSeg* seg, double px, double py, double ax, double ay, double bx, double by, int radius)
+{
+  double sx = px + (ax > px ? radius : (ax < px ? -radius : 0));
+  double sy = py + (ay > py ? radius : (ay < py ? -radius : 0));
+  double ex = px + (bx > px ? radius : (bx < px ? -radius : 0));
+  double ey = py + (by > py ? radius : (by < py ? -radius : 0));
+
+  seg[0].op = IUP_PATHSEG_LINE_TO;
+  seg[0].x1 = sx;
+  seg[0].y1 = sy;
+  seg[1].op = IUP_PATHSEG_CURVE_TO;
+  seg[1].x1 = sx + 0.5523 * (px - sx);
+  seg[1].y1 = sy + 0.5523 * (py - sy);
+  seg[1].x2 = ex + 0.5523 * (px - ex);
+  seg[1].y2 = ey + 0.5523 * (py - ey);
+  seg[1].x3 = ex;
+  seg[1].y3 = ey;
+}
+
+/* the two corners away from the children are rounded */
+static int iFlatTabsTabPath(IupPathSeg* segs, int tabType, double x1, double y1, double x2, double y2, int radius, int closed)
+{
+  double px[4], py[4];
+  int count = 0;
+
+  if (tabType == ITABS_TOP)
+  {
+    px[0] = x1; py[0] = y2;
+    px[1] = x1; py[1] = y1;
+    px[2] = x2; py[2] = y1;
+    px[3] = x2; py[3] = y2;
+  }
+  else if (tabType == ITABS_BOTTOM)
+  {
+    px[0] = x1; py[0] = y1;
+    px[1] = x1; py[1] = y2;
+    px[2] = x2; py[2] = y2;
+    px[3] = x2; py[3] = y1;
+  }
+  else if (tabType == ITABS_LEFT)
+  {
+    px[0] = x2; py[0] = y1;
+    px[1] = x1; py[1] = y1;
+    px[2] = x1; py[2] = y2;
+    px[3] = x2; py[3] = y2;
+  }
+  else
+  {
+    px[0] = x1; py[0] = y1;
+    px[1] = x2; py[1] = y1;
+    px[2] = x2; py[2] = y2;
+    px[3] = x1; py[3] = y2;
+  }
+
+  memset(segs, 0, 7 * sizeof(IupPathSeg));
+  segs[count].op = IUP_PATHSEG_MOVE_TO;
+  segs[count].x1 = px[0];
+  segs[count].y1 = py[0];
+  count++;
+  iFlatTabsPathCorner(segs + count, px[1], py[1], px[0], py[0], px[2], py[2], radius);
+  count += 2;
+  iFlatTabsPathCorner(segs + count, px[2], py[2], px[1], py[1], px[3], py[3], radius);
+  count += 2;
+  segs[count].op = IUP_PATHSEG_LINE_TO;
+  segs[count].x1 = px[3];
+  segs[count].y1 = py[3];
+  count++;
+  if (closed)
+  {
+    segs[count].op = IUP_PATHSEG_CLOSE;
+    count++;
+  }
+  return count;
+}
+
 static int iFlatTabsRedraw_CB(Ihandle* ih)
 {
   Ihandle* current_child = iFlatTabsGetCurrentTab(ih);
@@ -583,9 +658,11 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
   int text_flags = iupDrawGetTextFlags(ih, "TABSTEXTALIGNMENT", "TABSTEXTWRAP", "TABSTEXTELLIPSIS");
   double text_orientation = iupAttribGetDouble(ih, "TABSTEXTORIENTATION");
   int active = IupGetInt(ih, "ACTIVE");  /* native implementation */
+  int inactive_alpha;
   int spacing = iupAttribGetInt(ih, "TABSIMAGESPACING");
   int horiz_padding, vert_padding;
   int show_lines = iupAttribGetBoolean(ih, "SHOWLINES");
+  int tabs_radius = iupAttribGetInt(ih, "TABSCORNERRADIUS");
   int title_width, title_height;
   int fixedwidth = iupAttribGetInt(ih, "FIXEDWIDTH");
   Ihandle* child;
@@ -604,6 +681,7 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
 
   iupdrvDrawGetSize(dc, &draw_w, &draw_h);
+  inactive_alpha = iupFlatDrawBeginInactive(ih, dc, &active);
 
   scroll_size = iFlatTabsGetTitleSize(ih, &title_width, &title_height, 1);
 
@@ -682,7 +760,8 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
       char* tab_forecolor = iupAttribGetId(ih, "TABFORECOLOR", pos);
       char* tab_highcolor = iupAttribGetId(ih, "TABHIGHCOLOR", pos);
       char* background_color = NULL;
-      int tab_w, tab_h, tab_active, reset_clip;
+      int tab_w, tab_h, tab_active, reset_clip, tab_radius;
+      int tab_x1, tab_y1, tab_x2, tab_y2;
       char* foreground_color;
       int icon_x, icon_y, icon_width, icon_height, make_inactive = 0;
       char num_title[30] = "";
@@ -775,30 +854,59 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
         }
       }
 
+      if (tabType == ITABS_TOP || tabType == ITABS_BOTTOM)
+      {
+        tab_x1 = tab_x;
+        tab_y1 = title_y_pos;
+        tab_x2 = tab_x + tab_w;
+        tab_y2 = title_y_pos + title_height - 1;
+      }
+      else
+      {
+        tab_x1 = title_x_pos;
+        tab_x2 = title_x_pos + title_width - 1;
+        tab_y1 = tab_y;
+        tab_y2 = tab_y + tab_h;
+      }
+
+      tab_radius = iupMIN(tab_x2 - tab_x1, tab_y2 - tab_y1) / 2;
+      if (tab_radius > tabs_radius)
+        tab_radius = tabs_radius;
+
       /* draw tab title background */
       if (background_color)
       {
-        int x1, x2, y1, y2;
-        if (tabType == ITABS_TOP || tabType == ITABS_BOTTOM)
+        if (tab_radius > 0)
         {
-          x1 = tab_x;
-          y1 = title_y_pos;
-          x2 = tab_x + tab_w;
-          y2 = title_y_pos + title_height - 1;
+          IupPathSeg segs[7];
+          IupDrawSource src;
+          int count = iFlatTabsTabPath(segs, tabType, tab_x1, tab_y1, tab_x2 + 1, tab_y2 + 1, tab_radius, 1);
+
+          memset(&src, 0, sizeof(src));
+          src.type = IUP_SOURCE_SOLID;
+          src.color = iupDrawStrToColor(background_color, 0);
+
+          iupdrvDrawPathFill(dc, segs, count, &src, IUP_PATH_RULE_WINDING);
         }
         else
-        {
-          x1 = title_x_pos;
-          x2 = title_x_pos + title_width - 1;
-          y1 = tab_y;
-          y2 = tab_y + tab_h;
-        }
-        iupFlatDrawBox(dc, x1, x2, y1, y2, background_color, NULL, 1);
+          iupFlatDrawBox(dc, tab_x1, tab_x2, tab_y1, tab_y2, background_color, NULL, 1);
       }
       else
         background_color = tabs_bgcolor;
 
-      if (show_lines && current_child == child)
+      if (show_lines && current_child == child && tab_radius > 0)
+      {
+        IupPathSeg segs[7];
+        IupDrawSource src;
+        int count = iFlatTabsTabPath(segs, tabType, tab_x1 + 0.5, tab_y1 + 0.5, tab_x2 + 0.5, tab_y2 + 0.5, tab_radius, 0);
+
+        memset(&src, 0, sizeof(src));
+        src.type = IUP_SOURCE_SOLID;
+        src.color = line_color;
+
+        iupdrvDrawPathStroke(dc, segs, count, &src, IUP_DRAW_STROKE, 1);
+      }
+      else if (show_lines && current_child == child)
       {
         if (tabType == ITABS_TOP || tabType == ITABS_BOTTOM)
         {
@@ -862,8 +970,10 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
           y1 += ITABS_CLOSE_SPACING + ITABS_CLOSE_SIZE + ITABS_CLOSE_BORDER;
           y2 += ITABS_CLOSE_SPACING + ITABS_CLOSE_SIZE + ITABS_CLOSE_BORDER;
         }
-        iupdrvDrawFocusRect(dc, x1, y1, x2, y2);
+        iupFlatDrawFocusRect(dc, x1, x2, y1, y2, tab_radius > 3 ? tab_radius - 3 : 0);
       }
+
+      iupFlatDrawBadge(ih, dc, icon_x + icon_width - 2, ((tabType == ITABS_TOP || tabType == ITABS_BOTTOM) ? title_y_pos : tab_y) + 2, iupAttribGetId(ih, "TABBADGE", pos));
 
       if (show_close)
       {
@@ -1075,6 +1185,8 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
     else
       iupFlatDrawBox(dc, title_x_pos, title_x_pos + title_width - 1, marker_coord - 1, marker_coord + 1, marker_color, NULL, 1);
   }
+
+  iupFlatDrawEndInactive(dc, inactive_alpha);
 
   iupdrvDrawFlush(dc);
 
@@ -2652,6 +2764,9 @@ Iclass* iupFlatTabsNewClass(void)
   iupClassRegisterAttributeId(ic, "TABHIGHCOLOR", NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABFONT", NULL, (IattribSetIdFunc)iFlatTabsSetAttribPostRedraw, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABTIP", NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABBADGE", NULL, (IattribSetIdFunc)iFlatTabsSetAttribPostRedraw, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BADGECOLOR", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "220 50 50", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BADGETEXTCOLOR", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "255 255 255", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "TABFONTSTYLE", iFlatTabsGetTabFontStyleAttrib, iFlatTabsSetTabFontStyleAttrib, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABFONTSIZE", iFlatTabsGetTabFontSizeAttrib, iFlatTabsSetTabFontSizeAttrib, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
@@ -2673,10 +2788,13 @@ Iclass* iupFlatTabsNewClass(void)
 
   iupClassRegisterAttribute(ic, "SHOWLINES", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSLINECOLOR", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "160 160 160", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INACTIVEOPACITY", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "IMAGETINT", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIMAGEPOSITION", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIMAGESPACING", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "2", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSALIGNMENT", NULL, iFlatTabsSetAttribPostRedraw, "ACENTER:ACENTER", NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSPADDING", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "6x4", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABSCORNERRADIUS", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSTEXTALIGNMENT", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSTEXTWRAP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSTEXTELLIPSIS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

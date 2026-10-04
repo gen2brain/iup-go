@@ -78,6 +78,9 @@ All child elements are considered even invisible ones.
 
 **TABCHANGEONCHECK**: call the TABCHANGE* callbacks when current tab is removed or hidden, so a new tab is made current internally.
 
+**TABSCORNERRADIUS** (non-inheritable): radius of the rounded corners for the tab title background, line and focus feedback. Only the two corners away from the children are rounded.
+Default: "0" (no rounding).
+
 **TABSPADDING**: internal margin of the tab title.
 Works just like the MARGIN attribute of the IupHbox and IupVbox containers, but uses a different name to avoid inheritance problems.
 Alignment does not include the padding area. Default value: "6x4" (default changed in 3.29).
@@ -119,6 +122,16 @@ When changed with the dialog visible the application should call IupRefresh or I
 Default is "HORIZONTAL". When set to vertical it will simply set TABSTEXTORIENTATION to 90.
 
 **TABSLINECOLOR**: color of the separator line. Default: "160 160 160"
+
+**TABBADGEn** (non-inheritable): text drawn in a small pill at the top right corner of the respective tab title. Default: NULL.
+
+**BADGECOLOR** (non-inheritable): background color of the tab badges. Default: "220 50 50".
+
+**BADGETEXTCOLOR** (non-inheritable): text color of the tab badges. Default: "255 255 255".
+
+**INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
+
+**IMAGETINT** (non-inheritable): when "YES", the tab image is drawn recolored with the current text color, keeping its alpha channel. Default: "NO".
 
 **TABSIMAGEPOSITION**: position of the image relative to the text when both are displayed.
 Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.

@@ -22,6 +22,16 @@ When NULL it follows the parent background color tinted towards FGCOLOR.
 
 **CANFOCUS:** enables the focus traversal of the control. Default: NO. (different from IupCanvas)
 
+**INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
+
+**CIRCULAR** (non-inheritable): when "YES", the gauge is drawn as a ring filled clockwise from the top, with the text at its center. ORIENTATION, FLAT and CORNERRADIUS are ignored. Default: "NO".
+When set before mapping to a control that is not square, RASTERSIZE is changed to "48x48".
+
+**RINGWIDTH** (non-inheritable): line width of the ring when CIRCULAR=YES. Default: "0" (1/8 of the ring diameter).
+
+**CORNERRADIUS** (non-inheritable): radius of the rounded corners for the border, background and filled area.
+Default: "0" (no rounding).
+
 **DASHED**: Changes the style of the gauge for a dashed pattern. Default is "NO".
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Controls the gauge and text color.

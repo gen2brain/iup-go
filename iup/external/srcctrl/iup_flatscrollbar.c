@@ -252,7 +252,13 @@ static void iFlatScrollBarDrawVertical(Ihandle* sb_vert, IdrawCanvas* dc, int ac
 
   /* draw handler */
   if (iFlatScrollBarCalcHandler(height, arrow_size, ymax, dy, sb_size, posy, &pos1, &pos2))
-    iupFlatDrawBox(dc, 2, sb_size - 1 - 2, pos1, pos2, fgcolor_drag, bgcolor, active);
+  {
+    int corner_radius = iupAttribGetInt(sb_vert->parent, "SB_CORNERRADIUS");
+    if (corner_radius > 0)
+      iupFlatDrawRoundedBox(dc, 2, sb_size - 1 - 2, pos1, pos2, corner_radius, fgcolor_drag, bgcolor, active);
+    else
+      iupFlatDrawBox(dc, 2, sb_size - 1 - 2, pos1, pos2, fgcolor_drag, bgcolor, active);
+  }
 }
 
 static void iFlatScrollBarDrawHorizontal(Ihandle* sb_horiz, IdrawCanvas* dc, int active, const char* fgcolor, const char* bgcolor, int pressed,
@@ -332,7 +338,13 @@ static void iFlatScrollBarDrawHorizontal(Ihandle* sb_horiz, IdrawCanvas* dc, int
 
   /* draw handler */
   if (iFlatScrollBarCalcHandler(width, arrow_size, xmax, dx, sb_size, posx, &pos1, &pos2))
-    iupFlatDrawBox(dc, pos1, pos2, 2, sb_size - 1 - 2, fgcolor_drag, bgcolor, active);
+  {
+    int corner_radius = iupAttribGetInt(sb_horiz->parent, "SB_CORNERRADIUS");
+    if (corner_radius > 0)
+      iupFlatDrawRoundedBox(dc, pos1, pos2, 2, sb_size - 1 - 2, corner_radius, fgcolor_drag, bgcolor, active);
+    else
+      iupFlatDrawBox(dc, pos1, pos2, 2, sb_size - 1 - 2, fgcolor_drag, bgcolor, active);
+  }
 }
 
 static int iFlatScrollBarAction_CB(Ihandle* sb_ih)
@@ -1252,6 +1264,7 @@ IUP_SDK_API void iupFlatScrollBarRegister(Iclass* ic)
   iupClassRegisterAttribute(ic, "SB_BACKCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SB_HIGHCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "132 132 132", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SB_PRESSCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "96 96 96", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SB_CORNERRADIUS", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWARROWS", NULL, NULL, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ARROWIMAGES", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
