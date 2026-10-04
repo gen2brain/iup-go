@@ -174,9 +174,10 @@ extern "C" IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 {
   if (!ih || !ih->handle) return 1;
+  if (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG)
+    return iupAttribGet(ih, "_IUPHAIKU_INACTIVE") ? 0 : 1;
   if (ih->iclass && (ih->iclass->nativetype == IUP_TYPEVOID ||
-                     ih->iclass->nativetype == IUP_TYPEMENU ||
-                     ih->iclass->nativetype == IUP_TYPEDIALOG))
+                     ih->iclass->nativetype == IUP_TYPEMENU))
     return 1;
 
   auto* view = reinterpret_cast<BView*>(ih->handle);
@@ -210,9 +211,13 @@ extern "C" IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
 static void haikuSetActiveSelf(Ihandle* ih, int enable)
 {
   if (!ih->handle) return;
+  if (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG)
+  {
+    iupAttribSet(ih, "_IUPHAIKU_INACTIVE", enable ? nullptr : const_cast<char*>("1"));
+    return;
+  }
   if (ih->iclass && (ih->iclass->nativetype == IUP_TYPEVOID ||
-                     ih->iclass->nativetype == IUP_TYPEMENU ||
-                     ih->iclass->nativetype == IUP_TYPEDIALOG))
+                     ih->iclass->nativetype == IUP_TYPEMENU))
     return;
 
   auto* view = reinterpret_cast<BView*>(ih->handle);

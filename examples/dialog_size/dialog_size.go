@@ -40,7 +40,7 @@ func focusless() {
 	setStatus("opened focus-less RASTERSIZE dialog")
 }
 
-// showChildAt shows a modeless child at a named position (LEFT=top, RIGHT=bottom for y).
+// showChildAt shows a modeless child at a named position.
 func showChildAt(desc string, x, y int) {
 	child := newChild("Positioned child", "",
 		iup.Vbox(
@@ -90,16 +90,16 @@ func startFocusDemo() {
 // showNoFocus shows a child that does not steal focus from the main dialog.
 func showNoFocus() {
 	child := newChild("SHOWNOFOCUS", `SHOWNOFOCUS=YES`,
-		iup.Vbox(iup.Label("Shown without taking focus - the main dialog keeps it.")).SetAttributes(`NMARGIN=16x16`))
-	iup.ShowXY(child, iup.RIGHT, iup.LEFT)
-	setStatus("SHOWNOFOCUS child shown - main dialog keeps focus")
+		iup.Vbox(iup.Label("No control was focused after show."), iup.Text().SetAttributes(`VISIBLECOLUMNS=12`)).SetAttributes(`NMARGIN=16x16, NGAP=6`))
+	iup.ShowXY(child, iup.RIGHT, iup.TOP)
+	setStatus("SHOWNOFOCUS child shown - its field is not focused")
 }
 
-// showNoActivate shows a child without activating it (Windows/macOS; no-op elsewhere).
+// showNoActivate shows a child without activating it (Win32, WinUI, Qt, QML and macOS).
 func showNoActivate() {
 	child := newChild("SHOWNOACTIVATE", `SHOWNOACTIVATE=YES`,
-		iup.Vbox(iup.Label("Shown without activating (Windows/macOS).")).SetAttributes(`NMARGIN=16x16`))
-	iup.ShowXY(child, iup.RIGHT, iup.RIGHT)
+		iup.Vbox(iup.Label("Shown without activating (Win32, WinUI, Qt, QML and macOS).")).SetAttributes(`NMARGIN=16x16`))
+	iup.ShowXY(child, iup.RIGHT, iup.BOTTOM)
 	setStatus("SHOWNOACTIVATE child shown")
 }
 
@@ -196,21 +196,21 @@ func main() {
 	).SetAttributes(`NMARGIN=6x6, NGAP=4`)).SetAttribute("TITLE", "Placement")
 
 	windows := iup.Frame(iup.Vbox(
-		btn("Child top-left", func() { showChildAt("top-left", iup.LEFT, iup.LEFT) }),
-		btn("Child bottom-right", func() { showChildAt("bottom-right", iup.RIGHT, iup.RIGHT) }),
+		btn("Child top-left", func() { showChildAt("top-left", iup.LEFT, iup.TOP) }),
+		btn("Child bottom-right", func() { showChildAt("bottom-right", iup.RIGHT, iup.BOTTOM) }),
 		btn("Child at mouse", func() { showChildAt("at mouse", iup.MOUSEPOS, iup.MOUSEPOS) }),
 		btn("Child centered on parent", func() { showChildAt("centered on parent", iup.CENTERPARENT, iup.CENTERPARENT) }),
 		btn("Modal (+ nested)", modalDemo),
 		btn("TOPMOST child", func() {
 			child := newChild("TOPMOST", `TOPMOST=YES`,
 				iup.Vbox(iup.Label("Always in front of other dialogs.")).SetAttributes(`NMARGIN=16x16`))
-			iup.ShowXY(child, iup.RIGHT, iup.LEFT)
+			iup.ShowXY(child, iup.RIGHT, iup.TOP)
 			setStatus("TOPMOST child shown")
 		}),
 		btn("TOOLBOX child", func() {
 			child := newChild("Toolbox", `TOOLBOX=YES, MAXBOX=NO, MINBOX=NO`,
 				iup.Vbox(iup.Label("Small title bar, no taskbar entry.")).SetAttributes(`NMARGIN=16x16`))
-			iup.ShowXY(child, iup.LEFT, iup.RIGHT)
+			iup.ShowXY(child, iup.LEFT, iup.BOTTOM)
 			setStatus("TOOLBOX child shown")
 		}),
 		btn("STARTFOCUS child", startFocusDemo),

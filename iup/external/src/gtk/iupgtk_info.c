@@ -19,9 +19,35 @@
 
 IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
+#if (defined(__APPLE__) || defined(G_OS_WIN32)) && GTK_CHECK_VERSION(3, 22, 0)
+  /* the main screen origin is the work area, below the macOS menu bar or beside a top/left Windows taskbar */
+  GdkDisplay* display = gdk_display_get_default();
+  GdkMonitor* monitor = display ? gdk_display_get_primary_monitor(display) : NULL;
+  GdkRectangle geometry, workarea;
+  int dx, dy;
+
+  if (!monitor && display)
+    monitor = gdk_display_get_monitor(display, 0);
+  if (!monitor || add == 0)
+    return;
+
+  gdk_monitor_get_geometry(monitor, &geometry);
+  gdk_monitor_get_workarea(monitor, &workarea);
+  dx = workarea.x - geometry.x;
+  dy = workarea.y - geometry.y;
+  if (add < 0)
+  {
+    dx = -dx;
+    dy = -dy;
+  }
+
+  if (x) *x += dx;
+  if (y) *y += dy;
+#else
   (void)x;
   (void)y;
   (void)add;
+#endif
 }
 
 IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
@@ -110,6 +136,8 @@ IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 #else
   gdk_display_get_pointer(gdk_display_get_default(), NULL, x, y, NULL);
 #endif
+
+  iupdrvAddScreenOffset(x, y, -1);
 }
 
 IUP_SDK_API void iupdrvGetKeyState(char* key)

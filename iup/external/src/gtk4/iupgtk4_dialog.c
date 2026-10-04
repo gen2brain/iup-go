@@ -64,7 +64,14 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w,
   if (!handle)
     handle = ih->handle;
 
-  gtk_window_get_default_size((GtkWindow*)handle, &width, &height);
+  if (gtk_widget_get_visible((GtkWidget*)handle) && gtk_widget_get_width((GtkWidget*)handle) > 0 &&
+      !gtk_widget_has_css_class((GtkWidget*)handle, "csd"))
+  {
+    width = gtk_widget_get_width((GtkWidget*)handle);
+    height = gtk_widget_get_height((GtkWidget*)handle);
+  }
+  else
+    gtk_window_get_default_size((GtkWindow*)handle, &width, &height);
 
   if (ih)
     iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
@@ -74,49 +81,70 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w,
 }
 
 #ifdef GDK_WINDOWING_X11
-static gboolean gtk4DialogResizeIncIdle(gpointer user_data)
+static void gtk4DialogApplySizeHints(Ihandle* ih, GdkSurface* surface, const char* minsize, const char* maxsize, const char* resizeinc)
+{
+  int min_w = 1, min_h = 1, max_w = 65535, max_h = 65535;
+  int inc_w = 0, inc_h = 0;
+  int border, caption, menu;
+
+  iupStrToIntInt(minsize, &min_w, &min_h, 'x');
+  iupStrToIntInt(maxsize, &max_w, &max_h, 'x');
+  if (!iupStrToIntInt(resizeinc, &inc_w, &inc_h, 'x'))
+    inc_w = inc_h = 0;
+
+  iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+  min_w -= 2 * border;
+  min_h -= 2 * border + caption;
+
+  if (max_w < 65535 || max_h < 65535)
+  {
+    max_w -= 2 * border;
+    max_h -= 2 * border + caption;
+    if (max_w < 1) max_w = 1;
+    if (max_h < 1) max_h = 1;
+  }
+  else
+    max_w = max_h = 0;
+
+  iupgtk4X11SetSizeHints(surface, min_w, min_h, inc_w, inc_h, max_w, max_h);
+}
+
+static gboolean gtk4DialogSizeHintsIdle(gpointer user_data)
 {
   Ihandle* ih = (Ihandle*)user_data;
   GdkSurface* surface;
-  int min_w = 1, min_h = 1;
-  int inc_w = 0, inc_h = 0;
 
   if (!iupObjectCheck(ih) || !ih->handle)
     return G_SOURCE_REMOVE;
 
+  iupAttribSet(ih, "_IUPGTK4_SIZEHINTS_PENDING", NULL);
+
   surface = iupgtk4GetSurface(ih->handle);
-  if (!surface)
-    return G_SOURCE_REMOVE;
-
-  iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
-  if (!iupStrToIntInt(iupAttribGet(ih, "RESIZEINC"), &inc_w, &inc_h, 'x'))
-    inc_w = inc_h = 0;
-
-  iupAttribSet(ih, "_IUPGTK4_RESIZEINC_PENDING", NULL);
-  iupgtk4X11SetResizeInc(surface, min_w, min_h, inc_w, inc_h);
+  if (surface)
+    gtk4DialogApplySizeHints(ih, surface, iupAttribGet(ih, "MINSIZE"), iupAttribGet(ih, "MAXSIZE"), iupAttribGet(ih, "RESIZEINC"));
   return G_SOURCE_REMOVE;
 }
 
-/* GDK rewrites the hints from its own layout idle, so the increments have to be written after it */
+/* GDK rewrites the hints from its own layout idle, so the increments and the maximum have to be written after it */
 static void gtk4DialogSurfaceLayout(GdkSurface* surface, int width, int height, Ihandle* ih)
 {
   (void)surface;
   (void)width;
   (void)height;
 
-  if (iupAttribGet(ih, "_IUPGTK4_RESIZEINC_PENDING"))
+  if (iupAttribGet(ih, "_IUPGTK4_SIZEHINTS_PENDING"))
     return;
 
-  iupAttribSet(ih, "_IUPGTK4_RESIZEINC_PENDING", "1");
-  g_idle_add(gtk4DialogResizeIncIdle, ih);
+  iupAttribSet(ih, "_IUPGTK4_SIZEHINTS_PENDING", "1");
+  g_idle_add(gtk4DialogSizeHintsIdle, ih);
 }
 #endif
 
-static void gtk4DialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int min_h)
+static void gtk4DialogUpdateSizeHints(Ihandle* ih, const char* minsize, const char* maxsize, const char* resizeinc)
 {
 #ifdef GDK_WINDOWING_X11
   GdkSurface* surface;
-  int inc_w = 0, inc_h = 0;
+  int inc_w = 0, inc_h = 0, max_w = 65535, max_h = 65535;
 
   if (!ih->handle || !iupgtk4X11IsBackend())
     return;
@@ -125,21 +153,21 @@ static void gtk4DialogSetResizeInc(Ihandle* ih, const char* value, int min_w, in
   if (!surface)
     return;
 
-  if (!iupStrToIntInt(value, &inc_w, &inc_h, 'x'))
-    inc_w = inc_h = 0;
+  iupStrToIntInt(resizeinc, &inc_w, &inc_h, 'x');
+  iupStrToIntInt(maxsize, &max_w, &max_h, 'x');
 
-  if ((inc_w > 1 || inc_h > 1) && !iupAttribGet(ih, "_IUPGTK4_RESIZEINC_HANDLER"))
+  if ((inc_w > 1 || inc_h > 1 || max_w < 65535 || max_h < 65535) && !iupAttribGet(ih, "_IUPGTK4_SIZEHINTS_HANDLER"))
   {
     gulong handler_id = g_signal_connect(G_OBJECT(surface), "layout", G_CALLBACK(gtk4DialogSurfaceLayout), ih);
-    iupAttribSet(ih, "_IUPGTK4_RESIZEINC_HANDLER", (char*)(uintptr_t)handler_id);
+    iupAttribSet(ih, "_IUPGTK4_SIZEHINTS_HANDLER", (char*)(uintptr_t)handler_id);
   }
 
-  iupgtk4X11SetResizeInc(surface, min_w, min_h, inc_w, inc_h);
+  gtk4DialogApplySizeHints(ih, surface, minsize, maxsize, resizeinc);
 #else
   (void)ih;
-  (void)value;
-  (void)min_w;
-  (void)min_h;
+  (void)minsize;
+  (void)maxsize;
+  (void)resizeinc;
 #endif
 }
 
@@ -175,12 +203,8 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
     gtk4DialogSetTaskBarButton(ih, iupAttribGet(ih, "TASKBARBUTTON"));
 
   /* the surface, and with it the window manager hints, exists only once shown */
-  if (visible && iupAttribGet(ih, "RESIZEINC"))
-  {
-    int min_w = 1, min_h = 1;
-    iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
-    gtk4DialogSetResizeInc(ih, iupAttribGet(ih, "RESIZEINC"), min_w, min_h);
-  }
+  if (visible && (iupAttribGet(ih, "RESIZEINC") || iupAttribGet(ih, "MAXSIZE")))
+    gtk4DialogUpdateSizeHints(ih, iupAttribGet(ih, "MINSIZE"), iupAttribGet(ih, "MAXSIZE"), iupAttribGet(ih, "RESIZEINC"));
 }
 
 IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
@@ -198,7 +222,7 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
       int gx = 0, gy = 0, left = 0, top = 0;
       if (iupgtk4X11GetWindowPosition(surface, &gx, &gy))
       {
-        if (iupgtk4X11GetFrameExtents(surface, &left, &top))
+        if (iupgtk4X11GetFrameExtents(surface, &left, &top, NULL, NULL))
         {
           gx -= left;
           gy -= top;
@@ -220,6 +244,22 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
   }
 }
 
+static void gtk4DialogSetDefaultSize(Ihandle* ih, int width, int height, int server_frame)
+{
+#ifdef GDK_WINDOWING_X11
+  /* GDK skips a size equal to the last one it computed, even after the WM resized the window */
+  if (server_frame && iupgtk4X11IsBackend() && gtk_widget_get_mapped(ih->handle) &&
+      width == iupAttribGetInt(ih, "_IUPGTK4_REQ_W") && height == iupAttribGetInt(ih, "_IUPGTK4_REQ_H"))
+    iupgtk4X11ResizeWindow(iupgtk4GetSurface(ih->handle), width, height);
+#else
+  (void)server_frame;
+#endif
+
+  gtk_window_set_default_size((GtkWindow*)ih->handle, width, height);
+  iupAttribSetInt(ih, "_IUPGTK4_REQ_W", width);
+  iupAttribSetInt(ih, "_IUPGTK4_REQ_H", height);
+}
+
 IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
 #ifdef GDK_WINDOWING_X11
@@ -227,7 +267,13 @@ IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
   {
     GdkSurface* surface = iupgtk4GetSurface(ih->handle);
     if (surface && iupgtk4X11MoveWindow(surface, x, y))
+    {
+      /* a pending GDK resize resends the old position, the configure handler moves again */
+      iupAttribSetInt(ih, "_IUPGTK4_TARGET_X", x);
+      iupAttribSetInt(ih, "_IUPGTK4_TARGET_Y", y);
+      iupAttribSetInt(ih, "_IUPGTK4_TARGET_TIME", (int)iupdrvGetTickCount());
       return;
+    }
   }
 #endif
 
@@ -279,6 +325,28 @@ static void gtk4DialogGetWindowDecor(Ihandle* ih, int* win_border, int* win_capt
   }
 }
 
+/* the window manager frame on X11, outside the GTK window */
+static void gtk4DialogGetFrameDecor(Ihandle* ih, int* border, int* caption)
+{
+  *border = 0;
+  *caption = 0;
+
+#ifdef GDK_WINDOWING_X11
+  if (ih->handle && iupgtk4X11IsBackend())
+  {
+    int left = 0, top = 0, right = 0, bottom = 0;
+    GdkSurface* surface = iupgtk4GetSurface(ih->handle);
+    if (surface && iupgtk4X11GetFrameExtents(surface, &left, &top, &right, &bottom) && (left || top))
+    {
+      *border = left;
+      *caption = top + bottom - 2 * left;
+    }
+  }
+#else
+  (void)ih;
+#endif
+}
+
 IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   static int native_caption = 0;
@@ -316,6 +384,13 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* captio
     int win_border = 0, win_caption = 0;
 
     gtk4DialogGetWindowDecor(ih, &win_border, &win_caption);
+
+    {
+      int frame_border, frame_caption;
+      gtk4DialogGetFrameDecor(ih, &frame_border, &frame_caption);
+      win_border += frame_border;
+      win_caption += frame_caption;
+    }
 
     if (win_border >= 0 && win_caption >= 0)
     {
@@ -366,6 +441,10 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   placement = iupAttribGet(ih, "PLACEMENT");
   if (!placement)
   {
+    GdkSurface* surface = iupgtk4GetSurface(ih->handle);
+    int restore = gtk_window_is_maximized((GtkWindow*)ih->handle) ||
+                  (surface && GDK_IS_TOPLEVEL(surface) && (gdk_toplevel_get_state(GDK_TOPLEVEL(surface)) & GDK_TOPLEVEL_STATE_MINIMIZED));
+
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
 
@@ -378,7 +457,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
       return 1;
     }
 
-    return 0;
+    return restore;
   }
 
   if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupStrEqualNoCase(placement, "MAXIMIZED"))
@@ -412,8 +491,8 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 
     height += menu;
 
+    gtk4DialogSetDefaultSize(ih, width, height, !gtk_widget_has_css_class(GTK_WIDGET(ih->handle), "csd"));
     iupdrvDialogSetPosition(ih, x, y);
-    gtk_window_set_default_size((GtkWindow*)ih->handle, width, height);
 
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
@@ -463,11 +542,19 @@ void gtk4DialogSizeAllocate(GtkWidget* widget, int width, int height, int baseli
 
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
 
-  ih->currentwidth = width;
-  ih->currentheight = height + menu;
-
-  client_width = ih->currentwidth - 2 * border;
-  client_height = ih->currentheight;
+  if (gtk_widget_has_css_class(GTK_WIDGET(ih->handle), "csd"))
+  {
+    ih->currentwidth = width;
+    ih->currentheight = height + menu;
+    client_width = ih->currentwidth - 2 * border;
+  }
+  else
+  {
+    ih->currentwidth = width + 2 * border;
+    ih->currentheight = height + menu + 2 * border + caption;
+    client_width = width;
+  }
+  client_height = height + menu;
 
   cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
   if (!cb || cb(ih, client_width, client_height - menu) != IUP_IGNORE)
@@ -569,6 +656,18 @@ static void gtk4DialogX11Configure(unsigned long xid)
     {
       int x, y;
       iupdrvDialogGetPosition(ih, NULL, &x, &y);
+
+      if (iupAttribGet(ih, "_IUPGTK4_TARGET_TIME"))
+      {
+        unsigned int start = (unsigned int)iupAttribGetInt(ih, "_IUPGTK4_TARGET_TIME");
+        int target_x = iupAttribGetInt(ih, "_IUPGTK4_TARGET_X");
+        int target_y = iupAttribGetInt(ih, "_IUPGTK4_TARGET_Y");
+
+        if (iupdrvGetTickCount() - start > 500)
+          iupAttribSet(ih, "_IUPGTK4_TARGET_TIME", NULL);
+        else if (x != target_x || y != target_y)
+          iupgtk4X11MoveWindow(iupgtk4GetSurface(ih->handle), target_x, target_y);
+      }
 
       if (x != iupAttribGetInt(ih, "_IUPGTK4_OLD_X") || y != iupAttribGetInt(ih, "_IUPGTK4_OLD_Y"))
       {
@@ -800,20 +899,19 @@ static void gtk4DialogLayoutUpdateMethod(Ihandle* ih)
   }
   else
   {
-    height = ih->currentheight - caption;
+    height = ih->currentheight - 2 * border - caption;
   }
 
   if (width <= 0) width = 1;
   if (height <= 0) height = 1;
 
   if (!gtk_window_is_maximized((GtkWindow*)ih->handle)
-      && !gtk_window_is_fullscreen((GtkWindow*)ih->handle)
-      && (width != iupAttribGetInt(ih, "_IUPGTK4_LAST_DEFW")
-          || height != iupAttribGetInt(ih, "_IUPGTK4_LAST_DEFH")))
+      && !gtk_window_is_fullscreen((GtkWindow*)ih->handle))
   {
-    gtk_window_set_default_size((GtkWindow*)ih->handle, width, height);
-    iupAttribSetInt(ih, "_IUPGTK4_LAST_DEFW", width);
-    iupAttribSetInt(ih, "_IUPGTK4_LAST_DEFH", height);
+    int def_w, def_h;
+    gtk_window_get_default_size((GtkWindow*)ih->handle, &def_w, &def_h);
+    if (width != def_w || height != def_h)
+      gtk4DialogSetDefaultSize(ih, width, height, !has_csd);
   }
 
   {
@@ -822,7 +920,7 @@ static void gtk4DialogLayoutUpdateMethod(Ihandle* ih)
     if (!iupAttribGetBoolean(ih, "RESIZE"))
     {
       min_w = ih->currentwidth - 2 * border;
-      min_h = ih->currentheight - caption;
+      min_h = ih->currentheight - 2 * border - caption;
 
       if (min_w <= 0) min_w = 1;
       if (min_h <= 0) min_h = 1;
@@ -830,7 +928,7 @@ static void gtk4DialogLayoutUpdateMethod(Ihandle* ih)
     else
     {
       min_w = (ih->userwidth <= 0 && ih->naturalwidth > 0) ? ih->naturalwidth - 2 * border : -1;
-      min_h = (ih->userheight <= 0 && ih->naturalheight > 0) ? ih->naturalheight - caption : -1;
+      min_h = (ih->userheight <= 0 && ih->naturalheight > 0) ? ih->naturalheight - 2 * border - caption : -1;
     }
 
     if (min_w != iupAttribGetInt(ih, "_IUPGTK4_LAST_MINW")
@@ -860,7 +958,7 @@ static void gtk4DialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, in
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
 
   decorwidth = 2 * border;
-  decorheight = caption;
+  decorheight = 2 * border + caption;
 
   if (min_w > decorwidth)
     min_w = min_w - decorwidth;
@@ -872,18 +970,14 @@ static void gtk4DialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, in
   else
     min_h = 1;
 
-  /* GTK4 removed gtk_window_set_geometry_hints, max size constraints are not supported */
+  /* GTK4 has no maximum size, on X11 it is written to the WM hints */
   gtk_widget_set_size_request(ih->handle, min_w, min_h);
 }
 
 
 static int gtk4DialogSetResizeIncAttrib(Ihandle* ih, const char* value)
 {
-  int min_w = 1, min_h = 1;
-
-  iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
-  gtk4DialogSetResizeInc(ih, value, min_w, min_h);
-
+  gtk4DialogUpdateSizeHints(ih, iupAttribGet(ih, "MINSIZE"), iupAttribGet(ih, "MAXSIZE"), value);
   return 1;
 }
 
@@ -898,7 +992,7 @@ static int gtk4DialogSetMinSizeAttrib(Ihandle* ih, const char* value)
   gtk4DialogSetMinMax(ih, min_w, min_h, max_w, max_h);
 
   /* the base follows MINSIZE */
-  gtk4DialogSetResizeInc(ih, iupAttribGet(ih, "RESIZEINC"), min_w, min_h);
+  gtk4DialogUpdateSizeHints(ih, value, iupAttribGet(ih, "MAXSIZE"), iupAttribGet(ih, "RESIZEINC"));
 
   return iupBaseSetMinSizeAttrib(ih, value);
 }
@@ -912,16 +1006,15 @@ static int gtk4DialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
   iupStrToIntInt(iupAttribGet(ih, "MINSIZE"), &min_w, &min_h, 'x');
 
   gtk4DialogSetMinMax(ih, min_w, min_h, max_w, max_h);
+  gtk4DialogUpdateSizeHints(ih, iupAttribGet(ih, "MINSIZE"), value, iupAttribGet(ih, "RESIZEINC"));
 
   return iupBaseSetMaxSizeAttrib(ih, value);
 }
 
 static int gtk4DialogSetTitleAttrib(Ihandle* ih, const char* value)
 {
-  if (!value)
-    value = "";
-  gtk_window_set_title((GtkWindow*)ih->handle, iupgtk4StrConvertToSystem(value));
-  return 0;
+  gtk_window_set_title((GtkWindow*)ih->handle, iupgtk4StrConvertToSystem(value ? value : ""));
+  return 1;
 }
 
 static int gtk4DialogSetIconAttrib(Ihandle* ih, const char* value)
@@ -978,7 +1071,7 @@ static int gtk4DialogSetFullScreenAttrib(Ihandle* ih, const char* value)
     iupAttribSet(ih, "_IUPGTK4_FS_STYLE", NULL);
     gtk_window_unfullscreen((GtkWindow*)ih->handle);
   }
-  return 0;
+  return 1;
 }
 
 static char* gtk4DialogGetClientSizeAttrib(Ihandle* ih)
@@ -998,6 +1091,13 @@ static char* gtk4DialogGetClientSizeAttrib(Ihandle* ih)
 
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
 
+  {
+    int frame_border, frame_caption;
+    gtk4DialogGetFrameDecor(ih, &frame_border, &frame_caption);
+    border -= frame_border;
+    caption -= frame_caption;
+  }
+
   width = width - 2 * border;
   height = height - caption - menu;
 
@@ -1009,9 +1109,10 @@ static char* gtk4DialogGetClientSizeAttrib(Ihandle* ih)
 
 static char* gtk4DialogGetClientOffsetAttrib(Ihandle* ih)
 {
-  int border, caption, menu;
+  int border, caption, menu, frame_border, frame_caption;
   iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
-  return iupStrReturnIntInt(border, caption + menu, 'x');
+  gtk4DialogGetFrameDecor(ih, &frame_border, &frame_caption);
+  return iupStrReturnIntInt(border - frame_border, caption - frame_caption + menu, 'x');
 }
 
 static char* gtk4DialogGetActiveWindowAttrib(Ihandle* ih)
@@ -1155,7 +1256,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, gtk4DialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESIZEINC", NULL, gtk4DialogSetResizeIncAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MAXIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", gtk4DialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);

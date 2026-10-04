@@ -228,6 +228,8 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupCommon_DoResize(JNIEnv*
   if (ih->naturalheight > h) h = ih->naturalheight;
   ih->currentwidth = w;
   ih->currentheight = h;
+  iupAttribSetInt(ih, "_IUPANDROID_VIEW_W", w);
+  iupAttribSetInt(ih, "_IUPANDROID_VIEW_H", iupAndroid_PxToDpRound((float)height));
   if (ret != IUP_IGNORE)
     IupRefresh(ih);
   return ret;

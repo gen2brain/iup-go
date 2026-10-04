@@ -94,6 +94,26 @@ IUP_DRV_API int iupgtk4X11MoveWindow(GdkSurface* surface, int x, int y)
   return 1;
 }
 
+IUP_DRV_API int iupgtk4X11ResizeWindow(GdkSurface* surface, int width, int height)
+{
+  Display* xdisplay;
+
+  if (!surface || !GDK_IS_X11_SURFACE(surface) || width <= 0 || height <= 0)
+    return 0;
+
+  xdisplay = x11_get_xdisplay();
+  if (!xdisplay)
+    return 0;
+
+#ifdef IUPX11_USE_DLOPEN
+  if (!iupX11Open())
+    return 0;
+#endif
+
+  XResizeWindow(xdisplay, gdk_x11_surface_get_xid(surface), (unsigned int)width, (unsigned int)height);
+  return 1;
+}
+
 IUP_DRV_API int iupgtk4X11GetWindowPosition(GdkSurface* surface, int* x, int* y)
 {
   Display* xdisplay;
@@ -118,7 +138,7 @@ IUP_DRV_API int iupgtk4X11GetWindowPosition(GdkSurface* surface, int* x, int* y)
   return 1;
 }
 
-IUP_DRV_API int iupgtk4X11GetFrameExtents(GdkSurface* surface, int* left, int* top)
+IUP_DRV_API int iupgtk4X11GetFrameExtents(GdkSurface* surface, int* left, int* top, int* right, int* bottom)
 {
   Display* xdisplay;
   Atom type;
@@ -146,6 +166,8 @@ IUP_DRV_API int iupgtk4X11GetFrameExtents(GdkSurface* surface, int* left, int* t
       long* extents = (long*)data;
       *left = (int)extents[0];
       *top = (int)extents[2];
+      if (right) *right = (int)extents[1];
+      if (bottom) *bottom = (int)extents[3];
       found = 1;
     }
     if (data)
@@ -231,7 +253,7 @@ IUP_DRV_API int iupgtk4X11SetSkipTaskbar(GdkSurface* surface, int skip)
 /* Pointer operations */
 
 /* GTK4 dropped the geometry hints, so the resize increments go straight to the window manager */
-IUP_DRV_API int iupgtk4X11SetResizeInc(GdkSurface* surface, int min_w, int min_h, int inc_w, int inc_h)
+IUP_DRV_API int iupgtk4X11SetSizeHints(GdkSurface* surface, int base_w, int base_h, int inc_w, int inc_h, int max_w, int max_h)
 {
   Display* xdisplay;
   Window xwindow;
@@ -258,13 +280,22 @@ IUP_DRV_API int iupgtk4X11SetResizeInc(GdkSurface* surface, int min_w, int min_h
   if (inc_w > 1 || inc_h > 1)
   {
     hints.flags |= PBaseSize | PResizeInc;
-    hints.base_width = min_w > 0? min_w: 0;
-    hints.base_height = min_h > 0? min_h: 0;
+    hints.base_width = base_w > 0? base_w: 0;
+    hints.base_height = base_h > 0? base_h: 0;
     hints.width_inc = inc_w > 1? inc_w: 1;
     hints.height_inc = inc_h > 1? inc_h: 1;
   }
   else
     hints.flags &= ~(PBaseSize | PResizeInc);
+
+  if (max_w > 0 && max_h > 0)
+  {
+    hints.flags |= PMaxSize;
+    hints.max_width = max_w;
+    hints.max_height = max_h;
+  }
+  else
+    hints.flags &= ~PMaxSize;
 
   XSetWMNormalHints(xdisplay, xwindow, &hints);
   return 1;

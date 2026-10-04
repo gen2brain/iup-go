@@ -58,6 +58,12 @@ public class IupActivity extends AppCompatActivity
 
     private static int sLiveCount;
 
+    /* ACTIVE=NO on the dialog: input is swallowed like a disabled desktop window */
+    private boolean inactive;
+
+    public void setInactive(boolean value) { inactive = value; }
+    public boolean isInactive() { return inactive; }
+
     public static Activity currentActivity()
     {
         return sCurrentActivityRef != null ? sCurrentActivityRef.get() : null;
@@ -71,6 +77,8 @@ public class IupActivity extends AppCompatActivity
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev)
     {
+        if (inactive)
+            return true;
         int action = ev.getActionMasked();
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE)
         {
@@ -102,6 +110,8 @@ public class IupActivity extends AppCompatActivity
     @Override
     public boolean dispatchKeyEvent(android.view.KeyEvent ev)
     {
+        if (inactive)
+            return true;
         if (IupCommon.inputCallbacksEnabled)
         {
             int press = (ev.getAction() == android.view.KeyEvent.ACTION_DOWN) ? 1 : 0;

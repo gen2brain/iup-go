@@ -100,7 +100,14 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w,
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   if (visible)
+  {
     gtk_widget_show(ih->handle);
+#ifdef GDK_WINDOWING_QUARTZ
+    /* quartz recreates the NSWindow when the decorations change, which drops the keep-above level */
+    if (iupAttribGetBoolean(ih, "TOPMOST"))
+      gtk_window_set_keep_above((GtkWindow*)ih->handle, TRUE);
+#endif
+  }
   else
     gtk_widget_hide(ih->handle);
 }
@@ -116,6 +123,7 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
     gtk_window_get_position((GtkWindow*)handle, &gx, &gy);
     if (x) *x = gx;
     if (y) *y = gy;
+    iupdrvAddScreenOffset(x, y, -1);
   }
   else if (ih)
   {
@@ -126,6 +134,13 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
 
 IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 {
+#ifdef GDK_WINDOWING_QUARTZ
+  /* the quartz backend places the client area at the gtk_window_move position */
+  int border, caption, menu;
+  iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+  x += border;
+  y += border + caption;
+#endif
   gtk_window_move((GtkWindow*)ih->handle, x, y);
 }
 
@@ -227,6 +242,7 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* captio
 {
   static int native_border = 0;
   static int native_caption = 0;
+  static int native_measured = 0;
   int has_csd = 0;
 
   int has_titlebar = iupAttribGetBoolean(ih, "RESIZE")  ||
@@ -284,8 +300,12 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* captio
       *border = has_border ? win_border : 0;
       *caption = has_titlebar ? win_caption : 0;
 
-      if (win_border > 0) native_border = win_border;
-      if (win_caption > 0) native_caption = win_caption;
+      if (win_caption > 0 && has_titlebar)
+      {
+        native_border = win_border;
+        native_caption = win_caption;
+        native_measured = 1;
+      }
       return;
     }
   }
@@ -300,11 +320,11 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* captio
   {
     *border = 0;
     if (has_border)
-      *border = (native_border > 0) ? native_border : 5;
+      *border = native_measured ? native_border : 5;
 
     *caption = 0;
     if (has_titlebar)
-      *caption = (native_caption > 0) ? native_caption : 20;
+      *caption = native_measured ? native_caption : 20;
   }
 }
 
@@ -323,6 +343,9 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   placement = iupAttribGet(ih, "PLACEMENT");
   if (!placement)
   {
+    GdkWindow* window = iupgtkGetWindow(ih->handle);
+    int restore = window && (gdk_window_get_state(window) & (GDK_WINDOW_STATE_MAXIMIZED | GDK_WINDOW_STATE_ICONIFIED));
+
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
 
@@ -335,7 +358,7 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
       return 1;
     }
 
-    return 0;
+    return restore;
   }
 
   if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupStrEqualNoCase(placement, "MAXIMIZED"))
@@ -362,6 +385,15 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     int border, caption, menu;
     iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
 
+#ifdef GDK_WINDOWING_QUARTZ
+    /* macOS keeps windows below the menu bar, FULL fills the visible area */
+    x = 0;
+    y = 0;
+    iupdrvGetScreenSize(&width, &height);
+    width -= 2 * border;
+    height -= 2 * border + caption;
+    iupdrvAddScreenOffset(&x, &y, 1);
+#else
     /* position the decoration outside the screen */
     x = -(border);
     y = -(border+caption+menu);
@@ -370,10 +402,17 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     iupdrvGetFullSize(&width, &height);
 
     height += menu; /* menu is inside the client area. */
+#endif
 
     /* set the new size and position */
-    iupdrvDialogSetPosition(ih, x, y);
     gtk_window_resize((GtkWindow*)ih->handle, width, height);
+    iupdrvDialogSetPosition(ih, x, y);
+
+    /* the queued resize sends its own position, move again when it arrives */
+    iupAttribSetInt(ih, "_IUPGTK_FULL_X", x);
+    iupAttribSetInt(ih, "_IUPGTK_FULL_Y", y);
+    iupAttribSetInt(ih, "_IUPGTK_FULL_W", width);
+    iupAttribSetInt(ih, "_IUPGTK_FULL_H", height);
 
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
@@ -425,6 +464,16 @@ static gboolean gtkDialogConfigureEvent(GtkWidget* widget, GdkEventConfigure* ev
   {
     if (evt->width > 0)
       gtk_widget_set_size_request(ih->data->menu->handle, evt->width, -1);
+  }
+
+  if (iupAttribGet(ih, "_IUPGTK_FULL_W") &&
+      evt->width == iupAttribGetInt(ih, "_IUPGTK_FULL_W") && evt->height == iupAttribGetInt(ih, "_IUPGTK_FULL_H"))
+  {
+    iupdrvDialogSetPosition(ih, iupAttribGetInt(ih, "_IUPGTK_FULL_X"), iupAttribGetInt(ih, "_IUPGTK_FULL_Y"));
+    iupAttribSet(ih, "_IUPGTK_FULL_X", NULL);
+    iupAttribSet(ih, "_IUPGTK_FULL_Y", NULL);
+    iupAttribSet(ih, "_IUPGTK_FULL_W", NULL);
+    iupAttribSet(ih, "_IUPGTK_FULL_H", NULL);
   }
 
   if (ih->data->ignore_resize)
@@ -569,23 +618,17 @@ static gboolean gtkDialogWindowStateEvent(GtkWidget* widget, GdkEventWindowState
   int state = -1;
   (void)widget;
 
-  iupAttribSet(ih, "MAXIMIZED", NULL);
-  iupAttribSet(ih, "MINIMIZED", NULL);
+  iupAttribSet(ih, "MAXIMIZED", (evt->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) ? "Yes" : NULL);
+  iupAttribSet(ih, "MINIMIZED", (evt->new_window_state & GDK_WINDOW_STATE_ICONIFIED) ? "Yes" : NULL);
 
   if ((evt->changed_mask & GDK_WINDOW_STATE_MAXIMIZED) &&
       (evt->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) &&
       !(evt->new_window_state & GDK_WINDOW_STATE_WITHDRAWN))
-  {
     state = IUP_MAXIMIZE;
-    iupAttribSet(ih, "MAXIMIZED", "Yes");
-  }
   else if ((evt->changed_mask & GDK_WINDOW_STATE_ICONIFIED) &&
            (evt->new_window_state & GDK_WINDOW_STATE_ICONIFIED) &&
            !(evt->new_window_state & GDK_WINDOW_STATE_WITHDRAWN))
-  {
     state = IUP_MINIMIZE;
-    iupAttribSet(ih, "MINIMIZED", "Yes");
-  }
   else if ((evt->changed_mask & GDK_WINDOW_STATE_ICONIFIED) &&
            (evt->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) &&
            !(evt->new_window_state & GDK_WINDOW_STATE_WITHDRAWN))
@@ -931,7 +974,11 @@ static void gtkDialogLayoutUpdateMethod(Ihandle* ih)
   iupAttribSetInt(ih, "_IUPGTK_SIZED_BORDER", border);
   iupAttribSetInt(ih, "_IUPGTK_SIZED_CAPTION", caption);
 
-  gtk_window_resize((GtkWindow*)ih->handle, width, height);
+#ifdef GDK_WINDOWING_QUARTZ
+  /* quartz keeps a resize made while zoomed and applies it after the zoom is restored */
+  if (!gtkDialogIsStateFixedSize(ih))
+#endif
+    gtk_window_resize((GtkWindow*)ih->handle, width, height);
 
   if (!iupAttribGetBoolean(ih, "RESIZE"))
   {
@@ -1107,6 +1154,12 @@ static int gtkDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSetStr(ih, "_IUPGTK_FS_RESIZE", iupAttribGet(ih, "RESIZE"));
       iupAttribSetStr(ih, "_IUPGTK_FS_BORDER", iupAttribGet(ih, "BORDER"));
       iupAttribSetStr(ih, "_IUPGTK_FS_TITLE",  iupAttribGet(ih, "TITLE"));
+      {
+        gint w, h;
+        gtk_window_get_size((GtkWindow*)ih->handle, &w, &h);
+        iupAttribSetInt(ih, "_IUPGTK_FS_WIDTH", w);
+        iupAttribSetInt(ih, "_IUPGTK_FS_HEIGHT", h);
+      }
 
       /* remove the decorations attributes */
       iupAttribSet(ih, "MAXBOX", "NO");
@@ -1133,12 +1186,18 @@ static int gtkDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSetStr(ih, "MAXBOX", iupAttribGet(ih, "_IUPGTK_FS_MAXBOX"));
       iupAttribSetStr(ih, "MINBOX", iupAttribGet(ih, "_IUPGTK_FS_MINBOX"));
       iupAttribSetStr(ih, "MENUBOX",iupAttribGet(ih, "_IUPGTK_FS_MENUBOX"));
-      IupSetAttribute(ih, "TITLE",  iupAttribGet(ih, "_IUPGTK_FS_TITLE"));  /* must use IupSetAttribute to update the native implementation */
+      IupSetStrAttribute(ih, "TITLE", iupAttribGet(ih, "_IUPGTK_FS_TITLE"));  /* must use IupSetStrAttribute to update the native implementation */
       iupAttribSetStr(ih, "RESIZE", iupAttribGet(ih, "_IUPGTK_FS_RESIZE"));
       iupAttribSetStr(ih, "BORDER", iupAttribGet(ih, "_IUPGTK_FS_BORDER"));
 
       if (iupdrvIsVisible(ih))
         gtk_window_unfullscreen((GtkWindow*)ih->handle);
+
+      /* Wayland leaves the size to the client after fullscreen, and the layout already asked for the fullscreen size */
+      if (iupAttribGetInt(ih, "_IUPGTK_FS_WIDTH") > 0)
+        gtk_window_resize((GtkWindow*)ih->handle, iupAttribGetInt(ih, "_IUPGTK_FS_WIDTH"), iupAttribGetInt(ih, "_IUPGTK_FS_HEIGHT"));
+      iupAttribSet(ih, "_IUPGTK_FS_WIDTH", NULL);
+      iupAttribSet(ih, "_IUPGTK_FS_HEIGHT", NULL);
 
       /* remove auxiliar attributes */
       iupAttribSet(ih, "_IUPGTK_FS_MAXBOX", NULL);
@@ -1488,8 +1547,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "MAXSIZE", NULL, gtkDialogSetMaxSizeAttrib, IUPAF_SAMEASSYSTEM, "65535x65535", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESIZEINC", NULL, gtkDialogSetResizeIncAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAVEUNDER", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);  /* saveunder not supported in GTK */
-  iupClassRegisterAttribute(ic, "MAXIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "MINIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", gtkDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPMOST", NULL, gtkDialogSetTopMostAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);

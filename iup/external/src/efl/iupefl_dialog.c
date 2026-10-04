@@ -101,11 +101,33 @@ static void eflDialogFreeCanvasImage(Eo* img)
 
 static int eflDialogGetMenuSize(Ihandle* ih);
 
+static int efl_last_border = 0;
+static int efl_last_caption = 0;
+
+static int eflDialogGetFrameExtents(Eo* win, int* left, int* right, int* top, int* bottom)
+{
+  int found = 0;
+  *left = *right = *top = *bottom = 0;
+
+#ifdef HAVE_ECORE_X
+  if (win && !iupeflIsWayland())
+  {
+    Ecore_X_Window xwin = elm_win_xwindow_get(win);
+    if (xwin)
+      found = ecore_x_netwm_frame_size_get(xwin, left, right, top, bottom);
+  }
+#else
+  (void)win;
+#endif
+
+  return found;
+}
+
 static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Eina_Rect geometry;
-  int w, h;
+  int w, h, border, caption, menu;
   IFnii cb;
 
   if (!iupObjectCheck(ih))
@@ -118,10 +140,12 @@ static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
   if (ih->data->ignore_resize)
     return;
 
-  if (w != ih->currentwidth || h != ih->currentheight)
+  iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+
+  if (w + 2 * border != ih->currentwidth || h + 2 * border + caption != ih->currentheight)
   {
-    ih->currentwidth = w;
-    ih->currentheight = h;
+    ih->currentwidth = w + 2 * border;
+    ih->currentheight = h + 2 * border + caption;
 
     cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
     if (!cb || cb(ih, w, h - eflDialogGetMenuSize(ih)) != IUP_IGNORE)
@@ -154,18 +178,8 @@ static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
 
 static void eflDialogGetFrameOffset(Eo* win, int* left, int* top)
 {
-  *left = 0;
-  *top = 0;
-
-#ifdef HAVE_ECORE_X
-  {
-    Ecore_X_Window xwin = elm_win_xwindow_get(win);
-    if (xwin)
-      ecore_x_netwm_frame_size_get(xwin, left, NULL, top, NULL);
-  }
-#else
-  (void)win;
-#endif
+  int right, bottom;
+  eflDialogGetFrameExtents(win, left, &right, top, &bottom);
 }
 
 static void eflDialogMoveCallback(void* data, const Efl_Event* ev)
@@ -182,6 +196,18 @@ static void eflDialogMoveCallback(void* data, const Efl_Event* ev)
   eflDialogGetFrameOffset((Eo*)ih->handle, &left, &top);
   x = pos->x - left;
   y = pos->y - top;
+
+  if (!ih->data->ignore_resize && iupAttribGet(ih, "_IUPEFL_SIZED_BORDER"))
+  {
+    int border, caption, menu;
+    iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+    if (border != iupAttribGetInt(ih, "_IUPEFL_SIZED_BORDER") || caption != iupAttribGetInt(ih, "_IUPEFL_SIZED_CAPTION"))
+    {
+      ih->currentwidth = 0;
+      ih->currentheight = 0;
+      IupRefresh(ih);
+    }
+  }
 
   /* EFL fires this twice per move; dedup. */
   if (x == iupAttribGetInt(ih, "_IUPEFL_OLD_X") && y == iupAttribGetInt(ih, "_IUPEFL_OLD_Y"))
@@ -471,8 +497,14 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w,
   if (handle)
   {
     Eina_Rect geometry = iupeflGetGeometry((Eo*)handle);
+    int left, right, top, bottom;
     width = geometry.w;
     height = geometry.h;
+    if (eflDialogGetFrameExtents((Eo*)handle, &left, &right, &top, &bottom))
+    {
+      width += left + right;
+      height += top + bottom;
+    }
   }
 
   if (w) *w = width;
@@ -497,6 +529,15 @@ static void eflDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int
   ee = eflDialogGetEcoreEvas(win);
   if (!ee)
     return;
+
+  {
+    int border, caption, menu;
+    iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+    min_w -= 2 * border;
+    min_h -= 2 * border + caption;
+    if (max_w < 65535) max_w -= 2 * border;
+    if (max_h < 65535) max_h -= 2 * border + caption;
+  }
 
   if (min_w < 1) min_w = 1;
   if (min_h < 1) min_h = 1;
@@ -528,6 +569,15 @@ static void eflDialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int
     ecore_evas_size_base_set(ee, 0, 0);
     ecore_evas_size_step_set(ee, 0, 0);
     return;
+  }
+
+  {
+    int border, caption, menu;
+    iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+    min_w -= 2 * border;
+    min_h -= 2 * border + caption;
+    if (min_w < 1) min_w = 1;
+    if (min_h < 1) min_h = 1;
   }
 
   ecore_evas_size_base_set(ee, min_w, min_h);
@@ -636,6 +686,12 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
     if (width > 0 && height > 0 && !iupAttribGet(ih, "_IUP_EFL_SHOWN"))
     {
       Ecore_Evas* ee = eflDialogGetEcoreEvas(win);
+      int border, caption, menu;
+      iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+      width -= 2 * border;
+      height -= 2 * border + caption;
+      if (width < 1) width = 1;
+      if (height < 1) height = 1;
       iupAttribSet(ih, "_IUP_EFL_SHOWN", "1");
       iupeflSetSize(win, width, height);
       if (ee)
@@ -656,9 +712,32 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
   {
     Eina_Rect geometry = iupeflGetGeometry((Eo*)handle);
     int left, top;
+    gx = geometry.x;
+    gy = geometry.y;
+#ifdef HAVE_ECORE_X
+    {
+      /* a WM move done together with a resize reaches EFL only as a resize */
+      Ecore_X_Window xwin = elm_win_xwindow_get((Eo*)handle);
+      if (xwin && iupeflIsVisible((Eo*)handle))
+      {
+        Ecore_X_Window root = ecore_x_window_root_get(xwin);
+        Ecore_X_Window w = xwin;
+        int wx, wy;
+        gx = 0;
+        gy = 0;
+        while (w && w != root)
+        {
+          ecore_x_window_geometry_get(w, &wx, &wy, NULL, NULL);
+          gx += wx;
+          gy += wy;
+          w = ecore_x_window_parent_get(w);
+        }
+      }
+    }
+#endif
     eflDialogGetFrameOffset((Eo*)handle, &left, &top);
-    gx = geometry.x - left;
-    gy = geometry.y - top;
+    gx -= left;
+    gy -= top;
   }
 
   if (x) *x = gx;
@@ -676,10 +755,47 @@ IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 
 IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
-  /* EFL windows handle decorations internally */
+  int left, right, top, bottom;
+
   *menu = eflDialogGetMenuSize(ih);
-  *border = 0;
-  *caption = 0;
+
+  if (ih->handle && iupeflIsVisible((Eo*)ih->handle) && eflDialogGetFrameExtents((Eo*)ih->handle, &left, &right, &top, &bottom))
+  {
+    *border = left;
+    *caption = top + bottom - 2 * left;
+    if (*caption < 0) *caption = 0;
+
+    if (!iupAttribGetBoolean(ih, "FULLSCREEN") && !efl_ui_win_maximized_get((Eo*)ih->handle))
+    {
+      iupAttribSetInt(ih, "_IUPEFL_DECOR_BORDER", *border);
+      iupAttribSetInt(ih, "_IUPEFL_DECOR_CAPTION", *caption);
+      if (*caption > 0)
+      {
+        efl_last_border = *border;
+        efl_last_caption = *caption;
+      }
+    }
+    return;
+  }
+
+  if (iupAttribGet(ih, "_IUPEFL_DECOR_BORDER"))
+  {
+    *border = iupAttribGetInt(ih, "_IUPEFL_DECOR_BORDER");
+    *caption = iupAttribGetInt(ih, "_IUPEFL_DECOR_CAPTION");
+    return;
+  }
+
+  if (iupAttribGetBoolean(ih, "HIDETITLEBAR") ||
+      !(iupAttribGet(ih, "TITLE") || iupAttribGetBoolean(ih, "RESIZE") || iupAttribGetBoolean(ih, "MAXBOX") ||
+        iupAttribGetBoolean(ih, "MINBOX") || iupAttribGetBoolean(ih, "MENUBOX")))
+  {
+    *border = 0;
+    *caption = 0;
+    return;
+  }
+
+  *border = efl_last_border;
+  *caption = efl_last_caption;
 }
 
 IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
@@ -707,11 +823,17 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
   placement = iupAttribGet(ih, "PLACEMENT");
   if (!placement)
   {
+    Ecore_Evas* ee = ecore_evas_ecore_evas_get(evas_object_evas_get(win));
+    int maximized = efl_ui_win_maximized_get(win);
+    int minimized = ee && ecore_evas_iconified_get(ee);
+
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
 
+    if (minimized)
+      efl_ui_win_minimized_set(win, EINA_FALSE);
     efl_ui_win_maximized_set(win, EINA_FALSE);
-    return 0;
+    return maximized || minimized;
   }
 
   if (iupStrEqualNoCase(placement, "MINIMIZED"))
@@ -736,8 +858,8 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     iupdrvGetFullSize(&width, &height);
     height += menu;
 
-    iupdrvDialogSetPosition(ih, x, y);
     iupeflSetSize(win, width, height);
+    iupdrvDialogSetPosition(ih, x, y);
 
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
@@ -1001,8 +1123,14 @@ static void eflDialogLayoutUpdateMethod(Ihandle* ih)
 
   ih->data->ignore_resize = 1;
 
-  width = ih->currentwidth;
-  height = ih->currentheight;
+  {
+    int border, caption, menu;
+    iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+    width = ih->currentwidth - 2 * border;
+    height = ih->currentheight - 2 * border - caption;
+    iupAttribSetInt(ih, "_IUPEFL_SIZED_BORDER", border);
+    iupAttribSetInt(ih, "_IUPEFL_SIZED_CAPTION", caption);
+  }
 
   if (width <= 0) width = 1;
   if (height <= 0) height = 1;
@@ -1133,10 +1261,12 @@ static int eflDialogSetMinimizedAttrib(Ihandle* ih, const char* value)
 static char* eflDialogGetMinimizedAttrib(Ihandle* ih)
 {
   Eo* win = iupeflGetWidget(ih);
+  Ecore_Evas* ee;
   if (!win)
     return "NO";
 
-  return efl_ui_win_minimized_get(win) ? "YES" : "NO";
+  ee = ecore_evas_ecore_evas_get(evas_object_evas_get(win));
+  return (ee && ecore_evas_iconified_get(ee)) ? "YES" : "NO";
 }
 
 static int eflDialogSetTopMostAttrib(Ihandle* ih, const char* value)
@@ -1171,7 +1301,7 @@ static int eflDialogSetBgColorAttrib(Ihandle* ih, const char* value)
   }
 
   efl_gfx_color_set(bg_rect, r, g, b, 255);
-  efl_gfx_entity_size_set(bg_rect, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
+  efl_gfx_entity_size_set(bg_rect, iupeflGetGeometry(win).size);
   efl_gfx_entity_position_set(bg_rect, EINA_POSITION2D(0, 0));
   eflDialogStackBgBelow(ih, bg_rect);
 
@@ -1247,11 +1377,11 @@ static int eflDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
       efl_gfx_buffer_unmap(src_img, mapped);
 
       if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
-        evas_object_image_fill_set(bg_img, 0, 0, ih->currentwidth, ih->currentheight);
+        evas_object_image_fill_set(bg_img, 0, 0, iupeflGetGeometry(win).w, iupeflGetGeometry(win).h);
       else
         evas_object_image_fill_set(bg_img, 0, 0, w, h);
 
-      efl_gfx_entity_size_set(bg_img, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
+      efl_gfx_entity_size_set(bg_img, iupeflGetGeometry(win).size);
       efl_gfx_entity_position_set(bg_img, EINA_POSITION2D(0, 0));
       eflDialogStackBgBelow(ih, bg_img);
       efl_gfx_entity_visible_set(bg_img, EINA_TRUE);

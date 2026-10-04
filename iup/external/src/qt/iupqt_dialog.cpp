@@ -243,7 +243,11 @@ protected:
 
     auto cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "MOVE_CB"));
     if (cb)
-      cb(iup_handle, pos.x(), pos.y());
+    {
+      int cb_x = pos.x(), cb_y = pos.y();
+      iupdrvAddScreenOffset(&cb_x, &cb_y, -1);
+      cb(iup_handle, cb_x, cb_y);
+    }
 
     iupAttribSetInt(iup_handle, "_IUPQT_OLD_X", pos.x());
     iupAttribSetInt(iup_handle, "_IUPQT_OLD_Y", pos.y());
@@ -270,6 +274,15 @@ protected:
         iup_state = IUP_MAXIMIZE;
       else
         iup_state = IUP_RESTORE;
+
+      /* leaving fullscreen on macOS does not restore the previous position */
+      if (iup_state == IUP_RESTORE && iupAttribGet(iup_handle, "_IUPQT_FS_X") && !iupAttribGet(iup_handle, "_IUPQT_FS_STYLE"))
+      {
+        QPoint old_pos(iupAttribGetInt(iup_handle, "_IUPQT_FS_X"), iupAttribGetInt(iup_handle, "_IUPQT_FS_Y"));
+        iupAttribSet(iup_handle, "_IUPQT_FS_X", nullptr);
+        iupAttribSet(iup_handle, "_IUPQT_FS_Y", nullptr);
+        QTimer::singleShot(0, this, [this, old_pos]() { move(old_pos); });
+      }
 
       if (iup_handle->data->show_state != iup_state)
       {
@@ -516,8 +529,13 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   {
     if (visible)
     {
+      int no_activate = iupAttribGetBoolean(ih, "SHOWNOACTIVATE");
+      widget->setAttribute(Qt::WA_ShowWithoutActivating, no_activate);
+      if (widget->windowHandle())
+        widget->windowHandle()->setProperty("_q_showWithoutActivating", QVariant(no_activate != 0));
+
       /* activateWindow/raise would un-minimize; keep a minimized window minimized. */
-      if (iupAttribGetBoolean(ih, "SHOWNOACTIVATE") || (widget->windowState() & Qt::WindowMinimized))
+      if (no_activate || (widget->windowState() & Qt::WindowMinimized))
         widget->show();
       else
       {
@@ -560,6 +578,13 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
   else if (widget && widget->isVisible())
   {
     QPoint pos = widget->pos();
+    if (ih && widget->frameGeometry().topLeft() == widget->geometry().topLeft() &&
+        !(widget->windowState() & (Qt::WindowMaximized | Qt::WindowFullScreen)))
+    {
+      int border, caption, menu;
+      iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+      pos -= QPoint(border, border + caption);
+    }
     if (x) *x = pos.x();
     if (y) *y = pos.y();
   }
@@ -568,6 +593,9 @@ extern "C" IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* 
     if (x) *x = iupAttribGetInt(ih, "_IUPQT_OLD_X");
     if (y) *y = iupAttribGetInt(ih, "_IUPQT_OLD_Y");
   }
+
+  if (QGuiApplication::platformName() != "wayland")
+    iupdrvAddScreenOffset(x, y, -1);
 }
 
 extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
@@ -576,7 +604,15 @@ extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 
   if (widget)
   {
-    widget->move(x, y);
+    /* until the frame is known, move() of an existing native window places the client area */
+    if (!widget->isVisible() && widget->frameGeometry().topLeft() == widget->geometry().topLeft())
+    {
+      int border, caption, menu;
+      iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+      widget->move(x + border, y + border + caption);
+    }
+    else
+      widget->move(x, y);
 
     iupAttribSetInt(ih, "_IUPQT_OLD_X", x);
     iupAttribSetInt(ih, "_IUPQT_OLD_Y", y);
@@ -591,10 +627,13 @@ static int qtDialogGetMenuSize(Ihandle* ih)
     return 0;
 }
 
+static int qt_last_border = 0, qt_last_caption = 0;
+
 extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   /* Estimate used until the native window frame can be measured. */
-  const int est_border = 5, est_caption = 25;
+  const int est_border = qt_last_caption ? qt_last_border : 5;
+  const int est_caption = qt_last_caption ? qt_last_caption : 25;
 
 #ifdef Q_OS_MAC
   /* On macOS, Qt uses the native global menu bar */
@@ -623,8 +662,11 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
                    iupAttribGetBoolean(ih, "RESIZE") ||
                    iupAttribGetBoolean(ih, "BORDER");
 
+  auto* state_widget = ih->handle ? reinterpret_cast<QWidget*>(ih->handle) : nullptr;
+  bool state_frame = state_widget && (state_widget->windowState() & (Qt::WindowMaximized | Qt::WindowFullScreen));
+
   /* prefer the cache; the live frame query races with a window resize */
-  if (native_border > 0 && native_caption > 0)
+  if (native_border > 0 && native_caption > 0 && !state_frame)
   {
     *border = has_border ? native_border : 0;
     *caption = has_titlebar ? native_caption : 0;
@@ -645,12 +687,15 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
       if (frame_geom.width() != window_geom.width() || frame_geom.height() != window_geom.height())
       {
         int win_border = (frame_geom.width() - window_geom.width()) / 2;
-        int win_caption = frame_geom.height() - window_geom.height() - win_border;
+        int win_caption = frame_geom.height() - window_geom.height() - 2 * win_border;
 
         if (win_border >= 0 && win_border < 100 && win_caption >= 0 && win_caption < 200)
         {
           *border = has_border ? win_border : 0;
           *caption = has_titlebar ? win_caption : 0;
+
+          if (state_frame)
+            return;
 
           /* Correct the current size, sized below with the estimate, by the real-vs-estimate delta. */
           if (!native_border && !native_caption && ih->currentheight > 0)
@@ -664,6 +709,11 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
             iupAttribSetInt(ih, "_IUPQT_NATIVE_BORDER", win_border);
           if (win_caption > 0)
             iupAttribSetInt(ih, "_IUPQT_NATIVE_CAPTION", win_caption);
+          if (win_caption > 0 && has_border && has_titlebar)
+          {
+            qt_last_border = win_border;
+            qt_last_caption = win_caption;
+          }
 
           return;
         }
@@ -762,8 +812,8 @@ extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 
     height += menu; /* menu is inside the client area */
 
-    iupdrvDialogSetPosition(ih, x, y);
     widget->resize(width, height);
+    iupdrvDialogSetPosition(ih, x, y);
 
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
@@ -964,6 +1014,11 @@ static int qtDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSet(ih, "RESIZE", "NO");
       iupAttribSet(ih, "BORDER", "NO");
 
+#ifdef Q_OS_MACOS
+      iupAttribSetInt(ih, "_IUPQT_FS_X", widget->pos().x());
+      iupAttribSetInt(ih, "_IUPQT_FS_Y", widget->pos().y());
+#endif
+
       widget->setWindowState(widget->windowState() | Qt::WindowFullScreen);
 
       iupAttribSet(ih, "_IUPQT_FS_STYLE", "YES");
@@ -978,7 +1033,7 @@ static int qtDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSetStr(ih, "MAXBOX", iupAttribGet(ih, "_IUPQT_FS_MAXBOX"));
       iupAttribSetStr(ih, "MINBOX", iupAttribGet(ih, "_IUPQT_FS_MINBOX"));
       iupAttribSetStr(ih, "MENUBOX", iupAttribGet(ih, "_IUPQT_FS_MENUBOX"));
-      IupSetAttribute(ih, "TITLE", iupAttribGet(ih, "_IUPQT_FS_TITLE"));
+      IupSetStrAttribute(ih, "TITLE", iupAttribGet(ih, "_IUPQT_FS_TITLE"));
       iupAttribSetStr(ih, "RESIZE", iupAttribGet(ih, "_IUPQT_FS_RESIZE"));
       iupAttribSetStr(ih, "BORDER", iupAttribGet(ih, "_IUPQT_FS_BORDER"));
 

@@ -1195,9 +1195,9 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
     {
       if (aux && aux->appWindow)
       {
-        aux->appWindow.Show();
+        aux->appWindow.Show(ih->data->cmd_show != SW_SHOWNOACTIVATE);
 
-        if (ih->data->cmd_show != SW_SHOWNORMAL && ih->data->cmd_show != SW_SHOWNOACTIVATE)
+        if ((ih->data->cmd_show != SW_SHOWNORMAL && ih->data->cmd_show != SW_SHOWNOACTIVATE) || IsIconic(hwnd) || IsZoomed(hwnd))
           ShowWindow(hwnd, ih->data->cmd_show);
       }
       else
@@ -1433,7 +1433,7 @@ static int winuiDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSetStr(ih, "MAXBOX", iupAttribGet(ih, "_IUPWINUI_FS_MAXBOX"));
       iupAttribSetStr(ih, "MINBOX", iupAttribGet(ih, "_IUPWINUI_FS_MINBOX"));
       iupAttribSetStr(ih, "MENUBOX", iupAttribGet(ih, "_IUPWINUI_FS_MENUBOX"));
-      IupSetAttribute(ih, "TITLE", iupAttribGet(ih, "_IUPWINUI_FS_TITLE"));
+      IupSetStrAttribute(ih, "TITLE", iupAttribGet(ih, "_IUPWINUI_FS_TITLE"));
       iupAttribSetStr(ih, "RESIZE", iupAttribGet(ih, "_IUPWINUI_FS_RESIZE"));
       iupAttribSetStr(ih, "BORDER", iupAttribGet(ih, "_IUPWINUI_FS_BORDER"));
 

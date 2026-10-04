@@ -203,7 +203,11 @@ public final class IupCommon
         }
         /* Dialog ih->handle becomes an Activity after onCreate swaps it. */
         if (widget instanceof Activity)
+        {
+            if (widget instanceof IupActivity activity)
+                activity.setInactive(!active);
             return;
+        }
         Log.e(TAG, "setActive: widget is not a View (" + (widget != null ? widget.getClass().getName() : "null") + ")");
     }
 
@@ -224,6 +228,7 @@ public final class IupCommon
     {
         if (widget == null) return true;
         if (widget instanceof View) return ((View)widget).isEnabled();
+        if (widget instanceof IupActivity activity) return !activity.isInactive();
         if (widget instanceof Activity) return true;
         Log.e(TAG, "isActive: widget is not a View (" + widget.getClass().getName() + ")");
         return true;

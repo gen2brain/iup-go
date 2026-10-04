@@ -19,11 +19,12 @@ IUP_DRV_API unsigned long iupgtk4X11GetSurfaceXid(GdkSurface* surface);
 IUP_DRV_API int iupgtk4X11IsSurface(GdkSurface* surface);
 
 IUP_DRV_API int iupgtk4X11MoveWindow(GdkSurface* surface, int x, int y);
+IUP_DRV_API int iupgtk4X11ResizeWindow(GdkSurface* surface, int width, int height);
 IUP_DRV_API int iupgtk4X11GetWindowPosition(GdkSurface* surface, int* x, int* y);
-IUP_DRV_API int iupgtk4X11GetFrameExtents(GdkSurface* surface, int* left, int* top);
+IUP_DRV_API int iupgtk4X11GetFrameExtents(GdkSurface* surface, int* left, int* top, int* right, int* bottom);
 IUP_DRV_API int iupgtk4X11HideFromTaskbar(GdkSurface* surface);
 IUP_DRV_API int iupgtk4X11SetSkipTaskbar(GdkSurface* surface, int skip);
-IUP_DRV_API int iupgtk4X11SetResizeInc(GdkSurface* surface, int min_w, int min_h, int inc_w, int inc_h);
+IUP_DRV_API int iupgtk4X11SetSizeHints(GdkSurface* surface, int base_w, int base_h, int inc_w, int inc_h, int max_w, int max_h);
 
 IUP_DRV_API int iupgtk4X11QueryPointer(int* x, int* y);
 IUP_DRV_API int iupgtk4X11WarpPointer(int x, int y);

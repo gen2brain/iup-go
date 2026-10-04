@@ -9,6 +9,7 @@
 #include "iup.h"
 #include "iupcbs.h"
 #include "iup_object.h"
+#include "iup_attrib.h"
 
 #include "iupcocoatouch_drv.h"
 
@@ -91,6 +92,9 @@
 	{
 		int target_h = viewport_h;
 		if (_ihandle->naturalheight > target_h) target_h = _ihandle->naturalheight;
+
+		iupAttribSetInt(_ihandle, "_IUPCOCOATOUCH_VIEW_W", viewport_w);
+		iupAttribSetInt(_ihandle, "_IUPCOCOATOUCH_VIEW_H", viewport_h);
 
 		if (viewport_w != _ihandle->currentwidth || target_h != _ihandle->currentheight)
 		{

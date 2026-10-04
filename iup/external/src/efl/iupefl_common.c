@@ -1112,6 +1112,7 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
   if (efl_isa(widget, EFL_UI_WIN_CLASS))
   {
     Evas* evas = evas_object_evas_get(widget);
+    iupAttribSet(ih, "_IUPEFL_INACTIVE", enable ? NULL : "1");
     if (!enable)
     {
       Eo* blocker = (Eo*)iupAttribGet(ih, "_IUP_EFL_MODAL_BLOCKER");
@@ -1166,7 +1167,7 @@ IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
   if (!widget)
     return 1;
 
-  if (!efl_isa(widget, EFL_UI_WIDGET_CLASS))
+  if (!efl_isa(widget, EFL_UI_WIDGET_CLASS) || efl_isa(widget, EFL_UI_WIN_CLASS))
     return iupAttribGet(ih, "_IUPEFL_INACTIVE") ? 0 : 1;
 
   return !iupeflGetDisabled(widget);

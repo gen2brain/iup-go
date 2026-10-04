@@ -289,9 +289,10 @@ IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 
 IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
-  (void)handle;
-  if (w) *w = ih->currentwidth;
-  if (h) *h = ih->currentheight;
+  if (!ih && handle)
+    ih = iupwasmHandleFromId((int)(intptr_t)handle);
+  if (w) *w = ih ? ih->currentwidth : 0;
+  if (h) *h = ih ? ih->currentheight : 0;
 }
 
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
@@ -318,7 +319,8 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 
 IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
-  (void)handle;
+  if (!ih && handle)
+    ih = iupwasmHandleFromId((int)(intptr_t)handle);
   if (x) *x = ih ? iupAttribGetInt(ih, "_IUPWASM_POSX") : 0;
   if (y) *y = ih ? iupAttribGetInt(ih, "_IUPWASM_POSY") : 0;
 }
@@ -409,7 +411,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ACTIVEWINDOW", wasmDialogGetActiveWindowAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "RESIZE", NULL, wasmDialogSetResizeAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "MAXIMIZED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "MENUBOX", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

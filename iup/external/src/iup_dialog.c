@@ -422,7 +422,7 @@ static void iDialogAfterShow(Ihandle* ih)
     }
 
     /* do it only if show_cb did NOT change the current focus */
-    if (old_focus == IupGetFocus() && !iupAttribGetBoolean(ih, "SHOWNOFOCUS"))
+    if (old_focus == IupGetFocus() && !iupAttribGetBoolean(ih, "SHOWNOFOCUS") && !iupAttribGetBoolean(ih, "SHOWNOACTIVATE"))
     {
       Ihandle* startfocus = IupGetAttributeHandle(ih, "STARTFOCUS");
       if (startfocus)
@@ -1043,6 +1043,16 @@ static char* iDialogGetModalAttrib(Ihandle* ih)
   return iupStrReturnBoolean(iupAttribGetBoolean(ih, "MODAL"));
 }
 
+static char* iDialogGetMaximizedAttrib(Ihandle* ih)
+{
+  return iupStrReturnBoolean(iupAttribGetBoolean(ih, "MAXIMIZED"));
+}
+
+static char* iDialogGetMinimizedAttrib(Ihandle* ih)
+{
+  return iupStrReturnBoolean(iupAttribGetBoolean(ih, "MINIMIZED"));
+}
+
 static int iDialogSetSizeAttrib(Ihandle* ih, const char* value)
 {
   if (!value)
@@ -1471,6 +1481,8 @@ Iclass* iupDialogNewClass(void)
   iupClassRegisterAttribute(ic, "SHRINK",       NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "STARTFOCUS",   NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MODAL",        iDialogGetModalAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXIMIZED",    iDialogGetMaximizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINIMIZED",    iDialogGetMinimizedAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PLACEMENT",    NULL, iDialogSetPlacementAttrib, "NORMAL", NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "NOFLUSH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWNOFOCUS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
