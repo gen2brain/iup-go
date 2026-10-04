@@ -722,27 +722,45 @@ static void iExpanderUpdateBox(Ihandle* ih)
 |* Internal Callbacks                                                        *|
 \*****************************************************************************/
 
-static int iExpanderGlobalMotion_cb(int x, int y)
+static int iexpander_old_inputcallbacks = 0;
+
+static void iExpanderGlobalMotionStop(void)
+{
+  IupSetGlobal("_IUP_EXPANDER_GLOBAL", NULL);
+  IupSetFunction("GLOBALMOTION_CB", IupGetFunction("_IUP_OLD_GLOBALMOTION_CB"));
+  IupSetFunction("_IUP_OLD_GLOBALMOTION_CB", NULL);
+  if (!iexpander_old_inputcallbacks)
+    IupSetGlobal("INPUTCALLBACKS", "No");
+}
+
+static void iExpanderGlobalMotion_cb(int x, int y, char* status)
 {
   int child_x, child_y;
-  Ihandle* ih = (Ihandle*)IupGetGlobal("_IUP_EXPANDER_GLOBAL");
-  Ihandle* bar = ih->firstchild;
-  Ihandle* child = ih->firstchild->brother;
+  Ihandle* ih, *bar, *child;
+  IFiis old_cb = (IFiis)IupGetFunction("_IUP_OLD_GLOBALMOTION_CB");
+
+  if (old_cb)
+    old_cb(x, y, status);
+
+  /* the application callback may have destroyed the expander */
+  ih = (Ihandle*)IupGetGlobal("_IUP_EXPANDER_GLOBAL");
+  if (!ih)
+    return;
+
+  bar = ih->firstchild;
+  child = ih->firstchild->brother;
 
   if (ih->data->state != IEXPANDER_OPEN_FLOAT)
   {
-    IupSetGlobal("_IUP_EXPANDER_GLOBAL", NULL);
-    IupSetFunction("GLOBALMOTION_CB", IupGetFunction("_IUP_OLD_GLOBALMOTION_CB"));
-    IupSetFunction("_IUP_OLD_GLOBALMOTION_CB", NULL);
-    IupSetGlobal("INPUTCALLBACKS", "No");
-    return IUP_DEFAULT;
+    iExpanderGlobalMotionStop();
+    return;
   }
 
   child_x = 0, child_y = 0;
   iupdrvClientToScreen(bar, &child_x, &child_y);
   if (x > child_x && x < child_x + bar->currentwidth &&
       y > child_y && y < child_y + bar->currentheight)
-    return IUP_DEFAULT;  /* ignore if inside the bar */
+    return;  /* ignore if inside the bar */
 
   child_x = 0, child_y = 0;
   iupdrvClientToScreen(child, &child_x, &child_y);
@@ -750,14 +768,26 @@ static int iExpanderGlobalMotion_cb(int x, int y)
       y < child_y || y > child_y+child->currentheight)
   {
     iExpanderOpenCloseChild(ih, 0, 1, IEXPANDER_CLOSE);
+    iExpanderGlobalMotionStop();
+  }
+}
 
-    IupSetGlobal("_IUP_EXPANDER_GLOBAL", NULL);
-    IupSetFunction("GLOBALMOTION_CB", IupGetFunction("_IUP_OLD_GLOBALMOTION_CB"));
-    IupSetFunction("_IUP_OLD_GLOBALMOTION_CB", NULL);
-    IupSetGlobal("INPUTCALLBACKS", "No");
+static void iExpanderGlobalMotionStart(Ihandle* ih)
+{
+  Ihandle* floating = (Ihandle*)IupGetGlobal("_IUP_EXPANDER_GLOBAL");
+  if (floating)
+  {
+    if (floating != ih)
+      iExpanderOpenCloseChild(floating, 0, 1, IEXPANDER_CLOSE);
+    IupSetGlobal("_IUP_EXPANDER_GLOBAL", (char*)ih);
+    return;
   }
 
-  return IUP_DEFAULT;
+  iexpander_old_inputcallbacks = IupGetInt(NULL, "INPUTCALLBACKS");
+  IupSetGlobal("INPUTCALLBACKS", "Yes");
+  IupSetFunction("_IUP_OLD_GLOBALMOTION_CB", IupGetFunction("GLOBALMOTION_CB"));
+  IupSetGlobal("_IUP_EXPANDER_GLOBAL", (char*)ih);
+  IupSetFunction("GLOBALMOTION_CB", (Icallback)iExpanderGlobalMotion_cb);
 }
 
 static int iExpanderAutoShowTimer_cb(Ihandle* auto_show_timer)
@@ -774,11 +804,7 @@ static int iExpanderAutoShowTimer_cb(Ihandle* auto_show_timer)
   IupRefreshChildren(ih);
   IupSetAttribute(child, "ZORDER", "TOP");
 
-  /* now monitor mouse move */
-  IupSetGlobal("INPUTCALLBACKS", "Yes");
-  IupSetFunction("_IUP_OLD_GLOBALMOTION_CB", IupGetFunction("GLOBALMOTION_CB"));
-  IupSetGlobal("_IUP_EXPANDER_GLOBAL", (char*)ih);
-  IupSetFunction("GLOBALMOTION_CB", (Icallback)iExpanderGlobalMotion_cb);
+  iExpanderGlobalMotionStart(ih);
   return IUP_DEFAULT;
 }
 
@@ -1609,6 +1635,9 @@ static int iExpanderCreateMethod(Ihandle* ih, void** params)
 
 static void iExpanderDestroyMethod(Ihandle* ih)
 {
+  if ((Ihandle*)IupGetGlobal("_IUP_EXPANDER_GLOBAL") == ih)
+    iExpanderGlobalMotionStop();
+
   if (ih->data->auto_show_timer)
     IupDestroy(ih->data->auto_show_timer);
   if (ih->data->animate_timer)
