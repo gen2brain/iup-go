@@ -1293,6 +1293,74 @@ static int gtk4TextSetCaretPosAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+typedef struct {
+  GtkTextView* view;
+  GtkTextMark* mark;
+  double upper;
+  int stable, ticks, cancelled;
+} gtk4TextScrollData;
+
+static gboolean gtk4TextScrollTick(gpointer data)
+{
+  gtk4TextScrollData* sd = (gtk4TextScrollData*)data;
+  if (sd->cancelled)
+  {
+    if (!gtk_text_mark_get_deleted(sd->mark))
+      gtk_text_buffer_delete_mark(gtk_text_mark_get_buffer(sd->mark), sd->mark);
+  }
+  else if (!gtk_text_mark_get_deleted(sd->mark) && gtk_widget_get_mapped(GTK_WIDGET(sd->view)))
+  {
+    GtkTextBuffer* buffer = gtk_text_mark_get_buffer(sd->mark);
+    GtkAdjustment* adj = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(sd->view));
+    double upper = gtk_adjustment_get_upper(adj);
+    GtkTextIter iter;
+    GdkRectangle rect, visible;
+    int onscreen;
+
+    gtk_text_buffer_get_iter_at_mark(buffer, &iter, sd->mark);
+    gtk_text_view_get_iter_location(sd->view, &iter, &rect);
+    gtk_text_view_get_visible_rect(sd->view, &visible);
+    onscreen = rect.y >= visible.y && rect.y + rect.height <= visible.y + visible.height;
+
+    if (onscreen && upper == sd->upper)
+      sd->stable++;
+    else
+    {
+      sd->stable = 0;
+      if (!onscreen)
+        gtk_text_view_scroll_to_mark(sd->view, sd->mark, 0, FALSE, 0, 0);
+    }
+    sd->upper = upper;
+
+    if (sd->stable < 2 && ++sd->ticks < 50)
+      return TRUE;
+
+    gtk_text_buffer_delete_mark(buffer, sd->mark);
+  }
+  else if (!gtk_text_mark_get_deleted(sd->mark) && ++sd->ticks < 50)
+    return TRUE;
+
+  if (g_object_get_data(G_OBJECT(sd->view), "_IUP_SCROLL") == sd)
+    g_object_set_data(G_OBJECT(sd->view), "_IUP_SCROLL", NULL);
+  g_object_unref(sd->mark);
+  g_object_unref(sd->view);
+  free(sd);
+  return FALSE;
+}
+
+static void gtk4TextScrollToIter(Ihandle* ih, GtkTextBuffer* buffer, GtkTextIter* iter)
+{
+  gtk4TextScrollData* sd = (gtk4TextScrollData*)calloc(1, sizeof(gtk4TextScrollData));
+  gtk4TextScrollData* previous = (gtk4TextScrollData*)g_object_get_data(G_OBJECT(ih->handle), "_IUP_SCROLL");
+  if (previous)
+    previous->cancelled = 1;
+  g_object_set_data(G_OBJECT(ih->handle), "_IUP_SCROLL", sd);
+  sd->view = (GtkTextView*)g_object_ref(ih->handle);
+  sd->mark = (GtkTextMark*)g_object_ref(gtk_text_buffer_create_mark(buffer, NULL, iter, FALSE));
+  gtk_text_view_scroll_to_mark(sd->view, sd->mark, 0, FALSE, 0, 0);
+  g_timeout_add(20, gtk4TextScrollTick, sd);
+}
+
 static int gtk4TextSetScrollToAttrib(Ihandle* ih, const char* value)
 {
   if (!value)
@@ -1309,7 +1377,7 @@ static int gtk4TextSetScrollToAttrib(Ihandle* ih, const char* value)
     if (col < 1) col = 1;
 
     gtkTextMoveIterToLinCol(buffer, &iter, lin, col);
-    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(ih->handle), &iter, 0, FALSE, 0, 0);
+    gtk4TextScrollToIter(ih, buffer, &iter);
   }
   else
   {
@@ -1338,7 +1406,7 @@ static int gtk4TextSetScrollToPosAttrib(Ihandle* ih, const char* value)
     GtkTextIter iter;
     GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
     gtk_text_buffer_get_iter_at_offset(buffer, &iter, pos);
-    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(ih->handle), &iter, 0, FALSE, 0, 0);
+    gtk4TextScrollToIter(ih, buffer, &iter);
   }
   else
     gtk_editable_set_position(GTK_EDITABLE(ih->handle), pos);
