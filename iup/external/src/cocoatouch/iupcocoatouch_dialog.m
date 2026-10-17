@@ -15,6 +15,7 @@
 #include "iup_class.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
+#include "iup_globalattrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
 #define _IUPDLG_PRIVATE
@@ -369,21 +370,35 @@ static int cocoaTouchDialogSetDrawerAttrib(Ihandle* ih, const char* value)
 	return 1;
 }
 
+static void cocoaTouchDialogSetBarStyle(IupViewController* vc, const char* bgcolor)
+{
+	UINavigationBar* bar = vc.navigationController.navigationBar;
+	if (!bar) return;
+
+	UIUserInterfaceStyle style = UIUserInterfaceStyleUnspecified;
+	unsigned char r, g, b;
+	if (bgcolor && iupStrToRGB(bgcolor, &r, &g, &b))
+		style = (0.2126 * r + 0.7152 * g + 0.0722 * b < 128) ? UIUserInterfaceStyleDark : UIUserInterfaceStyleLight;
+	bar.overrideUserInterfaceStyle = style;
+}
+
 static int cocoaTouchDialogSetBgColorAttrib(Ihandle* ih, const char* value)
 {
 	IupViewController* vc = cocoaTouchDialogVC(ih);
 	if (!vc) return 0;
 
 	/* only the untouched system colour auto-flips with dark mode */
-	if (value && iupStrEqual(value, IupGetGlobal("_IUP_SYSTEM_DLGBGCOLOR")))
+	if (value && !iupGlobalDefaultColorChanged("DLGBGCOLOR") && iupStrEqual(value, IupGetGlobal("DLGBGCOLOR")))
 	{
 		[[vc view] setBackgroundColor:[UIColor systemBackgroundColor]];
+		cocoaTouchDialogSetBarStyle(vc, NULL);
 		return 1;
 	}
 
 	UIColor* color = iupCocoaTouchToNativeColor(value);
 	if (!color) return 0;
 	[[vc view] setBackgroundColor:color];
+	cocoaTouchDialogSetBarStyle(vc, value);
 	return 1;
 }
 
