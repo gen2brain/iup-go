@@ -103,21 +103,12 @@ public:
         return 1;
       case FL_PUSH:
       case FL_RELEASE:
-      {
-        auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(iup_handle, "BUTTON_CB"));
-        if (cb)
+        if (IupGetCallback(iup_handle, "BUTTON_CB"))
         {
-          int button = IUP_BUTTON1;
-          if (Fl::event_button() == FL_MIDDLE_MOUSE) button = IUP_BUTTON2;
-          else if (Fl::event_button() == FL_RIGHT_MOUSE) button = IUP_BUTTON3;
-          int pressed = (event == FL_PUSH) ? 1 : 0;
-          char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-          iupfltkButtonKeySetStatus(Fl::event_state(), button, status, 0);
-          cb(iup_handle, button, pressed, Fl::event_x() - x(), Fl::event_y() - y(), status);
+          iupfltkMouseButtonEvent(this, iup_handle, event);
           return 1;
         }
         break;
-      }
     }
     return Fl_Box::handle(event);
   }

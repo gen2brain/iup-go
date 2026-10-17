@@ -489,7 +489,7 @@ IUP_DRV_API int iupfltkMouseButtonEvent(Fl_Widget* widget, Ihandle* ih, int even
     if (event == FL_RELEASE)
       press = 0;
 
-    if (Fl::event_clicks() > 0)
+    if (event == FL_PUSH && Fl::event_clicks() > 0)
       doubleclick = 1;
 
     int fl_button = Fl::event_button();
