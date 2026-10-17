@@ -5,6 +5,7 @@
  */
 
 #include <QTabWidget>
+#include <QKeyEvent>
 #include <QPointer>
 #include <QWidget>
 #include <QLayout>
@@ -190,6 +191,16 @@ protected:
       }
     }
     QTabBar::mousePressEvent(event);
+  }
+
+  void keyPressEvent(QKeyEvent* event) override
+  {
+    if (iupqtKeyPressEvent(this, event, ih))
+    {
+      event->accept();
+      return;
+    }
+    QTabBar::keyPressEvent(event);
   }
 
   void tabInserted(int index) override
@@ -1126,6 +1137,7 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     pos = IupGetChildPos(ih, child);
 
     tab_page = new QWidget();
+    tab_page->setFocusProxy(tabs->tabBar());
     auto* pageLayout = new QVBoxLayout(tab_page);
     pageLayout->setContentsMargins(0, 0, 0, 0);
     pageLayout->setSpacing(0);
