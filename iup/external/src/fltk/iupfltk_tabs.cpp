@@ -883,11 +883,7 @@ static void fltkTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
     iupAttribSet(child, "_IUPTAB_PAGE", nullptr);
 
     if (was_current && tabs->children() > 0)
-    {
-      if (pos >= tabs->children())
-        pos = tabs->children() - 1;
-      iupdrvTabsSetCurrentTab(ih, pos);
-    }
+      iupTabsSelectNearestTab(ih, pos);
 
     tabs->clampTabOffset();
     tabs->redraw();
