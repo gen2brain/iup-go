@@ -154,6 +154,12 @@ static int wasmButtonMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static int wasmButtonSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  iupdrvBaseSetBgColorAttrib(ih, value);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
@@ -175,6 +181,6 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "PADDING", iupButtonGetPaddingAttrib, wasmButtonSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, wasmButtonSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ACENTER:ACENTER", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKUP", NULL, wasmButtonSetMarkupAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, wasmButtonSetBgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
 }

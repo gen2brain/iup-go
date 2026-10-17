@@ -19,12 +19,11 @@ Default: "ACENTER:ACENTER". Partial values are also accepted, like "ARIGHT" or "
 In Motif, vertical alignment is restricted to "ACENTER".
 In GTK, horizontal alignment for multiple lines will align only the text block.
 
-[BGCOLOR](../attrib/iup_bgcolor.md): Background color.
+[BGCOLOR](../attrib/iup_bgcolor.md) (non-inheritable): Background color of the button face, also with text, image or FLAT=YES.
+When not defined, the button has the native look and a FLAT button shows the background of the native parent.
 If text and image are not defined, the button is configured to simply show a color, in this case set the button size because the natural size will be very small.
-In Win32 and in GTK 3, the BGCOLOR attribute is ignored if text or image is defined.
-In WinUI, when text or image is defined, a BGCOLOR inherited from the parent is ignored.
-Default: the global attribute DLGBGCOLOR.
-BGCOLOR is ignored when FLAT=YES because it will be used the background from the native parent.
+Not supported in QML with the Imagine style.
+Default: NULL.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
 In Windows the button will respect CANFOCUS differently to some other controls.
@@ -35,7 +34,8 @@ Default: NO.
 
 **FLAT** (creation-only): Hides the button borders until the mouse cursor enters the button area.
 The border space is always there. Can be YES or NO. Default: NO.
-On Android and iOS the button has no background; on Android an image-only flat button keeps the 48dp touch target.
+In QML, a FLAT button with BGCOLOR is drawn as a regular button.
+On Android an image-only flat button keeps the 48dp touch target.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute DLGFGCOLOR.
 

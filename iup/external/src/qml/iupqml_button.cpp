@@ -10,6 +10,9 @@
 #include <QUrl>
 #include <QColor>
 #include <QKeyEvent>
+#include <QQuickStyle>
+#include <QQmlEngine>
+#include <QMetaObject>
 
 #include <cstdlib>
 #include <memory>
@@ -496,25 +499,103 @@ static int qmlButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 
 static char* qmlButtonGetBgColorAttrib(Ihandle* ih)
 {
-  if (ih->data->type & IUP_BUTTON_IMAGE || iupAttribGet(ih, "IMPRESS"))
+  if (!iupAttribGet(ih, "BGCOLOR") && (ih->data->type & IUP_BUTTON_IMAGE || iupAttribGet(ih, "IMPRESS")))
     return iupBaseNativeParentGetBgColorAttrib(ih);
 
   return nullptr;
 }
 
+static int qmlButtonIsFlat(Ihandle* ih)
+{
+  return iupAttribGetBoolean(ih, "FLAT") ||
+         ((ih->data->type & IUP_BUTTON_IMAGE) && iupAttribGet(ih, "IMPRESS") && !iupAttribGetBoolean(ih, "IMPRESSBORDER"));
+}
+
+static QObject* qml_button_color_helper = nullptr;
+static bool qml_button_color_helper_created = false;
+
+static QObject* qmlButtonStyleColorHelper(void)
+{
+  if (!qml_button_color_helper_created)
+  {
+    QObject* helper = nullptr;
+    QString style = QQuickStyle::name();
+    qml_button_color_helper_created = true;
+    if (style == QLatin1String("Material"))
+      helper = iupqmlCreateObject(
+        "import QtQuick\nimport QtQuick.Controls.Material\n"
+        "QtObject {\n"
+        "  function apply(item, c) { item.Material.background = c }\n"
+        "  function reset(item) { item.Material.background = undefined }\n"
+        "}\n");
+    else if (style == QLatin1String("Universal"))
+      helper = iupqmlCreateObject(
+        "import QtQuick\nimport QtQuick.Controls.Universal\n"
+        "QtObject {\n"
+        "  function apply(item, c) { item.background.color = Qt.binding(function() { return item.down ? Qt.darker(c, 1.1) : c }) }\n"
+        "  function reset(item) { item.background.color = Qt.binding(function() {\n"
+        "    return item.down ? item.Universal.baseMediumLowColor :\n"
+        "           item.enabled && (item.highlighted || item.checked) ? item.Universal.accent : item.Universal.baseLowColor }) }\n"
+        "}\n");
+
+    if (helper)
+    {
+      helper->setParent(qmlEngine(helper));
+      QObject::connect(helper, &QObject::destroyed, []() {
+        qml_button_color_helper = nullptr;
+        qml_button_color_helper_created = false;
+      });
+    }
+    qml_button_color_helper = helper;
+  }
+
+  return qml_button_color_helper;
+}
+
+static void qmlButtonSetStyleColor(QQuickItem* button, const QColor* color)
+{
+  QObject* helper = qmlButtonStyleColorHelper();
+  if (!helper)
+    return;
+
+  if (color)
+    QMetaObject::invokeMethod(helper, "apply", Q_ARG(QVariant, QVariant::fromValue<QObject*>(button)), Q_ARG(QVariant, QVariant::fromValue(*color)));
+  else
+    QMetaObject::invokeMethod(helper, "reset", Q_ARG(QVariant, QVariant::fromValue<QObject*>(button)));
+}
+
 static int qmlButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
-  if (!value || !iupStrToRGB(value, &r, &g, &b))
-    return 0;
-
   auto* button = reinterpret_cast<QQuickItem*>(ih->handle);
-  if (button)
+  if (!button)
+    return 1;
+
+  int swatch = ih->data->type == IUP_BUTTON_TEXT && !iupAttribGet(ih, "TITLE");
+
+  if (!value || !iupStrToRGB(value, &r, &g, &b))
   {
-    iupqmlSetPaletteColor(button, "button", QColor(r, g, b));
-    if (ih->data->type == IUP_BUTTON_TEXT && !iupAttribGet(ih, "TITLE"))
-      iupqmlSetProperty(button, "background.color", QColor(r, g, b));
+    auto* palette = qvariant_cast<QObject*>(button->property("palette"));
+    if (palette)
+    {
+      int index = palette->metaObject()->indexOfProperty("button");
+      if (index >= 0)
+        palette->metaObject()->property(index).reset(palette);
+    }
+    qmlButtonSetStyleColor(button, nullptr);
+    button->setProperty("flat", qmlButtonIsFlat(ih) ? true : false);
+    qmlButtonUpdatePadding(ih);
+    return 1;
   }
+
+  QColor color(r, g, b);
+  iupqmlSetPaletteColor(button, "button", color);
+  if (swatch)
+    iupqmlSetProperty(button, "background.color", color);
+  else
+    qmlButtonSetStyleColor(button, &color);
+  button->setProperty("flat", false);
+  qmlButtonUpdatePadding(ih);
   return 1;
 }
 
@@ -590,6 +671,9 @@ static void qmlButtonApplyFlat(Ihandle* ih, int flat)
   auto* button = reinterpret_cast<QQuickItem*>(ih->handle);
   if (!button)
     return;
+
+  if (iupAttribGet(ih, "BGCOLOR"))
+    flat = 0;
 
   button->setProperty("flat", flat ? true : false);
   qmlButtonUpdatePadding(ih);
@@ -813,7 +897,7 @@ extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, qmlButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", qmlButtonGetBgColorAttrib, qmlButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", qmlButtonGetBgColorAttrib, qmlButtonSetBgColorAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, qmlButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TITLE", nullptr, qmlButtonSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

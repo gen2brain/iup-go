@@ -142,6 +142,15 @@ public:
 
   void draw() override
   {
+    if (iup_handle && !iupAttribGet(iup_handle, "BGCOLOR"))
+    {
+      Fl_Color c = FL_BACKGROUND_COLOR;
+      unsigned char r, g, b;
+      if (box() == FL_FLAT_BOX && iupStrToRGB(iupBaseNativeParentGetBgColor(iup_handle), &r, &g, &b))
+        c = fl_rgb_color(r, g, b);
+      color(c);
+    }
+
     if (!iup_handle || !iupAttribGetBoolean(iup_handle, "SHOWASDEFAULT"))
     {
       Fl_Button::draw();
@@ -303,12 +312,13 @@ static int fltkButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 static int fltkButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
-  if (!iupStrToRGB(value, &r, &g, &b))
-    return 0;
-
   auto* button = reinterpret_cast<IupFltkButton*>(ih->handle);
-  if (button)
+  if (!button)
+    return 1;
+
+  if (value && iupStrToRGB(value, &r, &g, &b))
     button->color(fl_rgb_color(r, g, b));
+  button->redraw();
 
   return 1;
 }
@@ -508,7 +518,7 @@ extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "FONT", nullptr, fltkButtonSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, fltkButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, fltkButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, fltkButtonSetBgColorAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, fltkButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TITLE", nullptr, fltkButtonSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ALIGNMENT", fltkButtonGetAlignmentAttrib, fltkButtonSetAlignmentAttrib, "ACENTER:ACENTER", nullptr, IUPAF_NO_INHERIT);

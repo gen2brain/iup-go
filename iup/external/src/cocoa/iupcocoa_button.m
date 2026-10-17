@@ -33,7 +33,13 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 
 - (void)drawWithFrame:(NSRect)cellFrame inView:(NSView*)controlView
 {
-  if (self.backgroundColor)
+#ifdef GNUSTEP
+  BOOL inner = self.backgroundColor && [self isBordered];
+#else
+  BOOL inner = NO;
+#endif
+
+  if (self.backgroundColor && !inner)
   {
     [self.backgroundColor setFill];
     NSRectFill(cellFrame);
@@ -44,6 +50,17 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
     NSRectFillUsingOperation(cellFrame, NSCompositingOperationSourceOver);
   }
   [super drawWithFrame:cellFrame inView:controlView];
+
+  if (inner)
+  {
+    NSColor* color = self.backgroundColor;
+    if ([self isHighlighted])
+      color = [color blendedColorWithFraction:0.1 ofColor:[NSColor blackColor]];
+    [color setFill];
+    NSRectFill([self drawingRectForBounds:cellFrame]);
+    if ([self image] || [[self title] length] > 0)
+      [self drawInteriorWithFrame:cellFrame inView:controlView];
+  }
 }
 
 @end
@@ -678,13 +695,13 @@ static int cocoaButtonSetBgColorAttrib(Ihandle* ih, const char* value)
   NSButtonCell* cell = [the_button cell];
   unsigned char r, g, b;
 
-  if (!iupStrToRGB(value, &r, &g, &b))
-    return 0;
-
-  [cell setBackgroundColor:[NSColor colorWithSRGBRed:r/255.0
-                                               green:g/255.0
-                                                blue:b/255.0
-                                               alpha:1.0]];
+  if (value && iupStrToRGB(value, &r, &g, &b))
+    [cell setBackgroundColor:[NSColor colorWithSRGBRed:r/255.0
+                                                 green:g/255.0
+                                                  blue:b/255.0
+                                                 alpha:1.0]];
+  else
+    [cell setBackgroundColor:nil];
   [the_button setNeedsDisplay:YES];
 
   return 1;
@@ -999,7 +1016,7 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   ic->UnMap = cocoaButtonUnMapMethod;
   ic->LayoutUpdate = cocoaButtonLayoutUpdateMethod;
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaButtonSetBgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, cocoaButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, cocoaButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FONT", NULL, cocoaButtonSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);

@@ -296,15 +296,25 @@ static TextBlock winuiButtonGetTextBlock(Ihandle* ih)
   return nullptr;
 }
 
+static bool winuiButtonIsBorderless(Ihandle* ih)
+{
+  char* impress = iupAttribGet(ih, "IMPRESS");
+  return (ih->data->type & IUP_BUTTON_IMAGE && impress && !iupAttribGetBoolean(ih, "IMPRESSBORDER")) || iupAttribGetBoolean(ih, "FLAT");
+}
+
 static int winuiButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  int has_content = iupAttribGet(ih, "IMAGE") || (iupAttribGet(ih, "TITLE") && *iupAttribGet(ih, "TITLE"));
-  if (has_content && !iupAttribGet(ih, "BGCOLOR") && ih->parent &&
-      iupStrEqualNoCase(value, IupGetAttribute(ih->parent, "BGCOLOR")))
+  unsigned char r, g, b;
+  if (!value || !iupStrToRGB(value, &r, &g, &b))
   {
     auto btn = winuiGetHandle<Button>(ih);
     if (btn)
-      btn.ClearValue(Control::BackgroundProperty());
+    {
+      if (winuiButtonIsBorderless(ih))
+        btn.Background(SolidColorBrush(Microsoft::UI::Colors::Transparent()));
+      else
+        btn.ClearValue(Control::BackgroundProperty());
+    }
     return 1;
   }
 
@@ -490,8 +500,7 @@ static int winuiButtonMapMethod(Ihandle* ih)
   if (ih->userwidth > 0 || ih->userheight > 0)
     btn.Padding(Thickness{0, 0, 0, 0});
 
-  char* impress = iupAttribGet(ih, "IMPRESS");
-  if ((ih->data->type & IUP_BUTTON_IMAGE && impress && !iupAttribGetBoolean(ih, "IMPRESSBORDER")) || iupAttribGetBoolean(ih, "FLAT"))
+  if (winuiButtonIsBorderless(ih))
   {
     btn.BorderThickness(Thickness{0, 0, 0, 0});
     btn.Padding(Thickness{0, 0, 0, 0});
@@ -545,7 +554,7 @@ static int winuiButtonMapMethod(Ihandle* ih)
       winuiButtonClickHandler(ih);
   });
 
-  if (impress && (ih->data->type & IUP_BUTTON_IMAGE))
+  if (iupAttribGet(ih, "IMPRESS") && (ih->data->type & IUP_BUTTON_IMAGE))
   {
     aux->pointerPressedToken = contentBorder.PointerPressed([ih](IInspectable const&, Input::PointerRoutedEventArgs const&) {
       winuiButtonPointerPressed(ih);
@@ -750,7 +759,7 @@ extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 
   /* Visual */
   iupClassRegisterAttribute(ic, "ACTIVE", nullptr, winuiButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, winuiButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, winuiButtonSetBgColorAttrib, nullptr, nullptr, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, winuiButtonSetFgColorAttrib, "DLGFGCOLOR", nullptr, IUPAF_NOT_MAPPED);
 
   /* Special */

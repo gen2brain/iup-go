@@ -63,6 +63,7 @@ public final class IupButtonHelper
         boolean isBorderless;
         boolean isFlat;
         String buttonStyle;
+        Integer bgColor;
 
         public IupMaterialButton(Context ctx, long ih)
         {
@@ -189,13 +190,26 @@ public final class IupButtonHelper
     @Keep
     public static void setBgColor(Button button, int r, int g, int b)
     {
-        if (button instanceof MaterialButton mb)
+        if (button instanceof IupMaterialButton mb)
         {
-            mb.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(r, g, b)));
-            sThemableButtons.remove(mb);  // user-set colour, opt out of theme refresh
+            mb.bgColor = Color.rgb(r, g, b);
+            mb.setBackgroundTintList(ColorStateList.valueOf(mb.bgColor));
         }
+        else if (button instanceof MaterialButton mb)
+            mb.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(r, g, b)));
         else
             button.setBackgroundColor(Color.rgb(r, g, b));
+    }
+
+    @Keep
+    public static void resetBgColor(Button button)
+    {
+        if (!(button instanceof IupMaterialButton mb)) return;
+        mb.bgColor = null;
+        if (mb.isBorderless)
+            mb.setBackgroundTintList(ColorStateList.valueOf(Color.TRANSPARENT));
+        else
+            applyChrome(mb, Boolean.TRUE.equals(sThemableButtons.get(mb)));
     }
 
 
@@ -262,6 +276,9 @@ public final class IupButtonHelper
             applyPadding(mb, mb.defaultPaddingL, mb.defaultPaddingR);
             if (mb.defaultTextColors != null) mb.setTextColor(mb.defaultTextColors);
         }
+
+        if (mb.bgColor != null)
+            mb.setBackgroundTintList(ColorStateList.valueOf(mb.bgColor));
     }
 
     /* No-op while borderless: FLAT/IMPRESS-without-border owns the paint until the user clears it. */
@@ -307,6 +324,9 @@ public final class IupButtonHelper
         }
         else
             applyShowAsDefault(mb, show);
+
+        if (mb.bgColor != null)
+            mb.setBackgroundTintList(ColorStateList.valueOf(mb.bgColor));
     }
 
     @Keep

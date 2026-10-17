@@ -313,30 +313,84 @@ static int eflButtonSetImPressAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void eflButtonSetColorClass(Eo* btn, const char* name, int r, int g, int b, int a)
+{
+  Evas_Object* edje = elm_layout_edje_get(btn);
+  if (!edje)
+    return;
+
+  if (a < 0)
+    edje_object_color_class_del(edje, name);
+  else
+    edje_object_color_class_set(edje, name, r, g, b, a, 0, 0, 0, 0, 0, 0, 0, 0);
+}
+
+static void eflButtonApplyColors(Ihandle* ih, const char* value)
+{
+  Eo* btn = iupeflGetWidget(ih);
+  unsigned char r, g, b;
+  int chromeless = (ih->data->type & IUP_BUTTON_IMAGE) && iupAttribGet(ih, "IMPRESS") && !iupAttribGetBoolean(ih, "IMPRESSBORDER");
+  int flat_rest = chromeless || (iupAttribGetBoolean(ih, "FLAT") && !iupAttribGet(ih, "_IUP_EFL_HOVER"));
+
+  if (!btn)
+    return;
+
+  if (!(ih->data->type & IUP_BUTTON_IMAGE) && !(iupAttribGet(ih, "TITLE") && *iupAttribGet(ih, "TITLE")))
+    value = NULL;
+
+  if (value && iupStrToRGB(value, &r, &g, &b))
+  {
+    eflButtonSetColorClass(btn, "/bg/normal/button", r, g, b, 255);
+    eflButtonSetColorClass(btn, "/bg/pressed/button", r * 9 / 10, g * 9 / 10, b * 9 / 10, 255);
+  }
+  else if (flat_rest)
+  {
+    eflButtonSetColorClass(btn, "/bg/normal/button", 0, 0, 0, 0);
+    eflButtonSetColorClass(btn, "/bg/pressed/button", 0, 0, 0, chromeless ? 0 : -1);
+  }
+  else
+  {
+    eflButtonSetColorClass(btn, "/bg/normal/button", 0, 0, 0, -1);
+    eflButtonSetColorClass(btn, "/bg/pressed/button", 0, 0, 0, -1);
+  }
+
+  eflButtonSetColorClass(btn, "/shadow/normal/button", 0, 0, 0, flat_rest ? 0 : -1);
+}
+
+static void eflButtonHoverInCallback(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  (void)ev;
+  iupAttribSet(ih, "_IUP_EFL_HOVER", "1");
+  eflButtonApplyColors(ih, iupAttribGet(ih, "BGCOLOR"));
+}
+
+static void eflButtonHoverOutCallback(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  (void)ev;
+  iupAttribSet(ih, "_IUP_EFL_HOVER", NULL);
+  eflButtonApplyColors(ih, iupAttribGet(ih, "BGCOLOR"));
+}
+
 static int eflButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   Eo* btn = iupeflGetWidget(ih);
   Eo* color_rect;
   unsigned char r, g, b;
+  char* title = iupAttribGet(ih, "TITLE");
 
   if (!btn)
     return 1;
 
-  if (!value || !value[0])
-    return 1;
-
-  if (!iupStrToRGB(value, &r, &g, &b))
-    return 1;
-
-  if (ih->data->type & IUP_BUTTON_IMAGE)
-    return 1;
-
-  if (ih->data->type & IUP_BUTTON_TEXT)
+  if ((ih->data->type & IUP_BUTTON_IMAGE) || (title && title[0]))
   {
-    char* title = iupAttribGet(ih, "TITLE");
-    if (title && title[0])
-      return 1;
+    eflButtonApplyColors(ih, value);
+    return 1;
   }
+
+  if (!value || !iupStrToRGB(value, &r, &g, &b))
+    return 1;
 
   color_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_COLORRECT");
   if (!color_rect)
@@ -376,7 +430,6 @@ static int eflButtonMapMethod(Ihandle* ih)
   Eo* parent;
   Eo* btn;
   char* value;
-  int has_border = 1;
 
   parent = iupeflGetParentWidget(ih);
 
@@ -392,18 +445,7 @@ static int eflButtonMapMethod(Ihandle* ih)
   else
     ih->data->type = IUP_BUTTON_TEXT;
 
-  if (ih->data->type & IUP_BUTTON_IMAGE &&
-      iupAttribGet(ih, "IMPRESS") &&
-      !iupAttribGetBoolean(ih, "IMPRESSBORDER"))
-    has_border = 0;
-
-  if (iupAttribGetBoolean(ih, "FLAT"))
-    has_border = 0;
-
-  if (!has_border)
-    btn = efl_add(EFL_UI_BUTTON_CLASS, parent, efl_ui_widget_style_set(efl_added, "anchor"));
-  else
-    btn = efl_add(EFL_UI_BUTTON_CLASS, parent);
+  btn = efl_add(EFL_UI_BUTTON_CLASS, parent);
 
   if (!btn)
     return IUP_ERROR;
@@ -432,6 +474,10 @@ static int eflButtonMapMethod(Ihandle* ih)
 
   efl_event_callback_add(btn, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
   efl_event_callback_add(btn, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
+  efl_event_callback_add(btn, EFL_EVENT_POINTER_IN, eflButtonHoverInCallback, ih);
+  efl_event_callback_add(btn, EFL_EVENT_POINTER_OUT, eflButtonHoverOutCallback, ih);
+  iupAttribSet(ih, "_IUP_EFL_HOVER", NULL);
+  eflButtonApplyColors(ih, iupAttribGet(ih, "BGCOLOR"));
   iupeflKeySetTarget(btn, ih);
   efl_event_callback_add(btn, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
   efl_event_callback_add(btn, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
@@ -460,6 +506,8 @@ static void eflButtonUnMapMethod(Ihandle* ih)
 
     efl_event_callback_del(btn, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
     efl_event_callback_del(btn, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
+    efl_event_callback_del(btn, EFL_EVENT_POINTER_IN, eflButtonHoverInCallback, ih);
+    efl_event_callback_del(btn, EFL_EVENT_POINTER_OUT, eflButtonHoverOutCallback, ih);
     efl_event_callback_del(btn, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
     efl_event_callback_del(btn, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
     efl_event_callback_del(btn, EFL_UI_FOCUS_OBJECT_EVENT_FOCUS_CHANGED, iupeflFocusChangedEvent, ih);
