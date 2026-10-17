@@ -10,7 +10,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
 	"testing"
+	"unicode/utf16"
 )
 
 func templateAPK(t *testing.T) string {
@@ -112,6 +114,50 @@ func TestLauncherIconPaths(t *testing.T) {
 		if Find(entries, p) == nil {
 			t.Errorf("%s not in the template", p)
 		}
+	}
+}
+
+func TestRenamePackage(t *testing.T) {
+	entries, err := ReadTemplate(templateAPK(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	table, err := Find(entries, "resources.arsc").Content()
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := RenamePackage(table, "com.example.renamed")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != len(table) {
+		t.Fatalf("size %d, want %d", len(out), len(table))
+	}
+	hs := int(binary.LittleEndian.Uint16(out[2:]))
+	_, size, err := arscPool(out[hs:])
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg := out[hs+size:]
+	if binary.LittleEndian.Uint16(pkg) != arscPackage {
+		t.Fatal("package chunk expected after the string pool")
+	}
+	var name []uint16
+	for i := 0; i < arscNameLen; i++ {
+		c := binary.LittleEndian.Uint16(pkg[arscNameOffset+2*i:])
+		if c == 0 {
+			break
+		}
+		name = append(name, c)
+	}
+	if got := string(utf16.Decode(name)); got != "com.example.renamed" {
+		t.Errorf("package name = %q", got)
+	}
+	if _, err := LauncherIconPaths(out, "ic_launcher"); err != nil {
+		t.Error(err)
+	}
+	if _, err := RenamePackage(table, strings.Repeat("a", arscNameLen)); err == nil {
+		t.Error("over-long name accepted")
 	}
 }
 

@@ -83,6 +83,17 @@ func packageAndroid(c *config) error {
 		return err
 	}
 
+	table, err := arsc.Content()
+	if err != nil {
+		return err
+	}
+	if table, err = apk.RenamePackage(table, c.id); err != nil {
+		return fmt.Errorf("%s: %w", template, err)
+	}
+	if err := arsc.SetContent(table); err != nil {
+		return err
+	}
+
 	if err := replaceLauncherIcons(c, entries, arsc); err != nil {
 		return err
 	}

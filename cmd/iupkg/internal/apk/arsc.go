@@ -3,6 +3,7 @@ package apk
 import (
 	"encoding/binary"
 	"errors"
+	"unicode/utf16"
 )
 
 const (
@@ -11,6 +12,9 @@ const (
 	arscType         = 0x0201
 	arscFlagSparse   = 0x01
 	arscFlagOffset16 = 0x02
+	arscAppPackageID = 0x7f
+	arscNameOffset   = 12
+	arscNameLen      = 128
 )
 
 func arscPool(data []byte) ([]string, int, error) {
@@ -26,6 +30,45 @@ func arscPool(data []byte) ([]string, int, error) {
 		return nil, 0, err
 	}
 	return a.strings, size, nil
+}
+
+func RenamePackage(arsc []byte, name string) ([]byte, error) {
+	if len(arsc) < 12 || binary.LittleEndian.Uint16(arsc) != arscTable {
+		return nil, errors.New("not a resource table")
+	}
+	u := utf16.Encode([]rune(name))
+	if len(u) >= arscNameLen {
+		return nil, errors.New("package name too long for resources.arsc")
+	}
+	out := append([]byte(nil), arsc...)
+	hs := int(binary.LittleEndian.Uint16(out[2:]))
+	_, size, err := arscPool(out[hs:])
+	if err != nil {
+		return nil, err
+	}
+
+	renamed := false
+	off := hs + size
+	for off+8 <= len(out) {
+		typ := binary.LittleEndian.Uint16(out[off:])
+		csize := int(binary.LittleEndian.Uint32(out[off+4:]))
+		if csize < 8 || off+csize > len(out) {
+			return nil, errors.New("bad chunk in resources.arsc")
+		}
+		if typ == arscPackage && csize >= arscNameOffset+2*arscNameLen && binary.LittleEndian.Uint32(out[off+8:]) == arscAppPackageID {
+			field := out[off+arscNameOffset : off+arscNameOffset+2*arscNameLen]
+			clear(field)
+			for i, c := range u {
+				binary.LittleEndian.PutUint16(field[2*i:], c)
+			}
+			renamed = true
+		}
+		off += csize
+	}
+	if !renamed {
+		return nil, errors.New("application package not found in resources.arsc")
+	}
+	return out, nil
 }
 
 func LauncherIconPaths(arsc []byte, name string) ([]string, error) {
