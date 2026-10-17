@@ -68,6 +68,22 @@ static void eflFontApplyStyle(Eo* tb, const char* family, int size, int is_bold,
   efl_canvas_textblock_style_apply(tb, style);
 }
 
+/* IUP size: + points at 96 dpi, - pixels; Evas sizes are pixels at scale 1 */
+IUP_DRV_API int iupeflFontSizeToNative(int size)
+{
+  if (size < 0)
+    return -size;
+  return (size * 96 + 36) / 72;
+}
+
+IUP_DRV_API int iupeflFontSizeFromNative(int native_size)
+{
+  int points = (native_size * 72 + 48) / 96;
+  if (iupeflFontSizeToNative(points) == native_size)
+    return points;
+  return -native_size;
+}
+
 static void eflFontParse(const char* value, char* family, int* size, int* is_bold, int* is_italic, int* is_underline, int* is_strikeout)
 {
   const char* p;
@@ -117,9 +133,11 @@ static void eflFontParse(const char* value, char* family, int* size, int* is_bol
         *is_strikeout = 1;
         p += 9;
       }
-      else if (*p >= '0' && *p <= '9')
+      else if ((*p >= '0' && *p <= '9') || (*p == '-' && p[1] >= '0' && p[1] <= '9'))
       {
         *size = 0; iupStrToInt(p, size);
+        *size = iupeflFontSizeToNative(*size);
+        p++;
         while (*p >= '0' && *p <= '9') p++;
       }
       else
@@ -134,6 +152,11 @@ static void eflFontParse(const char* value, char* family, int* size, int* is_bol
   mapped_name = iupFontGetPangoName(family);
   if (mapped_name)
     iupStrCopyN(family, 100, mapped_name);
+}
+
+IUP_DRV_API void iupeflFontParse(const char* value, char* family, int* size, int* is_bold, int* is_italic, int* is_underline, int* is_strikeout)
+{
+  eflFontParse(value, family, size, is_bold, is_italic, is_underline, is_strikeout);
 }
 
 static Eo* eflFontGetMeasureTextblock(void)
@@ -466,7 +489,7 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
       {
         if (fo->font && fo->font[0] && fo->size > 0)
         {
-          snprintf(system_font, sizeof(system_font), "%s, %d", fo->font, (int)fo->size);
+          snprintf(system_font, sizeof(system_font), "%s, %d", fo->font, iupeflFontSizeFromNative((int)fo->size));
           return system_font;
         }
         break;
@@ -474,7 +497,7 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
     }
   }
 
-  iupStrCopyN(system_font, sizeof(system_font), "Sans, 11");
+  snprintf(system_font, sizeof(system_font), "Sans, %d", iupeflFontSizeFromNative(11));
   return system_font;
 }
 

@@ -576,7 +576,7 @@ static void eflTableApplyCellText(Ihandle* ih, Evas_Object* txt, int lin, int co
         while (*p == ' ') p++;
         if (strncasecmp(p, "Bold", 4) == 0) { is_bold = 1; p += 4; }
         else if (strncasecmp(p, "Italic", 6) == 0) { is_italic = 1; p += 6; }
-        else if (*p >= '0' && *p <= '9') { font_size = 0; iupStrToInt(p, &font_size); while (*p >= '0' && *p <= '9') p++; }
+        else if ((*p >= '0' && *p <= '9') || (*p == '-' && p[1] >= '0' && p[1] <= '9')) { font_size = 0; iupStrToInt(p, &font_size); p++; while (*p >= '0' && *p <= '9') p++; }
         else p++;
       }
     }
@@ -584,7 +584,7 @@ static void eflTableApplyCellText(Ihandle* ih, Evas_Object* txt, int lin, int co
       iupStrCopyN(font_family, sizeof(font_family), font);
 
     efl_text_font_family_set(txt, font_family);
-    efl_text_font_size_set(txt, font_size);
+    efl_text_font_size_set(txt, iupeflFontSizeToNative(font_size));
     efl_text_font_weight_set(txt, (is_header || is_bold) ? EFL_TEXT_FONT_WEIGHT_BOLD : EFL_TEXT_FONT_WEIGHT_NORMAL);
     efl_text_font_slant_set(txt, is_italic ? EFL_TEXT_FONT_SLANT_ITALIC : EFL_TEXT_FONT_SLANT_NORMAL);
   }

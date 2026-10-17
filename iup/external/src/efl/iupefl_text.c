@@ -2048,8 +2048,7 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
     int val;
     if (iupStrToInt(attr, &val))
     {
-      if (val < 0)
-        val = -val;
+      val = iupeflFontSizeToNative(val);
       if (val > 0)
       {
         remaining = format_size - pos;
@@ -2086,8 +2085,7 @@ static void eflTextBuildCharacterFormat(Ihandle* ih, Ihandle* formattag, char* f
       char* size_str = iupGetFontSizeAttrib(ih);
       if (size_str)
         iupStrToInt(size_str, &base_size);
-      if (base_size < 0)
-        base_size = -base_size;
+      base_size = iupeflFontSizeToNative(base_size);
       if (base_size > 0)
       {
         int new_size = (int)(base_size * fval + 0.5);
@@ -2763,7 +2761,11 @@ static void eflTextMarkupApplyFormat(const char* format, Ihandle* formattag)
     IupSetStrAttribute(formattag, "FONTFACE", value);
 
   if (eflTextMarkupGetKey(format, "font_size", value, sizeof(value)))
-    IupSetStrAttribute(formattag, "FONTSIZE", value);
+  {
+    int native_size = 0;
+    if (iupStrToInt(value, &native_size))
+      IupSetInt(formattag, "FONTSIZE", iupeflFontSizeFromNative(native_size));
+  }
 
   if (eflTextMarkupGetKey(format, "left_margin", value, sizeof(value)))
     IupSetStrAttribute(formattag, "INDENT", value);

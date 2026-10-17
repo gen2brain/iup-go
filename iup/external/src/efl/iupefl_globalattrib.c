@@ -211,6 +211,8 @@ static void eflApplyGlobalFontOverlays(const char* font)
   if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return;
 
+  size = iupeflFontSizeToNative(size);
+
   if (is_bold && is_italic)
     snprintf(efl_font, sizeof(efl_font), "%s:style=Bold Italic", typeface);
   else if (is_bold)
