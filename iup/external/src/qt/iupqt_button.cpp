@@ -94,10 +94,10 @@ protected:
 
   void keyPressEvent(QKeyEvent* event) override
   {
-    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
-    { click(); event->accept(); return; }
     if (iupqtKeyPressEvent(this, event, iup_handle))
     { event->accept(); return; }
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+    { click(); event->accept(); return; }
     QPushButton::keyPressEvent(event);
   }
 
@@ -208,10 +208,10 @@ protected:
 
   void keyPressEvent(QKeyEvent* event) override
   {
-    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
-    { click(); event->accept(); return; }
     if (iupqtKeyPressEvent(this, event, iup_handle))
     { event->accept(); return; }
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+    { click(); event->accept(); return; }
     QToolButton::keyPressEvent(event);
   }
 
