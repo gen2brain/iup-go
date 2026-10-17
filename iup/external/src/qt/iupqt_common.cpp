@@ -472,6 +472,12 @@ extern "C" IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
   return widget ? widget->isEnabled() : 0;
 }
 
+IUP_DRV_API int iupqtIsSelfActive(Ihandle* ih)
+{
+  auto* widget = reinterpret_cast<QWidget*>(ih->handle);
+  return widget ? !widget->testAttribute(Qt::WA_ForceDisabled) : 0;
+}
+
 extern "C" IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 {
   if (ih->iclass->nativetype == IUP_TYPEVOID)
@@ -662,6 +668,15 @@ IUP_DRV_API void iupqtSetWidgetPalette(QWidget* widget, const QPalette& palette)
     scroll_area->viewport()->setPalette(palette);
 }
 
+IUP_DRV_API void iupqtPaletteSetForeground(QPalette& palette, int role, const QColor& color)
+{
+  QColor disabled(color);
+  disabled.setAlphaF(0.5);
+  palette.setColor(QPalette::Active, static_cast<QPalette::ColorRole>(role), color);
+  palette.setColor(QPalette::Inactive, static_cast<QPalette::ColorRole>(role), color);
+  palette.setColor(QPalette::Disabled, static_cast<QPalette::ColorRole>(role), disabled);
+}
+
 extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle || !value)
@@ -694,9 +709,9 @@ extern "C" IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* v
 
   auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   QPalette palette = widget->palette();
-  palette.setColor(QPalette::WindowText, QColor(r, g, b));
-  palette.setColor(QPalette::ButtonText, QColor(r, g, b));
-  palette.setColor(QPalette::Text, QColor(r, g, b));
+  iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
+  iupqtPaletteSetForeground(palette, QPalette::ButtonText, QColor(r, g, b));
+  iupqtPaletteSetForeground(palette, QPalette::Text, QColor(r, g, b));
   iupqtSetWidgetPalette(widget, palette);
 
   return 1;

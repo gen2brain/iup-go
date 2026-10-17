@@ -10,6 +10,7 @@
 #include <QTimer>
 #include <QHBoxLayout>
 #include <QWheelEvent>
+#include <QCoreApplication>
 #include <QVarLengthArray>
 #include <QGesture>
 
@@ -709,6 +710,36 @@ static int qtCanvasSetDYAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+class IupQtCanvasChildArea : public QWidget
+{
+public:
+  IupQtCanvas* canvas;
+
+  IupQtCanvasChildArea() : QWidget(), canvas(nullptr) {}
+
+protected:
+  void wheelEvent(QWheelEvent* event) override
+  {
+    if (!canvas)
+    {
+      QWidget::wheelEvent(event);
+      return;
+    }
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+    QPointF pos = canvas->mapFrom(this, event->position().toPoint());
+    QPointF global = event->globalPosition();
+#else
+    QPointF pos = canvas->mapFrom(this, event->pos());
+    QPointF global = event->globalPosF();
+#endif
+    QWheelEvent forwarded(pos, global, event->pixelDelta(), event->angleDelta(), event->buttons(),
+                          event->modifiers(), event->phase(), event->inverted());
+    QCoreApplication::sendEvent(canvas, &forwarded);
+    event->setAccepted(forwarded.isAccepted());
+  }
+};
+
 /****************************************************************************
  * Map Canvas to Native Control
  ****************************************************************************/
@@ -718,7 +749,8 @@ static int qtCanvasMapMethod(Ihandle* ih)
   auto* container_data = new IupQtCanvasContainer();
 
   /* the extra parent has no layout, so IUP children can be placed with move() */
-  QWidget* extra_parent = iupqtNativeContainerNew(0);
+  auto* child_area = new IupQtCanvasChildArea();
+  QWidget* extra_parent = child_area;
 
   auto* container = new QWidget(extra_parent);
   container_data->container = container;
@@ -726,6 +758,7 @@ static int qtCanvasMapMethod(Ihandle* ih)
   auto* canvas = new IupQtCanvas();
   canvas->ih = ih;
   container_data->canvas = canvas;
+  child_area->canvas = canvas;
   QWidget* canvas_widget = canvas;
 
   if (iupAttribGet(ih, "_IUP_GLCONTROLDATA") && !IupClassMatch(ih, "glbackgroundbox"))

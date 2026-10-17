@@ -651,7 +651,7 @@ static int qtToggleSetValueAttrib(Ihandle* ih, const char* value)
     button->setChecked(!button->isChecked());
 
     if (ih->data->type == IUP_TOGGLE_IMAGE)
-      qtToggleUpdateImage(ih, iupdrvIsActive(ih), qtToggleGetCheck(ih));
+      qtToggleUpdateImage(ih, iupqtIsSelfActive(ih), qtToggleGetCheck(ih));
   }
   else
   {
@@ -659,7 +659,7 @@ static int qtToggleSetValueAttrib(Ihandle* ih, const char* value)
     button->setChecked(check);
 
     if (ih->data->type == IUP_TOGGLE_IMAGE)
-      qtToggleUpdateImage(ih, iupdrvIsActive(ih), qtToggleGetCheck(ih));
+      qtToggleUpdateImage(ih, iupqtIsSelfActive(ih), qtToggleGetCheck(ih));
   }
 
   button->blockSignals(false);
@@ -794,9 +794,9 @@ static int qtToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 
   /* Set text color via palette; the check/radio label is drawn from Text */
   QPalette palette = button->palette();
-  palette.setColor(QPalette::WindowText, QColor(r, g, b));
-  palette.setColor(QPalette::ButtonText, QColor(r, g, b));
-  palette.setColor(QPalette::Text, QColor(r, g, b));
+  iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
+  iupqtPaletteSetForeground(palette, QPalette::ButtonText, QColor(r, g, b));
+  iupqtPaletteSetForeground(palette, QPalette::Text, QColor(r, g, b));
   button->setPalette(palette);
 
   return 1;
@@ -872,7 +872,7 @@ static int qtToggleSetImageAttrib(Ihandle* ih, const char* value)
     if (value != iupAttribGet(ih, "IMAGE"))
       iupAttribSet(ih, "IMAGE", const_cast<char*>(value));
 
-    qtToggleUpdateImage(ih, iupdrvIsActive(ih), qtToggleGetCheck(ih));
+    qtToggleUpdateImage(ih, iupqtIsSelfActive(ih), qtToggleGetCheck(ih));
     return 1;
   }
 
@@ -886,7 +886,7 @@ static int qtToggleSetImInactiveAttrib(Ihandle* ih, const char* value)
     if (value != iupAttribGet(ih, "IMINACTIVE"))
       iupAttribSet(ih, "IMINACTIVE", const_cast<char*>(value));
 
-    qtToggleUpdateImage(ih, iupdrvIsActive(ih), qtToggleGetCheck(ih));
+    qtToggleUpdateImage(ih, iupqtIsSelfActive(ih), qtToggleGetCheck(ih));
     return 1;
   }
 
@@ -900,7 +900,7 @@ static int qtToggleSetImPressAttrib(Ihandle* ih, const char* value)
     if (value != iupAttribGet(ih, "IMPRESS"))
       iupAttribSet(ih, "IMPRESS", const_cast<char*>(value));
 
-    qtToggleUpdateImage(ih, iupdrvIsActive(ih), qtToggleGetCheck(ih));
+    qtToggleUpdateImage(ih, iupqtIsSelfActive(ih), qtToggleGetCheck(ih));
     return 1;
   }
 
@@ -927,7 +927,7 @@ static void qtToggleToggled(Ihandle* ih, bool checked)
   int check = checked ? 1 : 0;
 
   if (ih->data->type == IUP_TOGGLE_IMAGE)
-    qtToggleUpdateImage(ih, iupdrvIsActive(ih), check);
+    qtToggleUpdateImage(ih, iupqtIsSelfActive(ih), check);
 
   IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "ACTION"));
   if (cb && cb(ih, check) == IUP_CLOSE)

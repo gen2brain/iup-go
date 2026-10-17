@@ -1020,7 +1020,7 @@ static int qtTreeSetFgColorAttrib(Ihandle* ih, const char* value)
 
   auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QPalette palette = tree->palette();
-  palette.setColor(QPalette::Text, QColor(r, g, b));
+  iupqtPaletteSetForeground(palette, QPalette::Text, QColor(r, g, b));
   iupqtSetWidgetPalette(tree, palette);
 
   return 1;

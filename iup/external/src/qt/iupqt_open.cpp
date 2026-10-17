@@ -18,6 +18,7 @@
 #include <QWindow>
 #include <QPalette>
 #include <QStyle>
+#include <QStyleFactory>
 #include <QString>
 #include <QGuiApplication>
 #include <QStyleHints>
@@ -303,6 +304,7 @@ IUP_DRV_API QApplication* iupqtGetApplication()
  ****************************************************************************/
 
 static QPalette qt_system_palette;
+static QString qt_replaced_style;
 static int qt_appearance = IUP_APPEARANCE_SYSTEM;
 
 static int qtPaletteIsDark(const QPalette& palette)
@@ -356,6 +358,34 @@ static QPalette qtAppearancePalette(int dark)
   return palette;
 }
 
+static void qtApplyStyleVariant(int appearance)
+{
+  QString current = QApplication::style()->objectName();
+  QString target = current;
+
+  if (appearance == IUP_APPEARANCE_SYSTEM)
+  {
+    if (!qt_replaced_style.isEmpty())
+      target = qt_replaced_style;
+    qt_replaced_style.clear();
+  }
+  else if (!current.isEmpty())
+  {
+    QString stem = current.endsWith(QLatin1String("-dark"), Qt::CaseInsensitive)? current.left(current.size() - 5): current;
+    QString variant = (appearance == IUP_APPEARANCE_DARK)? stem + QLatin1String("-dark"): stem;
+    if (QStyleFactory::keys().contains(variant, Qt::CaseInsensitive))
+      target = variant;
+  }
+
+  if (target.isEmpty() || current.compare(target, Qt::CaseInsensitive) == 0)
+    return;
+
+  if (appearance != IUP_APPEARANCE_SYSTEM && qt_replaced_style.isEmpty())
+    qt_replaced_style = current;
+
+  QApplication::setStyle(target);
+}
+
 extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
 {
   qt_appearance = appearance;
@@ -368,6 +398,8 @@ extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
   else
     QGuiApplication::styleHints()->unsetColorScheme();
 #endif
+
+  qtApplyStyleVariant(appearance);
 
   if (appearance == IUP_APPEARANCE_SYSTEM)
     QApplication::setPalette(qt_system_palette);
