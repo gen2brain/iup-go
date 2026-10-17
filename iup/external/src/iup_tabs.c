@@ -272,7 +272,7 @@ void iupTabsCheckCurrentTab(Ihandle* ih, int pos, int removed)
   int cur_pos = iupdrvTabsGetCurrentTab(ih);
   if (cur_pos == pos)
   {
-    int p;
+    int p = 0, left = -1, right = -1;
 
     /* if given tab is the current tab,
        then the current tab must be changed to a visible tab */
@@ -281,26 +281,53 @@ void iupTabsCheckCurrentTab(Ihandle* ih, int pos, int removed)
     /* this function is called after the child has being removed from the hierarchy,
        but before the system tab being removed. */
 
-    p = 0;
-    if (removed && p == pos)
-      p++;
-
     for (child = ih->firstchild; child; child = child->brother)
     {
+      if (removed && p == pos)
+        p++;
+
       if (p != pos && iupdrvTabsIsTabVisible(child, p))
       {
-        iupdrvTabsSetCurrentTab(ih, p);
-
-        if (!iupAttribGetBoolean(ih, "CHILDSIZEALL"))
-          IupRefresh(ih);
-
-        return;
+        if (p < pos)
+          left = p;
+        else if (right == -1)
+          right = p;
       }
 
       p++;
-      if (removed && p == pos)
-        p++;  /* increment twice to compensate for child already removed */
     }
+
+    if (right != -1 || left != -1)
+    {
+      iupdrvTabsSetCurrentTab(ih, right != -1? right: left);
+
+      if (!iupAttribGetBoolean(ih, "CHILDSIZEALL"))
+        IupRefresh(ih);
+    }
+  }
+}
+
+void iupTabsSelectNearestTab(Ihandle* ih, int pos)
+{
+  Ihandle* child;
+  int p = 0, target = -1;
+
+  for (child = ih->firstchild; child; child = child->brother, p++)
+  {
+    if (!iupdrvTabsIsTabVisible(child, p))
+      continue;
+
+    target = p;
+    if (p >= pos)
+      break;
+  }
+
+  if (target != -1)
+  {
+    iupdrvTabsSetCurrentTab(ih, target);
+
+    if (!iupAttribGetBoolean(ih, "CHILDSIZEALL"))
+      IupRefresh(ih);
   }
 }
 
