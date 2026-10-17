@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 
@@ -95,7 +97,7 @@ public class IupLaunchActivity extends Activity
 
         final String entryName = entryFunctionName, libraryName = entryLibraryName;
         /* a popup from the entry point pumps a modal loop, which needs this activity resumed */
-        getWindow().getDecorView().post(() -> {
+        new Handler(Looper.getMainLooper()).post(() -> {
             IupEntry(this, entryName, libraryName);
             finish();
         });

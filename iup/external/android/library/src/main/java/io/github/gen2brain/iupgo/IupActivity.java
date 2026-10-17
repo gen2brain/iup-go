@@ -57,9 +57,13 @@ public class IupActivity extends AppCompatActivity
     private static int sLastTouchY;
 
     private static int sLiveCount;
+    private static boolean[] sStartWait;
+    private static long sStartWaitIhandle;
 
     /* ACTIVE=NO on the dialog: input is swallowed like a disabled desktop window */
     private boolean inactive;
+
+    private long createdIhandle;
 
     public void setInactive(boolean value) { inactive = value; }
     public boolean isInactive() { return inactive; }
@@ -72,6 +76,28 @@ public class IupActivity extends AppCompatActivity
     public static boolean isRunning()
     {
         return sLiveCount > 0;
+    }
+
+    /* IupShow from the entry point returns once the dialog's Activity is up, as on the desktop */
+    @Keep
+    public static boolean waitForStart(Object handle, long ihandlePtr)
+    {
+        if (handle instanceof Activity || sStartWait != null) return false;
+        IupApplication app = IupApplication.getIupApplication();
+        if (app == null || !(app.getCurrentActivity() instanceof IupLaunchActivity)) return false;
+
+        boolean[] done = { false };
+        sStartWait = done;
+        sStartWaitIhandle = ihandlePtr;
+        IupCommon.pumpUntilDone(done);
+        sStartWait = null;
+        return true;
+    }
+
+    private void endStartWait()
+    {
+        if (sStartWait != null && createdIhandle == sStartWaitIhandle)
+            sStartWait[0] = true;
     }
 
     @Keep
@@ -292,6 +318,7 @@ public class IupActivity extends AppCompatActivity
 
         final Intent intent = getIntent();
         final long ihandlePtr = intent.getLongExtra("Ihandle", 0);
+        createdIhandle = ihandlePtr;
 
         Object viewGroupObject = IupCommon.getObjectFromIhandle(ihandlePtr);
         if (viewGroupObject instanceof IupAndroidFixed)
@@ -381,6 +408,7 @@ public class IupActivity extends AppCompatActivity
         super.onResume();
         sCurrentActivityRef = new java.lang.ref.WeakReference<>(this);
         previousConfig = new Configuration(getResources().getConfiguration());
+        endStartWait();
     }
 
     @Override
@@ -405,6 +433,7 @@ public class IupActivity extends AppCompatActivity
         }
 
         IupCommon.modalPumpExitTopmost();
+        endStartWait();
 
         sLiveCount--;
         if (sLiveCount == 0 && isFinishing())
@@ -538,6 +567,8 @@ public class IupActivity extends AppCompatActivity
     {
         final Intent intent = new Intent(parentActivity, IupActivity.class);
         intent.putExtra("Ihandle", ihandlePtr);
+        if (parentActivity instanceof IupLaunchActivity)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
         parentActivity.startActivity(intent);
         return new IupAndroidFixed(parentActivity);
     }

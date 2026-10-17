@@ -14,7 +14,7 @@
 
 		<activity
 			android:name="io.github.gen2brain.iupgo.IupLaunchActivity"
-			android:theme="@android:style/Theme.Translucent.NoTitleBar"
+			android:theme="@style/IupLaunchTheme"
 			android:configChanges="orientation|keyboardHidden|screenSize"
 			android:noHistory="true"
 			android:exported="true"
