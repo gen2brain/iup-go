@@ -148,9 +148,7 @@ static void androidDialogSetBgColor(Ihandle* ih, unsigned char r, unsigned char 
 
 IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
 {
-  /* An Activity-backed dialog is always "visible" once mapped. */
-  (void)ih;
-  return 1;
+  return ih->handle && iupAttribGet(ih, "_IUPANDROID_SHOWN");
 }
 
 IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
@@ -182,6 +180,7 @@ static int androidDialogWaitForStart(Ihandle* ih)
 
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
+  iupAttribSet(ih, "_IUPANDROID_SHOWN", visible ? "1" : NULL);
   if (visible && androidDialogWaitForStart(ih))
     return;
   androidDialogCallVoidNoArg(ih, visible ? "bringToFront" : "moveToBack");
