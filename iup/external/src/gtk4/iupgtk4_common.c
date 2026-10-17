@@ -549,19 +549,48 @@ IUP_SDK_API void iupdrvClientToScreen(Ihandle* ih, int* x, int* y)
   }
 }
 
+IUP_DRV_API char* iupgtk4StrEscapeUnderline(const char* str)
+{
+  int count = 0;
+  const char* p;
+  char* out, *q;
+
+  for (p = str; *p; p++)
+    if (*p == '_')
+      count++;
+
+  if (!count)
+    return NULL;
+
+  out = (char*)malloc(strlen(str) + count + 1);
+  for (p = str, q = out; *p; p++)
+  {
+    *q++ = *p;
+    if (*p == '_')
+      *q++ = '_';
+  }
+  *q = 0;
+  return out;
+}
+
 IUP_DRV_API int iupgtk4SetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value)
 {
   char c = '_';
   char* str;
+  char* escaped;
+  const char* source;
 
   if (!value)
     value = "";
 
-  str = iupStrProcessMnemonic(value, &c, 1);
-  if (str != value)
+  escaped = strchr(value, '&') ? iupgtk4StrEscapeUnderline(value) : NULL;
+  source = escaped ? escaped : value;
+  str = iupStrProcessMnemonic(source, &c, 1);
+  if (str != source)
   {
     gtk_label_set_text_with_mnemonic(label, iupgtk4StrConvertToSystem(str));
     free(str);
+    free(escaped);
     return 1;
   }
   else

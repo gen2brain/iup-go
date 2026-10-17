@@ -23,6 +23,7 @@ IUP_DRV_API void iupgtk4SetupButtonEvents(GtkWidget* widget, Ihandle* ih);
 IUP_DRV_API void iupgtk4ButtonPressed(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih);
 
 IUP_DRV_API int iupgtk4SetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value);
+IUP_DRV_API char* iupgtk4StrEscapeUnderline(const char* str);
 IUP_DRV_API void iupgtk4UpdateMnemonic(Ihandle* ih);
 
 IUP_DRV_API void iupgtk4ColorSetRGB(GdkRGBA* color, unsigned char r, unsigned char g, unsigned char b);
