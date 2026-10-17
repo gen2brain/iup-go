@@ -101,12 +101,9 @@ public final class IupTableHelper
         String selectionMode = "SINGLE";
         int rowSelectBg;
         int rowSelectFg;
-        int focusCellBg;
-        GradientDrawable focusCellDrawable;
         boolean focusRect = true;
         int cellsLin1, cellsCol1, cellsLin2, cellsCol2;
         int cellsBg, cellsFg;
-        GradientDrawable cellsFocusDrawable;
 
         boolean editableAll;
         final SparseBooleanArray editableCol = new SparseBooleanArray();
@@ -164,8 +161,6 @@ public final class IupTableHelper
             this.headerFg  = IupCommon.paletteDlgFg;
             this.rowSelectBg = IupCommon.paletteTxtHlBg;
             this.rowSelectFg = IupCommon.paletteTxtHlFg;
-            this.focusCellBg = IupCommon.blendColor(IupCommon.paletteTxtHlBg, IupCommon.paletteDlgFg, 0.45f);
-            this.focusCellDrawable = null;
             setBackgroundColor(defaultBg);
         }
     }
@@ -236,31 +231,34 @@ public final class IupTableHelper
         return t.defaultFg;
     }
 
-    static Drawable focusCellDrawable(IupTableView t)
+    static Drawable focusCellDrawable(int fill, int stroke)
     {
-        if (t.focusCellDrawable == null)
-        {
-            GradientDrawable gd = new GradientDrawable();
-            gd.setColor(t.focusCellBg);
-            t.focusCellDrawable = gd;
-        }
-        return t.focusCellDrawable;
+        float density = IupCommon.getDisplayDensity();
+        GradientDrawable gd = new GradientDrawable();
+        gd.setColor(fill);
+        gd.setStroke(Math.max(1, Math.round(density)), stroke, 3 * density, 2 * density);
+        return gd;
+    }
+
+    static void applyCellColors(IupTableView t, TextView tv, int lin, int col)
+    {
+        boolean cellsMode = "CELLS".equalsIgnoreCase(t.selectionMode);
+        boolean inRange = cellsMode && inCellRange(t, lin, col);
+        boolean rowSelected = !cellsMode && t.selectedLins.contains(lin);
+        int bg = rowSelected ? t.rowSelectBg : inRange ? t.cellsBg : resolveBg(t, lin, col);
+        int fg = rowSelected ? t.rowSelectFg : inRange ? t.cellsFg : resolveFg(t, lin, col);
+        if (lin == t.focusLin && col == t.focusCol && t.focusRect)
+            tv.setBackground(focusCellDrawable(bg, fg));
+        else if (bg != 0)
+            tv.setBackgroundColor(bg);
+        else
+            tv.setBackground(null);
+        tv.setTextColor(fg);
     }
 
     static boolean inCellRange(IupTableView t, int lin, int col)
     {
         return t.cellsLin1 > 0 && lin >= t.cellsLin1 && lin <= t.cellsLin2 && col >= t.cellsCol1 && col <= t.cellsCol2;
-    }
-
-    static Drawable cellsFocusDrawable(IupTableView t)
-    {
-        if (t.cellsFocusDrawable == null)
-        {
-            GradientDrawable gd = new GradientDrawable();
-            gd.setColor(t.cellsBg);
-            t.cellsFocusDrawable = gd;
-        }
-        return t.cellsFocusDrawable;
     }
 
     static int gravityFromAlign(String align)
@@ -362,30 +360,7 @@ public final class IupTableHelper
                 tv.setText(text);
                 tv.setGravity(gravityFromAlign(table.colAlign.get(col)));
 
-                boolean cellsMode = "CELLS".equalsIgnoreCase(table.selectionMode);
-                boolean inRange = cellsMode && inCellRange(table, lin, col);
-                boolean rowSelected = !cellsMode && table.selectedLins.contains(lin);
-                boolean focusCell = (lin == table.focusLin) && (col == table.focusCol) && table.focusRect;
-                if (focusCell)
-                {
-                    tv.setBackground(inRange ? cellsFocusDrawable(table) : focusCellDrawable(table));
-                }
-                else if (rowSelected)
-                {
-                    tv.setBackgroundColor(table.rowSelectBg);
-                }
-                else if (inRange)
-                {
-                    tv.setBackgroundColor(table.cellsBg);
-                }
-                else
-                {
-                    int bg = resolveBg(table, lin, col);
-                    if (bg != 0) tv.setBackgroundColor(bg);
-                    else tv.setBackground(null);
-                }
-
-                tv.setTextColor(rowSelected ? table.rowSelectFg : inRange ? table.cellsFg : resolveFg(table, lin, col));
+                applyCellColors(table, tv, lin, col);
 
                 ensureDefaultCellTextSize(table, tv);
                 applyCellFont(table, tv, resolveFont(table, lin, col));
@@ -506,29 +481,7 @@ public final class IupTableHelper
 
     static void applyCellStyle(IupTableView t, TextView tv, int lin, int col)
     {
-        boolean cellsMode = "CELLS".equalsIgnoreCase(t.selectionMode);
-        boolean inRange = cellsMode && inCellRange(t, lin, col);
-        boolean rowSelected = !cellsMode && t.selectedLins.contains(lin);
-        boolean focusCell = (lin == t.focusLin) && (col == t.focusCol) && t.focusRect;
-        if (focusCell)
-        {
-            tv.setBackground(inRange ? cellsFocusDrawable(t) : focusCellDrawable(t));
-        }
-        else if (rowSelected)
-        {
-            tv.setBackgroundColor(t.rowSelectBg);
-        }
-        else if (inRange)
-        {
-            tv.setBackgroundColor(t.cellsBg);
-        }
-        else
-        {
-            int bg = resolveBg(t, lin, col);
-            if (bg != 0) tv.setBackgroundColor(bg);
-            else tv.setBackground(null);
-        }
-        tv.setTextColor(rowSelected ? t.rowSelectFg : inRange ? t.cellsFg : resolveFg(t, lin, col));
+        applyCellColors(t, tv, lin, col);
         ensureDefaultCellTextSize(t, tv);
         applyCellFont(t, tv, resolveFont(t, lin, col));
     }
