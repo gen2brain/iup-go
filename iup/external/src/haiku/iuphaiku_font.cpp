@@ -175,6 +175,22 @@ static void haikuFindStyle(const font_family family, uint16 want_face, font_styl
   }
 }
 
+/* IUP size: + points at 96 dpi, - pixels; BFont sizes are pixels */
+IUP_DRV_API float iuphaikuFontSizeToNative(int size)
+{
+  if (size < 0)
+    return static_cast<float>(-size);
+  return static_cast<float>(size) * 96.0f / 72.0f;
+}
+
+IUP_DRV_API int iuphaikuFontSizeFromNative(float native_size)
+{
+  int points = static_cast<int>(lroundf(native_size * 72.0f / 96.0f));
+  if (fabsf(iuphaikuFontSizeToNative(points) - native_size) < 0.01f)
+    return points;
+  return -static_cast<int>(lroundf(native_size));
+}
+
 static BFont* haikuBuildBFont(const char* typeface, int size, int is_bold, int is_italic, int is_underline, int is_strikeout)
 {
   auto* bf = new BFont(be_plain_font);
@@ -192,9 +208,8 @@ static BFont* haikuBuildBFont(const char* typeface, int size, int is_bold, int i
     bf->SetFamilyAndStyle(family, style);
   }
 
-  /* IUP size: + points, - pixels; treat |size| as points (close at 72-96 DPI). */
   if (size != 0)
-    bf->SetSize(static_cast<float>(size < 0 ? -size : size));
+    bf->SetSize(iuphaikuFontSizeToNative(size));
 
   uint16 face = bf->Face();
   if (is_bold)      face |= B_BOLD_FACE;
@@ -304,8 +319,8 @@ extern "C" IUP_SDK_API char* iupdrvGetSystemFont(void)
   font_family family;
   font_style style;
   be_plain_font->GetFamilyAndStyle(&family, &style);
-  int size = static_cast<int>(be_plain_font->Size() + 0.5f);
-  if (size <= 0) size = 10;
+  int size = iuphaikuFontSizeFromNative(be_plain_font->Size());
+  if (size == 0) size = 9;
   snprintf(def, sizeof(def), "%s, %s %d", family, style, size);
   return def;
 }
