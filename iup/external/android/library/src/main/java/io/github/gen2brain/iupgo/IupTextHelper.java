@@ -2,6 +2,8 @@ package io.github.gen2brain.iupgo;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
@@ -21,6 +23,7 @@ import android.text.style.AlignmentSpan;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
+import android.text.style.ReplacementSpan;
 import android.text.style.LeadingMarginSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
@@ -1400,7 +1403,70 @@ public final class IupTextHelper
         }
 
         if (fontFamily != null && !fontFamily.isEmpty())
+        {
             buf.setSpan(new TypefaceSpan(fontFamily), start, end, mask);
+            if (fontFamily.endsWith("monospace")) setBoxDrawingSpans(buf, start, end);
+        }
+    }
+
+    private static void setBoxDrawingSpans(Editable buf, int start, int end)
+    {
+        for (int i = start; i < end; i++)
+        {
+            int arms = BoxDrawingSpan.armsOf(buf.charAt(i));
+            if (arms != 0) buf.setSpan(new BoxDrawingSpan(arms), i, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
+    private static final class BoxDrawingSpan extends ReplacementSpan
+    {
+        static final int LEFT = 1, RIGHT = 2, UP = 4, DOWN = 8;
+        final int arms;
+
+        BoxDrawingSpan(int arms) { this.arms = arms; }
+
+        static int armsOf(char c)
+        {
+            switch (c)
+            {
+                case '\u2500': return LEFT | RIGHT;
+                case '\u2502': return UP | DOWN;
+                case '\u250C': return RIGHT | DOWN;
+                case '\u2510': return LEFT | DOWN;
+                case '\u2514': return RIGHT | UP;
+                case '\u2518': return LEFT | UP;
+                case '\u251C': return UP | DOWN | RIGHT;
+                case '\u2524': return UP | DOWN | LEFT;
+                case '\u252C': return LEFT | RIGHT | DOWN;
+                case '\u2534': return LEFT | RIGHT | UP;
+                case '\u253C': return LEFT | RIGHT | UP | DOWN;
+                default: return 0;
+            }
+        }
+
+        @Override
+        public int getSize(@NonNull Paint paint, CharSequence text, int start, int end, Paint.FontMetricsInt fm)
+        {
+            if (fm != null) paint.getFontMetricsInt(fm);
+            return Math.round(paint.measureText("0"));
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end,
+                         float x, int top, int y, int bottom, @NonNull Paint paint)
+        {
+            float w = Math.round(paint.measureText("0"));
+            float lw = Math.max(1f, Math.round(paint.getTextSize() / 16f));
+            float x0 = Math.round(x), x1 = x0 + w;
+            float cx = Math.round(x0 + (w - lw) / 2f), cy = Math.round((top + bottom - lw) / 2f);
+            Paint.Style style = paint.getStyle();
+            paint.setStyle(Paint.Style.FILL);
+            if ((arms & LEFT) != 0)  canvas.drawRect(x0, cy, cx + lw, cy + lw, paint);
+            if ((arms & RIGHT) != 0) canvas.drawRect(cx, cy, x1, cy + lw, paint);
+            if ((arms & UP) != 0)    canvas.drawRect(cx, top, cx + lw, cy + lw, paint);
+            if ((arms & DOWN) != 0)  canvas.drawRect(cx, cy, cx + lw, bottom, paint);
+            paint.setStyle(style);
+        }
     }
 
     private static void applyParaSpans(Editable buf, int start, int end,
