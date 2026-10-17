@@ -449,7 +449,7 @@ public final class IupTableHelper
         });
     }
 
-    static void handleCellLongPress(IupTableView t, int lin, int col)
+    static void handleCellLongPress(IupTableView t, View cell, int lin, int col)
     {
         if ("CELLS".equalsIgnoreCase(t.selectionMode) && !inCellRange(t, lin, col))
         {
@@ -475,9 +475,18 @@ public final class IupTableHelper
         refreshRowStyle(t, oldLin);
         refreshRowStyle(t, lin);
 
+        /* RecyclerView owns gestures so OnLongClickListener never fires; pass the cell centre */
+        View row = (cell.getParent() instanceof View p) ? p : cell;
+        int[] cellLoc = new int[2], tableLoc = new int[2];
+        cell.getLocationInWindow(cellLoc);
+        t.getLocationInWindow(tableLoc);
+        int dragX = cellLoc[0] - tableLoc[0] + cell.getWidth() / 2;
+        int dragY = cellLoc[1] - tableLoc[1] + cell.getHeight() / 2;
+        final boolean dragging = IupDragDropHelper.tryStartGenericDrag(t, row, t.ihandlePtr, dragX, dragY);
+
         final boolean changedFinal = changed;
         t.recyclerView.post(() -> {
-            dispatchRightClick(t.ihandlePtr, lin, col, changedFinal ? 1 : 0);
+            if (!dragging) dispatchRightClick(t.ihandlePtr, lin, col, changedFinal ? 1 : 0);
             dispatchSelection(t.ihandlePtr);
         });
     }
@@ -561,7 +570,7 @@ public final class IupTableHelper
                 @Override public void onLongPress(@NonNull MotionEvent e)
                 {
                     if (t.showDragDrop || state.lin <= 0 || state.col <= 0) return;
-                    handleCellLongPress(t, state.lin, state.col);
+                    handleCellLongPress(t, tv, state.lin, state.col);
                 }
             });
         tv.setOnTouchListener((v, ev) -> gd.onTouchEvent(ev));
