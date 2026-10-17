@@ -486,7 +486,7 @@ static int qtLabelSetFgColorAttrib(Ihandle* ih, const char* value)
   if (label)
   {
     QPalette palette = label->palette();
-    palette.setColor(QPalette::WindowText, QColor(r, g, b));
+    iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
     label->setPalette(palette);
     return 1;
   }
@@ -521,7 +521,7 @@ static int qtLabelSetImageAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_IMAGE)
   {
-    if (iupdrvIsActive(ih))
+    if (iupqtIsSelfActive(ih))
       qtLabelSetPixmap(ih, value, 0);
     else
     {
@@ -541,7 +541,7 @@ static int qtLabelSetImInactiveAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_IMAGE)
   {
-    if (!iupdrvIsActive(ih))
+    if (!iupqtIsSelfActive(ih))
     {
       if (value)
         qtLabelSetPixmap(ih, value, 0);

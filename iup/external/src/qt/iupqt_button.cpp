@@ -500,7 +500,8 @@ static int qtButtonSetFgColorAttrib(Ihandle* ih, const char* value)
   if (button)
   {
     QPalette palette = button->palette();
-    palette.setColor(QPalette::ButtonText, QColor(r, g, b));
+    iupqtPaletteSetForeground(palette, QPalette::ButtonText, QColor(r, g, b));
+    iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
     button->setPalette(palette);
     return 1;
   }
@@ -527,7 +528,7 @@ static int qtButtonSetImageAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
-    if (iupdrvIsActive(ih))
+    if (iupqtIsSelfActive(ih))
       qtButtonSetPixmap(ih, value, 0);
     else
     {
@@ -548,7 +549,7 @@ static int qtButtonSetImInactiveAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
-    if (!iupdrvIsActive(ih))
+    if (!iupqtIsSelfActive(ih))
     {
       if (value)
         qtButtonSetPixmap(ih, value, 0);

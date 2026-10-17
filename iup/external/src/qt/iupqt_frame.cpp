@@ -201,7 +201,7 @@ static int qtFrameSetFgColorAttrib(Ihandle* ih, const char* value)
     return 0;
 
   QPalette palette = groupbox->palette();
-  palette.setColor(QPalette::WindowText, QColor(r, g, b));
+  iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
   groupbox->setPalette(palette);
 
   return 1;

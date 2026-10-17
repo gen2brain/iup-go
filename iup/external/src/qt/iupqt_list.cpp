@@ -1685,7 +1685,7 @@ static int qtListSetFgColorAttrib(Ihandle* ih, const char* value)
   {
     auto* combo = reinterpret_cast<QComboBox*>(ih->handle);
     QPalette palette = combo->palette();
-    palette.setColor(QPalette::Text, QColor(r, g, b));
+    iupqtPaletteSetForeground(palette, QPalette::Text, QColor(r, g, b));
     combo->setPalette(palette);
   }
   else
@@ -1694,7 +1694,7 @@ static int qtListSetFgColorAttrib(Ihandle* ih, const char* value)
     if (list)
     {
       QPalette palette = list->palette();
-      palette.setColor(QPalette::Text, QColor(r, g, b));
+      iupqtPaletteSetForeground(palette, QPalette::Text, QColor(r, g, b));
       iupqtSetWidgetPalette(list, palette);
     }
   }
