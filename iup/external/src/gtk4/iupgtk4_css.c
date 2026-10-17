@@ -16,6 +16,7 @@
 typedef struct {
   char* bg_css;
   char* fg_css;
+  char* fg_disabled_css;
   char* padding_css;
   char* font_css;
   char* custom_css;
@@ -41,6 +42,7 @@ static void gtk4CssWidgetStyleFree(gpointer data)
   {
     g_free(style->bg_css);
     g_free(style->fg_css);
+    g_free(style->fg_disabled_css);
     g_free(style->padding_css);
     g_free(style->font_css);
     g_free(style->custom_css);
@@ -82,6 +84,7 @@ static void gtk4CssAppendRules(GString* out, const char* class_name, Igtk4Widget
   {
     g_string_append_printf(out, ".%s:hover { %s }\n", class_name, style->fg_css);
     g_string_append_printf(out, ".%s:active { %s }\n", class_name, style->fg_css);
+    g_string_append_printf(out, ".%s:disabled { %s }\n", class_name, style->fg_disabled_css);
   }
 
   if (style->sub_rules && g_hash_table_size(style->sub_rules) > 0)
@@ -348,6 +351,8 @@ IUP_DRV_API void iupgtk4CssSetWidgetFgColor(GtkWidget* widget, unsigned char r, 
 
   g_free(style->fg_css);
   style->fg_css = g_strdup_printf("color: %s;", color_str);
+  g_free(style->fg_disabled_css);
+  style->fg_disabled_css = g_strdup_printf("color: alpha(%s, 0.5);", color_str);
 
   g_free(color_str);
 

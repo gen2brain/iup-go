@@ -390,8 +390,11 @@ static char* gtk4MenuProcessTitle(Ihandle* ih, const char* title)
 {
   char c = '_';
   char* keyed = iupMenuProcessTitle(ih, title);
-  char* processed = iupStrProcessMnemonic(keyed, &c, 1);
-  if (processed == keyed) processed = iupStrDup(keyed);
+  char* escaped = iupgtk4StrEscapeUnderline(keyed);
+  char* source = escaped ? escaped : keyed;
+  char* processed = iupStrProcessMnemonic(source, &c, 1);
+  if (processed == source) processed = iupStrDup(source);
+  free(escaped);
   if (keyed != title) free(keyed);
   return processed;
 }
