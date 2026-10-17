@@ -13,6 +13,7 @@
 
 #include "iup_object.h"
 #include "iup_attrib.h"
+#include "iup_globalattrib.h"
 #include "iup_str.h"
 #include "iup_val.h"
 #include "iup_drvinfo.h"
@@ -122,7 +123,7 @@ static int androidValSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
   if (!iupStrToRGB(value, &r, &g, &b)) return 0;
-  if (!ih->handle || iupStrEqualNoCase(value, IupGetGlobal("DLGBGCOLOR"))) return 1;
+  if (!ih->handle || (!iupGlobalDefaultColorChanged("DLGBGCOLOR") && iupStrEqualNoCase(value, IupGetGlobal("DLGBGCOLOR")))) return 1;
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupValHelper, jni_env, "io/github/gen2brain/iupgo/IupValHelper");
