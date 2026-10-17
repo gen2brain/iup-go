@@ -159,6 +159,9 @@ IUP_DRV_API void iupeflDialogSetFocus(Ihandle* ih);
 
 IUP_DRV_API void iupeflUpdateWidgetFont(Ihandle* ih, Eo* widget);
 IUP_DRV_API void iupeflBuildTextStyle(Ihandle* ih, char* style, int style_size);
+IUP_DRV_API void iupeflFontParse(const char* value, char* family, int* size, int* is_bold, int* is_italic, int* is_underline, int* is_strikeout);
+IUP_DRV_API int iupeflFontSizeToNative(int size);
+IUP_DRV_API int iupeflFontSizeFromNative(int native_size);
 IUP_DRV_API void iupeflApplyTextStyle(Ihandle* ih, Eo* widget);
 
 /****************************************************************************

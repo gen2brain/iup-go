@@ -59,7 +59,7 @@ static void eflTipSetLabelText(Evas_Object* label, Ihandle* ih, const char* tip)
       int size, is_bold, is_italic, is_underline, is_strikeout;
       if (iupGetFontInfo(tipfont, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
       {
-        if (size < 0) size = -size;
+        size = iupeflFontSizeToNative(size);
         open_pos += snprintf(open_tags + open_pos, sizeof(open_tags) - open_pos, "<font=%s><font_size=%d>", typeface, size);
         close_pos += snprintf(close_tags + close_pos, sizeof(close_tags) - close_pos, "</font_size></font>");
       }

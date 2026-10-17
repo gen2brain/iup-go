@@ -1416,7 +1416,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   iDrawGetColor(color, &r, &g, &b, &a);
 
   if (font)
-    iupFontParsePango(font, typeface, &fontsize, &bold, &italic, &underline, &strikeout);
+    iupeflFontParse(font, typeface, &fontsize, &bold, &italic, &underline, &strikeout);
 
   if (fontsize <= 0)
     fontsize = 12;
