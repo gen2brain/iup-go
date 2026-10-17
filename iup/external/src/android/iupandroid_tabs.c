@@ -155,6 +155,7 @@ static void androidTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
   jobject page = (jobject)iupAttribGet(child, "_IUPTAB_CONTAINER");
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  int was_current = (iupdrvTabsGetCurrentTab(ih) == pos);
 
   jclass java_class = androidTabsFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "removeTab", "(Landroid/view/View;I)V");
@@ -164,6 +165,9 @@ static void androidTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
   if (page) (*jni_env)->DeleteGlobalRef(jni_env, page);
   iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
+
+  if (was_current && ih->firstchild)
+    iupTabsSelectNearestTab(ih, pos);
 }
 
 static int androidTabsMapMethod(Ihandle* ih)
