@@ -809,7 +809,11 @@ public final class IupTextHelper
         {
             tv.setSelection(buf.length());
             if (v instanceof NestedScrollView nsv)
-                nsv.post(() -> nsv.fullScroll(View.FOCUS_DOWN));
+                nsv.post(() -> {
+                    View child = nsv.getChildAt(0);
+                    if (child != null)
+                        nsv.scrollTo(nsv.getScrollX(), child.getBottom() + nsv.getPaddingBottom() - nsv.getHeight());
+                });
         }
     }
 
