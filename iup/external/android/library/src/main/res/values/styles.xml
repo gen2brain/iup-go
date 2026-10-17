@@ -9,6 +9,11 @@
 		<item name="windowNoTitle">true</item>
 	</style>
 
+	<style name="IupLaunchTheme" parent="AppTheme">
+		<item name="windowActionBar">false</item>
+		<item name="windowNoTitle">true</item>
+	</style>
+
 	<style name="IupTextInputTheme" parent="">
 		<item name="textInputStyle">@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense</item>
 	</style>

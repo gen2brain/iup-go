@@ -165,8 +165,25 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w,
   if (h) *h = ih->currentheight;
 }
 
+static int androidDialogWaitForStart(Ihandle* ih)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupActivity_waitForStart);
+  if (!ih->handle)
+    return 0;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupActivity, jni_env, "io/github/gen2brain/iupgo/IupActivity");
+  jmethodID method_id = IUPJNI_GetStaticMethodID(IupActivity_waitForStart, jni_env, java_class, "waitForStart", "(Ljava/lang/Object;J)Z");
+  jboolean waited = (*jni_env)->CallStaticBooleanMethod(jni_env, java_class, method_id, ih->handle, (jlong)(intptr_t)ih);
+  iupAndroid_CheckException(jni_env, "IupActivity.waitForStart");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  return waited ? 1 : 0;
+}
+
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
+  if (visible && androidDialogWaitForStart(ih))
+    return;
   androidDialogCallVoidNoArg(ih, visible ? "bringToFront" : "moveToBack");
 }
 
