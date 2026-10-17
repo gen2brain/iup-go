@@ -54,8 +54,8 @@ public class IupLaunchActivity extends Activity
 
         handleNotificationIntent(getIntent());
 
-        /* IUP already running: notification just routed through here, finish */
-        if (IupActivity.currentActivity() != null)
+        /* IUP already running (launcher return or notification): finish, the task comes forward */
+        if (IupActivity.isRunning())
         {
             finish();
             return;
@@ -106,7 +106,7 @@ public class IupLaunchActivity extends Activity
     {
         super.onNewIntent(intent);
         handleNotificationIntent(intent);
-        if (IupActivity.currentActivity() != null)
+        if (IupActivity.isRunning())
         {
             finish();
         }

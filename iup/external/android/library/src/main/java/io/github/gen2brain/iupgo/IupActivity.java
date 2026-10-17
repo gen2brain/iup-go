@@ -69,6 +69,11 @@ public class IupActivity extends AppCompatActivity
         return sCurrentActivityRef != null ? sCurrentActivityRef.get() : null;
     }
 
+    public static boolean isRunning()
+    {
+        return sLiveCount > 0;
+    }
+
     @Keep
     public static int getLastTouchX() { return sLastTouchX; }
     @Keep
