@@ -228,7 +228,7 @@ public:
     BTabView::Select(tab);
     ScrollToTab(Selection());
     if (fSuppressSelectCallbacks) return;
-    if (!fIhandle || prev == tab) return;
+    if (!fIhandle || prev == tab || prev < 0) return;
 
     int iup_new = IupPosFromBTab(tab);
     int iup_old = IupPosFromBTab(prev);
@@ -291,11 +291,16 @@ public:
       if (ret == IUP_CONTINUE && child) IupDestroy(child);
       else if (child)
       {
+        bool was_current = (Selection() == btab_idx);
+        fSuppressSelectCallbacks = true;
         BTab* tab = RemoveTab(btab_idx);
+        fSuppressSelectCallbacks = false;
         if (tab)
         {
           iupAttribSet(child, "_IUPHAIKU_HIDDEN_TAB", reinterpret_cast<char*>(tab));
           iupAttribSet(child, "TABVISIBLE", "NO");
+          if (was_current && CountTabs() > 0)
+            iupTabsSelectNearestTab(fIhandle, iup_pos);
         }
       }
       Invalidate();
@@ -710,10 +715,14 @@ static void haikuTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
     if (iupAttribGet(c, "_IUPHAIKU_HIDDEN_TAB")) hidden_before++;
 
   int btab_pos = pos - hidden_before;
+  bool was_current = (tabs->Selection() == btab_pos);
   tabs->SetSuppressSelectCallbacks(true);
   BTab* tab = tabs->RemoveTab(btab_pos);
   tabs->SetSuppressSelectCallbacks(false);
   delete tab;
+
+  if (was_current && tabs->CountTabs() > 0)
+    iupTabsSelectNearestTab(ih, pos);
 
   iupAttribSet(child, "_IUPTAB_CONTAINER", nullptr);
 }
@@ -756,22 +765,34 @@ static void haikuTabsUnMapMethod(Ihandle* ih)
 
 extern "C" IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* /*ih*/) { return 0; }
 extern "C" IUP_SDK_API int iupdrvTabsExtraMargin(void) { return 0; }
-extern "C" IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* /*child*/, int /*pos*/) { return 1; }
+extern "C" IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int /*pos*/)
+{
+  return iupAttribGet(child, "_IUPHAIKU_HIDDEN_TAB") ? 0 : 1;
+}
 extern "C" IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* /*ih*/) { return 1; }
 
 extern "C" IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
 {
   auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
   if (!tabs) return;
+
+  int btab_pos = 0, i = 0;
+  Ihandle* c;
+  for (c = ih->firstchild; c && i < pos; c = c->brother, i++)
+    if (!iupAttribGet(c, "_IUPHAIKU_HIDDEN_TAB")) btab_pos++;
+  if (!c || iupAttribGet(c, "_IUPHAIKU_HIDDEN_TAB")) return;
+
   LooperLockGuard guard(tabs->Looper());
-  tabs->Select(pos);
+  tabs->SetSuppressSelectCallbacks(true);
+  tabs->Select(btab_pos);
+  tabs->SetSuppressSelectCallbacks(false);
 }
 
 extern "C" IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
 {
   auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
   if (!tabs) return -1;
-  return tabs->Selection();
+  return tabs->IupPosFromBTab(tabs->Selection());
 }
 
 extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const char* tab_image, int* tab_width, int* tab_height)
