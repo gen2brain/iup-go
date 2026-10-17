@@ -16,6 +16,7 @@
 #include <QString>
 #include <QStyle>
 #include <QStylePainter>
+#include <QPainter>
 #include <QStyleOptionButton>
 #include <QStyleOptionToolButton>
 
@@ -38,6 +39,12 @@ extern "C" {
 
 
 static void qtButtonSetPixmap(Ihandle* ih, const char* name, int make_inactive);
+
+static void qtButtonFillBackground(QWidget* widget, Ihandle* ih)
+{
+  if (iupAttribGet(ih, "_IUPQT_FILLBG"))
+    QPainter(widget).fillRect(widget->rect(), widget->palette().color(widget->backgroundRole()));
+}
 
 class IupQtButton : public QPushButton
 {
@@ -79,6 +86,7 @@ protected:
   {
     int stacked = (iup_handle->data->type & IUP_BUTTON_IMAGE) && (iup_handle->data->type & IUP_BUTTON_TEXT) &&
                   (iup_handle->data->img_position == IUP_IMGPOS_TOP || iup_handle->data->img_position == IUP_IMGPOS_BOTTOM);
+    qtButtonFillBackground(this, iup_handle);
     if (!stacked || icon().isNull() || findChild<QLabel*>("_iup_markup_label"))
     {
       QPushButton::paintEvent(event);
@@ -185,6 +193,12 @@ protected:
         qtButtonSetPixmap(iup_handle, image, 0);
     }
     iupqtMouseButtonEvent(this, event, iup_handle);
+  }
+
+  void paintEvent(QPaintEvent* event) override
+  {
+    qtButtonFillBackground(this, iup_handle);
+    QToolButton::paintEvent(event);
   }
 };
 
@@ -482,7 +496,8 @@ static int qtButtonSetBgColorAttrib(Ihandle* ih, const char* value)
       QPalette palette = button->palette();
       palette.setColor(QPalette::Button, QColor(r, g, b));
       button->setPalette(palette);
-      button->setAutoFillBackground(true);
+      iupAttribSet(ih, "_IUPQT_FILLBG", "1");
+      button->update();
     }
   }
   return 1;
