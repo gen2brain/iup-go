@@ -1326,16 +1326,6 @@
         var tw = els[c.id];
         if (tw && tw.__iupTabs[c.pos]) tw.__iupTabs[c.pos].title = c.tip;
       } break;
-      case 'tabshide': {
-        var tw = els[c.id];
-        if (tw && tw.__iupTabs[c.pos]) {
-          tw.__iupTabs[c.pos].style.display = 'none';
-          if (c.pos === tw.__iupCurrent) {
-            for (var i = 0; i < tw.__iupTabs.length; i++)
-              if (i !== c.pos && tw.__iupTabs[i].style.display !== 'none') { D('iupwasmTabsSetCurrent', c.id, i); break; }
-          }
-        }
-      } break;
       case 'tabsremove': {
         var tw = els[c.id];
         if (tw && c.pos >= 0 && c.pos < tw.__iupTabs.length) {
@@ -3261,6 +3251,9 @@ globalThis.__iupMediaPick = function (kind, index) {
       } break;
       case 'inputvalue': {
         return el ? (el.value || '') : '';
+      } break;
+      case 'tabsgetcurrent': {
+        return el && el.__iupTabs ? el.__iupCurrent : -1;
       } break;
       case 'listxy2pos': {
         var lxs = el && el.__iupOpts;
