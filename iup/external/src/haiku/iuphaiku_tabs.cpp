@@ -42,7 +42,7 @@ public:
   static constexpr int kClosePad  = 4;
   static constexpr int kCloseSize = 12;
 
-  IupHaikuTab() : fIcon(nullptr), fIconW(0), fIconH(0), fShowClose(false), fCloseHot(false), fHasFgColor(false) {}
+  IupHaikuTab() : fIcon(nullptr), fIconW(0), fIconH(0), fPadH(0), fShowClose(false), fCloseHot(false), fHasFgColor(false) {}
 
   /* bm is a weak ref into the IUP image cache */
   void SetIcon(BBitmap* bm, int draw_w, int draw_h)
@@ -62,9 +62,10 @@ public:
   void SetFgColor(bool has, rgb_color c) { fHasFgColor = has; fFgColor = c; }
   float IconWidth() const { return fIcon ? static_cast<float>(fIconW) : 0.0f; }
   float IconHeight() const { return fIcon ? static_cast<float>(fIconH) : 0.0f; }
+  void SetPadding(int horiz) { fPadH = horiz; }
   float ExtraWidth() const
   {
-    float extra = 0.0f;
+    float extra = static_cast<float>(2 * fPadH);
     if (fIcon)      extra += IconWidth() + kIconPad;
     if (fShowClose) extra += kCloseSize + kClosePad;
     return extra;
@@ -77,7 +78,7 @@ public:
     auto iw = static_cast<float>(fIconW);
     auto ih = static_cast<float>(fIconH);
     float cy = frame.top + (frame.Height() - ih) / 2.0f;
-    float cx = frame.left + spacing;
+    float cx = frame.left + spacing + fPadH;
     return {cx, cy, cx + iw - 1, cy + ih - 1};
   }
 
@@ -86,7 +87,7 @@ public:
     if (!fShowClose) return {};
     float spacing = be_control_look ? be_control_look->DefaultLabelSpacing() : 4.0f;
     float cy = frame.top + (frame.Height() - kCloseSize) / 2.0f;
-    float cx = frame.right - spacing - kCloseSize + 1;
+    float cx = frame.right - spacing - fPadH - kCloseSize + 1;
     return {cx, cy, cx + kCloseSize - 1, cy + kCloseSize - 1};
   }
 
@@ -164,6 +165,7 @@ private:
   BBitmap* fIcon;
   int fIconW;
   int fIconH;
+  int fPadH;
   bool fShowClose;
   bool fCloseHot;
   bool fHasFgColor;
@@ -289,20 +291,7 @@ public:
 
       Ihandle* child = IupGetChild(fIhandle, iup_pos);
       if (ret == IUP_CONTINUE && child) IupDestroy(child);
-      else if (child)
-      {
-        bool was_current = (Selection() == btab_idx);
-        fSuppressSelectCallbacks = true;
-        BTab* tab = RemoveTab(btab_idx);
-        fSuppressSelectCallbacks = false;
-        if (tab)
-        {
-          iupAttribSet(child, "_IUPHAIKU_HIDDEN_TAB", reinterpret_cast<char*>(tab));
-          iupAttribSet(child, "TABVISIBLE", "NO");
-          if (was_current && CountTabs() > 0)
-            iupTabsSelectNearestTab(fIhandle, iup_pos);
-        }
-      }
+      else if (child) IupSetAttributeId(fIhandle, "TABVISIBLE", iup_pos, "NO");
       Invalidate();
       return;
     }
@@ -405,6 +394,30 @@ public:
     }
     if (IsOverflowing())
       DrawArrows();
+  }
+
+  void InsertBTab(BTab* tab, int index)
+  {
+    int prev_selection = static_cast<int>(Selection());
+    bool had_tabs = CountTabs() > 0;
+    fSuppressSelectCallbacks = true;
+
+    BList tail;
+    for (int n = CountTabs() - index; n > 0; --n)
+    {
+      BTab* t = RemoveTab(index);
+      if (t) tail.AddItem(t);
+    }
+    AddTab(tab->View(), tab);
+    for (int32 i = 0; i < tail.CountItems(); i++)
+    {
+      BTab* t = static_cast<BTab*>(tail.ItemAt(i));
+      AddTab(t->View(), t);
+    }
+
+    if (had_tabs && prev_selection >= 0)
+      Select(prev_selection >= index ? prev_selection + 1 : prev_selection);
+    fSuppressSelectCallbacks = false;
   }
 
   void ReorderBTab(int src_btab_pos, int tgt_btab_pos)
@@ -629,9 +642,27 @@ static void haikuTabsAssignIcon(IupHaikuTab* tab, Ihandle* ih, BBitmap* bm)
   tab->SetIcon(bm, dst_w, dst_h);
 }
 
-/* Native BTabView strip height = font + 8; grow it to fit the tallest tab icon. */
-static void haikuTabsUpdateStripHeight(IupHaikuTabView* tabs)
+static int haikuTabsBTabIndex(Ihandle* ih, int pos)
 {
+  int btab_pos = 0, i = 0;
+  for (Ihandle* c = ih->firstchild; c && i < pos; c = c->brother, i++)
+    if (!iupAttribGet(c, "_IUPHAIKU_HIDDEN_TAB")) btab_pos++;
+  return btab_pos;
+}
+
+static BTab* haikuTabsChildTab(Ihandle* ih, Ihandle* child)
+{
+  auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
+  if (!tabs || !child) return nullptr;
+  BTab* hidden = reinterpret_cast<BTab*>(iupAttribGet(child, "_IUPHAIKU_HIDDEN_TAB"));
+  if (hidden) return hidden;
+  return tabs->TabAt(haikuTabsBTabIndex(ih, IupGetChildPos(ih, child)));
+}
+
+/* Native BTabView strip height = font + 8; grow it to fit the tallest tab icon. */
+static void haikuTabsUpdateStripHeight(Ihandle* ih)
+{
+  auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
   if (!tabs) return;
   font_height fh;
   tabs->GetFontHeight(&fh);
@@ -645,6 +676,7 @@ static void haikuTabsUpdateStripHeight(IupHaikuTabView* tabs)
     float h = t->IconHeight() + 8.0f;
     if (h > wanted) wanted = h;
   }
+  wanted += static_cast<float>(2 * ih->data->vert_padding);
   if (wanted != tabs->TabHeight())
     tabs->SetTabHeight(wanted);
 }
@@ -674,6 +706,7 @@ static void haikuTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
   if (image) haikuTabsAssignIcon(tab, ih, haikuTabsResolveImage(ih, image));
 
   if (ih->data->show_close) tab->SetShowClose(true);
+  tab->SetPadding(ih->data->horiz_padding);
 
   unsigned char fr, fg, fb;
   char* fgcolor = iupAttribGet(ih, "FGCOLOR");
@@ -684,8 +717,8 @@ static void haikuTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
   }
 
   LooperLockGuard guard(tabs->Looper());
-  tabs->AddTab(page, tab);
-  haikuTabsUpdateStripHeight(tabs);
+  tabs->InsertBTab(tab, haikuTabsBTabIndex(ih, pos));
+  haikuTabsUpdateStripHeight(ih);
 
   iupAttribSet(child, "_IUPTAB_CONTAINER", reinterpret_cast<char*>(page));
 }
@@ -708,13 +741,7 @@ static void haikuTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
     return;
   }
 
-  /* `child` is already unlinked here; walk `pos` siblings forward to find its old slot. */
-  int hidden_before = 0;
-  int i = 0;
-  for (Ihandle* c = ih->firstchild; c && i < pos; c = c->brother, i++)
-    if (iupAttribGet(c, "_IUPHAIKU_HIDDEN_TAB")) hidden_before++;
-
-  int btab_pos = pos - hidden_before;
+  int btab_pos = haikuTabsBTabIndex(ih, pos);
   bool was_current = (tabs->Selection() == btab_pos);
   tabs->SetSuppressSelectCallbacks(true);
   BTab* tab = tabs->RemoveTab(btab_pos);
@@ -776,15 +803,12 @@ extern "C" IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
   auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
   if (!tabs) return;
 
-  int btab_pos = 0, i = 0;
-  Ihandle* c;
-  for (c = ih->firstchild; c && i < pos; c = c->brother, i++)
-    if (!iupAttribGet(c, "_IUPHAIKU_HIDDEN_TAB")) btab_pos++;
-  if (!c || iupAttribGet(c, "_IUPHAIKU_HIDDEN_TAB")) return;
+  Ihandle* child = IupGetChild(ih, pos);
+  if (!child || iupAttribGet(child, "_IUPHAIKU_HIDDEN_TAB")) return;
 
   LooperLockGuard guard(tabs->Looper());
   tabs->SetSuppressSelectCallbacks(true);
-  tabs->Select(btab_pos);
+  tabs->Select(haikuTabsBTabIndex(ih, pos));
   tabs->SetSuppressSelectCallbacks(false);
 }
 
@@ -818,15 +842,18 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
   int long_pad = static_cast<int>(ceilf(spacing * 3.3f));    /* per-tab padding on the stack axis */
   int strip_pad = static_cast<int>(ceilf(spacing * 1.3f));   /* fTabHeight extra over the font   */
 
+  int pad_w = 2 * ih->data->horiz_padding;
+  int pad_h = 2 * ih->data->vert_padding;
+
   if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
   {
-    if (tab_width)  *tab_width  = text_h + strip_pad;
-    if (tab_height) *tab_height = text_w + long_pad;
+    if (tab_width)  *tab_width  = text_h + strip_pad + pad_h;
+    if (tab_height) *tab_height = text_w + long_pad + pad_w;
   }
   else
   {
-    if (tab_width)  *tab_width  = text_w + long_pad;
-    if (tab_height) *tab_height = text_h;
+    if (tab_width)  *tab_width  = text_w + long_pad + pad_w;
+    if (tab_height) *tab_height = text_h + pad_h;
   }
 }
 
@@ -845,7 +872,7 @@ static int haikuTabsSetTabTitleAttribId(Ihandle* ih, int i, const char* value)
   auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
   if (!tabs) return 1;
   LooperLockGuard guard(tabs->Looper());
-  BTab* tab = tabs->TabAt(i);
+  BTab* tab = haikuTabsChildTab(ih, IupGetChild(ih, i));
   if (tab) { tab->SetLabel(value ? value : ""); tabs->Invalidate(); }
   return 1;
 }
@@ -854,13 +881,56 @@ static int haikuTabsSetTabImageAttribId(Ihandle* ih, int i, const char* value)
 {
   auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
   if (!tabs) return 1;
-  auto* tab = dynamic_cast<IupHaikuTab*>(tabs->TabAt(i));
+  auto* tab = dynamic_cast<IupHaikuTab*>(haikuTabsChildTab(ih, IupGetChild(ih, i)));
   if (!tab) return 1;
   LooperLockGuard guard(tabs->Looper());
   haikuTabsAssignIcon(tab, ih, haikuTabsResolveImage(ih, value));
-  haikuTabsUpdateStripHeight(tabs);
+  haikuTabsUpdateStripHeight(ih);
   tabs->Invalidate();
   return 1;
+}
+
+static int haikuTabsSetTabVisibleAttribId(Ihandle* ih, int pos, const char* value)
+{
+  auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
+  Ihandle* child = IupGetChild(ih, pos);
+  if (!tabs || !child) return 1;
+
+  LooperLockGuard guard(tabs->Looper());
+  BTab* hidden = reinterpret_cast<BTab*>(iupAttribGet(child, "_IUPHAIKU_HIDDEN_TAB"));
+  if (iupStrBoolean(value))
+  {
+    if (!hidden) return 1;
+    iupAttribSet(child, "_IUPHAIKU_HIDDEN_TAB", nullptr);
+    tabs->InsertBTab(hidden, haikuTabsBTabIndex(ih, pos));
+  }
+  else
+  {
+    if (hidden) return 1;
+    iupTabsCheckCurrentTab(ih, pos, 0);
+    tabs->SetSuppressSelectCallbacks(true);
+    BTab* tab = tabs->RemoveTab(haikuTabsBTabIndex(ih, pos));
+    tabs->SetSuppressSelectCallbacks(false);
+    if (tab) iupAttribSet(child, "_IUPHAIKU_HIDDEN_TAB", reinterpret_cast<char*>(tab));
+  }
+  tabs->Invalidate();
+  return 1;
+}
+
+static int haikuTabsSetTabPaddingAttrib(Ihandle* ih, const char* value)
+{
+  iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
+
+  auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
+  if (!tabs) return 0;
+
+  LooperLockGuard guard(tabs->Looper());
+  for (Ihandle* c = ih->firstchild; c; c = c->brother)
+    if (auto* t = dynamic_cast<IupHaikuTab*>(haikuTabsChildTab(ih, c)))
+      t->SetPadding(ih->data->horiz_padding);
+  haikuTabsUpdateStripHeight(ih);
+  tabs->Invalidate();
+  return 0;
 }
 
 static char* haikuTabsGetShowCloseAttrib(Ihandle* ih)
@@ -876,8 +946,8 @@ static int haikuTabsSetShowCloseAttrib(Ihandle* ih, const char* value)
   auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
   if (!tabs) return 0;
   LooperLockGuard guard(tabs->Looper());
-  for (int32 i = 0; i < tabs->CountTabs(); i++)
-    if (auto* t = dynamic_cast<IupHaikuTab*>(tabs->TabAt(i)))
+  for (Ihandle* c = ih->firstchild; c; c = c->brother)
+    if (auto* t = dynamic_cast<IupHaikuTab*>(haikuTabsChildTab(ih, c)))
       t->SetShowClose(v != 0);
   tabs->Invalidate();
   return 0;
@@ -893,9 +963,10 @@ static int haikuTabsSetBgColorAttrib(Ihandle* ih, const char* value)
   LooperLockGuard guard(tabs->Looper());
   tabs->SetViewColor(c);
   tabs->SetLowColor(c);
-  for (int32 i = 0; i < tabs->CountTabs(); i++)
+  for (Ihandle* child = ih->firstchild; child; child = child->brother)
   {
-    BView* page = tabs->TabAt(i)->View();
+    BTab* t = haikuTabsChildTab(ih, child);
+    BView* page = t ? t->View() : nullptr;
     if (page)
     {
       page->SetViewColor(c);
@@ -917,8 +988,8 @@ static int haikuTabsSetFgColorAttrib(Ihandle* ih, const char* value)
   auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
   if (!tabs) return 1;
   LooperLockGuard guard(tabs->Looper());
-  for (int32 i = 0; i < tabs->CountTabs(); i++)
-    if (auto* t = dynamic_cast<IupHaikuTab*>(tabs->TabAt(i)))
+  for (Ihandle* c = ih->firstchild; c; c = c->brother)
+    if (auto* t = dynamic_cast<IupHaikuTab*>(haikuTabsChildTab(ih, c)))
       t->SetFgColor(has, color);
   tabs->Invalidate();
   return 1;
@@ -931,8 +1002,8 @@ static int haikuTabsSetActiveAttrib(Ihandle* ih, const char* value)
   {
     LooperLockGuard guard(tabs->Looper());
     bool enable = iupStrBoolean(value);
-    for (int32 i = 0; i < tabs->CountTabs(); i++)
-      if (BTab* t = tabs->TabAt(i)) t->SetEnabled(enable);
+    for (Ihandle* c = ih->firstchild; c; c = c->brother)
+      if (BTab* t = haikuTabsChildTab(ih, c)) t->SetEnabled(enable);
   }
   return iupBaseSetActiveAttrib(ih, value);
 }
@@ -956,6 +1027,8 @@ extern "C" IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, haikuTabsSetTabTitleAttribId, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", nullptr, haikuTabsSetTabImageAttribId, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABTIP", nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABVISIBLE", iupTabsGetTabVisibleAttrib, haikuTabsSetTabVisibleAttribId, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TABPADDING", iupTabsGetTabPaddingAttrib, haikuTabsSetTabPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABTYPE", iupTabsGetTabTypeAttrib, haikuTabsSetTabTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
   /* LEFT/RIGHT is always rotated (BeOS); TOP/BOTTOM is always horizontal. */
