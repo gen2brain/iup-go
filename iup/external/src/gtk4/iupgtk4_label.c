@@ -203,7 +203,7 @@ static int gtk4LabelSetImageAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_IMAGE)
   {
-    if (iupdrvIsActive(ih))
+    if (gtk_widget_get_sensitive(ih->handle))
       gtk4LabelSetPaintable(ih, value, 0);
     else
     {
@@ -223,7 +223,7 @@ static int gtk4LabelSetImInactiveAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_IMAGE)
   {
-    if (!iupdrvIsActive(ih))
+    if (!gtk_widget_get_sensitive(ih->handle))
     {
       if (value)
         gtk4LabelSetPaintable(ih, value, 0);

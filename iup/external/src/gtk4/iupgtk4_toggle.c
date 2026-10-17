@@ -270,7 +270,7 @@ static void gtk4ToggleRadioDeactivatePrevious(Ihandle* radio, Ihandle* ih)
   iupAttribSet(last_ih, "_IUPGTK4_IGNORE_TOGGLE", NULL);
 
   if (last_ih->data->type == IUP_TOGGLE_IMAGE)
-    gtk4ToggleUpdateImage(last_ih, iupdrvIsActive(last_ih), 0);
+    gtk4ToggleUpdateImage(last_ih, gtk_widget_get_sensitive(last_ih->handle), 0);
 }
 
 static int gtk4ToggleSetValueAttrib(Ihandle* ih, const char* value)
@@ -312,7 +312,7 @@ static int gtk4ToggleSetValueAttrib(Ihandle* ih, const char* value)
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ih->handle), check);
 
     if (ih->data->type == IUP_TOGGLE_IMAGE)
-      gtk4ToggleUpdateImage(ih, iupdrvIsActive(ih), check);
+      gtk4ToggleUpdateImage(ih, gtk_widget_get_sensitive(ih->handle), check);
 
     if (radio && check)
       iupAttribSet(radio, "_IUPGTK4_RADIO_ACTIVE", (char*)ih);
@@ -350,7 +350,7 @@ static int gtk4ToggleSetValueAttrib(Ihandle* ih, const char* value)
     gtk_check_button_set_active(GTK_CHECK_BUTTON(ih->handle), check);
 
     if (ih->data->type == IUP_TOGGLE_IMAGE)
-      gtk4ToggleUpdateImage(ih, iupdrvIsActive(ih), gtk4ToggleGetCheck(ih));
+      gtk4ToggleUpdateImage(ih, gtk_widget_get_sensitive(ih->handle), gtk4ToggleGetCheck(ih));
 
     if (radio && check)
       iupAttribSet(radio, "_IUPGTK4_RADIO_ACTIVE", (char*)ih);
@@ -503,7 +503,7 @@ static int gtk4ToggleSetImageAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
-    int active = iupdrvIsActive(ih);
+    int active = gtk_widget_get_sensitive(ih->handle);
     if (active)
       gtk4ToggleSetPaintable(ih, value, 0);
     else
@@ -521,7 +521,7 @@ static int gtk4ToggleSetImInactiveAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
-    if (!iupdrvIsActive(ih))
+    if (!gtk_widget_get_sensitive(ih->handle))
     {
       if (value)
         gtk4ToggleSetPaintable(ih, value, 0);
@@ -541,7 +541,7 @@ static int gtk4ToggleSetImPressAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_TOGGLE_IMAGE)
   {
-    gtk4ToggleUpdateImage(ih, iupdrvIsActive(ih), gtk4ToggleGetCheck(ih));
+    gtk4ToggleUpdateImage(ih, gtk_widget_get_sensitive(ih->handle), gtk4ToggleGetCheck(ih));
     return 1;
   }
   return 0;
@@ -653,7 +653,7 @@ static void gtk4ToggleToggled(GtkCheckButton* widget, Ihandle* ih)
     }
 
     if (ih->data->type == IUP_TOGGLE_IMAGE)
-      gtk4ToggleUpdateImage(ih, iupdrvIsActive(ih), check);
+      gtk4ToggleUpdateImage(ih, gtk_widget_get_sensitive(ih->handle), check);
   }
 
   iupBaseCallValueChangedCb(ih);

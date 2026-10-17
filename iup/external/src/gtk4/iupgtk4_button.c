@@ -463,7 +463,7 @@ static int gtk4ButtonSetImageAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
-    if (iupdrvIsActive(ih))
+    if (gtk_widget_get_sensitive(ih->handle))
       gtk4ButtonSetPaintable(ih, value, 0);
     else
     {
@@ -480,7 +480,7 @@ static int gtk4ButtonSetImInactiveAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
-    if (!iupdrvIsActive(ih))
+    if (!gtk_widget_get_sensitive(ih->handle))
     {
       if (value)
         gtk4ButtonSetPaintable(ih, value, 0);
