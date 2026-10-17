@@ -353,19 +353,55 @@ IUP_DRV_API gboolean iupgtkEnterLeaveEvent(GtkWidget* widget, GdkEventCrossing* 
   return FALSE;
 }
 
+static char* gtkStrEscapeUnderline(const char* str)
+{
+  int count = 0;
+  const char* p;
+  char* out, *q;
+
+  for (p = str; *p; p++)
+    if (*p == '_')
+      count++;
+
+  if (!count)
+    return NULL;
+
+  out = (char*)malloc(strlen(str) + count + 1);
+  for (p = str, q = out; *p; p++)
+  {
+    *q++ = *p;
+    if (*p == '_')
+      *q++ = '_';
+  }
+  *q = 0;
+  return out;
+}
+
 IUP_DRV_API int iupgtkSetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value)
 {
   char c = '_';
   char* str;
+  char* escaped;
+  const char* source;
 
   if (!value)
     value = "";
 
-  str = iupStrProcessMnemonic(value, &c, 1);  /* replace & by c, the returned value of c is ignored in GTK */
-  if (str != value)
+  escaped = strchr(value, '&') ? gtkStrEscapeUnderline(value) : NULL;
+  source = escaped ? escaped : value;
+  str = iupStrProcessMnemonic(source, &c, 1);  /* replace & by c, the returned value of c is ignored in GTK */
+  if (str != source)
   {
     gtk_label_set_text_with_mnemonic(label, iupgtkStrConvertToSystem(str));
+#if GTK_CHECK_VERSION(2, 20, 0)
+    {
+      GtkWidget* toplevel = gtk_widget_get_toplevel((GtkWidget*)label);
+      if (GTK_IS_WINDOW(toplevel) && !gtk_window_get_mnemonics_visible((GtkWindow*)toplevel))
+        gtk_label_set_text_with_mnemonic(label, iupgtkStrConvertToSystem(str));
+    }
+#endif
     free(str);
+    free(escaped);
     return 1;
   }
   else
@@ -641,15 +677,18 @@ IUP_DRV_API void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsign
 IUP_DRV_API void iupgtkSetFgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
-  GdkRGBA rgba;
+  GdkRGBA rgba, dim_rgba;
 
   iupgdkRGBASet(&rgba, r, g, b);
+  dim_rgba = rgba;
+  dim_rgba.alpha = 0.5;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   gtk_widget_override_color(handle, GTK_STATE_FLAG_NORMAL, &rgba);
   gtk_widget_override_color(handle, GTK_STATE_FLAG_ACTIVE, &rgba);
   gtk_widget_override_color(handle, GTK_STATE_FLAG_PRELIGHT, &rgba);
+  gtk_widget_override_color(handle, GTK_STATE_FLAG_INSENSITIVE, &dim_rgba);
 #pragma GCC diagnostic pop
 #else
   GtkRcStyle* rc_style;
