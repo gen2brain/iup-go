@@ -201,8 +201,10 @@ static void gtkFontUpdateWidget(Ihandle* ih, GtkWidget* widget, PangoFontDescrip
     if (!(ih && iupAttribGetBoolean(ih, "MARKUP")))
     {
       PangoAttrList* attrs = pango_attr_list_new();
-      pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->strikethrough));
-      pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->underline));
+      if (((PangoAttrInt*)gtkfont->strikethrough)->value)
+        pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->strikethrough));
+      if (((PangoAttrInt*)gtkfont->underline)->value != PANGO_UNDERLINE_NONE)
+        pango_attr_list_insert(attrs, pango_attribute_copy(gtkfont->underline));
       gtk_label_set_attributes(GTK_LABEL(widget), attrs);
       pango_attr_list_unref(attrs);
     }
