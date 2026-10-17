@@ -442,6 +442,22 @@ IUP_DRV_API void iupgtk4CssClearWidgetStyle(GtkWidget* widget)
   }
 }
 
+IUP_DRV_API void iupgtk4CssResetWidgetBgColor(GtkWidget* widget)
+{
+  Igtk4WidgetStyle* style;
+
+  if (!gtk4_widget_styles)
+    return;
+
+  style = g_hash_table_lookup(gtk4_widget_styles, widget);
+  if (style && style->bg_css)
+  {
+    g_free(style->bg_css);
+    style->bg_css = NULL;
+    gtk4CssMarkDirty(widget);
+  }
+}
+
 IUP_DRV_API void iupgtk4CssResetWidgetPadding(GtkWidget* widget)
 {
   Igtk4WidgetStyle* style;

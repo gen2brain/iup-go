@@ -112,6 +112,7 @@ IUP_DRV_API void iupgtk4CssSetWidgetFont(GtkWidget* widget, const char* font_css
 IUP_DRV_API void iupgtk4CssSetWidgetCustom(GtkWidget* widget, const char* css_property, const char* css_value);
 IUP_DRV_API void iupgtk4CssSetWidgetSubRule(GtkWidget* widget, const char* sub_selector, const char* css_decl);
 IUP_DRV_API void iupgtk4CssClearWidgetStyle(GtkWidget* widget);
+IUP_DRV_API void iupgtk4CssResetWidgetBgColor(GtkWidget* widget);
 IUP_DRV_API void iupgtk4CssResetWidgetPadding(GtkWidget* widget);
 IUP_DRV_API void iupgtk4CssResetWidgetCustom(GtkWidget* widget);
 IUP_DRV_API void iupgtk4CssAddStaticRule(const char* selector, const char* css_rules);

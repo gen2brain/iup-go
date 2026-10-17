@@ -311,13 +311,13 @@
         }
       } break;
       case 'bgvar': {
-        if (el) el.style.backgroundColor = c.css;
+        if (el) { el.style.backgroundColor = c.css; el.__iupBg = null; if (el.__iupFlatRest) el.__iupFlatRest(); }
       } break;
       case 'fgvar': {
         if (el) el.style.color = c.css;
       } break;
       case 'bg': {
-        if (el) el.style.backgroundColor = 'rgb(' + c.r + ',' + c.g + ',' + c.b + ')';
+        if (el) { el.__iupBg = 'rgb(' + c.r + ',' + c.g + ',' + c.b + ')'; el.style.backgroundColor = el.__iupBg; }
       } break;
       case 'fg': {
         if (el) el.style.color = 'rgb(' + c.r + ',' + c.g + ',' + c.b + ')';
@@ -421,11 +421,16 @@
         if (el && el.__iupInput) el.style.flexDirection = c.on ? 'row-reverse' : 'row';
       } break;
       case 'btnflat': {
-        if (el && !c.hover) { el.style.border = 'none'; el.style.padding = '0'; el.style.background = 'transparent'; }
+        if (el && !c.hover) {
+          el.style.border = 'none'; el.style.padding = '0';
+          el.__iupFlatRest = function () { el.style.backgroundColor = el.__iupBg || 'transparent'; };
+          el.__iupFlatRest();
+        }
         else if (el) {
-          var hide = function () { el.style.borderColor = 'transparent'; el.style.background = 'transparent'; };
+          var hide = function () { el.style.borderColor = 'transparent'; el.style.backgroundColor = el.__iupBg || 'transparent'; };
+          el.__iupFlatRest = hide;
           hide();
-          el.addEventListener('mouseenter', function () { el.style.borderColor = ''; el.style.background = ''; });
+          el.addEventListener('mouseenter', function () { el.style.borderColor = ''; el.style.backgroundColor = el.__iupBg || ''; });
           el.addEventListener('mouseleave', hide);
         }
       } break;

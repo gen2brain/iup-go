@@ -204,7 +204,7 @@ static UIButtonConfiguration* cocoaTouchButtonMakeConfig(Ihandle* ih)
 
 	UIColor* bg_color = nil;
 	const char* bg = cocoaTouchButtonAttrib(ih, "BGCOLOR");
-	if (bg && !iupStrEqualNoCase(bg, IupGetGlobal("DLGBGCOLOR")))
+	if (bg)
 		bg_color = iupCocoaTouchToNativeColor(bg);
 
 	UIButtonConfiguration* cfg;
@@ -526,7 +526,7 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 	ic->UnMap = cocoaTouchButtonUnMapMethod;
 
 	iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, cocoaTouchButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-	iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaTouchButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+	iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaTouchButtonSetBgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "FGCOLOR", NULL, cocoaTouchButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "FONT", NULL, cocoaTouchButtonSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 

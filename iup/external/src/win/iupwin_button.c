@@ -279,7 +279,7 @@ static void winButtonDrawText(Ihandle* ih, HDC hDC, int rect_width, int rect_hei
       ypad = ih->data->vert_padding + border;
   char* title = iupAttribGet(ih, "TITLE");
 
-  if (title)
+  if (title && *title)
   {
     int x, y;
     int width, height;
@@ -383,6 +383,33 @@ static void winButtonDrawItem(Ihandle* ih, DRAWITEMSTRUCT* drawitem)
 
   if (draw_border)
     iupwinDrawButtonBorder(ih->handle, hDC, &drawitem->rcItem, drawitem->itemState);
+
+  {
+    char* bgcolor = iupAttribGet(ih, "BGCOLOR");
+    char* title = iupAttribGet(ih, "TITLE");
+    unsigned char r, g, b;
+    if (bgcolor && iupStrToRGB(bgcolor, &r, &g, &b) &&
+        !(ih->data->type == IUP_BUTTON_TEXT && !(title && *title)))
+    {
+      RECT rect;
+      int inset = draw_border ? border : 0;
+      if (drawitem->itemState & ODS_SELECTED)
+      {
+        r = (unsigned char)(r * 9 / 10);
+        g = (unsigned char)(g * 9 / 10);
+        b = (unsigned char)(b * 9 / 10);
+      }
+      else if (drawitem->itemState & ODS_HOTLIGHT)
+      {
+        r = (unsigned char)iupMIN(255, r * 11 / 10);
+        g = (unsigned char)iupMIN(255, g * 11 / 10);
+        b = (unsigned char)iupMIN(255, b * 11 / 10);
+      }
+      SetDCBrushColor(hDC, RGB(r, g, b));
+      SetRect(&rect, inset, inset, width - inset, height - inset);
+      FillRect(hDC, &rect, (HBRUSH)GetStockObject(DC_BRUSH));
+    }
+  }
 
   if (ih->data->type == IUP_BUTTON_IMAGE)
     winButtonDrawImage(ih, hDC, width, height, border, drawitem->itemState);
@@ -512,6 +539,9 @@ static char* winButtonGetBgColorAttrib(Ihandle* ih)
 {
   /* the most important use of this is to provide
      the correct background for images */
+  if (iupAttribGet(ih, "BGCOLOR"))
+    return NULL;
+
   if (iupwin_comctl32ver6 && ih->data->type&IUP_BUTTON_IMAGE && !iupAttribGet(ih, "IMPRESS"))
   {
     COLORREF cr;
@@ -798,7 +828,7 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, winButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", winButtonGetBgColorAttrib, winButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
+  iupClassRegisterAttribute(ic, "BGCOLOR", winButtonGetBgColorAttrib, winButtonSetBgColorAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
 
   /* Special */
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, winButtonSetFgColorAttrib, "DLGFGCOLOR", NULL, IUPAF_NOT_MAPPED);  /* force the new default value */

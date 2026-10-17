@@ -229,7 +229,18 @@ public:
     const BBitmap* icon = IconBitmap((Value() == B_CONTROL_OFF ? B_INACTIVE_ICON_BITMAP : B_ACTIVE_ICON_BITMAP)
                                      | (IsEnabled() ? 0 : B_DISABLED_ICON_BITMAP));
     const char* label = Label();
-    if (pos == IUP_IMGPOS_LEFT || !icon || !label || !*label)
+    bool stacked = pos != IUP_IMGPOS_LEFT && icon && label && *label;
+    rgb_color base = ui_color(B_CONTROL_BACKGROUND_COLOR);
+    bool own = false;
+    unsigned char r, g, b;
+    char* bgcolor = fIhandle ? iupAttribGet(fIhandle, "BGCOLOR") : nullptr;
+    if (bgcolor && iupStrToRGB(bgcolor, &r, &g, &b))
+    {
+      base = make_color(r, g, b);
+      own = true;
+    }
+
+    if (!stacked && !own && !IsFlat())
     {
       BButton::Draw(updateRect);
       return;
@@ -238,15 +249,32 @@ public:
     BRect rect(Bounds());
     rgb_color background = ViewColor();
     rgb_color text = ui_color(B_CONTROL_TEXT_COLOR);
-    rgb_color base = ui_color(B_CONTROL_BACKGROUND_COLOR);
+    if (fIhandle && iupStrToRGB(iupBaseNativeParentGetBgColor(fIhandle), &r, &g, &b))
+      background = make_color(r, g, b);
 
     uint32 flags = be_control_look->Flags(this);
     if (IsDefault()) flags |= BControlLook::B_DEFAULT_BUTTON;
-    if (IsFlat() && !IsTracking()) flags |= BControlLook::B_FLAT;
     if (fInside) flags |= BControlLook::B_HOVER;
 
-    be_control_look->DrawButtonFrame(this, rect, updateRect, base, background, flags);
-    be_control_look->DrawButtonBackground(this, rect, updateRect, base, flags);
+    if (IsFlat() && !IsTracking() && !fInside)
+    {
+      if (!own)
+        base = background;
+      SetHighColor(base);
+      FillRect(rect);
+    }
+    else
+    {
+      be_control_look->DrawButtonFrame(this, rect, updateRect, base, background, flags);
+      be_control_look->DrawButtonBackground(this, rect, updateRect, base, flags);
+    }
+
+    if (!stacked)
+    {
+      be_control_look->DrawLabel(this, label, icon, rect, updateRect, base, flags,
+                                 BAlignment(B_ALIGN_CENTER, B_ALIGN_MIDDLE), &text);
+      return;
+    }
 
     float spacing = fIhandle->data->spacing;
     float icon_w = icon->Bounds().Width() + 1;
@@ -609,13 +637,27 @@ extern "C" IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   if (y) *y += static_cast<int>(top + bottom + spacing + 0.5f);
 }
 
+static int haikuButtonSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->handle)
+    return 1;
+
+  if (haikuButtonIsChromeless(ih))
+    return iupdrvBaseSetBgColorAttrib(ih, value ? value : iupBaseNativeParentGetBgColor(ih));
+
+  auto* view = reinterpret_cast<BView*>(ih->handle);
+  LooperLockGuard guard(view->Looper());
+  view->Invalidate();
+  return 1;
+}
+
 extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 {
   ic->Map = haikuButtonMapMethod;
 
   iupClassRegisterAttribute(ic, "FONT", nullptr, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, haikuButtonSetBgColorAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TITLE", nullptr, haikuButtonSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 

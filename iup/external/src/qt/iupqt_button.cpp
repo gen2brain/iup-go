@@ -56,9 +56,16 @@ static void qtButtonFillBackground(QAbstractButton* button, Ihandle* ih)
   QPainter(button).fillRect(button->rect(), color);
 }
 
+static void qtButtonDrawColorFrame(QWidget* widget)
+{
+  QPainter p(widget);
+  p.setPen(widget->palette().color(QPalette::Mid));
+  p.drawRect(widget->rect().adjusted(0, 0, -1, -1));
+}
+
 static void qtButtonUpdateFlatHover(QPushButton* button, Ihandle* ih, bool hover)
 {
-  if (iupAttribGetBoolean(ih, "FLAT") && !iupAttribGet(ih, "_IUPQT_FILLBG"))
+  if (iupAttribGetBoolean(ih, "FLAT"))
     button->setFlat(!(hover && button->isEnabled()));
   button->update();
 }
@@ -103,14 +110,18 @@ protected:
   {
     int stacked = (iup_handle->data->type & IUP_BUTTON_IMAGE) && (iup_handle->data->type & IUP_BUTTON_TEXT) &&
                   (iup_handle->data->img_position == IUP_IMGPOS_TOP || iup_handle->data->img_position == IUP_IMGPOS_BOTTOM);
+    int fill = iupAttribGet(iup_handle, "_IUPQT_FILLBG") != nullptr;
     qtButtonFillBackground(this, iup_handle);
+    if (fill && !isFlat())
+      qtButtonDrawColorFrame(this);
     if (!stacked || icon().isNull() || findChild<QLabel*>("_iup_markup_label"))
     {
-      if (isFlat() && iupAttribGet(iup_handle, "_IUPQT_FILLBG"))
+      if (fill)
       {
         QStylePainter p(this);
         QStyleOptionButton opt;
         initStyleOption(&opt);
+        opt.features |= QStyleOptionButton::Flat;
         opt.state &= ~(QStyle::State_Sunken | QStyle::State_On);
         p.drawControl(QStyle::CE_PushButton, opt);
         return;
@@ -122,8 +133,11 @@ protected:
     QStylePainter p(this);
     QStyleOptionButton opt;
     initStyleOption(&opt);
-    if (isFlat() && iupAttribGet(iup_handle, "_IUPQT_FILLBG"))
+    if (fill)
+    {
+      opt.features |= QStyleOptionButton::Flat;
       opt.state &= ~(QStyle::State_Sunken | QStyle::State_On);
+    }
     p.drawControl(QStyle::CE_PushButtonBevel, opt);
 
     QIcon::Mode mode = isEnabled() ? QIcon::Normal : QIcon::Disabled;
@@ -225,8 +239,22 @@ protected:
 
   void paintEvent(QPaintEvent* event) override
   {
+    if (!iupAttribGet(iup_handle, "_IUPQT_FILLBG"))
+    {
+      QToolButton::paintEvent(event);
+      return;
+    }
+
     qtButtonFillBackground(this, iup_handle);
-    QToolButton::paintEvent(event);
+    if (!autoRaise() || (underMouse() && isEnabled()))
+      qtButtonDrawColorFrame(this);
+
+    QStylePainter p(this);
+    QStyleOptionToolButton opt;
+    initStyleOption(&opt);
+    opt.state |= QStyle::State_AutoRaise;
+    opt.state &= ~(QStyle::State_Raised | QStyle::State_Sunken | QStyle::State_On | QStyle::State_MouseOver);
+    p.drawComplexControl(QStyle::CC_ToolButton, opt);
   }
 };
 
@@ -499,7 +527,7 @@ static int qtButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 
 static char* qtButtonGetBgColorAttrib(Ihandle* ih)
 {
-  if (ih->data->type & IUP_BUTTON_IMAGE || iupAttribGet(ih, "IMPRESS"))
+  if (!iupAttribGet(ih, "BGCOLOR") && (ih->data->type & IUP_BUTTON_IMAGE || iupAttribGet(ih, "IMPRESS")))
     return iupBaseNativeParentGetBgColorAttrib(ih);
 
   return nullptr;
@@ -508,25 +536,36 @@ static char* qtButtonGetBgColorAttrib(Ihandle* ih)
 static int qtButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
-  if (!value || !iupStrToRGB(value, &r, &g, &b))
-    return 0;
-
   auto* button = reinterpret_cast<QAbstractButton*>(ih->handle);
-  if (button)
+  if (!button)
+    return 1;
+
+  int swatch = ih->data->type == IUP_BUTTON_TEXT && !iupAttribGet(ih, "TITLE");
+
+  if (!value || !iupStrToRGB(value, &r, &g, &b))
   {
-    if (ih->data->type == IUP_BUTTON_TEXT && !iupAttribGet(ih, "TITLE"))
-    {
-      button->setStyleSheet(QString("QPushButton { background-color: rgb(%1, %2, %3); border: 1px solid palette(mid); }")
-                            .arg(r).arg(g).arg(b));
-    }
-    else
-    {
-      QPalette palette = button->palette();
-      palette.setColor(QPalette::Button, QColor(r, g, b));
-      button->setPalette(palette);
-      iupAttribSet(ih, "_IUPQT_FILLBG", "1");
-      button->update();
-    }
+    if (swatch)
+      button->setStyleSheet(QString());
+    QPalette palette = button->palette();
+    palette.setColor(QPalette::Button, QApplication::palette(button).color(QPalette::Button));
+    button->setPalette(palette);
+    iupAttribSet(ih, "_IUPQT_FILLBG", nullptr);
+    button->update();
+    return 1;
+  }
+
+  if (swatch)
+  {
+    button->setStyleSheet(QString("QPushButton { background-color: rgb(%1, %2, %3); border: 1px solid palette(mid); }")
+                          .arg(r).arg(g).arg(b));
+  }
+  else
+  {
+    QPalette palette = button->palette();
+    palette.setColor(QPalette::Button, QColor(r, g, b));
+    button->setPalette(palette);
+    iupAttribSet(ih, "_IUPQT_FILLBG", "1");
+    button->update();
   }
   return 1;
 }
@@ -812,7 +851,7 @@ extern "C" IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, qtButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", qtButtonGetBgColorAttrib, qtButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", qtButtonGetBgColorAttrib, qtButtonSetBgColorAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, qtButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TITLE", nullptr, qtButtonSetTitleAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

@@ -171,14 +171,22 @@ static int androidButtonSetFgColorAttrib(Ihandle* ih, const char* value)
 static int androidButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
-  if (!iupStrToRGB(value, &r, &g, &b)) return 0;
   if (!ih->handle) return 1;
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidButtonFindHelper(jni_env);
-  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setBgColor", "(Landroid/widget/Button;III)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, (jint)r, (jint)g, (jint)b);
-  iupAndroid_CheckException(jni_env, "IupButtonHelper.setBgColor");
+  if (value && iupStrToRGB(value, &r, &g, &b))
+  {
+    jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setBgColor", "(Landroid/widget/Button;III)V");
+    (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, (jint)r, (jint)g, (jint)b);
+    iupAndroid_CheckException(jni_env, "IupButtonHelper.setBgColor");
+  }
+  else
+  {
+    jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "resetBgColor", "(Landroid/widget/Button;)V");
+    (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle);
+    iupAndroid_CheckException(jni_env, "IupButtonHelper.resetBgColor");
+  }
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
   return 1;
 }

@@ -370,21 +370,48 @@ static int gtk4ButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 
 static int gtk4ButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
+  unsigned char r, g, b;
+  int has_color = value && iupStrToRGB(value, &r, &g, &b);
+
   if (ih->data->type == IUP_BUTTON_TEXT && GTK_IS_BUTTON(ih->handle))
   {
     GtkWidget* child = gtk_button_get_child(GTK_BUTTON(ih->handle));
     if (child && GTK_IS_WIDGET(child) && !GTK_IS_LABEL(child))
     {
-      unsigned char r, g, b;
-      if (!iupStrToRGB(value, &r, &g, &b))
-        return 0;
-
-      iupgtk4SetBgColor(child, r, g, b);
+      if (has_color)
+        iupgtk4SetBgColor(child, r, g, b);
+      else
+        iupgtk4CssResetWidgetBgColor(child);
       return 1;
     }
   }
 
-  return iupdrvBaseSetBgColorAttrib(ih, value);
+  if (!has_color)
+  {
+    if (GTK_IS_BUTTON(ih->handle))
+    {
+      iupgtk4CssSetWidgetSubRule(ih->handle, "", NULL);
+      iupgtk4CssSetWidgetSubRule(ih->handle, ":hover:not(:active):not(:disabled)", NULL);
+      iupgtk4CssSetWidgetSubRule(ih->handle, ":active:not(:disabled)", NULL);
+    }
+    iupgtk4CssResetWidgetBgColor(ih->handle);
+    return 1;
+  }
+
+  if (GTK_IS_BUTTON(ih->handle))
+  {
+    char* decl;
+    iupgtk4CssSetWidgetSubRule(ih->handle, "", "background-image: none;");
+    decl = g_strdup_printf("background-color: shade(rgb(%d,%d,%d), 1.1);", r, g, b);
+    iupgtk4CssSetWidgetSubRule(ih->handle, ":hover:not(:active):not(:disabled)", decl);
+    g_free(decl);
+    decl = g_strdup_printf("background-color: shade(rgb(%d,%d,%d), 0.9);", r, g, b);
+    iupgtk4CssSetWidgetSubRule(ih->handle, ":active:not(:disabled)", decl);
+    g_free(decl);
+  }
+
+  iupgtk4SetBgColor(ih->handle, r, g, b);
+  return 1;
 }
 
 static int gtk4ButtonSetFgColorAttrib(Ihandle* ih, const char* value)
@@ -606,7 +633,9 @@ static void gtk4ButtonClicked(GtkButton* widget, Ihandle* ih)
 
 static void gtk4ButtonMotionEnter(GtkEventControllerMotion* controller, double x, double y, Ihandle* ih)
 {
-  if (ih->data->type == IUP_BUTTON_IMAGE && iupAttribGet(ih, "IMPRESS"))
+  if (GTK_IS_BUTTON(ih->handle))
+    gtk_widget_remove_css_class(ih->handle, "flat");
+  else if (ih->data->type == IUP_BUTTON_IMAGE && iupAttribGet(ih, "IMPRESS"))
   {
     gtk_widget_set_opacity(ih->handle, 0.7);
   }
@@ -618,7 +647,9 @@ static void gtk4ButtonMotionEnter(GtkEventControllerMotion* controller, double x
 
 static void gtk4ButtonMotionLeave(GtkEventControllerMotion* controller, Ihandle* ih)
 {
-  if (ih->data->type == IUP_BUTTON_IMAGE && iupAttribGet(ih, "IMPRESS"))
+  if (GTK_IS_BUTTON(ih->handle))
+    gtk_widget_add_css_class(ih->handle, "flat");
+  else if (ih->data->type == IUP_BUTTON_IMAGE && iupAttribGet(ih, "IMPRESS"))
   {
     gtk_widget_set_opacity(ih->handle, 1.0);
   }
@@ -771,6 +802,14 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
     g_signal_connect(gesture, "released", G_CALLBACK(gtk4ButtonReleased), ih);
 
     g_signal_connect(G_OBJECT(ih->handle), "clicked", G_CALLBACK(gtk4ButtonClicked), ih);
+
+    if (iupAttribGetBoolean(ih, "FLAT"))
+    {
+      GtkEventController* motion = gtk_event_controller_motion_new();
+      g_signal_connect(motion, "enter", G_CALLBACK(gtk4ButtonMotionEnter), ih);
+      g_signal_connect(motion, "leave", G_CALLBACK(gtk4ButtonMotionLeave), ih);
+      gtk_widget_add_controller(ih->handle, motion);
+    }
   }
   else
   {
@@ -842,7 +881,7 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, gtk4ButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtk4ButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtk4ButtonSetBgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtk4ButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "TITLE", NULL, gtk4ButtonSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);

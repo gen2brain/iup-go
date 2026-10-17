@@ -593,81 +593,120 @@ static void gtkButtonColorDrawAreaRealize(GtkWidget* widget, Ihandle* ih)
   }
 }
 #else
-static gboolean gtkButtonColorExposeAfter(GtkWidget* widget, GdkEventExpose* evt, Ihandle* ih)
+static gboolean gtkButtonColorExpose(GtkWidget* widget, GdkEventExpose* evt, Ihandle* ih)
 {
   GtkAllocation allocation;
+  GtkStateType state;
+  GtkWidget* child;
   cairo_t* cr;
-  GdkWindow* window;
-  char* value;
   unsigned char r, g, b;
-  int x, y, w, h;
-  gint xthickness, ythickness;
-
-  (void)evt;
-
-  value = iupAttribGet(ih, "BGCOLOR");
+  double f = 1.0;
+  int x = 0, y = 0;
+  char* value = iupAttribGet(ih, "BGCOLOR");
   if (!value || !iupStrToRGB(value, &r, &g, &b))
     return FALSE;
 
-  window = gtk_widget_get_window(widget);
-  if (!window)
-    return FALSE;
-
   gtk_widget_get_allocation(widget, &allocation);
-
-  xthickness = GTK_WIDGET(widget)->style->xthickness;
-  ythickness = GTK_WIDGET(widget)->style->ythickness;
-
-  /* GTK2 buttons use parent's window, so we need allocation offset */
-  x = allocation.x + xthickness;
-  y = allocation.y + ythickness;
-  w = allocation.width - 2 * xthickness;
-  h = allocation.height - 2 * ythickness;
-
-  if (w > 0 && h > 0)
+  if (!gtk_widget_get_has_window(widget))
   {
-    cr = gdk_cairo_create(window);
-    cairo_set_source_rgb(cr, r / 255.0, g / 255.0, b / 255.0);
-    cairo_rectangle(cr, x, y, w, h);
-    cairo_fill(cr);
-    cairo_destroy(cr);
+    x = allocation.x;
+    y = allocation.y;
   }
 
-  return FALSE;
+  state = gtk_widget_get_state(widget);
+  if (state == GTK_STATE_PRELIGHT)
+    f = 1.1;
+  else if (state == GTK_STATE_ACTIVE)
+    f = 0.9;
+
+  cr = gdk_cairo_create(evt->window);
+  gdk_cairo_region(cr, evt->region);
+  cairo_clip(cr);
+  cairo_set_source_rgb(cr, MIN(r * f, 255) / 255.0, MIN(g * f, 255) / 255.0, MIN(b * f, 255) / 255.0);
+  cairo_rectangle(cr, x, y, allocation.width, allocation.height);
+  cairo_fill(cr);
+  cairo_destroy(cr);
+
+  if (GTK_IS_BUTTON(widget))
+  {
+    GtkStyle* style = gtk_widget_get_style(widget);
+
+    if (gtk_button_get_relief(GTK_BUTTON(widget)) == GTK_RELIEF_NORMAL || state != GTK_STATE_NORMAL)
+      gtk_paint_shadow(style, evt->window, state, state == GTK_STATE_ACTIVE ? GTK_SHADOW_IN : GTK_SHADOW_OUT,
+                       &evt->area, widget, "button", x, y, allocation.width, allocation.height);
+
+    if (gtk_widget_has_focus(widget))
+      gtk_paint_focus(style, evt->window, state, &evt->area, widget, "button",
+                      x + style->xthickness, y + style->ythickness,
+                      allocation.width - 2 * style->xthickness, allocation.height - 2 * style->ythickness);
+  }
+
+  child = gtk_bin_get_child(GTK_BIN(widget));
+  if (child)
+    gtk_container_propagate_expose(GTK_CONTAINER(widget), child, evt);
+
+  return TRUE;
 }
 #endif
 
 static int gtkButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
+  GtkCssProvider* provider;
+  GtkStyleContext* context;
+  unsigned char r, g, b;
+  char* css;
+
   if (ih->data->type == IUP_BUTTON_TEXT)
   {
-    GtkWidget* frame = gtk_bin_get_child(GTK_BIN(ih->handle));
-    if (frame && GTK_IS_FRAME(frame))
+    GtkWidget* drawarea = gtk_bin_get_child(GTK_BIN(ih->handle));
+    if (drawarea && GTK_IS_DRAWING_AREA(drawarea))
     {
-      unsigned char r, g, b;
-      if (!iupStrToRGB(value, &r, &g, &b))
-        return 0;
+      if (!value || !iupStrToRGB(value, &r, &g, &b))
+        return 1;
 
-      GtkWidget* drawarea = gtk_bin_get_child(GTK_BIN(frame));
       if (gtk_widget_get_realized(drawarea))
+      {
         iupgtkSetBgColor(drawarea, r, g, b);
+        gtk_widget_queue_draw(drawarea);
+      }
       return 1;
     }
   }
-#else
-  if (ih->data->type == IUP_BUTTON_TEXT)
-  {
-    char* bgcolor = iupAttribGet(ih, "BGCOLOR");
-    if (bgcolor)
-    {
-      gtk_widget_queue_draw(ih->handle);
-      return 1;
-    }
-  }
-#endif
 
-  return iupdrvBaseSetBgColorAttrib(ih, value);
+  context = gtk_widget_get_style_context(ih->handle);
+  provider = (GtkCssProvider*)iupAttribGet(ih, "_IUPGTK_BGPROVIDER");
+
+  if (!value || !iupStrToRGB(value, &r, &g, &b))
+  {
+    if (provider)
+    {
+      gtk_style_context_remove_provider(context, GTK_STYLE_PROVIDER(provider));
+      iupAttribSet(ih, "_IUPGTK_BGPROVIDER", NULL);
+    }
+    return 1;
+  }
+
+  if (!provider)
+  {
+    provider = gtk_css_provider_new();
+    gtk_style_context_add_provider(context, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+    g_object_unref(provider);
+    iupAttribSet(ih, "_IUPGTK_BGPROVIDER", (char*)provider);
+  }
+
+  css = g_strdup_printf("* { background-color: rgb(%d,%d,%d); background-image: none; }"
+                        "*:hover { background-color: shade(rgb(%d,%d,%d), 1.1); }"
+                        "*:active { background-color: shade(rgb(%d,%d,%d), 0.9); }",
+                        r, g, b, r, g, b, r, g, b);
+  gtk_css_provider_load_from_data(provider, css, -1, NULL);
+  g_free(css);
+  return 1;
+#else
+  (void)value;
+  gtk_widget_queue_draw(ih->handle);
+  return 1;
+#endif
 }
 
 static int gtkButtonSetFgColorAttrib(Ihandle* ih, const char* value)
@@ -881,6 +920,8 @@ static int gtkButtonMapMethod(Ihandle* ih)
 {
   int has_border = 1;
 
+  iupAttribSet(ih, "_IUPGTK_BGPROVIDER", NULL);
+
   char* value = iupAttribGet(ih, "IMAGE");
   if (value)
   {
@@ -996,8 +1037,6 @@ static int gtkButtonMapMethod(Ihandle* ih)
             GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
           g_object_unref(provider);
         }
-#else
-        g_signal_connect_after(G_OBJECT(ih->handle), "expose-event", G_CALLBACK(gtkButtonColorExposeAfter), ih);
 #endif
       }
       else
@@ -1022,6 +1061,10 @@ static int gtkButtonMapMethod(Ihandle* ih)
   (void)has_border;
 
   iupgtkAddToParent(ih);
+
+#if !GTK_CHECK_VERSION(3, 0, 0)
+  g_signal_connect(G_OBJECT(ih->handle), "expose-event", G_CALLBACK(gtkButtonColorExpose), ih);
+#endif
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
     iupgtkSetCanFocus(ih->handle, 0);
@@ -1114,7 +1157,7 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, gtkButtonSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtkButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtkButtonSetBgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   /* Special */
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtkButtonSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);

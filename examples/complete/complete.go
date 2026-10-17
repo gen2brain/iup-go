@@ -10,6 +10,8 @@ import (
 	"github.com/gen2brain/iup-go/iup"
 )
 
+var keyNavigation bool
+
 func init() { iup.EntryPoint(main) }
 
 func main() {
@@ -44,6 +46,8 @@ func kAnyCb(ih iup.Ihandle, c int) int {
 		return iup.IGNORE
 	}
 
+	keyNavigation = c == iup.K_DOWN || c == iup.K_UP
+
 	if c == iup.K_ESC || c == iup.K_CR {
 		iup.Hide(list)
 		iup.SetFocus(text)
@@ -54,8 +58,16 @@ func kAnyCb(ih iup.Ihandle, c int) int {
 }
 
 func listValueChangedCb(ih iup.Ihandle) int {
-	val := ih.GetAttribute("VALUESTRING")
-	iup.GetHandle("text").SetAttribute("VALUE", val)
+	text := iup.GetHandle("text")
+	text.SetAttribute("VALUE", ih.GetAttribute("VALUESTRING"))
+
+	if !keyNavigation {
+		iup.Hide(ih)
+		iup.SetFocus(text)
+		text.SetAttribute("SCROLLTOPOS", text.GetInt("COUNT"))
+	}
+	keyNavigation = false
+
 	return iup.DEFAULT
 }
 

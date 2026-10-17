@@ -147,18 +147,37 @@ static int motButtonSetPaddingAttrib(Ihandle* ih, const char* value)
     return 1; /* store until not mapped, when mapped will be set again */
 }
 
+static void motButtonUpdateImages(Ihandle* ih)
+{
+  char* value;
+
+  if (!(ih->data->type & IUP_BUTTON_IMAGE))
+    return;
+
+  value = iupAttribGet(ih, "IMAGE");
+  if (value)
+    motButtonSetImageAttrib(ih, value);
+  value = iupAttribGet(ih, "IMINACTIVE");
+  if (value)
+    motButtonSetImInactiveAttrib(ih, value);
+  value = iupAttribGet(ih, "IMPRESS");
+  if (value)
+    motButtonSetImPressAttrib(ih, value);
+}
+
 static int motButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  if (iupAttribGet(ih, "IMPRESS") || iupAttribGetBoolean(ih, "FLAT"))
+  if (!value)
   {
-    /* ignore given value, must use only from parent */
-    value = iupBaseNativeParentGetBgColor(ih);
-
-    if (iupdrvBaseSetBgColorAttrib(ih, value))
-      return 1;
+    if (iupAttribGet(ih, "IMPRESS") || iupAttribGetBoolean(ih, "FLAT"))
+      value = iupBaseNativeParentGetBgColor(ih);
+    else
+      value = IupGetGlobal("DLGBGCOLOR");
   }
 
-  return iupdrvBaseSetBgColorAttrib(ih, value);
+  iupdrvBaseSetBgColorAttrib(ih, value);
+  motButtonUpdateImages(ih);
+  return 1;
 }
 
 static int motButtonSetBackgroundAttrib(Ihandle* ih, const char* value)
@@ -339,6 +358,9 @@ static int motButtonMapMethod(Ihandle* ih)
   if (ih->data->type & IUP_BUTTON_TEXT)
     iupmotSetXmString(ih->handle, XmNlabelString, "");
 
+  if (!iupAttribGet(ih, "BGCOLOR") && (iupAttribGet(ih, "IMPRESS") || iupAttribGetBoolean(ih, "FLAT")))
+    iupdrvBaseSetBgColorAttrib(ih, iupBaseNativeParentGetBgColor(ih));
+
   return IUP_NOERROR;
 }
 
@@ -358,7 +380,7 @@ IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
   /* Driver Dependent Attribute functions */
 
   /* Visual */
-  iupClassRegisterAttribute(ic, "BGCOLOR", iupmotGetBgColorAttrib, motButtonSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
+  iupClassRegisterAttribute(ic, "BGCOLOR", iupmotGetBgColorAttrib, motButtonSetBgColorAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, motButtonSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* Special */
