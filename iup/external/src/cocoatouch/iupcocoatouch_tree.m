@@ -15,6 +15,7 @@
 #include "iup_object.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
+#include "iup_globalattrib.h"
 #include "iup_str.h"
 #include "iup_drvinfo.h"
 #include "iup_drvfont.h"
@@ -917,7 +918,7 @@ static int cocoaTouchTreeSetBgColorAttrib(Ihandle* ih, const char* value)
 	if (!view) return 0;
 	UIColor* c = iupCocoaTouchToNativeColor(value);
 	if (!c) return 0;
-	if (iupStrEqualNoCase(value, IupGetGlobal("TXTBGCOLOR"))) c = nil;
+	if (!iupGlobalDefaultColorChanged("TXTBGCOLOR") && iupStrEqualNoCase(value, IupGetGlobal("TXTBGCOLOR"))) c = nil;
 	view.bgColor = c;
 	view.tableView.backgroundColor = c;
 	view.backgroundColor = c;
