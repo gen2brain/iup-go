@@ -1320,7 +1320,7 @@ static gboolean gtkTextScrollTick(gpointer data)
   else if (!gtk_text_mark_get_deleted(sd->mark) && gtk_widget_get_mapped(GTK_WIDGET(sd->view)))
   {
     GtkTextBuffer* buffer = gtk_text_mark_get_buffer(sd->mark);
-    GtkAdjustment* adj = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(sd->view));
+    GtkAdjustment* adj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_widget_get_parent(GTK_WIDGET(sd->view))));
     double upper = gtk_adjustment_get_upper(adj);
     GtkTextIter iter;
     GdkRectangle rect, visible;
