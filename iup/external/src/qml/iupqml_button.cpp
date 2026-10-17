@@ -833,8 +833,8 @@ static int qmlButtonMapMethod(Ihandle* ih)
   }
 
   iupqmlAddToParent(ih);
-  iupqmlInstallFilter(ih, button);
   button->installEventFilter(new IupQmlButtonKeyFilter(button, ih));
+  iupqmlInstallFilter(ih, button);
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
     iupqmlSetCanFocus(button, 0);
