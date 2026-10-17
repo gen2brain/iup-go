@@ -16,6 +16,7 @@
 
 #include "iup_object.h"
 #include "iup_attrib.h"
+#include "iup_globalattrib.h"
 #include "iup_str.h"
 #include "iup_mask.h"
 #include "iup_focus.h"
@@ -1340,7 +1341,7 @@ static int cocoaTouchTextSetBgColorAttrib(Ihandle* ih, const char* value)
 {
 	UIColor* color = iupCocoaTouchToNativeColor(value);
 	if (!color) return 0;
-	if (iupStrEqualNoCase(value, IupGetGlobal("TXTBGCOLOR"))) color = nil;
+	if (!iupGlobalDefaultColorChanged("TXTBGCOLOR") && iupStrEqualNoCase(value, IupGetGlobal("TXTBGCOLOR"))) color = nil;
 
 	UITextField* field = cocoaTouchTextField(ih);
 	if (field) [field setBackgroundColor:color];
