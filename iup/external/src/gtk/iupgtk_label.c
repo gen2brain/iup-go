@@ -238,7 +238,7 @@ static int gtkLabelSetImageAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_IMAGE)
   {
-    if (iupdrvIsActive(ih))
+    if (gtk_widget_get_sensitive(ih->handle))
       gtkLabelSetPixbuf(ih, value, 0);
     else
     {
@@ -259,7 +259,7 @@ static int gtkLabelSetImInactiveAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_IMAGE)
   {
-    if (!iupdrvIsActive(ih))
+    if (!gtk_widget_get_sensitive(ih->handle))
     {
       if (value)
         gtkLabelSetPixbuf(ih, value, 0);
