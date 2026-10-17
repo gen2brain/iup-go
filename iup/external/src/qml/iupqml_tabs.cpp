@@ -5,6 +5,7 @@
  */
 
 #include <QQuickItem>
+#include <QQuickWindow>
 #include <QQuickStyle>
 #include <QTimer>
 #include <QString>
@@ -212,13 +213,37 @@ static Ihandle* qmlTabsChildFromIndex(Ihandle* ih, int index)
   return nullptr;
 }
 
+static QQuickItem* qmlTabsFocusItem(Ihandle* ih)
+{
+  QQuickItem* bar = qmlTabsGetBar(ih);
+  Ihandle* child = bar ? qmlTabsChildFromIndex(ih, bar->property("currentIndex").toInt()) : nullptr;
+  return child ? reinterpret_cast<QQuickItem*>(iupAttribGet(child, "_IUPQML_TABBUTTON")) : bar;
+}
+
 static void qmlTabsShowPage(Ihandle* ih, Ihandle* child)
 {
+  bool refocus = false;
+
   for (Ihandle* c = ih->firstchild; c; c = c->brother)
   {
     auto* container = reinterpret_cast<QQuickItem*>(iupAttribGet(c, "_IUPTAB_CONTAINER"));
     if (container)
+    {
+      if (c != child && container->isVisible() && container->window())
+      {
+        QQuickItem* focus = container->window()->activeFocusItem();
+        if (focus && container->isAncestorOf(focus))
+          refocus = true;
+      }
       container->setVisible(c == child);
+    }
+  }
+
+  if (refocus)
+  {
+    QQuickItem* item = qmlTabsFocusItem(ih);
+    if (item)
+      item->forceActiveFocus(Qt::OtherFocusReason);
   }
 }
 
@@ -448,13 +473,6 @@ static void qmlTabsLayoutUpdateMethod(Ihandle* ih)
 /****************************************************************************
  * Callbacks
  ****************************************************************************/
-
-static QQuickItem* qmlTabsFocusItem(Ihandle* ih)
-{
-  QQuickItem* bar = qmlTabsGetBar(ih);
-  Ihandle* child = bar ? qmlTabsChildFromIndex(ih, bar->property("currentIndex").toInt()) : nullptr;
-  return child ? reinterpret_cast<QQuickItem*>(iupAttribGet(child, "_IUPQML_TABBUTTON")) : bar;
-}
 
 static int qmlTabsMoveCurrent(Ihandle* ih, QKeyEvent* key)
 {
