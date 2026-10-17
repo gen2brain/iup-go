@@ -46,10 +46,6 @@ EM_JS(void, iupwasmJsTabsSetTip, (int tabsId, int pos, const char* tip), {
   globalThis.__iupApply({ op: 'tabssettip', id: tabsId, pos: pos, tip: UTF8ToString(tip) });
 })
 
-EM_JS(void, iupwasmJsTabsHideTab, (int tabsId, int pos), {
-  globalThis.__iupApply({ op: 'tabshide', id: tabsId, pos: pos });
-})
-
 EM_JS(void, iupwasmJsTabsRemoveTab, (int tabsId, int pos), {
   globalThis.__iupApply({ op: 'tabsremove', id: tabsId, pos: pos });
 })
@@ -64,6 +60,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTabsSetCurrent(int tabsId, int pos)
 }
 
 EM_JS(int, iupwasmJsTabsGetCurrent, (int tabsId), {
+  if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'tabsgetcurrent', id: tabsId });
   var wrap = globalThis.__iup.els[tabsId];
   return wrap ? wrap.__iupCurrent : -1;
 })
@@ -150,7 +147,6 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTabsClose(int tabsId, int pos)
   if (ret == IUP_CONTINUE)
   {
     Ihandle* child = IupGetChild(ih, pos);
-    iupwasmJsTabsRemoveTab(tabsId, pos);
     if (child)
     {
       IupDestroy(child);
@@ -158,7 +154,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTabsClose(int tabsId, int pos)
     }
   }
   else if (ret == IUP_DEFAULT)
-    iupwasmJsTabsHideTab(tabsId, pos);
+    IupSetAttributeId(ih, "TABVISIBLE", pos, "NO");
 }
 
 EMSCRIPTEN_KEEPALIVE void iupwasmTabsRightClick(int tabsId, int pos)
@@ -235,6 +231,21 @@ static void wasmTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     iupwasmJsTabsSetTip(tabsId, pos, tip);
 }
 
+static void wasmTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
+{
+  int was_current;
+  if (!ih->handle || iupAttribGet(ih, "_IUPTABS_REORDERING"))
+    return;
+
+  was_current = (iupdrvTabsGetCurrentTab(ih) == pos);
+  iupwasmJsTabsRemoveTab(iupwasmIdOf(ih), pos);
+  iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
+  iupAttribSet(child, "_IUPWASM_TABHIDDEN", NULL);
+
+  if (was_current && ih->firstchild)
+    iupTabsSelectNearestTab(ih, pos);
+}
+
 static int wasmTabsMapMethod(Ihandle* ih)
 {
   Ihandle* child;
@@ -278,8 +289,16 @@ static int wasmTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
 static int wasmTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
 {
   int id = iupwasmIdOf(ih);
+  int visible = iupStrBoolean(value);
+  Ihandle* child = IupGetChild(ih, pos);
+  if (child)
+    iupAttribSet(child, "_IUPWASM_TABHIDDEN", visible ? NULL : "1");
   if (id)
-    iupwasmJsTabsSetVisible(id, pos, iupStrBoolean(value));
+  {
+    if (!visible)
+      iupTabsCheckCurrentTab(ih, pos, 0);
+    iupwasmJsTabsSetVisible(id, pos, visible);
+  }
   return 1;
 }
 
@@ -404,7 +423,7 @@ IUP_SDK_API int iupdrvTabsGetCurrentTab(Ihandle* ih)
 IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 {
   (void)pos;
-  return iupAttribGetBoolean(child, "TABVISIBLE") || !iupAttribGet(child, "TABVISIBLE");
+  return iupAttribGet(child, "_IUPWASM_TABHIDDEN") ? 0 : 1;
 }
 
 IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* ih)
@@ -459,6 +478,7 @@ IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   ic->UnMap = iupdrvBaseUnMapMethod;
   ic->LayoutUpdate = iupdrvBaseLayoutUpdateMethod;
   ic->ChildAdded = wasmTabsChildAddedMethod;
+  ic->ChildRemoved = wasmTabsChildRemovedMethod;
 
   iupClassRegisterAttributeId(ic, "TABTITLE", NULL, wasmTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, wasmTabsSetTabImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
