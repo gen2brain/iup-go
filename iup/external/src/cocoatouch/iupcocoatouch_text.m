@@ -1373,7 +1373,7 @@ static int cocoaTouchTextSetFgColorAttrib(Ihandle* ih, const char* value)
 {
 	UIColor* color = iupCocoaTouchToNativeColor(value);
 	if (!color) return 0;
-	if (iupStrEqualNoCase(value, IupGetGlobal("TXTFGCOLOR"))) color = [UIColor labelColor];
+	if (!iupGlobalDefaultColorChanged("TXTFGCOLOR") && iupStrEqualNoCase(value, IupGetGlobal("TXTFGCOLOR"))) color = [UIColor labelColor];
 
 	UITextField* field = cocoaTouchTextField(ih);
 	if (field) [field setTextColor:color];
