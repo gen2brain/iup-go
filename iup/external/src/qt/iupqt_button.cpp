@@ -40,10 +40,27 @@ extern "C" {
 
 static void qtButtonSetPixmap(Ihandle* ih, const char* name, int make_inactive);
 
-static void qtButtonFillBackground(QWidget* widget, Ihandle* ih)
+static void qtButtonFillBackground(QAbstractButton* button, Ihandle* ih)
 {
-  if (iupAttribGet(ih, "_IUPQT_FILLBG"))
-    QPainter(widget).fillRect(widget->rect(), widget->palette().color(widget->backgroundRole()));
+  if (!iupAttribGet(ih, "_IUPQT_FILLBG"))
+    return;
+
+  QColor color = button->palette().color(button->backgroundRole());
+  if (button->isEnabled())
+  {
+    if (button->isDown())
+      color = color.darker(110);
+    else if (button->underMouse())
+      color = color.lighter(115);
+  }
+  QPainter(button).fillRect(button->rect(), color);
+}
+
+static void qtButtonUpdateFlatHover(QPushButton* button, Ihandle* ih, bool hover)
+{
+  if (iupAttribGetBoolean(ih, "FLAT") && !iupAttribGet(ih, "_IUPQT_FILLBG"))
+    button->setFlat(!(hover && button->isEnabled()));
+  button->update();
 }
 
 class IupQtButton : public QPushButton
@@ -60,9 +77,9 @@ protected:
 #else
   void enterEvent(QEvent* event) override
 #endif
-  { QPushButton::enterEvent(event); iupqtEnterLeaveEvent(this, event, iup_handle); }
+  { QPushButton::enterEvent(event); qtButtonUpdateFlatHover(this, iup_handle, true); iupqtEnterLeaveEvent(this, event, iup_handle); }
   void leaveEvent(QEvent* event) override
-  { QPushButton::leaveEvent(event); iupqtEnterLeaveEvent(this, event, iup_handle); }
+  { QPushButton::leaveEvent(event); qtButtonUpdateFlatHover(this, iup_handle, false); iupqtEnterLeaveEvent(this, event, iup_handle); }
   void focusInEvent(QFocusEvent* event) override
   { QPushButton::focusInEvent(event); iupqtFocusInOutEvent(this, event, iup_handle); }
   void focusOutEvent(QFocusEvent* event) override
@@ -89,6 +106,15 @@ protected:
     qtButtonFillBackground(this, iup_handle);
     if (!stacked || icon().isNull() || findChild<QLabel*>("_iup_markup_label"))
     {
+      if (isFlat() && iupAttribGet(iup_handle, "_IUPQT_FILLBG"))
+      {
+        QStylePainter p(this);
+        QStyleOptionButton opt;
+        initStyleOption(&opt);
+        opt.state &= ~(QStyle::State_Sunken | QStyle::State_On);
+        p.drawControl(QStyle::CE_PushButton, opt);
+        return;
+      }
       QPushButton::paintEvent(event);
       return;
     }
@@ -96,6 +122,8 @@ protected:
     QStylePainter p(this);
     QStyleOptionButton opt;
     initStyleOption(&opt);
+    if (isFlat() && iupAttribGet(iup_handle, "_IUPQT_FILLBG"))
+      opt.state &= ~(QStyle::State_Sunken | QStyle::State_On);
     p.drawControl(QStyle::CE_PushButtonBevel, opt);
 
     QIcon::Mode mode = isEnabled() ? QIcon::Normal : QIcon::Disabled;
