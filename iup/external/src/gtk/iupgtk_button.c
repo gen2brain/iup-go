@@ -745,7 +745,7 @@ static int gtkButtonSetImageAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
-    if (iupdrvIsActive(ih))
+    if (gtk_widget_get_sensitive(ih->handle))
       gtkButtonSetPixbuf(ih, value, 0);
     else
     {
@@ -766,7 +766,7 @@ static int gtkButtonSetImInactiveAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
-    if (!iupdrvIsActive(ih))
+    if (!gtk_widget_get_sensitive(ih->handle))
     {
       if (value)
         gtkButtonSetPixbuf(ih, value, 0);

@@ -586,7 +586,7 @@ static int gtkToggleSetValueAttrib(Ihandle* ih, const char* value)
     }
 
     if (ih->data->type == IUP_TOGGLE_IMAGE)
-      gtkToggleUpdateImage(ih, iupdrvIsActive(ih), gtkToggleGetCheck(ih));
+      gtkToggleUpdateImage(ih, gtk_widget_get_sensitive(ih->handle), gtkToggleGetCheck(ih));
 
     iupAttribSet(ih, "_IUPGTK_IGNORE_TOGGLE", NULL);
     if (last_ih)
@@ -729,7 +729,7 @@ static int gtkToggleSetImageAttrib(Ihandle* ih, const char* value)
   {
     if (value != iupAttribGet(ih, "IMAGE"))
       iupAttribSet(ih, "IMAGE", (char*)value);
-    gtkToggleUpdateImage(ih, iupdrvIsActive(ih), gtkToggleGetCheck(ih));
+    gtkToggleUpdateImage(ih, gtk_widget_get_sensitive(ih->handle), gtkToggleGetCheck(ih));
     return 1;
   }
   else
@@ -742,7 +742,7 @@ static int gtkToggleSetImInactiveAttrib(Ihandle* ih, const char* value)
   {
     if (value != iupAttribGet(ih, "IMINACTIVE"))
       iupAttribSet(ih, "IMINACTIVE", (char*)value);
-    gtkToggleUpdateImage(ih, iupdrvIsActive(ih), gtkToggleGetCheck(ih));
+    gtkToggleUpdateImage(ih, gtk_widget_get_sensitive(ih->handle), gtkToggleGetCheck(ih));
     return 1;
   }
   else
@@ -755,7 +755,7 @@ static int gtkToggleSetImPressAttrib(Ihandle* ih, const char* value)
   {
     if (value != iupAttribGet(ih, "IMPRESS"))
       iupAttribSet(ih, "IMPRESS", (char*)value);
-    gtkToggleUpdateImage(ih, iupdrvIsActive(ih), gtkToggleGetCheck(ih));
+    gtkToggleUpdateImage(ih, gtk_widget_get_sensitive(ih->handle), gtkToggleGetCheck(ih));
     return 1;
   }
   else
@@ -806,7 +806,7 @@ static void gtkToggleToggled(GtkToggleButton* widget, Ihandle* ih)
   check = gtkToggleGetCheck(ih);
 
   if (ih->data->type == IUP_TOGGLE_IMAGE)
-    gtkToggleUpdateImage(ih, iupdrvIsActive(ih), check);
+    gtkToggleUpdateImage(ih, gtk_widget_get_sensitive(ih->handle), check);
 
   cb = (IFni)IupGetCallback(ih, "ACTION");
   if (cb && cb(ih, check) == IUP_CLOSE)
@@ -860,9 +860,9 @@ static gboolean gtkToggleButtonEvent(GtkWidget* widget, GdkEventButton* evt, Iha
     if (name)
     {
       if (evt->type == GDK_BUTTON_PRESS)
-        gtkToggleUpdateImage(ih, iupdrvIsActive(ih), 1);
+        gtkToggleUpdateImage(ih, gtk_widget_get_sensitive(ih->handle), 1);
       else
-        gtkToggleUpdateImage(ih, iupdrvIsActive(ih), 0);
+        gtkToggleUpdateImage(ih, gtk_widget_get_sensitive(ih->handle), 0);
     }
   }
   else
