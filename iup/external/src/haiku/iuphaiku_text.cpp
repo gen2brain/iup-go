@@ -1583,7 +1583,7 @@ static void haikuTextApplyFormatTagFont(BFont& bfont, Ihandle* tag, uint32* mode
           *mode |= B_FONT_FAMILY_AND_STYLE;
         }
       }
-      if (size > 0) { bfont.SetSize(static_cast<float>(size)); *mode |= B_FONT_SIZE; }
+      if (size != 0) { bfont.SetSize(iuphaikuFontSizeToNative(size)); *mode |= B_FONT_SIZE; }
       uint16 face = 0;
       if (bold) face |= B_BOLD_FACE;
       if (italic) face |= B_ITALIC_FACE;
@@ -1611,9 +1611,9 @@ static void haikuTextApplyFormatTagFont(BFont& bfont, Ihandle* tag, uint32* mode
   if (fontsize)
   {
     int sz = 0;
-    if (iupStrToInt(fontsize, &sz) && sz > 0)
+    if (iupStrToInt(fontsize, &sz) && sz != 0)
     {
-      bfont.SetSize(static_cast<float>(sz));
+      bfont.SetSize(iuphaikuFontSizeToNative(sz));
       *mode |= B_FONT_SIZE;
     }
   }
@@ -2334,7 +2334,7 @@ static void haikuTextAddFormatRun(Ihandle* ih, Ihandle* bulk_tag, const BFont& b
   IupSetAttribute(formattag, "ITALIC", (face & B_ITALIC_FACE) ? "YES" : "NO");
   IupSetAttribute(formattag, "STRIKEOUT", (face & B_STRIKEOUT_FACE) ? "YES" : "NO");
   IupSetStrAttribute(formattag, "FONTFACE", family);
-  IupSetInt(formattag, "FONTSIZE", static_cast<int>(bfont.Size() + 0.5f));
+  IupSetInt(formattag, "FONTSIZE", iuphaikuFontSizeFromNative(bfont.Size()));
 
   count = iupAttribGetInt(ih, "_IUPHAIKU_LINK_COUNT");
   for (i = 0; i < count; ++i)
