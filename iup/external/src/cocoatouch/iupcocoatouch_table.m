@@ -1020,7 +1020,7 @@ IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const ch
 	UICollectionView* view = cocoaTouchTableGet(ih);
 	if (view)
 	{
-		[view setCollectionViewLayout:cocoaTouchTableMakeLayout(ctrl) animated:NO];
+		[view.collectionViewLayout invalidateLayout];
 		[view reloadData];
 	}
 }
@@ -1041,7 +1041,7 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
 	UICollectionView* view = cocoaTouchTableGet(ih);
 	if (view)
 	{
-		[view setCollectionViewLayout:cocoaTouchTableMakeLayout(ctrl) animated:NO];
+		[view.collectionViewLayout invalidateLayout];
 		[view reloadData];
 	}
 }
