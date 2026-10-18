@@ -59,7 +59,7 @@ IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
   {
     int title_h = androidFrameCallIntGetter(ih, "getTitleHeight");
     int stroke = androidFrameCallIntGetter(ih, "getStrokePx");
-    if (x) *x = iupAndroid_PxToDp(stroke);
+    if (x) *x = iupAndroid_PxToDpRound(stroke);
     if (y) *y = iupAndroid_PxToDp(stroke + title_h);
   }
   else
@@ -104,7 +104,7 @@ IUP_SDK_API int iupdrvFrameGetDecorSize(Ihandle* ih, int* w, int* h)
   {
     int stroke = androidFrameCallIntGetter(ih, "getStrokePx");
     int title_h = androidFrameCallIntGetter(ih, "getTitleHeight");
-    if (w) *w = iupAndroid_PxToDp(2 * stroke);
+    if (w) *w = 2 * iupAndroid_PxToDpRound(stroke);
     if (h) *h = iupAndroid_PxToDp(2 * stroke + title_h);
   }
   else

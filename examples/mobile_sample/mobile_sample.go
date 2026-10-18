@@ -522,7 +522,7 @@ func buildClipboardNotify() iup.Ihandle {
 	return iup.Frame(
 		iup.Vbox(
 			entry,
-			iup.Hbox(btnCopy, btnPaste, btnNotify, btnToast).SetAttributes(`GAP=2, ALIGNMENT=ACENTER`),
-		).SetAttributes(`GAP=6, NMARGIN=2x4`),
+			iup.Hbox(btnCopy, btnPaste, btnNotify, btnToast).SetAttributes(`GAP=1, ALIGNMENT=ACENTER`),
+		).SetAttributes(`GAP=6, NMARGIN=0x4`),
 	).SetAttributes(`TITLE="Clipboard + Notify", EXPAND=HORIZONTAL`)
 }
