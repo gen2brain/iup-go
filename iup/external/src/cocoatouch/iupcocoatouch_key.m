@@ -352,15 +352,6 @@ IUP_DRV_API bool iupCocoaTouchKeyEvent(Ihandle* ih, UIPress* press, bool is_pres
 			}
 		}
 
-		if ([key modifierFlags] & UIKeyModifierAlternate)
-		{
-			int base_code = iup_XkeyBase(code);
-			if (base_code < 128 && iupKeyProcessMnemonic(ih, base_code))
-			{
-				return true;
-			}
-		}
-
 		int has_shift = ([key modifierFlags] & UIKeyModifierShift) ? 1 : 0;
 		if (iupKeyProcessNavigation(ih, code, has_shift))
 		{
