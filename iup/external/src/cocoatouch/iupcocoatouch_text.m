@@ -376,9 +376,40 @@ static UITextView* cocoaTouchTextView(Ihandle* ih)
 	return [h isKindOfClass:[UITextView class]] ? (UITextView*)h : nil;
 }
 
+static void cocoaTouchTextScrollLineToVisible(UITextView* v, NSUInteger index)
+{
+	NSLayoutManager* lm = v.layoutManager;
+	[lm ensureLayoutForTextContainer:v.textContainer];
+	[v layoutIfNeeded];
+
+	CGRect line;
+	if (index < [v.textStorage length])
+		line = [lm lineFragmentRectForGlyphAtIndex:[lm glyphIndexForCharacterAtIndex:index] effectiveRange:NULL];
+	else if (!CGRectIsEmpty(lm.extraLineFragmentRect))
+		line = lm.extraLineFragmentRect;
+	else if ([lm numberOfGlyphs] > 0)
+		line = [lm lineFragmentRectForGlyphAtIndex:[lm numberOfGlyphs] - 1 effectiveRange:NULL];
+	else
+		return;
+
+	UIEdgeInsets inset = v.textContainerInset;
+	CGFloat view_h = v.bounds.size.height;
+	CGFloat top = line.origin.y, bottom = CGRectGetMaxY(line) + inset.top + inset.bottom;
+	CGFloat y = v.contentOffset.y;
+	if (top < y)
+		y = top;
+	else if (bottom > y + view_h)
+		y = bottom - view_h;
+	y = MAX(0, MIN(y, v.contentSize.height - view_h));
+	[v setContentOffset:CGPointMake(v.contentOffset.x, y) animated:NO];
+}
+
 static void cocoaTouchTextScrollRangeToVisible(UITextView* v, NSRange range)
 {
-	[v scrollRangeToVisible:range];
+	if (v.scrollEnabled)
+		cocoaTouchTextScrollLineToVisible(v, range.location);
+	else
+		[v scrollRangeToVisible:range];
 	if ([v.superview isKindOfClass:[IupCocoaTouchTextScroll class]])
 		[(IupCocoaTouchTextScroll*)v.superview revealRange:range];
 }
