@@ -95,6 +95,15 @@ static void gtkTabsUpdatePageFgColor(Ihandle* ih, unsigned char r, unsigned char
   }
 }
 
+static void gtkTabsApplyLabelPadding(Ihandle* ih, GtkWidget* tab_label)
+{
+#if GTK_CHECK_VERSION(3, 4, 0)
+  iupgtkSetMargin(tab_label, ih->data->horiz_padding, ih->data->vert_padding, 1);
+#else
+  gtk_misc_set_padding((GtkMisc*)tab_label, ih->data->horiz_padding, ih->data->vert_padding);
+#endif
+}
+
 static void gtkTabsUpdatePagePadding(Ihandle* ih)
 {
   Ihandle* child;
@@ -103,13 +112,7 @@ static void gtkTabsUpdatePagePadding(Ihandle* ih)
   {
     GtkWidget* tab_label = (GtkWidget*)iupAttribGet(child, "_IUPGTK_TABLABEL");
     if (tab_label)
-    {
-#if GTK_CHECK_VERSION(3, 4, 0)
-      iupgtkSetMargin(tab_label, ih->data->horiz_padding, ih->data->vert_padding, 1);
-#else
-      gtk_misc_set_padding((GtkMisc*)tab_label, ih->data->horiz_padding, ih->data->vert_padding);
-#endif
-    }
+      gtkTabsApplyLabelPadding(ih, tab_label);
   }
 }
 
@@ -178,6 +181,26 @@ static int gtkTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
     if (value)
     {
       GtkWidget* tab_label = (GtkWidget*)iupAttribGet(child, "_IUPGTK_TABLABEL");
+      GtkWidget* box = (GtkWidget*)iupAttribGet(child, "_IUPGTK_TABBOX");
+      if (!tab_label && box)
+      {
+        unsigned char r, g, b;
+
+        tab_label = gtk_label_new(NULL);
+#if GTK_CHECK_VERSION(2, 6, 0)
+        if (ih->data->orientation == ITABS_VERTICAL)
+          gtk_label_set_angle((GtkLabel*)tab_label, 90);
+#endif
+        gtk_box_pack_start((GtkBox*)box, tab_label, FALSE, FALSE, 0);
+        gtk_box_reorder_child((GtkBox*)box, tab_label, iupAttribGet(child, "_IUPGTK_TABIMAGE") ? 1 : 0);
+
+        iupgtkUpdateWidgetFont(ih, tab_label);
+        iupStrToRGB(IupGetAttribute(ih, "FGCOLOR"), &r, &g, &b);
+        iupgtkSetFgColor(tab_label, r, g, b);
+        gtkTabsApplyLabelPadding(ih, tab_label);
+        gtk_widget_show(tab_label);
+        iupAttribSet(child, "_IUPGTK_TABLABEL", (char*)tab_label);
+      }
       if (tab_label)
       {
         GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
