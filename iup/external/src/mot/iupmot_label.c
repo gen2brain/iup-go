@@ -109,14 +109,11 @@ static int motLabelSetImageAttrib(Ihandle* ih, const char* value)
   {
     iupmotSetPixmap(ih, value, XmNlabelPixmap, 0);
 
-    if (!iupdrvIsActive(ih))
+    if (!iupAttribGet(ih, "IMINACTIVE"))
     {
-      if (!iupAttribGet(ih, "IMINACTIVE"))
-      {
-        /* if not active and IMINACTIVE is not defined
-           then automatically create one based on IMAGE */
-        iupmotSetPixmap(ih, value, XmNlabelInsensitivePixmap, 1); /* make_inactive */
-      }
+      /* if not active and IMINACTIVE is not defined
+         then automatically create one based on IMAGE */
+      iupmotSetPixmap(ih, value, XmNlabelInsensitivePixmap, 1); /* make_inactive */
     }
     return 1;
   }
@@ -133,22 +130,6 @@ static int motLabelSetImInactiveAttrib(Ihandle* ih, const char* value)
   }
   else
     return 0;
-}
-
-static int motLabelSetActiveAttrib(Ihandle* ih, const char* value)
-{
-  /* update the inactive image if necessary */
-  if (ih->data->type == IUP_LABEL_IMAGE && !iupStrBoolean(value))
-  {
-    if (!iupAttribGet(ih, "IMINACTIVE"))
-    {
-      /* if not defined then automatically create one based on IMAGE */
-      char* name = iupAttribGet(ih, "IMAGE");
-      iupmotSetPixmap(ih, name, XmNlabelInsensitivePixmap, 1); /* make_inactive */
-    }
-  }
-
-  return iupBaseSetActiveAttrib(ih, value);
 }
 
 static int motLabelSetPaddingAttrib(Ihandle* ih, const char* value)
@@ -261,7 +242,6 @@ IUP_SDK_API void iupdrvLabelInitClass(Iclass* ic)
   /* Driver Dependent Attribute functions */
 
   /* Overwrite Visual */
-  iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, motLabelSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", iupBaseNativeParentGetBgColorAttrib, motLabelSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_SAVE);
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, motLabelSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 

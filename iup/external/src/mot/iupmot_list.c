@@ -28,6 +28,7 @@
 #include "iup_dialog.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_drvfont.h"
 #include "iup_mask.h"
 #include "iup_list.h"
 
@@ -120,7 +121,11 @@ IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 
 static void motListAddItem(Ihandle* ih, int pos, const char* value)
 {
-  XmString str = iupmotStringCreate(value);
+  Widget list_widget = ih->handle;
+  XmString str;
+  if (ih->data->is_dropdown || ih->data->has_editbox)
+    XtVaGetValues(ih->handle, XmNlist, &list_widget, NULL);
+  str = iupmotStringCreateWidget(list_widget, value);
   /* The utility functions use 0=last 1=first */
   if (ih->data->is_dropdown || ih->data->has_editbox)
     XmComboBoxAddItem(ih->handle, str, pos+1, False);
@@ -240,7 +245,7 @@ IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
   for (i = 0; i < count; i++)
   {
     char* text = iupListGetItemValueCb(ih, i + 1);
-    items[i] = iupmotStringCreate(text ? text : "");
+    items[i] = iupmotStringCreateWidget(list_widget, text ? text : "");
   }
 
   XmListAddItems(list_widget, items, count, 0);
@@ -1683,6 +1688,8 @@ static int motListMapMethod(Ihandle* ih)
     iupmotDisableDragSource(ih->handle);  /* Disable Drag Source */
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)motListConvertXYToPos);
+
+  iupUpdateFontAttrib(ih);
 
   if (ih->data->is_virtual)
   {

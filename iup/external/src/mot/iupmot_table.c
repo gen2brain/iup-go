@@ -760,11 +760,7 @@ static int motTableGetTextWidth(ImotTableFont* font, const char* text, int len)
 {
 #ifdef IUP_USE_XFT
   if (font->xft_font)
-  {
-    XGlyphInfo extents;
-    XftTextExtentsUtf8(iupmot_display, font->xft_font, (FcChar8*)text, len, &extents);
-    return extents.width;
-  }
+    return iupmotXftTextWidth(font->xft_font, text, len);
 #endif
   if (font->font_struct)
     return XTextWidth(font->font_struct, text, len);
@@ -1001,7 +997,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
       render_color.alpha = 0xffff;
 
       XftColorAllocValue(display, DefaultVisual(display, iupmot_screen), DefaultColormap(display, iupmot_screen), &render_color, &xft_color);
-      XftDrawStringUtf8(mot_data->xft_draw, &xft_color, font.xft_font, text_x, text_y, (FcChar8*)text, text_len);
+      iupmotXftDrawString(mot_data->xft_draw, &xft_color, font.xft_font, text_x, text_y, text, text_len);
       XftColorFree(display, DefaultVisual(display, iupmot_screen), DefaultColormap(display, iupmot_screen), &xft_color);
     }
     else

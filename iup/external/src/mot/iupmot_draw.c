@@ -1488,7 +1488,10 @@ static XftFont* motDrawGetMatrixXftFont(XftFont* xftfont, double xx, double xy, 
   }
 
   if (cache[next].font)
+  {
+    iupmotXftFontRelease(cache[next].font);
     XftFontClose(iupmot_display, cache[next].font);
+  }
   cache[next].base = xftfont;
   cache[next].xx = xx;
   cache[next].xy = xy;
@@ -1507,11 +1510,9 @@ static XftFont* motDrawGetRotatedXftFont(XftFont* xftfont, double angle)
 
 static int motDrawXftWidth(void* font, const char* text, int len)
 {
-  XGlyphInfo extents;
   if (len <= 0)
     return 0;
-  XftTextExtentsUtf8(iupmot_display, (XftFont*)font, (FcChar8*)text, len, &extents);
-  return extents.xOff;
+  return iupmotXftTextWidth(font, text, len);
 }
 
 static void iDrawTextXft(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, XftFont* xftfont, int flags, double text_orientation, int alpha_target)
@@ -1613,10 +1614,10 @@ static void iDrawTextXft(IdrawCanvas* dc, const char* text, int len, int x, int 
       dy = by - py;
       ux = px + dx * c + dy * sn;
       uy = py - dx * sn + dy * c;
-      XftDrawStringUtf8(xftdraw, &xftcolor, transformed,
-                        (int)floor(dc->matrix.a * ux + dc->matrix.c * uy + dc->matrix.e + 0.5),
-                        (int)floor(dc->matrix.b * ux + dc->matrix.d * uy + dc->matrix.f + 0.5),
-                        (FcChar8*)lines[i].text, lines[i].len);
+      iupmotXftDrawString(xftdraw, &xftcolor, transformed,
+                          (int)floor(dc->matrix.a * ux + dc->matrix.c * uy + dc->matrix.e + 0.5),
+                          (int)floor(dc->matrix.b * ux + dc->matrix.d * uy + dc->matrix.f + 0.5),
+                          lines[i].text, lines[i].len);
     }
   }
   else if (text_orientation != 0)
@@ -1651,7 +1652,7 @@ static void iDrawTextXft(IdrawCanvas* dc, const char* text, int len, int x, int 
         bx += layout_w - line_w;
       dx = bx - px;
       dy = by - py;
-      XftDrawStringUtf8(xftdraw, &xftcolor, rotated, (int)floor(px + dx * c + dy * sn + 0.5), (int)floor(py - dx * sn + dy * c + 0.5), (FcChar8*)lines[i].text, lines[i].len);
+      iupmotXftDrawString(xftdraw, &xftcolor, rotated, (int)floor(px + dx * c + dy * sn + 0.5), (int)floor(py - dx * sn + dy * c + 0.5), lines[i].text, lines[i].len);
     }
   }
   else
@@ -1666,7 +1667,7 @@ static void iDrawTextXft(IdrawCanvas* dc, const char* text, int len, int x, int 
         off_x = (flags & IUP_DRAW_RIGHT) ? box_w - line_w : (box_w - line_w) / 2;
         if (off_x < 0) off_x = 0;
       }
-      XftDrawStringUtf8(xftdraw, &xftcolor, xftfont, x + off_x, y + i * line_height + xftfont->ascent, (FcChar8*)lines[i].text, lines[i].len);
+      iupmotXftDrawString(xftdraw, &xftcolor, xftfont, x + off_x, y + i * line_height + xftfont->ascent, lines[i].text, lines[i].len);
     }
   }
 

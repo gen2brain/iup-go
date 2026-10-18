@@ -701,6 +701,7 @@ static void motTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
         tab_form,
         XmNlabelType, XmPIXMAP,
         XmNlabelPixmap, mot_tabs_close_pixmap,
+        XmNlabelInsensitivePixmap, mot_tabs_close_pixmap,
         XmNmarginHeight, 0,
         XmNmarginWidth, 0,
         XmNwidth, ITABS_CLOSE_SIZE + 6,

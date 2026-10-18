@@ -70,6 +70,7 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int m
   Pixmap pixmap;
   unsigned char bg_r=0, bg_g=0, bg_b=0;
   GC gc;
+  XImage* ximage;
   Pixel color2pixel[256];
 
   bpp = iupAttribGetInt(ih, "BPP");
@@ -112,13 +113,17 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int m
     }
   }
 
-  pixmap = XCreatePixmap(iupmot_display,
-          RootWindow(iupmot_display,iupmot_screen),
-          width, height, iupdrvGetScreenDepth());
-  if (!pixmap)
+  ximage = XCreateImage(iupmot_display, iupmot_visual, iupdrvGetScreenDepth(), ZPixmap, 0, NULL, width, height, 32, 0);
+  if (!ximage)
     return NULL;
 
-  gc = XCreateGC(iupmot_display,pixmap,0,NULL);
+  ximage->data = (char*)malloc((size_t)ximage->bytes_per_line * height);
+  if (!ximage->data)
+  {
+    XDestroyImage(ximage);
+    return NULL;
+  }
+
   for (y=0;y<height;y++)
   {
     for(x=0;x<width;x++)
@@ -152,11 +157,23 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int m
         p = iupmotColorGetPixel(r, g, b);
       }
 
-      XSetForeground(iupmot_display,gc,p);
-      XDrawPoint(iupmot_display,pixmap,gc,x,y);
+      XPutPixel(ximage, x, y, p);
     }
   }
+
+  pixmap = XCreatePixmap(iupmot_display,
+          RootWindow(iupmot_display,iupmot_screen),
+          width, height, iupdrvGetScreenDepth());
+  if (!pixmap)
+  {
+    XDestroyImage(ximage);
+    return NULL;
+  }
+
+  gc = XCreateGC(iupmot_display,pixmap,0,NULL);
+  XPutImage(iupmot_display, pixmap, gc, ximage, 0, 0, 0, 0, width, height);
   XFreeGC(iupmot_display,gc);
+  XDestroyImage(ximage);
 
   if (bgcolor_depend || make_inactive)
     iupAttribSet(ih, "_IUP_BGCOLOR_DEPEND", "1");
