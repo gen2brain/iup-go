@@ -389,8 +389,14 @@ static void eflTabsSetItemIcon(Eo* item, const char* tabimage, Ihandle* ih)
   Eo* efl_img;
   int raw_w = 0, raw_h = 0, dst_w, dst_h;
 
-  if (!item || !tabimage)
+  if (!item)
     return;
+
+  if (!tabimage)
+  {
+    efl_content_set(efl_part(item, "icon"), NULL);
+    return;
+  }
 
   iupImageGetInfo(tabimage, &raw_w, &raw_h, NULL);
   dst_w = raw_w;
@@ -758,7 +764,7 @@ static int eflTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
   {
     iupAttribSetStr(child, "TABIMAGE", value);
 
-    if (ih->handle && value)
+    if (ih->handle)
     {
       Eo* page = (Eo*)iupAttribGet(child, "_IUPTAB_PAGE");
       if (page)

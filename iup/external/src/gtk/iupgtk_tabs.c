@@ -220,19 +220,30 @@ static int gtkTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
   if (child)
   {
     GtkWidget* tab_image;
+    GdkPixbuf* pixbuf;
 
     iupAttribSetStr(child, "TABIMAGE", value);
 
     tab_image = (GtkWidget*)iupAttribGet(child, "_IUPGTK_TABIMAGE");
-    if (tab_image)
+    pixbuf = value ? iupImageGetImage(value, ih, 0, NULL) : NULL;
+    if (pixbuf)
     {
-      if (value)
+      GtkWidget* box = (GtkWidget*)iupAttribGet(child, "_IUPGTK_TABBOX");
+      if (!tab_image && box)
       {
-        GdkPixbuf* pixbuf = iupImageGetImage(value, ih, 0, NULL);
-        gtkTabsApplyTabImage(ih, (GtkImage*)tab_image, pixbuf);
+        tab_image = gtk_image_new();
+        gtk_box_pack_start((GtkBox*)box, tab_image, FALSE, FALSE, 0);
+        gtk_box_reorder_child((GtkBox*)box, tab_image, 0);
+        gtk_widget_show(tab_image);
+        iupAttribSet(child, "_IUPGTK_TABIMAGE", (char*)tab_image);
       }
-      else
-        gtk_image_set_from_pixbuf((GtkImage*)tab_image, NULL);
+      if (tab_image)
+        gtkTabsApplyTabImage(ih, (GtkImage*)tab_image, pixbuf);
+    }
+    else if (tab_image)
+    {
+      gtk_widget_destroy(tab_image);
+      iupAttribSet(child, "_IUPGTK_TABIMAGE", NULL);
     }
   }
   return 1;
@@ -538,21 +549,18 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     iupAttribSet(ih, "_IUPGTK_IGNORE_CHANGE", "1");
 
-    if ((tabimage && tabtitle) || ih->data->show_close)
-    {
 #if GTK_CHECK_VERSION(3, 0, 0)
-      if (ih->data->orientation == ITABS_VERTICAL)
-        box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
-      else
-        box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    if (ih->data->orientation == ITABS_VERTICAL)
+      box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    else
+      box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
 #else
-      if (ih->data->orientation == ITABS_VERTICAL)
-        box = gtk_vbox_new(FALSE, 2);
-      else
-        box = gtk_hbox_new(FALSE, 2);
+    if (ih->data->orientation == ITABS_VERTICAL)
+      box = gtk_vbox_new(FALSE, 2);
+    else
+      box = gtk_hbox_new(FALSE, 2);
 #endif
-      gtk_widget_show(box);
-    }
+    gtk_widget_show(box);
 
     /* RIGHTCLICK_CB will not work without the eventbox */
     evtBox = gtk_event_box_new();
@@ -562,46 +570,21 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     gtk_widget_add_events(evtBox, GDK_BUTTON_PRESS_MASK);
     g_signal_connect(G_OBJECT(evtBox), "button-press-event", G_CALLBACK(gtkTabsButtonPressEvent), child);
 
-    if (tabimage && tabtitle)
-    {
+    if (tab_image)
       gtk_container_add((GtkContainer*)box, tab_image);
+    if (tab_label)
       gtk_container_add((GtkContainer*)box, tab_label);
-
-      if(ih->data->show_close)
-        gtk_container_add((GtkContainer*)box, tab_close);
-
-      gtk_container_add((GtkContainer*)evtBox, box);
-      gtk_notebook_insert_page((GtkNotebook*)ih->handle, tab_page, evtBox, pos);
-      gtk_notebook_set_menu_label_text((GtkNotebook*)ih->handle, tab_page, gtk_label_get_text((GtkLabel*)tab_label));
-    }
-    else if(tabimage && ih->data->show_close)
-    {
-      gtk_container_add((GtkContainer*)box, tab_image);
+    if (tab_close)
       gtk_container_add((GtkContainer*)box, tab_close);
-      gtk_container_add((GtkContainer*)evtBox, box);
-      gtk_notebook_insert_page((GtkNotebook*)ih->handle, tab_page, evtBox, pos);
-    }
-    else if(tabtitle && ih->data->show_close)
-    {
-      gtk_container_add((GtkContainer*)box, tab_label);
-      gtk_container_add((GtkContainer*)box, tab_close);
-      gtk_container_add((GtkContainer*)evtBox, box);
-      gtk_notebook_insert_page((GtkNotebook*)ih->handle, tab_page, evtBox, pos);
+
+    gtk_container_add((GtkContainer*)evtBox, box);
+    gtk_notebook_insert_page((GtkNotebook*)ih->handle, tab_page, evtBox, pos);
+    if (tab_label)
       gtk_notebook_set_menu_label_text((GtkNotebook*)ih->handle, tab_page, gtk_label_get_text((GtkLabel*)tab_label));
-    }
-    else if (tabimage)
-    {
-      gtk_container_add((GtkContainer*)evtBox, tab_image);
-      gtk_notebook_insert_page((GtkNotebook*)ih->handle, tab_page, evtBox, pos);
-    }
-    else
-    {
-      gtk_container_add((GtkContainer*)evtBox, tab_label);
-      gtk_notebook_insert_page((GtkNotebook*)ih->handle, tab_page, evtBox, pos);
-    }
 
     gtk_widget_realize(tab_page);
 
+    iupAttribSet(child, "_IUPGTK_TABBOX", (char*)box);
     iupAttribSet(child, "_IUPGTK_TABCLOSE", (char*)tab_close);
     iupAttribSet(child, "_IUPGTK_TABIMAGE", (char*)tab_image);  /* store it even if its NULL */
     iupAttribSet(child, "_IUPGTK_TABLABEL", (char*)tab_label);
@@ -675,6 +658,7 @@ static void gtkTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   child->handle = NULL;
 
   iupAttribSet(child, "_IUPGTK_TABCLOSE", NULL);
+  iupAttribSet(child, "_IUPGTK_TABBOX", NULL);
   iupAttribSet(child, "_IUPGTK_TABIMAGE", NULL);
   iupAttribSet(child, "_IUPGTK_TABLABEL", NULL);
   iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
@@ -915,7 +899,6 @@ static int gtkTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
     if (ih->handle && child)
     {
       GtkWidget* tab_close = (GtkWidget*)iupAttribGet(child, "_IUPGTK_TABCLOSE");
-      GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
 
       if (iupStrBoolean(value))
       {
@@ -941,40 +924,9 @@ static int gtkTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
 
           g_signal_connect(G_OBJECT(tab_close), "clicked", G_CALLBACK(gtkTabsCloseButtonClicked), child);
 
-          GtkWidget* tab_header = gtk_notebook_get_tab_label((GtkNotebook*)ih->handle, tab_page);
-          if (tab_header)
-          {
-            GtkWidget* evtBox = tab_header;
-            GtkWidget* evtBox_child = gtk_bin_get_child((GtkBin*)evtBox);
-
-            if (GTK_IS_BOX(evtBox_child))
-            {
-              gtk_container_add((GtkContainer*)evtBox_child, tab_close);
-            }
-            else
-            {
-#if GTK_CHECK_VERSION(3, 0, 0)
-              if (ih->data->orientation == ITABS_VERTICAL)
-                box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
-              else
-                box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
-#else
-              if (ih->data->orientation == ITABS_VERTICAL)
-                box = gtk_vbox_new(FALSE, 2);
-              else
-                box = gtk_hbox_new(FALSE, 2);
-#endif
-              gtk_widget_show(box);
-
-              g_object_ref(evtBox_child);
-              gtk_container_remove((GtkContainer*)evtBox, evtBox_child);
-              gtk_container_add((GtkContainer*)box, evtBox_child);
-              g_object_unref(evtBox_child);
-
-              gtk_container_add((GtkContainer*)box, tab_close);
-              gtk_container_add((GtkContainer*)evtBox, box);
-            }
-          }
+          box = (GtkWidget*)iupAttribGet(child, "_IUPGTK_TABBOX");
+          if (box)
+            gtk_container_add((GtkContainer*)box, tab_close);
 
           gtk_widget_show(tab_close);
           iupAttribSet(child, "_IUPGTK_TABCLOSE", (char*)tab_close);
