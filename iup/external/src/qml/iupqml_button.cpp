@@ -564,6 +564,34 @@ static void qmlButtonSetStyleColor(QQuickItem* button, const QColor* color)
     QMetaObject::invokeMethod(helper, "reset", Q_ARG(QVariant, QVariant::fromValue<QObject*>(button)));
 }
 
+static void qmlButtonUpdateBackground(Ihandle* ih, const char* impress, int has_bgcolor)
+{
+  auto* button = reinterpret_cast<QQuickItem*>(ih->handle);
+  if (!button)
+    return;
+
+  int no_border = (ih->data->type & IUP_BUTTON_IMAGE) && impress && !iupAttribGetBoolean(ih, "IMPRESSBORDER") && !has_bgcolor;
+  QQuickItem* current = iupqmlGetItemProperty(button, "background");
+  auto* original = button->property("_iup_original_background").value<QQuickItem*>();
+
+  if (no_border)
+  {
+    if (!current)
+      return;
+    if (!original)
+    {
+      current->setParent(button);
+      button->setProperty("_iup_original_background", QVariant::fromValue<QQuickItem*>(current));
+    }
+    button->setProperty("background", QVariant::fromValue<QQuickItem*>(nullptr));
+  }
+  else if (original && !current)
+  {
+    button->setProperty("background", QVariant::fromValue<QQuickItem*>(original));
+    original->setVisible(true);
+  }
+}
+
 static int qmlButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
@@ -584,6 +612,7 @@ static int qmlButtonSetBgColorAttrib(Ihandle* ih, const char* value)
     }
     qmlButtonSetStyleColor(button, nullptr);
     button->setProperty("flat", qmlButtonIsFlat(ih) ? true : false);
+    qmlButtonUpdateBackground(ih, iupAttribGet(ih, "IMPRESS"), 0);
     qmlButtonUpdatePadding(ih);
     return 1;
   }
@@ -595,6 +624,7 @@ static int qmlButtonSetBgColorAttrib(Ihandle* ih, const char* value)
   else
     qmlButtonSetStyleColor(button, &color);
   button->setProperty("flat", false);
+  qmlButtonUpdateBackground(ih, iupAttribGet(ih, "IMPRESS"), 1);
   qmlButtonUpdatePadding(ih);
   return 1;
 }
@@ -681,19 +711,19 @@ static void qmlButtonApplyFlat(Ihandle* ih, int flat)
 
 static int qmlButtonSetImPressAttrib(Ihandle* ih, const char* value)
 {
-  (void)value;
   if (ih->data->type & IUP_BUTTON_IMAGE)
   {
     if (ih->handle)
     {
       int should_be_flat = iupAttribGetBoolean(ih, "FLAT");
       if (!should_be_flat &&
-          iupAttribGet(ih, "IMPRESS") &&
+          value &&
           !iupAttribGetBoolean(ih, "IMPRESSBORDER"))
       {
         should_be_flat = 1;
       }
       qmlButtonApplyFlat(ih, should_be_flat);
+      qmlButtonUpdateBackground(ih, value, iupAttribGet(ih, "BGCOLOR") != nullptr);
     }
 
     return 1;
@@ -858,10 +888,12 @@ static int qmlButtonMapMethod(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "FLAT"))
     qmlButtonApplyFlat(ih, 1);
 
-  if (ih->data->type == IUP_BUTTON_IMAGE &&
+  if ((ih->data->type & IUP_BUTTON_IMAGE) &&
       iupAttribGet(ih, "IMPRESS") &&
       !iupAttribGetBoolean(ih, "IMPRESSBORDER"))
     qmlButtonApplyFlat(ih, 1);
+
+  qmlButtonUpdateBackground(ih, iupAttribGet(ih, "IMPRESS"), iupAttribGet(ih, "BGCOLOR") != nullptr);
 
   iupqmlConnect(button, "clicked()", [ih](void**) {
     qmlButtonClicked(ih);
