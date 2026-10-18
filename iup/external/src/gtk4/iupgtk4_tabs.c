@@ -312,19 +312,28 @@ static int gtk4TabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
   if (child)
   {
     GtkWidget* tab_image;
+    GdkPaintable* paintable;
 
     iupAttribSetStr(child, "TABIMAGE", value);
 
     tab_image = (GtkWidget*)iupAttribGet(child, "_IUPGTK4_TABIMAGE");
-    if (tab_image)
+    paintable = value ? (GdkPaintable*)iupImageGetImage(value, ih, 0, NULL) : NULL;
+    if (paintable)
     {
-      if (value)
+      GtkWidget* box = (GtkWidget*)iupAttribGet(child, "_IUPGTK4_TABBOX");
+      if (!tab_image && box)
       {
-        GdkPaintable* paintable = (GdkPaintable*)iupImageGetImage(value, ih, 0, NULL);
-        gtk4TabsApplyTabImage(ih, (GtkImage*)tab_image, paintable);
+        tab_image = gtk_image_new();
+        gtk_box_prepend(GTK_BOX(box), tab_image);
+        iupAttribSet(child, "_IUPGTK4_TABIMAGE", (char*)tab_image);
       }
-      else
-        gtk4TabsApplyTabImage(ih, (GtkImage*)tab_image, NULL);
+      if (tab_image)
+        gtk4TabsApplyTabImage(ih, (GtkImage*)tab_image, paintable);
+    }
+    else if (tab_image)
+    {
+      gtk_box_remove(GTK_BOX(gtk_widget_get_parent(tab_image)), tab_image);
+      iupAttribSet(child, "_IUPGTK4_TABIMAGE", NULL);
     }
   }
   return 1;
@@ -553,10 +562,8 @@ static void gtk4TabsUpdateShowClose(Ihandle* ih, Ihandle* child, int show)
   {
     if (!tab_close)
     {
-      GtkWidget* tab_label = (GtkWidget*)iupAttribGet(child, "_IUPGTK4_TABLABEL");
       GtkWidget* image = gtk_image_new_from_icon_name("window-close-symbolic");
-      GtkWidget* current_tab_widget;
-      GtkWidget* box;
+      GtkWidget* box = (GtkWidget*)iupAttribGet(child, "_IUPGTK4_TABBOX");
 
       gtk_image_set_icon_size(GTK_IMAGE(image), GTK_ICON_SIZE_NORMAL);
 
@@ -567,40 +574,8 @@ static void gtk4TabsUpdateShowClose(Ihandle* ih, Ihandle* child, int show)
 
       g_signal_connect(G_OBJECT(tab_close), "clicked", G_CALLBACK(gtk4TabsCloseButtonClicked), child);
 
-      current_tab_widget = gtk_notebook_get_tab_label((GtkNotebook*)ih->handle, tab_page);
-
-      if (current_tab_widget && GTK_IS_BOX(current_tab_widget))
-      {
-        gtk_box_append(GTK_BOX(current_tab_widget), tab_close);
-      }
-      else
-      {
-        if (ih->data->orientation == ITABS_VERTICAL)
-          box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
-        else
-          box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
-        gtk_widget_set_visible(box, TRUE);
-
-        if (current_tab_widget)
-        {
-          g_object_ref(current_tab_widget);
-          gtk_notebook_set_tab_label((GtkNotebook*)ih->handle, tab_page, NULL);
-          gtk_box_append(GTK_BOX(box), current_tab_widget);
-          g_object_unref(current_tab_widget);
-        }
-
+      if (box)
         gtk_box_append(GTK_BOX(box), tab_close);
-
-        GtkGesture* gesture = gtk_gesture_click_new();
-        gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gesture), 0);
-        gtk_widget_add_controller(box, GTK_EVENT_CONTROLLER(gesture));
-        g_signal_connect(gesture, "pressed", G_CALLBACK(gtk4TabsButtonPressed), child);
-
-        gtk_notebook_set_tab_label((GtkNotebook*)ih->handle, tab_page, box);
-
-        if (tab_label)
-          gtk_notebook_set_menu_label_text((GtkNotebook*)ih->handle, tab_page, gtk_label_get_text((GtkLabel*)tab_label));
-      }
 
       gtk_widget_set_visible(tab_close, TRUE);
       gtk_widget_realize(tab_close);
@@ -612,11 +587,7 @@ static void gtk4TabsUpdateShowClose(Ihandle* ih, Ihandle* child, int show)
   {
     if (tab_close)
     {
-      GtkWidget* parent = gtk_widget_get_parent(tab_close);
-      if (parent && GTK_IS_BOX(parent))
-        gtk_box_remove(GTK_BOX(parent), tab_close);
-      else
-        gtk_widget_unparent(tab_close);
+      gtk_box_remove(GTK_BOX(gtk_widget_get_parent(tab_close)), tab_close);
 
       iupAttribSet(child, "_IUPGTK4_TABCLOSE", NULL);
     }
@@ -746,60 +717,32 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     iupAttribSet(ih, "_IUPGTK4_IGNORE_CHANGE", "1");
 
-    if ((tabimage && tabtitle) || ih->data->show_close)
-    {
-      if (ih->data->orientation == ITABS_VERTICAL)
-        box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
-      else
-        box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
-      gtk_widget_set_visible(box, TRUE);
-    }
-
-    GtkWidget* tab_widget;
-
-    if (tabimage && tabtitle)
-    {
-      gtk_box_append(GTK_BOX(box), tab_image);
-      gtk_box_append(GTK_BOX(box), tab_label);
-
-      if(ih->data->show_close)
-        gtk_box_append(GTK_BOX(box), tab_close);
-
-      tab_widget = box;
-    }
-    else if(tabimage && ih->data->show_close)
-    {
-      gtk_box_append(GTK_BOX(box), tab_image);
-      gtk_box_append(GTK_BOX(box), tab_close);
-      tab_widget = box;
-    }
-    else if(tabtitle && ih->data->show_close)
-    {
-      gtk_box_append(GTK_BOX(box), tab_label);
-      gtk_box_append(GTK_BOX(box), tab_close);
-      tab_widget = box;
-    }
-    else if (tabimage)
-    {
-      tab_widget = tab_image;
-    }
+    if (ih->data->orientation == ITABS_VERTICAL)
+      box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
     else
-    {
-      tab_widget = tab_label;
-    }
+      box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    gtk_widget_set_visible(box, TRUE);
+
+    if (tab_image)
+      gtk_box_append(GTK_BOX(box), tab_image);
+    if (tab_label)
+      gtk_box_append(GTK_BOX(box), tab_label);
+    if (tab_close)
+      gtk_box_append(GTK_BOX(box), tab_close);
 
     GtkGesture* gesture = gtk_gesture_click_new();
     gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gesture), 0); /* all buttons */
-    gtk_widget_add_controller(tab_widget, GTK_EVENT_CONTROLLER(gesture));
+    gtk_widget_add_controller(box, GTK_EVENT_CONTROLLER(gesture));
     g_signal_connect(gesture, "pressed", G_CALLBACK(gtk4TabsButtonPressed), child);
 
-    gtk_notebook_insert_page((GtkNotebook*)ih->handle, tab_page, tab_widget, pos);
+    gtk_notebook_insert_page((GtkNotebook*)ih->handle, tab_page, box, pos);
 
     if (tab_label)
       gtk_notebook_set_menu_label_text((GtkNotebook*)ih->handle, tab_page, gtk_label_get_text((GtkLabel*)tab_label));
 
     gtk_widget_realize(tab_page);
 
+    iupAttribSet(child, "_IUPGTK4_TABBOX", (char*)box);
     iupAttribSet(child, "_IUPGTK4_TABCLOSE", (char*)tab_close);
     iupAttribSet(child, "_IUPGTK4_TABIMAGE", (char*)tab_image);  /* store it even if its NULL */
     iupAttribSet(child, "_IUPGTK4_TABLABEL", (char*)tab_label);
@@ -873,6 +816,7 @@ static void gtk4TabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   child->handle = NULL;
 
   iupAttribSet(child, "_IUPGTK4_TABCLOSE", NULL);
+  iupAttribSet(child, "_IUPGTK4_TABBOX", NULL);
   iupAttribSet(child, "_IUPGTK4_TABIMAGE", NULL);
   iupAttribSet(child, "_IUPGTK4_TABLABEL", NULL);
   iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
