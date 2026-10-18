@@ -486,7 +486,7 @@ static int cocoaTouchNotifySetRequestPermissionAttrib(Ihandle* ih, const char* v
 		(void)granted;
 		if (error)
 		{
-			dispatch_async(dispatch_get_main_queue(), ^{
+			iupCocoaTouchRunLater(^{
 				if (!ih_ref || !iupObjectCheck(ih_ref)) return;
 				cocoaTouchNotifyFireError(ih_ref, [error localizedDescription]);
 			});
@@ -578,7 +578,7 @@ IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
 	     withCompletionHandler:^(NSError* error) {
 		if (error)
 		{
-			dispatch_async(dispatch_get_main_queue(), ^{
+			iupCocoaTouchRunLater(^{
 				if (!ih_ref || !iupObjectCheck(ih_ref)) return;
 				cocoaTouchNotifyFireError(ih_ref, [error localizedDescription]);
 			});
