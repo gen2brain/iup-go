@@ -38,7 +38,7 @@ IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* ih)
 
 IUP_SDK_API int iupdrvTabsExtraMargin(void)
 {
-  return 0;
+  return -3;
 }
 
 IUP_SDK_API int iupdrvTabsGetLineCountAttrib(Ihandle* ih)
