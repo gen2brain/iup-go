@@ -512,9 +512,10 @@ IUP_SDK_API void iupdrvFontInit(void)
 {
   gtk4_fonts = iupArrayCreate(50, sizeof(Igtk4Font));
 
-  PangoFontMap* font_map = pango_cairo_font_map_get_default();
-  gtk4_fonts_context = pango_font_map_create_context(font_map);
-  pango_context_set_language(gtk4_fonts_context, gtk_get_default_language());
+  GtkWidget* label = gtk_label_new(NULL);
+  g_object_ref_sink(label);
+  gtk4_fonts_context = gtk_widget_create_pango_context(label);
+  g_object_unref(label);
 }
 
 IUP_SDK_API void iupdrvFontFinish(void)

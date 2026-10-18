@@ -32,7 +32,7 @@ Default: YES.
 Set to NULL after map to use it as an initial value.
 
 **VISIBLECOLUMNS**: Defines the number of visible columns for the **Natural Size**, this means that will act also as minimum number of visible columns.
-It uses a wider character size than the one used for the SIZE attribute, so strings will fit better without the need of extra columns. Default: 20
+A column is the width of the digit "0" in the element font. Default: 20
 
 **VISIBLELINES**: Defines the number of visible lines for the **Natural Size**, this means that will act also as minimum number of visible lines. Default: 8
 

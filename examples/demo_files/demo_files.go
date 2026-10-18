@@ -70,7 +70,7 @@ func main() {
 	dlg := iup.Dialog(iup.Vbox(
 		toolbar(),
 		iup.Split(tree, iup.Vbox(path, table).SetAttributes("NMARGIN=6x6, NGAP=4")).
-			SetAttributes("ORIENTATION=VERTICAL, VALUE=260, SHOWGRIP=YES"),
+			SetAttributes("ORIENTATION=VERTICAL, SHOWGRIP=YES"),
 		iup.Hbox(
 			iup.Label("").SetAttributes("EXPAND=HORIZONTAL").SetHandle("fm_status"),
 			iup.Label("Drag a row onto a folder, or right click for Move to"),

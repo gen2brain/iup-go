@@ -221,7 +221,7 @@ It will be ignored when TEXTWRAP=YES.
 The text size will adapt to include the rotated space.
 
 **VISIBLECOLUMNS**: Defines the number of visible columns for the **Natural Size**, this means that will act also as minimum number of visible columns.
-It uses a wider character size then the one used for the SIZE attribute, so strings will fit better without the need of extra columns.
+A column is the width of the digit "0" in the element font.
 Padding will be around the visible columns.
 
 > 

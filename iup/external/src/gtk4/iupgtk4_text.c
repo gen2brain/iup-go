@@ -92,6 +92,15 @@ static void gtk4TextMeasureEntryBorders(void)
   }
 }
 
+static int gtk4TextCaretWidth(Ihandle* ih)
+{
+  double aspect_ratio = 0.04;
+  int char_height;
+  iupdrvFontGetCharSize(ih, NULL, &char_height);
+  g_object_get(gtk_settings_get_default(), "gtk-cursor-aspect-ratio", &aspect_ratio, NULL);
+  return (int)(aspect_ratio * char_height) + 1;
+}
+
 IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
   static int spin_arrow_width = -1;
@@ -174,36 +183,6 @@ static void gtk4TextMeasureMultilineMetrics(void)
   }
 }
 
-/* the core sizes a column as a W, GTK as a digit, and the gap between them depends on the font */
-static int gtk4TextColumnAdjust(Ihandle* ih, int visiblecolumns)
-{
-  PangoLayout* layout = (PangoLayout*)iupgtk4GetPangoLayoutAttrib(ih);
-  int digit_col = iupdrvFontGetStringWidth(ih, "0000000000") / 10;
-  int adjust;
-
-  if (layout)
-  {
-    PangoContext* context = pango_layout_get_context(layout);
-    PangoFontMetrics* metrics = pango_context_get_metrics(context,
-        pango_layout_get_font_description(layout) ? pango_layout_get_font_description(layout) : pango_context_get_font_description(context),
-        pango_context_get_language(context));
-    int avg_w = pango_font_metrics_get_approximate_char_width(metrics);
-    int digit_w = pango_font_metrics_get_approximate_digit_width(metrics);
-    int gtk_char_pixels = (MAX(avg_w, digit_w) + PANGO_SCALE - 1) / PANGO_SCALE;
-
-    if (digit_col < gtk_char_pixels + 1)
-      digit_col = gtk_char_pixels + 1;
-
-    pango_font_metrics_unref(metrics);
-  }
-
-  adjust = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW") / 10 - digit_col;
-  if (adjust < 0)
-    adjust = 0;
-
-  return visiblecolumns * adjust;
-}
-
 IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 {
   gtk4TextMeasureEntryBorders();
@@ -225,12 +204,11 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 
   if (ih->data && ih->data->is_multiline)
   {
-    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
     int visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
 
     gtk4TextMeasureMultilineMetrics();
 
-    (*w) += gtk4_multiline_border_width - gtk4TextColumnAdjust(ih, visiblecolumns);
+    (*w) += gtk4_multiline_border_width;
 
     if (visiblelines > 0)
     {
@@ -251,8 +229,7 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
   }
   else
   {
-    int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-    (*w) += gtk4_entry_css_dec_x - gtk4TextColumnAdjust(ih, visiblecolumns);
+    (*w) += gtk4_entry_css_dec_x + gtk4TextCaretWidth(ih);
 
     if (iupAttribGetBoolean(ih, "SPIN"))
     {
@@ -270,9 +247,9 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 
 IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
 {
-  (void)ih;
   gtk4TextMeasureEntryBorders();
   if (w) *w += gtk4_entry_noframe_border_y;
+  if (w && !ih->data->is_multiline) *w += gtk4TextCaretWidth(ih);
   if (h) *h += gtk4_entry_noframe_border_y;
 }
 

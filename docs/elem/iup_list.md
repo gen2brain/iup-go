@@ -160,7 +160,7 @@ Default: 5.
 Not supported in GTK, GTK 4, FLTK, WebAssembly, iOS and Haiku.
 
 **VISIBLECOLUMNS**: Defines the number of visible columns for the **Natural Size**, this means that will act also as minimum number of visible columns.
-It uses a wider character size then the one used for the SIZE attribute, so strings will fit better without the need of extra columns.
+A column is the width of the digit "0" in the element font.
 Set this attribute to speed **Natural Size** computation for very large lists.
 
 **VISIBLELINES**: When DROPDOWN=NO defines the number of visible lines for the **Natural Size**, this means that will act also as minimum number of visible lines.

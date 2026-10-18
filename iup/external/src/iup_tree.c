@@ -745,7 +745,7 @@ static void iTreeComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* chil
 
   visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   if (visiblecolumns <= 0) visiblecolumns = 20;
-  natural_w = (visiblecolumns * iupdrvFontGetStringWidth(ih, "WWWWWWWWWW")) / 10;
+  natural_w = (visiblecolumns * iupdrvFontGetStringWidth(ih, "0000000000")) / 10;
 
   visiblelines = iupAttribGetInt(ih, "VISIBLELINES");
   if (visiblelines <= 0) visiblelines = 8;

@@ -58,7 +58,8 @@ It will actually set the SPACING attribute.
 **TOPITEM** (write-only): position the given node identifier at the top of the tree or near to make it visible.
 If any parent node is collapsed then they are automatically expanded.
 
-**VISIBLECOLUMNS** (non-inheritable): number of visible columns of the natural size. Default: 20
+**VISIBLECOLUMNS** (non-inheritable): number of visible columns of the natural size.
+A column is the width of the digit "0" in the element font. Default: 20
 
 **VISIBLELINES** (non-inheritable): number of visible lines of the natural size. Default: 8
 

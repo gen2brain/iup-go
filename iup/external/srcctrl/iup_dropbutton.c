@@ -941,7 +941,7 @@ static void iDropButtonComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int
     visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
     if (visiblecolumns)
     {
-      *w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
+      *w = iupdrvFontGetStringWidth(ih, "0000000000");
       *w = (visiblecolumns*(*w)) / 10;
       *w += 2 * ih->data->horiz_padding;
     }

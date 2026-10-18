@@ -1275,6 +1275,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       [new_text_field setBezeled:NO];
       [new_text_field setDrawsBackground:NO];
       [new_text_field setEditable:NO];
+      [[new_text_field cell] setLineBreakMode:NSLineBreakByTruncatingTail];
 #ifdef GNUSTEP
       /* Selectable textField swallows clicks (mouseDown → first responder) on GNUstep. */
       [new_text_field setSelectable:NO];
@@ -1283,7 +1284,6 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
 #else
       [new_text_field setSelectable:YES];
       [new_text_field setTranslatesAutoresizingMaskIntoConstraints:NO];
-      [new_text_field setContentCompressionResistancePriority:NSLayoutPriorityRequired forOrientation:NSLayoutConstraintOrientationHorizontal];
 #endif
       [table_cell_view addSubview:new_text_field];
       [table_cell_view setTextField:new_text_field];
@@ -1343,6 +1343,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
       [text_field setBezeled:NO];
       [text_field setDrawsBackground:NO];
       [text_field setEditable:NO];
+      [[text_field cell] setLineBreakMode:NSLineBreakByTruncatingTail];
 #ifdef GNUSTEP
       [text_field setSelectable:NO];
       [text_field setTranslatesAutoresizingMaskIntoConstraints:YES];
@@ -1350,8 +1351,6 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
 #else
       [text_field setSelectable:YES];
       [text_field setTranslatesAutoresizingMaskIntoConstraints:NO];
-
-      [text_field setContentCompressionResistancePriority:NSLayoutPriorityRequired forOrientation:NSLayoutConstraintOrientationHorizontal];
 #endif
 
       [table_cell_view addSubview:text_field];

@@ -1266,6 +1266,10 @@ static UIView* cocoaTouchListCreateTable(Ihandle* ih, IupCocoaTouchListControlle
 	[table setAllowsMultipleSelection:(ih->data->is_multiple ? YES : NO)];
 	UIFont* base = [UIFont systemFontOfSize:[UIFont labelFontSize]];
 	[table setRowHeight:ceil(base.lineHeight) + 12];
+	table.preservesSuperviewLayoutMargins = NO;
+	table.insetsLayoutMarginsFromSafeArea = NO;
+	table.layoutMargins = UIEdgeInsetsMake(0, 16, 0, 16);
+	table.separatorInset = UIEdgeInsetsMake(0, 16, 0, 0);
 
 	UITapGestureRecognizer* dtap = [[UITapGestureRecognizer alloc] initWithTarget:ctrl action:@selector(handleDoubleTap:)];
 	dtap.numberOfTapsRequired = 2;

@@ -20,6 +20,7 @@
 #include "iup_mask.h"
 #include "iup_image.h"
 #include "iup_drvfont.h"
+#include "iup_drv.h"
 #include "iup_list.h"
 
 #include "iupwasm_drv.h"
@@ -621,8 +622,12 @@ IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 
 IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
-  (void)ih;
-  if (w) *w += 4;
+  if (w)
+  {
+    *w += 4;
+    if (ih->data->is_dropdown)
+      *w += iupdrvGetScrollbarSize();
+  }
   if (h) *h += 2;
 }
 

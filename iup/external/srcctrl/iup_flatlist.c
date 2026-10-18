@@ -1809,7 +1809,7 @@ static void iFlatListComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* 
 
   if (visiblecolumns)
   {
-    *w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
+    *w = iupdrvFontGetStringWidth(ih, "0000000000");
     *w = (visiblecolumns*(*w)) / 10;
   }
   else

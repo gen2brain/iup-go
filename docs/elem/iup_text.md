@@ -245,7 +245,7 @@ After the element is mapped and if there is no text will return the empty string
 If not, does nothing.
 
 **VISIBLECOLUMNS**: Defines the number of visible columns for the **Natural Size**, this means that will act also as minimum number of visible columns.
-It uses a wider character size than the one used for the SIZE attribute, so strings will fit better without the need of extra columns.
+A column is the width of the digit "0" in the element font.
 As for SIZE you can set to NULL after map to use it as an initial value. Default: 5
 
 **VISIBLELINES**: When MULTILINE=YES defines the number of visible lines for the **Natural Size**, this means that will act also as minimum number of visible lines.

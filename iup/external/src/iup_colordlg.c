@@ -1014,7 +1014,7 @@ static int iColorDlgCreateMethod(Ihandle* ih, void** params)
   IupSetCallback (colordlg_data->color_cnv, "BUTTON_CB", (Icallback)iColorDlgColorCnvButton_CB);
 
   colordlg_data->colorhex_txt = IupText();      /* Hex of the color */
-  IupSetAttribute(colordlg_data->colorhex_txt, "VISIBLECOLUMNS", "7");
+  IupSetAttribute(colordlg_data->colorhex_txt, "VISIBLECOLUMNS", "10");
   IupSetCallback (colordlg_data->colorhex_txt, "ACTION", (Icallback)iColorDlgHexAction_CB);
   IupSetAttribute(colordlg_data->colorhex_txt, "MASK", "#[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]");
 

@@ -565,7 +565,7 @@ static void iTextComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* chil
 
   /* Since the contents can be changed by the user, the size can not be dependent on it. */
   iupdrvFontGetCharSize(ih, NULL, &natural_h);  /* one line height */
-  natural_w = iupdrvFontGetStringWidth(ih, "WWWWWWWWWW");
+  natural_w = iupdrvFontGetStringWidth(ih, "0000000000");
   natural_w = (visiblecolumns*natural_w)/10;
   if (ih->data->is_multiline)
     natural_h = visiblelines*natural_h;

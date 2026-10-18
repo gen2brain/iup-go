@@ -8,6 +8,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.InputType;
+import android.text.TextPaint;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
@@ -191,6 +192,18 @@ public final class IupListHelper
 
 
     /* Applies FGCOLOR, FONT and per-item IMAGE; popup theme handled by Android. */
+    static TextPaint rowTextPaint(ListView lv)
+    {
+        View row = android.view.LayoutInflater.from(lv.getContext()).inflate(android.R.layout.simple_list_item_activated_1, lv, false);
+        if (!(row instanceof TextView tv)) return null;
+        if (lv.getAdapter() instanceof ThemedAdapter ta)
+        {
+            if (ta.typeface != null) tv.setTypeface(ta.typeface);
+            if (ta.sizeUnit != 0 && ta.size > 0) tv.setTextSize(ta.sizeUnit, ta.size);
+        }
+        return new TextPaint(tv.getPaint());
+    }
+
     private static final class ThemedAdapter extends ArrayAdapter<String>
     {
         int textColor;
