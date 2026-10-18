@@ -15,6 +15,7 @@
 #include "iup_str.h"
 #include "iup_drv.h"
 #include "iup_menu.h"
+#include "iup_dlglist.h"
 
 #include "iupgtk4_drv.h"
 #include "iupgtk4_x11.h"
@@ -355,21 +356,30 @@ static GtkWidget* gtk4MenuItemCustomWidget(const char* label_str, const char* ac
 static void gtk4MenuItemDetachCustom(Ihandle* ih)
 {
   GtkWidget* widget = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_CUSTOM_WIDGET");
-  Ihandle* root;
+  GtkWidget* popover;
 
   if (!widget || !gtk_widget_get_parent(widget))
     return;
 
-  root = gtk4MenuGetRootMenu(ih->parent);
-  if (iupMenuIsMenuBar(root) && root->handle && GTK_IS_POPOVER_MENU_BAR(root->handle))
-    gtk_popover_menu_bar_remove_child(GTK_POPOVER_MENU_BAR(root->handle), widget);
-  else
+  popover = gtk_widget_get_ancestor(widget, GTK_TYPE_POPOVER_MENU);
+  if (popover)
+    gtk_popover_menu_remove_child(GTK_POPOVER_MENU(popover), widget);
+}
+
+static int gtk4MenuAddCustomChild(GtkWidget* widget, GtkWidget* child, const char* id)
+{
+  GtkWidget* w;
+
+  if (GTK_IS_POPOVER_MENU(widget) && gtk_popover_menu_add_child(GTK_POPOVER_MENU(widget), child, id))
+    return 1;
+
+  for (w = gtk_widget_get_first_child(widget); w; w = gtk_widget_get_next_sibling(w))
   {
-    GtkWidget* parent = gtk_widget_get_parent(widget);
-    GtkWidget* popover = parent ? gtk_widget_get_ancestor(widget, GTK_TYPE_POPOVER_MENU) : NULL;
-    if (popover)
-      gtk_popover_menu_remove_child(GTK_POPOVER_MENU(popover), widget);
+    if (w != child && gtk4MenuAddCustomChild(w, child, id))
+      return 1;
   }
+
+  return 0;
 }
 
 static void gtk4MenuItemAttachCustom(Ihandle* ih)
@@ -383,7 +393,7 @@ static void gtk4MenuItemAttachCustom(Ihandle* ih)
 
   root = gtk4MenuGetRootMenu(ih->parent);
   if (iupMenuIsMenuBar(root) && root->handle && GTK_IS_POPOVER_MENU_BAR(root->handle))
-    gtk_popover_menu_bar_add_child(GTK_POPOVER_MENU_BAR(root->handle), widget, id);
+    gtk4MenuAddCustomChild((GtkWidget*)root->handle, widget, id);
 }
 
 static char* gtk4MenuProcessTitle(Ihandle* ih, const char* title)
@@ -589,7 +599,7 @@ static void gtk4MenuPopupAttachCustoms(Ihandle* ih_menu, GtkPopoverMenu* popover
       if (widget && id)
       {
         gtk4MenuItemDetachCustom(child);
-        gtk_popover_menu_add_child(popover, widget, id);
+        gtk4MenuAddCustomChild(GTK_WIDGET(popover), widget, id);
       }
     }
     else if (iupStrEqual(child->iclass->name, "submenu") && child->firstchild)
@@ -654,7 +664,9 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
       GtkWindow* win = GTK_WINDOW(l->data);
       if (gtk_window_is_active(win) && gtk_widget_get_visible(GTK_WIDGET(win)))
       {
-        Ihandle* dlg = (Ihandle*)g_object_get_data(G_OBJECT(win), "IUP");
+        Ihandle* dlg = iupDlgListFirst();
+        while (dlg && dlg->handle != (InativeHandle*)win)
+          dlg = iupDlgListNext();
         if (dlg)
         {
           parent_widget = (GtkWidget*)iupAttribGet(dlg, "_IUPGTK4_INNER_PARENT");
@@ -763,7 +775,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
       }
     }
 
-    popover = gtk_popover_menu_new_from_model(G_MENU_MODEL(menu_model));
+    popover = gtk_popover_menu_new_from_model_full(G_MENU_MODEL(menu_model), GTK_POPOVER_MENU_NESTED);
     if (!popover)
       return IUP_ERROR;
 
@@ -846,7 +858,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   /* IupPopup must be synchronous, so block in a nested main loop */
   loop = g_main_loop_new(NULL, FALSE);
 
-  popover = gtk_popover_menu_new_from_model(G_MENU_MODEL(menu_model));
+  popover = gtk_popover_menu_new_from_model_full(G_MENU_MODEL(menu_model), GTK_POPOVER_MENU_NESTED);
   if (!popover)
   {
     g_main_loop_unref(loop);
