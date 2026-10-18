@@ -27,6 +27,7 @@
 @property(nonatomic, retain) UILabel* titleLabel;
 @property(nonatomic, retain) UIColor* strokeColor;
 @property(nonatomic, retain) UIColor* fillColor;
+@property(nonatomic, retain) UIView* contentView;
 @end
 
 @implementation IupCocoaTouchFrameView
@@ -36,6 +37,7 @@
 	[_titleLabel release];
 	[_strokeColor release];
 	[_fillColor release];
+	[_contentView release];
 	[super dealloc];
 }
 
@@ -70,11 +72,19 @@
 - (void)layoutSubviews
 {
 	[super layoutSubviews];
-	if (!_titleLabel || _titleLabel.text.length == 0) return;
-	CGSize size = [_titleLabel sizeThatFits:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)];
-	_titleLabel.frame = CGRectMake(IUPCOCOATOUCH_FRAME_TITLE_INSET, 0,
-	                               MIN(size.width, self.bounds.size.width - 2 * IUPCOCOATOUCH_FRAME_TITLE_INSET),
-	                               size.height);
+	CGFloat stroke = IUPCOCOATOUCH_FRAME_BORDER_WIDTH;
+	CGFloat client_top = stroke;
+	if (_titleLabel && _titleLabel.text.length > 0)
+	{
+		CGSize size = [_titleLabel sizeThatFits:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)];
+		_titleLabel.frame = CGRectMake(IUPCOCOATOUCH_FRAME_TITLE_INSET, 0,
+		                               MIN(size.width, self.bounds.size.width - 2 * IUPCOCOATOUCH_FRAME_TITLE_INSET),
+		                               size.height);
+		client_top += ceil(_titleLabel.font.lineHeight);
+	}
+	_contentView.frame = CGRectMake(stroke, client_top,
+	                                MAX(0, self.bounds.size.width - 2 * stroke),
+	                                MAX(0, self.bounds.size.height - client_top - stroke));
 }
 
 @end
@@ -132,6 +142,10 @@ static int cocoaTouchFrameMapMethod(Ihandle* ih)
 	frame.backgroundColor = [UIColor clearColor];
 	frame.opaque = NO;
 	frame.strokeColor = cocoaTouchFrameDefaultStrokeColor();
+	frame.contentView = [[[UIView alloc] initWithFrame:CGRectZero] autorelease];
+	frame.contentView.backgroundColor = [UIColor clearColor];
+	frame.contentView.clipsToBounds = YES;
+	[frame addSubview:frame.contentView];
 
 	const char* title = iupAttribGet(ih, "TITLE");
 
@@ -163,7 +177,7 @@ IUP_SDK_API void iupdrvFrameGetDecorOffset(Ihandle* ih, int* x, int* y)
 IUP_SDK_API int iupdrvFrameHasClientOffset(Ihandle* ih)
 {
 	(void)ih;
-	return 1;
+	return 0;
 }
 
 static int cocoaTouchFrameTitleHeightPx(Ihandle* ih)
@@ -262,6 +276,7 @@ static int cocoaTouchFrameSetTitleAttrib(Ihandle* ih, const char* value)
 		[frame.titleLabel removeFromSuperview];
 		frame.titleLabel = nil;
 		iupAttribSet(ih, "_IUPFRAME_HAS_TITLE", NULL);
+		[frame setNeedsLayout];
 		[frame setNeedsDisplay];
 	}
 	return IUP_NOERROR;
@@ -281,9 +296,17 @@ static int cocoaTouchFrameSetFontAttrib(Ihandle* ih, const char* value)
 	return 1;
 }
 
+static void* cocoaTouchFrameGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* child)
+{
+	(void)child;
+	IupCocoaTouchFrameView* frame = cocoaTouchFrameGet(ih);
+	return frame ? frame.contentView : ih->handle;
+}
+
 IUP_SDK_API void iupdrvFrameInitClass(Iclass* ic)
 {
 	ic->Map = cocoaTouchFrameMapMethod;
+	ic->GetInnerNativeContainerHandle = cocoaTouchFrameGetInnerNativeContainerHandleMethod;
 	ic->UnMap = iupdrvBaseUnMapMethod;
 
 	iupClassRegisterAttribute(ic, "BGCOLOR", iupFrameGetBgColorAttrib, cocoaTouchFrameSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);

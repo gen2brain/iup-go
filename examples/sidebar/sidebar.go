@@ -276,7 +276,11 @@ func group(name string, rows ...[2]iup.Ihandle) iup.Ihandle {
 	for _, r := range rows {
 		cells = append(cells, r[0], r[1])
 	}
-	grid := iup.GridBox(cells...).SetAttributes("NUMDIV=2, SIZELIN=-1, SIZECOL=-1, GAPLIN=8, GAPCOL=24, ALIGNMENTLIN=ACENTER")
+	gapcol := 24
+	if phone() {
+		gapcol = 12
+	}
+	grid := iup.GridBox(cells...).SetAttributes(fmt.Sprintf("NUMDIV=2, SIZELIN=-1, SIZECOL=-1, GAPLIN=8, GAPCOL=%d, ALIGNMENTLIN=ACENTER", gapcol))
 	return iup.Frame(iup.Hbox(grid, iup.Fill())).SetAttributes(fmt.Sprintf("TITLE=%q, MARGIN=10x8", name))
 }
 
