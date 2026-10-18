@@ -130,6 +130,12 @@ IUP_DRV_API unsigned int iupCocoaTouchModalSerial(void)
 	return s_modal_serial;
 }
 
+IUP_DRV_API void iupCocoaTouchRunLater(void (^block)(void))
+{
+	CFRunLoopPerformBlock(CFRunLoopGetMain(), kCFRunLoopCommonModes, block);
+	CFRunLoopWakeUp(CFRunLoopGetMain());
+}
+
 int IupMainLoopLevel(void)
 {
 	return s_main_loop_level + s_modal_loop_level;
