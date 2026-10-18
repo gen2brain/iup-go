@@ -275,7 +275,7 @@ static void eflDialogKeyDownCallback(void* data, const Efl_Event* event)
   Eo* ev = event->info;
   int code;
 
-  if (!iupObjectCheck(ih) || efl_input_processed_get(ev))
+  if (!iupObjectCheck(ih) || efl_input_processed_get(ev) || iupAttribGet(ih, "_IUPEFL_INACTIVE"))
     return;
 
   code = iupeflKeyDecodeEvent(ev);
