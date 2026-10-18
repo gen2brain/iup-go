@@ -24,6 +24,7 @@ extern "C" {
 #include "iup_image.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
+#include "iup_key.h"
 #include "iup_label.h"
 #include "iup_markup.h"
 }
@@ -232,11 +233,14 @@ static int qtLabelSetTitleAttrib(Ihandle* ih, const char* value)
           label->setTextFormat(Qt::RichText);
           label->setText(QString::fromUtf8(html));
           free(html);
+          iupKeySetMnemonic(ih, 0, -1);
         }
         else
         {
-          char c;
+          char c = 0;
           char* str = iupStrProcessMnemonic(value, &c, -1);
+
+          iupKeySetMnemonic(ih, c, -1);
 
           if (str && str != value)
           {
@@ -267,6 +271,7 @@ static int qtLabelSetTitleAttrib(Ihandle* ih, const char* value)
       else
       {
         label->setText(QString());
+        iupKeySetMnemonic(ih, 0, -1);
       }
 
       return 1;
@@ -695,8 +700,10 @@ static int qtLabelMapMethod(Ihandle* ih)
       char* title = iupAttribGet(ih, "TITLE");
       if (title)
       {
-        char c;
+        char c = 0;
         char* str = iupStrProcessMnemonic(title, &c, -1);
+
+        iupKeySetMnemonic(ih, c, -1);
 
         if (str && str != title)
         {

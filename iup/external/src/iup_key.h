@@ -44,11 +44,11 @@ IUP_SDK_API int iupKeyCallTextInputCb(Ihandle* ih, const char* value);
  * \ingroup key */
 IUP_SDK_API int iupKeyProcessNavigation(Ihandle* ih, int code, int shift);
 
-/** Process mnemonics (Used only in Windows and Motif).
+/** Process mnemonics.
  * \ingroup key */
 IUP_SDK_API int iupKeyProcessMnemonic(Ihandle* ih, int code);
 
-/** Set a mnemonic (Used only in Windows and Motif).
+/** Set the mnemonic of an element, or of a tab at pos in a tabs; code 0 removes it.
  * \ingroup key */
 IUP_SDK_API void iupKeySetMnemonic(Ihandle* ih, int code, int pos);
 

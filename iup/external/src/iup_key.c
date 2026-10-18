@@ -640,9 +640,24 @@ IUP_SDK_API void iupKeySetMnemonic(Ihandle* ih, int code, int pos)
   if (IupClassMatch(ih, "tabs"))
   {
     char attrib[16] = "_IUP_MNEMONIC_ ";
-    attrib[14] = (char)code;
-    iupAttribSetInt(ih, attrib, pos);
+    int c;
+
+    for (c = 33; c < 127; c++)
+    {
+      int old_pos = -1;
+      attrib[14] = (char)c;
+      if (iupStrToInt(iupAttribGet(ih, attrib), &old_pos) && old_pos == pos)
+        iupAttribSet(ih, attrib, NULL);
+    }
+
+    if (code)
+    {
+      attrib[14] = (char)code;
+      iupAttribSetInt(ih, attrib, pos);
+    }
   }
-  else
+  else if (code)
     iupAttribSetInt(ih, "_IUP_MNEMONIC", code);
+  else
+    iupAttribSet(ih, "_IUP_MNEMONIC", NULL);
 }

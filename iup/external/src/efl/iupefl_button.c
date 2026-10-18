@@ -146,8 +146,7 @@ static int eflButtonSetTitleAttrib(Ihandle* ih, const char* value)
     const char* v = value ? value : "";
     char* str = iupStrProcessMnemonic(v, &c, -1);
     efl_text_set(btn, str ? str : "");
-    if (c)
-      iupKeySetMnemonic(ih, c, -1);
+    iupKeySetMnemonic(ih, c, -1);
     if (str && str != v)
       free(str);
   }

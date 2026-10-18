@@ -783,6 +783,9 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     gtk_notebook_insert_page((GtkNotebook*)ih->handle, tab_page, tab_widget, pos);
 
     if (tab_label)
+      gtk_label_set_mnemonic_widget((GtkLabel*)tab_label, tab_widget);
+
+    if (tab_label)
       gtk_notebook_set_menu_label_text((GtkNotebook*)ih->handle, tab_page, gtk_label_get_text((GtkLabel*)tab_label));
 
     gtk_widget_realize(tab_page);

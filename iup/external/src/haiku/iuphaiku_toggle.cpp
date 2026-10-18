@@ -579,7 +579,7 @@ static int haikuToggleSetTitleAttrib(Ihandle* ih, const char* value)
   auto* v = reinterpret_cast<BView*>(ih->handle);
   if (!v) return 1;
   int mn = iupStrFindMnemonic(value);
-  if (mn) iupKeySetMnemonic(ih, mn, 0);
+  iupKeySetMnemonic(ih, mn, 0);
   char* stripped = haikuStrippedMnemonic(value);
   LooperLockGuard guard(v->Looper());
   haikuToggleNativeSetLabel(v, stripped ? stripped : "");

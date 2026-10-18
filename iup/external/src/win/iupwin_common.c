@@ -1039,11 +1039,8 @@ IUP_DRV_API void iupwinSetMnemonicTitle(Ihandle* ih, int pos, const char* value)
     value = "";
 
   c = iupStrFindMnemonic(value);
-  if (c != 0)
-  {
-    if (ih->iclass->nativetype != IUP_TYPEMENU)
-      iupKeySetMnemonic(ih, c, pos);
-  }
+  if (ih->iclass->nativetype != IUP_TYPEMENU)
+    iupKeySetMnemonic(ih, c, pos);
 }
 
 IUP_DRV_API TCHAR* iupwinGetWindowText(HWND hWnd)

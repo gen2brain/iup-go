@@ -16,6 +16,7 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_key.h"
 #include "iup_drvfont.h"
 #include "iup_tabs.h"
 #include "iup_image.h"
@@ -239,9 +240,16 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   TextBlock tabLabel;
   if (title)
-    tabLabel.Text(iupwinuiStringToHString(title));
+  {
+    char c = 0;
+    iupwinuiSetMnemonicText(tabLabel, title, &c);
+    iupKeySetMnemonic(ih, c, pos);
+  }
   else
+  {
     tabLabel.Text(hstring(L"Tab"));
+    iupKeySetMnemonic(ih, 0, pos);
+  }
   tabLabel.VerticalAlignment(VerticalAlignment::Center);
 
   if (ih->data->horiz_padding || ih->data->vert_padding)
@@ -553,7 +561,9 @@ static int winuiTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
   TextBlock tabLabel = winuiTabsGetTabLabel(child);
   if (tabLabel)
   {
-    tabLabel.Text(iupwinuiStringToHString(value));
+    char c = 0;
+    iupwinuiSetMnemonicText(tabLabel, value, &c);
+    iupKeySetMnemonic(ih, c, pos);
 
     tabLabel.FontWeight(Windows::UI::Text::FontWeights::SemiBold());
     tabLabel.Measure(Size(10000.0f, 10000.0f));
