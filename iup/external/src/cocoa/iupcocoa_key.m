@@ -422,15 +422,6 @@ bool iupCocoaKeyDownEvent(Ihandle* ih, NSEvent* ns_event, int mac_key_code)
       }
     }
 
-    if ([ns_event modifierFlags] & NSEventModifierFlagOption)
-    {
-      int base_code = iup_XkeyBase(iup_key_code);
-      if (base_code < 128 && iupKeyProcessMnemonic(ih, base_code))
-      {
-        return true;
-      }
-    }
-
     int has_shift = ([ns_event modifierFlags] & NSEventModifierFlagShift) ? 1 : 0;
     BOOL nav_result = iupKeyProcessNavigation(ih, iup_key_code, has_shift);
 
