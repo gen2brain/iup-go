@@ -322,7 +322,7 @@ static int haikuLabelSetTitleAttrib(Ihandle* ih, const char* value)
   if (!view) return 1;
 
   int mn = iupStrFindMnemonic(value);
-  if (mn) iupKeySetMnemonic(ih, mn, 0);
+  iupKeySetMnemonic(ih, mn, 0);
 
   char* stripped = haikuStrippedMnemonic(value);
   LooperLockGuard guard(view->Looper());

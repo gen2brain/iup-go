@@ -466,8 +466,7 @@ IUP_DRV_API int iupeflSetMnemonicTitle(Ihandle* ih, Eo* widget, const char* valu
   {
     char c = 0;
     str = iupStrProcessMnemonic(value, &c, -1);
-    if (c)
-      iupKeySetMnemonic(ih, c, -1);
+    iupKeySetMnemonic(ih, c, -1);
   }
 
   if (efl_isa(widget, EFL_TEXT_INTERFACE))

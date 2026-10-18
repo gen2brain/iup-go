@@ -357,8 +357,7 @@ static int eflToggleSetTitleAttrib(Ihandle* ih, const char* value)
       const char* v = value ? value : "";
       char* str = iupStrProcessMnemonic(v, &c, -1);
       efl_text_set(label, str ? str : "");
-      if (c)
-        iupKeySetMnemonic(ih, c, -1);
+      iupKeySetMnemonic(ih, c, -1);
       if (str && str != v)
         free(str);
     }

@@ -434,7 +434,7 @@ static int haikuButtonSetTitleAttrib(Ihandle* ih, const char* value)
   if (!button) return 1;
 
   int mn = iupStrFindMnemonic(value);
-  if (mn) iupKeySetMnemonic(ih, mn, 0);
+  iupKeySetMnemonic(ih, mn, 0);
 
   char* stripped = haikuStrippedMnemonic(value);
   LooperLockGuard guard(button->Looper());

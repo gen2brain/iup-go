@@ -441,8 +441,7 @@ static void eflTabsSetItemTitle(Ihandle* ih, Ihandle* child, Eo* item, const cha
 
   str = iupStrProcessMnemonic(title, &c, -1);
   efl_text_set(label, str ? str : "");
-  if (c)
-    iupKeySetMnemonic(ih, c, pos);
+  iupKeySetMnemonic(ih, c, pos);
   if (str && str != title)
     free(str);
 

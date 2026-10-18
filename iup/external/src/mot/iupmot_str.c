@@ -386,6 +386,10 @@ IUP_DRV_API void iupmotSetMnemonicTitle(Ihandle* ih, Widget w, int pos, const ch
     XtVaGetValues(w, XmNmnemonic, &cur_keysym, NULL);
     if (cur_keysym != NoSymbol)
       XtVaSetValues (w, XmNmnemonic, NULL, NULL);
+
+    if (ih->iclass->nativetype != IUP_TYPEMENU)
+      iupKeySetMnemonic(ih, 0, pos);
+
     iupmotSetXmString(w, XmNlabelString, str);
   }
 }

@@ -26,6 +26,7 @@ extern "C" {
 #include "iup_classbase.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_key.h"
 #include "iup_tabs.h"
 #include "iup_drv.h"
 #include "iup_drvfont.h"
@@ -650,6 +651,15 @@ static int haikuTabsBTabIndex(Ihandle* ih, int pos)
   return btab_pos;
 }
 
+static void haikuTabsSetTabLabel(Ihandle* ih, BTab* tab, int pos, const char* title)
+{
+  if (!title) title = "";
+  iupKeySetMnemonic(ih, iupStrFindMnemonic(title), pos);
+  char* str = iupStrProcessMnemonic(title, nullptr, 0);
+  tab->SetLabel(str ? str : "");
+  if (str && str != title) free(str);
+}
+
 static BTab* haikuTabsChildTab(Ihandle* ih, Ihandle* child)
 {
   auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
@@ -699,7 +709,7 @@ static void haikuTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   char* title = iupAttribGetId(ih, "TABTITLE", pos);
   if (!title) title = iupAttribGet(child, "TABTITLE");
-  if (title) tab->SetLabel(title);
+  if (title) haikuTabsSetTabLabel(ih, tab, pos, title);
 
   char* image = iupAttribGetId(ih, "TABIMAGE", pos);
   if (!image) image = iupAttribGet(child, "TABIMAGE");
@@ -873,7 +883,7 @@ static int haikuTabsSetTabTitleAttribId(Ihandle* ih, int i, const char* value)
   if (!tabs) return 1;
   LooperLockGuard guard(tabs->Looper());
   BTab* tab = haikuTabsChildTab(ih, IupGetChild(ih, i));
-  if (tab) { tab->SetLabel(value ? value : ""); tabs->Invalidate(); }
+  if (tab) { haikuTabsSetTabLabel(ih, tab, i, value); tabs->Invalidate(); }
   return 1;
 }
 

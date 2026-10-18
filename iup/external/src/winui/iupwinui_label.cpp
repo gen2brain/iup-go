@@ -182,9 +182,14 @@ static int winuiLabelSetTitleAttrib(Ihandle* ih, const char* value)
       if (iupAttribGetBoolean(ih, "MARKUP"))
       {
         iupwinuiApplyMarkupToTextBlock(textBlock, value);
+        iupKeySetMnemonic(ih, 0, -1);
       }
       else
-        iupwinuiSetMnemonicText(textBlock, value, nullptr);
+      {
+        char c = 0;
+        iupwinuiSetMnemonicText(textBlock, value, &c);
+        iupKeySetMnemonic(ih, c, -1);
+      }
     }
   }
   return 1;
@@ -383,7 +388,11 @@ static int winuiLabelMapMethod(Ihandle* ih)
 
     const char* title = iupAttribGet(ih, "TITLE");
     if (title)
-      iupwinuiSetMnemonicText(textBlock, title, nullptr);
+    {
+      char c = 0;
+      iupwinuiSetMnemonicText(textBlock, title, &c);
+      iupKeySetMnemonic(ih, c, -1);
+    }
 
     border.Child(textBlock);
 

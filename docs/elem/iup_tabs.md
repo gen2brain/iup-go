@@ -96,8 +96,8 @@ When a tab is hidden the tabs indices are not changed. Can be YES or NO. Default
 **TABTITLEn** (non-inheritable): Contains the text to be shown in the respective tab title. n starts at 0.
 If this value is NULL, it will remain empty.
 The "&" character can be used to define a mnemonic, the next character will be used as a key.
-Use "&&" to show the "&" character instead on defining a mnemonic.
-The button can be activated from any control in the dialog using the "Alt+key" combination.
+Use "&&" to show the "&" character instead of defining a mnemonic.
+The tab can be selected from any control in the dialog using the "Alt+key" combination.
 When set after map it will update the TABTITLE attribute on the respective child.
 
 **TABTIPn** (non-inheritable): tooltip text shown when the cursor hovers over the respective tab. n starts at 0.
