@@ -57,7 +57,7 @@ static void iupCocoaTouchIdleObserver(CFRunLoopObserverRef observer, CFRunLoopAc
 		return;
 	}
 	/* re-poke the loop so BeforeWaiting fires again */
-	dispatch_async(dispatch_get_main_queue(), ^{});
+	iupCocoaTouchRunLater(^{});
 }
 
 IUP_SDK_API void iupdrvSetIdleFunction(Icallback f)
@@ -211,7 +211,7 @@ void IupFlush(void)
 void IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p)
 {
 	char* s_copy = iupStrDup(s);
-	dispatch_async(dispatch_get_main_queue(),
+	iupCocoaTouchRunLater(
 		^{
 			if (ih && iupObjectCheck(ih))
 			{

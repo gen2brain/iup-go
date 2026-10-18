@@ -616,7 +616,7 @@ static void cocoaTouchListReorder(Ihandle* ih, int drag_id, int drop_id)
 		id drag_context = iupCocoaTouchDropBegin(session);
 		[provider loadDataRepresentationForTypeIdentifier:type_copy
 			completionHandler:^(NSData* data, NSError* error) {
-				dispatch_async(dispatch_get_main_queue(), ^{
+				iupCocoaTouchRunLater(^{
 					if (!error && data && iupObjectCheck(ih))
 					{
 						char type_cstr[128];

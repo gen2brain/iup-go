@@ -126,7 +126,7 @@ IUP_DRV_API void iupCocoaTouchDropDone(id drag_context)
 /* UIKit loads drag data on a background queue; the IUP callbacks must run on the main thread */
 IUP_DRV_API void iupCocoaTouchDragLoadData(Ihandle* ih, NSString* uti, void (^completion)(NSData*, NSError*))
 {
-	dispatch_async(dispatch_get_main_queue(), ^{
+	iupCocoaTouchRunLater(^{
 		IFns size_cb = iupObjectCheck(ih) ? (IFns)IupGetCallback(ih, "DRAGDATASIZE_CB") : NULL;
 		IFnsVi data_cb = iupObjectCheck(ih) ? (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB") : NULL;
 		if (!size_cb || !data_cb)
@@ -306,7 +306,7 @@ static BOOL cocoaTouchDropSessionWantsMove(id<UIDropSession> session)
 			completionHandler:^(id<NSItemProviderReading> obj, NSError* error) {
 				if (error || !obj || ![obj isKindOfClass:[NSURL class]]) return;
 				NSURL* url = (NSURL*)obj;
-				dispatch_async(dispatch_get_main_queue(), ^{
+				iupCocoaTouchRunLater(^{
 					if (!iupObjectCheck(ih)) return;
 					const char* path_cstr = [[url path] UTF8String];
 					if (!path_cstr || strlen(path_cstr) >= 2048) return;
@@ -345,7 +345,7 @@ static BOOL cocoaTouchDropSessionWantsMove(id<UIDropSession> session)
 		id drag_context = iupCocoaTouchDropBegin(session);
 		[provider loadDataRepresentationForTypeIdentifier:type_copy
 			completionHandler:^(NSData* data, NSError* error) {
-				dispatch_async(dispatch_get_main_queue(), ^{
+				iupCocoaTouchRunLater(^{
 					if (!error && data && [data length] <= (NSUInteger)INT_MAX && iupObjectCheck(ih))
 					{
 						char type_cstr[128];
