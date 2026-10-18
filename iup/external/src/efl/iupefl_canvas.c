@@ -664,6 +664,13 @@ static int eflCanvasMapMethod(Ihandle* ih)
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)dnd_wrap);
   }
 
+  if (iupStrEqual(ih->iclass->name, "scrollbox") || iupStrEqual(ih->iclass->name, "flatscrollbox"))
+  {
+    Eo* clip = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(vg));
+    iupeflSetVisible(clip, EINA_TRUE);
+    iupAttribSet(ih, "_IUP_EFL_CANVAS_CLIP", (char*)clip);
+  }
+
   efl_event_callback_add(vg, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasActionCallback, ih);
   efl_event_callback_add(vg, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflCanvasResizeCallback, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_MOVE, eflCanvasMotionCallback, ih);
@@ -841,6 +848,17 @@ static void eflCanvasLayoutUpdateMethod(Ihandle* ih)
     iupeflGetOrigin(ih, &abs_x, &abs_y);
     abs_x += ih->x;
     abs_y += ih->y;
+
+    {
+      Eo* clip = (Eo*)iupAttribGet(ih, "_IUP_EFL_CANVAS_CLIP");
+      if (clip)
+      {
+        iupeflAttachToContainer(ih, clip);
+        evas_object_move(clip, abs_x, abs_y);
+        evas_object_resize(clip, width, height);
+        evas_object_clip_set(clip, evas_object_clip_get(vg));
+      }
+    }
 
     if (vsb)
     {
