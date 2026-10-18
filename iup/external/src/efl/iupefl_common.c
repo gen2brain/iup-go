@@ -245,6 +245,24 @@ IUP_DRV_API void iupeflAttachToContainer(Ihandle* ih, Eo* obj)
   evas_object_smart_member_add(obj, container);
 }
 
+static void eflForwardWheelEvent(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Ihandle* p;
+
+  if (efl_input_processed_get(ev->info))
+    return;
+
+  for (p = ih->parent; p; p = p->parent)
+  {
+    if (iupAttribGet(p, "_IUP_EFL_CANVAS_CLIP"))
+    {
+      iupeflCanvasWheel(p, ev->info);
+      return;
+    }
+  }
+}
+
 IUP_DRV_API void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int height)
 {
   Eo* widget = (Eo*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
@@ -285,6 +303,11 @@ IUP_DRV_API void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int heig
         evas_object_clip_set(widget, clip);
         if (bg_rect)
           evas_object_clip_set(bg_rect, clip);
+        if (!iupAttribGet(ih, "_IUPEFL_WHEEL_FORWARD"))
+        {
+          efl_event_callback_priority_add(widget, EFL_EVENT_POINTER_WHEEL, EFL_CALLBACK_PRIORITY_AFTER, eflForwardWheelEvent, ih);
+          iupAttribSet(ih, "_IUPEFL_WHEEL_FORWARD", "1");
+        }
         break;
       }
       p = p->parent;

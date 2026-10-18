@@ -371,37 +371,58 @@ static void eflCanvasButtonCallback(void* data, const Efl_Event* ev)
   }
 }
 
-static void eflCanvasWheelCallback(void* data, const Efl_Event* ev)
+IUP_DRV_API void iupeflCanvasWheel(Ihandle* ih, Efl_Input_Pointer* pointer)
 {
-  Ihandle* ih = (Ihandle*)data;
-  Efl_Input_Pointer* pointer = ev->info;
   IFnfiis cb;
-  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-  Eina_Position2D pos;
-  Eina_Position2D canvas_pos;
-  int wheel_delta;
-  unsigned int pressed_buttons;
-
-  pos = efl_input_pointer_position_get(pointer);
-  canvas_pos = efl_gfx_entity_position_get(ev->object);
-  wheel_delta = efl_input_pointer_wheel_delta_get(pointer);
-
-  eflCanvasSetModifierStatus(pointer, status);
-
-  pressed_buttons = (unsigned int)efl_input_pointer_value_get(pointer, EFL_INPUT_VALUE_BUTTONS_PRESSED);
-  if (pressed_buttons & (1 << 0))
-    iupKEY_SETBUTTON1(status);
-  if (pressed_buttons & (1 << 1))
-    iupKEY_SETBUTTON2(status);
-  if (pressed_buttons & (1 << 2))
-    iupKEY_SETBUTTON3(status);
+  Eina_Position2D pos = efl_input_pointer_position_get(pointer);
+  Eina_Position2D canvas_pos = efl_gfx_entity_position_get(iupeflGetWidget(ih));
+  int wheel_delta = efl_input_pointer_wheel_delta_get(pointer);
+  Eina_Bool horizontal = efl_input_pointer_wheel_horizontal_get(pointer);
 
   cb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
   if (cb)
   {
-    float delta = (float)-wheel_delta;
-    cb(ih, delta, pos.x - canvas_pos.x, pos.y - canvas_pos.y, status);
+    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+    unsigned int pressed_buttons;
+
+    eflCanvasSetModifierStatus(pointer, status);
+
+    pressed_buttons = (unsigned int)efl_input_pointer_value_get(pointer, EFL_INPUT_VALUE_BUTTONS_PRESSED);
+    if (pressed_buttons & (1 << 0))
+      iupKEY_SETBUTTON1(status);
+    if (pressed_buttons & (1 << 1))
+      iupKEY_SETBUTTON2(status);
+    if (pressed_buttons & (1 << 2))
+      iupKEY_SETBUTTON3(status);
+
+    cb(ih, (float)-wheel_delta, pos.x - canvas_pos.x, pos.y - canvas_pos.y, status);
   }
+  else
+  {
+    IFniff scb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+    int op;
+
+    if (horizontal)
+    {
+      IupSetDouble(ih, "POSX", ih->data->posx + wheel_delta * iupAttribGetDouble(ih, "DX") / 10.0);
+      op = wheel_delta < 0 ? IUP_SBLEFT : IUP_SBRIGHT;
+    }
+    else
+    {
+      IupSetDouble(ih, "POSY", ih->data->posy + wheel_delta * iupAttribGetDouble(ih, "DY") / 10.0);
+      op = wheel_delta < 0 ? IUP_SBUP : IUP_SBDN;
+    }
+
+    if (scb)
+      scb(ih, op, (float)ih->data->posx, (float)ih->data->posy);
+  }
+
+  efl_input_processed_set(pointer, EINA_TRUE);
+}
+
+static void eflCanvasWheelCallback(void* data, const Efl_Event* ev)
+{
+  iupeflCanvasWheel((Ihandle*)data, ev->info);
 }
 
 /****************************************************************

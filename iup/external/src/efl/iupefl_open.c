@@ -312,7 +312,7 @@ IUP_DRV_API void iupeflSetGlobalColors(void)
   }
 
   widget = elm_button_add(temp_win);
-  efl_text_set(efl_part(widget, "efl.text"), "X");
+  elm_object_text_set(widget, "X");
   efl_gfx_entity_size_set(widget, EINA_SIZE2D(100, 50));
   efl_gfx_entity_visible_set(widget, EINA_TRUE);
   if (efl_isa(widget, EFL_UI_LAYOUT_BASE_CLASS))

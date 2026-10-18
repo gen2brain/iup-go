@@ -1607,18 +1607,9 @@ static int eflDialogSetIconAttrib(Ihandle* ih, const char* value)
     efl_ui_win_icon_object_set(win, NULL);
   else
   {
-    Evas_Object* icon = (Evas_Object*)iupImageGetIcon(value);
+    Eo* icon = iupeflImageCreateUiImage(value, ih, win, 0);
     if (icon)
-    {
-      int w = 0, h = 0;
-      iupImageGetInfo(value, &w, &h, NULL);
-      if (w > 0 && h > 0)
-      {
-        efl_gfx_hint_size_min_set(icon, EINA_SIZE2D(w, h));
-        efl_gfx_hint_size_max_set(icon, EINA_SIZE2D(w, h));
-      }
       efl_ui_win_icon_object_set(win, icon);
-    }
   }
 
   return 1;

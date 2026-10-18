@@ -317,7 +317,10 @@ static void eflTabsDragPointerMove(void* data, const Efl_Event* ev)
     start_x = iupAttribGetInt(ih, "_IUPTABS_DRAG_START_X");
     start_y = iupAttribGetInt(ih, "_IUPTABS_DRAG_START_Y");
     if (abs(pointer_pos.x - start_x) > 5 || abs(pointer_pos.y - start_y) > 5)
+    {
       iupAttribSetInt(ih, "_IUPTABS_DRAGGING", 1);
+      elm_object_tooltip_hide(ev->object);
+    }
     else
       return;
   }
@@ -341,8 +344,6 @@ static void eflTabsDragPointerUp(void* data, const Efl_Event* ev)
   int source;
   int target;
 
-  (void)ev;
-
   is_dragging = iupAttribGetInt(ih, "_IUPTABS_DRAGGING");
   source = iupAttribGetInt(ih, "_IUPTABS_DRAG_SOURCE");
   target = iupAttribGetInt(ih, "_IUPTABS_DRAG_TARGET");
@@ -355,6 +356,8 @@ static void eflTabsDragPointerUp(void* data, const Efl_Event* ev)
 
   eflTabsHideDragIndicator(ih);
 
+  if (is_dragging)
+    elm_object_tooltip_hide(ev->object);
   if (is_dragging && source != target)
     eflTabsReorderTab(ih, source, target);
 }
@@ -706,7 +709,7 @@ static void eflTabsSetPageHidden(Ihandle* ih, Ihandle* child, int hide)
   }
 }
 
-static void eflTabsCloseButtonClicked(void* data, const Efl_Event* ev)
+static void eflTabsCloseJob(void* data)
 {
   Ihandle* child = (Ihandle*)data;
   Ihandle* ih;
@@ -716,10 +719,7 @@ static void eflTabsCloseButtonClicked(void* data, const Efl_Event* ev)
   int ret = IUP_DEFAULT;
   IFni cb;
 
-  (void)ev;
-
-  if (!child)
-    return;
+  iupAttribSet(child, "_IUPEFL_CLOSE_JOB", NULL);
 
   ih = IupGetParent(child);
   if (!ih)
@@ -745,6 +745,15 @@ static void eflTabsCloseButtonClicked(void* data, const Efl_Event* ev)
   {
     eflTabsSetPageHidden(ih, child, 1);
   }
+}
+
+static void eflTabsCloseButtonClicked(void* data, const Efl_Event* ev)
+{
+  Ihandle* child = (Ihandle*)data;
+  (void)ev;
+
+  if (child && !iupAttribGet(child, "_IUPEFL_CLOSE_JOB"))
+    iupAttribSet(child, "_IUPEFL_CLOSE_JOB", (char*)ecore_job_add(eflTabsCloseJob, child));
 }
 
 static Eo* eflTabsCreateCloseButton(Ihandle* ih, Ihandle* child, Eo* item)
@@ -1069,6 +1078,11 @@ static void eflTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   iupAttribSet(child, "_IUPEFL_TAB_ROW", NULL);
   iupAttribSet(child, "_IUPEFL_TAB_LABEL", NULL);
   iupAttribSet(child, "_IUPEFL_TAB_IMAGE", NULL);
+  if (iupAttribGet(child, "_IUPEFL_CLOSE_JOB"))
+  {
+    ecore_job_del((Ecore_Job*)iupAttribGet(child, "_IUPEFL_CLOSE_JOB"));
+    iupAttribSet(child, "_IUPEFL_CLOSE_JOB", NULL);
+  }
 
   if (ih->handle)
     eflTabsScheduleLayout(ih);
