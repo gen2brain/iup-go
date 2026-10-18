@@ -11,6 +11,7 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Tabs.H>
 #include <FL/Fl_Group.H>
+#include <FL/Fl_Tooltip.H>
 #include <FL/fl_draw.H>
 
 #include <cstdlib>
@@ -109,6 +110,36 @@ public:
 
   void redrawTabsArea() { redraw_tabs(); }
 
+  bool inTabStrip(int ey)
+  {
+    int H = tab_height();
+    return H >= 0 ? ey <= y() + H : ey >= y() + h() + H;
+  }
+
+  void hideTabTip()
+  {
+    if (Fl_Tooltip::current() == this)
+      Fl_Tooltip::enter_area(this, 0, 0, 0, 0, nullptr);
+  }
+
+  void showTabTip(int ex, int ey)
+  {
+    Fl_Widget* page = which(ex, ey);
+    Ihandle* child = page ? fltkTabsChildFromPage(iup_handle, page) : nullptr;
+    const char* tip = child ? iupAttribGet(child, "_IUPFLTK_TABTIP") : nullptr;
+    int i = page ? find(page) : -1;
+
+    tab_positions();
+    if (!tip || !tip[0] || i < 0 || i >= tab_count)
+    {
+      hideTabTip();
+      return;
+    }
+
+    int H = tab_height();
+    Fl_Tooltip::enter_area(this, tab_pos[i] + tab_offset, H >= 0 ? 0 : h() + H, tab_width[i], H >= 0 ? H : -H, tip);
+  }
+
 protected:
   void draw() override
   {
@@ -152,7 +183,18 @@ public:
         break;
       case FL_ENTER:
       case FL_LEAVE:
+        if (event == FL_LEAVE)
+          hideTabTip();
         iupfltkEnterLeaveEvent(this, iup_handle, event);
+        break;
+      case FL_MOVE:
+        if (inTabStrip(Fl::event_y()))
+        {
+          int ret = Fl_Group::handle(event);
+          showTabTip(Fl::event_x(), Fl::event_y());
+          return ret;
+        }
+        hideTabTip();
         break;
     }
 
@@ -460,16 +502,10 @@ static int fltkTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
 
 static int fltkTabsSetTabTipAttrib(Ihandle* ih, int pos, const char* value)
 {
-  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
-  if (!tabs) return 0;
-
-  if (pos >= 0 && pos < tabs->children())
-  {
-    Fl_Widget* page = tabs->child(pos);
-    page->copy_tooltip(value ? value : "");
-    return 1;
-  }
-  return 0;
+  Ihandle* child = IupGetChild(ih, pos);
+  if (child)
+    iupAttribSetStr(child, "_IUPFLTK_TABTIP", value);
+  return 1;
 }
 
 static void fltkTabsAssignTabImage(Ihandle* ih, Ihandle* child, Fl_Widget* page, Fl_Image* src)
@@ -836,8 +872,7 @@ static void fltkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     char* tabtip = iupAttribGet(child, "TABTIP");
     if (!tabtip)
       tabtip = iupAttribGetId(ih, "TABTIP", pos);
-    if (tabtip)
-      page->copy_tooltip(tabtip);
+    iupAttribSetStr(child, "_IUPFLTK_TABTIP", tabtip);
 
     tabs->end();
 
