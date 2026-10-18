@@ -708,6 +708,7 @@ static void motTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
         XmNheight, ITABS_CLOSE_SIZE + 6,
         XmNshadowThickness, 1,
         XmNhighlightThickness, 0,
+        XmNtraversalOn, False,
         XmNrecomputeSize, False,
         XmNtopAttachment, XmATTACH_FORM,
         XmNbottomAttachment, XmATTACH_FORM,
