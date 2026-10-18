@@ -866,10 +866,14 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 		if (enter_cb && enter_cb(_ihandle, (int)_focusLin, (int)_focusCol) == IUP_CLOSE) IupExitLoop();
 	}
 
-	IFnii cb = (IFnii)IupGetCallback(_ihandle, "RIGHTCLICK_CB");
-	if (cb && cb(_ihandle, (int)_focusLin, (int)_focusCol) == IUP_CLOSE) IupExitLoop();
-
-	iupTableCallMultiSelectionCb(_ihandle);
+	Ihandle* ih = _ihandle;
+	int focus_lin = (int)_focusLin, focus_col = (int)_focusCol;
+	iupCocoaTouchRunLater(^{
+		if (!iupObjectCheck(ih)) return;
+		IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+		if (cb && cb(ih, focus_lin, focus_col) == IUP_CLOSE) IupExitLoop();
+		if (iupObjectCheck(ih)) iupTableCallMultiSelectionCb(ih);
+	});
 }
 
 - (void)onDoubleTap:(UITapGestureRecognizer*)gr

@@ -219,15 +219,19 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 	CGPoint p = [g locationInView:self];
 	cocoaTouchFireGesture(_ihandle, IUP_GESTURE_LONGPRESS, IUP_GESTURE_END, (int)p.x, (int)p.y, 0.0, 0.0);
 
-	IFniiiis cb = (IFniiiis)IupGetCallback(_ihandle, "BUTTON_CB");
-	if (!cb) return;
-	char status[IUPKEY_STATUS_SIZE];
-	unsigned int serial = iupCocoaTouchModalSerial();
-	iupCocoaTouchButtonKeySetStatus(nil, 0, 3, 0, status);
-	if (cb(_ihandle, IUP_BUTTON3, 1, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
-	if (serial != iupCocoaTouchModalSerial() || !_ihandle) return;
-	iupCocoaTouchButtonKeySetStatus(nil, 0, 0, 0, status);
-	if (cb(_ihandle, IUP_BUTTON3, 0, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
+	Ihandle* ih = _ihandle;
+	iupCocoaTouchRunLater(^{
+		if (!iupObjectCheck(ih)) return;
+		IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+		if (!cb) return;
+		char status[IUPKEY_STATUS_SIZE];
+		unsigned int serial = iupCocoaTouchModalSerial();
+		iupCocoaTouchButtonKeySetStatus(nil, 0, 3, 0, status);
+		if (cb(ih, IUP_BUTTON3, 1, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
+		if (serial != iupCocoaTouchModalSerial() || !iupObjectCheck(ih)) return;
+		iupCocoaTouchButtonKeySetStatus(nil, 0, 0, 0, status);
+		if (cb(ih, IUP_BUTTON3, 0, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
+	});
 }
 
 - (void)onPinch:(UIPinchGestureRecognizer*)g

@@ -397,8 +397,12 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 	int id_ = iupTreeFindNodeId(_ihandle, (InodeHandle*)node);
 	if (id_ < 0) return;
 
-	IFni cb = (IFni)IupGetCallback(_ihandle, "RIGHTCLICK_CB");
-	if (cb) cb(_ihandle, id_);
+	Ihandle* ih = _ihandle;
+	iupCocoaTouchRunLater(^{
+		if (!iupObjectCheck(ih)) return;
+		IFni cb = (IFni)IupGetCallback(ih, "RIGHTCLICK_CB");
+		if (cb) cb(ih, id_);
+	});
 }
 
 - (NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section

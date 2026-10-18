@@ -123,6 +123,7 @@ IUP_DRV_API void iupCocoaTouchMarkEntryFinished(void);
 
 IUP_DRV_API void iupCocoaTouchModalBegin(void);
 IUP_DRV_API unsigned int iupCocoaTouchModalSerial(void);
+IUP_DRV_API void iupCocoaTouchRunLater(void (^block)(void));
 
 #define IUPCOCOATOUCH_UTI_PDF        @"com.adobe.pdf"
 #define IUPCOCOATOUCH_UTI_PNG        @"public.png"
