@@ -384,39 +384,99 @@ static int eflTabsSetAllowReorderAttrib(Ihandle* ih, const char* value)
                      Tab Item Helper
 ****************************************************************/
 
-static void eflTabsSetItemIcon(Eo* item, const char* tabimage, Ihandle* ih)
+static Eo* eflTabsGetItemRow(Ihandle* child, Eo* item)
 {
-  Eo* efl_img;
+  Eo* row = (Eo*)iupAttribGet(child, "_IUPEFL_TAB_ROW");
+  if (!row)
+  {
+    row = efl_add(EFL_UI_BOX_CLASS, item, efl_ui_layout_orientation_set(efl_added, EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL));
+    efl_gfx_arrangement_content_padding_set(row, 4, 0);
+    efl_content_set(efl_part(item, "efl.icon"), row);
+    iupAttribSet(child, "_IUPEFL_TAB_ROW", (char*)row);
+  }
+  return row;
+}
+
+static void eflTabsUpdateItemMargin(Ihandle* ih, Ihandle* child)
+{
+  Eo* row = (Eo*)iupAttribGet(child, "_IUPEFL_TAB_ROW");
+  Eo* close_btn = (Eo*)iupAttribGet(child, "_IUPTAB_CLOSE");
+  int right = ih->data->horiz_padding;
+
+  if (!row)
+    return;
+
+  if (close_btn)
+  {
+    Eina_Size2D sz = efl_gfx_hint_size_combined_min_get(close_btn);
+    right += (sz.w > 0 ? sz.w : 20) + 4;
+  }
+  efl_gfx_hint_margin_set(row, ih->data->horiz_padding, right, ih->data->vert_padding, ih->data->vert_padding);
+}
+
+static void eflTabsSetItemTitle(Ihandle* ih, Ihandle* child, Eo* item, const char* title, int pos)
+{
+  Eo* row = eflTabsGetItemRow(child, item);
+  Eo* label = (Eo*)iupAttribGet(child, "_IUPEFL_TAB_LABEL");
+  char c = 0;
+  char* str;
+
+  if (!label)
+  {
+    Eo* image = (Eo*)iupAttribGet(child, "_IUPEFL_TAB_IMAGE");
+    label = efl_add(EFL_UI_TEXTBOX_CLASS, row,
+      efl_text_interactive_editable_set(efl_added, EINA_FALSE),
+      efl_ui_textbox_cnp_dnd_mode_set(efl_added, EFL_UI_TEXTBOX_CNP_CONTENT_NOTHING),
+      efl_text_interactive_selection_allowed_set(efl_added, EINA_FALSE));
+    efl_canvas_object_pass_events_set(label, EINA_TRUE);
+    if (image)
+      efl_pack_after(row, label, image);
+    else
+      efl_pack_begin(row, label);
+    iupAttribSet(child, "_IUPEFL_TAB_LABEL", (char*)label);
+  }
+
+  str = iupStrProcessMnemonic(title, &c, -1);
+  efl_text_set(label, str ? str : "");
+  if (c)
+    iupKeySetMnemonic(ih, c, pos);
+  if (str && str != title)
+    free(str);
+
+  iupeflApplyTextStyle(ih, label);
+}
+
+static void eflTabsSetItemIcon(Ihandle* ih, Ihandle* child, Eo* item, const char* tabimage)
+{
+  Eo* old = (Eo*)iupAttribGet(child, "_IUPEFL_TAB_IMAGE");
+  Eo* efl_img = tabimage ? iupeflImageGetImage(tabimage, ih, 0) : NULL;
   int raw_w = 0, raw_h = 0, dst_w, dst_h;
 
-  if (!item)
-    return;
-
-  if (!tabimage)
+  if (old)
   {
-    efl_content_set(efl_part(item, "icon"), NULL);
-    return;
+    efl_del(old);
+    iupAttribSet(child, "_IUPEFL_TAB_IMAGE", NULL);
   }
+
+  if (!efl_img)
+    return;
 
   iupImageGetInfo(tabimage, &raw_w, &raw_h, NULL);
   dst_w = raw_w;
   dst_h = raw_h;
   if (raw_w > 0 && raw_h > 0)
     iupTabsScaleImageSize(ih, raw_w, raw_h, &dst_w, &dst_h);
-
-  efl_img = iupeflImageGetImage(tabimage, ih, 0);
-  if (efl_img)
+  if (dst_w > 0 && dst_h > 0)
   {
-    if (dst_w > 0 && dst_h > 0 && (dst_w != raw_w || dst_h != raw_h))
-    {
+    if (dst_w != raw_w || dst_h != raw_h)
       evas_object_image_smooth_scale_set(efl_img, EINA_TRUE);
-      efl_gfx_hint_size_min_set(efl_img, EINA_SIZE2D(dst_w, dst_h));
-      efl_gfx_hint_size_max_set(efl_img, EINA_SIZE2D(dst_w, dst_h));
-      efl_gfx_entity_size_set(efl_img, EINA_SIZE2D(dst_w, dst_h));
-    }
-    efl_gfx_entity_visible_set(efl_img, EINA_TRUE);
-    efl_content_set(efl_part(item, "icon"), efl_img);
+    efl_gfx_hint_size_min_set(efl_img, EINA_SIZE2D(dst_w, dst_h));
+    efl_gfx_hint_size_max_set(efl_img, EINA_SIZE2D(dst_w, dst_h));
   }
+  efl_canvas_object_pass_events_set(efl_img, EINA_TRUE);
+  efl_gfx_entity_visible_set(efl_img, EINA_TRUE);
+  efl_pack_begin(eflTabsGetItemRow(child, item), efl_img);
+  iupAttribSet(child, "_IUPEFL_TAB_IMAGE", (char*)efl_img);
 }
 
 IUP_SDK_API int iupdrvTabsExtraDecor(Ihandle* ih)
@@ -470,6 +530,12 @@ static void eflTabsScheduleLayout(Ihandle* ih)
     return;
 
   iupAttribSet(ih, "_IUP_EFL_LAYOUT_JOB", (char*)ecore_job_add(eflTabsLayoutJob, ih));
+}
+
+static void eflTabsContainerGeometryChanged(void* data, const Efl_Event* ev)
+{
+  (void)ev;
+  eflTabsScheduleLayout((Ihandle*)data);
 }
 
 IUP_SDK_API void iupdrvTabsSetCurrentTab(Ihandle* ih, int pos)
@@ -741,15 +807,7 @@ static int eflTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
       {
         Eo* item = efl_ui_tab_page_tab_bar_item_get(page);
         if (item)
-        {
-          char c = 0;
-          char* str = iupStrProcessMnemonic(value, &c, -1);
-          efl_text_set(item, str ? str : "");
-          if (c)
-            iupKeySetMnemonic(ih, c, pos);
-          if (str && str != value)
-            free(str);
-        }
+          eflTabsSetItemTitle(ih, child, item, value, pos);
       }
     }
   }
@@ -771,7 +829,7 @@ static int eflTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
       {
         Eo* item = efl_ui_tab_page_tab_bar_item_get(page);
         if (item)
-          eflTabsSetItemIcon(item, value, ih);
+          eflTabsSetItemIcon(ih, child, item, value);
       }
     }
   }
@@ -914,6 +972,8 @@ static void eflTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
       efl_gfx_hint_weight_set(content_box, 1.0, 1.0);
       efl_gfx_hint_align_set(content_box, -1.0, -1.0);
       efl_content_set(page, content_box);
+      efl_event_callback_add(content_box, EFL_GFX_ENTITY_EVENT_POSITION_CHANGED, eflTabsContainerGeometryChanged, ih);
+      efl_event_callback_add(content_box, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflTabsContainerGeometryChanged, ih);
     }
 
     tabtitle = iupAttribGet(child, "TABTITLE");
@@ -939,24 +999,19 @@ static void eflTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     Eo* item = efl_ui_tab_page_tab_bar_item_get(page);
     if (item)
     {
-      if (tabtitle)
-      {
-        char c = 0;
-        char* str = iupStrProcessMnemonic(tabtitle, &c, -1);
-        efl_text_set(item, str ? str : "");
-        if (c)
-          iupKeySetMnemonic(ih, c, pos);
-        if (str && str != tabtitle)
-          free(str);
-      }
       if (tabimage)
-        eflTabsSetItemIcon(item, tabimage, ih);
+        eflTabsSetItemIcon(ih, child, item, tabimage);
+      if (tabtitle)
+        eflTabsSetItemTitle(ih, child, item, tabtitle, pos);
+
+      efl_gfx_hint_weight_set(item, 0.0, 1.0);
 
       if (ih->data->show_close)
       {
         Evas_Object* close_btn = eflTabsCreateCloseButton(ih, child, item);
         iupAttribSet(child, "_IUPTAB_CLOSE", (char*)close_btn);
       }
+      eflTabsUpdateItemMargin(ih, child);
 
       eflTabsAddReorderCallbacks(ih, item);
     }
@@ -1011,6 +1066,9 @@ static void eflTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
   iupAttribSet(child, "_IUPTAB_PAGE", NULL);
   iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
   iupAttribSet(child, "_IUPTAB_CLOSE", NULL);
+  iupAttribSet(child, "_IUPEFL_TAB_ROW", NULL);
+  iupAttribSet(child, "_IUPEFL_TAB_LABEL", NULL);
+  iupAttribSet(child, "_IUPEFL_TAB_IMAGE", NULL);
 
   if (ih->handle)
     eflTabsScheduleLayout(ih);
@@ -1040,6 +1098,8 @@ static int eflTabsMapMethod(Ihandle* ih)
     {
       Eo* scroller;
       efl_content_unset(efl_part(tab_bar, "efl.content"));
+      efl_ui_box_homogeneous_set(box, EINA_FALSE);
+      efl_gfx_arrangement_content_align_set(box, 0.0, 0.5);
       scroller = efl_add(EFL_UI_SCROLLER_CLASS, tab_bar);
       efl_ui_scrollbar_bar_mode_set(scroller, EFL_UI_SCROLLBAR_MODE_OFF, EFL_UI_SCROLLBAR_MODE_OFF);
       efl_ui_scrollable_match_content_set(scroller, EINA_FALSE, EINA_TRUE);
@@ -1176,6 +1236,7 @@ static int eflTabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
           iupAttribSet(child, "_IUPTAB_CLOSE", NULL);
         }
       }
+      eflTabsUpdateItemMargin(ih, child);
     }
 
     return 0;

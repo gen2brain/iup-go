@@ -287,8 +287,6 @@ IUP_DRV_API void iupeflSetPosSize(Ihandle* ih, int x, int y, int width, int heig
           evas_object_clip_set(bg_rect, clip);
         break;
       }
-      if (p->iclass->nativetype != IUP_TYPEVOID)
-        break;
       p = p->parent;
     }
   }
@@ -1219,6 +1217,24 @@ IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
     return 0;
 }
 
+static void eflRaiseNativeChildren(Ihandle* ih)
+{
+  Ihandle* child;
+
+  for (child = ih->firstchild; child; child = child->brother)
+  {
+    if (child->iclass->nativetype != IUP_TYPEVOID && child->handle)
+    {
+      Eo* w = (Eo*)iupAttribGet(child, "_IUP_EXTRAPARENT");
+      if (!w)
+        w = iupeflGetWidget(child);
+      if (w)
+        evas_object_raise(w);
+    }
+    eflRaiseNativeChildren(child);
+  }
+}
+
 IUP_SDK_API void iupdrvReparent(Ihandle* ih)
 {
   Eo* new_parent = (Eo*)iupChildTreeGetNativeParentHandle(ih);
@@ -1254,6 +1270,7 @@ IUP_SDK_API void iupdrvReparent(Ihandle* ih)
       efl_ui_widget_sub_object_add(new_parent, widget);
     efl_parent_set(widget, new_parent);
     evas_object_raise(widget);
+    eflRaiseNativeChildren(ih);
     efl_gfx_entity_visible_set(widget, visible);
   }
 }
