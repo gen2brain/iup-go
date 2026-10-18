@@ -474,6 +474,7 @@ static int cocoaTouchMessageDlgPopup(Ihandle* ih, int x, int y)
 
 		[alert showInWindow:window];
 
+		iupCocoaTouchModalBegin();
 		while (response == IUPCOCOATOUCH_MSGDLG_PENDING)
 		{
 			@autoreleasepool {

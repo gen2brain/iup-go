@@ -121,6 +121,9 @@ IUP_DRV_API int iupCocoaTouchSetBgColorAttrib(Ihandle* ih, const char* value);
 /* IupAppDelegate flips this once ENTRY_POINT returns; before then IupMainLoop returns IUP_OPENED */
 IUP_DRV_API void iupCocoaTouchMarkEntryFinished(void);
 
+IUP_DRV_API void iupCocoaTouchModalBegin(void);
+IUP_DRV_API unsigned int iupCocoaTouchModalSerial(void);
+
 #define IUPCOCOATOUCH_UTI_PDF        @"com.adobe.pdf"
 #define IUPCOCOATOUCH_UTI_PNG        @"public.png"
 #define IUPCOCOATOUCH_UTI_JPEG       @"public.jpeg"

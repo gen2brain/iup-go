@@ -72,6 +72,7 @@ static UIViewController* cocoaTouchFontDlgResolveHost(Ihandle* ih)
 
 static void cocoaTouchFontDlgPumpUntil(int* state)
 {
+	iupCocoaTouchModalBegin();
 	while (*state == IUPCOCOATOUCH_FONTDLG_PENDING)
 	{
 		@autoreleasepool {

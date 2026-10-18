@@ -783,6 +783,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 	cocoaTouchMenuFireOpen(ih);
 	[host presentViewController:vc animated:YES completion:nil];
 
+	iupCocoaTouchModalBegin();
 	while (!vc.done)
 	{
 		@autoreleasepool {

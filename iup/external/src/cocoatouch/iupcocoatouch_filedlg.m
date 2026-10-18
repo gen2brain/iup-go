@@ -71,6 +71,7 @@ static UIViewController* cocoaTouchFileDlgResolveHost(Ihandle* ih)
 
 static void cocoaTouchFileDlgPumpUntil(int* state)
 {
+	iupCocoaTouchModalBegin();
 	while (*state == IUPCOCOATOUCH_FILEDLG_PENDING)
 	{
 		@autoreleasepool {

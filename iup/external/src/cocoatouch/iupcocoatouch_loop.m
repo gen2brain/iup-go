@@ -25,6 +25,7 @@ static int s_main_loop_level = 0;
 static int s_modal_loop_level = 0;
 static int s_modal_should_exit = 0;
 static int s_entry_finished = 0;
+static unsigned int s_modal_serial = 0;
 
 static IFidle s_idle_cb = NULL;
 static CFRunLoopObserverRef s_idle_observer = NULL;
@@ -119,6 +120,16 @@ void IupExitLoop(void)
 		[top dismissViewControllerAnimated:YES completion:nil];
 }
 
+IUP_DRV_API void iupCocoaTouchModalBegin(void)
+{
+	s_modal_serial++;
+}
+
+IUP_DRV_API unsigned int iupCocoaTouchModalSerial(void)
+{
+	return s_modal_serial;
+}
+
 int IupMainLoopLevel(void)
 {
 	return s_main_loop_level + s_modal_loop_level;
@@ -156,6 +167,7 @@ int IupMainLoop(void)
 		return IUP_OPENED;
 
 	s_modal_loop_level++;
+	iupCocoaTouchModalBegin();
 	s_modal_should_exit = 0;
 	while (!s_modal_should_exit)
 	{
