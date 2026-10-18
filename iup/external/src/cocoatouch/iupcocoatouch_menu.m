@@ -536,6 +536,8 @@ static IupCocoaTouchMenuRow* cocoaTouchMenuNewRow(Ihandle* item, int recent_inde
 	UIListContentConfiguration* content = [UIListContentConfiguration cellConfiguration];
 	content.text = [self titleForRow:row];
 	content.textProperties.numberOfLines = 1;
+	content.axesPreservingSuperviewLayoutMargins = UIAxisHorizontal;
+	content.directionalLayoutMargins = NSDirectionalEdgeInsetsMake(4, 0, 4, 0);
 	content.textProperties.color = enabled ? [UIColor labelColor] : [UIColor tertiaryLabelColor];
 	content.imageProperties.reservedLayoutSize = CGSizeMake(20, 20);
 	content.imageProperties.tintColor = [UIColor labelColor];
