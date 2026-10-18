@@ -271,24 +271,6 @@ static UIColor* cocoaTouchLabelDisabledTextColor(void)
 	return [UIColor placeholderTextColor];
 }
 
-/* 0-based mnemonic pos in the stripped title (-1 if none, "&&" escapes) */
-static int cocoaTouchLabelMnemonicPos(const char* raw)
-{
-	if (!raw || !strchr(raw, '&')) return -1;
-	int pos = 0;
-	while (*raw)
-	{
-		if (*raw == '&')
-		{
-			raw++;
-			if (*raw == '&') { pos++; raw++; continue; }
-			return pos;
-		}
-		raw++; pos++;
-	}
-	return -1;
-}
-
 static void cocoaTouchLabelApplyTitle(IupCocoaTouchLabelView* label, Ihandle* ih, const char* value)
 {
 	if (!value) { [label setText:@""]; [label setAttributedText:nil]; return; }
@@ -308,9 +290,8 @@ static void cocoaTouchLabelApplyTitle(IupCocoaTouchLabelView* label, Ihandle* ih
 
 	IupCocoaTouchFont* iup_font = iupCocoaTouchGetFont(ih);
 	BOOL font_has_attrs = iup_font && [iup_font usesAttributes];
-	int mnemonic = markup ? -1 : cocoaTouchLabelMnemonicPos(value);
 
-	if (!markup && (font_has_attrs || (mnemonic >= 0 && mnemonic < (int)title.length)))
+	if (!markup && font_has_attrs)
 	{
 		NSMutableAttributedString* attr = [[[NSMutableAttributedString alloc]
 			initWithString:title] autorelease];
@@ -320,21 +301,12 @@ static void cocoaTouchLabelApplyTitle(IupCocoaTouchLabelView* label, Ihandle* ih
 		[attr addAttribute:NSFontAttributeName value:base_font range:full];
 		[attr addAttribute:NSForegroundColorAttributeName value:base_color range:full];
 
-		if (font_has_attrs)
+		NSDictionary* font_dict = [iup_font attributeDictionary];
+		for (NSString* key in font_dict)
 		{
-			NSDictionary* font_dict = [iup_font attributeDictionary];
-			for (NSString* key in font_dict)
-			{
-				if ([key isEqualToString:NSFontAttributeName]) continue;
-				if ([key isEqualToString:NSForegroundColorAttributeName]) continue;
-				[attr addAttribute:key value:font_dict[key] range:full];
-			}
-		}
-
-		if (mnemonic >= 0 && mnemonic < (int)title.length)
-		{
-			[attr addAttribute:NSUnderlineStyleAttributeName value:@(NSUnderlineStyleSingle)
-			             range:NSMakeRange((NSUInteger)mnemonic, 1)];
+			if ([key isEqualToString:NSFontAttributeName]) continue;
+			if ([key isEqualToString:NSForegroundColorAttributeName]) continue;
+			[attr addAttribute:key value:font_dict[key] range:full];
 		}
 		markup = attr;
 	}
