@@ -20,8 +20,9 @@ import "C"
 
 import "time"
 
-// Pre-open IUP so users can register ENTRY_POINT from a package
-// init() before UIKit fires it.
+var pendingEntry func()
+
+// Pre-open IUP for code that runs in a package init().
 func init() {
 	Open()
 	setTimeLocal()
@@ -46,6 +47,10 @@ func setTimeLocal() {
 // https://gen2brain.github.io/iup-go/func/iup_open.html
 func Open() int {
 	ret := openShared()
+	if entry := pendingEntry; entry != nil {
+		pendingEntry = nil
+		SetFunction("ENTRY_POINT", EntryPointFunc(entry))
+	}
 	if ret == OPENED {
 		return NOERROR
 	}
@@ -72,5 +77,5 @@ func Close() {}
 //	    iup.MainLoop()
 //	}
 func EntryPoint(entry func()) {
-	SetFunction("ENTRY_POINT", EntryPointFunc(entry))
+	pendingEntry = entry
 }

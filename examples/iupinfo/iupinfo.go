@@ -441,15 +441,15 @@ Examples:
 }
 
 func main() {
+	iup.Open()
+	defer iup.Close()
+
 	flag.Usage = usage
 	full := flag.Bool("full", false, "full dump of every class and the globals registry")
 	globalsOnly := flag.Bool("globals", false, "dump only the globals section")
 	callbacksOnly := flag.Bool("callbacks", false, "dump every callback name aggregated across all classes")
 	attributesOnly := flag.Bool("attributes", false, "dump every attribute name aggregated across all classes")
 	flag.Parse()
-
-	iup.Open()
-	defer iup.Close()
 
 	for _, fn := range extraOpens {
 		fn()
