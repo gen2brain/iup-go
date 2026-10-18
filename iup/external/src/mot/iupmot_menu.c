@@ -241,6 +241,17 @@ static int motMenuMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static int motMenuSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  Pixel color = iupmotColorGetPixelStr(value);
+  if (color != (Pixel)-1)
+  {
+    XmChangeColor(ih->handle, color);
+    XtVaSetValues(ih->handle, XmNbackgroundPixmap, XmUNSPECIFIED_PIXMAP, NULL);
+  }
+  return 1;
+}
+
 IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -250,7 +261,7 @@ IUP_SDK_API void iupdrvMenuInitClass(Iclass* ic)
   /* Used by iupdrvMenuGetMenuBarSize */
   iupClassRegisterAttribute(ic, "FONT", NULL, NULL, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);  /* inherited */
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, motMenuSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 }
 
 /*******************************************************************************************/
@@ -705,7 +716,7 @@ IUP_SDK_API void iupdrvMenuItemInitClass(Iclass* ic)
 
   /* Visual */
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, iupBaseSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, motMenuSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* IupMenuItem only */
   iupClassRegisterAttribute(ic, "VALUE", motMenuItemGetValueAttrib, motMenuItemSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
@@ -729,7 +740,7 @@ IUP_SDK_API void iupdrvSubmenuInitClass(Iclass* ic)
 
   /* Visual */
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, iupBaseSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, motMenuSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 
   /* IupSubmenu only */
   iupClassRegisterAttribute(ic, "TITLE", NULL, motMenuItemSetTitleAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
@@ -742,5 +753,5 @@ IUP_SDK_API void iupdrvMenuSeparatorInitClass(Iclass* ic)
   ic->Map = motMenuSeparatorMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, motMenuSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 }
