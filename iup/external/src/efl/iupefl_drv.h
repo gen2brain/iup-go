@@ -94,6 +94,7 @@ IUP_DRV_API void iupeflPointerOutEvent(void* data, const Efl_Event* ev);
 IUP_DRV_API void iupeflCursorInit(void);
 IUP_DRV_API void iupeflCanvasSetScrollBarsVisible(Ihandle* ih, int visible);
 IUP_DRV_API Eo* iupeflCanvasGetOverlayWidget(Ihandle* ih);
+IUP_DRV_API void iupeflCanvasWheel(Ihandle* ih, Efl_Input_Pointer* pointer);
 IUP_DRV_API void iupeflTreeDragSelect(Ihandle* ih, int x, int y);
 IUP_DRV_API void iupeflChildFocusChangedEvent(void* data, const Efl_Event* ev);
 IUP_DRV_API void iupeflManagerFocusChangedEvent(void* data, const Efl_Event* ev);
@@ -185,6 +186,7 @@ typedef struct _IeflVgImageData {
  ****************************************************************************/
 
 IUP_DRV_API Eo* iupeflImageGetImage(const char* name, Ihandle* ih, int make_inactive);
+IUP_DRV_API Eo* iupeflImageCreateUiImage(const char* name, Ihandle* ih, Eo* parent, int make_inactive);
 IUP_DRV_API Eo* iupeflImageGetImageForParent(const char* name, Ihandle* ih, int make_inactive, Eo* parent);
 IUP_DRV_API int iupeflImageUpdateImage(Eo* elm_img, const char* name, Ihandle* ih, int make_inactive);
 
