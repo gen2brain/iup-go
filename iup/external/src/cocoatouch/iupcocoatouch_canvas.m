@@ -222,8 +222,10 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 	IFniiiis cb = (IFniiiis)IupGetCallback(_ihandle, "BUTTON_CB");
 	if (!cb) return;
 	char status[IUPKEY_STATUS_SIZE];
+	unsigned int serial = iupCocoaTouchModalSerial();
 	iupCocoaTouchButtonKeySetStatus(nil, 0, 3, 0, status);
 	if (cb(_ihandle, IUP_BUTTON3, 1, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
+	if (serial != iupCocoaTouchModalSerial() || !_ihandle) return;
 	iupCocoaTouchButtonKeySetStatus(nil, 0, 0, 0, status);
 	if (cb(_ihandle, IUP_BUTTON3, 0, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
 }
@@ -467,16 +469,18 @@ static UIKeyModifierFlags cocoaTouchCanvasModifiers(UIEvent* event)
 	return event ? [event modifierFlags] : 0;
 }
 
-static void cocoaTouchCanvasFireButton(Ihandle* ih, UITouch* touch, UIEvent* event, UIView* view, int pressed)
+static int cocoaTouchCanvasFireButton(Ihandle* ih, UITouch* touch, UIEvent* event, UIView* view, int pressed)
 {
-	if (!ih || !touch) return;
+	if (!ih || !touch) return 0;
 	IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
-	if (!cb) return;
+	if (!cb) return 0;
 
 	CGPoint p = [touch locationInView:view];
 	char status[IUPKEY_STATUS_SIZE];
+	unsigned int serial = iupCocoaTouchModalSerial();
 	iupCocoaTouchButtonKeySetStatus(event, cocoaTouchCanvasModifiers(event), pressed ? 1 : 0, 0, status);
 	if (cb(ih, IUP_BUTTON1, pressed, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
+	return serial != iupCocoaTouchModalSerial();
 }
 
 static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* event, UIView* view, int pressed)
@@ -596,8 +600,10 @@ static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* eve
 		{
 			_touchState = IUPCOCOATOUCH_TOUCH_DIRECT;
 			[self pauseAncestorPanGestures:NO];
-			cocoaTouchCanvasFireButton(_ihandle, t, event, self, 1);
-			cocoaTouchCanvasFireMotion(_ihandle, t, event, self, 1);
+			if (cocoaTouchCanvasFireButton(_ihandle, t, event, self, 1))
+				_touchState = IUPCOCOATOUCH_TOUCH_CONSUMED;
+			else
+				cocoaTouchCanvasFireMotion(_ihandle, t, event, self, 1);
 		}
 	}
 	[self dispatchTouchBatch:touches phase:'D'];
@@ -635,8 +641,8 @@ static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* eve
 		UITouch* t = _trackedTouch;
 		if (_touchState == IUPCOCOATOUCH_TOUCH_PENDING)
 		{
-			cocoaTouchCanvasFireButton(_ihandle, t, event, self, 1);
-			if (_ihandle) cocoaTouchCanvasFireButton(_ihandle, t, event, self, 0);
+			if (!cocoaTouchCanvasFireButton(_ihandle, t, event, self, 1) && _ihandle)
+				cocoaTouchCanvasFireButton(_ihandle, t, event, self, 0);
 		}
 		else if (_touchState == IUPCOCOATOUCH_TOUCH_DIRECT)
 		{
