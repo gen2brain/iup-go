@@ -182,7 +182,16 @@ static int motButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 
 static int motButtonSetBackgroundAttrib(Ihandle* ih, const char* value)
 {
-  if (iupAttribGet(ih, "IMPRESS") || iupAttribGetBoolean(ih, "FLAT"))
+  if (!iupAttribGet(ih, "IMPRESS") && !iupAttribGetBoolean(ih, "FLAT"))
+  {
+    if (!iupAttribGet(ih, "BGCOLOR"))
+    {
+      iupdrvBaseSetBgColorAttrib(ih, IupGetGlobal("DLGBGCOLOR"));
+      motButtonUpdateImages(ih);
+    }
+    return 1;
+  }
+  else
   {
     /* ignore given value, must use only from parent */
     value = iupAttribGetInheritNativeParent(ih, "BACKGROUND");

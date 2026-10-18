@@ -39,8 +39,6 @@ static Pixmap mot_tabs_close_pixmap = 0;
 
 static void motTabsInitializeClosePixmap(Widget parent)
 {
-  Pixel fg, bg;
-
   if (mot_tabs_close_pixmap != 0)
     return;
 
@@ -59,19 +57,8 @@ static void motTabsInitializeClosePixmap(Widget parent)
     0x00, 0x00
   };
 
-  Display* dpy = XtDisplay(parent);
-  Window root = RootWindowOfScreen(XtScreen(parent));
-
-  XtVaGetValues(parent, XmNforeground, &fg, XmNbackground, &bg, NULL);
-
-  mot_tabs_close_pixmap = XCreatePixmapFromBitmapData(
-    dpy, root,
-    (char*)close_bits,
-    ITABS_CLOSE_SIZE, ITABS_CLOSE_SIZE,
-    fg,
-    bg,
-    DefaultDepthOfScreen(XtScreen(parent))
-  );
+  mot_tabs_close_pixmap = XCreateBitmapFromData(XtDisplay(parent), RootWindowOfScreen(XtScreen(parent)),
+                                                (char*)close_bits, ITABS_CLOSE_SIZE, ITABS_CLOSE_SIZE);
 }
 
 
@@ -222,44 +209,46 @@ static void motTabsUpdatePageBgColor(Ihandle* ih, Pixel color)
   }
 }
 
+static void motTabsSetTabFgColor(Ihandle* child, Pixel color)
+{
+  Widget tab_label = (Widget)iupAttribGet(child, "_IUPMOT_TABLABEL");
+  Widget tab_button = (Widget)iupAttribGet(child, "_IUPMOT_TABBUTTON");
+  Widget tab_close = (Widget)iupAttribGet(child, "_IUPMOT_TABCLOSE");
+
+  if (tab_label)
+    XtVaSetValues(tab_label, XmNforeground, color, NULL);
+  if (tab_button)
+    XtVaSetValues(tab_button, XmNforeground, color, NULL);
+  if (tab_close)
+    XtVaSetValues(tab_close, XmNforeground, color, NULL);
+}
+
 static void motTabsUpdateButtonsFgColor(Ihandle* ih, Pixel color)
 {
   Ihandle* child;
   for (child = ih->firstchild; child; child = child->brother)
-  {
-    Widget tab_label = (Widget)iupAttribGet(child, "_IUPMOT_TABLABEL");
-    Widget tab_button = (Widget)iupAttribGet(child, "_IUPMOT_TABBUTTON");
+    motTabsSetTabFgColor(child, color);
+}
 
-    if (tab_label)
-    {
-      XtVaSetValues(tab_label, XmNforeground, color, NULL);
-      XtVaSetValues(tab_button, XmNforeground, color, NULL);
-    }
-    else if (tab_button)
-    {
-      XtVaSetValues(tab_button, XmNforeground, color, NULL);
-    }
-  }
+static void motTabsSetTabBgColor(Ihandle* child, Pixel color)
+{
+  Widget tab_label = (Widget)iupAttribGet(child, "_IUPMOT_TABLABEL");
+  Widget tab_button = (Widget)iupAttribGet(child, "_IUPMOT_TABBUTTON");
+  Widget tab_close = (Widget)iupAttribGet(child, "_IUPMOT_TABCLOSE");
+
+  if (tab_label)
+    iupmotSetBgColor(tab_label, color);
+  if (tab_button)
+    iupmotSetBgColor(tab_button, color);
+  if (tab_close)
+    iupmotSetBgColor(tab_close, color);
 }
 
 static void motTabsUpdateButtonsBgColor(Ihandle* ih, Pixel color)
 {
   Ihandle* child;
   for (child = ih->firstchild; child; child = child->brother)
-  {
-    Widget tab_label = (Widget)iupAttribGet(child, "_IUPMOT_TABLABEL");
-    Widget tab_button = (Widget)iupAttribGet(child, "_IUPMOT_TABBUTTON");
-
-    if (tab_label)
-    {
-      iupmotSetBgColor(tab_label, color);
-      iupmotSetBgColor(tab_button, color);
-    }
-    else if (tab_button)
-    {
-      iupmotSetBgColor(tab_button, color);
-    }
-  }
+    motTabsSetTabBgColor(child, color);
 }
 
 static void motTabsUpdateButtonsPadding(Ihandle* ih)
@@ -277,20 +266,23 @@ static void motTabsUpdateButtonsPadding(Ihandle* ih)
   }
 }
 
+static void motTabsSetTabFont(Ihandle* child, XmFontList fontlist)
+{
+  Widget tab_label = (Widget)iupAttribGet(child, "_IUPMOT_TABLABEL");
+  Widget tab_button = (Widget)iupAttribGet(child, "_IUPMOT_TABBUTTON");
+  Widget target = tab_label ? tab_label : tab_button;
+
+  if (target)
+    XtVaSetValues(target, XmNrenderTable, fontlist, NULL);
+}
+
 static void motTabsUpdatePageFont(Ihandle* ih)
 {
   Ihandle* child;
   XmFontList fontlist = (XmFontList)iupmotGetFontListAttrib(ih);
 
   for (child = ih->firstchild; child; child = child->brother)
-  {
-    Widget tab_label = (Widget)iupAttribGet(child, "_IUPMOT_TABLABEL");
-    Widget tab_button = (Widget)iupAttribGet(child, "_IUPMOT_TABBUTTON");
-    Widget target = tab_label ? tab_label : tab_button;
-
-    if (target)
-      XtVaSetValues(target, XmNrenderTable, fontlist, NULL);
-  }
+    motTabsSetTabFont(child, fontlist);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -817,20 +809,22 @@ static void motTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
       }
     }
 
-    background = iupAttribGetStr(ih, "BGCOLOR");
-    color = iupmotColorGetPixelStr(background);
-    if (color != -1)
-      iupmotSetBgColor(tab_button, color);
-
-    color = iupmotColorGetPixelStr(IupGetAttribute(ih, "FGCOLOR"));
-    XtVaSetValues(tab_button, XmNforeground, color, NULL);
-
-    XtRealizeWidget(child_manager);
-    XtRealizeWidget(tab_button);
-
     iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)child_manager);
     iupAttribSet(child, "_IUPMOT_TABBUTTON", (char*)tab_button);
     iupAttribSetInt(child, "_IUPMOT_TABNUMBER", pos);
+
+    color = iupmotColorGetPixelStr(iupAttribGetStr(ih, "BGCOLOR"));
+    if (color != (Pixel)-1)
+      motTabsSetTabBgColor(child, color);
+
+    color = iupmotColorGetPixelStr(IupGetAttribute(ih, "FGCOLOR"));
+    if (color != (Pixel)-1)
+      motTabsSetTabFgColor(child, color);
+
+    motTabsSetTabFont(child, (XmFontList)iupmotGetFontListAttrib(ih));
+
+    XtRealizeWidget(child_manager);
+    XtRealizeWidget(tab_button);
 
     if (pos != iupdrvTabsGetCurrentTab(ih))
       XtUnmapWidget(child_manager);
