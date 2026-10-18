@@ -203,14 +203,19 @@ public final class IupFontHelper
             Object tag = ((com.google.android.material.textfield.TextInputLayout)nativeObject).getTag();
             if (tag instanceof TextView) nativeObject = tag;
         }
-        TextPaint paint;
-        if (nativeObject instanceof TextView)
-            paint = new TextPaint(((TextView)nativeObject).getPaint());
-        else
+        TextPaint paint = null;
+        if (nativeObject instanceof android.widget.ListView)
+            paint = IupListHelper.rowTextPaint((android.widget.ListView)nativeObject);
+        if (paint == null)
         {
-            if (sDefaultPaint == null)
-                sDefaultPaint = new TextPaint(new TextView(IupCommon.getContextThemeWrapper()).getPaint());
-            paint = new TextPaint(sDefaultPaint);
+            if (nativeObject instanceof TextView)
+                paint = new TextPaint(((TextView)nativeObject).getPaint());
+            else
+            {
+                if (sDefaultPaint == null)
+                    sDefaultPaint = new TextPaint(new TextView(IupCommon.getContextThemeWrapper()).getPaint());
+                paint = new TextPaint(sDefaultPaint);
+            }
         }
         if (typeface != null) paint.setTypeface(typeface);
         return paint;

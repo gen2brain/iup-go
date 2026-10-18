@@ -239,15 +239,6 @@ extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
     (*w) += 8;
     (*h) += 8;
   }
-
-  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-  if (visiblecolumns > 0)
-  {
-    int adjust = (iupdrvFontGetStringWidth(ih, "WWWWWWWWWW") -
-                  iupdrvFontGetStringWidth(ih, "0000000000")) / 10;
-    if (adjust > 0)
-      (*w) -= visiblecolumns * adjust;
-  }
 }
 
 extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)

@@ -515,8 +515,22 @@ IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 
 IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
 {
-	(void)ih;
-	if (x) *x += 2;
+	static int field_chrome_w = -1, view_chrome_w = -1;
+
+	if (field_chrome_w < 0)
+	{
+		UITextField* f = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, 200, 40)];
+		f.borderStyle = UITextBorderStyleRoundedRect;
+		field_chrome_w = 200 - (int)floor([f textRectForBounds:f.bounds].size.width);
+		[f release];
+
+		UITextView* tv = [[UITextView alloc] initWithFrame:CGRectMake(0, 0, 200, 40)];
+		tv.textContainerInset = UIEdgeInsetsZero;
+		view_chrome_w = (int)ceil(tv.textContainerInset.left + tv.textContainerInset.right + 2 * tv.textContainer.lineFragmentPadding);
+		[tv release];
+	}
+
+	if (x) *x += (ih->data->is_multiline ? view_chrome_w : field_chrome_w) + 2;
 	if (y) *y += 2;
 }
 

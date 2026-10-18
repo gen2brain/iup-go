@@ -475,16 +475,6 @@ extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
     (*w) += iupqt_entry_border_x;
     (*h) += iupqt_entry_border_y;
   }
-
-  /* core sizes VISIBLECOLUMNS by the widest glyph; bring it down to digit width */
-  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-  if (visiblecolumns > 0)
-  {
-    int adjust = (iupdrvFontGetStringWidth(ih, "WWWWWWWWWW") -
-                  iupdrvFontGetStringWidth(ih, "0000000000")) / 10;
-    if (adjust > 0)
-      (*w) -= visiblecolumns * adjust;
-  }
 }
 
 extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)

@@ -4098,7 +4098,7 @@ static void iFlatTreeComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* 
     char_h += 2 * 2;
   line_h = iupMAX(img_h, char_h) + ih->data->spacing;
 
-  *w = (visiblecolumns * iupdrvFontGetStringWidth(ih, "WWWWWWWWWW")) / 10;
+  *w = (visiblecolumns * iupdrvFontGetStringWidth(ih, "0000000000")) / 10;
   *w += ih->data->indentation + img_w + ih->data->icon_spacing + ih->data->extratext_width;
   if (ih->data->show_toggle)
     *w += ih->data->toggle_size;

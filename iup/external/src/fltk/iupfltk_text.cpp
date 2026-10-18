@@ -1687,14 +1687,6 @@ extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 
   *w += Fl::box_dw(box) + 6;   /* LEFT_MARGIN(3) + RIGHT_MARGIN(3) in Fl_Text_Display */
   *h += Fl::box_dh(box) + 2;   /* TOP_MARGIN(1) + BOTTOM_MARGIN(1) in Fl_Text_Display */
-
-  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
-  if (visiblecolumns > 0)
-  {
-    int adjust = (iupdrvFontGetStringWidth(ih, "WWWWWWWWWW") - iupdrvFontGetStringWidth(ih, "0000000000")) / 10;
-    if (adjust > 0)
-      *w -= visiblecolumns * adjust;
-  }
 }
 
 extern "C" IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)

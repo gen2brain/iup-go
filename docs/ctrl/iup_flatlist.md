@@ -185,7 +185,7 @@ It will be ignored when TEXTWRAP=YES.
 Works only when MULTIPLE=NO. When set it will search for the first item with the same string.
 
 **VISIBLECOLUMNS**: Defines the number of visible columns for the **Natural Size**, this means that will act also as minimum number of visible columns.
-It uses a wider character size then the one used for the SIZE attribute, so strings will fit better without the need of extra columns.
+A column is the width of the digit "0" in the element font.
 Set this attribute to speed **Natural Size** computation for very large lists.
 
 **VISIBLELINES**: Defines the number of visible lines for the **Natural Size**, this means that will act also as minimum number of visible lines.
