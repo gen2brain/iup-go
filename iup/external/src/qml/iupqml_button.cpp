@@ -702,6 +702,20 @@ static int qmlButtonSetImPressAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void qmlButtonRegrabShortcut(Ihandle* ih)
+{
+  auto* button = reinterpret_cast<QQuickItem*>(ih->handle);
+  if (!button || !(ih->data->type & IUP_BUTTON_TEXT))
+    return;
+
+  QVariant text = button->property("text");
+  if (text.toString().isEmpty())
+    return;
+
+  button->setProperty("text", QString());
+  button->setProperty("text", text);
+}
+
 static int qmlButtonSetActiveAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type & IUP_BUTTON_IMAGE)
@@ -724,7 +738,9 @@ static int qmlButtonSetActiveAttrib(Ihandle* ih, const char* value)
     }
   }
 
-  return iupBaseSetActiveAttrib(ih, value);
+  int ret = iupBaseSetActiveAttrib(ih, value);
+  qmlButtonRegrabShortcut(ih);
+  return ret;
 }
 
 static int qmlButtonSetFlatAttrib(Ihandle* ih, const char* value)
