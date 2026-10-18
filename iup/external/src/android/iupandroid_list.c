@@ -64,8 +64,6 @@ IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
   {
     int pref = androidListPreferredRowHeight();
     if (*h < pref) *h = pref;
-    if (!ih->data->is_dropdown && ih->data->spacing > 0)
-      *h += 2 * ih->data->spacing;
   }
 }
 
@@ -119,7 +117,7 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
       iupdrvFontGetCharSize(ih, &char_w, &char_h);
       int item_h = char_h;
       iupdrvListAddItemSpace(ih, &item_h);
-      *h -= item_h;
+      *h -= item_h + 2 * ih->data->spacing;
     }
     *h += androidListEditBoxHeight();
   }
