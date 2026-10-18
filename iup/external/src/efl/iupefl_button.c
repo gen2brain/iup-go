@@ -227,49 +227,6 @@ static int eflButtonSetImageAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int eflButtonSetActiveAttrib(Ihandle* ih, const char* value)
-{
-  if (ih->data->type & IUP_BUTTON_IMAGE)
-  {
-    Eo* btn = iupeflGetWidget(ih);
-    if (btn)
-    {
-      if (!iupStrBoolean(value))
-      {
-        char* name = iupAttribGet(ih, "IMINACTIVE");
-        if (name)
-        {
-          Eo* image = iupeflImageGetImage(name, ih, 0);
-          if (image)
-            efl_content_set(btn, image);
-        }
-        else
-        {
-          name = iupAttribGet(ih, "IMAGE");
-          if (name)
-          {
-            Eo* image = iupeflImageGetImage(name, ih, 1);
-            if (image)
-              efl_content_set(btn, image);
-          }
-        }
-      }
-      else
-      {
-        char* name = iupAttribGet(ih, "IMAGE");
-        if (name)
-        {
-          Eo* image = iupeflImageGetImage(name, ih, 0);
-          if (image)
-            efl_content_set(btn, image);
-        }
-      }
-    }
-  }
-
-  return iupBaseSetActiveAttrib(ih, value);
-}
-
 static int eflButtonSetImInactiveAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type & IUP_BUTTON_IMAGE)
@@ -330,7 +287,8 @@ static void eflButtonApplyColors(Ihandle* ih, const char* value)
   Eo* btn = iupeflGetWidget(ih);
   unsigned char r, g, b;
   int chromeless = (ih->data->type & IUP_BUTTON_IMAGE) && iupAttribGet(ih, "IMPRESS") && !iupAttribGetBoolean(ih, "IMPRESSBORDER");
-  int flat_rest = chromeless || (iupAttribGetBoolean(ih, "FLAT") && !iupAttribGet(ih, "_IUP_EFL_HOVER"));
+  int hover = iupAttribGet(ih, "_IUP_EFL_HOVER") && iupdrvIsActive(ih);
+  int flat_rest = chromeless || (iupAttribGetBoolean(ih, "FLAT") && !hover);
 
   if (!btn)
     return;
@@ -340,7 +298,10 @@ static void eflButtonApplyColors(Ihandle* ih, const char* value)
 
   if (value && iupStrToRGB(value, &r, &g, &b))
   {
-    eflButtonSetColorClass(btn, "/bg/normal/button", r, g, b, 255);
+    if (hover)
+      eflButtonSetColorClass(btn, "/bg/normal/button", iupMIN(255, r * 11 / 10), iupMIN(255, g * 11 / 10), iupMIN(255, b * 11 / 10), 255);
+    else
+      eflButtonSetColorClass(btn, "/bg/normal/button", r, g, b, 255);
     eflButtonSetColorClass(btn, "/bg/pressed/button", r * 9 / 10, g * 9 / 10, b * 9 / 10, 255);
   }
   else if (flat_rest)
@@ -355,6 +316,53 @@ static void eflButtonApplyColors(Ihandle* ih, const char* value)
   }
 
   eflButtonSetColorClass(btn, "/shadow/normal/button", 0, 0, 0, flat_rest ? 0 : -1);
+}
+
+static int eflButtonSetActiveAttrib(Ihandle* ih, const char* value)
+{
+  if (ih->data->type & IUP_BUTTON_IMAGE)
+  {
+    Eo* btn = iupeflGetWidget(ih);
+    if (btn)
+    {
+      if (!iupStrBoolean(value))
+      {
+        char* name = iupAttribGet(ih, "IMINACTIVE");
+        if (name)
+        {
+          Eo* image = iupeflImageGetImage(name, ih, 0);
+          if (image)
+            efl_content_set(btn, image);
+        }
+        else
+        {
+          name = iupAttribGet(ih, "IMAGE");
+          if (name)
+          {
+            Eo* image = iupeflImageGetImage(name, ih, 1);
+            if (image)
+              efl_content_set(btn, image);
+          }
+        }
+      }
+      else
+      {
+        char* name = iupAttribGet(ih, "IMAGE");
+        if (name)
+        {
+          Eo* image = iupeflImageGetImage(name, ih, 0);
+          if (image)
+            efl_content_set(btn, image);
+        }
+      }
+    }
+  }
+
+  {
+    int ret = iupBaseSetActiveAttrib(ih, value);
+    eflButtonApplyColors(ih, iupAttribGet(ih, "BGCOLOR"));
+    return ret;
+  }
 }
 
 static void eflButtonHoverInCallback(void* data, const Efl_Event* ev)
@@ -413,14 +421,24 @@ static int eflButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 static int eflButtonSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   Eo* btn = iupeflGetWidget(ih);
-
-  (void)value;
+  Eo* markup_label = (Eo*)iupAttribGet(ih, "_IUP_EFL_MARKUP_LABEL");
+  unsigned char r, g, b;
 
   if (!btn)
     return 1;
 
-  if (ih->data->type & IUP_BUTTON_TEXT)
-    iupeflApplyTextStyle(ih, btn);
+  if (value && iupStrToRGB(value, &r, &g, &b))
+  {
+    eflButtonSetColorClass(btn, "/fg/normal/button", r, g, b, 255);
+    eflButtonSetColorClass(btn, "/fg/pressed/button", r, g, b, 255);
+    if (markup_label)
+      efl_text_color_set(markup_label, r, g, b, 255);
+  }
+  else
+  {
+    eflButtonSetColorClass(btn, "/fg/normal/button", 0, 0, 0, -1);
+    eflButtonSetColorClass(btn, "/fg/pressed/button", 0, 0, 0, -1);
+  }
 
   return 1;
 }
