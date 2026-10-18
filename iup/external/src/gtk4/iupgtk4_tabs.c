@@ -141,7 +141,7 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
     height += 8;
   }
 
-  if (ih->data->type == ITABS_LEFT || ih->data->type == ITABS_RIGHT)
+  if (ih->data->orientation == ITABS_VERTICAL)
   {
     if (tab_width) *tab_width = height;
     if (tab_height) *tab_height = width;
@@ -266,6 +266,20 @@ static int gtk4TabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
     if (value)
     {
       GtkWidget* tab_label = (GtkWidget*)iupAttribGet(child, "_IUPGTK4_TABLABEL");
+      GtkWidget* box = (GtkWidget*)iupAttribGet(child, "_IUPGTK4_TABBOX");
+      if (!tab_label && box)
+      {
+        unsigned char r, g, b;
+
+        tab_label = gtk_label_new(NULL);
+        gtk_box_insert_child_after(GTK_BOX(box), tab_label, (GtkWidget*)iupAttribGet(child, "_IUPGTK4_TABIMAGE"));
+
+        iupgtk4UpdateWidgetFont(ih, tab_label);
+        iupStrToRGB(IupGetAttribute(ih, "FGCOLOR"), &r, &g, &b);
+        iupgtk4SetFgColor(tab_label, r, g, b);
+        iupgtk4SetMargin(tab_label, ih->data->horiz_padding, ih->data->vert_padding);
+        iupAttribSet(child, "_IUPGTK4_TABLABEL", (char*)tab_label);
+      }
       if (tab_label)
       {
         GtkWidget* tab_page = (GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE");
@@ -629,6 +643,40 @@ static int gtk4TabsSetShowCloseAttrib(Ihandle* ih, int pos, const char* value)
   }
 }
 
+static void gtk4TabsRotatedMeasure(GtkWidget* widget, GtkOrientation orientation, int for_size, int* minimum, int* natural, int* minimum_baseline, int* natural_baseline)
+{
+  GtkWidget* child = gtk_widget_get_first_child(widget);
+  GtkOrientation swapped = orientation == GTK_ORIENTATION_HORIZONTAL ? GTK_ORIENTATION_VERTICAL : GTK_ORIENTATION_HORIZONTAL;
+
+  (void)for_size;
+
+  *minimum = 0;
+  *natural = 0;
+  if (child && gtk_widget_should_layout(child))
+    gtk_widget_measure(child, swapped, -1, minimum, natural, NULL, NULL);
+
+  if (minimum_baseline) *minimum_baseline = -1;
+  if (natural_baseline) *natural_baseline = -1;
+}
+
+static void gtk4TabsRotatedAllocate(GtkWidget* widget, int width, int height, int baseline)
+{
+  GtkWidget* child = gtk_widget_get_first_child(widget);
+  GskTransform* transform;
+
+  (void)baseline;
+
+  if (!child || !gtk_widget_should_layout(child))
+    return;
+
+  if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "iup-tab-angle")) < 0)
+    transform = gsk_transform_rotate(gsk_transform_translate(NULL, &GRAPHENE_POINT_INIT(0, height)), -90);
+  else
+    transform = gsk_transform_rotate(gsk_transform_translate(NULL, &GRAPHENE_POINT_INIT(width, 0)), 90);
+
+  gtk_widget_allocate(child, height, width, -1, transform);
+}
+
 static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 {
   if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
@@ -640,7 +688,7 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   if (ih->handle)
   {
-    GtkWidget* tab_page, *tab_container, *box = NULL;
+    GtkWidget* tab_page, *tab_container, *box, *tab_widget;
     GtkWidget* tab_label = NULL, *tab_image = NULL, *tab_close = NULL;
     char* tabtitle, *tabimage;
     int pos;
@@ -680,15 +728,6 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     {
       tab_label = gtk_label_new(NULL);
       iupgtk4SetMnemonicTitle(ih, (GtkLabel*)tab_label, tabtitle);
-
-      if (ih->data->orientation == ITABS_VERTICAL)
-      {
-        if (ih->data->type == ITABS_LEFT)
-          iupgtk4CssAddStaticRule(".iup-tab-label-vertical-left", "transform: rotate(-90deg);");
-        else
-          iupgtk4CssAddStaticRule(".iup-tab-label-vertical-right", "transform: rotate(90deg);");
-        gtk_widget_add_css_class(tab_label, ih->data->type == ITABS_LEFT ? "iup-tab-label-vertical-left" : "iup-tab-label-vertical-right");
-      }
     }
 
     if (tabimage)
@@ -717,11 +756,7 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     iupAttribSet(ih, "_IUPGTK4_IGNORE_CHANGE", "1");
 
-    if (ih->data->orientation == ITABS_VERTICAL)
-      box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
-    else
-      box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
-    gtk_widget_set_visible(box, TRUE);
+    box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
 
     if (tab_image)
       gtk_box_append(GTK_BOX(box), tab_image);
@@ -730,12 +765,22 @@ static void gtk4TabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     if (tab_close)
       gtk_box_append(GTK_BOX(box), tab_close);
 
+    if (ih->data->orientation == ITABS_VERTICAL)
+    {
+      tab_widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+      gtk_widget_set_layout_manager(tab_widget, gtk_custom_layout_new(NULL, gtk4TabsRotatedMeasure, gtk4TabsRotatedAllocate));
+      g_object_set_data(G_OBJECT(tab_widget), "iup-tab-angle", GINT_TO_POINTER(ih->data->type == ITABS_LEFT ? -90 : 90));
+      gtk_box_append(GTK_BOX(tab_widget), box);
+    }
+    else
+      tab_widget = box;
+
     GtkGesture* gesture = gtk_gesture_click_new();
     gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gesture), 0); /* all buttons */
-    gtk_widget_add_controller(box, GTK_EVENT_CONTROLLER(gesture));
+    gtk_widget_add_controller(tab_widget, GTK_EVENT_CONTROLLER(gesture));
     g_signal_connect(gesture, "pressed", G_CALLBACK(gtk4TabsButtonPressed), child);
 
-    gtk_notebook_insert_page((GtkNotebook*)ih->handle, tab_page, box, pos);
+    gtk_notebook_insert_page((GtkNotebook*)ih->handle, tab_page, tab_widget, pos);
 
     if (tab_label)
       gtk_notebook_set_menu_label_text((GtkNotebook*)ih->handle, tab_page, gtk_label_get_text((GtkLabel*)tab_label));
