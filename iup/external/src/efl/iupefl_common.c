@@ -1133,14 +1133,15 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
   if (efl_isa(widget, EFL_UI_WIN_CLASS))
   {
     Evas* evas = evas_object_evas_get(widget);
+    Eo* content = (Eo*)iupAttribGet(ih, "_IUP_EFL_INNER");
     iupAttribSet(ih, "_IUPEFL_INACTIVE", enable ? NULL : "1");
+    evas_object_freeze_events_set(widget, enable ? EINA_FALSE : EINA_TRUE);
     if (!enable)
     {
       Eo* blocker = (Eo*)iupAttribGet(ih, "_IUP_EFL_MODAL_BLOCKER");
       if (!blocker)
       {
-        Eo* inner = (Eo*)iupAttribGet(ih, "_IUP_EFL_INNER");
-        Evas_Object* parent = inner ? evas_object_smart_parent_get(inner) : NULL;
+        Evas_Object* parent = content ? evas_object_smart_parent_get(content) : NULL;
         if (parent && evas)
         {
           blocker = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas);
@@ -1148,25 +1149,19 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
           evas_object_smart_member_add(blocker, parent);
           efl_gfx_entity_size_set(blocker, EINA_SIZE2D(ih->currentwidth, ih->currentheight));
           efl_gfx_entity_position_set(blocker, EINA_POSITION2D(0, 0));
-          efl_gfx_stack_above(blocker, inner);
+          efl_gfx_stack_above(blocker, content);
           efl_gfx_entity_visible_set(blocker, EINA_TRUE);
           iupAttribSet(ih, "_IUP_EFL_MODAL_BLOCKER", (char*)blocker);
         }
       }
-      if (evas)
-        evas_event_freeze(evas);
     }
     else
     {
-      if (evas)
-        evas_event_thaw(evas);
+      Eo* blocker = (Eo*)iupAttribGet(ih, "_IUP_EFL_MODAL_BLOCKER");
+      if (blocker)
       {
-        Eo* blocker = (Eo*)iupAttribGet(ih, "_IUP_EFL_MODAL_BLOCKER");
-        if (blocker)
-        {
-          efl_del(blocker);
-          iupAttribSet(ih, "_IUP_EFL_MODAL_BLOCKER", NULL);
-        }
+        efl_del(blocker);
+        iupAttribSet(ih, "_IUP_EFL_MODAL_BLOCKER", NULL);
       }
     }
     return;

@@ -399,6 +399,12 @@ IUP_DRV_API int iupeflKeyProcessMnemonic(Ihandle* ih, Efl_Input_Key* key_event)
   return 1;
 }
 
+static int eflKeyDialogInactive(Ihandle* ih)
+{
+  Ihandle* dlg = IupGetDialog(ih);
+  return dlg && iupAttribGet(dlg, "_IUPEFL_INACTIVE");
+}
+
 IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -408,6 +414,12 @@ IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
   int code;
   int result;
   int has_shift;
+
+  if (eflKeyDialogInactive(ih))
+  {
+    efl_input_processed_set(key_event, EINA_TRUE);
+    return;
+  }
 
   if (eflKeyImfTextInput(ih, ev->object, key_event, keyname, keystr))
     return;
@@ -489,6 +501,12 @@ IUP_DRV_API void iupeflKeyUpEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Input_Key* key_event = ev->info;
+
+  if (eflKeyDialogInactive(ih))
+  {
+    efl_input_processed_set(key_event, EINA_TRUE);
+    return;
+  }
 
   if (ih->iclass->nativetype == IUP_TYPECANVAS)
   {
