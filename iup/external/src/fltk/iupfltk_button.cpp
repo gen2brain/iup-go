@@ -115,6 +115,8 @@ public:
           do_callback();
           return 1;
         }
+        if (iupfltkKeyPressEvent(this, iup_handle))
+          return 1;
         break;
       }
     }

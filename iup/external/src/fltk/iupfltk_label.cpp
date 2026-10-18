@@ -67,6 +67,12 @@ public:
       return;
     }
 
+    char* plain = iupStrProcessMnemonic(full, nullptr, 0);
+    std::string text(plain ? plain : full);
+    if (plain && plain != full)
+      free(plain);
+    full = text.c_str();
+
     fl_font(labelfont(), labelsize());
     if (static_cast<int>(fl_width(full)) <= W)
     {
@@ -140,21 +146,14 @@ extern "C" IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int*
     *x += 6;
 }
 
-/* Labels strip the '&' mnemonic: FLTK labels aren't focusable, so it has no effect. */
-static void fltkLabelSetTitle(Fl_Widget* widget, const char* value)
+static void fltkLabelSetTitle(Ihandle* ih, Fl_Widget* widget, const char* value)
 {
   if (!value)
     value = "";
 
-  char c;
-  char* str = iupStrProcessMnemonic(value, &c, -1);
-  if (str != value)
-  {
-    widget->copy_label(str);
-    free(str);
-  }
-  else
-    widget->copy_label(value);
+  iupKeySetMnemonic(ih, iupStrFindMnemonic(value), -1);
+  widget->shortcut_label(1);
+  widget->copy_label(value);
 }
 
 static int fltkLabelSetTitleAttrib(Ihandle* ih, const char* value)
@@ -164,7 +163,7 @@ static int fltkLabelSetTitleAttrib(Ihandle* ih, const char* value)
     auto* label = reinterpret_cast<IupFltkLabel*>(ih->handle);
     if (label)
     {
-      fltkLabelSetTitle(label, value);
+      fltkLabelSetTitle(ih, label, value);
       return 1;
     }
   }
@@ -427,7 +426,7 @@ static int fltkLabelMapMethod(Ihandle* ih)
 
     char* title = iupAttribGet(ih, "TITLE");
     if (title)
-      fltkLabelSetTitle(label, title);
+      fltkLabelSetTitle(ih, label, title);
   }
   else
   {
