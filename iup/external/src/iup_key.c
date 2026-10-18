@@ -544,14 +544,70 @@ IUP_SDK_API int iupKeyProcessNavigation(Ihandle* ih, int code, int shift)
   return 0;
 }
 
+static int iKeyMnemonicIsVisible(Ihandle* ih)
+{
+  if (ih->iclass->nativetype != IUP_TYPEVOID && ih->handle)
+    return IupGetInt(ih, "VISIBLE");
+  return !iupStrFalse(iupAttribGet(ih, "VISIBLE"));
+}
+
+static int iKeyMnemonicIsShown(Ihandle* ih, Ihandle* dialog)
+{
+  for (; ih && ih != dialog; ih = ih->parent)
+  {
+    if (!iKeyMnemonicIsVisible(ih))
+      return 0;
+
+    if (ih->parent && IupClassMatch(ih->parent, "tabs") &&
+        (Ihandle*)IupGetAttribute(ih->parent, "VALUE_HANDLE") != ih)
+      return 0;
+  }
+  return 1;
+}
+
+static int iKeyMnemonicMatch(Ihandle* ih, const char* attrib, int code)
+{
+  int mnemonic = 0;
+
+  if (iupAttribGet(ih, attrib))
+    return 1;
+
+  iupStrToInt(iupAttribGet(ih, "_IUP_MNEMONIC"), &mnemonic);
+  return mnemonic == code;
+}
+
+static Ihandle* iKeyFindMnemonic(Ihandle* dialog, Ihandle* ih, const char* attrib, int code)
+{
+  Ihandle* child;
+
+  for (child = ih->firstchild; child; child = child->brother)
+  {
+    Ihandle* found;
+
+    if (iKeyMnemonicMatch(child, attrib, code) && IupGetInt(child, "ACTIVE") && iKeyMnemonicIsShown(child, dialog))
+      return child;
+
+    found = iKeyFindMnemonic(dialog, child, attrib, code);
+    if (found)
+      return found;
+  }
+
+  return NULL;
+}
+
 IUP_SDK_API int iupKeyProcessMnemonic(Ihandle* ih, int code)
 {
   Ihandle* ih_mnemonic, *dialog = IupGetDialog(ih);
   char attrib[16] = "_IUP_MNEMONIC_ ";
+
+  if (!dialog)
+    return 0;
+
+  code = iup_toupper(code);
   attrib[14] = (char)code;
-  iupStrUpper(attrib, attrib);
-  ih_mnemonic = (Ihandle*)IupGetAttribute(dialog, attrib);
-  if (iupObjectCheck(ih_mnemonic))
+
+  ih_mnemonic = iKeyFindMnemonic(dialog, dialog, attrib, code);
+  if (ih_mnemonic)
   {
     if (IupClassMatch(ih_mnemonic, "label"))
     {
@@ -567,7 +623,7 @@ IUP_SDK_API int iupKeyProcessMnemonic(Ihandle* ih, int code)
       }
     }
     else if (IupClassMatch(ih_mnemonic, "tabs"))
-      IupSetAttribute(ih_mnemonic, "VALUEPOS", IupGetAttribute(ih_mnemonic, attrib));
+      IupSetAttribute(ih_mnemonic, "VALUEPOS", iupAttribGet(ih_mnemonic, attrib));
     else /* button or toggle */
       iupKeyActivate(ih_mnemonic);
 
@@ -579,12 +635,14 @@ IUP_SDK_API int iupKeyProcessMnemonic(Ihandle* ih, int code)
 
 IUP_SDK_API void iupKeySetMnemonic(Ihandle* ih, int code, int pos)
 {
-  Ihandle* ih_dialog = IupGetDialog(ih);
-  char attrib[16] = "_IUP_MNEMONIC_ ";
-  attrib[14] = (char)code;
-  iupStrUpper(attrib, attrib);
+  code = iup_toupper(code);
 
-  IupSetAttribute(ih_dialog, attrib, (char*)ih);
   if (IupClassMatch(ih, "tabs"))
-    IupSetInt(ih, attrib, pos);
+  {
+    char attrib[16] = "_IUP_MNEMONIC_ ";
+    attrib[14] = (char)code;
+    iupAttribSetInt(ih, attrib, pos);
+  }
+  else
+    iupAttribSetInt(ih, "_IUP_MNEMONIC", code);
 }
