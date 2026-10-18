@@ -335,6 +335,14 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 	iupCocoaTouchKeyText(_ihandle, self, K_BS);
 }
 
+- (UIView*)inputView
+{
+	static UIView* no_keyboard = nil;
+	if (_ihandle && IupGetCallback(_ihandle, "TEXTINPUT_CB")) return nil;
+	if (!no_keyboard) no_keyboard = [[UIView alloc] initWithFrame:CGRectZero];
+	return no_keyboard;
+}
+
 - (UIKeyboardType)keyboardType
 {
 	/* not ASCIICapable: that hides the globe key and blocks other-script keyboards */
