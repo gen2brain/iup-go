@@ -390,11 +390,110 @@ IUP_DRV_API void iupmotSetMnemonicTitle(Ihandle* ih, Widget w, int pos, const ch
   }
 }
 
+#ifdef IUP_USE_XFT
+static XmString motStringGenerateXft(Widget w, const char* value, int* has_fallback)
+{
+  XmString xm_str = NULL;
+  XmDirection direction = XmLEFT_TO_RIGHT;
+  void* base;
+  int len;
+
+  if (!value || iupStrIsAscii(value))
+    return NULL;
+
+  base = iupmotGetWidgetXftFont(w);
+  if (!base)
+    return NULL;
+
+  len = (int)strlen(value);
+
+  while (len > 0)
+  {
+    void* run_font;
+    int n = iupmotXftNextRun(base, value, len, &run_font);
+    char* tag = NULL;
+    char* run;
+
+    if (!xm_str)
+    {
+      if (n == len && run_font == base)
+        return NULL;
+
+      XtVaGetValues(w, XmNlayoutDirection, &direction, NULL);
+      xm_str = XmStringComponentCreate(XmSTRING_COMPONENT_LAYOUT_PUSH, sizeof(XmDirection), (XtPointer)&direction);
+    }
+
+    if (run_font != base)
+      tag = iupmotSetWidgetXftFallback(w, run_font);
+
+    run = (char*)malloc(n + 1);
+    memcpy(run, value, n);
+    run[n] = 0;
+    xm_str = XmStringConcatAndFree(xm_str, XmStringGenerate((XtPointer)run, "UTF-8", XmCHARSET_TEXT, tag));
+    free(run);
+
+    value += n;
+    len -= n;
+  }
+
+  *has_fallback = 1;
+  return XmStringConcatAndFree(xm_str, XmStringComponentCreate(XmSTRING_COMPONENT_LAYOUT_POP, 0, NULL));
+}
+#endif
+
+static XmString motStringCreate(Widget w, const char* value, int* has_fallback)
+{
+  int use_utf8 = 0;
+
+  if (iupmot_utf8mode)
+    use_utf8 = 1;
+#ifdef IUP_USE_XFT
+  else if (motStrIsLocaleUTF8())
+    use_utf8 = 1;
+#endif
+
+  if (use_utf8 && motStrCheckUTF8Support())
+  {
+    value = motStrValidUTF8(value);
+#ifdef IUP_USE_XFT
+    if (w)
+    {
+      XmString xm_str = motStringGenerateXft(w, value, has_fallback);
+      if (xm_str)
+        return xm_str;
+    }
+#endif
+    return XmStringGenerate((XtPointer)value, "UTF-8", XmCHARSET_TEXT, NULL);
+  }
+  else
+  {
+    value = iupmotStrConvertToSystem(value);
+    return XmStringCreateLocalized((String)value);
+  }
+}
+
+IUP_DRV_API XmString iupmotStringCreate(const char* value)
+{
+  return motStringCreate(NULL, value, NULL);
+}
+
+IUP_DRV_API XmString iupmotStringCreateWidget(Widget w, const char* value)
+{
+  int has_fallback = 0;
+  return motStringCreate(w, value, &has_fallback);
+}
+
 IUP_DRV_API void iupmotSetXmString(Widget w, const char* resource, const char* value)
 {
-  XmString xm_str = iupmotStringCreate(value);
+  int has_fallback = 0;
+  XmString xm_str = motStringCreate(w, value, &has_fallback);
   XmString cur_str = NULL;
   XtVaGetValues(w, resource, &cur_str, NULL);
+  if (cur_str && has_fallback)
+  {
+    XmStringFree(cur_str);
+    cur_str = NULL;
+  }
   if (cur_str)
   {
     Boolean equal = XmStringCompare(xm_str, cur_str);
@@ -456,28 +555,6 @@ IUP_DRV_API char* iupmotReturnXmString(XmString str)
   }
 
   return ret;
-}
-
-IUP_DRV_API XmString iupmotStringCreate(const char* value)
-{
-  int use_utf8 = 0;
-
-  if (iupmot_utf8mode)
-    use_utf8 = 1;
-#ifdef IUP_USE_XFT
-  else if (motStrIsLocaleUTF8())
-    use_utf8 = 1;
-#endif
-
-  if (use_utf8 && motStrCheckUTF8Support())
-  {
-    return XmStringGenerate((XtPointer)motStrValidUTF8(value), "UTF-8", XmCHARSET_TEXT, NULL);
-  }
-  else
-  {
-    value = iupmotStrConvertToSystem(value);
-    return XmStringCreateLocalized((String)value);
-  }
 }
 
 IUP_DRV_API void iupmotSetTitle(Widget w, const char* value)

@@ -50,6 +50,12 @@ IUP_DRV_API char* iupmotGetFontIdAttrib(Ihandle* ih);
 #ifdef IUP_USE_XFT
 IUP_DRV_API void* iupmotGetXftFontAttrib(Ihandle* ih);
 IUP_DRV_API void* iupmotGetXftFont(const char* value);
+IUP_DRV_API int iupmotXftNextRun(void* base, const char* str, int len, void** run_font);
+IUP_DRV_API int iupmotXftTextWidth(void* font, const char* str, int len);
+IUP_DRV_API void iupmotXftDrawString(void* draw, void* color, void* font, int x, int y, const char* str, int len);
+IUP_DRV_API void iupmotXftFontRelease(void* base);
+IUP_DRV_API void* iupmotGetWidgetXftFont(Widget w);
+IUP_DRV_API char* iupmotSetWidgetXftFallback(Widget w, void* font);
 #endif
 
 /* tips */
@@ -65,6 +71,7 @@ IUP_DRV_API char* iupmotReturnXmString(XmString str);
 IUP_DRV_API void iupmotSetMnemonicTitle(Ihandle* ih, Widget w, int pos, const char* value);
 IUP_DRV_API void iupmotTextSetString(Widget w, const char* value);
 IUP_DRV_API XmString iupmotStringCreate(const char* value);
+IUP_DRV_API XmString iupmotStringCreateWidget(Widget w, const char* value);
 IUP_DRV_API void iupmotSetTitle(Widget w, const char* value);
 IUP_DRV_API void iupmotStrSetUTF8Mode(int utf8mode);
 IUP_DRV_API void iupmotStrSetUTF8ModeFile(int utf8mode);

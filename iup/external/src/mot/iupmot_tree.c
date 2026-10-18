@@ -49,6 +49,12 @@ static void motTreeShowEditField(Ihandle* ih, Widget wItem);
 static void motTreeRemoveNode(Ihandle* ih, Widget wItem, int del_data, int call_cb);
 
 
+static void motTreeUpdateItemTitle(Widget wItem, const char* title)
+{
+  if (title && !iupStrIsAscii(title))
+    iupmotSetXmString(wItem, XmNlabelString, title);
+}
+
 /*****************************************************************************/
 /* COPYING ITEMS (Branches and its children)                                 */
 /*****************************************************************************/
@@ -107,6 +113,8 @@ static Widget motTreeCopyItem(Ihandle* ih, Widget wItem, Widget wParent, int pos
 
   /* Add the new node */
   wItemNew = XtCreateManagedWidget("icon", xmIconGadgetClass, ih->handle, args, num_args);
+
+  motTreeUpdateItemTitle(wItemNew, iupmotReturnXmString(title));
 
   ih->data->node_count++;
 
@@ -719,6 +727,8 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, const char* ti
 
   /* Add the new node */
   wItemNew = XtCreateManagedWidget("icon", xmIconGadgetClass, ih->handle, args, num_args);
+
+  motTreeUpdateItemTitle(wItemNew, title);
 
   if (wItemPrev)
     iupTreeAddToCache(ih, add, kindPrev, wItemPrev, wItemNew);
@@ -2706,6 +2716,8 @@ static Widget motTreeDragDropCopyItem(Ihandle* src, Ihandle* dst, Widget wItem, 
 
   /* Add the new node */
   wItemNew = XtCreateManagedWidget("icon", xmIconGadgetClass, dst->handle, args, num_args);
+
+  motTreeUpdateItemTitle(wItemNew, iupmotReturnXmString(title));
 
   dst->data->node_count++;
 

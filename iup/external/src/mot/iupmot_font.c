@@ -12,6 +12,10 @@
 #ifdef IUP_USE_XFT
 #include <X11/Xft/Xft.h>
 #include <Xm/XmStrDefs23.h>
+#include <Xm/Label.h>
+#include <Xm/LabelG.h>
+#include <Xm/List.h>
+#include <Xm/ComboBox.h>
 #endif
 
 #include "iup.h"
@@ -534,6 +538,328 @@ IUP_DRV_API void* iupmotGetXftFontAttrib(Ihandle* ih)
     return (void*)motfont->xftfont;
   return NULL;
 }
+
+typedef struct _ImotXftFallback
+{
+  XftFont* base;
+  XftFont* font;
+  FcChar32 miss;
+} ImotXftFallback;
+
+static Iarray* mot_xft_fallbacks = NULL;
+
+static XftFont* motXftOpenFallback(XftFont* base, FcChar32 ucs)
+{
+  FcObjectSet* os = FcObjectSetBuild(FC_FAMILY, FC_STYLE, FC_WEIGHT, FC_SLANT, FC_WIDTH, FC_SIZE, FC_PIXEL_SIZE,
+                                     FC_MATRIX, FC_ANTIALIAS, FC_HINTING, FC_HINT_STYLE, FC_RGBA, FC_DPI, (char*)NULL);
+  FcPattern* pattern = FcPatternFilter(base->pattern, os);
+  FcCharSet* charset = FcCharSetCreate();
+  FcPattern* match;
+  FcResult result;
+  XftFont* font = NULL;
+
+  FcObjectSetDestroy(os);
+  FcCharSetAddChar(charset, ucs);
+  FcPatternAddCharSet(pattern, FC_CHARSET, charset);
+  FcCharSetDestroy(charset);
+
+  match = XftFontMatch(iupmot_display, iupmot_screen, pattern, &result);
+  FcPatternDestroy(pattern);
+  if (!match)
+    return NULL;
+
+  font = XftFontOpenPattern(iupmot_display, match);
+  if (!font)
+  {
+    FcPatternDestroy(match);
+    return NULL;
+  }
+
+  if (font == base || !XftCharExists(iupmot_display, font, ucs))
+  {
+    XftFontClose(iupmot_display, font);
+    return NULL;
+  }
+
+  return font;
+}
+
+static XftFont* motXftFontForChar(XftFont* base, FcChar32 ucs)
+{
+  ImotXftFallback* fallbacks;
+  XftFont* font;
+  int i, count;
+
+  if (ucs < 0x20 || XftCharExists(iupmot_display, base, ucs))
+    return base;
+
+  if (!mot_xft_fallbacks)
+    mot_xft_fallbacks = iupArrayCreate(10, sizeof(ImotXftFallback));
+
+  fallbacks = (ImotXftFallback*)iupArrayGetData(mot_xft_fallbacks);
+  count = iupArrayCount(mot_xft_fallbacks);
+  for (i = 0; i < count; i++)
+  {
+    if (fallbacks[i].base != base)
+      continue;
+    if (fallbacks[i].font && XftCharExists(iupmot_display, fallbacks[i].font, ucs))
+      return fallbacks[i].font;
+    if (!fallbacks[i].font && fallbacks[i].miss == ucs)
+      return base;
+  }
+
+  font = motXftOpenFallback(base, ucs);
+
+  fallbacks = (ImotXftFallback*)iupArrayInc(mot_xft_fallbacks);
+  fallbacks[count].base = base;
+  fallbacks[count].font = font;
+  fallbacks[count].miss = font ? 0 : ucs;
+
+  return font ? font : base;
+}
+
+IUP_DRV_API int iupmotXftNextRun(void* base, const char* str, int len, void** run_font)
+{
+  XftFont* font = NULL;
+  int pos = 0;
+
+  while (pos < len)
+  {
+    FcChar32 ucs;
+    XftFont* char_font;
+    int n = FcUtf8ToUcs4((const FcChar8*)str + pos, &ucs, len - pos);
+    if (n <= 0)
+    {
+      n = 1;
+      char_font = (XftFont*)base;
+    }
+    else
+      char_font = motXftFontForChar((XftFont*)base, ucs);
+
+    if (font && char_font != font)
+      break;
+
+    font = char_font;
+    pos += n;
+  }
+
+  *run_font = font ? font : base;
+  return pos;
+}
+
+IUP_DRV_API int iupmotXftTextWidth(void* font, const char* str, int len)
+{
+  int width = 0;
+
+  while (len > 0)
+  {
+    XGlyphInfo extents;
+    void* run_font;
+    int n = iupmotXftNextRun(font, str, len, &run_font);
+    XftTextExtentsUtf8(iupmot_display, (XftFont*)run_font, (FcChar8*)str, n, &extents);
+    width += extents.xOff;
+    str += n;
+    len -= n;
+  }
+
+  return width;
+}
+
+IUP_DRV_API void iupmotXftDrawString(void* draw, void* color, void* font, int x, int y, const char* str, int len)
+{
+  while (len > 0)
+  {
+    XGlyphInfo extents;
+    void* run_font;
+    int n = iupmotXftNextRun(font, str, len, &run_font);
+    XftDrawStringUtf8((XftDraw*)draw, (XftColor*)color, (XftFont*)run_font, x, y, (FcChar8*)str, n);
+    XftTextExtentsUtf8(iupmot_display, (XftFont*)run_font, (FcChar8*)str, n, &extents);
+    x += extents.xOff;
+    y += extents.yOff;
+    str += n;
+    len -= n;
+  }
+}
+
+IUP_DRV_API void iupmotXftFontRelease(void* base)
+{
+  ImotXftFallback* fallbacks;
+  int i, count;
+
+  if (!mot_xft_fallbacks)
+    return;
+
+  fallbacks = (ImotXftFallback*)iupArrayGetData(mot_xft_fallbacks);
+  count = iupArrayCount(mot_xft_fallbacks);
+  for (i = count - 1; i >= 0; i--)
+  {
+    if (fallbacks[i].base == base)
+    {
+      if (fallbacks[i].font)
+        XftFontClose(iupmot_display, fallbacks[i].font);
+      iupArrayRemove(mot_xft_fallbacks, i, 1);
+      fallbacks = (ImotXftFallback*)iupArrayGetData(mot_xft_fallbacks);
+    }
+  }
+}
+
+static XmRendition motFontGetMainRendition(XmRenderTable table)
+{
+  XmStringTag* tags = NULL;
+  XmRendition rendition = NULL;
+  int i, count = XmRenderTableGetTags(table, &tags);
+
+  if (count > 0)
+    rendition = XmRenderTableGetRendition(table, tags[0]);
+
+  for (i = 0; i < count; i++)
+    XtFree(tags[i]);
+  XtFree((char*)tags);
+
+  return rendition;
+}
+
+IUP_DRV_API void* iupmotGetWidgetXftFont(Widget w)
+{
+  XmRenderTable table = NULL;
+  XmRendition rendition;
+  XmFontType type = XmFONT_IS_FONT;
+  XftFont* font = NULL;
+  Arg args[2];
+
+  XtVaGetValues(w, XmNrenderTable, &table, NULL);
+  if (!table)
+    return NULL;
+
+  rendition = motFontGetMainRendition(table);
+  if (!rendition)
+    return NULL;
+
+  XtSetArg(args[0], XmNfontType, &type);
+  XtSetArg(args[1], XmNxftFont, &font);
+  XmRenditionRetrieve(rendition, args, 2);
+  XmRenditionFree(rendition);
+
+  if (type != XmFONT_IS_XFT)
+    return NULL;
+  return font;
+}
+
+IUP_DRV_API char* iupmotSetWidgetXftFallback(Widget w, void* font)
+{
+  static char tag[50];
+  XmRenderTable table = NULL;
+  XmRendition rendition;
+  XftFont* font_ref;
+  unsigned char underline = XmNO_LINE, strikethru = XmNO_LINE;
+  Arg args[5];
+
+  snprintf(tag, sizeof(tag), "_IUPMOT_XFT_%p", font);
+
+  XtVaGetValues(w, XmNrenderTable, &table, NULL);
+  if (!table)
+    return NULL;
+
+  rendition = XmRenderTableGetRendition(table, tag);
+  if (rendition)
+  {
+    XmRenditionFree(rendition);
+    return tag;
+  }
+
+  rendition = motFontGetMainRendition(table);
+  if (rendition)
+  {
+    XtSetArg(args[0], XmNunderlineType, &underline);
+    XtSetArg(args[1], XmNstrikethruType, &strikethru);
+    XmRenditionRetrieve(rendition, args, 2);
+    XmRenditionFree(rendition);
+  }
+
+  font_ref = XftFontOpenPattern(iupmot_display, FcPatternDuplicate(((XftFont*)font)->pattern));
+  if (!font_ref)
+    return NULL;
+
+  XtSetArg(args[0], XmNfontType, XmFONT_IS_XFT);
+  XtSetArg(args[1], XmNxftFont, font_ref);
+  XtSetArg(args[2], XmNloadModel, XmLOAD_IMMEDIATE);
+  XtSetArg(args[3], XmNunderlineType, underline);
+  XtSetArg(args[4], XmNstrikethruType, strikethru);
+  rendition = XmRenditionCreate(w, tag, args, 5);
+
+  table = XmRenderTableCopy(table, NULL, 0);
+  table = XmRenderTableAddRenditions(table, &rendition, 1, XmMERGE_NEW);
+  XmRenditionFree(rendition);
+
+  XtVaSetValues(w, XmNrenderTable, table, NULL);
+  XmRenderTableFree(table);
+
+  return tag;
+}
+
+static int motFontHasXftFallback(Widget w)
+{
+  XmRenderTable table = NULL;
+  XmStringTag* tags = NULL;
+  int i, count;
+
+  XtVaGetValues(w, XmNrenderTable, &table, NULL);
+  if (!table)
+    return 0;
+
+  count = XmRenderTableGetTags(table, &tags);
+  for (i = 0; i < count; i++)
+    XtFree(tags[i]);
+  XtFree((char*)tags);
+
+  return count > 1;
+}
+
+static Widget motFontGetStringWidget(Widget w)
+{
+  if (XmIsComboBox(w))
+  {
+    Widget list = NULL;
+    XtVaGetValues(w, XmNlist, &list, NULL);
+    return list;
+  }
+  return w;
+}
+
+static void motFontUpdateXftFallback(Widget w)
+{
+  if (XmIsList(w))
+  {
+    XmStringTable items = NULL;
+    XmString* new_items;
+    int i, count = 0;
+
+    XtVaGetValues(w, XmNitems, &items, XmNitemCount, &count, NULL);
+    if (count <= 0)
+      return;
+
+    new_items = (XmString*)malloc(count * sizeof(XmString));
+    for (i = 0; i < count; i++)
+      new_items[i] = iupmotStringCreateWidget(w, iupmotReturnXmString(items[i]));
+
+    XmListReplaceItemsPos(w, new_items, count, 1);
+
+    for (i = 0; i < count; i++)
+      XmStringFree(new_items[i]);
+    free(new_items);
+  }
+  else if (XmIsLabel(w) || XmIsLabelGadget(w))
+  {
+    XmString str = NULL;
+    XtVaGetValues(w, XmNlabelString, &str, NULL);
+    if (str)
+    {
+      char* text = iupmotReturnXmString(str);
+      XmStringFree(str);
+      iupmotSetXmString(w, XmNlabelString, text);
+    }
+  }
+}
 #endif
 
 IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
@@ -550,9 +876,17 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   if (ih->handle && (ih->iclass->nativetype != IUP_TYPEVOID) &&
       (XmFontList)iupAttribGet(ih, "_IUPMOT_FONTLIST") != motfont->fontlist)
   {
+#ifdef IUP_USE_XFT
+    Widget str_widget = motFontGetStringWidget(ih->handle);
+    int had_fallback = str_widget && motFontHasXftFallback(str_widget);
+#endif
     XtVaSetValues(ih->handle, XmNrenderTable, motfont->fontlist, NULL);
     XtVaSetValues(ih->handle, XmNfontList, motfont->fontlist, NULL);
     iupAttribSet(ih, "_IUPMOT_FONTLIST", (char*)motfont->fontlist);
+#ifdef IUP_USE_XFT
+    if (had_fallback)
+      motFontUpdateXftFallback(str_widget);
+#endif
   }
 
   return 1;
@@ -579,11 +913,7 @@ IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str)
 
 #ifdef IUP_USE_XFT
   if (motfont->is_xft && motfont->xftfont)
-  {
-    XGlyphInfo extents;
-    XftTextExtentsUtf8(iupmot_display, motfont->xftfont, (FcChar8*)str, len, &extents);
-    return extents.xOff;
-  }
+    return iupmotXftTextWidth(motfont->xftfont, str, len);
   else
 #endif
   {
@@ -627,11 +957,7 @@ static void motFontGetTextSize(ImotFont* motfont, const char* str, int len, int*
       {
 #ifdef IUP_USE_XFT
         if (motfont->is_xft && motfont->xftfont)
-        {
-          XGlyphInfo extents;
-          XftTextExtentsUtf8(iupmot_display, motfont->xftfont, (FcChar8*)curstr, l_len, &extents);
-          lw = extents.xOff;
-        }
+          lw = iupmotXftTextWidth(motfont->xftfont, curstr, l_len);
         else
 #endif
         {
@@ -866,6 +1192,8 @@ IUP_SDK_API void iupdrvFontFinish(void)
       XmFontListFree(fonts[i].fontlist);
     fonts[i].fontlist = NULL;
 #ifdef IUP_USE_XFT
+    if (fonts[i].xftfont)
+      iupmotXftFontRelease(fonts[i].xftfont);
     fonts[i].xftfont = NULL;
 #endif
     if (fonts[i].fontstruct)
@@ -875,4 +1203,11 @@ IUP_SDK_API void iupdrvFontFinish(void)
     }
   }
   iupArrayDestroy(mot_fonts);
+#ifdef IUP_USE_XFT
+  if (mot_xft_fallbacks)
+  {
+    iupArrayDestroy(mot_xft_fallbacks);
+    mot_xft_fallbacks = NULL;
+  }
+#endif
 }
