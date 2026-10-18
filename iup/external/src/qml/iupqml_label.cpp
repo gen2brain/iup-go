@@ -77,8 +77,10 @@ static void qmlLabelUpdateText(Ihandle* ih, QQuickItem* label, const char* value
     return;
   }
 
-  char c;
+  char c = 0;
   char* str = iupStrProcessMnemonic(value, &c, -1);
+
+  iupKeySetMnemonic(ih, c, -1);
 
   if (str && str != value)
   {
@@ -92,8 +94,6 @@ static void qmlLabelUpdateText(Ihandle* ih, QQuickItem* label, const char* value
         text = text.toHtmlEscaped();
       label->setProperty("textFormat", 4);
       label->setProperty("text", text);
-      if (IupGetDialog(ih))
-        iupKeySetMnemonic(ih, c, -1);
     }
     else
     {

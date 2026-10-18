@@ -318,6 +318,8 @@ static void qmlToggleSetText(Ihandle* ih, QQuickItem* button, const char* value)
   QString plain = QString::fromUtf8(str ? str : "");
   QString html = plain.toHtmlEscaped();
 
+  iupKeySetMnemonic(ih, c, -1);
+
   if (str && str != value)
   {
     if (c)
@@ -325,8 +327,6 @@ static void qmlToggleSetText(Ihandle* ih, QQuickItem* button, const char* value)
       int idx = plain.indexOf(QChar(c), 0, Qt::CaseInsensitive);
       if (idx >= 0 && iupqmlMnemonicVisible())
         html = plain.left(idx).toHtmlEscaped() + "<u>" + plain.mid(idx, 1).toHtmlEscaped() + "</u>" + plain.mid(idx + 1).toHtmlEscaped();
-      if (IupGetDialog(ih))
-        iupKeySetMnemonic(ih, c, -1);
     }
     free(str);
   }
