@@ -40,6 +40,28 @@ static void gtkLabelSeparatorLineColor(unsigned char* r, unsigned char* g, unsig
   *b = iupDrawBlue(line);
 }
 
+#if GTK_CHECK_VERSION(3, 16, 0)
+static void gtkLabelSetSeparatorLine(Ihandle* ih, unsigned char r, unsigned char g, unsigned char b)
+{
+  GtkCssProvider* provider = (GtkCssProvider*)iupAttribGet(ih, "_IUPGTK_SEPARATOR_CSS");
+  const char* place = (ih->data->type == IUP_LABEL_SEP_HORIZ) ? "top / 100% 1px" : "left / 1px 100%";
+  char* css;
+
+  if (!provider)
+  {
+    provider = gtk_css_provider_new();
+    gtk_style_context_add_provider(gtk_widget_get_style_context(ih->handle), GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+    g_object_unref(provider);
+    iupAttribSet(ih, "_IUPGTK_SEPARATOR_CSS", (char*)provider);
+  }
+
+  css = g_strdup_printf("* { background: linear-gradient(rgb(%d,%d,%d), rgb(%d,%d,%d)) %s no-repeat transparent; }",
+                        r, g, b, r, g, b, place);
+  gtk_css_provider_load_from_data(provider, css, -1, NULL);
+  g_free(css);
+}
+#endif
+
 #if !GTK_CHECK_VERSION(3, 0, 0)
 static gboolean gtkLabelSeparatorExpose(GtkWidget* widget, GdkEventExpose* evt, Ihandle* ih)
 {
@@ -55,7 +77,10 @@ static gboolean gtkLabelSeparatorExpose(GtkWidget* widget, GdkEventExpose* evt, 
   gdk_cairo_region(cr, evt->region);
   cairo_clip(cr);
   cairo_set_source_rgb(cr, r / 255.0, g / 255.0, b / 255.0);
-  cairo_rectangle(cr, allocation.x, allocation.y, allocation.width, allocation.height);
+  if (ih->data->type == IUP_LABEL_SEP_HORIZ)
+    cairo_rectangle(cr, allocation.x, allocation.y + (allocation.height - 1) / 2, allocation.width, 1);
+  else
+    cairo_rectangle(cr, allocation.x + (allocation.width - 1) / 2, allocation.y, 1, allocation.height);
   cairo_fill(cr);
   cairo_destroy(cr);
   return TRUE;
@@ -83,7 +108,9 @@ static int gtkLabelSetBgColorAttrib(Ihandle* ih, const char* value)
     if (ih->data->type == IUP_LABEL_SEP_HORIZ || ih->data->type == IUP_LABEL_SEP_VERT)
     {
       gtkLabelSeparatorLineColor(&r, &g, &b);
-#if GTK_CHECK_VERSION(3, 0, 0)
+#if GTK_CHECK_VERSION(3, 16, 0)
+      gtkLabelSetSeparatorLine(ih, r, g, b);
+#elif GTK_CHECK_VERSION(3, 0, 0)
       iupgtkSetBgColor(ih->handle, r, g, b);
 #else
       iupAttribSetStrf(ih, "_IUPGTK_SEPARATOR_COLOR", "%d %d %d", (int)r, (int)g, (int)b);

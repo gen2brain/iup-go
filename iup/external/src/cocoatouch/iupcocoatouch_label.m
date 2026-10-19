@@ -175,6 +175,42 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 @end
 
 
+@interface IupCocoaTouchSeparatorView : UIView
+@property (nonatomic, retain) UIColor* lineColor;
+@property (nonatomic, assign) BOOL vertical;
+@end
+
+@implementation IupCocoaTouchSeparatorView
+
+- (void)dealloc
+{
+	[_lineColor release];
+	[super dealloc];
+}
+
+- (void)drawRect:(CGRect)rect
+{
+	CGRect line = self.bounds;
+	if (self.vertical)
+	{
+		line.size.width = 1;
+	}
+	else
+	{
+		line.size.height = 1;
+	}
+	[self.lineColor setFill];
+	UIRectFill(line);
+}
+
+- (void)traitCollectionDidChange:(UITraitCollection*)previousTraitCollection
+{
+	[super traitCollectionDidChange:previousTraitCollection];
+	[self setNeedsDisplay];
+}
+
+@end
+
 @interface IupCocoaTouchLabelSelectTarget : NSObject
 @property(nonatomic, assign) Ihandle* ihandle;
 @property(nonatomic, assign) UILongPressGestureRecognizer* recognizer;
@@ -554,15 +590,16 @@ static int cocoaTouchLabelSetBgColorAttrib(Ihandle* ih, const char* value)
 	{
 		return 0;
 	}
-	int type = cocoaTouchLabelType(ih);
-	if (type == IUP_LABEL_SEP_HORIZ || type == IUP_LABEL_SEP_VERT)
+	if ([(id)ih->handle isKindOfClass:[IupCocoaTouchSeparatorView class]])
 	{
 		unsigned char r, g, b;
 		if (!iupStrToRGB(value, &r, &g, &b))
 		{
 			return 0;
 		}
-		color = cocoaTouchSeparatorLineColor(r, g, b);
+		IupCocoaTouchSeparatorView* sep = (IupCocoaTouchSeparatorView*)ih->handle;
+		sep.lineColor = cocoaTouchSeparatorLineColor(r, g, b);
+		[sep setNeedsDisplay];
 	}
 	[(UIView*)ih->handle setBackgroundColor:color];
 	return 1;
@@ -683,8 +720,11 @@ static int cocoaTouchLabelMapMethod(Ihandle* ih)
 
 	if ((value = iupAttribGet(ih, "SEPARATOR")) != NULL)
 	{
-		UIView* sep = [[UIView alloc] initWithFrame:CGRectZero];
-		[sep setBackgroundColor:cocoaTouchSeparatorColor()];
+		IupCocoaTouchSeparatorView* sep = [[IupCocoaTouchSeparatorView alloc] initWithFrame:CGRectZero];
+		[sep setBackgroundColor:[UIColor clearColor]];
+		[sep setOpaque:NO];
+		[sep setContentMode:UIViewContentModeRedraw];
+		sep.lineColor = cocoaTouchSeparatorColor();
 		if (iupStrEqualNoCase(value, "HORIZONTAL"))
 		{
 			ih->data->type = IUP_LABEL_SEP_HORIZ;
@@ -692,6 +732,7 @@ static int cocoaTouchLabelMapMethod(Ihandle* ih)
 		else
 		{
 			ih->data->type = IUP_LABEL_SEP_VERT;
+			sep.vertical = YES;
 		}
 		widget = sep;
 	}

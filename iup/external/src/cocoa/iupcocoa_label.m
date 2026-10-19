@@ -98,6 +98,8 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
 	NSTrackingArea* _mouseTrackingArea;
 }
 @property (nonatomic, retain) NSColor* customBackgroundColor;
+@property (nonatomic, retain) NSColor* separatorLineColor;
+@property (nonatomic, assign) BOOL separatorVertical;
 @end
 
 @implementation IUPCocoaLabelEventView
@@ -110,6 +112,7 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
 		[_mouseTrackingArea release];
 	}
 	[_customBackgroundColor release];
+	[_separatorLineColor release];
 	[super dealloc];
 }
 
@@ -119,6 +122,20 @@ typedef NS_ENUM(NSUInteger, IUPTextVerticalAlignment)
 	{
 		[self.customBackgroundColor setFill];
 		NSRectFill(self.bounds);
+	}
+	if (self.separatorLineColor)
+	{
+		NSRect line = self.bounds;
+		if (self.separatorVertical)
+			line.size.width = 1;
+		else
+		{
+			if (![self isFlipped])
+				line.origin.y = NSMaxY(line) - 1;
+			line.size.height = 1;
+		}
+		[self.separatorLineColor setFill];
+		NSRectFill(line);
 	}
 	[super drawRect:dirtyRect];
 }
@@ -816,10 +833,9 @@ static int cocoaLabelSetBgColorAttrib(Ihandle* ih, const char* value)
 
   if ((ih->data->type == IUP_LABEL_SEP_HORIZ || ih->data->type == IUP_LABEL_SEP_VERT) && [the_view isKindOfClass:[NSBox class]])
   {
-    NSBox* separator = (NSBox*)the_view;
-    [separator setBoxType:NSBoxCustom];
-    [separator setBorderWidth:0];
-    [separator setFillColor:cocoaLabelSeparatorLineColor(r, g, b)];
+    [the_view setHidden:YES];
+    root_view.separatorLineColor = cocoaLabelSeparatorLineColor(r, g, b);
+    root_view.separatorVertical = (ih->data->type == IUP_LABEL_SEP_VERT);
   }
 
   if ([the_view isKindOfClass:[NSTextField class]])

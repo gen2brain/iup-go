@@ -2959,10 +2959,22 @@ IUP_SDK_API void iupDrawCalcShadows(long bgcolor, long* light_shadow, long* mid_
 
 IUP_SDK_API long iupDrawCalcSeparatorColor(long bgcolor)
 {
-  long light_shadow, dark_shadow;
-  int lum = (iupDrawRed(bgcolor) * 299 + iupDrawGreen(bgcolor) * 587 + iupDrawBlue(bgcolor) * 114) / 1000;
-  iupDrawCalcShadows(bgcolor, &light_shadow, NULL, &dark_shadow);
-  return (lum < 128) ? light_shadow : dark_shadow;
+  int r = iupDrawRed(bgcolor), g = iupDrawGreen(bgcolor), b = iupDrawBlue(bgcolor);
+
+  if ((r * 299 + g * 587 + b * 114) / 1000 < 128)
+  {
+    r += ((255 - r) * 15) / 100;
+    g += ((255 - g) * 15) / 100;
+    b += ((255 - b) * 15) / 100;
+  }
+  else
+  {
+    r -= (r * 15) / 100;
+    g -= (g * 15) / 100;
+    b -= (b * 15) / 100;
+  }
+
+  return iupDrawColor((unsigned char)r, (unsigned char)g, (unsigned char)b, 255);
 }
 
 IUP_SDK_API void iupDrawParentBackground(IdrawCanvas* dc, Ihandle* ih)

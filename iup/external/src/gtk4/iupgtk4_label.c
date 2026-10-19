@@ -47,8 +47,16 @@ static int gtk4LabelSetBgColorAttrib(Ihandle* ih, const char* value)
   if (ih->handle)
   {
     if (ih->data->type == IUP_LABEL_SEP_HORIZ || ih->data->type == IUP_LABEL_SEP_VERT)
+    {
+      const char* place = (ih->data->type == IUP_LABEL_SEP_HORIZ) ? "top / 100% 1px" : "left / 1px 100%";
+      char* css;
       gtk4LabelSeparatorLineColor(&r, &g, &b);
-    iupgtk4SetBgColor(ih->handle, r, g, b);
+      css = g_strdup_printf("linear-gradient(rgb(%d,%d,%d), rgb(%d,%d,%d)) %s no-repeat transparent", r, g, b, r, g, b, place);
+      iupgtk4CssSetWidgetCustom(ih->handle, "background", css);
+      g_free(css);
+    }
+    else
+      iupgtk4SetBgColor(ih->handle, r, g, b);
   }
 
   return 1;
