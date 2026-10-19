@@ -17,6 +17,8 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
+#include "iup_drvdraw.h"
+#include "iup_draw.h"
 #include "iup_label.h"
 #include "iup_drv.h"
 #include "iup_focus.h"
@@ -29,6 +31,36 @@ IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
   (void)x;
   (void)y;
 }
+
+static void gtkLabelSeparatorLineColor(unsigned char* r, unsigned char* g, unsigned char* b)
+{
+  long line = iupDrawCalcSeparatorColor(iupDrawColor(*r, *g, *b, 255));
+  *r = iupDrawRed(line);
+  *g = iupDrawGreen(line);
+  *b = iupDrawBlue(line);
+}
+
+#if !GTK_CHECK_VERSION(3, 0, 0)
+static gboolean gtkLabelSeparatorExpose(GtkWidget* widget, GdkEventExpose* evt, Ihandle* ih)
+{
+  GtkAllocation allocation;
+  cairo_t* cr;
+  unsigned char r, g, b;
+  if (!iupStrToRGB(iupAttribGet(ih, "_IUPGTK_SEPARATOR_COLOR"), &r, &g, &b))
+    return FALSE;
+
+  gtk_widget_get_allocation(widget, &allocation);
+
+  cr = gdk_cairo_create(evt->window);
+  gdk_cairo_region(cr, evt->region);
+  cairo_clip(cr);
+  cairo_set_source_rgb(cr, r / 255.0, g / 255.0, b / 255.0);
+  cairo_rectangle(cr, allocation.x, allocation.y, allocation.width, allocation.height);
+  cairo_fill(cr);
+  cairo_destroy(cr);
+  return TRUE;
+}
+#endif
 
 static int gtkLabelSetBgColorAttrib(Ihandle* ih, const char* value)
 {
@@ -47,7 +79,20 @@ static int gtkLabelSetBgColorAttrib(Ihandle* ih, const char* value)
   }
 
   if (ih->handle)
-    iupgtkSetBgColor(ih->handle, r, g, b);
+  {
+    if (ih->data->type == IUP_LABEL_SEP_HORIZ || ih->data->type == IUP_LABEL_SEP_VERT)
+    {
+      gtkLabelSeparatorLineColor(&r, &g, &b);
+#if GTK_CHECK_VERSION(3, 0, 0)
+      iupgtkSetBgColor(ih->handle, r, g, b);
+#else
+      iupAttribSetStrf(ih, "_IUPGTK_SEPARATOR_COLOR", "%d %d %d", (int)r, (int)g, (int)b);
+      gtk_widget_queue_draw(ih->handle);
+#endif
+    }
+    else
+      iupgtkSetBgColor(ih->handle, r, g, b);
+  }
 
   return 1;
 }
@@ -376,6 +421,11 @@ static int gtkLabelMapMethod(Ihandle* ih)
 
   /* add to the parent, all GTK controls must call this. */
   iupgtkAddToParent(ih);
+
+#if !GTK_CHECK_VERSION(3, 0, 0)
+  if (ih->data->type == IUP_LABEL_SEP_HORIZ || ih->data->type == IUP_LABEL_SEP_VERT)
+    g_signal_connect(G_OBJECT(label), "expose-event", G_CALLBACK(gtkLabelSeparatorExpose), ih);
+#endif
 
   gtk_widget_realize(label);
 

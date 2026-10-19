@@ -277,13 +277,15 @@ static int eflLabelMapMethod(Ihandle* ih)
     {
       ih->data->type = IUP_LABEL_SEP_HORIZ;
 
-      label = efl_add(EFL_UI_SEPARATOR_CLASS, parent, efl_ui_layout_orientation_set(efl_added, EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL));
+      label = elm_separator_add(parent);
+      elm_separator_horizontal_set(label, EINA_TRUE);
     }
     else
     {
       ih->data->type = IUP_LABEL_SEP_VERT;
 
-      label = efl_add(EFL_UI_SEPARATOR_CLASS, parent, efl_ui_layout_orientation_set(efl_added, EFL_UI_LAYOUT_ORIENTATION_VERTICAL));
+      label = elm_separator_add(parent);
+      elm_separator_horizontal_set(label, EINA_FALSE);
     }
   }
   else
@@ -340,8 +342,14 @@ static void eflLabelUnMapMethod(Ihandle* ih)
 IUP_SDK_API void iupdrvLabelAddExtraPadding(Ihandle* ih, int* x, int* y)
 {
   int border_x, border_y;
+  int type = iupLabelGetTypeBeforeMap(ih);
 
-  if (ih->data->type != IUP_LABEL_TEXT)
+  if (type == IUP_LABEL_SEP_HORIZ)
+    *y += 8;
+  else if (type == IUP_LABEL_SEP_VERT)
+    *x += 8;
+
+  if (type != IUP_LABEL_TEXT)
     return;
 
   iupeflTextGetBorder(&border_x, &border_y);
