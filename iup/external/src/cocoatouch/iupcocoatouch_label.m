@@ -18,6 +18,8 @@
 #include "iup_str.h"
 #include "iup_key.h"
 #include "iup_image.h"
+#include "iup_drvdraw.h"
+#include "iup_draw.h"
 #include "iup_label.h"
 #include "iup_drv.h"
 
@@ -539,12 +541,28 @@ static int cocoaTouchLabelSetImInactiveAttrib(Ihandle* ih, const char* value)
 	return 1;
 }
 
+static UIColor* cocoaTouchSeparatorLineColor(unsigned char r, unsigned char g, unsigned char b)
+{
+	long line = iupDrawCalcSeparatorColor(iupDrawColor(r, g, b, 255));
+	return [UIColor colorWithRed:iupDrawRed(line)/255.0 green:iupDrawGreen(line)/255.0 blue:iupDrawBlue(line)/255.0 alpha:1.0];
+}
+
 static int cocoaTouchLabelSetBgColorAttrib(Ihandle* ih, const char* value)
 {
 	UIColor* color = iupCocoaTouchToNativeColor(value);
 	if (!color || ![(id)ih->handle isKindOfClass:[UIView class]])
 	{
 		return 0;
+	}
+	int type = cocoaTouchLabelType(ih);
+	if (type == IUP_LABEL_SEP_HORIZ || type == IUP_LABEL_SEP_VERT)
+	{
+		unsigned char r, g, b;
+		if (!iupStrToRGB(value, &r, &g, &b))
+		{
+			return 0;
+		}
+		color = cocoaTouchSeparatorLineColor(r, g, b);
 	}
 	[(UIView*)ih->handle setBackgroundColor:color];
 	return 1;

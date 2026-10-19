@@ -286,7 +286,8 @@ static int fltkLabelSetBgColorAttrib(Ihandle* ih, const char* value)
   if (label)
   {
     label->color(fl_rgb_color(r, g, b));
-    label->box(FL_FLAT_BOX);
+    if (ih->data->type != IUP_LABEL_SEP_HORIZ && ih->data->type != IUP_LABEL_SEP_VERT)
+      label->box(FL_FLAT_BOX);
     return 1;
   }
   return 0;

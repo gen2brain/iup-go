@@ -16,6 +16,8 @@ extern "C" {
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
+#include "iup_drvdraw.h"
+#include "iup_draw.h"
 #include "iup_label.h"
 #include "iup_key.h"
 #include "iup_classbase.h"
@@ -547,12 +549,17 @@ static int winuiLabelSetFgColorAttrib(Ihandle* ih, const char* value)
 
 static int winuiLabelSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  if (ih->data->type == IUP_LABEL_SEP_HORIZ || ih->data->type == IUP_LABEL_SEP_VERT)
-    return 1;
-
   unsigned char r, g, b;
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
+
+  if (ih->data->type == IUP_LABEL_SEP_HORIZ || ih->data->type == IUP_LABEL_SEP_VERT)
+  {
+    long line = iupDrawCalcSeparatorColor(iupDrawColor(r, g, b, 255));
+    r = iupDrawRed(line);
+    g = iupDrawGreen(line);
+    b = iupDrawBlue(line);
+  }
 
   auto border = winuiGetHandle<Border>(ih);
   if (border)

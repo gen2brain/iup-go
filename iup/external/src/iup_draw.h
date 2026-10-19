@@ -32,6 +32,7 @@ extern "C"
 IUP_SDK_API long iupDrawStrToColor(const char* str, long c_def);
 IUP_SDK_API long iupDrawColor(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha);
 IUP_SDK_API void iupDrawCalcShadows(long bgcolor, long* light_shadow, long* mid_shadow, long* dark_shadow);
+IUP_SDK_API long iupDrawCalcSeparatorColor(long bgcolor);
 IUP_SDK_API long iupDrawColorMakeInactive(long color, long bgcolor);
 
 #define iupDrawAlpha(_c)    (unsigned char)(~(((_c) >> 24) & 0xFF))   /* 0=transparent, 255=opaque (default is opaque, internally stored as 0) */
