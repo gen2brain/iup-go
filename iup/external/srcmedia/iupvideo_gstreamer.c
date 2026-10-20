@@ -4,6 +4,7 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,8 +18,11 @@ typedef struct
   IvideoSession* session;
   GstElement* player;
   GstElement* sink;
+  GstElement* balance;
+  GstElement* gamma;
   GstBus* bus;
   int play, buffering, live;
+  int64_t restore_position;
   int width, height;
   double aspect;
   IvideoInfo info;
@@ -92,6 +96,71 @@ static int iVideoGstAvailable(void)
   return available;
 }
 
+static GstElement* iVideoGstDeviceSink(GstDevice* device)
+{
+  GstElement* sink = gst_device_create_element(device, NULL);
+  GstElementFactory* factory;
+  if (!sink)
+    return NULL;
+  g_object_ref_sink(sink);
+  factory = gst_element_get_factory(sink);
+  if (!factory || gst_plugin_feature_get_rank((GstPluginFeature*)factory) < 64)
+  {
+    g_object_unref(sink);
+    return NULL;
+  }
+  return sink;
+}
+
+static int iVideoGstAudioSinks(IvideoAudioDevice** devices, const char* id, GstElement** found)
+{
+  GstDeviceMonitor* monitor = gst_device_monitor_new();
+  GList* list;
+  GList* item;
+  int i, count = 0;
+  if (!monitor)
+    return 0;
+  gst_device_monitor_set_show_all_devices(monitor, 1);
+  gst_device_monitor_add_filter(monitor, "Audio/Sink", NULL);
+  list = gst_device_monitor_get_devices(monitor);
+  for (item = list; item; item = item->next)
+  {
+    char* name = gst_device_get_display_name((GstDevice*)item->data);
+    GstElement* sink = name ? iVideoGstDeviceSink((GstDevice*)item->data) : NULL;
+    int seen = 0;
+    for (i = 0; devices && i < count; i++)
+    {
+      if (strcmp((*devices)[i].id, name) == 0)
+        seen = 1;
+    }
+    if (sink && !seen)
+    {
+      if (found && !*found && strcmp(name, id) == 0)
+      {
+        *found = sink;
+        sink = NULL;
+      }
+      if (devices)
+        count = iupVideoAddAudioDevice(devices, count, name, name);
+    }
+    if (sink)
+      g_object_unref(sink);
+    g_free(name);
+    g_object_unref(item->data);
+  }
+  g_list_free(list);
+  g_object_unref(monitor);
+  return count;
+}
+
+static GstElement* iVideoGstAudioSink(const char* id)
+{
+  GstElement* sink = NULL;
+  if (id)
+    iVideoGstAudioSinks(NULL, id, &sink);
+  return sink;
+}
+
 static void iVideoGstClose(IvideoSession* session)
 {
   IvideoGst* context = (IvideoGst*)session->context;
@@ -108,6 +177,10 @@ static void iVideoGstClose(IvideoSession* session)
   }
   if (context->bus)
     g_object_unref(context->bus);
+  if (context->balance)
+    g_object_unref(context->balance);
+  if (context->gamma)
+    g_object_unref(context->gamma);
   if (context->player)
     g_object_unref(context->player);
   free(context);
@@ -168,12 +241,29 @@ static int iVideoGstOpen(IvideoSession* session, Ihandle* ih, const char* source
   g_object_get(context->player, "flags", &flags, NULL);
   g_object_set(context->player, "uri", url ? source : uri, "video-sink", context->sink, "flags", flags & ~4u, NULL);
   g_free(uri);
-  flip = gst_element_factory_make("videoflip", NULL);
+  if (session->audio_device)
+  {
+    GstElement* audio = iVideoGstAudioSink(session->audio_device);
+    if (audio)
+    {
+      g_object_set(context->player, "audio-sink", audio, NULL);
+      g_object_unref(audio);
+    }
+  }
+  flip = gst_parse_bin_from_description("videoconvert ! videoflip video-direction=auto ! videobalance name=balance ! gamma name=gamma ! videoconvert", 1, NULL);
   if (flip)
   {
-    gst_util_set_object_arg(flip, "video-direction", "auto");
-    g_object_set(context->player, "video-filter", flip, NULL);
+    context->balance = gst_bin_get_by_name((GstBin*)flip, "balance");
+    context->gamma = gst_bin_get_by_name((GstBin*)flip, "gamma");
   }
+  else
+  {
+    flip = gst_element_factory_make("videoflip", NULL);
+    if (flip)
+      gst_util_set_object_arg(flip, "video-direction", "auto");
+  }
+  if (flip)
+    g_object_set(context->player, "video-filter", flip, NULL);
   context->bus = gst_element_get_bus(context->player);
   if (!context->bus)
     return 0;
@@ -252,6 +342,11 @@ static void iVideoGstPoll(IvideoSession* session)
   {
     iupVideoError(session, "GStreamer playback state query failed");
     return;
+  }
+  if (context->restore_position > 0 && pending == GST_STATE_VOID_PENDING && state >= GST_STATE_PAUSED)
+  {
+    gst_element_seek_simple(context->player, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE, context->restore_position);
+    context->restore_position = 0;
   }
   if (state >= GST_STATE_PAUSED || context->live)
     context->info.ready = 1;
@@ -362,4 +457,40 @@ static int iVideoGstSubtitleSelect(IvideoSession* session, int index, double del
   return 1;
 }
 
-const IvideoBackend iupVideoGstreamerBackend = {"GSTREAMER", iVideoGstAvailable, iVideoGstOpen, iVideoGstClose, iVideoGstPlay, iVideoGstSeek, iVideoGstVolume, iVideoGstPoll, NULL, iVideoGstSubtitleCount, iVideoGstSubtitleName, iVideoGstSubtitleSelect, NULL, 0};
+static int iVideoGstAudioDevices(IvideoAudioDevice** devices)
+{
+  if (!iVideoGstAvailable())
+    return 0;
+  return iVideoGstAudioSinks(devices, NULL, NULL);
+}
+
+static void iVideoGstAudioDevice(IvideoSession* session, const char* id)
+{
+  IvideoGst* context = (IvideoGst*)session->context;
+  GstElement* sink = id ? iVideoGstAudioSink(id) : gst_element_factory_make("autoaudiosink", NULL);
+  int64_t position = -1;
+  if (!sink)
+    return;
+  if (gst_element_query_position(context->player, GST_FORMAT_TIME, &position) && position > 0)
+    context->restore_position = position;
+  gst_element_set_state(context->player, GST_STATE_READY);
+  g_object_set(context->player, "audio-sink", sink, NULL);
+  if (id)
+    g_object_unref(sink);
+  iVideoGstPlay(session, context->play);
+}
+
+static void iVideoGstAdjust(IvideoSession* session, const int* values)
+{
+  IvideoGst* context = (IvideoGst*)session->context;
+  double contrast = 1 + values[IVIDEO_CONTRAST] / 100.0;
+  double brightness = values[IVIDEO_BRIGHTNESS] / 100.0 + (1 - contrast) / 2;
+  if (brightness > 1) brightness = 1;
+  if (brightness < -1) brightness = -1;
+  if (context->balance)
+    g_object_set(context->balance, "brightness", brightness, "contrast", contrast, "saturation", 1 + values[IVIDEO_SATURATION] / 100.0, NULL);
+  if (context->gamma)
+    g_object_set(context->gamma, "gamma", pow(2, values[IVIDEO_GAMMA] / 50.0), NULL);
+}
+
+const IvideoBackend iupVideoGstreamerBackend = {"GSTREAMER", iVideoGstAvailable, iVideoGstOpen, iVideoGstClose, iVideoGstPlay, iVideoGstSeek, iVideoGstVolume, iVideoGstPoll, NULL, iVideoGstSubtitleCount, iVideoGstSubtitleName, iVideoGstSubtitleSelect, NULL, 0, iVideoGstAudioDevices, iVideoGstAudioDevice, iVideoGstAdjust};

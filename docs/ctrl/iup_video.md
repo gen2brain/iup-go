@@ -71,6 +71,18 @@ While "YES" and the source is seekable, PLAYEND_CB is not called.
 
 **MUTE** (non-inheritable): Silences the audio keeping VOLUME. Can be "YES" or "NO". Default: "NO".
 
+**AUDIODEVICE** (non-inheritable): Index of the audio output device, from 0. Index 0 is the system default output. Default: "0".
+Changing it during playback moves the audio to the new device.
+Not supported in iOS. In Android it requires Android 9.
+
+**AUDIODEVICECOUNT** (read-only): Number of audio output devices of the engine selected by BACKEND, counting the default at index 0. Each query lists the devices again.
+
+**AUDIODEVICENAMEid** (read-only): Name of the audio output device at index "id", or NULL. AUDIODEVICENAME0 is "Default".
+In WebAssembly the devices are listed only after media access has been granted and when the browser can select the output device.
+
+**BRIGHTNESS**, **CONTRAST**, **SATURATION**, **GAMMA** (non-inheritable): Picture adjustments from -100 to 100. "0" leaves the picture unchanged. Default: "0".
+Not supported with BACKEND "NATIVE" in Windows and Android.
+
 **HASVIDEO**, **HASAUDIO** (read-only): Return "YES" if the source has a playable video or audio stream, "NO" otherwise.
 In WebAssembly, HASAUDIO can return "NO" until playback starts.
 

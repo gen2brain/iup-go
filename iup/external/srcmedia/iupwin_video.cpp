@@ -27,6 +27,7 @@
 #include <d2d1.h>
 #include <dwrite.h>
 #include <mferror.h>
+#include <mmdeviceapi.h>
 
 #include <limits.h>
 #include <math.h>
@@ -876,6 +877,83 @@ static int winVideoCreatePlayer(IvideoSession* session, IwinVideo* context)
   return winVideoCheck(session, context->player->EnableWindowlessSwapchainMode(TRUE), "Cannot enable video swap chain");
 }
 
+static wchar_t* winVideoWide(const char* value)
+{
+  int count = MultiByteToWideChar(CP_UTF8, 0, value, -1, nullptr, 0);
+  wchar_t* result = count ? (wchar_t*)malloc((size_t)count * sizeof(wchar_t)) : nullptr;
+  if (result)
+    MultiByteToWideChar(CP_UTF8, 0, value, -1, result, count);
+  return result;
+}
+
+static char* winVideoUTF8(LPCWSTR value)
+{
+  int length = WideCharToMultiByte(CP_UTF8, 0, value, -1, nullptr, 0, nullptr, nullptr);
+  char* result = length > 0 ? (char*)malloc((size_t)length) : nullptr;
+  if (result)
+    WideCharToMultiByte(CP_UTF8, 0, value, -1, result, length, nullptr, nullptr);
+  return result;
+}
+
+static void winVideoAudioEndpoint(IvideoSession* session, const char* id)
+{
+  IwinVideo* context = (IwinVideo*)session->context;
+  IMFMediaEngineAudioEndpointId* endpoint = nullptr;
+  wchar_t* value = winVideoWide(id ? id : "");
+  if (value && SUCCEEDED(context->player->QueryInterface(__uuidof(IMFMediaEngineAudioEndpointId), (void**)&endpoint)))
+  {
+    endpoint->SetAudioEndpointId(value);
+    endpoint->Release();
+  }
+  free(value);
+}
+
+static int winVideoAudioDevices(IvideoAudioDevice** devices)
+{
+  static const PROPERTYKEY friendly_name = {{0xa45c254e, 0xdf1c, 0x4efd, {0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0}}, 14};
+  IMMDeviceEnumerator* enumerator = nullptr;
+  IMMDeviceCollection* collection = nullptr;
+  UINT total = 0, i;
+  int count = 0;
+  HRESULT init = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+  if (SUCCEEDED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&enumerator)) &&
+      SUCCEEDED(enumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &collection)))
+    collection->GetCount(&total);
+  for (i = 0; i < total; i++)
+  {
+    IMMDevice* device = nullptr;
+    IPropertyStore* store = nullptr;
+    LPWSTR id = nullptr;
+    PROPVARIANT name;
+    PropVariantInit(&name);
+    if (SUCCEEDED(collection->Item(i, &device)) && SUCCEEDED(device->GetId(&id)))
+    {
+      char* utf8_id = winVideoUTF8(id);
+      char* utf8_name = nullptr;
+      if (SUCCEEDED(device->OpenPropertyStore(STGM_READ, &store)) && SUCCEEDED(store->GetValue(friendly_name, &name)) && name.vt == VT_LPWSTR)
+        utf8_name = winVideoUTF8(name.pwszVal);
+      if (utf8_id)
+        count = iupVideoAddAudioDevice(devices, count, utf8_id, utf8_name);
+      free(utf8_id);
+      free(utf8_name);
+    }
+    PropVariantClear(&name);
+    if (store)
+      store->Release();
+    if (id)
+      CoTaskMemFree(id);
+    if (device)
+      device->Release();
+  }
+  if (collection)
+    collection->Release();
+  if (enumerator)
+    enumerator->Release();
+  if (SUCCEEDED(init))
+    CoUninitialize();
+  return count;
+}
+
 static int winVideoOpen(IvideoSession* session, Ihandle* ih, const char* source, int url)
 {
   IwinVideo* context = (IwinVideo*)calloc(1, sizeof(IwinVideo));
@@ -912,6 +990,8 @@ static int winVideoOpen(IvideoSession* session, Ihandle* ih, const char* source,
     iupVideoError(session, "Cannot create video source URI");
     return 0;
   }
+  if (session->audio_device)
+    winVideoAudioEndpoint(session, session->audio_device);
   result = context->player->SetSource(uri);
   SysFreeString(uri);
   if (FAILED(result))
@@ -1139,7 +1219,7 @@ extern "C" char* iupdrvVideoReadSubtitle(const char* filename)
   return iupVideoReadSubtitleStream(file);
 }
 
-static const IvideoBackend winVideoBackend = {"NATIVE", winVideoAvailable, winVideoOpen, winVideoClose, winVideoPlay, winVideoSeek, winVideoVolume, winVideoPoll, winVideoLayout, winVideoSubtitleCount, winVideoSubtitleName, winVideoSubtitleSelect, winVideoSubtitleText, 0};
+static const IvideoBackend winVideoBackend = {"NATIVE", winVideoAvailable, winVideoOpen, winVideoClose, winVideoPlay, winVideoSeek, winVideoVolume, winVideoPoll, winVideoLayout, winVideoSubtitleCount, winVideoSubtitleName, winVideoSubtitleSelect, winVideoSubtitleText, 0, winVideoAudioDevices, winVideoAudioEndpoint, nullptr};
 
 extern "C" const IvideoBackend iupVideoVlcBackend;
 extern "C" const IvideoBackend iupVideoGstreamerBackend;

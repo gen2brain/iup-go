@@ -79,6 +79,23 @@ EM_JS(void, iupwasmJsVideoVolume, (int vid, int volume, int mute), {
   globalThis.__iupApply({ op: 'vidvol', vid: vid, v: volume, m: mute });
 })
 
+EM_JS(char*, iupwasmJsVideoDevices, (void), {
+  if (typeof document !== 'undefined') return 0;
+  var s = globalThis.__iupReadSync({ op: 'viddevices' });
+  if (!s) return 0;
+  var len = lengthBytesUTF8(s) + 1, p = _malloc(len);
+  stringToUTF8(s, p, len);
+  return p;
+})
+
+EM_JS(void, iupwasmJsVideoSink, (int vid, const char* id), {
+  globalThis.__iupApply({ op: 'vidsink', vid: vid, id: UTF8ToString(id) });
+})
+
+EM_JS(void, iupwasmJsVideoFilter, (int vid, int brightness, int contrast, int saturation, int gamma), {
+  globalThis.__iupApply({ op: 'vidfilter', vid: vid, b: brightness, c: contrast, s: saturation, g: gamma });
+})
+
 EM_JS(void, iupwasmJsVideoWake, (int on), {
   globalThis.__iupApply({ op: 'vidwake', on: on });
 })
@@ -126,6 +143,37 @@ static int wasmVideoAvailable(void)
   return 1;
 }
 
+static void wasmVideoAudioDevice(IvideoSession* session, const char* id)
+{
+  IwasmVideo* context = (IwasmVideo*)session->context;
+  iupwasmJsVideoSink(context->vid, id ? id : "");
+}
+
+static int wasmVideoAudioDevices(IvideoAudioDevice** devices)
+{
+  char* list = iupwasmJsVideoDevices();
+  char* line;
+  int count = 0;
+  if (!list)
+    return 0;
+  for (line = strtok(list, "\n"); line; line = strtok(NULL, "\n"))
+  {
+    char* name = strchr(line, '\t');
+    if (!name)
+      continue;
+    *name++ = 0;
+    count = iupVideoAddAudioDevice(devices, count, line, name);
+  }
+  free(list);
+  return count;
+}
+
+static void wasmVideoAdjust(IvideoSession* session, const int* values)
+{
+  IwasmVideo* context = (IwasmVideo*)session->context;
+  iupwasmJsVideoFilter(context->vid, values[IVIDEO_BRIGHTNESS], values[IVIDEO_CONTRAST], values[IVIDEO_SATURATION], values[IVIDEO_GAMMA]);
+}
+
 static int wasmVideoOpen(IvideoSession* session, Ihandle* ih, const char* source, int url)
 {
   static int next_vid = 1;
@@ -148,6 +196,8 @@ static int wasmVideoOpen(IvideoSession* session, Ihandle* ih, const char* source
     iupVideoError(session, "Cannot read the video file");
     return 0;
   }
+  if (session->audio_device)
+    wasmVideoAudioDevice(session, session->audio_device);
   return 1;
 }
 
@@ -275,7 +325,7 @@ void iupdrvVideoInhibitScreenSaver(int inhibit)
   iupwasmJsVideoWake(inhibit);
 }
 
-static const IvideoBackend wasmVideoBackend = {"NATIVE", wasmVideoAvailable, wasmVideoOpen, wasmVideoClose, wasmVideoPlay, wasmVideoSeek, wasmVideoVolume, wasmVideoPoll, wasmVideoLayout, wasmVideoSubtitleCount, wasmVideoSubtitleName, wasmVideoSubtitleSelect, wasmVideoSubtitleText, 0};
+static const IvideoBackend wasmVideoBackend = {"NATIVE", wasmVideoAvailable, wasmVideoOpen, wasmVideoClose, wasmVideoPlay, wasmVideoSeek, wasmVideoVolume, wasmVideoPoll, wasmVideoLayout, wasmVideoSubtitleCount, wasmVideoSubtitleName, wasmVideoSubtitleSelect, wasmVideoSubtitleText, 0, wasmVideoAudioDevices, wasmVideoAudioDevice, wasmVideoAdjust};
 
 const IvideoBackend* iupdrvVideoBackend(int index)
 {

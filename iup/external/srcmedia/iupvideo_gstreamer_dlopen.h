@@ -25,6 +25,17 @@ typedef struct _GstMemory GstMemory;
 typedef struct _GstAppSink GstAppSink;
 typedef struct _GstPad GstPad;
 typedef struct _GstEvent GstEvent;
+typedef struct _GstBin GstBin;
+typedef struct _GstDevice GstDevice;
+typedef struct _GstDeviceMonitor GstDeviceMonitor;
+typedef struct _GstPluginFeature GstPluginFeature;
+
+typedef struct _GList
+{
+  void* data;
+  struct _GList* next;
+  struct _GList* prev;
+} GList;
 
 typedef enum
 {
@@ -179,6 +190,17 @@ static void (*iupgst_g_signal_emit_by_name)(void*, const char*, ...);
 static int (*iupgst_tag_list_get_string)(const void*, const char*, char**);
 static GstEvent* (*iupgst_pad_get_sticky_event)(GstPad*, GstEventType, unsigned);
 static void (*iupgst_event_parse_stream_flags)(GstEvent*, GstStreamFlags*);
+static GstElement* (*iupgst_parse_bin_from_description)(const char*, int, GError**);
+static GstElement* (*iupgst_bin_get_by_name)(GstBin*, const char*);
+static GstDeviceMonitor* (*iupgst_device_monitor_new)(void);
+static unsigned (*iupgst_device_monitor_add_filter)(GstDeviceMonitor*, const char*, GstCaps*);
+static GList* (*iupgst_device_monitor_get_devices)(GstDeviceMonitor*);
+static void (*iupgst_device_monitor_set_show_all_devices)(GstDeviceMonitor*, int);
+static char* (*iupgst_device_get_display_name)(GstDevice*);
+static GstElement* (*iupgst_device_create_element)(GstDevice*, const char*);
+static void (*iupgst_g_list_free)(GList*);
+static GstElementFactory* (*iupgst_element_get_factory)(GstElement*);
+static unsigned (*iupgst_plugin_feature_get_rank)(GstPluginFeature*);
 
 #define gst_element_factory_make iupgst_element_factory_make
 #define gst_element_factory_find iupgst_element_factory_find
@@ -223,6 +245,17 @@ static void (*iupgst_event_parse_stream_flags)(GstEvent*, GstStreamFlags*);
 #define gst_tag_list_get_string iupgst_tag_list_get_string
 #define gst_pad_get_sticky_event iupgst_pad_get_sticky_event
 #define gst_event_parse_stream_flags iupgst_event_parse_stream_flags
+#define gst_parse_bin_from_description iupgst_parse_bin_from_description
+#define gst_bin_get_by_name iupgst_bin_get_by_name
+#define gst_device_monitor_new iupgst_device_monitor_new
+#define gst_device_monitor_add_filter iupgst_device_monitor_add_filter
+#define gst_device_monitor_get_devices iupgst_device_monitor_get_devices
+#define gst_device_monitor_set_show_all_devices iupgst_device_monitor_set_show_all_devices
+#define gst_device_get_display_name iupgst_device_get_display_name
+#define gst_device_create_element iupgst_device_create_element
+#define g_list_free iupgst_g_list_free
+#define gst_element_get_factory iupgst_element_get_factory
+#define gst_plugin_feature_get_rank iupgst_plugin_feature_get_rank
 
 static void* iupGstSymbol(void* handle, const char* name, int* missing)
 {
@@ -350,6 +383,17 @@ static int iupGstOpen(void)
     *(void**)&iupgst_g_signal_emit_by_name = iupGstSymbol(handles[2], "g_signal_emit_by_name", &missing);
     *(void**)&iupgst_tag_list_get_string = iupGstSymbol(handles[0], "gst_tag_list_get_string", &missing);
     *(void**)&iupgst_pad_get_sticky_event = iupGstSymbol(handles[0], "gst_pad_get_sticky_event", &missing);
+    *(void**)&iupgst_parse_bin_from_description = iupGstSymbol(handles[0], "gst_parse_bin_from_description", &missing);
+    *(void**)&iupgst_bin_get_by_name = iupGstSymbol(handles[0], "gst_bin_get_by_name", &missing);
+    *(void**)&iupgst_device_monitor_new = iupGstSymbol(handles[0], "gst_device_monitor_new", &missing);
+    *(void**)&iupgst_device_monitor_add_filter = iupGstSymbol(handles[0], "gst_device_monitor_add_filter", &missing);
+    *(void**)&iupgst_device_monitor_get_devices = iupGstSymbol(handles[0], "gst_device_monitor_get_devices", &missing);
+    *(void**)&iupgst_device_monitor_set_show_all_devices = iupGstSymbol(handles[0], "gst_device_monitor_set_show_all_devices", &missing);
+    *(void**)&iupgst_device_get_display_name = iupGstSymbol(handles[0], "gst_device_get_display_name", &missing);
+    *(void**)&iupgst_device_create_element = iupGstSymbol(handles[0], "gst_device_create_element", &missing);
+    *(void**)&iupgst_g_list_free = iupGstSymbol(handles[3], "g_list_free", &missing);
+    *(void**)&iupgst_element_get_factory = iupGstSymbol(handles[0], "gst_element_get_factory", &missing);
+    *(void**)&iupgst_plugin_feature_get_rank = iupGstSymbol(handles[0], "gst_plugin_feature_get_rank", &missing);
     *(void**)&iupgst_event_parse_stream_flags = iupGstSymbol(handles[0], "gst_event_parse_stream_flags", &missing);
   }
 

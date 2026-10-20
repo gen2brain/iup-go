@@ -5,6 +5,8 @@
  */
 
 #include <limits.h>
+#include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -42,6 +44,7 @@ typedef struct
   ivideo_cond_t condition;
   int initialized, started, dirty, quit, width, height;
   int paused, buffering, idle, eof, rotate;
+  int adjust[IVIDEO_ADJUST_COUNT];
   char* audio;
   int64_t* subtitles;
   int64_t subtitle_auto;
@@ -262,6 +265,8 @@ static int iVideoMpvOpen(IvideoSession* session, Ihandle* ih, const char* source
   mpv_set_option_string(context->player, "config", config ? "yes" : "no");
   mpv_set_option_string(context->player, "load-scripts", "no");
   mpv_set_option_string(context->player, "ytdl", "no");
+  if (session->audio_device)
+    mpv_set_option_string(context->player, "audio-device", session->audio_device);
   if (options)
     iVideoMpvOptions(context->player, options);
   if (!iVideoMpvRequired(context->player))
@@ -359,19 +364,37 @@ static void iVideoMpvVolume(IvideoSession* session, int volume, int mute)
   mpv_set_property_async(context->player, 0, "mute", MPV_FORMAT_FLAG, &mute);
 }
 
+static void iVideoMpvFilters(IvideoMpv* context)
+{
+  char filter[256] = "";
+  const char* value = filter;
+  const int* adjust = context->adjust;
+  if (context->rotate == 90)
+    strcpy(filter, "lavfi=[transpose=clock]");
+  else if (context->rotate == 180)
+    strcpy(filter, "lavfi=[hflip,vflip]");
+  else if (context->rotate == 270)
+    strcpy(filter, "lavfi=[transpose=cclock]");
+  if (adjust[IVIDEO_BRIGHTNESS] || adjust[IVIDEO_CONTRAST] || adjust[IVIDEO_GAMMA])
+  {
+    size_t length = strlen(filter);
+    snprintf(filter + length, sizeof(filter) - length, "%slavfi=[lutyuv=y=clip(pow(clip((val/255-0.5)*%.2f+0.5+%.2f\\,0\\,1)\\,%.3f)*255\\,0\\,255)]",
+             length ? "," : "", 1 + adjust[IVIDEO_CONTRAST] / 100.0, adjust[IVIDEO_BRIGHTNESS] / 100.0, pow(2, -adjust[IVIDEO_GAMMA] / 50.0));
+  }
+  if (adjust[IVIDEO_SATURATION])
+  {
+    size_t length = strlen(filter);
+    snprintf(filter + length, sizeof(filter) - length, "%slavfi=[hue=s=%.2f]", length ? "," : "", 1 + adjust[IVIDEO_SATURATION] / 100.0);
+  }
+  mpv_set_property_async(context->player, 0, "vf", MPV_FORMAT_STRING, &value);
+}
+
 static void iVideoMpvRotate(IvideoMpv* context, int64_t rotate)
 {
-  const char* filter = "";
   if (rotate == context->rotate)
     return;
   context->rotate = (int)rotate;
-  if (rotate == 90)
-    filter = "lavfi=[transpose=clock]";
-  else if (rotate == 180)
-    filter = "lavfi=[hflip,vflip]";
-  else if (rotate == 270)
-    filter = "lavfi=[transpose=cclock]";
-  mpv_set_property_async(context->player, 0, "vf", MPV_FORMAT_STRING, &filter);
+  iVideoMpvFilters(context);
 }
 
 static mpv_node* iVideoMpvField(mpv_node* node, const char* key)
@@ -599,4 +622,55 @@ static int iVideoMpvSubtitleSelect(IvideoSession* session, int index, double del
   return 1;
 }
 
-const IvideoBackend iupVideoMpvBackend = {"MPV", iVideoMpvLoad, iVideoMpvOpen, iVideoMpvClose, iVideoMpvPlay, iVideoMpvSeek, iVideoMpvVolume, iVideoMpvPoll, NULL, iVideoMpvSubtitleCount, iVideoMpvSubtitleName, iVideoMpvSubtitleSelect, NULL, 1};
+static int iVideoMpvAudioDevices(IvideoAudioDevice** devices)
+{
+  mpv_handle* player;
+  mpv_node list;
+  int i, count = 0;
+  if (!iVideoMpvLoad())
+    return 0;
+  player = mpv_create();
+  if (!player)
+    return 0;
+  mpv_set_option_string(player, "config", "no");
+  mpv_set_option_string(player, "load-scripts", "no");
+  mpv_set_option_string(player, "vo", "null");
+  if (mpv_initialize(player) < 0 || mpv_get_property(player, "audio-device-list", MPV_FORMAT_NODE, &list) < 0)
+  {
+    mpv_terminate_destroy(player);
+    return 0;
+  }
+  if (list.format == MPV_FORMAT_NODE_ARRAY)
+  {
+    for (i = 0; i < list.u.list->num; i++)
+    {
+      mpv_node* name = iVideoMpvField(&list.u.list->values[i], "name");
+      mpv_node* description = iVideoMpvField(&list.u.list->values[i], "description");
+      if (!name || name->format != MPV_FORMAT_STRING || strcmp(name->u.string, "auto") == 0)
+        continue;
+      count = iupVideoAddAudioDevice(devices, count, name->u.string,
+                                     description && description->format == MPV_FORMAT_STRING ? description->u.string : NULL);
+    }
+  }
+  mpv_free_node_contents(&list);
+  mpv_terminate_destroy(player);
+  return count;
+}
+
+static void iVideoMpvAudioDevice(IvideoSession* session, const char* id)
+{
+  IvideoMpv* context = (IvideoMpv*)session->context;
+  const char* value = id ? id : "auto";
+  mpv_set_property_async(context->player, 0, "audio-device", MPV_FORMAT_STRING, &value);
+}
+
+static void iVideoMpvAdjust(IvideoSession* session, const int* values)
+{
+  IvideoMpv* context = (IvideoMpv*)session->context;
+  if (memcmp(context->adjust, values, sizeof(context->adjust)) == 0)
+    return;
+  memcpy(context->adjust, values, sizeof(context->adjust));
+  iVideoMpvFilters(context);
+}
+
+const IvideoBackend iupVideoMpvBackend = {"MPV", iVideoMpvLoad, iVideoMpvOpen, iVideoMpvClose, iVideoMpvPlay, iVideoMpvSeek, iVideoMpvVolume, iVideoMpvPoll, NULL, iVideoMpvSubtitleCount, iVideoMpvSubtitleName, iVideoMpvSubtitleSelect, NULL, 1, iVideoMpvAudioDevices, iVideoMpvAudioDevice, iVideoMpvAdjust};

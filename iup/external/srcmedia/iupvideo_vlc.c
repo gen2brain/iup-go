@@ -5,6 +5,7 @@
  */
 
 #include <limits.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -21,6 +22,9 @@ typedef struct
   ivideo_mutex_t lock;
   int ready, play, attached, track, cached_track, scanned, audio, video, width, height;
   int subtitle_auto, subtitle_explicit;
+  int volume, mute, adjust[IVIDEO_ADJUST_COUNT];
+  int restore_spu, restore_spu_id;
+  int64_t restore_spu_delay;
   double aspect;
   libvlc_state_t previous;
 } IvideoVlc;
@@ -171,18 +175,24 @@ static void iVideoVlcDisplay(void* opaque, void* picture)
   ivideoMutexUnlock(&context->lock);
 }
 
+static void iVideoVlcReleasePlayer(IvideoSession* session, IvideoVlc* context)
+{
+  if (!context->player)
+    return;
+  if (context->attached)
+    libvlc_event_detach(context->events, libvlc_MediaPlayerEncounteredError, iVideoVlcError, session);
+  context->attached = 0;
+  libvlc_media_player_stop(context->player);
+  libvlc_media_player_release(context->player);
+  context->player = NULL;
+}
+
 static void iVideoVlcClose(IvideoSession* session)
 {
   IvideoVlc* context = (IvideoVlc*)session->context;
   if (!context)
     return;
-  if (context->player)
-  {
-    if (context->attached)
-      libvlc_event_detach(context->events, libvlc_MediaPlayerEncounteredError, iVideoVlcError, session);
-    libvlc_media_player_stop(context->player);
-    libvlc_media_player_release(context->player);
-  }
+  iVideoVlcReleasePlayer(session, context);
   if (context->media)
     libvlc_media_release(context->media);
   ivideoMutexDestroy(&context->lock);
@@ -190,14 +200,57 @@ static void iVideoVlcClose(IvideoSession* session)
   session->context = NULL;
 }
 
-static int iVideoVlcOpen(IvideoSession* session, Ihandle* ih, const char* source, int url)
+static int iVideoVlcInstance(void)
 {
   const char* options[] = {"--quiet", "--no-video-title-show", "--no-osd", "--no-sub-autodetect-file"};
-  IvideoVlc* context;
-  (void)ih;
   if (!ivlc_instance)
     ivlc_instance = libvlc_new((int)(sizeof(options) / sizeof(options[0])), options);
-  if (!ivlc_instance)
+  return ivlc_instance != NULL;
+}
+
+static libvlc_media_player_t* iVideoVlcNewPlayer(IvideoSession* session, IvideoVlc* context, const char* device)
+{
+  libvlc_media_player_t* player = libvlc_media_player_new(ivlc_instance);
+  libvlc_event_manager_t* events;
+  if (!player)
+  {
+    iupVideoError(session, "Cannot create VLC player");
+    return NULL;
+  }
+  events = libvlc_media_player_event_manager(player);
+  if (!events || libvlc_event_attach(events, libvlc_MediaPlayerEncounteredError, iVideoVlcError, session) != 0)
+  {
+    iupVideoError(session, "Cannot attach VLC playback events");
+    libvlc_media_player_release(player);
+    return NULL;
+  }
+  if (device)
+    libvlc_audio_output_device_set(player, NULL, device);
+  libvlc_media_player_set_media(player, context->media);
+  libvlc_video_set_callbacks(player, iVideoVlcLock, iVideoVlcUnlock, iVideoVlcDisplay, context);
+  libvlc_video_set_format_callbacks(player, iVideoVlcFormat, iVideoVlcCleanup);
+  return player;
+}
+
+static int iVideoVlcStart(IvideoSession* session, IvideoVlc* context, libvlc_media_player_t* player)
+{
+  context->player = player;
+  context->events = libvlc_media_player_event_manager(player);
+  context->attached = 1;
+  if (libvlc_media_player_play(player) != 0)
+  {
+    iupVideoError(session, "VLC cannot start this source");
+    return 0;
+  }
+  return 1;
+}
+
+static int iVideoVlcOpen(IvideoSession* session, Ihandle* ih, const char* source, int url)
+{
+  IvideoVlc* context;
+  libvlc_media_player_t* player;
+  (void)ih;
+  if (!iVideoVlcInstance())
   {
     iupVideoError(session, "Cannot initialize VLC");
     return 0;
@@ -221,34 +274,14 @@ static int iVideoVlcOpen(IvideoSession* session, Ihandle* ih, const char* source
     iupVideoError(session, "VLC cannot open this source");
     return 0;
   }
-  context->player = libvlc_media_player_new(ivlc_instance);
-  if (!context->player)
-  {
-    iupVideoError(session, "Cannot create VLC player");
-    return 0;
-  }
-  context->events = libvlc_media_player_event_manager(context->player);
-  if (!context->events || libvlc_event_attach(context->events, libvlc_MediaPlayerEncounteredError, iVideoVlcError, session) != 0)
-  {
-    iupVideoError(session, "Cannot attach VLC playback events");
-    return 0;
-  }
-  context->attached = 1;
   if (session->audio && libvlc_media_slaves_add(context->media, libvlc_media_slave_type_audio, 4, session->audio) != 0)
   {
     iupVideoError(session, "VLC cannot open AUDIOURL");
     return 0;
   }
   libvlc_media_add_option(context->media, ":start-paused");
-  libvlc_media_player_set_media(context->player, context->media);
-  libvlc_video_set_callbacks(context->player, iVideoVlcLock, iVideoVlcUnlock, iVideoVlcDisplay, context);
-  libvlc_video_set_format_callbacks(context->player, iVideoVlcFormat, iVideoVlcCleanup);
-  if (libvlc_media_player_play(context->player) != 0)
-  {
-    iupVideoError(session, "VLC cannot start this source");
-    return 0;
-  }
-  return 1;
+  player = iVideoVlcNewPlayer(session, context, session->audio_device);
+  return player && iVideoVlcStart(session, context, player);
 }
 
 static void iVideoVlcPlay(IvideoSession* session, int play)
@@ -275,6 +308,8 @@ static void iVideoVlcSeek(IvideoSession* session, double position)
 static void iVideoVlcVolume(IvideoSession* session, int volume, int mute)
 {
   IvideoVlc* context = (IvideoVlc*)session->context;
+  context->volume = volume;
+  context->mute = mute;
   libvlc_audio_set_volume(context->player, volume);
   libvlc_audio_set_mute(context->player, mute);
 }
@@ -322,6 +357,12 @@ static void iVideoVlcPoll(IvideoSession* session)
   }
   if (state == libvlc_Playing || state == libvlc_Paused || state == libvlc_Ended)
     context->ready = 1;
+  if (context->restore_spu && (state == libvlc_Playing || state == libvlc_Paused))
+  {
+    context->restore_spu = 0;
+    libvlc_video_set_spu_delay(context->player, context->restore_spu_delay);
+    libvlc_video_set_spu(context->player, context->restore_spu_id);
+  }
   if (context->ready && state == libvlc_Paused && context->play)
     libvlc_media_player_set_pause(context->player, 0);
   info.ready = context->ready;
@@ -443,4 +484,72 @@ static int iVideoVlcSubtitleSelect(IvideoSession* session, int index, double del
   return 1;
 }
 
-const IvideoBackend iupVideoVlcBackend = {"VLC", iVideoVlcLoad, iVideoVlcOpen, iVideoVlcClose, iVideoVlcPlay, iVideoVlcSeek, iVideoVlcVolume, iVideoVlcPoll, NULL, iVideoVlcSubtitleCount, iVideoVlcSubtitleName, iVideoVlcSubtitleSelect, NULL, 1};
+static int iVideoVlcAudioDevices(IvideoAudioDevice** devices)
+{
+  libvlc_media_player_t* player;
+  libvlc_audio_output_device_t* list;
+  libvlc_audio_output_device_t* device;
+  int count = 0;
+  if (!iVideoVlcLoad() || !iVideoVlcInstance())
+    return 0;
+  player = libvlc_media_player_new(ivlc_instance);
+  if (!player)
+    return 0;
+  list = libvlc_audio_output_device_enum(player);
+  for (device = list; device; device = device->p_next)
+  {
+    if (device->psz_device && device->psz_device[0])
+      count = iupVideoAddAudioDevice(devices, count, device->psz_device, device->psz_description);
+  }
+  if (list)
+    libvlc_audio_output_device_list_release(list);
+  libvlc_media_player_release(player);
+  return count;
+}
+
+static void iVideoVlcApplyAdjust(IvideoVlc* context)
+{
+  const int* values = context->adjust;
+  int enable = values[IVIDEO_BRIGHTNESS] || values[IVIDEO_CONTRAST] || values[IVIDEO_SATURATION] || values[IVIDEO_GAMMA];
+  libvlc_video_set_adjust_float(context->player, libvlc_adjust_Brightness, 1.0f + values[IVIDEO_BRIGHTNESS] / 100.0f);
+  libvlc_video_set_adjust_float(context->player, libvlc_adjust_Contrast, 1.0f + values[IVIDEO_CONTRAST] / 100.0f);
+  libvlc_video_set_adjust_float(context->player, libvlc_adjust_Saturation, 1.0f + values[IVIDEO_SATURATION] / 100.0f);
+  libvlc_video_set_adjust_float(context->player, libvlc_adjust_Gamma, (float)pow(2, values[IVIDEO_GAMMA] / 50.0));
+  libvlc_video_set_adjust_int(context->player, libvlc_adjust_Enable, enable);
+}
+
+static void iVideoVlcAdjust(IvideoSession* session, const int* values)
+{
+  IvideoVlc* context = (IvideoVlc*)session->context;
+  memcpy(context->adjust, values, sizeof(context->adjust));
+  iVideoVlcApplyAdjust(context);
+}
+
+static void iVideoVlcAudioDevice(IvideoSession* session, const char* id)
+{
+  IvideoVlc* context = (IvideoVlc*)session->context;
+  libvlc_time_t time = libvlc_media_player_get_time(context->player);
+  int spu = libvlc_video_get_spu(context->player);
+  int64_t delay = libvlc_video_get_spu_delay(context->player);
+  libvlc_media_player_t* player = iVideoVlcNewPlayer(session, context, id);
+  if (!player)
+    return;
+  iVideoVlcReleasePlayer(session, context);
+  libvlc_audio_set_volume(player, context->volume);
+  libvlc_audio_set_mute(player, context->mute);
+  context->player = player;
+  iVideoVlcApplyAdjust(context);
+  if (!iVideoVlcStart(session, context, player))
+    return;
+  if (time > 0)
+    libvlc_media_player_set_time(context->player, time);
+  context->previous = libvlc_Opening;
+  if (context->ready)
+  {
+    context->restore_spu = 1;
+    context->restore_spu_id = spu;
+    context->restore_spu_delay = delay;
+  }
+}
+
+const IvideoBackend iupVideoVlcBackend = {"VLC", iVideoVlcLoad, iVideoVlcOpen, iVideoVlcClose, iVideoVlcPlay, iVideoVlcSeek, iVideoVlcVolume, iVideoVlcPoll, NULL, iVideoVlcSubtitleCount, iVideoVlcSubtitleName, iVideoVlcSubtitleSelect, NULL, 1, iVideoVlcAudioDevices, iVideoVlcAudioDevice, iVideoVlcAdjust};

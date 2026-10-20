@@ -7,10 +7,12 @@
 #import <TargetConditionals.h>
 #import <AVFoundation/AVFoundation.h>
 #import <QuartzCore/QuartzCore.h>
+#import <CoreImage/CoreImage.h>
 #if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
 #else
 #import <AppKit/AppKit.h>
+#import <CoreAudio/CoreAudio.h>
 #endif
 
 #include <limits.h>
@@ -39,6 +41,10 @@
   unsigned char* rgba;
   size_t capacity;
   int ended;
+  NSMutableData* adjust;
+  int adjustPending;
+  int restoring;
+  CMTime restoreTime;
 }
 @end
 
@@ -74,6 +80,7 @@
   [output release];
   [item release];
   [player release];
+  [adjust release];
   free(rgba);
   [super dealloc];
 }
@@ -253,6 +260,11 @@ static int iappleVideoOpen(IvideoSession* session, Ihandle* ih, const char* sour
     return 0;
   }
   context->player.actionAtItemEnd = AVPlayerActionAtItemEndPause;
+#if !TARGET_OS_IPHONE
+  if (session->audio_device)
+    context->player.audioOutputDeviceUniqueID = [NSString stringWithUTF8String:session->audio_device];
+#endif
+  context->adjust = [[NSMutableData alloc] initWithLength:IVIDEO_ADJUST_COUNT * sizeof(int)];
   parent = iappleVideoParent(ih);
   if (parent)
   {
@@ -350,6 +362,7 @@ static void iappleVideoSeek(IvideoSession* session, double position)
   if (position > (double)LLONG_MAX / 600)
     return;
   context->ended = 0;
+  context->restoring = 0;
   [context->player seekToTime:CMTimeMakeWithSeconds(position, 600) toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
 }
 
@@ -412,6 +425,139 @@ static void iappleVideoFrame(IupAppleVideo* context)
   CVPixelBufferRelease(buffer);
 }
 
+static CMTime iappleVideoKeptTime(IupAppleVideo* context)
+{
+  return context->restoring ? context->restoreTime : context->player.currentTime;
+}
+
+static void iappleVideoRestoreTime(IupAppleVideo* context, CMTime time)
+{
+  context->restoring = 1;
+  context->restoreTime = time;
+  [context->player seekToTime:time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero completionHandler:^(BOOL finished) {
+    if (finished)
+      context->restoring = 0;
+  }];
+}
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+static void iappleVideoApplyAdjust(IupAppleVideo* context)
+{
+  const int* values = (const int*)context->adjust.bytes;
+  int any = values[IVIDEO_BRIGHTNESS] || values[IVIDEO_CONTRAST] || values[IVIDEO_SATURATION] || values[IVIDEO_GAMMA];
+  int video = 0;
+  NSMutableData* adjust = context->adjust;
+  CMTime time;
+  if (!context->adjustPending || context->item.status != AVPlayerItemStatusReadyToPlay)
+    return;
+  context->adjustPending = 0;
+  if (!any)
+  {
+    if (context->item.videoComposition)
+    {
+      time = iappleVideoKeptTime(context);
+      context->item.videoComposition = nil;
+      iappleVideoRestoreTime(context, time);
+    }
+    return;
+  }
+  if (context->item.videoComposition)
+    return;
+  for (AVPlayerItemTrack* track in context->item.tracks)
+  {
+    if ([track.assetTrack.mediaType isEqualToString:AVMediaTypeVideo])
+      video = 1;
+  }
+  if (!video)
+    return;
+  time = iappleVideoKeptTime(context);
+  context->item.videoComposition = [AVVideoComposition videoCompositionWithAsset:context->item.asset applyingCIFiltersWithHandler:^(AVAsynchronousCIImageFilteringRequest* request) {
+    const int* current = (const int*)adjust.bytes;
+    CIImage* image = request.sourceImage.imageByClampingToExtent;
+    CIFilter* color = [CIFilter filterWithName:@"CIColorControls"];
+    CIFilter* gamma = [CIFilter filterWithName:@"CIGammaAdjust"];
+    [color setValue:image forKey:kCIInputImageKey];
+    [color setValue:@(current[IVIDEO_BRIGHTNESS] / 100.0) forKey:kCIInputBrightnessKey];
+    [color setValue:@(1 + current[IVIDEO_CONTRAST] / 100.0) forKey:kCIInputContrastKey];
+    [color setValue:@(1 + current[IVIDEO_SATURATION] / 100.0) forKey:kCIInputSaturationKey];
+    [gamma setValue:color.outputImage forKey:kCIInputImageKey];
+    [gamma setValue:@(pow(2, -current[IVIDEO_GAMMA] / 50.0)) forKey:@"inputPower"];
+    [request finishWithImage:[gamma.outputImage imageByCroppingToRect:request.sourceImage.extent] context:nil];
+  }];
+  iappleVideoRestoreTime(context, time);
+}
+#pragma clang diagnostic pop
+
+static void iappleVideoAdjust(IvideoSession* session, const int* values)
+{
+  IupAppleVideo* context = (IupAppleVideo*)session->context;
+  memcpy(context->adjust.mutableBytes, values, IVIDEO_ADJUST_COUNT * sizeof(int));
+  context->adjustPending = 1;
+  iappleVideoApplyAdjust(context);
+}
+
+#if !TARGET_OS_IPHONE
+static char* iappleVideoAudioString(AudioObjectID device, AudioObjectPropertySelector selector)
+{
+  AudioObjectPropertyAddress address = {selector, kAudioObjectPropertyScopeGlobal, 0};
+  CFStringRef value = NULL;
+  UInt32 size = sizeof(value);
+  char* result = NULL;
+  if (AudioObjectGetPropertyData(device, &address, 0, NULL, &size, &value) == noErr && value)
+  {
+    result = iupStrDup([(NSString*)value UTF8String]);
+    CFRelease(value);
+  }
+  return result;
+}
+
+static int iappleVideoAudioDevices(IvideoAudioDevice** devices)
+{
+  AudioObjectPropertyAddress address = {kAudioHardwarePropertyDevices, kAudioObjectPropertyScopeGlobal, 0};
+  AudioObjectID* ids;
+  UInt32 size = 0, total, i;
+  int count = 0;
+  if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &address, 0, NULL, &size) != noErr || size == 0)
+    return 0;
+  ids = (AudioObjectID*)malloc(size);
+  if (!ids)
+    return 0;
+  if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &address, 0, NULL, &size, ids) != noErr)
+  {
+    free(ids);
+    return 0;
+  }
+  total = size / sizeof(AudioObjectID);
+  for (i = 0; i < total; i++)
+  {
+    AudioObjectPropertyAddress streams = {kAudioDevicePropertyStreams, kAudioObjectPropertyScopeOutput, 0};
+    UInt32 streams_size = 0;
+    char* uid;
+    char* name;
+    if (AudioObjectGetPropertyDataSize(ids[i], &streams, 0, NULL, &streams_size) != noErr || streams_size == 0)
+      continue;
+    uid = iappleVideoAudioString(ids[i], kAudioDevicePropertyDeviceUID);
+    name = iappleVideoAudioString(ids[i], kAudioObjectPropertyName);
+    if (uid)
+      count = iupVideoAddAudioDevice(devices, count, uid, name);
+    free(uid);
+    free(name);
+  }
+  free(ids);
+  return count;
+}
+
+static void iappleVideoAudioDevice(IvideoSession* session, const char* id)
+{
+  IupAppleVideo* context = (IupAppleVideo*)session->context;
+  CMTime time = iappleVideoKeptTime(context);
+  context->player.audioOutputDeviceUniqueID = id ? [NSString stringWithUTF8String:id] : nil;
+  if (context->item.status == AVPlayerItemStatusReadyToPlay)
+    iappleVideoRestoreTime(context, time);
+}
+#endif
+
 static void iappleVideoPoll(IvideoSession* session)
 {
   IupAppleVideo* context = (IupAppleVideo*)session->context;
@@ -452,6 +598,7 @@ static void iappleVideoPoll(IvideoSession* session)
       if ([track.assetTrack.mediaType isEqualToString:AVMediaTypeAudio])
         info.audio = 1;
     }
+    iappleVideoApplyAdjust(context);
     if (context->output)
       iappleVideoFrame(context);
   }
@@ -593,7 +740,13 @@ char* iupdrvVideoReadSubtitle(const char* filename)
   return text;
 }
 
-static const IvideoBackend iappleVideoBackend = {"NATIVE", iappleVideoAvailable, iappleVideoOpen, iappleVideoClose, iappleVideoPlay, iappleVideoSeek, iappleVideoVolume, iappleVideoPoll, iappleVideoLayout, iappleVideoSubtitleCount, iappleVideoSubtitleName, iappleVideoSubtitleSelect, iappleVideoSubtitleText, 1};
+static const IvideoBackend iappleVideoBackend = {"NATIVE", iappleVideoAvailable, iappleVideoOpen, iappleVideoClose, iappleVideoPlay, iappleVideoSeek, iappleVideoVolume, iappleVideoPoll, iappleVideoLayout, iappleVideoSubtitleCount, iappleVideoSubtitleName, iappleVideoSubtitleSelect, iappleVideoSubtitleText, 1,
+#if TARGET_OS_IPHONE
+  NULL, NULL,
+#else
+  iappleVideoAudioDevices, iappleVideoAudioDevice,
+#endif
+  iappleVideoAdjust};
 
 #if TARGET_OS_IPHONE
 const IvideoBackend* iupdrvVideoBackend(int index)

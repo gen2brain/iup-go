@@ -28,6 +28,14 @@ typedef struct _IvideoInfo
   char error[512];
 } IvideoInfo;
 
+typedef struct _IvideoAudioDevice
+{
+  char* id;
+  char* name;
+} IvideoAudioDevice;
+
+enum { IVIDEO_BRIGHTNESS, IVIDEO_CONTRAST, IVIDEO_SATURATION, IVIDEO_GAMMA, IVIDEO_ADJUST_COUNT };
+
 typedef struct _IvideoBackend
 {
   const char* name;
@@ -44,6 +52,9 @@ typedef struct _IvideoBackend
   int (*subtitle_select)(IvideoSession* session, int index, double delay);
   int (*subtitle_text)(IvideoSession* session, const char* text, int size, const char* color);
   int audio;
+  int (*audio_devices)(IvideoAudioDevice** devices);
+  void (*audio_device)(IvideoSession* session, const char* id);
+  void (*adjust)(IvideoSession* session, const int* values);
 } IvideoBackend;
 
 struct _IvideoSession
@@ -51,6 +62,7 @@ struct _IvideoSession
   const IvideoBackend* backend;
   void* context;
   const char* audio;
+  const char* audio_device;
   void* mutex;
   int closing;
   IvideoInfo info;
@@ -67,6 +79,8 @@ void iupVideoError(IvideoSession* session, const char* message);
 void iupVideoFrame(IvideoSession* session, const unsigned char* pixels, int width, int height, size_t stride, int channels);
 void iupVideoSubtitleCue(IvideoSession* session, const char* text);
 void iupVideoSubtitleError(IvideoSession* session, const char* message);
+int iupVideoAddAudioDevice(IvideoAudioDevice** devices, int count, const char* id, const char* name);
+void iupVideoFreeAudioDevices(IvideoAudioDevice* devices, int count);
 char* iupVideoReadSubtitleStream(FILE* file);
 char* iupdrvVideoReadSubtitle(const char* filename);
 void iupdrvVideoInhibitScreenSaver(int inhibit);

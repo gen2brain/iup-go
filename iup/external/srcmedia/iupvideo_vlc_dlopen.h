@@ -100,6 +100,23 @@ typedef struct
   char* psz_description;
 } libvlc_media_track_t;
 
+typedef struct libvlc_audio_output_device_t
+{
+  struct libvlc_audio_output_device_t* p_next;
+  char* psz_device;
+  char* psz_description;
+} libvlc_audio_output_device_t;
+
+enum
+{
+  libvlc_adjust_Enable = 0,
+  libvlc_adjust_Contrast,
+  libvlc_adjust_Brightness,
+  libvlc_adjust_Hue,
+  libvlc_adjust_Saturation,
+  libvlc_adjust_Gamma
+};
+
 typedef void (*libvlc_callback_t)(const libvlc_event_t* event, void* data);
 typedef void* (*libvlc_video_lock_cb)(void* opaque, void** planes);
 typedef void (*libvlc_video_unlock_cb)(void* opaque, void* picture, void* const* planes);
@@ -140,6 +157,11 @@ static int (*iupvlc_video_set_spu)(libvlc_media_player_t*, int);
 static int (*iupvlc_video_get_spu)(libvlc_media_player_t*);
 static int (*iupvlc_video_set_spu_delay)(libvlc_media_player_t*, int64_t);
 static int64_t (*iupvlc_video_get_spu_delay)(libvlc_media_player_t*);
+static libvlc_audio_output_device_t* (*iupvlc_audio_output_device_enum)(libvlc_media_player_t*);
+static void (*iupvlc_audio_output_device_list_release)(libvlc_audio_output_device_t*);
+static void (*iupvlc_audio_output_device_set)(libvlc_media_player_t*, const char*, const char*);
+static void (*iupvlc_video_set_adjust_int)(libvlc_media_player_t*, unsigned, int);
+static void (*iupvlc_video_set_adjust_float)(libvlc_media_player_t*, unsigned, float);
 
 #define libvlc_get_version iupvlc_get_version
 #define libvlc_new iupvlc_new
@@ -172,6 +194,11 @@ static int64_t (*iupvlc_video_get_spu_delay)(libvlc_media_player_t*);
 #define libvlc_video_get_spu iupvlc_video_get_spu
 #define libvlc_video_set_spu_delay iupvlc_video_set_spu_delay
 #define libvlc_video_get_spu_delay iupvlc_video_get_spu_delay
+#define libvlc_audio_output_device_enum iupvlc_audio_output_device_enum
+#define libvlc_audio_output_device_list_release iupvlc_audio_output_device_list_release
+#define libvlc_audio_output_device_set iupvlc_audio_output_device_set
+#define libvlc_video_set_adjust_int iupvlc_video_set_adjust_int
+#define libvlc_video_set_adjust_float iupvlc_video_set_adjust_float
 
 static void* iupVlcSymbol(const char* name, int* missing)
 {
@@ -261,6 +288,11 @@ static int iupVlcOpen(void)
   *(void**)&iupvlc_video_get_spu = iupVlcSymbol("libvlc_video_get_spu", &missing);
   *(void**)&iupvlc_video_set_spu_delay = iupVlcSymbol("libvlc_video_set_spu_delay", &missing);
   *(void**)&iupvlc_video_get_spu_delay = iupVlcSymbol("libvlc_video_get_spu_delay", &missing);
+  *(void**)&iupvlc_audio_output_device_enum = iupVlcSymbol("libvlc_audio_output_device_enum", &missing);
+  *(void**)&iupvlc_audio_output_device_list_release = iupVlcSymbol("libvlc_audio_output_device_list_release", &missing);
+  *(void**)&iupvlc_audio_output_device_set = iupVlcSymbol("libvlc_audio_output_device_set", &missing);
+  *(void**)&iupvlc_video_set_adjust_int = iupVlcSymbol("libvlc_video_set_adjust_int", &missing);
+  *(void**)&iupvlc_video_set_adjust_float = iupVlcSymbol("libvlc_video_set_adjust_float", &missing);
 
   if (missing || libvlc_get_version()[0] != '3')
   {

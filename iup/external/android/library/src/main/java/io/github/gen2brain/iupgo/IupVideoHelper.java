@@ -3,6 +3,9 @@ package io.github.gen2brain.iupgo;
 import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
+import android.content.Context;
+import android.media.AudioDeviceInfo;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
@@ -21,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 import androidx.annotation.Keep;
 
@@ -76,6 +80,57 @@ public final class IupVideoHelper
     public static void volume(Object object, int volume, boolean mute)
     {
         ((Player)object).volume(volume, mute);
+    }
+
+    @Keep
+    public static String[] audioDevices()
+    {
+        if (Build.VERSION.SDK_INT < 28)
+            return new String[0];
+        ArrayList<String> list = new ArrayList<>();
+        AudioManager manager = (AudioManager)IupCommon.getContextThemeWrapper().getSystemService(Context.AUDIO_SERVICE);
+        for (AudioDeviceInfo device : manager.getDevices(AudioManager.GET_DEVICES_OUTPUTS))
+        {
+            String name = audioDeviceName(device);
+            if (name == null)
+                continue;
+            list.add(String.valueOf(device.getId()));
+            list.add(name);
+        }
+        return list.toArray(new String[0]);
+    }
+
+    private static String audioDeviceName(AudioDeviceInfo device)
+    {
+        String type;
+        switch (device.getType())
+        {
+            case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER: return "Speaker";
+            case AudioDeviceInfo.TYPE_BUILTIN_EARPIECE: return "Earpiece";
+            case AudioDeviceInfo.TYPE_WIRED_HEADSET: return "Wired headset";
+            case AudioDeviceInfo.TYPE_WIRED_HEADPHONES: return "Wired headphones";
+            case AudioDeviceInfo.TYPE_LINE_ANALOG:
+            case AudioDeviceInfo.TYPE_LINE_DIGITAL: return "Line out";
+            case AudioDeviceInfo.TYPE_TELEPHONY:
+            case AudioDeviceInfo.TYPE_REMOTE_SUBMIX:
+            case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE: return null;
+            case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
+            case AudioDeviceInfo.TYPE_BLUETOOTH_SCO: type = "Bluetooth"; break;
+            case AudioDeviceInfo.TYPE_HDMI:
+            case AudioDeviceInfo.TYPE_HDMI_ARC: type = "HDMI"; break;
+            case AudioDeviceInfo.TYPE_USB_DEVICE:
+            case AudioDeviceInfo.TYPE_USB_ACCESSORY:
+            case AudioDeviceInfo.TYPE_USB_HEADSET: type = "USB"; break;
+            default: type = "Audio output"; break;
+        }
+        CharSequence product = device.getProductName();
+        return product == null || product.length() == 0 ? type : product + " (" + type + ")";
+    }
+
+    @Keep
+    public static void audioDevice(Object object, int id)
+    {
+        ((Player)object).audioDevice(id);
     }
 
     @Keep
@@ -509,6 +564,20 @@ public final class IupVideoHelper
                 seeking = false;
                 fail(error.toString());
             }
+        }
+
+        void audioDevice(int id)
+        {
+            if (closed || Build.VERSION.SDK_INT < 28)
+                return;
+            AudioDeviceInfo preferred = null;
+            AudioManager manager = (AudioManager)host.getContext().getSystemService(Context.AUDIO_SERVICE);
+            for (AudioDeviceInfo device : manager.getDevices(AudioManager.GET_DEVICES_OUTPUTS))
+            {
+                if (device.getId() == id)
+                    preferred = device;
+            }
+            media.setPreferredDevice(preferred);
         }
 
         void volume(int volume, boolean mute)

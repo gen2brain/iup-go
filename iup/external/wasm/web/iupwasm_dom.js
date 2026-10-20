@@ -2787,6 +2787,7 @@
           vv.pause(); vv.removeAttribute('src'); vv.load();
           if (vv.parentNode) vv.parentNode.removeChild(vv);
           if (subtitle.parentNode) subtitle.parentNode.removeChild(subtitle);
+          if (vo.gamma) vo.gamma.remove();
           if (vo.url) URL.revokeObjectURL(vo.url);
         };
         VS[c.vid] = vo;
@@ -2804,6 +2805,31 @@
       case 'vidvol': {
         var VL = globalThis.__iupVid && globalThis.__iupVid[c.vid];
         if (VL) { VL.el.volume = Math.min(1, Math.max(0, c.v / 100)); VL.el.muted = !!c.m; }
+      } break;
+      case 'vidsink': {
+        var VK = globalThis.__iupVid && globalThis.__iupVid[c.vid];
+        if (VK && VK.el.setSinkId) VK.el.setSinkId(c.id).catch(function () {});
+      } break;
+      case 'vidfilter': {
+        var VF = globalThis.__iupVid && globalThis.__iupVid[c.vid];
+        if (!VF) break;
+        var vfl = [];
+        if (c.b) vfl.push('brightness(' + (1 + c.b / 100) + ')');
+        if (c.c) vfl.push('contrast(' + (1 + c.c / 100) + ')');
+        if (c.s) vfl.push('saturate(' + (1 + c.s / 100) + ')');
+        if (c.g) {
+          if (!VF.gamma) {
+            var vns = 'http://www.w3.org/2000/svg', vsvg = document.createElementNS(vns, 'svg'), vfi = document.createElementNS(vns, 'filter'), vtr = document.createElementNS(vns, 'feComponentTransfer');
+            vsvg.setAttribute('width', '0'); vsvg.setAttribute('height', '0'); vsvg.style.position = 'absolute';
+            vfi.setAttribute('id', '__iupvidgamma' + c.vid); vfi.setAttribute('color-interpolation-filters', 'sRGB');
+            ['feFuncR', 'feFuncG', 'feFuncB'].forEach(function (n) { var vfn = document.createElementNS(vns, n); vfn.setAttribute('type', 'gamma'); vtr.appendChild(vfn); });
+            vfi.appendChild(vtr); vsvg.appendChild(vfi); document.body.appendChild(vsvg);
+            VF.gamma = vsvg;
+          }
+          Array.from(VF.gamma.getElementsByTagName('*')).forEach(function (n) { if (n.getAttribute('type') === 'gamma') n.setAttribute('exponent', String(Math.pow(2, -c.g / 50))); });
+          vfl.push('url(#__iupvidgamma' + c.vid + ')');
+        }
+        VF.el.style.filter = vfl.join(' ');
       } break;
       case 'vidbg': {
         var VB = globalThis.__iupVid && globalThis.__iupVid[c.vid];
@@ -3520,6 +3546,16 @@ globalThis.__iupMediaPick = function (kind, index) {
       } break;
       case 'micopen': {
         return globalThis.__iupMicrophoneOpen(req.ihptr, req.rate);
+      } break;
+      case 'viddevices': {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices || !HTMLMediaElement.prototype.setSinkId) return null;
+        return navigator.mediaDevices.enumerateDevices().then(function (list) {
+          var lines = [], n = 0;
+          for (var i = 0; i < list.length; i++)
+            if (list[i].kind === 'audiooutput' && list[i].deviceId && list[i].deviceId !== 'default' && list[i].deviceId !== 'communications')
+              lines.push(list[i].deviceId + '\t' + (list[i].label || ('Audio output ' + (++n))));
+          return lines.length ? lines.join('\n') : null;
+        }).catch(function () { return null; });
       } break;
       case 'micdevices': {
         if (!globalThis.__iupMicrophoneAvailable()) return null;
