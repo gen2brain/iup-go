@@ -595,7 +595,21 @@ char* iupdrvVideoReadSubtitle(const char* filename)
 
 static const IvideoBackend iappleVideoBackend = {"NATIVE", iappleVideoAvailable, iappleVideoOpen, iappleVideoClose, iappleVideoPlay, iappleVideoSeek, iappleVideoVolume, iappleVideoPoll, iappleVideoLayout, iappleVideoSubtitleCount, iappleVideoSubtitleName, iappleVideoSubtitleSelect, iappleVideoSubtitleText, 1};
 
+#if TARGET_OS_IPHONE
 const IvideoBackend* iupdrvVideoBackend(int index)
 {
   return index == 0 ? &iappleVideoBackend : NULL;
 }
+#else
+extern const IvideoBackend iupVideoMpvBackend;
+extern const IvideoBackend iupVideoVlcBackend;
+extern const IvideoBackend iupVideoGstreamerBackend;
+
+const IvideoBackend* iupdrvVideoBackend(int index)
+{
+  static const IvideoBackend* backends[] = {&iappleVideoBackend, &iupVideoMpvBackend, &iupVideoVlcBackend, &iupVideoGstreamerBackend};
+  if (index < 0 || index >= (int)(sizeof(backends) / sizeof(backends[0])))
+    return NULL;
+  return backends[index];
+}
+#endif

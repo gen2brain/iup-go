@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include "iupvideo_os.h"
 
 typedef struct _GstElement GstElement;
@@ -273,6 +274,24 @@ static int iupGstOpen(void)
   handles[1] = iupGstLibrary("gstapp-1.0-0.dll");
   handles[2] = iupGstLibrary("gobject-2.0-0.dll");
   handles[3] = iupGstLibrary("glib-2.0-0.dll");
+#elif defined(__APPLE__)
+  {
+    static const char* const dirs[] = {"", "/opt/homebrew/lib/", "/usr/local/lib/", "/Library/Frameworks/GStreamer.framework/Versions/1.0/lib/"};
+    static const char* const names[] = {"libgstreamer-1.0.0.dylib", "libgstapp-1.0.0.dylib", "libgobject-2.0.0.dylib", "libglib-2.0.0.dylib"};
+    size_t d;
+    memset(handles, 0, sizeof(handles));
+    for (d = 0; !handles[0] && d < sizeof(dirs) / sizeof(dirs[0]); d++)
+    {
+      char path[256];
+      snprintf(path, sizeof(path), "%s%s", dirs[d], names[0]);
+      handles[0] = ivideoLibraryOpen(path);
+      for (i = 1; handles[0] && i < 4; i++)
+      {
+        snprintf(path, sizeof(path), "%s%s", dirs[d], names[i]);
+        handles[i] = ivideoLibraryOpen(path);
+      }
+    }
+  }
 #else
   handles[0] = ivideoLibraryOpen("libgstreamer-1.0.so.0");
   handles[1] = ivideoLibraryOpen("libgstapp-1.0.so.0");

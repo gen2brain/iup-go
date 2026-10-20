@@ -182,6 +182,11 @@ static int iupMpvOpen(void)
   iupmpv_handle = ivideoLibraryOpen("libmpv-2.dll");
   if (!iupmpv_handle)
     iupmpv_handle = ivideoLibraryOpen("mpv-2.dll");
+#elif defined(__APPLE__)
+  {
+    static const char* const dirs[] = {"/opt/homebrew/lib", "/usr/local/lib", NULL};
+    iupmpv_handle = ivideoLibraryOpenFrom(dirs, "libmpv.2.dylib");
+  }
 #else
   iupmpv_handle = ivideoLibraryOpen("libmpv.so.2");
 #endif

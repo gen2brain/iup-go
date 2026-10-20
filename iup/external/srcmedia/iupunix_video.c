@@ -177,7 +177,7 @@ void iupdrvVideoInhibitScreenSaver(int inhibit)
 
 const IvideoBackend* iupdrvVideoBackend(int index)
 {
-  static const IvideoBackend* backends[] = {&iupVideoVlcBackend, &iupVideoGstreamerBackend, &iupVideoMpvBackend};
+  static const IvideoBackend* backends[] = {&iupVideoMpvBackend, &iupVideoVlcBackend, &iupVideoGstreamerBackend};
   if (index < 0 || index >= (int)(sizeof(backends) / sizeof(backends[0])))
     return NULL;
   return backends[index];
