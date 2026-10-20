@@ -315,6 +315,7 @@ struct IupWinUIDialogAux
   winrt::Microsoft::UI::Xaml::Controls::Canvas contentCanvas;
   winrt::Microsoft::UI::Xaml::Controls::MenuBar menuBar;
   winrt::Microsoft::UI::Windowing::AppWindow appWindow;
+  winrt::Microsoft::UI::Windowing::AppWindowPresenter windowedPresenter;
   HWND islandHwnd;
   HWND lastFocusedHwnd;
   bool isVisible;
@@ -323,7 +324,7 @@ struct IupWinUIDialogAux
 
   IupWinUIDialogAux() : xamlSource(nullptr), siteBridge(nullptr),
                         rootPanel(nullptr), contentCanvas(nullptr), menuBar(nullptr),
-                        appWindow(nullptr),
+                        appWindow(nullptr), windowedPresenter(nullptr),
                         islandHwnd(nullptr), lastFocusedHwnd(nullptr),
                         isVisible(false), windowCreated(false) {}
 };
