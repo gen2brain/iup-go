@@ -196,6 +196,34 @@ static int iupVlcOpen(void)
     if (ivideoRegistryDir(HKEY_LOCAL_MACHINE, L"Software\\VideoLAN\\VLC", L"InstallDir", dir, MAX_PATH))
       iupvlc_handle = ivideoLibraryOpenIn(dir, "libvlc.dll");
   }
+#elif defined(__APPLE__)
+  iupvlc_handle = ivideoLibraryOpen("libvlc.dylib");
+  if (!iupvlc_handle)
+  {
+    const char* home = getenv("HOME");
+    const char* roots[] = {"", home};
+    int r;
+    for (r = 0; !iupvlc_handle && r < 2; r++)
+    {
+      char app[1024], path[1100];
+      void* core;
+      if (!roots[r] || snprintf(app, sizeof(app), "%s/Applications/VLC.app/Contents/MacOS", roots[r]) >= (int)sizeof(app))
+        continue;
+      snprintf(path, sizeof(path), "%s/lib/libvlccore.dylib", app);
+      core = ivideoLibraryOpen(path);
+      if (!core)
+        continue;
+      snprintf(path, sizeof(path), "%s/lib/libvlc.dylib", app);
+      iupvlc_handle = ivideoLibraryOpen(path);
+      if (iupvlc_handle)
+      {
+        snprintf(path, sizeof(path), "%s/plugins", app);
+        setenv("VLC_PLUGIN_PATH", path, 0);
+      }
+      else
+        ivideoLibraryClose(core);
+    }
+  }
 #else
   iupvlc_handle = ivideoLibraryOpen("libvlc.so.5");
 #endif

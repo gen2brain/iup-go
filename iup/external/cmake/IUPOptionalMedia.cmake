@@ -30,6 +30,13 @@ elseif(WIN32)
   )
 elseif(APPLE)
   list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_video.m")
+  if(NOT IUP_BACKEND STREQUAL "cocoatouch")
+    list(APPEND _MEDIA_SOURCES
+      "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupvideo_vlc.c"
+      "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupvideo_mpv.c"
+      "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupvideo_gstreamer.c"
+    )
+  endif()
 elseif(UNIX)
   list(APPEND _MEDIA_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupunix_video.c"

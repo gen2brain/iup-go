@@ -104,6 +104,7 @@ static inline char* ivideoFullPath(const char* path)
 #else
 #include <dlfcn.h>
 #include <pthread.h>
+#include <stdio.h>
 
 typedef pthread_mutex_t ivideo_mutex_t;
 typedef pthread_cond_t ivideo_cond_t;
@@ -145,6 +146,18 @@ static inline void ivideoAlignedFree(void* memory)
 static inline void* ivideoLibraryOpen(const char* name)
 {
   return dlopen(name, RTLD_NOW | RTLD_LOCAL);
+}
+
+static inline void* ivideoLibraryOpenFrom(const char* const* dirs, const char* name)
+{
+  void* library = ivideoLibraryOpen(name);
+  for (; !library && dirs && *dirs; dirs++)
+  {
+    char path[1024];
+    if (snprintf(path, sizeof(path), "%s/%s", *dirs, name) < (int)sizeof(path))
+      library = ivideoLibraryOpen(path);
+  }
+  return library;
 }
 
 static inline void* ivideoLibrarySymbol(void* library, const char* name)
