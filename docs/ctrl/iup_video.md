@@ -56,7 +56,7 @@ Ignored when no source is set and in the "ERROR" state.
 **STATE** (read-only): Returns "EMPTY" (no source), "LOADING", "STOPPED", "PLAYING", "PAUSED", "BUFFERING", "ENDED" or "ERROR".
 While the element is not mapped, a set source is "STOPPED". Unmapping closes the engine; mapping again reloads the source stopped.
 While "PLAYING" or "BUFFERING" a source with video, the screen saver and display sleep are inhibited.
-In Linux and FreeBSD this requires the org.freedesktop.ScreenSaver D-Bus service or an X11 session. Not supported in Haiku.
+In Linux and FreeBSD this requires the org.freedesktop.ScreenSaver D-Bus service or an X11 session.
 
 **POSITION** (non-inheritable): Playback position in seconds, as a floating point number. Setting it seeks asynchronously. Ignored when the source is not seekable.
 
