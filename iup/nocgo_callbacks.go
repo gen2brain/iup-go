@@ -568,6 +568,10 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		}
 	case "PLAYEND_CB":
 		setPlayEndFunc(ih, fn.(PlayEndFunc))
+	case "READY_CB":
+		setReadyFunc(ih, fn.(ReadyFunc))
+	case "STATECHANGED_CB":
+		setStateChangedFunc(ih, fn.(StateChangedFunc))
 	case "FRAME_CB":
 		setFrameFunc(ih, fn.(FrameFunc))
 	case "SAMPLES_CB":

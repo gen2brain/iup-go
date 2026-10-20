@@ -1,0 +1,208 @@
+/** \file
+ * \brief Video control, HTMLVideoElement playback
+ *
+ * See Copyright Notice in "iup.h"
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <emscripten.h>
+
+#include "iup.h"
+#include "iup_str.h"
+#include "iup_video.h"
+
+#include "iupwasm_drv.h"
+
+enum
+{
+  IWASMVIDEO_READY,
+  IWASMVIDEO_STATE,
+  IWASMVIDEO_ENDED,
+  IWASMVIDEO_ERROR,
+  IWASMVIDEO_POSITION,
+  IWASMVIDEO_DURATION,
+  IWASMVIDEO_SEEKABLE,
+  IWASMVIDEO_WIDTH,
+  IWASMVIDEO_HEIGHT,
+  IWASMVIDEO_AUDIO,
+  IWASMVIDEO_VIDEO,
+  IWASMVIDEO_COUNT
+};
+
+typedef struct _IwasmVideo
+{
+  int vid;
+  double ended;
+  char background[32];
+} IwasmVideo;
+
+EM_JS(int, iupwasmJsVideoOpen, (int vid, int canvas, const char* source, int url, const char* background), {
+  var src = UTF8ToString(source), data = null;
+  if (!url) {
+    try { data = FS.readFile(src); } catch (e) { return 0; }
+  }
+  var buffer = typeof SharedArrayBuffer !== 'undefined' ? new SharedArrayBuffer(8 * 11) : new ArrayBuffer(8 * 11);
+  if (!globalThis.__iupVideo) globalThis.__iupVideo = {};
+  globalThis.__iupVideo[vid] = new Float64Array(buffer);
+  var ext = src.split('?')[0].split('.').pop().toLowerCase();
+  var types = { mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', mkv: 'video/x-matroska', ogv: 'video/ogg', ogg: 'audio/ogg', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', flac: 'audio/flac' };
+  globalThis.__iupApply({ op: 'vidopen', vid: vid, id: canvas, sab: buffer, url: url ? src : null, data: data ? data.buffer : null, type: data ? (types[ext] || "") : "", bg: UTF8ToString(background) });
+  return 1;
+})
+
+EM_JS(void, iupwasmJsVideoRead, (int vid, double* values), {
+  var state = globalThis.__iupVideo && globalThis.__iupVideo[vid];
+  if (state) HEAPF64.set(state, values >> 3);
+})
+
+EM_JS(void, iupwasmJsVideoClose, (int vid), {
+  globalThis.__iupApply({ op: 'vidclose', vid: vid });
+  if (globalThis.__iupVideo) delete globalThis.__iupVideo[vid];
+})
+
+EM_JS(void, iupwasmJsVideoPlay, (int vid, int play), {
+  globalThis.__iupApply({ op: 'vidplay', vid: vid, play: play });
+})
+
+EM_JS(void, iupwasmJsVideoSeek, (int vid, double position), {
+  globalThis.__iupApply({ op: 'vidseek', vid: vid, t: position });
+})
+
+EM_JS(void, iupwasmJsVideoVolume, (int vid, int volume, int mute), {
+  globalThis.__iupApply({ op: 'vidvol', vid: vid, v: volume, m: mute });
+})
+
+EM_JS(void, iupwasmJsVideoBackground, (int vid, const char* background), {
+  globalThis.__iupApply({ op: 'vidbg', vid: vid, bg: UTF8ToString(background) });
+})
+
+static void wasmVideoBackground(Ihandle* ih, char* background, size_t size)
+{
+  unsigned char r = 0, g = 0, b = 0;
+  iupStrToRGB(IupGetAttribute(ih, "BGCOLOR"), &r, &g, &b);
+  snprintf(background, size, "rgb(%d,%d,%d)", r, g, b);
+}
+
+static int wasmVideoAvailable(void)
+{
+  return 1;
+}
+
+static int wasmVideoOpen(IvideoSession* session, Ihandle* ih, const char* source, int url)
+{
+  static int next_vid = 1;
+  IwasmVideo* context;
+  int canvas = iupwasmIdOf(ih);
+  if (!canvas)
+  {
+    iupVideoError(session, "No video canvas element");
+    return 0;
+  }
+  context = (IwasmVideo*)calloc(1, sizeof(IwasmVideo));
+  if (!context)
+    return 0;
+  session->context = context;
+  context->vid = next_vid++;
+  wasmVideoBackground(ih, context->background, sizeof(context->background));
+  if (!iupwasmJsVideoOpen(context->vid, canvas, source, url, context->background))
+  {
+    context->vid = 0;
+    iupVideoError(session, "Cannot read the video file");
+    return 0;
+  }
+  return 1;
+}
+
+static void wasmVideoClose(IvideoSession* session)
+{
+  IwasmVideo* context = (IwasmVideo*)session->context;
+  if (!context)
+    return;
+  if (context->vid)
+    iupwasmJsVideoClose(context->vid);
+  free(context);
+  session->context = NULL;
+}
+
+static void wasmVideoPlay(IvideoSession* session, int play)
+{
+  IwasmVideo* context = (IwasmVideo*)session->context;
+  iupwasmJsVideoPlay(context->vid, play);
+}
+
+static void wasmVideoSeek(IvideoSession* session, double position)
+{
+  IwasmVideo* context = (IwasmVideo*)session->context;
+  iupwasmJsVideoSeek(context->vid, position);
+}
+
+static void wasmVideoVolume(IvideoSession* session, int volume, int mute)
+{
+  IwasmVideo* context = (IwasmVideo*)session->context;
+  iupwasmJsVideoVolume(context->vid, volume, mute);
+}
+
+static void wasmVideoLayout(IvideoSession* session, Ihandle* ih)
+{
+  IwasmVideo* context = (IwasmVideo*)session->context;
+  char background[32];
+  wasmVideoBackground(ih, background, sizeof(background));
+  if (strcmp(background, context->background) != 0)
+  {
+    strcpy(context->background, background);
+    iupwasmJsVideoBackground(context->vid, background);
+  }
+}
+
+static const char* wasmVideoErrorMessage(int code)
+{
+  switch (code)
+  {
+  case 1:
+    return "Video loading was aborted";
+  case 2:
+    return "A network error stopped the video download";
+  case 3:
+    return "The video could not be decoded";
+  default:
+    return "The video format or source is not supported";
+  }
+}
+
+static void wasmVideoPoll(IvideoSession* session)
+{
+  IwasmVideo* context = (IwasmVideo*)session->context;
+  double values[IWASMVIDEO_COUNT];
+  IvideoInfo info;
+  memset(values, 0, sizeof(values));
+  memset(&info, 0, sizeof(info));
+  iupwasmJsVideoRead(context->vid, values);
+  if (values[IWASMVIDEO_ERROR] > 0)
+  {
+    iupVideoError(session, wasmVideoErrorMessage((int)values[IWASMVIDEO_ERROR]));
+    return;
+  }
+  info.ready = values[IWASMVIDEO_READY] > 0;
+  info.state = info.ready ? (int)values[IWASMVIDEO_STATE] : IVIDEO_LOADING;
+  info.ended = values[IWASMVIDEO_ENDED] > context->ended;
+  context->ended = values[IWASMVIDEO_ENDED];
+  info.position = values[IWASMVIDEO_POSITION];
+  info.duration = values[IWASMVIDEO_DURATION];
+  info.seekable = values[IWASMVIDEO_SEEKABLE] > 0;
+  info.width = (int)values[IWASMVIDEO_WIDTH];
+  info.height = (int)values[IWASMVIDEO_HEIGHT];
+  info.audio = values[IWASMVIDEO_AUDIO] > 0;
+  info.video = values[IWASMVIDEO_VIDEO] > 0;
+  info.aspect = info.height > 0 ? (double)info.width / info.height : 0;
+  iupVideoInfo(session, &info);
+}
+
+static const IvideoBackend wasmVideoBackend = {"NATIVE", wasmVideoAvailable, wasmVideoOpen, wasmVideoClose, wasmVideoPlay, wasmVideoSeek, wasmVideoVolume, wasmVideoPoll, wasmVideoLayout};
+
+const IvideoBackend* iupdrvVideoBackend(int index)
+{
+  return index == 0 ? &wasmVideoBackend : NULL;
+}

@@ -91,7 +91,7 @@
 	if (_ihandle)
 	{
 		int target_h = viewport_h;
-		if (_ihandle->naturalheight > target_h) target_h = _ihandle->naturalheight;
+		if (_ihandle->firstchild && _ihandle->firstchild->naturalheight > target_h) target_h = _ihandle->firstchild->naturalheight;
 
 		iupAttribSetInt(_ihandle, "_IUPCOCOATOUCH_VIEW_W", viewport_w);
 		iupAttribSetInt(_ihandle, "_IUPCOCOATOUCH_VIEW_H", viewport_h);

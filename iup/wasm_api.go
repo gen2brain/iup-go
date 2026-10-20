@@ -174,6 +174,12 @@ type UpdateFunc func(ih Ihandle) int
 // PlayEndFunc is the type for the IupAudio PLAYEND_CB callback.
 type PlayEndFunc func(ih Ihandle) int
 
+// ReadyFunc is the type for the IupVideo READY_CB callback.
+type ReadyFunc func(ih Ihandle) int
+
+// StateChangedFunc is the type for the IupVideo STATECHANGED_CB callback.
+type StateChangedFunc func(ih Ihandle, state string) int
+
 // FrameFunc is the type for the IupCamera FRAME_CB callback. The data slice holds packed RGB pixels.
 type FrameFunc func(ih Ihandle, width, height int, data []byte) int
 

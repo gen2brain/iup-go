@@ -20,6 +20,7 @@ IUPMEDIA_API int IupMediaOpen(void)
     return IUP_OPENED;
 
   iupRegisterClass(iupAudioNewClass());
+  iupRegisterClass(iupVideoNewClass());
   iupRegisterClass(iupCameraNewClass());
   iupRegisterClass(iupMicrophoneNewClass());
 

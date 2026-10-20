@@ -16,6 +16,13 @@ func Audio() Ihandle {
 	return ccallHandle("IupAudio", nil, nil)
 }
 
+// Video creates a video player.
+//
+// https://gen2brain.github.io/iup-go/ctrl/iup_video.html
+func Video() Ihandle {
+	return ccallHandle("IupVideo", nil, nil)
+}
+
 // Camera creates a canvas that shows the live picture of a camera.
 //
 // https://gen2brain.github.io/iup-go/ctrl/iup_camera.html

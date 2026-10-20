@@ -13,7 +13,9 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.text.TextPaint;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 
 import androidx.annotation.Keep;
 import androidx.appcompat.view.ContextThemeWrapper;
@@ -370,7 +372,37 @@ public final class IupCanvasHelper
     }
 
 
-    public static native void dispatchButton(long ihandlePtr, int button, int pressed, int x, int y, int metaState);
+    static final class DoubleTap
+    {
+        private long upTime;
+        private float upX, upY;
+        private boolean pressedDouble;
+
+        boolean press(View view, MotionEvent ev)
+        {
+            int slop = ViewConfiguration.get(view.getContext()).getScaledDoubleTapSlop();
+            float dx = ev.getX() - upX, dy = ev.getY() - upY;
+            pressedDouble = upTime != 0 && ev.getDownTime() - upTime <= ViewConfiguration.getDoubleTapTimeout() &&
+                            dx * dx + dy * dy <= (float)slop * slop;
+            return pressedDouble;
+        }
+
+        void reset()
+        {
+            upTime = 0;
+            pressedDouble = false;
+        }
+
+        void release(MotionEvent ev)
+        {
+            upTime = pressedDouble ? 0 : ev.getEventTime();
+            upX = ev.getX();
+            upY = ev.getY();
+            pressedDouble = false;
+        }
+    }
+
+    public static native void dispatchButton(long ihandlePtr, int button, int pressed, int x, int y, int metaState, boolean doubleClick);
     public static native void dispatchMotion(long ihandlePtr, int x, int y, int metaState, int buttonState);
     public static native void dispatchAction(long ihandlePtr, int x1, int y1, int x2, int y2);
     public static native void dispatchLeaveWindow(long ihandlePtr);

@@ -490,7 +490,7 @@ static int cocoaTouchCanvasFireButton(Ihandle* ih, UITouch* touch, UIEvent* even
 	CGPoint p = [touch locationInView:view];
 	char status[IUPKEY_STATUS_SIZE];
 	unsigned int serial = iupCocoaTouchModalSerial();
-	iupCocoaTouchButtonKeySetStatus(event, cocoaTouchCanvasModifiers(event), pressed ? 1 : 0, 0, status);
+	iupCocoaTouchButtonKeySetStatus(event, cocoaTouchCanvasModifiers(event), pressed ? 1 : 0, pressed && touch.tapCount % 2 == 0, status);
 	if (cb(ih, IUP_BUTTON1, pressed, (int)p.x, (int)p.y, status) == IUP_CLOSE) IupExitLoop();
 	return serial != iupCocoaTouchModalSerial();
 }

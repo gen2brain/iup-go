@@ -84,7 +84,7 @@ IDEs automatically pick up both files. See [example](https://gist.github.com/gen
 | `IUP_BUILD_WEB`      | `OFF`            | Build `iupweb` (Web browser control)                            |
 | `IUP_BUILD_CTRL`     | `OFF`            | Build `iupctrl` (Matrix, Cells, and Flat* controls)             |
 | `IUP_BUILD_PLOT`     | `OFF`            | Build `iupplot` (Plot control)                                  |
-| `IUP_BUILD_MEDIA`    | `OFF`            | Build `iupmedia` (Audio, Camera and Microphone controls)        |
+| `IUP_BUILD_MEDIA`    | `OFF`            | Build `iupmedia` (Audio, Video, Camera and Microphone controls) |
 | `IUP_BUILD_EXAMPLES` | `OFF`            | Build example programs (C and C++)                              |
 | `IUP_USE_XEMBED`     | `OFF`            | Use XEmbed tray protocol instead of SNI (GTK3/GTK2/Motif)       |
 | `IUP_USE_XFT`        | `OFF`            | Use Xft for font rendering (Motif)                              |
@@ -197,7 +197,9 @@ Haiku uses BGLView from `libGL` (ships with the OS).
 
 **Media** (`IUP_BUILD_MEDIA`):
 No extra dependencies. Audio uses the bundled miniaudio, which loads PulseAudio, ALSA or JACK at runtime on Linux and the system audio API elsewhere; the microphone captures through the same backends.
+Video on Linux, FreeBSD and Haiku loads libVLC, GStreamer or libmpv at runtime.
 The camera uses Video4Linux2, Media Foundation, AVFoundation, the Camera2 NDK or getUserMedia.
+On FreeBSD the camera needs the Video4Linux headers from the `v4l_compat` package.
 
 ### Using IUP from CMake
 
@@ -217,11 +219,11 @@ target_link_libraries(myapp PRIVATE IUP::iupmedia)
 
 ## Libraries
 
-| Library    | Description                                  |
-|------------|----------------------------------------------|
-| `iup`      | Core library (always built)                  |
-| `iupgl`    | OpenGL canvas control                        |
-| `iupweb`   | Web browser control                          |
-| `iupplot`  | Plot/charting control                        |
-| `iupctrl`  | Matrix, Cells, and Flat* controls            |
-| `iupmedia` | Audio player, Camera and Microphone controls |
+| Library    | Description                                             |
+|------------|---------------------------------------------------------|
+| `iup`      | Core library (always built)                             |
+| `iupgl`    | OpenGL canvas control                                   |
+| `iupweb`   | Web browser control                                     |
+| `iupplot`  | Plot/charting control                                   |
+| `iupctrl`  | Matrix, Cells, and Flat* controls                       |
+| `iupmedia` | Audio and Video players, Camera and Microphone controls |

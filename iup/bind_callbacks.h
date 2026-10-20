@@ -1111,6 +1111,16 @@ static void goIupSetPlayEndFunc(Ihandle *ih) {
 	IupSetCallback(ih, "PLAYEND_CB", (Icallback) goIupPlayEndCB);
 }
 
+CGO_EXPORT extern int goIupReadyCB(void *);
+static void goIupSetReadyFunc(Ihandle *ih) {
+	IupSetCallback(ih, "READY_CB", (Icallback) goIupReadyCB);
+}
+
+CGO_EXPORT extern int goIupStateChangedCB(void *, void *);
+static void goIupSetStateChangedFunc(Ihandle *ih) {
+	IupSetCallback(ih, "STATECHANGED_CB", (Icallback) goIupStateChangedCB);
+}
+
 CGO_EXPORT extern int goIupFrameCB(void *, int width, int height, void *data);
 static void goIupSetFrameFunc(Ihandle *ih) {
 	IupSetCallback(ih, "FRAME_CB", (Icallback) goIupFrameCB);

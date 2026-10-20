@@ -27,6 +27,7 @@ extern "C" {
 
 IUPMEDIA_API int IupMediaOpen(void);
 IUPMEDIA_API Ihandle* IupAudio(void);
+IUPMEDIA_API Ihandle* IupVideo(void);
 IUPMEDIA_API Ihandle* IupCamera(void);
 IUPMEDIA_API Ihandle* IupMicrophone(void);
 

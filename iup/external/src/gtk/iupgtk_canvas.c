@@ -1324,7 +1324,10 @@ static void gtkCanvasUnMapMethod(Ihandle* ih)
 #if GTK_CHECK_VERSION(3, 0, 0)
   cairo_surface_t* buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK3_CANVAS_BUFFER");
   if (buffer)
+  {
     cairo_surface_destroy(buffer);
+    iupAttribSet(ih, "_IUPGTK3_CANVAS_BUFFER", NULL);
+  }
 #endif
 
 #if GTK_CHECK_VERSION(3, 14, 0)

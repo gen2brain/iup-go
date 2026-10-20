@@ -12,6 +12,38 @@ import (
 // Called when playback reaches the end of the file.
 type PlayEndFunc func(ih Ihandle) int
 
+// ReadyFunc for READY_CB callback.
+// Called when the source is ready to play.
+type ReadyFunc func(ih Ihandle) int
+
+// StateChangedFunc for STATECHANGED_CB callback.
+// Called when the playback state changes.
+type StateChangedFunc func(ih Ihandle, state string) int
+
+var readyCB = purego.NewCallback(func(ih uintptr) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_READY_CB").(ReadyFunc); ok {
+		return f(Ihandle(ih))
+	}
+	return DEFAULT
+})
+
+var stateChangedCB = purego.NewCallback(func(ih, state uintptr) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_STATECHANGED_CB").(StateChangedFunc); ok {
+		return f(Ihandle(ih), goString(state))
+	}
+	return DEFAULT
+})
+
+func setReadyFunc(ih Ihandle, f ReadyFunc) {
+	storeCallback(ih, "_IUPGO_READY_CB", f)
+	iupSetCallback(uintptr(ih), "READY_CB", readyCB)
+}
+
+func setStateChangedFunc(ih Ihandle, f StateChangedFunc) {
+	storeCallback(ih, "_IUPGO_STATECHANGED_CB", f)
+	iupSetCallback(uintptr(ih), "STATECHANGED_CB", stateChangedCB)
+}
+
 var playEndCB = purego.NewCallback(func(ih uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PLAYEND_CB").(PlayEndFunc); ok {
 		return f(Ihandle(ih))
