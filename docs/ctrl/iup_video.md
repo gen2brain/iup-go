@@ -30,11 +30,20 @@ NULL unloads the source.
 Ignored while a source is open.
 "NATIVE" is the system player: Media Foundation in Windows, AVFoundation in macOS and iOS, MediaPlayer in Android and the HTML video element in WebAssembly.
 In Windows, "NATIVE" requires Windows 8 or newer.
-"VLC" (libVLC 3), "GSTREAMER" (GStreamer 1.x) and "MPV" (libmpv 2) are available in Linux, FreeBSD and Haiku, loaded at runtime when installed. "AUTO" tries them in that order.
+"VLC" (libVLC 3), "GSTREAMER" (GStreamer 1.x) and "MPV" (libmpv 2) are available in Windows, Linux, FreeBSD and Haiku, loaded at runtime when installed. "AUTO" tries them in that order, after "NATIVE" in Windows.
+In Windows, libvlc.dll is loaded from the application folder, PATH or the VLC installation, libmpv-2.dll from the application folder or PATH, and GStreamer from PATH or the GSTREAMER_1_0_ROOT_MSVC_X86_64, GSTREAMER_1_0_ROOT_MSVC_ARM64, GSTREAMER_1_0_ROOT_MINGW_X86_64 or GSTREAMER_1_0_ROOT_X86_64 installation.
 
 **BACKENDUSED** (read-only): Engine playing the current source, or NULL when none is open.
 
-**AVAILABLE** (read-only): Returns "YES" if an engine selected by BACKEND can be loaded, "NO" otherwise. Which formats play depends on the engine and its installed codecs.
+**AUDIOURL** (non-inheritable): URI of a separate audio stream played with the source in place of its own audio, such as an "http", "https" or "file" URL. Used when FILE or URL loads the source, so set it before them. NULL plays the audio of the source.
+Supported by "VLC", "MPV" and "NATIVE" in macOS and iOS. "AUTO" skips the other engines; when no engine selected by BACKEND supports it, STATE becomes "ERROR".
+
+**MPVCONFIG** (non-inheritable): Loads the user mpv configuration (mpv.conf) when "MPV" loads the source. Can be "YES" or "NO". Default: "NO".
+
+**MPVOPTIONS** (non-inheritable): Additional mpv options applied when "MPV" loads the source, after the configuration loaded by MPVCONFIG. Options are separated by spaces, each "name=value", "name" (same as "name=yes") or "no-name" (same as "name=no"), with an optional leading "--". Double quotes keep spaces in a value. Unknown options are ignored.
+The options IupVideo needs to render and control playback, such as "vo", "pause", "idle" and "keep-open", cannot be changed.
+
+**AVAILABLE** (read-only): Returns "YES" if an engine selected by BACKEND can be loaded, "NO" otherwise. While AUDIOURL is set, only engines that support it count. Which formats play depends on the engine and its installed codecs.
 
 **PLAY** (write-only): Starts playback, or resumes it after PAUSE. While the source is loading, playback starts when it is ready. After the end, playback restarts from the beginning.
 Ignored when no source is set and in the "ERROR" state.
@@ -45,6 +54,8 @@ Ignored when no source is set and in the "ERROR" state.
 
 **STATE** (read-only): Returns "EMPTY" (no source), "LOADING", "STOPPED", "PLAYING", "PAUSED", "BUFFERING", "ENDED" or "ERROR".
 While the element is not mapped, a set source is "STOPPED". Unmapping closes the engine; mapping again reloads the source stopped.
+While "PLAYING" or "BUFFERING" a source with video, the screen saver and display sleep are inhibited.
+In Linux and FreeBSD this requires the org.freedesktop.ScreenSaver D-Bus service or an X11 session. Not supported in Haiku.
 
 **POSITION** (non-inheritable): Playback position in seconds, as a floating point number. Setting it seeks asynchronously. Ignored when the source is not seekable.
 
@@ -101,9 +112,9 @@ In macOS, iOS and Android, applies only to external subtitles.
 
 **SUBTITLEERROR** (read-only): Last subtitle loading or selection error, or NULL. Cleared by a successful load or selection.
 
-In Win32, Cocoa, iOS, Android and WebAssembly the engine draws into a native view inside the canvas.
-In other Windows drivers it draws into a child window placed over the canvas, above sibling controls.
-In other drivers the decoded frames are drawn on the canvas.
+With "NATIVE" in Win32, Cocoa, iOS, Android and WebAssembly the engine draws into a native view inside the canvas.
+With "NATIVE" in other Windows drivers it draws into a child window placed over the canvas, above sibling controls.
+Otherwise the decoded frames are drawn on the canvas.
 
 ### Callbacks
 

@@ -22,7 +22,12 @@ if(IUP_BACKEND STREQUAL "android")
 elseif(EMSCRIPTEN)
   list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupwasm_video.c")
 elseif(WIN32)
-  list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupwin_video.cpp")
+  list(APPEND _MEDIA_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupwin_video.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupvideo_vlc.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupvideo_mpv.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupvideo_gstreamer.c"
+  )
 elseif(APPLE)
   list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_video.m")
 elseif(UNIX)

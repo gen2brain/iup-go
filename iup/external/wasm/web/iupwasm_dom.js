@@ -2825,6 +2825,21 @@
         var VC = globalThis.__iupVid && globalThis.__iupVid[c.vid];
         if (VC) { VC.close(); delete globalThis.__iupVid[c.vid]; }
       } break;
+      case 'vidwake': {
+        var W = globalThis.__iupVidWake || (globalThis.__iupVidWake = { on: false, lock: null, listening: false });
+        W.on = !!c.on;
+        var acquire = function () {
+          if (!W.on || W.lock || document.visibilityState !== 'visible' || !navigator.wakeLock) return;
+          navigator.wakeLock.request('screen').then(function (lock) {
+            if (!W.on) { lock.release(); return; }
+            W.lock = lock;
+            lock.addEventListener('release', function () { if (W.lock === lock) W.lock = null; });
+          }, function () {});
+        };
+        if (!W.listening) { W.listening = true; document.addEventListener('visibilitychange', acquire); }
+        if (W.on) acquire();
+        else if (W.lock) { var WL = W.lock; W.lock = null; WL.release(); }
+      } break;
       case 'camstart': {
         if (!globalThis.__iupCam) globalThis.__iupCam = {};
         var CM = globalThis.__iupCam, cp = c.ihptr, chdr = new Int32Array(c.sab, 0, 4), cu8 = new Uint8Array(c.sab, 16);

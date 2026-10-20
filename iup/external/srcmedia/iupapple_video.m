@@ -142,22 +142,103 @@ static void iappleVideoLayout(IvideoSession* session, Ihandle* ih)
   }
 }
 
-static int iappleVideoOpen(IvideoSession* session, Ihandle* ih, const char* source, int url)
+static NSURL* iappleVideoURL(const char* source, int url)
 {
   NSString* name = [NSString stringWithUTF8String:source];
-  IupAppleVideo* context;
-  CALayer* parent;
-  NSURL* uri;
   if (!name)
+    return nil;
+  return url ? [NSURL URLWithString:name] : [NSURL fileURLWithPath:[name stringByStandardizingPath]];
+}
+
+static int iappleVideoAttach(IupAppleVideo* context, AVPlayerItem* item)
+{
+  if (!item)
   {
-    iupVideoError(session, "Invalid source name");
+    iupVideoError(context->session, "Cannot create AVPlayer item");
     return 0;
   }
-  uri = url ? [NSURL URLWithString:name] : [NSURL fileURLWithPath:[name stringByStandardizingPath]];
+  context->item = [item retain];
+  [context->player replaceCurrentItemWithPlayerItem:item];
+  if (context->output)
+    [context->item addOutput:context->output];
+  context->legible = [[AVPlayerItemLegibleOutput alloc] init];
+  context->legible.suppressesPlayerRendering = context->output != nil;
+  if (context->output)
+    [context->legible setDelegate:context queue:dispatch_get_main_queue()];
+  [context->item addOutput:context->legible];
+  [context->item.asset loadValuesAsynchronouslyForKeys:@[@"availableMediaCharacteristicsWithMediaSelectionOptions"] completionHandler:^{
+    dispatch_async(dispatch_get_main_queue(), ^{
+      AVMediaSelectionGroup* group;
+      if (!context->session)
+        return;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+      group = [context->item.asset mediaSelectionGroupForMediaCharacteristic:AVMediaCharacteristicLegible];
+#pragma clang diagnostic pop
+      [context->subtitles release];
+      context->subtitles = [group retain];
+    });
+  }];
+  context->endObserver = [[[NSNotificationCenter defaultCenter]
+    addObserverForName:AVPlayerItemDidPlayToEndTimeNotification object:context->item
+    queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification* notification) {
+      (void)notification;
+      if (context->session)
+        context->ended = 1;
+    }] retain];
+  return 1;
+}
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+static AVPlayerItem* iappleVideoCompose(AVAsset* video, AVAsset* audio)
+{
+  AVMutableComposition* composition = [AVMutableComposition composition];
+  CMTimeRange range = CMTimeRangeMake(kCMTimeZero, video.duration);
+  int tracks = 0;
+  for (AVAssetTrack* track in video.tracks)
+  {
+    AVMutableCompositionTrack* target;
+    if ([track.mediaType isEqualToString:AVMediaTypeAudio])
+      continue;
+    target = [composition addMutableTrackWithMediaType:track.mediaType preferredTrackID:kCMPersistentTrackID_Invalid];
+    if (target && [target insertTimeRange:range ofTrack:track atTime:kCMTimeZero error:nil])
+    {
+      target.preferredTransform = track.preferredTransform;
+      tracks++;
+    }
+  }
+  for (AVAssetTrack* track in [audio tracksWithMediaType:AVMediaTypeAudio])
+  {
+    AVMutableCompositionTrack* target = [composition addMutableTrackWithMediaType:AVMediaTypeAudio preferredTrackID:kCMPersistentTrackID_Invalid];
+    CMTimeRange audio_range = CMTimeRangeMake(kCMTimeZero, CMTimeMinimum(audio.duration, video.duration));
+    if (target && [target insertTimeRange:audio_range ofTrack:track atTime:kCMTimeZero error:nil])
+      tracks++;
+    break;
+  }
+  return tracks ? [AVPlayerItem playerItemWithAsset:composition] : nil;
+}
+#pragma clang diagnostic pop
+
+static int iappleVideoOpen(IvideoSession* session, Ihandle* ih, const char* source, int url)
+{
+  IupAppleVideo* context;
+  CALayer* parent;
+  NSURL* uri = iappleVideoURL(source, url);
+  NSURL* audio_uri = nil;
   if (!uri)
   {
     iupVideoError(session, "Invalid source URL");
     return 0;
+  }
+  if (session->audio)
+  {
+    audio_uri = [NSURL URLWithString:[NSString stringWithUTF8String:session->audio]];
+    if (!audio_uri)
+    {
+      iupVideoError(session, "Invalid AUDIOURL");
+      return 0;
+    }
   }
   context = [[IupAppleVideo alloc] init];
   if (!context)
@@ -165,9 +246,8 @@ static int iappleVideoOpen(IvideoSession* session, Ihandle* ih, const char* sour
   session->context = context;
   context->session = session;
   context->ih = ih;
-  context->item = [[AVPlayerItem playerItemWithURL:uri] retain];
-  context->player = [[AVPlayer playerWithPlayerItem:context->item] retain];
-  if (!context->item || !context->player)
+  context->player = [[AVPlayer alloc] init];
+  if (!context->player)
   {
     iupVideoError(session, "Cannot create AVPlayer");
     return 0;
@@ -196,34 +276,37 @@ static int iappleVideoOpen(IvideoSession* session, Ihandle* ih, const char* sour
       iupVideoError(session, "Cannot create AVPlayer video output");
       return 0;
     }
-    [context->item addOutput:context->output];
   }
-  context->legible = [[AVPlayerItemLegibleOutput alloc] init];
-  context->legible.suppressesPlayerRendering = context->output != nil;
-  if (context->output)
-    [context->legible setDelegate:context queue:dispatch_get_main_queue()];
-  [context->item addOutput:context->legible];
-  [context->item.asset loadValuesAsynchronouslyForKeys:@[@"availableMediaCharacteristicsWithMediaSelectionOptions"] completionHandler:^{
-    dispatch_async(dispatch_get_main_queue(), ^{
-      AVMediaSelectionGroup* group;
-      if (!context->session)
-        return;
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-      group = [context->item.asset mediaSelectionGroupForMediaCharacteristic:AVMediaCharacteristicLegible];
-#pragma clang diagnostic pop
-      [context->subtitles release];
-      context->subtitles = [group retain];
-    });
-  }];
-  context->endObserver = [[[NSNotificationCenter defaultCenter]
-    addObserverForName:AVPlayerItemDidPlayToEndTimeNotification object:context->item
-    queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification* notification) {
-      (void)notification;
+  if (audio_uri)
+  {
+    AVURLAsset* video = [AVURLAsset URLAssetWithURL:uri options:nil];
+    AVURLAsset* audio = [AVURLAsset URLAssetWithURL:audio_uri options:nil];
+    NSArray* keys = @[@"tracks", @"duration"];
+    dispatch_group_t group = dispatch_group_create();
+    dispatch_group_enter(group);
+    [video loadValuesAsynchronouslyForKeys:keys completionHandler:^{ dispatch_group_leave(group); }];
+    dispatch_group_enter(group);
+    [audio loadValuesAsynchronouslyForKeys:keys completionHandler:^{ dispatch_group_leave(group); }];
+    [context retain];
+    dispatch_group_notify(group, dispatch_get_main_queue(), ^{
       if (context->session)
-        context->ended = 1;
-    }] retain];
-  return 1;
+      {
+        NSError* error = nil;
+        AVPlayerItem* item = nil;
+        if ([video statusOfValueForKey:@"tracks" error:&error] == AVKeyValueStatusLoaded &&
+            [audio statusOfValueForKey:@"tracks" error:&error] == AVKeyValueStatusLoaded)
+          item = iappleVideoCompose(video, audio);
+        if (item)
+          iappleVideoAttach(context, item);
+        else
+          iupVideoError(context->session, error ? error.localizedDescription.UTF8String : "Cannot combine the source with AUDIOURL");
+      }
+      [context release];
+    });
+    dispatch_release(group);
+    return 1;
+  }
+  return iappleVideoAttach(context, [AVPlayerItem playerItemWithURL:uri]);
 }
 
 static void iappleVideoClose(IvideoSession* session)
@@ -475,6 +558,26 @@ static int iappleVideoSubtitleText(IvideoSession* session, const char* text, int
   return 1;
 }
 
+#if !TARGET_OS_IPHONE
+static id iapple_video_activity = nil;
+#endif
+
+void iupdrvVideoInhibitScreenSaver(int inhibit)
+{
+#if TARGET_OS_IPHONE
+  [UIApplication sharedApplication].idleTimerDisabled = inhibit ? YES : NO;
+#else
+  if (inhibit && !iapple_video_activity)
+    iapple_video_activity = [[[NSProcessInfo processInfo] beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled | NSActivityIdleSystemSleepDisabled reason:@"Playing video"] retain];
+  else if (!inhibit && iapple_video_activity)
+  {
+    [[NSProcessInfo processInfo] endActivity:iapple_video_activity];
+    [iapple_video_activity release];
+    iapple_video_activity = nil;
+  }
+#endif
+}
+
 char* iupdrvVideoReadSubtitle(const char* filename)
 {
   NSData* bytes = [NSData dataWithContentsOfFile:[NSString stringWithUTF8String:filename]];
@@ -490,7 +593,7 @@ char* iupdrvVideoReadSubtitle(const char* filename)
   return text;
 }
 
-static const IvideoBackend iappleVideoBackend = {"NATIVE", iappleVideoAvailable, iappleVideoOpen, iappleVideoClose, iappleVideoPlay, iappleVideoSeek, iappleVideoVolume, iappleVideoPoll, iappleVideoLayout, iappleVideoSubtitleCount, iappleVideoSubtitleName, iappleVideoSubtitleSelect, iappleVideoSubtitleText};
+static const IvideoBackend iappleVideoBackend = {"NATIVE", iappleVideoAvailable, iappleVideoOpen, iappleVideoClose, iappleVideoPlay, iappleVideoSeek, iappleVideoVolume, iappleVideoPoll, iappleVideoLayout, iappleVideoSubtitleCount, iappleVideoSubtitleName, iappleVideoSubtitleSelect, iappleVideoSubtitleText, 1};
 
 const IvideoBackend* iupdrvVideoBackend(int index)
 {

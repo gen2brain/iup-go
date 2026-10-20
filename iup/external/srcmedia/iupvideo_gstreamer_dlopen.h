@@ -9,7 +9,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <dlfcn.h>
+#include <stdio.h>
+#include "iupvideo_os.h"
 
 typedef struct _GstElement GstElement;
 typedef struct _GstElementFactory GstElementFactory;
@@ -224,11 +225,37 @@ static void (*iupgst_event_parse_stream_flags)(GstEvent*, GstStreamFlags*);
 
 static void* iupGstSymbol(void* handle, const char* name, int* missing)
 {
-  void* symbol = dlsym(handle, name);
+  void* symbol = ivideoLibrarySymbol(handle, name);
   if (!symbol)
     *missing = 1;
   return symbol;
 }
+
+#ifdef _WIN32
+static void* iupGstLibrary(const char* name)
+{
+  static const wchar_t* roots[] = {L"GSTREAMER_1_0_ROOT_MSVC_X86_64", L"GSTREAMER_1_0_ROOT_MSVC_ARM64", L"GSTREAMER_1_0_ROOT_MINGW_X86_64", L"GSTREAMER_1_0_ROOT_X86_64"};
+  char prefixed[64];
+  void* library = ivideoLibraryOpen(name);
+  size_t i;
+  if (library)
+    return library;
+  snprintf(prefixed, sizeof(prefixed), "lib%s", name);
+  library = ivideoLibraryOpen(prefixed);
+  for (i = 0; !library && i < sizeof(roots) / sizeof(roots[0]); i++)
+  {
+    wchar_t dir[MAX_PATH];
+    DWORD length = GetEnvironmentVariableW(roots[i], dir, MAX_PATH - 8);
+    if (length == 0 || length >= MAX_PATH - 8)
+      continue;
+    if (dir[length - 1] != L'\\')
+      dir[length++] = L'\\';
+    memcpy(dir + length, L"bin", sizeof(L"bin"));
+    library = ivideoLibraryOpenIn(dir, name);
+  }
+  return library;
+}
+#endif
 
 static int iupGstOpen(void)
 {
@@ -241,10 +268,17 @@ static int iupGstOpen(void)
   if (iupgst_failed)
     return 0;
 
-  handles[0] = dlopen("libgstreamer-1.0.so.0", RTLD_NOW | RTLD_LOCAL);
-  handles[1] = dlopen("libgstapp-1.0.so.0", RTLD_NOW | RTLD_LOCAL);
-  handles[2] = dlopen("libgobject-2.0.so.0", RTLD_NOW | RTLD_LOCAL);
-  handles[3] = dlopen("libglib-2.0.so.0", RTLD_NOW | RTLD_LOCAL);
+#ifdef _WIN32
+  handles[0] = iupGstLibrary("gstreamer-1.0-0.dll");
+  handles[1] = iupGstLibrary("gstapp-1.0-0.dll");
+  handles[2] = iupGstLibrary("gobject-2.0-0.dll");
+  handles[3] = iupGstLibrary("glib-2.0-0.dll");
+#else
+  handles[0] = ivideoLibraryOpen("libgstreamer-1.0.so.0");
+  handles[1] = ivideoLibraryOpen("libgstapp-1.0.so.0");
+  handles[2] = ivideoLibraryOpen("libgobject-2.0.so.0");
+  handles[3] = ivideoLibraryOpen("libglib-2.0.so.0");
+#endif
   for (i = 0; i < 4; i++)
   {
     if (!handles[i])
@@ -308,7 +342,7 @@ static int iupGstOpen(void)
     for (i = 3; i >= 0; i--)
     {
       if (handles[i])
-        dlclose(handles[i]);
+        ivideoLibraryClose(handles[i]);
     }
     iupgst_failed = 1;
     return 0;
