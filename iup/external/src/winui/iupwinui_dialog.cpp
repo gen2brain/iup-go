@@ -1385,14 +1385,13 @@ static int winuiDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       int width, height;
       LONG off_style, new_style;
       HWND hwnd = static_cast<HWND>(ih->handle);
+      auto* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
       BOOL visible = ShowWindow(hwnd, SW_HIDE);
 
       off_style = WS_BORDER | WS_THICKFRAME | WS_CAPTION |
                   WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
       new_style = GetWindowLong(hwnd, GWL_STYLE);
       iupAttribSet(ih, "_IUPWINUI_FS_STYLE", reinterpret_cast<char*>(static_cast<intptr_t>(new_style)));
-      new_style &= (~off_style);
-      SetWindowLong(hwnd, GWL_STYLE, new_style);
 
       iupAttribSetStr(ih, "_IUPWINUI_FS_MAXBOX", iupAttribGet(ih, "MAXBOX"));
       iupAttribSetStr(ih, "_IUPWINUI_FS_MINBOX", iupAttribGet(ih, "MINBOX"));
@@ -1412,9 +1411,18 @@ static int winuiDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSet(ih, "RESIZE", "NO");
       iupAttribSet(ih, "BORDER", "NO");
 
-      iupdrvGetFullSize(&width, &height);
-
-      SetWindowPos(hwnd, HWND_TOP, 0, 0, width, height, SWP_FRAMECHANGED);
+      if (aux && aux->appWindow)
+      {
+        aux->windowedPresenter = aux->appWindow.Presenter();
+        aux->appWindow.SetPresenter(AppWindowPresenterKind::FullScreen);
+      }
+      else
+      {
+        new_style &= (~off_style);
+        SetWindowLong(hwnd, GWL_STYLE, new_style);
+        iupdrvGetFullSize(&width, &height);
+        SetWindowPos(hwnd, HWND_TOP, 0, 0, width, height, SWP_FRAMECHANGED);
+      }
 
       winuiDialogUpdateXamlIsland(ih);
 
@@ -1428,7 +1436,14 @@ static int winuiDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
     if (style)
     {
       HWND hwnd = static_cast<HWND>(ih->handle);
+      auto* aux = winuiGetAux<IupWinUIDialogAux>(ih, IUPWINUI_DIALOG_AUX);
       BOOL visible = ShowWindow(hwnd, SW_HIDE);
+
+      if (aux && aux->windowedPresenter)
+      {
+        aux->appWindow.SetPresenter(aux->windowedPresenter);
+        aux->windowedPresenter = nullptr;
+      }
 
       iupAttribSetStr(ih, "MAXBOX", iupAttribGet(ih, "_IUPWINUI_FS_MAXBOX"));
       iupAttribSetStr(ih, "MINBOX", iupAttribGet(ih, "_IUPWINUI_FS_MINBOX"));
