@@ -542,6 +542,9 @@ static gboolean gtkDialogConfigureEvent(GtkWidget* widget, GdkEventConfigure* ev
       ih->currentheight = client_height + 2*border + caption;
     }
 
+    iupAttribSetInt(ih, "_IUPGTK_SIZED_WIDTH", ih->currentwidth);
+    iupAttribSetInt(ih, "_IUPGTK_SIZED_HEIGHT", ih->currentheight);
+
     cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
     if (!cb || cb(ih, client_width, client_height - menu) != IUP_IGNORE)
     {
@@ -564,6 +567,8 @@ static gboolean gtkDialogConfigureEvent(GtkWidget* widget, GdkEventConfigure* ev
             ih->currentwidth = client_width + 2*new_border;
             ih->currentheight = client_height + 2*new_border + new_caption;
           }
+          iupAttribSetInt(ih, "_IUPGTK_SIZED_WIDTH", ih->currentwidth);
+          iupAttribSetInt(ih, "_IUPGTK_SIZED_HEIGHT", ih->currentheight);
           IupRefresh(ih);
         }
       }
@@ -974,7 +979,12 @@ static void gtkDialogLayoutUpdateMethod(Ihandle* ih)
   iupAttribSetInt(ih, "_IUPGTK_SIZED_BORDER", border);
   iupAttribSetInt(ih, "_IUPGTK_SIZED_CAPTION", caption);
 
-  gtk_window_resize((GtkWindow*)ih->handle, width, height);
+  if (ih->currentwidth != iupAttribGetInt(ih, "_IUPGTK_SIZED_WIDTH") || ih->currentheight != iupAttribGetInt(ih, "_IUPGTK_SIZED_HEIGHT"))
+  {
+    gtk_window_resize((GtkWindow*)ih->handle, width, height);
+    iupAttribSetInt(ih, "_IUPGTK_SIZED_WIDTH", ih->currentwidth);
+    iupAttribSetInt(ih, "_IUPGTK_SIZED_HEIGHT", ih->currentheight);
+  }
 
   if (!iupAttribGetBoolean(ih, "RESIZE"))
   {

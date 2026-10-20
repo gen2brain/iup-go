@@ -128,6 +128,8 @@ public:
 
     ih->currentwidth = width() + 2*border;
     ih->currentheight = height() + 2*border + caption;
+    iupAttribSetInt(ih, "_IUPQML_SIZED_WIDTH", ih->currentwidth);
+    iupAttribSetInt(ih, "_IUPQML_SIZED_HEIGHT", ih->currentheight);
 
     auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RESIZE_CB"));
     if (!cb || cb(ih, width(), height() - menu) != IUP_IGNORE)
@@ -1296,10 +1298,13 @@ extern "C" void qmlDialogLayoutUpdateMethod(Ihandle* ih)
   if (width <= 0) width = 1;
   if (height <= 0) height = 1;
 
-  if (dialog && !(dialog->windowState() & (Qt::WindowMaximized | Qt::WindowFullScreen)))
+  if (dialog && !(dialog->windowState() & (Qt::WindowMaximized | Qt::WindowFullScreen)) &&
+      (ih->currentwidth != iupAttribGetInt(ih, "_IUPQML_SIZED_WIDTH") || ih->currentheight != iupAttribGetInt(ih, "_IUPQML_SIZED_HEIGHT")))
   {
     dialog->resize(width, height);
     dialog->layoutContent();
+    iupAttribSetInt(ih, "_IUPQML_SIZED_WIDTH", ih->currentwidth);
+    iupAttribSetInt(ih, "_IUPQML_SIZED_HEIGHT", ih->currentheight);
   }
 
   if (!iupAttribGetBoolean(ih, "RESIZE"))

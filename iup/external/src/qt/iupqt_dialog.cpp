@@ -210,6 +210,8 @@ protected:
 
     iup_handle->currentwidth = new_width;
     iup_handle->currentheight = new_height;
+    iupAttribSetInt(iup_handle, "_IUPQT_SIZED_WIDTH", new_width);
+    iupAttribSetInt(iup_handle, "_IUPQT_SIZED_HEIGHT", new_height);
 
     auto cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "RESIZE_CB"));
     if (!cb || cb(iup_handle, width(), height() - menu) != IUP_IGNORE)
@@ -1409,9 +1411,12 @@ extern "C" void qtDialogLayoutUpdateMethod(Ihandle* ih)
   if (width <= 0) width = 1;
   if (height <= 0) height = 1;
 
-  if (widget && !(widget->windowState() & (Qt::WindowMaximized | Qt::WindowFullScreen)))
+  if (widget && !(widget->windowState() & (Qt::WindowMaximized | Qt::WindowFullScreen)) &&
+      (ih->currentwidth != iupAttribGetInt(ih, "_IUPQT_SIZED_WIDTH") || ih->currentheight != iupAttribGetInt(ih, "_IUPQT_SIZED_HEIGHT")))
   {
     widget->resize(width, height);
+    iupAttribSetInt(ih, "_IUPQT_SIZED_WIDTH", ih->currentwidth);
+    iupAttribSetInt(ih, "_IUPQT_SIZED_HEIGHT", ih->currentheight);
   }
 
   if (!iupAttribGetBoolean(ih, "RESIZE"))
