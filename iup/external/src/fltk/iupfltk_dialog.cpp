@@ -608,6 +608,8 @@ static void fltkDialogSaveNormalRect(Ihandle* ih, IupFltkDialog* dialog)
   iupAttribSetInt(ih, "_IUPFLTK_FS_Y", dialog->y());
   iupAttribSetInt(ih, "_IUPFLTK_FS_W", dialog->w());
   iupAttribSetInt(ih, "_IUPFLTK_FS_H", dialog->h());
+  iupAttribSetInt(ih, "_IUPFLTK_FS_WIDTH", ih->currentwidth);
+  iupAttribSetInt(ih, "_IUPFLTK_FS_HEIGHT", ih->currentheight);
 }
 
 extern "C" IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
@@ -999,10 +1001,14 @@ static int fltkDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
 
       dialog->fullscreen_off(fs_x, fs_y, fs_w, fs_h);
       dialog->resize(fs_x, fs_y, fs_w, fs_h);
+      ih->currentwidth = iupAttribGetInt(ih, "_IUPFLTK_FS_WIDTH");
+      ih->currentheight = iupAttribGetInt(ih, "_IUPFLTK_FS_HEIGHT");
       iupAttribSet(ih, "_IUPFLTK_FS_X", nullptr);
       iupAttribSet(ih, "_IUPFLTK_FS_Y", nullptr);
       iupAttribSet(ih, "_IUPFLTK_FS_W", nullptr);
       iupAttribSet(ih, "_IUPFLTK_FS_H", nullptr);
+      iupAttribSet(ih, "_IUPFLTK_FS_WIDTH", nullptr);
+      iupAttribSet(ih, "_IUPFLTK_FS_HEIGHT", nullptr);
     }
     else
       dialog->fullscreen_off();
@@ -1197,7 +1203,7 @@ static void fltkDialogLayoutUpdateMethod(Ihandle* ih)
 
   auto* dialog = reinterpret_cast<IupFltkDialog*>(ih->handle);
 
-  if (ih->data->ignore_resize)
+  if (ih->data->ignore_resize || (dialog && dialog->fullscreen_active()))
     return;
 
   ih->data->ignore_resize = 1;

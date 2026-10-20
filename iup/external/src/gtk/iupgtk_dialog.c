@@ -944,7 +944,7 @@ static void gtkDialogLayoutUpdateMethod(Ihandle* ih)
   int width, height;
   int decorheight;
 
-  if (ih->data->ignore_resize || iupAttribGet(ih, "_IUPGTK_FS_STYLE"))
+  if (ih->data->ignore_resize || iupAttribGet(ih, "_IUPGTK_FS_STYLE") || gtkDialogIsStateFixedSize(ih))
     return;
 
   ih->data->ignore_resize = 1;
@@ -974,11 +974,7 @@ static void gtkDialogLayoutUpdateMethod(Ihandle* ih)
   iupAttribSetInt(ih, "_IUPGTK_SIZED_BORDER", border);
   iupAttribSetInt(ih, "_IUPGTK_SIZED_CAPTION", caption);
 
-#ifdef GDK_WINDOWING_QUARTZ
-  /* quartz keeps a resize made while zoomed and applies it after the zoom is restored */
-  if (!gtkDialogIsStateFixedSize(ih))
-#endif
-    gtk_window_resize((GtkWindow*)ih->handle, width, height);
+  gtk_window_resize((GtkWindow*)ih->handle, width, height);
 
   if (!iupAttribGetBoolean(ih, "RESIZE"))
   {
@@ -1154,12 +1150,8 @@ static int gtkDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSetStr(ih, "_IUPGTK_FS_RESIZE", iupAttribGet(ih, "RESIZE"));
       iupAttribSetStr(ih, "_IUPGTK_FS_BORDER", iupAttribGet(ih, "BORDER"));
       iupAttribSetStr(ih, "_IUPGTK_FS_TITLE",  iupAttribGet(ih, "TITLE"));
-      {
-        gint w, h;
-        gtk_window_get_size((GtkWindow*)ih->handle, &w, &h);
-        iupAttribSetInt(ih, "_IUPGTK_FS_WIDTH", w);
-        iupAttribSetInt(ih, "_IUPGTK_FS_HEIGHT", h);
-      }
+      iupAttribSetInt(ih, "_IUPGTK_FS_WIDTH", ih->currentwidth);
+      iupAttribSetInt(ih, "_IUPGTK_FS_HEIGHT", ih->currentheight);
 
       /* remove the decorations attributes */
       iupAttribSet(ih, "MAXBOX", "NO");
@@ -1193,9 +1185,11 @@ static int gtkDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       if (iupdrvIsVisible(ih))
         gtk_window_unfullscreen((GtkWindow*)ih->handle);
 
-      /* Wayland leaves the size to the client after fullscreen, and the layout already asked for the fullscreen size */
       if (iupAttribGetInt(ih, "_IUPGTK_FS_WIDTH") > 0)
-        gtk_window_resize((GtkWindow*)ih->handle, iupAttribGetInt(ih, "_IUPGTK_FS_WIDTH"), iupAttribGetInt(ih, "_IUPGTK_FS_HEIGHT"));
+      {
+        ih->currentwidth = iupAttribGetInt(ih, "_IUPGTK_FS_WIDTH");
+        ih->currentheight = iupAttribGetInt(ih, "_IUPGTK_FS_HEIGHT");
+      }
       iupAttribSet(ih, "_IUPGTK_FS_WIDTH", NULL);
       iupAttribSet(ih, "_IUPGTK_FS_HEIGHT", NULL);
 
