@@ -244,6 +244,14 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
   }
 }
 
+static int gtk4DialogIsStateFixedSize(Ihandle* ih)
+{
+  GdkSurface* surface = iupgtk4GetSurface(ih->handle);
+  if (!surface || !GDK_IS_TOPLEVEL(surface))
+    return 0;
+  return (gdk_toplevel_get_state(GDK_TOPLEVEL(surface)) & (GDK_TOPLEVEL_STATE_MAXIMIZED | GDK_TOPLEVEL_STATE_FULLSCREEN | GDK_TOPLEVEL_STATE_TILED)) != 0;
+}
+
 static void gtk4DialogSetDefaultSize(Ihandle* ih, int width, int height, int server_frame)
 {
 #ifdef GDK_WINDOWING_X11
@@ -874,7 +882,7 @@ static void gtk4DialogLayoutUpdateMethod(Ihandle* ih)
   int border, caption, menu;
   int width, height;
 
-  if (ih->data->ignore_resize)
+  if (ih->data->ignore_resize || iupAttribGet(ih, "_IUPGTK4_FS_STYLE") || gtk4DialogIsStateFixedSize(ih))
   {
     return;
   }
@@ -905,8 +913,6 @@ static void gtk4DialogLayoutUpdateMethod(Ihandle* ih)
   if (width <= 0) width = 1;
   if (height <= 0) height = 1;
 
-  if (!gtk_window_is_maximized((GtkWindow*)ih->handle)
-      && !gtk_window_is_fullscreen((GtkWindow*)ih->handle))
   {
     int def_w, def_h;
     gtk_window_get_default_size((GtkWindow*)ih->handle, &def_w, &def_h);
@@ -1063,6 +1069,8 @@ static int gtk4DialogSetFullScreenAttrib(Ihandle* ih, const char* value)
     if (!iupAttribGet(ih, "_IUPGTK4_FS_STYLE"))
     {
       iupAttribSet(ih, "_IUPGTK4_FS_STYLE", "YES");
+      iupAttribSetInt(ih, "_IUPGTK4_FS_WIDTH", ih->currentwidth);
+      iupAttribSetInt(ih, "_IUPGTK4_FS_HEIGHT", ih->currentheight);
       gtk_window_fullscreen((GtkWindow*)ih->handle);
     }
   }
@@ -1070,6 +1078,14 @@ static int gtk4DialogSetFullScreenAttrib(Ihandle* ih, const char* value)
   {
     iupAttribSet(ih, "_IUPGTK4_FS_STYLE", NULL);
     gtk_window_unfullscreen((GtkWindow*)ih->handle);
+
+    if (iupAttribGetInt(ih, "_IUPGTK4_FS_WIDTH") > 0)
+    {
+      ih->currentwidth = iupAttribGetInt(ih, "_IUPGTK4_FS_WIDTH");
+      ih->currentheight = iupAttribGetInt(ih, "_IUPGTK4_FS_HEIGHT");
+    }
+    iupAttribSet(ih, "_IUPGTK4_FS_WIDTH", NULL);
+    iupAttribSet(ih, "_IUPGTK4_FS_HEIGHT", NULL);
   }
   return 1;
 }

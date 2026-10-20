@@ -916,6 +916,8 @@ static int qmlDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSetStr(ih, "_IUPQML_FS_RESIZE", iupAttribGet(ih, "RESIZE"));
       iupAttribSetStr(ih, "_IUPQML_FS_BORDER", iupAttribGet(ih, "BORDER"));
       iupAttribSetStr(ih, "_IUPQML_FS_TITLE", iupAttribGet(ih, "TITLE"));
+      iupAttribSetInt(ih, "_IUPQML_FS_WIDTH", ih->currentwidth);
+      iupAttribSetInt(ih, "_IUPQML_FS_HEIGHT", ih->currentheight);
 
       iupAttribSet(ih, "MAXBOX", "NO");
       iupAttribSet(ih, "MINBOX", "NO");
@@ -948,12 +950,20 @@ static int qmlDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
 
       window->setWindowState(Qt::WindowNoState);
 
+      if (iupAttribGetInt(ih, "_IUPQML_FS_WIDTH") > 0)
+      {
+        ih->currentwidth = iupAttribGetInt(ih, "_IUPQML_FS_WIDTH");
+        ih->currentheight = iupAttribGetInt(ih, "_IUPQML_FS_HEIGHT");
+      }
+
       iupAttribSet(ih, "_IUPQML_FS_MAXBOX", nullptr);
       iupAttribSet(ih, "_IUPQML_FS_MINBOX", nullptr);
       iupAttribSet(ih, "_IUPQML_FS_MENUBOX", nullptr);
       iupAttribSet(ih, "_IUPQML_FS_TITLE", nullptr);
       iupAttribSet(ih, "_IUPQML_FS_RESIZE", nullptr);
       iupAttribSet(ih, "_IUPQML_FS_BORDER", nullptr);
+      iupAttribSet(ih, "_IUPQML_FS_WIDTH", nullptr);
+      iupAttribSet(ih, "_IUPQML_FS_HEIGHT", nullptr);
     }
   }
 

@@ -847,6 +847,8 @@ static int motDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSetStr(ih, "_IUPMOT_FS_RESIZE", iupAttribGet(ih, "RESIZE"));
       iupAttribSetStr(ih, "_IUPMOT_FS_BORDER", iupAttribGet(ih, "BORDER"));
       iupAttribSetStr(ih, "_IUPMOT_FS_TITLE",  iupAttribGet(ih, "TITLE"));
+      iupAttribSetInt(ih, "_IUPMOT_FS_WIDTH", ih->currentwidth);
+      iupAttribSetInt(ih, "_IUPMOT_FS_HEIGHT", ih->currentheight);
 
       /* remove the decorations attributes */
       iupAttribSet(ih, "MAXBOX", "NO");
@@ -954,6 +956,12 @@ static int motDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
           iupAttribSet(ih, "_IUPMOT_FS_DECOR", NULL);
         }
 
+        if (iupAttribGetInt(ih, "_IUPMOT_FS_WIDTH") > 0)
+        {
+          ih->currentwidth = iupAttribGetInt(ih, "_IUPMOT_FS_WIDTH");
+          ih->currentheight = iupAttribGetInt(ih, "_IUPMOT_FS_HEIGHT");
+        }
+
         /* remove auxiliar attributes */
         iupAttribSet(ih, "_IUPMOT_FS_MAXBOX", NULL);
         iupAttribSet(ih, "_IUPMOT_FS_MINBOX", NULL);
@@ -961,6 +969,8 @@ static int motDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
         iupAttribSet(ih, "_IUPMOT_FS_RESIZE", NULL);
         iupAttribSet(ih, "_IUPMOT_FS_BORDER", NULL);
         iupAttribSet(ih, "_IUPMOT_FS_TITLE",  NULL);
+        iupAttribSet(ih, "_IUPMOT_FS_WIDTH", NULL);
+        iupAttribSet(ih, "_IUPMOT_FS_HEIGHT", NULL);
       }
     }
   }
