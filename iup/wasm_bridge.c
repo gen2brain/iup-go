@@ -189,6 +189,8 @@ static int wasmCbTerminalSize(Ihandle* ih, int cols, int lines) { return iupwasm
 static int wasmCbTerminalExit(Ihandle* ih, int status) { return iupwasmGoDispatch(ih, "EXIT_CB", status, 0, 0, 0, 0); }
 static int wasmCbTextInput(Ihandle* ih, char* text) { return iupwasmGoDispatch(ih, "TEXTINPUT_CB", 0, 0, 0, 0, text); }
 static int wasmCbPlayEnd(Ihandle* ih) { return iupwasmGoDispatch(ih, "PLAYEND_CB", 0, 0, 0, 0, 0); }
+static int wasmCbReady(Ihandle* ih) { return iupwasmGoDispatch(ih, "READY_CB", 0, 0, 0, 0, 0); }
+static int wasmCbStateChanged(Ihandle* ih, const char* state) { return iupwasmGoDispatch(ih, "STATECHANGED_CB", 0, 0, 0, 0, state); }
 static int wasmCbFrame(Ihandle* ih, int width, int height, void* data) { return iupwasmGoDispatch(ih, "FRAME_CB", width, height, (int)(intptr_t)data, 0, 0); }
 static int wasmCbSamples(Ihandle* ih, int frames, int channels, void* samples) { return iupwasmGoDispatch(ih, "SAMPLES_CB", frames, channels, (int)(intptr_t)samples, 0, 0); }
 
@@ -534,6 +536,10 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbTextInput);
   else if (strcmp(name, "PLAYEND_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbPlayEnd);
+  else if (strcmp(name, "READY_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbReady);
+  else if (strcmp(name, "STATECHANGED_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbStateChanged);
   else if (strcmp(name, "FRAME_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbFrame);
   else if (strcmp(name, "SAMPLES_CB") == 0)

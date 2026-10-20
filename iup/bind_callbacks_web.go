@@ -33,7 +33,7 @@ func setCompletedFunc(ih Ihandle, f CompletedFunc) {
 //--------------------
 
 // ErrorFunc for ERROR_CB callback.
-// Action generated when a page load fails.
+// Called when a page load or media playback fails.
 type ErrorFunc func(ih Ihandle, url string) int
 
 //export goIupErrorCB

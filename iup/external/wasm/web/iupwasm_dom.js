@@ -2651,6 +2651,93 @@
         var A2 = globalThis.__iupAudio;
         if (A2 && A2.node) { A2.node.disconnect(); A2.node = null; }
       } break;
+      case 'vidopen': {
+        if (!globalThis.__iupVid) globalThis.__iupVid = {};
+        var VS = globalThis.__iupVid, vf = new Float64Array(c.sab), vcv = el;
+        if (VS[c.vid]) { VS[c.vid].close(); delete VS[c.vid]; }
+        var vv = document.createElement('video'), vo = { url: null, obs: null, raf: 0, want: 0, armed: 0, done: 0 };
+        var vst = vv.style;
+        vv.playsInline = true; vv.preload = 'auto';
+        vst.position = 'absolute'; vst.boxSizing = 'border-box'; vst.margin = '0'; vst.objectFit = 'contain'; vst.pointerEvents = 'none'; vst.background = c.bg;
+        var vsync = function () {
+          var cs = vcv.style;
+          vst.left = cs.left; vst.top = cs.top; vst.width = cs.width; vst.height = cs.height;
+          vst.display = cs.display === 'none' ? 'none' : 'block';
+        };
+        if (vcv && vcv.parentNode) {
+          vcv.parentNode.insertBefore(vv, vcv.nextSibling);
+          vsync();
+          vo.obs = new MutationObserver(vsync);
+          vo.obs.observe(vcv, { attributes: true, attributeFilter: ['style'] });
+          vo.zobs = new MutationObserver(function () { if (vcv.nextSibling !== vv && vcv.parentNode === vv.parentNode) vcv.parentNode.insertBefore(vv, vcv.nextSibling); });
+          vo.zobs.observe(vcv.parentNode, { childList: true });
+        }
+        var vupd = function () {
+          var d = vv.duration;
+          vf[1] = vv.paused ? 4 : (vv.readyState < 3 ? 5 : 3);
+          vf[4] = vv.currentTime || 0;
+          vf[5] = isFinite(d) ? d : 0;
+          vf[6] = isFinite(d) && vv.seekable && vv.seekable.length > 0 ? 1 : 0;
+          vf[7] = vv.videoWidth; vf[8] = vv.videoHeight;
+          vf[10] = vv.videoWidth > 0 ? 1 : 0;
+          if (!vf[9] && (vv.mozHasAudio || vv.webkitAudioDecodedByteCount > 0 || (vv.audioTracks && vv.audioTracks.length > 0))) vf[9] = 1;
+        };
+        vv.addEventListener('loadedmetadata', function () { vupd(); vf[0] = 1; });
+        ['durationchange', 'timeupdate', 'playing', 'pause', 'waiting', 'seeked', 'canplay', 'resize', 'loadeddata'].forEach(function (n) { vv.addEventListener(n, vupd); });
+        vv.addEventListener('ended', function () { vupd(); vf[2] += 1; });
+        vv.addEventListener('error', function () { vf[3] = vv.error ? vv.error.code : 4; });
+        var vtick = function () { vo.raf = 0; if (vo.done) return; vupd(); vo.raf = requestAnimationFrame(vtick); };
+        vo.raf = requestAnimationFrame(vtick);
+        vo.play = function (on) {
+          vo.want = on;
+          if (!on) { vv.pause(); return; }
+          var pr = vv.play();
+          if (pr && pr.catch) pr.catch(function (e) {
+            if (!e || e.name !== 'NotAllowedError' || vo.armed || vo.done) return;
+            vo.armed = 1;
+            vo.once = function () {
+              vo.armed = 0;
+              window.removeEventListener('pointerdown', vo.once, true); window.removeEventListener('keydown', vo.once, true);
+              if (vo.want && !vo.done) vo.play(1);
+            };
+            window.addEventListener('pointerdown', vo.once, true); window.addEventListener('keydown', vo.once, true);
+          });
+        };
+        vo.el = vv;
+        vo.close = function () {
+          vo.done = 1;
+          if (vo.raf) cancelAnimationFrame(vo.raf);
+          if (vo.obs) vo.obs.disconnect();
+          if (vo.zobs) vo.zobs.disconnect();
+          if (vo.once) { window.removeEventListener('pointerdown', vo.once, true); window.removeEventListener('keydown', vo.once, true); }
+          vv.pause(); vv.removeAttribute('src'); vv.load();
+          if (vv.parentNode) vv.parentNode.removeChild(vv);
+          if (vo.url) URL.revokeObjectURL(vo.url);
+        };
+        VS[c.vid] = vo;
+        if (c.data) { vo.url = URL.createObjectURL(new Blob([c.data], c.type ? { type: c.type } : {})); vv.src = vo.url; }
+        else vv.src = c.url;
+      } break;
+      case 'vidplay': {
+        var VP = globalThis.__iupVid && globalThis.__iupVid[c.vid];
+        if (VP) VP.play(c.play);
+      } break;
+      case 'vidseek': {
+        var VK = globalThis.__iupVid && globalThis.__iupVid[c.vid];
+        if (VK) { try { VK.el.currentTime = c.t; } catch (e) {} }
+      } break;
+      case 'vidvol': {
+        var VL = globalThis.__iupVid && globalThis.__iupVid[c.vid];
+        if (VL) { VL.el.volume = Math.min(1, Math.max(0, c.v / 100)); VL.el.muted = !!c.m; }
+      } break;
+      case 'vidbg': {
+        var VB = globalThis.__iupVid && globalThis.__iupVid[c.vid];
+        if (VB) VB.el.style.background = c.bg;
+      } break;
+      case 'vidclose': {
+        var VC = globalThis.__iupVid && globalThis.__iupVid[c.vid];
+        if (VC) { VC.close(); delete globalThis.__iupVid[c.vid]; }
+      } break;
       case 'camstart': {
         if (!globalThis.__iupCam) globalThis.__iupCam = {};
         var CM = globalThis.__iupCam, cp = c.ihptr, chdr = new Int32Array(c.sab, 0, 4), cu8 = new Uint8Array(c.sab, 16);

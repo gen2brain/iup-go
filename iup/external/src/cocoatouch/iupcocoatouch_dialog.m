@@ -696,8 +696,9 @@ static void cocoaTouchDialogSetChildrenCurrentSizeMethod(Ihandle* ih, int shrink
 	if (iupAttribGet(ih, "_IUPCOCOATOUCH_VIEW_W"))
 	{
 		int view_h = iupAttribGetInt(ih, "_IUPCOCOATOUCH_VIEW_H");
+		int content_h = ih->firstchild ? ih->firstchild->naturalheight : 0;
 		ih->currentwidth = iupAttribGetInt(ih, "_IUPCOCOATOUCH_VIEW_W");
-		ih->currentheight = ih->naturalheight > view_h ? ih->naturalheight : view_h;
+		ih->currentheight = content_h > view_h ? content_h : view_h;
 	}
 
 	cocoatouch_dialog_set_children_current_size(ih, shrink);

@@ -3,6 +3,7 @@
 set(_MEDIA_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_media.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_audio.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_video.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_miniaudio.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_camera.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_microphone.c"
@@ -16,9 +17,26 @@ endif()
 set(_MEDIA_LIBS "")
 set(_MEDIA_DEFS "")
 
+if(IUP_BACKEND STREQUAL "android")
+  list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupandroid_video.c")
+elseif(EMSCRIPTEN)
+  list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupwasm_video.c")
+elseif(WIN32)
+  list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupwin_video.cpp")
+elseif(APPLE)
+  list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_video.m")
+elseif(UNIX)
+  list(APPEND _MEDIA_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupunix_video.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupvideo_vlc.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupvideo_mpv.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupvideo_gstreamer.c"
+  )
+endif()
+
 if(WIN32)
   list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupwin_camera.cpp")
-  set(_MEDIA_LIBS mfuuid ole32)
+  set(_MEDIA_LIBS mfuuid ole32 oleaut32)
 
 elseif(APPLE AND IUP_BACKEND STREQUAL "cocoatouch")
   list(APPEND _MEDIA_SOURCES
@@ -29,9 +47,10 @@ elseif(APPLE AND IUP_BACKEND STREQUAL "cocoatouch")
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_miniaudio.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_camera.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_microphone.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_video.m"
     PROPERTIES LANGUAGE OBJC
   )
-  set(_MEDIA_LIBS "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreVideo")
+  set(_MEDIA_LIBS "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreVideo" "-framework QuartzCore" "-framework UIKit")
 
 elseif(APPLE)
   list(APPEND _MEDIA_SOURCES
@@ -41,9 +60,10 @@ elseif(APPLE)
   set_source_files_properties(
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_camera.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_microphone.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_video.m"
     PROPERTIES LANGUAGE OBJC
   )
-  set(_MEDIA_LIBS "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreVideo")
+  set(_MEDIA_LIBS "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreVideo" "-framework QuartzCore" "-framework AppKit")
 
 elseif(IUP_BACKEND STREQUAL "android")
   list(APPEND _MEDIA_SOURCES
@@ -117,9 +137,11 @@ endif()
 # pkg-config
 set(IUPMEDIA_PC_LIBS_PRIVATE "")
 if(WIN32)
-  set(IUPMEDIA_PC_LIBS_PRIVATE "-lmfuuid -lole32")
+  set(IUPMEDIA_PC_LIBS_PRIVATE "-lmfuuid -lole32 -loleaut32")
+elseif(APPLE AND IUP_BACKEND STREQUAL "cocoatouch")
+  set(IUPMEDIA_PC_LIBS_PRIVATE "-framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework QuartzCore -framework UIKit")
 elseif(APPLE)
-  set(IUPMEDIA_PC_LIBS_PRIVATE "-framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo")
+  set(IUPMEDIA_PC_LIBS_PRIVATE "-framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework QuartzCore -framework AppKit")
 elseif(IUP_BACKEND STREQUAL "haiku")
   set(IUPMEDIA_PC_LIBS_PRIVATE "-lmedia")
 elseif(NOT WIN32 AND NOT IUP_BACKEND STREQUAL "android" AND NOT EMSCRIPTEN)

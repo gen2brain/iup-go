@@ -7,6 +7,7 @@ import "github.com/ebitengine/purego"
 var (
 	iupMediaOpen  func()
 	iupAudio      func() uintptr
+	iupVideo      func() uintptr
 	iupCamera     func() uintptr
 	iupMicrophone func() uintptr
 )
@@ -19,6 +20,7 @@ func init() {
 	}
 	purego.RegisterLibFunc(&iupMediaOpen, lib, "IupMediaOpen")
 	purego.RegisterLibFunc(&iupAudio, lib, "IupAudio")
+	purego.RegisterLibFunc(&iupVideo, lib, "IupVideo")
 	purego.RegisterLibFunc(&iupCamera, lib, "IupCamera")
 	purego.RegisterLibFunc(&iupMicrophone, lib, "IupMicrophone")
 }
@@ -35,6 +37,13 @@ func MediaOpen() {
 // https://gen2brain.github.io/iup-go/ctrl/iup_audio.html
 func Audio() Ihandle {
 	return mkih(iupAudio())
+}
+
+// Video creates a video player.
+//
+// https://gen2brain.github.io/iup-go/ctrl/iup_video.html
+func Video() Ihandle {
+	return mkih(iupVideo())
 }
 
 // Camera creates a canvas that shows the live picture of a camera.

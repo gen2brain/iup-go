@@ -79,4 +79,4 @@ Both callbacks are called from the main loop.
 
 ### See Also
 
-[IupTimer](../elem/iup_timer.md), [IupMicrophone](iup_microphone.md)
+[IupTimer](../elem/iup_timer.md), [IupVideo](iup_video.md), [IupMicrophone](iup_microphone.md)

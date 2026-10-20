@@ -165,7 +165,7 @@ This relies on the modern Objective-C stack, not the legacy GCC runtime.
 **Required combo**:
 
 * `Clang` as the compiler (`GCC` won't do)
-* `libobjc2` - the Apple-compatible Objective-C runtime, not the legacy `libobjc` from gcc.
+* `libobjc2` - the Apple-compatible Objective-C runtime, not the legacy `libobjc` from GCC.
 * `libdispatch` (GCD) - Apple's mainline `libdispatch`.
 * `libs-opal` - Apple CoreGraphics-compatible drawing layer built on Cairo.
 * `libs-corebase` - CoreFoundation.
@@ -213,8 +213,6 @@ The same `main()` compiles as a desktop binary, an Android shared library, and a
 Most examples are laid out for desktop windows and will overflow a phone screen though; production mobile apps need a layout tuned for small screens.
 See [mobile_sample](examples/mobile_sample) and [mobile_hello](examples/mobile_hello) for examples designed for mobile. Also check [demo_chat](examples/demo_chat) that handles both desktop and mobile layouts.
 
-Examples without a top-level `Dialog` (e.g., `alarm`, `message`) will not run on mobile, the host platform requires a real Dialog as the root.
-
 ##### Android
 
 Builds the Go program as a `c-shared` `.so` consumed by a Gradle library.
@@ -241,13 +239,13 @@ For a one-command `.ipa`, see [Packaging](#packaging).
 
 Controls:
 
-| Tag     | Description                                 |
-|---------|---------------------------------------------|
-| `gl`    | `GLCanvas` control                          |
-| `web`   | `WebBrowser` control                        |
-| `media` | `Audio`, `Camera` and `Microphone` controls |
-| `plot`  | `Plot` control                              |
-| `ctrl`  | `Matrix`, `Cells` and `Flat*` controls      |
+| Tag     | Description                                          |
+|---------|------------------------------------------------------|
+| `gl`    | `GLCanvas` control                                   |
+| `web`   | `WebBrowser` control                                 |
+| `media` | `Audio`, `Video`, `Camera` and `Microphone` controls |
+| `plot`  | `Plot` control                                       |
+| `ctrl`  | `Matrix`, `Cells` and `Flat*` controls               |
 
 Drivers:
 

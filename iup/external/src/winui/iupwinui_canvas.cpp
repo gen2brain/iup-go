@@ -836,8 +836,20 @@ static int winuiCanvasMapMethod(Ihandle* ih)
       int button = iupwinuiGetPointerButton(props);
       int x, y;
       iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
+      int doubleclick = 0;
+      auto* aux = winuiGetAux<IupWinUICanvasAux>(ih, IUPWINUI_CANVAS_AUX);
+      if (aux)
+      {
+        DWORD now = GetTickCount();
+        doubleclick = aux->lastClickButton == button && now - aux->lastClickTime <= GetDoubleClickTime() &&
+                      abs(x - aux->lastClickX) <= GetSystemMetrics(SM_CXDOUBLECLK) && abs(y - aux->lastClickY) <= GetSystemMetrics(SM_CYDOUBLECLK);
+        aux->lastClickTime = doubleclick ? 0 : now;
+        aux->lastClickX = x;
+        aux->lastClickY = y;
+        aux->lastClickButton = button;
+      }
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
+      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, doubleclick);
       int ret = cb(ih, button, 1, x, y, status);
       if (ret == IUP_CLOSE)
         IupExitLoop();

@@ -14,6 +14,7 @@ extern "C" {
 #endif
 
 Iclass* iupAudioNewClass(void);
+Iclass* iupVideoNewClass(void);
 Iclass* iupCameraNewClass(void);
 Iclass* iupMicrophoneNewClass(void);
 

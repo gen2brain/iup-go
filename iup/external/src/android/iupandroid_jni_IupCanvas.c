@@ -44,7 +44,7 @@ static void androidCanvasFillStatus(char* status, int button, int pressed, int m
   }
 }
 
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchButton(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint button, jint pressed, jint x, jint y, jint meta_state)
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchButton(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint button, jint pressed, jint x, jint y, jint meta_state, jboolean double_click)
 {
   (void)jni_env;
   (void)cls;
@@ -57,6 +57,8 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchBu
 
   char status[IUPKEY_STATUS_SIZE];
   androidCanvasFillStatus(status, button, pressed, meta_state);
+  if (double_click)
+    iupKEY_SETDOUBLE(status);
 
   /* IUP button codes are the ASCII digits '1'..'5', not integer indices. */
   int iup_button = '0' + button;

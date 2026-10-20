@@ -1,0 +1,284 @@
+/** \file
+ * \brief Video control, GStreamer engine
+ *
+ * See Copyright Notice in "iup.h"
+ */
+
+#include <stdlib.h>
+#include <string.h>
+
+#include "iup_video.h"
+#include "iup_thread.h"
+#include "iupvideo_gstreamer_dlopen.h"
+
+typedef struct
+{
+  IvideoSession* session;
+  GstElement* player;
+  GstElement* sink;
+  GstBus* bus;
+  int play, buffering, live;
+  int width, height;
+  double aspect;
+  IvideoInfo info;
+} IvideoGst;
+
+static GstFlowReturn iVideoGstFrame(IvideoGst* context, GstSample* sample)
+{
+  GstStructure* structure;
+  GstBuffer* buffer;
+  GstCaps* caps;
+  GstMapInfo map;
+  int width = 0, height = 0, par_n = 1, par_d = 1;
+  if (!sample)
+    return GST_FLOW_FLUSHING;
+  buffer = gst_sample_get_buffer(sample);
+  caps = gst_sample_get_caps(sample);
+  structure = caps ? gst_caps_get_structure(caps, 0) : NULL;
+  if (buffer && structure && gst_structure_get_int(structure, "width", &width) && gst_structure_get_int(structure, "height", &height) &&
+      width > 0 && height > 0 && gst_buffer_map(buffer, &map, GST_MAP_READ))
+  {
+    if (map.size / (size_t)height / 4 >= (size_t)width)
+      iupVideoFrame(context->session, map.data, width, height, (size_t)width * 4, 4);
+    gst_buffer_unmap(buffer, &map);
+    if (!gst_structure_get_fraction(structure, "pixel-aspect-ratio", &par_n, &par_d) || par_n <= 0 || par_d <= 0)
+    {
+      par_n = 1;
+      par_d = 1;
+    }
+    iupdrvMutexLock(context->session->mutex);
+    if (par_n > par_d)
+    {
+      context->width = (int)((long long)width * par_n / par_d);
+      context->height = height;
+    }
+    else
+    {
+      context->width = width;
+      context->height = (int)((long long)height * par_d / par_n);
+    }
+    context->aspect = (double)width * par_n / ((double)height * par_d);
+    iupdrvMutexUnlock(context->session->mutex);
+  }
+  gst_mini_object_unref((GstMiniObject*)sample);
+  return GST_FLOW_OK;
+}
+
+static GstFlowReturn iVideoGstSample(GstAppSink* sink, void* opaque)
+{
+  return iVideoGstFrame((IvideoGst*)opaque, gst_app_sink_pull_sample(sink));
+}
+
+static GstFlowReturn iVideoGstPreroll(GstAppSink* sink, void* opaque)
+{
+  return iVideoGstFrame((IvideoGst*)opaque, gst_app_sink_pull_preroll(sink));
+}
+
+static int iVideoGstAvailable(void)
+{
+  GstElementFactory* player;
+  GstElementFactory* sink;
+  int available;
+  if (!iupGstOpen())
+    return 0;
+  player = gst_element_factory_find("playbin");
+  sink = gst_element_factory_find("appsink");
+  available = player != NULL && sink != NULL;
+  if (player)
+    g_object_unref(player);
+  if (sink)
+    g_object_unref(sink);
+  return available;
+}
+
+static void iVideoGstClose(IvideoSession* session)
+{
+  IvideoGst* context = (IvideoGst*)session->context;
+  if (!context)
+    return;
+  if (context->player)
+    gst_element_set_state(context->player, GST_STATE_NULL);
+  if (context->sink)
+  {
+    GstAppSinkCallbacks callbacks;
+    memset(&callbacks, 0, sizeof(callbacks));
+    gst_app_sink_set_callbacks((GstAppSink*)context->sink, &callbacks, NULL, NULL);
+    g_object_unref(context->sink);
+  }
+  if (context->bus)
+    g_object_unref(context->bus);
+  if (context->player)
+    g_object_unref(context->player);
+  free(context);
+  session->context = NULL;
+}
+
+static int iVideoGstOpen(IvideoSession* session, Ihandle* ih, const char* source, int url)
+{
+  IvideoGst* context;
+  GstElement* flip;
+  GstAppSinkCallbacks callbacks;
+  GstCaps* caps;
+  GstStateChangeReturn result;
+  char* uri = NULL;
+  (void)ih;
+  context = (IvideoGst*)calloc(1, sizeof(IvideoGst));
+  if (!context)
+    return 0;
+  session->context = context;
+  context->session = session;
+  context->player = gst_element_factory_make("playbin", NULL);
+  context->sink = gst_element_factory_make("appsink", NULL);
+  if (context->player)
+    g_object_ref_sink(context->player);
+  if (context->sink)
+    g_object_ref_sink(context->sink);
+  if (!context->player || !context->sink)
+  {
+    iupVideoError(session, "Cannot create GStreamer playbin");
+    return 0;
+  }
+  caps = gst_caps_from_string("video/x-raw,format=RGBA");
+  if (!caps)
+    return 0;
+  gst_app_sink_set_caps((GstAppSink*)context->sink, caps);
+  gst_mini_object_unref((GstMiniObject*)caps);
+  gst_app_sink_set_max_buffers((GstAppSink*)context->sink, 1);
+  gst_app_sink_set_drop((GstAppSink*)context->sink, 1);
+  gst_app_sink_set_wait_on_eos((GstAppSink*)context->sink, 0);
+  g_object_set(context->sink, "sync", 1, NULL);
+  memset(&callbacks, 0, sizeof(callbacks));
+  callbacks.new_sample = iVideoGstSample;
+  callbacks.new_preroll = iVideoGstPreroll;
+  gst_app_sink_set_callbacks((GstAppSink*)context->sink, &callbacks, context, NULL);
+  if (!url)
+  {
+    char* path = g_canonicalize_filename(source, NULL);
+    if (path)
+      uri = gst_filename_to_uri(path, NULL);
+    g_free(path);
+    if (!uri)
+    {
+      iupVideoError(session, "Invalid file name");
+      return 0;
+    }
+  }
+  g_object_set(context->player, "uri", url ? source : uri, "video-sink", context->sink, NULL);
+  g_free(uri);
+  flip = gst_element_factory_make("videoflip", NULL);
+  if (flip)
+  {
+    gst_util_set_object_arg(flip, "video-direction", "auto");
+    g_object_set(context->player, "video-filter", flip, NULL);
+  }
+  context->bus = gst_element_get_bus(context->player);
+  if (!context->bus)
+    return 0;
+  result = gst_element_set_state(context->player, GST_STATE_PAUSED);
+  context->live = result == GST_STATE_CHANGE_NO_PREROLL;
+  if (result == GST_STATE_CHANGE_FAILURE)
+  {
+    iupVideoError(session, "GStreamer cannot open this source");
+    return 0;
+  }
+  return 1;
+}
+
+static void iVideoGstPlay(IvideoSession* session, int play)
+{
+  IvideoGst* context = (IvideoGst*)session->context;
+  GstState state = play && (!context->buffering || context->live) ? GST_STATE_PLAYING : GST_STATE_PAUSED;
+  context->play = play;
+  if (gst_element_set_state(context->player, state) == GST_STATE_CHANGE_FAILURE)
+    iupVideoError(session, "GStreamer playback state change failed");
+}
+
+static void iVideoGstSeek(IvideoSession* session, double position)
+{
+  IvideoGst* context = (IvideoGst*)session->context;
+  if (position > (double)INT64_MAX / GST_SECOND)
+    return;
+  gst_element_seek_simple(context->player, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE, (int64_t)(position * GST_SECOND));
+}
+
+static void iVideoGstVolume(IvideoSession* session, int volume, int mute)
+{
+  IvideoGst* context = (IvideoGst*)session->context;
+  g_object_set(context->player, "volume", volume / 100.0, "mute", mute ? 1 : 0, NULL);
+}
+
+static void iVideoGstMessages(IvideoSession* session, IvideoGst* context)
+{
+  GstMessage* message;
+  unsigned events = 0;
+  while (events++ < 256 && (message = gst_bus_pop(context->bus)) != NULL)
+  {
+    if (message->type == GST_MESSAGE_ERROR)
+    {
+      GError* error = NULL;
+      char* debug = NULL;
+      gst_message_parse_error(message, &error, &debug);
+      iupVideoError(session, error ? error->message : "GStreamer playback failed");
+      if (error)
+        g_error_free(error);
+      g_free(debug);
+    }
+    else if (message->type == GST_MESSAGE_EOS)
+      context->info.ended = 1;
+    else if (message->type == GST_MESSAGE_BUFFERING)
+    {
+      int percent;
+      gst_message_parse_buffering(message, &percent);
+      context->buffering = percent < 100;
+      if (!context->live)
+        gst_element_set_state(context->player, context->play && !context->buffering ? GST_STATE_PLAYING : GST_STATE_PAUSED);
+    }
+    gst_mini_object_unref((GstMiniObject*)message);
+  }
+}
+
+static void iVideoGstPoll(IvideoSession* session)
+{
+  IvideoGst* context = (IvideoGst*)session->context;
+  GstState state = GST_STATE_NULL, pending = GST_STATE_VOID_PENDING;
+  int64_t time;
+  GstQuery* query;
+  int video = 0, audio = 0;
+  iVideoGstMessages(session, context);
+  if (gst_element_get_state(context->player, &state, &pending, 0) == GST_STATE_CHANGE_FAILURE)
+  {
+    iupVideoError(session, "GStreamer playback state query failed");
+    return;
+  }
+  if (state >= GST_STATE_PAUSED || context->live)
+    context->info.ready = 1;
+  if (context->buffering)
+    context->info.state = IVIDEO_BUFFERING;
+  else
+    context->info.state = state == GST_STATE_PLAYING ? IVIDEO_PLAYING : IVIDEO_PAUSED;
+  if (gst_element_query_position(context->player, GST_FORMAT_TIME, &time) && time >= 0)
+    context->info.position = (double)time / GST_SECOND;
+  if (gst_element_query_duration(context->player, GST_FORMAT_TIME, &time) && time >= 0)
+    context->info.duration = (double)time / GST_SECOND;
+  query = gst_query_new_seeking(GST_FORMAT_TIME);
+  if (query)
+  {
+    int seekable = 0;
+    if (gst_element_query(context->player, query))
+      gst_query_parse_seeking(query, NULL, &seekable, NULL, NULL);
+    context->info.seekable = seekable;
+    gst_mini_object_unref((GstMiniObject*)query);
+  }
+  g_object_get(context->player, "n-video", &video, "n-audio", &audio, NULL);
+  context->info.video = video > 0;
+  context->info.audio = audio > 0;
+  iupdrvMutexLock(session->mutex);
+  context->info.width = context->width;
+  context->info.height = context->height;
+  context->info.aspect = context->aspect;
+  iupdrvMutexUnlock(session->mutex);
+  iupVideoInfo(session, &context->info);
+  context->info.ended = 0;
+}
+
+const IvideoBackend iupVideoGstreamerBackend = {"GSTREAMER", iVideoGstAvailable, iVideoGstOpen, iVideoGstClose, iVideoGstPlay, iVideoGstSeek, iVideoGstVolume, iVideoGstPoll, NULL};

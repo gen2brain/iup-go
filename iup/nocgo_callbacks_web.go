@@ -18,6 +18,8 @@ func setCompletedFunc(ih Ihandle, f CompletedFunc) {
 	iupSetCallback(uintptr(ih), "COMPLETED_CB", completedFuncCB)
 }
 
+// ErrorFunc for ERROR_CB callback.
+// Called when a page load or media playback fails.
 type ErrorFunc func(ih Ihandle, url string) int
 
 var errorFuncCB = purego.NewCallback(func(ih uintptr, url uintptr) int {

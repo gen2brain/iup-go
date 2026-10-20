@@ -95,4 +95,4 @@ The application must declare the platform permission, IUP cannot do it:
 
 ### See Also
 
-[IupAudio](iup_audio.md), [IupCamera](iup_camera.md)
+[IupAudio](iup_audio.md), [IupVideo](iup_video.md), [IupCamera](iup_camera.md)

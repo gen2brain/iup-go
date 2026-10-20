@@ -225,7 +225,7 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupCommon_DoResize(JNIEnv*
   if (cb)
     ret = cb(ih, w, h);
   /* SHRINK=YES would otherwise squeeze content into the viewport; let it overflow so NestedScrollView pans. */
-  if (ih->naturalheight > h) h = ih->naturalheight;
+  if (ih->firstchild && ih->firstchild->naturalheight > h) h = ih->firstchild->naturalheight;
   ih->currentwidth = w;
   ih->currentheight = h;
   iupAttribSetInt(ih, "_IUPANDROID_VIEW_W", w);

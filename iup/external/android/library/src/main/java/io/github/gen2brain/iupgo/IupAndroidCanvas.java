@@ -43,6 +43,7 @@ public class IupAndroidCanvas extends IupAndroidFixed
     private float rotateLast, rotateAngle;
     private static final int TOUCH_IDLE = 0, TOUCH_PENDING = 1, TOUCH_SCROLL = 2, TOUCH_DIRECT = 3, TOUCH_CONSUMED = 4;
     private int touchState = TOUCH_IDLE;
+    private final IupCanvasHelper.DoubleTap doubleTap = new IupCanvasHelper.DoubleTap();
     private float touchStartX, touchStartY, touchLastX, touchLastY;
     private int touchSlop;
     /* Tracks an outstanding clip save() for setClipRect's restore-then-replace contract. */
@@ -178,8 +179,8 @@ public class IupAndroidCanvas extends IupAndroidFixed
                     IupCanvasHelper.dispatchGesture(ihandlePtr, GESTURE_LONGPRESS, GESTURE_END, x, y, 0, 0);
                     /* onTouchEvent never reaches View, so the DRAGSOURCE listener needs this */
                     if (performLongClick()) return;
-                    IupCanvasHelper.dispatchButton(ihandlePtr, 3, 1, x, y, e.getMetaState());
-                    IupCanvasHelper.dispatchButton(ihandlePtr, 3, 0, x, y, e.getMetaState());
+                    IupCanvasHelper.dispatchButton(ihandlePtr, 3, 1, x, y, e.getMetaState(), false);
+                    IupCanvasHelper.dispatchButton(ihandlePtr, 3, 0, x, y, e.getMetaState(), false);
                 }
 
                 /* two-finger drag is a pan; one finger stays BUTTON_CB+MOTION_CB */
@@ -436,7 +437,7 @@ public class IupAndroidCanvas extends IupAndroidFixed
                 /* Drag-interactive or gesture canvas owns the sequence; parent must not intercept. */
                 if (getParent() != null && (IupCanvasHelper.isDragInteractive(ihandlePtr) || IupCanvasHelper.isGestureEnabled(ihandlePtr)))
                     getParent().requestDisallowInterceptTouchEvent(true);
-                IupCanvasHelper.dispatchButton(ihandlePtr, 1, 1, x, y, mods);
+                IupCanvasHelper.dispatchButton(ihandlePtr, 1, 1, x, y, mods, doubleTap.press(this, ev));
                 return true;
             case MotionEvent.ACTION_MOVE:
                 if (touchState == TOUCH_PENDING && ev.getPointerCount() == 1 &&
@@ -456,11 +457,15 @@ public class IupAndroidCanvas extends IupAndroidFixed
             case MotionEvent.ACTION_CANCEL:
                 if (touchState == TOUCH_PENDING && action == MotionEvent.ACTION_UP)
                 {
-                    IupCanvasHelper.dispatchButton(ihandlePtr, 1, 1, x, y, mods);
-                    IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, x, y, mods);
+                    IupCanvasHelper.dispatchButton(ihandlePtr, 1, 1, x, y, mods, doubleTap.press(this, ev));
+                    IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, x, y, mods, false);
                 }
                 else if (touchState == TOUCH_DIRECT)
-                    IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, x, y, mods);
+                    IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, x, y, mods, false);
+                if (action == MotionEvent.ACTION_UP && (touchState == TOUCH_PENDING || touchState == TOUCH_DIRECT))
+                    doubleTap.release(ev);
+                else
+                    doubleTap.reset();
                 touchState = TOUCH_IDLE;
                 /* Touch has no hover; fire LEAVEWINDOW_CB to clear it. */
                 IupCanvasHelper.dispatchLeaveWindow(ihandlePtr);

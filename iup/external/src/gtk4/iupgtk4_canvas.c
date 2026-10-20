@@ -1240,7 +1240,10 @@ static void gtk4CanvasUnMapMethod(Ihandle* ih)
 
   cairo_surface_t* buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK4_CANVAS_BUFFER");
   if (buffer)
+  {
     cairo_surface_destroy(buffer);
+    iupAttribSet(ih, "_IUPGTK4_CANVAS_BUFFER", NULL);
+  }
 
   ((iupGtk4Canvas*)ih->handle)->ih = NULL;
 

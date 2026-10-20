@@ -375,6 +375,10 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih, wasmReadBytes(i1, i2))
 	case PlayEndFunc:
 		ret = f(ih)
+	case ReadyFunc:
+		ret = f(ih)
+	case StateChangedFunc:
+		ret = f(ih, sarg)
 	case FrameFunc:
 		ret = f(ih, i1, i2, wasmReadBytes(i3, i1*i2*3))
 	case SamplesFunc:

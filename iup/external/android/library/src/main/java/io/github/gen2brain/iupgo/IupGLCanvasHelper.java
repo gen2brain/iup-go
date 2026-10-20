@@ -71,6 +71,7 @@ public final class IupGLCanvasHelper
     {
         private final long ihandlePtr;
         private final GestureDetector rightClickDetector;
+        private final IupCanvasHelper.DoubleTap doubleTap = new IupCanvasHelper.DoubleTap();
         private boolean rightClickFired;
 
         public IupGLSurfaceView(Context ctx, long ih)
@@ -91,8 +92,8 @@ public final class IupGLCanvasHelper
                         int x = (int) e.getX();
                         int y = (int) e.getY();
                         int mods = e.getMetaState();
-                        IupCanvasHelper.dispatchButton(ihandlePtr, 3, 1, x, y, mods);
-                        IupCanvasHelper.dispatchButton(ihandlePtr, 3, 0, x, y, mods);
+                        IupCanvasHelper.dispatchButton(ihandlePtr, 3, 1, x, y, mods, false);
+                        IupCanvasHelper.dispatchButton(ihandlePtr, 3, 0, x, y, mods, false);
                         rightClickFired = true;
                     }
                 });
@@ -140,7 +141,7 @@ public final class IupGLCanvasHelper
             {
                 case MotionEvent.ACTION_DOWN:
                     rightClickFired = false;
-                    IupCanvasHelper.dispatchButton(ihandlePtr, 1, 1, x, y, mods);
+                    IupCanvasHelper.dispatchButton(ihandlePtr, 1, 1, x, y, mods, doubleTap.press(this, ev));
                     return true;
                 case MotionEvent.ACTION_MOVE:
                     IupCanvasHelper.dispatchMotion(ihandlePtr, x, y, mods, 1);
@@ -148,7 +149,11 @@ public final class IupGLCanvasHelper
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
                     if (!rightClickFired)
-                        IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, x, y, mods);
+                        IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, x, y, mods, false);
+                    if (!rightClickFired && ev.getActionMasked() == MotionEvent.ACTION_UP)
+                        doubleTap.release(ev);
+                    else
+                        doubleTap.reset();
                     if (ev.getActionMasked() == MotionEvent.ACTION_UP)
                         performClick();
                     return true;
