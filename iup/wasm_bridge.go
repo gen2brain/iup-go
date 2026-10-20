@@ -35,6 +35,35 @@ func ccall(name, ret string, argTypes, args []interface{}) js.Value {
 	if ret == "" {
 		retArg = nil
 	}
+	var allocated []int
+	defer func() {
+		for _, pointer := range allocated {
+			wasmFree(pointer)
+		}
+	}()
+	for index, kind := range argTypes {
+		if kind != "string" {
+			continue
+		}
+		text, ok := args[index].(string)
+		if !ok {
+			continue
+		}
+		if allocated == nil {
+			argTypes = append([]interface{}(nil), argTypes...)
+			args = append([]interface{}(nil), args...)
+		}
+		pointer := wasmMalloc(len(text) + 1)
+		if pointer == 0 {
+			panic("iup: cannot allocate C string argument")
+		}
+		allocated = append(allocated, pointer)
+		bytes := make([]byte, len(text)+1)
+		copy(bytes, text)
+		wasmWriteBytes(pointer, bytes)
+		argTypes[index] = "number"
+		args[index] = pointer
+	}
 	return module().Call("ccall", name, retArg, js.ValueOf(argTypes), js.ValueOf(args))
 }
 

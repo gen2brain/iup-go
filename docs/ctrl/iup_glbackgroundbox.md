@@ -9,7 +9,7 @@ OBS: this is identical to the IupBackgroundBox element, but with OpenGL enabled.
 
 The **IupGLCanvasOpen** function must be called after **IupOpen**.
 The "iupgl.h" file must also be included in the source code.
-The program must be linked to the GL library (iupgl) and the OpenGL library. In Go it needs the `gl` build tag.
+The program must be linked to the GL library (iupgl) and the OpenGL library.
 
 ### Creation
 

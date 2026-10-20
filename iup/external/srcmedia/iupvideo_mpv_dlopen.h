@@ -132,6 +132,8 @@ static int (*iupmpv_command_node_async)(mpv_handle*, uint64_t, mpv_node*);
 static int (*iupmpv_set_property_async)(mpv_handle*, uint64_t, const char*, mpv_format, void*);
 static int (*iupmpv_observe_property)(mpv_handle*, uint64_t, const char*, mpv_format);
 static mpv_event* (*iupmpv_wait_event)(mpv_handle*, double);
+static int (*iupmpv_get_property)(mpv_handle*, const char*, mpv_format, void*);
+static void (*iupmpv_free_node_contents)(mpv_node*);
 static int (*iupmpv_render_context_create)(mpv_render_context**, mpv_handle*, mpv_render_param*);
 static void (*iupmpv_render_context_set_update_callback)(mpv_render_context*, mpv_render_update_fn, void*);
 static uint64_t (*iupmpv_render_context_update)(mpv_render_context*);
@@ -151,6 +153,8 @@ static void (*iupmpv_render_context_free)(mpv_render_context*);
 #define mpv_set_property_async iupmpv_set_property_async
 #define mpv_observe_property iupmpv_observe_property
 #define mpv_wait_event iupmpv_wait_event
+#define mpv_get_property iupmpv_get_property
+#define mpv_free_node_contents iupmpv_free_node_contents
 #define mpv_render_context_create iupmpv_render_context_create
 #define mpv_render_context_set_update_callback iupmpv_render_context_set_update_callback
 #define mpv_render_context_update iupmpv_render_context_update
@@ -189,6 +193,8 @@ static int iupMpvOpen(void)
   *(void**)&iupmpv_set_property_async = iupMpvSymbol("mpv_set_property_async", &missing);
   *(void**)&iupmpv_observe_property = iupMpvSymbol("mpv_observe_property", &missing);
   *(void**)&iupmpv_wait_event = iupMpvSymbol("mpv_wait_event", &missing);
+  *(void**)&iupmpv_get_property = iupMpvSymbol("mpv_get_property", &missing);
+  *(void**)&iupmpv_free_node_contents = iupMpvSymbol("mpv_free_node_contents", &missing);
   *(void**)&iupmpv_render_context_create = iupMpvSymbol("mpv_render_context_create", &missing);
   *(void**)&iupmpv_render_context_set_update_callback = iupMpvSymbol("mpv_render_context_set_update_callback", &missing);
   *(void**)&iupmpv_render_context_update = iupMpvSymbol("mpv_render_context_update", &missing);

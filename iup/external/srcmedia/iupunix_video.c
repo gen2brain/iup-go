@@ -10,6 +10,11 @@ extern const IvideoBackend iupVideoVlcBackend;
 extern const IvideoBackend iupVideoGstreamerBackend;
 extern const IvideoBackend iupVideoMpvBackend;
 
+char* iupdrvVideoReadSubtitle(const char* filename)
+{
+  return iupVideoReadSubtitleStream(fopen(filename, "rb"));
+}
+
 const IvideoBackend* iupdrvVideoBackend(int index)
 {
   static const IvideoBackend* backends[] = {&iupVideoVlcBackend, &iupVideoGstreamerBackend, &iupVideoMpvBackend};

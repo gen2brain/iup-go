@@ -129,6 +129,10 @@ static void (*iupvlc_video_set_callbacks)(libvlc_media_player_t*, libvlc_video_l
 static void (*iupvlc_video_set_format_callbacks)(libvlc_media_player_t*, libvlc_video_format_cb, libvlc_video_cleanup_cb);
 static int (*iupvlc_event_attach)(libvlc_event_manager_t*, int, libvlc_callback_t, void*);
 static void (*iupvlc_event_detach)(libvlc_event_manager_t*, int, libvlc_callback_t, void*);
+static int (*iupvlc_video_set_spu)(libvlc_media_player_t*, int);
+static int (*iupvlc_video_get_spu)(libvlc_media_player_t*);
+static int (*iupvlc_video_set_spu_delay)(libvlc_media_player_t*, int64_t);
+static int64_t (*iupvlc_video_get_spu_delay)(libvlc_media_player_t*);
 
 #define libvlc_get_version iupvlc_get_version
 #define libvlc_new iupvlc_new
@@ -156,6 +160,10 @@ static void (*iupvlc_event_detach)(libvlc_event_manager_t*, int, libvlc_callback
 #define libvlc_video_set_format_callbacks iupvlc_video_set_format_callbacks
 #define libvlc_event_attach iupvlc_event_attach
 #define libvlc_event_detach iupvlc_event_detach
+#define libvlc_video_set_spu iupvlc_video_set_spu
+#define libvlc_video_get_spu iupvlc_video_get_spu
+#define libvlc_video_set_spu_delay iupvlc_video_set_spu_delay
+#define libvlc_video_get_spu_delay iupvlc_video_get_spu_delay
 
 static void* iupVlcSymbol(const char* name, int* missing)
 {
@@ -202,6 +210,10 @@ static int iupVlcOpen(void)
   *(void**)&iupvlc_video_set_format_callbacks = iupVlcSymbol("libvlc_video_set_format_callbacks", &missing);
   *(void**)&iupvlc_event_attach = iupVlcSymbol("libvlc_event_attach", &missing);
   *(void**)&iupvlc_event_detach = iupVlcSymbol("libvlc_event_detach", &missing);
+  *(void**)&iupvlc_video_set_spu = iupVlcSymbol("libvlc_video_set_spu", &missing);
+  *(void**)&iupvlc_video_get_spu = iupVlcSymbol("libvlc_video_get_spu", &missing);
+  *(void**)&iupvlc_video_set_spu_delay = iupVlcSymbol("libvlc_video_set_spu_delay", &missing);
+  *(void**)&iupvlc_video_get_spu_delay = iupVlcSymbol("libvlc_video_get_spu_delay", &missing);
 
   if (missing || libvlc_get_version()[0] != '3')
   {

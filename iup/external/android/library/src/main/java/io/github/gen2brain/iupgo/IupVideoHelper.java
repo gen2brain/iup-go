@@ -4,12 +4,23 @@ import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.media.MediaPlayer;
+import android.media.MediaExtractor;
+import android.media.MediaFormat;
 import android.net.Uri;
 import android.os.Build;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Gravity;
+import android.widget.TextView;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.ByteBuffer;
 
 import androidx.annotation.Keep;
 
@@ -26,7 +37,7 @@ public final class IupVideoHelper
     @Keep
     public static Object create(View host, long session, String source, boolean url)
     {
-        Player player = new Player(host, session);
+        Player player = new Player(host, session, source, url);
         try
         {
             if (url)
@@ -82,11 +93,144 @@ public final class IupVideoHelper
     @Keep
     private static native void error(long session, String message);
 
+    @Keep
+    private static native void subtitleCue(long session, byte[] text);
+
+    @Keep
+    public static void subtitleText(Object object, String text, int size, int color)
+    {
+        Player player = (Player)object;
+        player.caption.setText(text == null ? "" : text);
+        player.caption.setTextSize(size);
+        player.caption.setTextColor(color);
+        player.placed = false;
+        player.layout();
+    }
+
+    @Keep
+    public static int subtitleCount(Object object)
+    {
+        Player player = (Player)object;
+        if (!player.prepared || player.failed || player.closed)
+            return 0;
+        int count = 0;
+        for (MediaPlayer.TrackInfo track : player.media.getTrackInfo())
+        {
+            if (track.getTrackType() == MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT)
+                count++;
+        }
+        return count;
+    }
+
+    @Keep
+    public static String subtitleName(Object object, int index, boolean language)
+    {
+        Player player = (Player)object;
+        if (!player.prepared || player.failed || player.closed)
+            return null;
+        int count = 0;
+        for (MediaPlayer.TrackInfo track : player.media.getTrackInfo())
+        {
+            if (track.getTrackType() == MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT && ++count == index)
+                return language ? track.getLanguage() : "Track " + index;
+        }
+        return null;
+    }
+
+    private static boolean subtitleFlag(MediaFormat format, String key)
+    {
+        try
+        {
+            return format != null && format.containsKey(key) && format.getInteger(key) != 0;
+        }
+        catch (ClassCastException | NullPointerException error)
+        {
+            return false;
+        }
+    }
+
+    @Keep
+    public static boolean subtitleSelect(Object object, int index, double delay)
+    {
+        Player player = (Player)object;
+        if (!player.prepared || player.failed || player.closed)
+            return index <= 0;
+        try
+        {
+            int previous = player.media.getSelectedTrack(MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT);
+            int selected = -1;
+            int count = 0;
+            MediaPlayer.TrackInfo[] tracks = player.media.getTrackInfo();
+            for (int i = 0; i < tracks.length && selected < 0; i++)
+            {
+                if (tracks[i].getTrackType() != MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT)
+                    continue;
+                count++;
+                if (index == -1)
+                {
+                    MediaFormat format = tracks[i].getFormat();
+                    if (subtitleFlag(format, MediaFormat.KEY_IS_DEFAULT) || subtitleFlag(format, MediaFormat.KEY_IS_FORCED_SUBTITLE))
+                        selected = i;
+                }
+                else if (count == index)
+                    selected = i;
+            }
+            if (index > 0 && selected < 0)
+                return false;
+            if (previous >= 0 && previous != selected)
+                player.media.deselectTrack(previous);
+            if (selected != previous)
+            {
+                player.cancelSubtitlePreview();
+                if (selected >= 0)
+                    player.media.selectTrack(selected);
+                if (player.session != 0)
+                    subtitleCue(player.session, null);
+                if (selected >= 0 && !player.media.isPlaying() && player.media.getDuration() > 0)
+                    player.previewSubtitle(selected);
+            }
+            return true;
+        }
+        catch (IllegalStateException | IllegalArgumentException error)
+        {
+            return false;
+        }
+    }
+
+    @Keep
+    public static byte[] readSubtitle(String source)
+    {
+        android.app.Activity activity = IupActivity.currentActivity();
+        try (InputStream input = source.startsWith("content:") && activity != null ?
+             activity.getContentResolver().openInputStream(Uri.parse(source)) : new FileInputStream(source))
+        {
+            if (input == null)
+                return null;
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            byte[] bytes = new byte[8192];
+            int count;
+            while ((count = input.read(bytes)) != -1)
+            {
+                if (output.size() + count > 16 * 1024 * 1024)
+                    return null;
+                output.write(bytes, 0, count);
+            }
+            return output.toByteArray();
+        }
+        catch (Exception error)
+        {
+            return null;
+        }
+    }
+
     private static final class Player implements TextureView.SurfaceTextureListener
     {
         final View host;
         final TextureView view;
+        final TextView caption;
         final MediaPlayer media;
+        final String source;
+        final boolean sourceURL;
         final double[] snapshot = new double[10];
         final Rect clip = new Rect();
         final Rect placedClip = new Rect();
@@ -94,21 +238,40 @@ public final class IupVideoHelper
         ViewGroup parent;
         Surface surface;
         long session;
-        boolean prepared, closed, failed, requested, buffering, ended, video, audio, seeking;
+        boolean prepared, failed, requested, buffering, ended, video, audio, seeking;
+        volatile boolean closed;
+        volatile int subtitleGeneration;
+        Thread subtitleThread;
+        int previewTrack;
+        long previewTime;
+        boolean previewPending;
         boolean placed, placedVisible;
         int width, height, level = 100;
         int placedX, placedY, placedW, placedH, placedWidth, placedHeight;
         boolean mute;
         double pendingSeek = -1;
 
-        Player(View host, long session)
+        Player(View host, long session, String source, boolean url)
         {
             this.host = host;
             this.session = session;
+            this.source = source;
+            sourceURL = url;
             view = new TextureView(host.getContext());
             view.setOpaque(false);
             view.setSurfaceTextureListener(this);
+            caption = new TextView(host.getContext());
+            caption.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM);
+            caption.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+            int padding = Math.round(8 * host.getResources().getDisplayMetrics().density);
+            caption.setPadding(padding, padding, padding, padding);
+            caption.setShadowLayer(2, 0, 1, Color.BLACK);
+            caption.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             media = new MediaPlayer();
+            media.setOnTimedTextListener((player, text) -> {
+                if (!closed && session != 0)
+                    subtitleCue(session, text == null || text.getText() == null ? null : text.getText().getBytes(StandardCharsets.UTF_8));
+            });
             media.setOnPreparedListener(player -> {
                 if (closed)
                     return;
@@ -163,6 +326,12 @@ public final class IupVideoHelper
                     pendingSeek = -1;
                     seek(position);
                 }
+                else if (!closed && !requested)
+                {
+                    int selected = media.getSelectedTrack(MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT);
+                    if (selected >= 0)
+                        previewSubtitle(selected);
+                }
             });
         }
 
@@ -172,6 +341,111 @@ public final class IupVideoHelper
             host.setKeepScreenOn(false);
             if (session != 0)
                 error(session, message);
+        }
+
+        void previewSubtitle(int selected)
+        {
+            int ordinal = 0;
+            MediaPlayer.TrackInfo[] tracks = media.getTrackInfo();
+            for (int i = 0; i <= selected; i++)
+            {
+                if (tracks[i].getTrackType() == MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT)
+                    ordinal++;
+            }
+            synchronized (this)
+            {
+                subtitleGeneration++;
+                previewTrack = ordinal;
+                previewTime = (long)media.getCurrentPosition() * 1000;
+                previewPending = true;
+                if (subtitleThread != null)
+                    return;
+                subtitleThread = new Thread(this::readSubtitlePreview, "IupSubtitle");
+                subtitleThread.start();
+            }
+        }
+
+        synchronized void cancelSubtitlePreview()
+        {
+            subtitleGeneration++;
+            previewPending = false;
+        }
+
+        void readSubtitlePreview()
+        {
+            ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024);
+            for (;;)
+            {
+                final int generation, ordinal;
+                final long time;
+                synchronized (this)
+                {
+                    if (closed || !previewPending)
+                    {
+                        subtitleThread = null;
+                        return;
+                    }
+                    generation = subtitleGeneration;
+                    ordinal = previewTrack;
+                    time = previewTime;
+                    previewPending = false;
+                }
+                byte[] text = null;
+                MediaExtractor extractor = new MediaExtractor();
+                try
+                {
+                    if (sourceURL)
+                        extractor.setDataSource(host.getContext(), Uri.parse(source), null);
+                    else
+                        extractor.setDataSource(source);
+                    int found = 0;
+                    for (int i = 0; i < extractor.getTrackCount(); i++)
+                    {
+                        MediaFormat format = extractor.getTrackFormat(i);
+                        String mime = format.getString(MediaFormat.KEY_MIME);
+                        if (!("application/x-3gpp-tt".equals(mime) || "text/3gpp".equals(mime) || "text/3gpp-tt".equals(mime)))
+                            continue;
+                        if (++found != ordinal)
+                            continue;
+                        extractor.selectTrack(i);
+                        extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                        long start = extractor.getSampleTime();
+                        if (start >= 0 && start <= time)
+                        {
+                            buffer.clear();
+                            int bytes = extractor.readSampleData(buffer, 0);
+                            if (bytes >= 2)
+                            {
+                                int length = buffer.getShort(0) & 0xffff;
+                                if (length <= bytes - 2)
+                                {
+                                    byte[] encoded = new byte[length];
+                                    buffer.position(2);
+                                    buffer.get(encoded);
+                                    if (length >= 2 && ((encoded[0] & 255) == 254 || (encoded[0] & 255) == 255))
+                                        text = new String(encoded, StandardCharsets.UTF_16).getBytes(StandardCharsets.UTF_8);
+                                    else
+                                        text = encoded;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+                catch (Exception error)
+                {
+                    text = null;
+                }
+                finally
+                {
+                    extractor.release();
+                }
+                final byte[] result = text;
+                host.post(() -> {
+                    if (!closed && session != 0 && subtitleGeneration == generation)
+                        subtitleCue(session, result);
+                });
+            }
         }
 
         void showFrame()
@@ -190,6 +464,8 @@ public final class IupVideoHelper
 
         void play(boolean play)
         {
+            if (play && !requested)
+                cancelSubtitlePreview();
             requested = play;
             host.setKeepScreenOn(play && !failed);
             if (closed || failed || !prepared || (video && surface == null))
@@ -221,6 +497,7 @@ public final class IupVideoHelper
             try
             {
                 seeking = true;
+                cancelSubtitlePreview();
                 ended = false;
                 if (Build.VERSION.SDK_INT >= 26)
                     media.seekTo((long)(position * 1000), MediaPlayer.SEEK_CLOSEST);
@@ -252,9 +529,13 @@ public final class IupVideoHelper
             if (parent != group)
             {
                 if (parent != null)
+                {
                     parent.getOverlay().remove(view);
+                    parent.getOverlay().remove(caption);
+                }
                 parent = group;
                 parent.getOverlay().add(view);
+                parent.getOverlay().add(caption);
                 placed = false;
             }
             int x = Math.round(host.getX()), y = Math.round(host.getY());
@@ -266,13 +547,31 @@ public final class IupVideoHelper
             view.layout(x, y, x + w, y + h);
             view.setClipBounds(clip);
             view.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
+            int vx = 0, vy = 0, vw = w, vh = h;
             if (w > 0 && h > 0 && width > 0 && height > 0)
             {
                 float aspect = (float)width / height;
                 float current = (float)w / h;
                 matrix.setScale(aspect < current ? aspect / current : 1, aspect > current ? current / aspect : 1, w / 2.0f, h / 2.0f);
                 view.setTransform(matrix);
+                if (aspect > current)
+                {
+                    vh = Math.round(w / aspect);
+                    vy = (h - vh) / 2;
+                }
+                else
+                {
+                    vw = Math.round(h * aspect);
+                    vx = (w - vw) / 2;
+                }
             }
+            caption.measure(View.MeasureSpec.makeMeasureSpec(Math.max(0, vw), View.MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec(Math.max(0, vh), View.MeasureSpec.EXACTLY));
+            caption.layout(x + vx, y + vy, x + vx + vw, y + vy + vh);
+            Rect captionClip = new Rect(clip);
+            captionClip.offset(-vx, -vy);
+            caption.setClipBounds(captionClip);
+            caption.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
             placed = true;
             placedX = x;
             placedY = y;
@@ -312,6 +611,7 @@ public final class IupVideoHelper
 
         void close()
         {
+            cancelSubtitlePreview();
             session = 0;
             closed = true;
             host.setKeepScreenOn(false);
@@ -322,6 +622,7 @@ public final class IupVideoHelper
             media.setOnErrorListener(null);
             media.setOnInfoListener(null);
             media.setOnSeekCompleteListener(null);
+            media.setOnTimedTextListener(null);
             media.release();
             if (surface != null)
             {
@@ -331,6 +632,7 @@ public final class IupVideoHelper
             if (parent != null)
             {
                 parent.getOverlay().remove(view);
+                parent.getOverlay().remove(caption);
                 parent = null;
             }
         }

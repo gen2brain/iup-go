@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "iup_video.h"
+#include "iup_str.h"
 #include "iupvideo_vlc_dlopen.h"
 
 typedef struct
@@ -20,6 +21,7 @@ typedef struct
   libvlc_event_manager_t* events;
   pthread_mutex_t lock;
   int ready, play, attached, track, cached_track, scanned, audio, video, width, height;
+  int subtitle_auto, subtitle_explicit;
   double aspect;
   libvlc_state_t previous;
 } IvideoVlc;
@@ -190,11 +192,11 @@ static void iVideoVlcClose(IvideoSession* session)
 
 static int iVideoVlcOpen(IvideoSession* session, Ihandle* ih, const char* source, int url)
 {
-  const char* options[] = {"--quiet", "--no-video-title-show", "--no-osd", "--no-spu"};
+  const char* options[] = {"--quiet", "--no-video-title-show", "--no-osd", "--no-sub-autodetect-file"};
   IvideoVlc* context;
   (void)ih;
   if (!ivlc_instance)
-    ivlc_instance = libvlc_new(4, options);
+    ivlc_instance = libvlc_new((int)(sizeof(options) / sizeof(options[0])), options);
   if (!ivlc_instance)
   {
     iupVideoError(session, "Cannot initialize VLC");
@@ -212,6 +214,7 @@ static int iVideoVlcOpen(IvideoSession* session, Ihandle* ih, const char* source
   context->session = session;
   context->track = -1;
   context->cached_track = -1;
+  context->subtitle_auto = -1;
   context->media = url ? libvlc_media_new_location(ivlc_instance, source) : libvlc_media_new_path(ivlc_instance, source);
   if (!context->media)
   {
@@ -341,4 +344,98 @@ static void iVideoVlcPoll(IvideoSession* session)
   iupVideoInfo(session, &info);
 }
 
-const IvideoBackend iupVideoVlcBackend = {"VLC", iVideoVlcLoad, iVideoVlcOpen, iVideoVlcClose, iVideoVlcPlay, iVideoVlcSeek, iVideoVlcVolume, iVideoVlcPoll, NULL};
+static int iVideoVlcSubtitleCount(IvideoSession* session)
+{
+  IvideoVlc* context = (IvideoVlc*)session->context;
+  libvlc_media_track_t** tracks = NULL;
+  unsigned i, count = libvlc_media_tracks_get(context->media, &tracks);
+  int n = 0;
+  for (i = 0; i < count; i++)
+  {
+    if (tracks[i]->i_type == libvlc_track_text)
+      n++;
+  }
+  if (tracks)
+    libvlc_media_tracks_release(tracks, count);
+  return n;
+}
+
+static char* iVideoVlcSubtitleName(IvideoSession* session, int index, int language)
+{
+  IvideoVlc* context = (IvideoVlc*)session->context;
+  libvlc_media_track_t** tracks = NULL;
+  unsigned i, count = libvlc_media_tracks_get(context->media, &tracks);
+  int n = 0;
+  char* text = NULL;
+  for (i = 0; i < count; i++)
+  {
+    if (tracks[i]->i_type != libvlc_track_text || ++n != index)
+      continue;
+    if (language)
+      text = iupStrReturnStr(tracks[i]->psz_language);
+    else if (tracks[i]->psz_description)
+      text = iupStrReturnStr(tracks[i]->psz_description);
+    else
+      text = iupStrReturnStrf("Track %d", index);
+    break;
+  }
+  if (tracks)
+    libvlc_media_tracks_release(tracks, count);
+  return text;
+}
+
+static int iVideoVlcSubtitleId(IvideoVlc* context, int index)
+{
+  libvlc_media_track_t** tracks = NULL;
+  unsigned i, count = libvlc_media_tracks_get(context->media, &tracks);
+  int n = 0, id = -1;
+  for (i = 0; i < count; i++)
+  {
+    if (tracks[i]->i_type == libvlc_track_text && ++n == index)
+    {
+      id = tracks[i]->i_id;
+      break;
+    }
+  }
+  if (tracks)
+    libvlc_media_tracks_release(tracks, count);
+  return id;
+}
+
+static int iVideoVlcSubtitleSelect(IvideoSession* session, int index, double delay)
+{
+  IvideoVlc* context = (IvideoVlc*)session->context;
+  int64_t offset = (int64_t)(delay * 1000000);
+  int current = libvlc_video_get_spu(context->player), id = -1, changed = 0;
+  if (index > 0)
+  {
+    id = iVideoVlcSubtitleId(context, index);
+    if (id < 0)
+      return 0;
+    context->subtitle_explicit = 1;
+  }
+  else if (index == 0)
+    context->subtitle_explicit = 1;
+  else
+  {
+    if (!context->subtitle_explicit)
+      context->subtitle_auto = current;
+    id = context->subtitle_auto;
+  }
+  if (libvlc_video_get_spu_delay(context->player) != offset)
+  {
+    libvlc_video_set_spu_delay(context->player, offset);
+    changed = 1;
+  }
+  if (current != id)
+  {
+    if (libvlc_video_set_spu(context->player, id) != 0)
+      return 0;
+    changed = 1;
+  }
+  if (changed && libvlc_media_player_get_state(context->player) == libvlc_Paused && libvlc_media_player_is_seekable(context->player))
+    libvlc_media_player_set_time(context->player, libvlc_media_player_get_time(context->player));
+  return 1;
+}
+
+const IvideoBackend iupVideoVlcBackend = {"VLC", iVideoVlcLoad, iVideoVlcOpen, iVideoVlcClose, iVideoVlcPlay, iVideoVlcSeek, iVideoVlcVolume, iVideoVlcPoll, NULL, iVideoVlcSubtitleCount, iVideoVlcSubtitleName, iVideoVlcSubtitleSelect, NULL};

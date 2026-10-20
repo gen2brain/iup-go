@@ -22,14 +22,19 @@
 #include "iup_object.h"
 #include "iup_str.h"
 
-@interface IupAppleVideo : NSObject
+@interface IupAppleVideo : NSObject <AVPlayerItemLegibleOutputPushDelegate>
 {
 @public
   IvideoSession* session;
+  Ihandle* ih;
   AVPlayer* player;
   AVPlayerItem* item;
   AVPlayerLayer* layer;
   AVPlayerItemVideoOutput* output;
+  AVPlayerItemLegibleOutput* legible;
+  AVMediaSelectionGroup* subtitles;
+  CATextLayer* caption;
+  CGRect captionRect;
   id endObserver;
   unsigned char* rgba;
   size_t capacity;
@@ -38,12 +43,34 @@
 @end
 
 @implementation IupAppleVideo
+- (void)legibleOutput:(AVPlayerItemLegibleOutput*)sender didOutputAttributedStrings:(NSArray<NSAttributedString*>*)strings nativeSampleBuffers:(NSArray*)samples forItemTime:(CMTime)time
+{
+  NSMutableArray* lines;
+  (void)sender;
+  (void)samples;
+  (void)time;
+  if (!session)
+    return;
+  lines = [NSMutableArray array];
+  for (NSAttributedString* value in strings)
+    [lines addObject:value.string];
+  iupVideoSubtitleCue(session, [[lines componentsJoinedByString:@"\n"] UTF8String]);
+}
+- (void)outputSequenceWasFlushed:(AVPlayerItemOutput*)sender
+{
+  (void)sender;
+  if (session)
+    iupVideoSubtitleCue(session, NULL);
+}
 - (void)dealloc
 {
   if (endObserver)
     [[NSNotificationCenter defaultCenter] removeObserver:endObserver];
   [endObserver release];
   [layer release];
+  [caption release];
+  [subtitles release];
+  [legible release];
   [output release];
   [item release];
   [player release];
@@ -74,6 +101,18 @@ static CALayer* iappleVideoParent(Ihandle* ih)
 #endif
 }
 
+#if TARGET_OS_IPHONE
+static UIFont* iappleVideoCaptionFont(CGFloat size)
+{
+  return [UIFont boldSystemFontOfSize:size];
+}
+#else
+static NSFont* iappleVideoCaptionFont(CGFloat size)
+{
+  return [NSFont boldSystemFontOfSize:size];
+}
+#endif
+
 static void iappleVideoLayout(IvideoSession* session, Ihandle* ih)
 {
   IupAppleVideo* context = (IupAppleVideo*)session->context;
@@ -83,6 +122,22 @@ static void iappleVideoLayout(IvideoSession* session, Ihandle* ih)
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
     context->layer.frame = parent.bounds;
+    if (context->caption)
+    {
+      CGRect rect = context->layer.videoRect;
+      NSString* text = (NSString*)context->caption.string;
+      CGFloat width, height;
+      CGRect bounds;
+      context->captionRect = rect;
+      if (CGRectIsEmpty(rect))
+        rect = parent.bounds;
+      width = MAX(0, rect.size.width - 20);
+      bounds = [text boundingRectWithSize:CGSizeMake(width, rect.size.height)
+        options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName:iappleVideoCaptionFont(context->caption.fontSize)} context:nil];
+      height = MIN(rect.size.height, ceil(bounds.size.height) + 4);
+      context->caption.frame = CGRectMake(rect.origin.x + 10, CGRectGetMaxY(rect) - height - 10, width, height);
+      context->caption.contentsScale = parent.contentsScale;
+    }
     [CATransaction commit];
   }
 }
@@ -109,6 +164,7 @@ static int iappleVideoOpen(IvideoSession* session, Ihandle* ih, const char* sour
     return 0;
   session->context = context;
   context->session = session;
+  context->ih = ih;
   context->item = [[AVPlayerItem playerItemWithURL:uri] retain];
   context->player = [[AVPlayer playerWithPlayerItem:context->item] retain];
   if (!context->item || !context->player)
@@ -142,6 +198,24 @@ static int iappleVideoOpen(IvideoSession* session, Ihandle* ih, const char* sour
     }
     [context->item addOutput:context->output];
   }
+  context->legible = [[AVPlayerItemLegibleOutput alloc] init];
+  context->legible.suppressesPlayerRendering = context->output != nil;
+  if (context->output)
+    [context->legible setDelegate:context queue:dispatch_get_main_queue()];
+  [context->item addOutput:context->legible];
+  [context->item.asset loadValuesAsynchronouslyForKeys:@[@"availableMediaCharacteristicsWithMediaSelectionOptions"] completionHandler:^{
+    dispatch_async(dispatch_get_main_queue(), ^{
+      AVMediaSelectionGroup* group;
+      if (!context->session)
+        return;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+      group = [context->item.asset mediaSelectionGroupForMediaCharacteristic:AVMediaCharacteristicLegible];
+#pragma clang diagnostic pop
+      [context->subtitles release];
+      context->subtitles = [group retain];
+    });
+  }];
   context->endObserver = [[[NSNotificationCenter defaultCenter]
     addObserverForName:AVPlayerItemDidPlayToEndTimeNotification object:context->item
     queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification* notification) {
@@ -158,6 +232,8 @@ static void iappleVideoClose(IvideoSession* session)
   if (!context)
     return;
   context->session = NULL;
+  [context->legible setDelegate:nil queue:NULL];
+  [context->caption removeFromSuperlayer];
   if (context->endObserver)
     [[NSNotificationCenter defaultCenter] removeObserver:context->endObserver];
   [context->endObserver release];
@@ -296,10 +372,125 @@ static void iappleVideoPoll(IvideoSession* session)
     if (context->output)
       iappleVideoFrame(context);
   }
+  if (context->caption && context->layer && !CGRectEqualToRect(context->layer.videoRect, context->captionRect))
+    iappleVideoLayout(session, context->ih);
   iupVideoInfo(session, &info);
 }
 
-static const IvideoBackend iappleVideoBackend = {"NATIVE", iappleVideoAvailable, iappleVideoOpen, iappleVideoClose, iappleVideoPlay, iappleVideoSeek, iappleVideoVolume, iappleVideoPoll, iappleVideoLayout};
+static int iappleVideoSubtitleCount(IvideoSession* session)
+{
+  IupAppleVideo* context = (IupAppleVideo*)session->context;
+  return (int)context->subtitles.options.count;
+}
+
+static char* iappleVideoSubtitleName(IvideoSession* session, int index, int language)
+{
+  IupAppleVideo* context = (IupAppleVideo*)session->context;
+  AVMediaSelectionOption* option;
+  if (index < 1 || index > (int)context->subtitles.options.count)
+    return NULL;
+  option = context->subtitles.options[index - 1];
+  return iupStrReturnStr((language ? (option.extendedLanguageTag ?: option.locale.localeIdentifier) : option.displayName).UTF8String);
+}
+
+static int iappleVideoSubtitleSelect(IvideoSession* session, int index, double delay)
+{
+  IupAppleVideo* context = (IupAppleVideo*)session->context;
+  CMTime position;
+  BOOL suppress, changed;
+  (void)delay;
+  if (index > (int)context->subtitles.options.count)
+    return 0;
+  position = context->player.currentTime;
+  suppress = index == 0 || context->output != nil;
+  changed = context->legible.suppressesPlayerRendering != suppress;
+  if (changed)
+    context->legible.suppressesPlayerRendering = suppress;
+  if (index == 0)
+    iupVideoSubtitleCue(session, NULL);
+  if (context->subtitles)
+  {
+    AVMediaSelectionOption* previous = [context->item.currentMediaSelection selectedMediaOptionInMediaSelectionGroup:context->subtitles];
+    AVMediaSelectionOption* selected;
+    if (index == -1)
+    {
+      [context->item selectMediaOptionAutomaticallyInMediaSelectionGroup:context->subtitles];
+      selected = [context->item.currentMediaSelection selectedMediaOptionInMediaSelectionGroup:context->subtitles];
+      if (previous != selected && ![previous isEqual:selected])
+        changed = YES;
+    }
+    else
+    {
+      selected = index == 0 ? nil : context->subtitles.options[index - 1];
+      if (previous != selected && ![previous isEqual:selected])
+      {
+        [context->item selectMediaOption:selected inMediaSelectionGroup:context->subtitles];
+        changed = YES;
+      }
+    }
+  }
+  if (changed && CMTIME_IS_NUMERIC(position) && context->item.seekableTimeRanges.count)
+    [context->player seekToTime:position toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
+  return 1;
+}
+
+static int iappleVideoSubtitleText(IvideoSession* session, const char* text, int size, const char* color)
+{
+  IupAppleVideo* context = (IupAppleVideo*)session->context;
+  unsigned char r = 255, g = 255, b = 255;
+  CGFloat components[4];
+  CGColorSpaceRef space;
+  CGColorRef foreground;
+  if (!context->layer)
+    return 0;
+  if (!text && !context->caption)
+    return 1;
+  if (!context->caption)
+  {
+    context->caption = [[CATextLayer alloc] init];
+    context->caption.alignmentMode = kCAAlignmentCenter;
+    context->caption.wrapped = YES;
+    context->caption.shadowOpacity = 1;
+    context->caption.shadowRadius = 2;
+    context->caption.shadowOffset = CGSizeMake(0, 1);
+    [context->layer addSublayer:context->caption];
+  }
+  iupStrToRGB(color, &r, &g, &b);
+  components[0] = r / 255.0;
+  components[1] = g / 255.0;
+  components[2] = b / 255.0;
+  components[3] = 1;
+  space = CGColorSpaceCreateDeviceRGB();
+  foreground = CGColorCreate(space, components);
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+  context->caption.string = text ? [NSString stringWithUTF8String:text] : @"";
+  context->caption.font = (CFTypeRef)iappleVideoCaptionFont(size);
+  context->caption.fontSize = size;
+  context->caption.foregroundColor = foreground;
+  [CATransaction commit];
+  CGColorRelease(foreground);
+  CGColorSpaceRelease(space);
+  iappleVideoLayout(session, context->ih);
+  return 1;
+}
+
+char* iupdrvVideoReadSubtitle(const char* filename)
+{
+  NSData* bytes = [NSData dataWithContentsOfFile:[NSString stringWithUTF8String:filename]];
+  char* text;
+  if (!bytes || bytes.length > 16 * 1024 * 1024 || memchr(bytes.bytes, 0, bytes.length))
+    return NULL;
+  text = (char*)malloc(bytes.length + 1);
+  if (text)
+  {
+    memcpy(text, bytes.bytes, bytes.length);
+    text[bytes.length] = 0;
+  }
+  return text;
+}
+
+static const IvideoBackend iappleVideoBackend = {"NATIVE", iappleVideoAvailable, iappleVideoOpen, iappleVideoClose, iappleVideoPlay, iappleVideoSeek, iappleVideoVolume, iappleVideoPoll, iappleVideoLayout, iappleVideoSubtitleCount, iappleVideoSubtitleName, iappleVideoSubtitleSelect, iappleVideoSubtitleText};
 
 const IvideoBackend* iupdrvVideoBackend(int index)
 {

@@ -2656,6 +2656,12 @@
         var VS = globalThis.__iupVid, vf = new Float64Array(c.sab), vcv = el;
         if (VS[c.vid]) { VS[c.vid].close(); delete VS[c.vid]; }
         var vv = document.createElement('video'), vo = { url: null, obs: null, raf: 0, want: 0, armed: 0, done: 0 };
+        var subtitle = document.createElement('div'), smemory = new Uint8Array(c.subtitles), sheader = new Int32Array(c.subtitles, 0, 2);
+        var ss = subtitle.style;
+        ss.position = 'absolute'; ss.pointerEvents = 'none'; ss.textAlign = 'center'; ss.whiteSpace = 'pre-wrap';
+        ss.overflow = 'hidden'; ss.fontWeight = 'bold'; ss.textShadow = '-1px -1px 1px black, 1px 1px 1px black';
+        ss.boxSizing = 'border-box'; ss.padding = '0 8px';
+        vo.caption = subtitle; vo.subtitleIndex = -1; vo.subtitleDelay = 0; vo.subtitleSnapshot = '';
         var vst = vv.style;
         vv.playsInline = true; vv.preload = 'auto';
         vst.position = 'absolute'; vst.boxSizing = 'border-box'; vst.margin = '0'; vst.objectFit = 'contain'; vst.pointerEvents = 'none'; vst.background = c.bg;
@@ -2663,15 +2669,53 @@
           var cs = vcv.style;
           vst.left = cs.left; vst.top = cs.top; vst.width = cs.width; vst.height = cs.height;
           vst.display = cs.display === 'none' ? 'none' : 'block';
+          var w = parseFloat(cs.width) || 0, h = parseFloat(cs.height) || 0, bottom = h, pictureWidth = w, pictureHeight = h;
+          if (vv.videoWidth > 0 && vv.videoHeight > 0 && vv.videoWidth * h > vv.videoHeight * w)
+            { pictureHeight = w * vv.videoHeight / vv.videoWidth; bottom = (h + pictureHeight) / 2; }
+          else if (vv.videoWidth > 0 && vv.videoHeight > 0) pictureWidth = h * vv.videoWidth / vv.videoHeight;
+          ss.left = ((parseFloat(cs.left) || 0) + (w - pictureWidth) / 2) + 'px'; ss.width = pictureWidth + 'px';
+          ss.transform = 'translateY(-100%)';
+          ss.top = ((parseFloat(cs.top) || 0) + bottom - 8) + 'px';
+          ss.maxHeight = pictureHeight + 'px'; ss.display = vst.display;
         };
         if (vcv && vcv.parentNode) {
           vcv.parentNode.insertBefore(vv, vcv.nextSibling);
+          vcv.parentNode.insertBefore(subtitle, vv.nextSibling);
           vsync();
           vo.obs = new MutationObserver(vsync);
           vo.obs.observe(vcv, { attributes: true, attributeFilter: ['style'] });
           vo.zobs = new MutationObserver(function () { if (vcv.nextSibling !== vv && vcv.parentNode === vv.parentNode) vcv.parentNode.insertBefore(vv, vcv.nextSibling); });
           vo.zobs.observe(vcv.parentNode, { childList: true });
         }
+        vo.subtitleTracks = function () {
+          return Array.from(vv.textTracks).filter(function (track) { return track.kind === 'subtitles' || track.kind === 'captions'; });
+        };
+        vo.subtitleDefault = function (track) {
+          var elements = vv.getElementsByTagName('track');
+          for (var i = 0; i < elements.length; i++) {
+            if (elements[i].track === track) return !!elements[i].default;
+          }
+          return false;
+        };
+        vo.shiftSubtitles = function () {
+          var delay = vo.subtitleDelay;
+          vo.subtitleTracks().forEach(function (track) {
+            var cues = track.cues;
+            if (!cues || (track.__iupCount === cues.length && track.__iupDelay === delay)) return;
+            track.__iupCount = cues.length;
+            track.__iupDelay = delay;
+            Array.from(cues).forEach(function (cue) {
+              if (cue.__iupStart === undefined) {
+                cue.__iupStart = cue.startTime;
+                cue.__iupEnd = cue.endTime;
+              }
+              if (cue.__iupDelay === delay) return;
+              cue.__iupDelay = delay;
+              cue.startTime = Math.max(0, cue.__iupStart + delay);
+              cue.endTime = Math.max(cue.startTime, cue.__iupEnd + delay);
+            });
+          });
+        };
         var vupd = function () {
           var d = vv.duration;
           vf[1] = vv.paused ? 4 : (vv.readyState < 3 ? 5 : 3);
@@ -2681,6 +2725,36 @@
           vf[7] = vv.videoWidth; vf[8] = vv.videoHeight;
           vf[10] = vv.videoWidth > 0 ? 1 : 0;
           if (!vf[9] && (vv.mozHasAudio || vv.webkitAudioDecodedByteCount > 0 || (vv.audioTracks && vv.audioTracks.length > 0))) vf[9] = 1;
+          var tracks = vo.subtitleTracks();
+          var labels = JSON.stringify(tracks.map(function (track) { return [track.label, track.language]; }));
+          if (labels !== vo.subtitleSnapshot) {
+            Atomics.add(sheader, 0, 1); smemory.fill(0, 8);
+            tracks.slice(0, 64).forEach(function (track, i) {
+              var encoder = new TextEncoder();
+              var put = function (text, offset) {
+                var bytes = encoder.encode(text), n = Math.min(bytes.length, 255);
+                while (n > 0 && (bytes[n] & 0xc0) === 0x80) n--;
+                smemory.set(bytes.subarray(0, n), offset);
+              };
+              put(track.label || ('Track ' + (i + 1)), 8 + i * 512);
+              put(track.language || '', 264 + i * 512);
+            });
+            Atomics.store(sheader, 1, tracks.length); Atomics.add(sheader, 0, 1);
+            vo.subtitleSnapshot = labels;
+          }
+          vo.shiftSubtitles();
+          vsync();
+        };
+        vo.selectSubtitle = function (index, delay) {
+          var shown = 0;
+          vo.subtitleIndex = index;
+          vo.subtitleDelay = delay;
+          vo.subtitleTracks().forEach(function (track, i) {
+            var show = index === -1 ? !shown && vo.subtitleDefault(track) : index === i + 1;
+            if (show) shown = 1;
+            track.mode = show ? 'showing' : 'disabled';
+          });
+          vo.shiftSubtitles();
         };
         vv.addEventListener('loadedmetadata', function () { vupd(); vf[0] = 1; });
         ['durationchange', 'timeupdate', 'playing', 'pause', 'waiting', 'seeked', 'canplay', 'resize', 'loadeddata'].forEach(function (n) { vv.addEventListener(n, vupd); });
@@ -2712,6 +2786,7 @@
           if (vo.once) { window.removeEventListener('pointerdown', vo.once, true); window.removeEventListener('keydown', vo.once, true); }
           vv.pause(); vv.removeAttribute('src'); vv.load();
           if (vv.parentNode) vv.parentNode.removeChild(vv);
+          if (subtitle.parentNode) subtitle.parentNode.removeChild(subtitle);
           if (vo.url) URL.revokeObjectURL(vo.url);
         };
         VS[c.vid] = vo;
@@ -2733,6 +2808,18 @@
       case 'vidbg': {
         var VB = globalThis.__iupVid && globalThis.__iupVid[c.vid];
         if (VB) VB.el.style.background = c.bg;
+      } break;
+      case 'vidsubselect': {
+        var VSUB = globalThis.__iupVid && globalThis.__iupVid[c.vid];
+        if (VSUB) VSUB.selectSubtitle(c.index, c.delay);
+      } break;
+      case 'vidsubtext': {
+        var VTEXT = globalThis.__iupVid && globalThis.__iupVid[c.vid];
+        if (VTEXT) {
+          VTEXT.caption.textContent = c.text;
+          VTEXT.caption.style.fontSize = c.size + 'pt';
+          VTEXT.caption.style.color = 'rgb(' + c.color.trim().split(/\s+/).join(',') + ')';
+        }
       } break;
       case 'vidclose': {
         var VC = globalThis.__iupVid && globalThis.__iupVid[c.vid];
