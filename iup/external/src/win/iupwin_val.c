@@ -271,7 +271,7 @@ static int winValMapMethod(Ihandle* ih)
   show_ticks = iupAttribGetInt(ih, "SHOWTICKS");
   if (!show_ticks)
   {
-    dwStyle |= TBS_NOTICKS;    /* No show_ticks */
+    dwStyle |= TBS_NOTICKS | TBS_BOTH;
   }
   else
   {
