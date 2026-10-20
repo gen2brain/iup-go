@@ -211,13 +211,27 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* captio
   if (menu) *menu = 0;
 }
 
+static int androidDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
+{
+  int fullscreen = iupStrBoolean(value);
+  androidDialogCallVoidWithBool(ih, "setFullscreen", fullscreen);
+  androidDialogCallVoidWithBool(ih, "setHideTitleBar", fullscreen || iupAttribGetBoolean(ih, "HIDETITLEBAR"));
+  return 1;
+}
+
+static int androidDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
+{
+  androidDialogCallVoidWithBool(ih, "setHideTitleBar", iupStrBoolean(value) || iupAttribGetBoolean(ih, "FULLSCREEN"));
+  return 1;
+}
+
 IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 {
   char* placement;
 
   if (iupAttribGetBoolean(ih, "FULLSCREEN"))
   {
-    androidDialogCallVoidWithBool(ih, "setFullscreen", 1);
+    androidDialogSetFullScreenAttrib(ih, "YES");
     ih->data->show_state = IUP_MAXIMIZE;
     return 1;
   }
@@ -327,18 +341,6 @@ static int androidDialogSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
   androidDialogSetBgColor(ih, r, g, b);
-  return 1;
-}
-
-static int androidDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
-{
-  androidDialogCallVoidWithBool(ih, "setFullscreen", iupStrBoolean(value));
-  return 1;
-}
-
-static int androidDialogSetHideTitleBarAttrib(Ihandle* ih, const char* value)
-{
-  androidDialogCallVoidWithBool(ih, "setHideTitleBar", iupStrBoolean(value));
   return 1;
 }
 
