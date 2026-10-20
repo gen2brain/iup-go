@@ -70,8 +70,6 @@ static char* iValGetMinAttrib(Ihandle* ih)
 
 static int iValSetOrientationAttrib(Ihandle* ih, const char* value)
 {
-  int min_w, min_h;
-
   /* valid only before map */
   if (ih->handle)
     return 0;
@@ -80,9 +78,6 @@ static int iValSetOrientationAttrib(Ihandle* ih, const char* value)
     ih->data->orientation = IVAL_VERTICAL;
   else /* "HORIZONTAL" */
     ih->data->orientation = IVAL_HORIZONTAL;
-
-  iupdrvValGetMinSize(ih, &min_w, &min_h);
-  IupSetfAttribute(ih, "RASTERSIZE", "%dx%d", min_w, min_h);
 
   return 0; /* do not store value in hash table */
 }
@@ -112,6 +107,12 @@ static int iValSetInvertedAttrib(Ihandle* ih, const char* value)
 static char* iValGetInvertedAttrib(Ihandle* ih)
 {
   return iupStrReturnBoolean (ih->data->inverted);
+}
+
+static void iValComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
+{
+  (void)children_expand;
+  iupdrvValGetMinSize(ih, w, h);
 }
 
 static int iValCreateMethod(Ihandle* ih, void** params)
@@ -147,6 +148,7 @@ Iclass* iupValNewClass(void)
   /* Class functions */
   ic->New = iupValNewClass;
   ic->Create  = iValCreateMethod;
+  ic->ComputeNaturalSize = iValComputeNaturalSizeMethod;
   ic->LayoutUpdate = iupdrvBaseLayoutUpdateMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 
