@@ -138,24 +138,12 @@ static void buildSoftwareAttributes(Ihandle* ih, NSOpenGLPixelFormatAttribute* a
     if (version_attr)
     {
       if (strcmp(version_attr, "4.1") == 0)
-      {
-        if (@available(macOS 10.10, *))
-          core_profile = NSOpenGLProfileVersion4_1Core;
-      }
-      else if (strcmp(version_attr, "3.2") == 0)
-      {
-        if (@available(macOS 10.7, *))
-          core_profile = NSOpenGLProfileVersion3_2Core;
-      }
-    }
-
-    if (core_profile == 0 && !version_attr)
-    {
-      if (@available(macOS 10.10, *))
         core_profile = NSOpenGLProfileVersion4_1Core;
-      else if (@available(macOS 10.7, *))
+      else if (strcmp(version_attr, "3.2") == 0)
         core_profile = NSOpenGLProfileVersion3_2Core;
     }
+    else
+      core_profile = NSOpenGLProfileVersion4_1Core;
 
     if (core_profile != 0)
     {
@@ -328,26 +316,10 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
   {
     NSOpenGLPixelFormatAttribute core_profile = 0;
 
-    if (major == 4 && minor == 1)
-    {
-      if (@available(macOS 10.10, *))
-        core_profile = NSOpenGLProfileVersion4_1Core;
-    }
-    else if (major == 3 && minor == 2)
-    {
-      if (@available(macOS 10.7, *))
-        core_profile = NSOpenGLProfileVersion3_2Core;
-    }
-
-    if (core_profile == 0)
-    {
-      if (@available(macOS 10.10, *))
-        core_profile = NSOpenGLProfileVersion4_1Core;
-      else if (@available(macOS 10.7, *))
-        core_profile = NSOpenGLProfileVersion3_2Core;
-      else
-        core_profile = 0x9999; /* Force failure if no core profile is available */
-    }
+    if (major == 3 && minor == 2)
+      core_profile = NSOpenGLProfileVersion3_2Core;
+    else
+      core_profile = NSOpenGLProfileVersion4_1Core;
 
     attrs[n++] = core_profile;
   }
