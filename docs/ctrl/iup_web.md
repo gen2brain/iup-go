@@ -38,7 +38,7 @@ Not supported: BACKCOUNT, FORWARDCOUNT, CANGOBACK, CANGOFORWARD, ITEMHISTORY, OP
 
 The **IupWebBrowserOpen** function must be called after **IupOpen**.
 The "iupweb.h" file must also be included in the source code.
-The program must be linked to the web library (iupweb). In Go it needs the `web` build tag.
+The program must be linked to the web library (iupweb).
 
 In Linux, the WebKitGTK library is loaded dynamically at runtime.
 If not found, **IupWebBrowserOpen** will return IUP_ERROR.

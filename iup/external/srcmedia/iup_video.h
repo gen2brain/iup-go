@@ -8,6 +8,7 @@
 #define __IUP_VIDEO_H
 
 #include <stddef.h>
+#include <stdio.h>
 #include "iup.h"
 #include "iup_class.h"
 
@@ -38,6 +39,10 @@ typedef struct _IvideoBackend
   void (*volume)(IvideoSession* session, int volume, int mute);
   void (*poll)(IvideoSession* session);
   void (*layout)(IvideoSession* session, Ihandle* ih);
+  int (*subtitle_count)(IvideoSession* session);
+  char* (*subtitle_name)(IvideoSession* session, int index, int language);
+  int (*subtitle_select)(IvideoSession* session, int index, double delay);
+  int (*subtitle_text)(IvideoSession* session, const char* text, int size, const char* color);
 } IvideoBackend;
 
 struct _IvideoSession
@@ -49,6 +54,8 @@ struct _IvideoSession
   IvideoInfo info;
   unsigned char* pending;
   int pending_width, pending_height, pending_ready;
+  char* subtitle_cue;
+  char subtitle_error[512];
 };
 
 Iclass* iupVideoNewClass(void);
@@ -56,6 +63,10 @@ const IvideoBackend* iupdrvVideoBackend(int index);
 void iupVideoInfo(IvideoSession* session, const IvideoInfo* info);
 void iupVideoError(IvideoSession* session, const char* message);
 void iupVideoFrame(IvideoSession* session, const unsigned char* pixels, int width, int height, size_t stride, int channels);
+void iupVideoSubtitleCue(IvideoSession* session, const char* text);
+void iupVideoSubtitleError(IvideoSession* session, const char* message);
+char* iupVideoReadSubtitleStream(FILE* file);
+char* iupdrvVideoReadSubtitle(const char* filename);
 
 #ifdef __cplusplus
 }

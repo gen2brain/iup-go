@@ -12,6 +12,7 @@
 #include "iup.h"
 #include "iup_object.h"
 #include "iup_video.h"
+#include "iup_str.h"
 #include "iupandroid_drv.h"
 #include "iupandroid_jnimacros.h"
 
@@ -191,7 +192,134 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupVideoHelper_error(JNIEn
     (*env)->ReleaseStringUTFChars(env, message, text);
 }
 
-static const IvideoBackend androidVideoBackend = {"NATIVE", androidVideoAvailable, androidVideoOpen, androidVideoClose, androidVideoPlay, androidVideoSeek, androidVideoVolume, androidVideoPoll, androidVideoLayout};
+static int androidVideoSubtitleCount(IvideoSession* session)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupVideoHelper_subtitleCount);
+  IandroidVideo* context = (IandroidVideo*)session->context;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupVideoHelper, env, "io/github/gen2brain/iupgo/IupVideoHelper");
+  jmethodID method = IUPJNI_GetStaticMethodID(IupVideoHelper_subtitleCount, env, cls, "subtitleCount", "(Ljava/lang/Object;)I");
+  int count = (*env)->CallStaticIntMethod(env, cls, method, context->player);
+  iupAndroid_CheckException(env, "IupVideoHelper.subtitleCount");
+  (*env)->DeleteLocalRef(env, cls);
+  return count;
+}
+
+static char* androidVideoSubtitleName(IvideoSession* session, int index, int language)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupVideoHelper_subtitleName);
+  IandroidVideo* context = (IandroidVideo*)session->context;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupVideoHelper, env, "io/github/gen2brain/iupgo/IupVideoHelper");
+  jmethodID method = IUPJNI_GetStaticMethodID(IupVideoHelper_subtitleName, env, cls, "subtitleName", "(Ljava/lang/Object;IZ)Ljava/lang/String;");
+  jstring value = (jstring)(*env)->CallStaticObjectMethod(env, cls, method, context->player, (jint)index, (jboolean)language);
+  char* result = NULL;
+  iupAndroid_CheckException(env, "IupVideoHelper.subtitleName");
+  if (value)
+  {
+    const char* text = (*env)->GetStringUTFChars(env, value, NULL);
+    if (text)
+    {
+      result = iupStrReturnStr(text);
+      (*env)->ReleaseStringUTFChars(env, value, text);
+    }
+    (*env)->DeleteLocalRef(env, value);
+  }
+  (*env)->DeleteLocalRef(env, cls);
+  return result;
+}
+
+static int androidVideoSubtitleSelect(IvideoSession* session, int index, double delay)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupVideoHelper_subtitleSelect);
+  IandroidVideo* context = (IandroidVideo*)session->context;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupVideoHelper, env, "io/github/gen2brain/iupgo/IupVideoHelper");
+  jmethodID method = IUPJNI_GetStaticMethodID(IupVideoHelper_subtitleSelect, env, cls, "subtitleSelect", "(Ljava/lang/Object;ID)Z");
+  int result = (*env)->CallStaticBooleanMethod(env, cls, method, context->player, (jint)index, (jdouble)delay);
+  iupAndroid_CheckException(env, "IupVideoHelper.subtitleSelect");
+  (*env)->DeleteLocalRef(env, cls);
+  return result;
+}
+
+static int androidVideoSubtitleText(IvideoSession* session, const char* text, int size, const char* color)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupVideoHelper_subtitleText);
+  IandroidVideo* context = (IandroidVideo*)session->context;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupVideoHelper, env, "io/github/gen2brain/iupgo/IupVideoHelper");
+  jmethodID method = IUPJNI_GetStaticMethodID(IupVideoHelper_subtitleText, env, cls, "subtitleText", "(Ljava/lang/Object;Ljava/lang/String;II)V");
+  jstring value = iupAndroid_NewStringUTF(env, text ? text : "");
+  unsigned char r = 255, g = 255, b = 255;
+  iupStrToRGB(color, &r, &g, &b);
+  if (value)
+  {
+    (*env)->CallStaticVoidMethod(env, cls, method, context->player, value, (jint)size,
+      (jint)(0xff000000u | ((unsigned)r << 16) | ((unsigned)g << 8) | b));
+    (*env)->DeleteLocalRef(env, value);
+  }
+  iupAndroid_CheckException(env, "IupVideoHelper.subtitleText");
+  (*env)->DeleteLocalRef(env, cls);
+  return 1;
+}
+
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupVideoHelper_subtitleCue(JNIEnv* env, jclass cls, jlong pointer, jbyteArray value)
+{
+  IvideoSession* session = (IvideoSession*)(intptr_t)pointer;
+  char* text = NULL;
+  (void)cls;
+  if (!session)
+    return;
+  if (value)
+  {
+    jsize length = (*env)->GetArrayLength(env, value);
+    text = (char*)malloc((size_t)length + 1);
+    if (text)
+    {
+      (*env)->GetByteArrayRegion(env, value, 0, length, (jbyte*)text);
+      text[length] = 0;
+    }
+  }
+  iupVideoSubtitleCue(session, text);
+  free(text);
+}
+
+char* iupdrvVideoReadSubtitle(const char* filename)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupVideoHelper_readSubtitle);
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupVideoHelper, env, "io/github/gen2brain/iupgo/IupVideoHelper");
+  jmethodID method = IUPJNI_GetStaticMethodID(IupVideoHelper_readSubtitle, env, cls, "readSubtitle", "(Ljava/lang/String;)[B");
+  jstring name = iupAndroid_NewStringUTF(env, filename);
+  jbyteArray value = name ? (jbyteArray)(*env)->CallStaticObjectMethod(env, cls, method, name) : NULL;
+  char* text = NULL;
+  iupAndroid_CheckException(env, "IupVideoHelper.readSubtitle");
+  if (value)
+  {
+    jsize length = (*env)->GetArrayLength(env, value);
+    if (length <= 16 * 1024 * 1024)
+    {
+      text = (char*)malloc((size_t)length + 1);
+      if (text)
+      {
+        (*env)->GetByteArrayRegion(env, value, 0, length, (jbyte*)text);
+        text[length] = 0;
+        if (memchr(text, 0, (size_t)length))
+        {
+          free(text);
+          text = NULL;
+        }
+      }
+    }
+    (*env)->DeleteLocalRef(env, value);
+  }
+  if (name)
+    (*env)->DeleteLocalRef(env, name);
+  (*env)->DeleteLocalRef(env, cls);
+  return text;
+}
+
+static const IvideoBackend androidVideoBackend = {"NATIVE", androidVideoAvailable, androidVideoOpen, androidVideoClose, androidVideoPlay, androidVideoSeek, androidVideoVolume, androidVideoPoll, androidVideoLayout, androidVideoSubtitleCount, androidVideoSubtitleName, androidVideoSubtitleSelect, androidVideoSubtitleText};
 
 const IvideoBackend* iupdrvVideoBackend(int index)
 {

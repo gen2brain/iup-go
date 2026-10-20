@@ -9,6 +9,7 @@
 
 #include "iup_video.h"
 #include "iup_thread.h"
+#include "iup_str.h"
 #include "iupvideo_gstreamer_dlopen.h"
 
 typedef struct
@@ -121,6 +122,7 @@ static int iVideoGstOpen(IvideoSession* session, Ihandle* ih, const char* source
   GstCaps* caps;
   GstStateChangeReturn result;
   char* uri = NULL;
+  unsigned flags = 0;
   (void)ih;
   context = (IvideoGst*)calloc(1, sizeof(IvideoGst));
   if (!context)
@@ -163,7 +165,8 @@ static int iVideoGstOpen(IvideoSession* session, Ihandle* ih, const char* source
       return 0;
     }
   }
-  g_object_set(context->player, "uri", url ? source : uri, "video-sink", context->sink, NULL);
+  g_object_get(context->player, "flags", &flags, NULL);
+  g_object_set(context->player, "uri", url ? source : uri, "video-sink", context->sink, "flags", flags & ~4u, NULL);
   g_free(uri);
   flip = gst_element_factory_make("videoflip", NULL);
   if (flip)
@@ -281,4 +284,82 @@ static void iVideoGstPoll(IvideoSession* session)
   context->info.ended = 0;
 }
 
-const IvideoBackend iupVideoGstreamerBackend = {"GSTREAMER", iVideoGstAvailable, iVideoGstOpen, iVideoGstClose, iVideoGstPlay, iVideoGstSeek, iVideoGstVolume, iVideoGstPoll, NULL};
+static int iVideoGstSubtitleCount(IvideoSession* session)
+{
+  IvideoGst* context = (IvideoGst*)session->context;
+  int count = 0;
+  g_object_get(context->player, "n-text", &count, NULL);
+  return count;
+}
+
+static char* iVideoGstSubtitleName(IvideoSession* session, int index, int language)
+{
+  IvideoGst* context = (IvideoGst*)session->context;
+  void* tags = NULL;
+  char* value = NULL;
+  char* result = NULL;
+  if (index <= 0 || index > iVideoGstSubtitleCount(session))
+    return NULL;
+  g_signal_emit_by_name(context->player, "get-text-tags", index - 1, &tags);
+  if (tags)
+  {
+    if (gst_tag_list_get_string(tags, language ? "language-code" : "title", &value))
+    {
+      result = iupStrReturnStr(value);
+      g_free(value);
+    }
+    gst_mini_object_unref((GstMiniObject*)tags);
+  }
+  return result ? result : (language ? NULL : iupStrReturnStrf("Track %d", index));
+}
+
+static int iVideoGstSubtitleDefault(IvideoGst* context, int count)
+{
+  int i;
+  for (i = 0; i < count; i++)
+  {
+    GstPad* pad = NULL;
+    GstEvent* event;
+    GstStreamFlags flags = GST_STREAM_FLAG_NONE;
+    g_signal_emit_by_name(context->player, "get-text-pad", i, &pad);
+    if (!pad)
+      continue;
+    event = gst_pad_get_sticky_event(pad, GST_EVENT_STREAM_START, 0);
+    if (event)
+    {
+      gst_event_parse_stream_flags(event, &flags);
+      gst_mini_object_unref((GstMiniObject*)event);
+    }
+    g_object_unref(pad);
+    if (flags & GST_STREAM_FLAG_SELECT)
+      return i;
+  }
+  return -1;
+}
+
+static int iVideoGstSubtitleSelect(IvideoSession* session, int index, double delay)
+{
+  IvideoGst* context = (IvideoGst*)session->context;
+  GstState state = GST_STATE_NULL;
+  unsigned flags = 0, old_flags = 0;
+  int64_t offset = (int64_t)(-delay * GST_SECOND), old_offset = 0, position;
+  int count = iVideoGstSubtitleCount(session), current = -1, old_current = -1;
+  if (index > count)
+    return 0;
+  g_object_get(context->player, "flags", &old_flags, "current-text", &old_current, "text-offset", &old_offset, NULL);
+  if (index < 0)
+    index = iVideoGstSubtitleDefault(context, count) + 1;
+  flags = index ? old_flags | 4u : old_flags & ~4u;
+  current = index ? index - 1 : old_current;
+  if (flags == old_flags && current == old_current && offset == old_offset)
+    return 1;
+  g_object_set(context->player, "flags", flags, "text-offset", offset, NULL);
+  if (current != old_current)
+    g_object_set(context->player, "current-text", current, NULL);
+  gst_element_get_state(context->player, &state, NULL, 0);
+  if (state == GST_STATE_PAUSED && gst_element_query_position(context->player, GST_FORMAT_TIME, &position) && position >= 0)
+    gst_element_seek_simple(context->player, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE, position);
+  return 1;
+}
+
+const IvideoBackend iupVideoGstreamerBackend = {"GSTREAMER", iVideoGstAvailable, iVideoGstOpen, iVideoGstClose, iVideoGstPlay, iVideoGstSeek, iVideoGstVolume, iVideoGstPoll, NULL, iVideoGstSubtitleCount, iVideoGstSubtitleName, iVideoGstSubtitleSelect, NULL};

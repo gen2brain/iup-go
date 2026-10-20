@@ -9,7 +9,7 @@ In WebAssembly, when the browser blocks autoplay, PLAY takes effect at the first
 
 The **IupMediaOpen** function must be called after **IupOpen**.
 The "iupmedia.h" file must also be included in the source code.
-The program must be linked to the media library (iupmedia). In Go it needs the `media` build tag.
+The program must be linked to the media library (iupmedia).
 
 ### Creation
 
@@ -70,6 +70,37 @@ In WebAssembly, HASAUDIO can return "NO" until playback starts.
 
 **CANFOCUS**: Default: "NO".
 
+**SUBTITLE** (non-inheritable): Selected subtitle track. Can be "AUTO", "OFF", "EXTERNAL" or a one-based embedded track index. Default: "AUTO".
+"AUTO" shows the embedded track flagged as default or forced in the source, and nothing when no track is flagged. "EXTERNAL" shows the subtitles loaded with SUBTITLEFILE or SUBTITLEDATA, and requires them. "OFF" hides subtitles and keeps them loaded.
+In GStreamer, "AUTO" follows only the default flag. In Windows, Android and WebAssembly, "AUTO" shows no embedded track.
+Can be changed while playing or paused without reloading the source. Changing FILE or URL sets a track index or "EXTERNAL" back to "AUTO"; "OFF" is kept.
+Embedded formats depend on the engine. Bitmap subtitles are shown only when the engine draws them.
+In Windows, embedded subtitles require Windows 10 or newer.
+
+**SUBTITLECOUNT** (read-only): Number of embedded subtitle tracks of the current source. External subtitles are not included. Can change after READY_CB.
+In macOS and iOS, forced-only tracks are included.
+
+**SUBTITLENAMEid**, **SUBTITLELANGUAGEid** (read-only): Name and language of the embedded subtitle track id, starting at 1. Can become available after READY_CB.
+
+**SUBTITLEFILE** (non-inheritable): Path of a local UTF-8 SRT or WebVTT file. Loads it as the external subtitles and sets SUBTITLE to "EXTERNAL", keeping the position and the playback state. NULL unloads the external subtitles.
+In Android, can also be a "content:" URI.
+
+**SUBTITLEDATA** (write-only): UTF-8 SRT or WebVTT contents. Same as SUBTITLEFILE, without a file. The contents are copied.
+The limit is 16 MiB. Overlapping cues are shown together. Markup is reduced to plain text; WebVTT positioning, regions and styles are ignored.
+Changing FILE or URL unloads the external subtitles. Unmapping keeps them.
+When loading fails, the previous subtitles are kept, SUBTITLEERROR is set and ERROR_CB is called. STATE does not change.
+
+**SUBTITLEDELAY** (non-inheritable): Subtitle offset in seconds, from -86400 to 86400. Positive values show subtitles later. Default: "0".
+In macOS, iOS and Android, applies only to external subtitles.
+
+**SUBTITLEFONTSIZE** (non-inheritable): Font size in points of the subtitles drawn by the element, from 6 to 96. Default: "18".
+
+**SUBTITLECOLOR** (non-inheritable): Text color of the subtitles drawn by the element. Default: "255 255 255".
+
+**SUBTITLETEXT** (read-only): Current subtitle text, or NULL between cues. NULL when the engine draws the embedded subtitles itself.
+
+**SUBTITLEERROR** (read-only): Last subtitle loading or selection error, or NULL. Cleared by a successful load or selection.
+
 In Win32, Cocoa, iOS, Android and WebAssembly the engine draws into a native view inside the canvas.
 In other Windows drivers it draws into a child window placed over the canvas, above sibling controls.
 In other drivers the decoded frames are drawn on the canvas.
@@ -104,6 +135,7 @@ Inherits all callbacks of the [IupCanvas](../elem/iup_canvas.md), except ACTION,
 **Returns**: IUP_CLOSE will be processed.
 
 **ERROR_CB**: Called when the source cannot be loaded or playback fails. STATECHANGED_CB with "ERROR" is called before it.
+Also called for subtitle errors, which do not change STATE and do not call STATECHANGED_CB.
 
     int function(Ihandle *ih, const char *message);
 

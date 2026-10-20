@@ -19,10 +19,14 @@
 
 #include <windows.h>
 #include <mfapi.h>
+#include <mfidl.h>
 #include <mfmediaengine.h>
 #include <dcomp.h>
 #include <d3d11.h>
 #include <d3d10.h>
+#include <d2d1.h>
+#include <dwrite.h>
+#include <mferror.h>
 
 #include <limits.h>
 #include <math.h>
@@ -34,6 +38,7 @@
 #include "iup_video.h"
 #include "iup_thread.h"
 #include "iup_str.h"
+#include "iupwin_timedtext.h"
 
 typedef HRESULT (WINAPI* MFStartupFunc)(ULONG, DWORD);
 typedef HRESULT (WINAPI* MFCreateAttributesFunc)(IMFAttributes**, UINT32);
@@ -41,6 +46,9 @@ typedef HRESULT (WINAPI* MFCreateDXGIDeviceManagerFunc)(UINT*, IMFDXGIDeviceMana
 typedef HRESULT (WINAPI* DCompositionCreateDeviceFunc)(IDXGIDevice*, REFIID, void**);
 typedef HRESULT (WINAPI* UrlCreateFromPathWFunc)(LPCWSTR, LPWSTR, LPDWORD, DWORD);
 typedef HRESULT (WINAPI* D3D11CreateDeviceFunc)(IDXGIAdapter*, D3D_DRIVER_TYPE, HMODULE, UINT, const D3D_FEATURE_LEVEL*, UINT, UINT, ID3D11Device**, D3D_FEATURE_LEVEL*, ID3D11DeviceContext**);
+typedef HRESULT (WINAPI* D2D1CreateFactoryFunc)(D2D1_FACTORY_TYPE, REFIID, const D2D1_FACTORY_OPTIONS*, void**);
+typedef HRESULT (WINAPI* DWriteCreateFactoryFunc)(DWRITE_FACTORY_TYPE, REFIID, IUnknown**);
+typedef UINT (WINAPI* GetDpiForWindowFunc)(HWND);
 
 static MFStartupFunc winVideoMFStartup;
 static MFCreateAttributesFunc winVideoMFCreateAttributes;
@@ -48,6 +56,9 @@ static MFCreateDXGIDeviceManagerFunc winVideoMFCreateDXGIDeviceManager;
 static DCompositionCreateDeviceFunc winVideoDCompositionCreateDevice;
 static UrlCreateFromPathWFunc winVideoUrlCreateFromPathW;
 static D3D11CreateDeviceFunc winVideoD3D11CreateDevice;
+static D2D1CreateFactoryFunc winVideoD2D1CreateFactory;
+static DWriteCreateFactoryFunc winVideoDWriteCreateFactory;
+static GetDpiForWindowFunc winVideoGetDpiForWindow;
 static int win_video_loaded = -1;
 
 static int winVideoCheck(IvideoSession* session, HRESULT result, const char* operation)
@@ -146,6 +157,242 @@ public:
   }
 };
 
+static char* winVideoCueText(IwinVideoTextCue* cue)
+{
+  char* text = nullptr;
+  size_t size = 0;
+  for (DWORD i = 0; i < cue->GetLineCount(); i++)
+  {
+    IwinVideoTextLine* line = nullptr;
+    LPWSTR value = nullptr;
+    if (FAILED(cue->GetLine(i, &line)))
+      continue;
+    if (SUCCEEDED(line->GetText(&value)) && value)
+    {
+      int length = WideCharToMultiByte(CP_UTF8, 0, value, -1, nullptr, 0, nullptr, nullptr);
+      if (length > 0 && size + length + 1 <= 1024 * 1024)
+      {
+        char* allocation = (char*)realloc(text, size + (size_t)length + 1);
+        if (allocation)
+        {
+          text = allocation;
+          if (size)
+            text[size++] = '\n';
+          WideCharToMultiByte(CP_UTF8, 0, value, -1, text + size, length, nullptr, nullptr);
+          size += (size_t)length - 1;
+        }
+      }
+      CoTaskMemFree(value);
+    }
+    line->Release();
+  }
+  return text;
+}
+
+typedef struct _IwinVideoCue
+{
+  DWORD track;
+  DWORD id;
+  char* text;
+} IwinVideoCue;
+
+class IwinVideoSubtitleNotify final : public IwinVideoTextNotify
+{
+  LONG references;
+  CRITICAL_SECTION lock;
+  IvideoSession* session;
+  IwinVideoCue* cues;
+  size_t count;
+  size_t capacity;
+
+  void remove(size_t index)
+  {
+    free(cues[index].text);
+    cues[index] = cues[--count];
+  }
+
+  void removeMatching(DWORD track, int match_id, DWORD id)
+  {
+    size_t i = 0;
+    while (i < count)
+    {
+      if (cues[i].track == track && (!match_id || cues[i].id == id))
+        remove(i);
+      else
+        i++;
+    }
+  }
+
+  void append(DWORD track, DWORD id, char* text)
+  {
+    if (count == capacity)
+    {
+      size_t next = capacity ? capacity * 2 : 8;
+      IwinVideoCue* allocation = (IwinVideoCue*)realloc(cues, next * sizeof(IwinVideoCue));
+      if (allocation)
+      {
+        cues = allocation;
+        capacity = next;
+      }
+    }
+    if (count < capacity)
+    {
+      cues[count].track = track;
+      cues[count].id = id;
+      cues[count].text = text;
+      count++;
+    }
+    else
+    {
+      free(text);
+      iupVideoSubtitleError(session, "Cannot allocate subtitle cues");
+    }
+  }
+
+  void publish()
+  {
+    size_t length = 0;
+    size_t offset = 0;
+    char* text;
+    if (!session)
+      return;
+    for (size_t i = 0; i < count; i++)
+      length += strlen(cues[i].text) + 1;
+    if (length > 1024 * 1024)
+    {
+      iupVideoSubtitleError(session, "Subtitle cues are too large");
+      return;
+    }
+    text = length ? (char*)malloc(length) : nullptr;
+    if (text)
+    {
+      for (size_t i = 0; i < count; i++)
+      {
+        size_t size = strlen(cues[i].text);
+        if (offset)
+          text[offset++] = '\n';
+        memcpy(text + offset, cues[i].text, size);
+        offset += size;
+      }
+      text[offset] = 0;
+    }
+    iupVideoSubtitleCue(session, text);
+    free(text);
+  }
+
+public:
+  explicit IwinVideoSubtitleNotify(IvideoSession* value) : references(1), session(value), cues(nullptr), count(0), capacity(0)
+  {
+    InitializeCriticalSection(&lock);
+  }
+
+  ~IwinVideoSubtitleNotify()
+  {
+    while (count)
+      remove(count - 1);
+    free(cues);
+    DeleteCriticalSection(&lock);
+  }
+
+  void disconnect()
+  {
+    EnterCriticalSection(&lock);
+    session = nullptr;
+    LeaveCriticalSection(&lock);
+  }
+
+  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** value) override
+  {
+    if (!value)
+      return E_POINTER;
+    *value = nullptr;
+    if (iid == __uuidof(IUnknown) || iid == iwinVideoTextNotifyIID)
+    {
+      *value = static_cast<IwinVideoTextNotify*>(this);
+      AddRef();
+      return S_OK;
+    }
+    return E_NOINTERFACE;
+  }
+
+  ULONG STDMETHODCALLTYPE AddRef() override
+  {
+    return (ULONG)InterlockedIncrement(&references);
+  }
+
+  ULONG STDMETHODCALLTYPE Release() override
+  {
+    ULONG value = (ULONG)InterlockedDecrement(&references);
+    if (!value)
+      delete this;
+    return value;
+  }
+
+  void STDMETHODCALLTYPE TrackAdded(DWORD) override
+  {
+  }
+
+  void STDMETHODCALLTYPE TrackReadyStateChanged(DWORD) override
+  {
+  }
+
+  void STDMETHODCALLTYPE TrackRemoved(DWORD track) override
+  {
+    TrackSelected(track, FALSE);
+  }
+
+  void STDMETHODCALLTYPE TrackSelected(DWORD track, BOOL selected) override
+  {
+    if (selected)
+      return;
+    EnterCriticalSection(&lock);
+    removeMatching(track, 0, 0);
+    publish();
+    LeaveCriticalSection(&lock);
+  }
+
+  void STDMETHODCALLTYPE Error(int, HRESULT result, DWORD) override
+  {
+    EnterCriticalSection(&lock);
+    if (session)
+    {
+      char text[128];
+      snprintf(text, sizeof(text), "Media Foundation subtitle error (0x%08lx)", (unsigned long)result);
+      iupVideoSubtitleError(session, text);
+    }
+    LeaveCriticalSection(&lock);
+  }
+
+  void STDMETHODCALLTYPE Cue(int event, double, IwinVideoTextCue* cue) override
+  {
+    EnterCriticalSection(&lock);
+    if (event == IWINVIDEO_CUE_CLEAR)
+    {
+      while (count)
+        remove(count - 1);
+    }
+    else if (cue && session)
+    {
+      DWORD track = cue->GetTrackId();
+      DWORD id = cue->GetId();
+      removeMatching(track, 1, id);
+      if (event == IWINVIDEO_CUE_ACTIVE)
+      {
+        char* text = winVideoCueText(cue);
+        if (text)
+          append(track, id, text);
+      }
+    }
+    publish();
+    LeaveCriticalSection(&lock);
+  }
+
+  void STDMETHODCALLTYPE Reset() override
+  {
+    Cue(IWINVIDEO_CUE_CLEAR, 0, nullptr);
+  }
+};
+
 typedef struct _IwinVideo
 {
   Ihandle* ih;
@@ -163,11 +410,26 @@ typedef struct _IwinVideo
   RECT bounds, clip;
   DWORD color;
   int placed, visible, com;
+  IwinVideoText* timed_text;
+  IwinVideoSubtitleNotify* subtitle_notify;
+  IDCompositionVisual* caption_visual;
+  IDCompositionSurface* caption_surface;
+  ID2D1Factory* caption_d2d;
+  IDWriteFactory* caption_write;
+  HANDLE caption_device;
+  char* caption_text;
+  int caption_size;
+  int caption_width;
+  int caption_height;
+  int caption_dirty;
+  unsigned char caption_red, caption_green, caption_blue;
+  double subtitle_delay;
+  double aspect;
 } IwinVideo;
 
 static int winVideoAvailable()
 {
-  HMODULE mfplat, dcomp, shlwapi, d3d11;
+  HMODULE mfplat, dcomp, shlwapi, d3d11, d2d1, dwrite, user32;
 
   if (win_video_loaded >= 0)
     return win_video_loaded;
@@ -189,6 +451,16 @@ static int winVideoAvailable()
   if (!winVideoMFStartup || !winVideoMFCreateAttributes || !winVideoMFCreateDXGIDeviceManager ||
       !winVideoDCompositionCreateDevice || !winVideoUrlCreateFromPathW || !winVideoD3D11CreateDevice)
     return 0;
+
+  d2d1 = LoadLibraryW(L"d2d1.dll");
+  dwrite = LoadLibraryW(L"dwrite.dll");
+  user32 = GetModuleHandleW(L"user32.dll");
+  if (d2d1)
+    winVideoD2D1CreateFactory = reinterpret_cast<D2D1CreateFactoryFunc>(GetProcAddress(d2d1, "D2D1CreateFactory"));
+  if (dwrite)
+    winVideoDWriteCreateFactory = reinterpret_cast<DWriteCreateFactoryFunc>(GetProcAddress(dwrite, "DWriteCreateFactory"));
+  if (user32)
+    winVideoGetDpiForWindow = reinterpret_cast<GetDpiForWindowFunc>(GetProcAddress(user32, "GetDpiForWindow"));
 
   if (FAILED(winVideoMFStartup(MF_VERSION, MFSTARTUP_FULL)))
     return 0;
@@ -227,6 +499,165 @@ static BSTR winVideoSource(const char* source, int url)
   }
   free(name);
   return result;
+}
+
+static int winVideoCaptionDpi(IwinVideo* context)
+{
+  HDC dc;
+  int dpi = 0;
+  if (winVideoGetDpiForWindow)
+    dpi = (int)winVideoGetDpiForWindow(context->window);
+  if (dpi > 0)
+    return dpi;
+  dc = GetDC(context->window);
+  if (dc)
+  {
+    dpi = GetDeviceCaps(dc, LOGPIXELSY);
+    ReleaseDC(context->window, dc);
+  }
+  return dpi > 0 ? dpi : 96;
+}
+
+static int winVideoLockCaptionDevice(IwinVideo* context)
+{
+  ID3D11Device* device = nullptr;
+  HANDLE handle = nullptr;
+  HRESULT result;
+  if (!context->caption_device)
+  {
+    if (FAILED(context->manager->OpenDeviceHandle(&handle)))
+      return 0;
+    context->caption_device = handle;
+  }
+  result = context->manager->LockDevice(context->caption_device, __uuidof(ID3D11Device), (void**)&device, TRUE);
+  if (result == MF_E_DXGI_NEW_VIDEO_DEVICE)
+  {
+    context->manager->CloseDeviceHandle(context->caption_device);
+    context->caption_device = nullptr;
+    if (FAILED(context->manager->OpenDeviceHandle(&handle)))
+      return 0;
+    context->caption_device = handle;
+    result = context->manager->LockDevice(context->caption_device, __uuidof(ID3D11Device), (void**)&device, TRUE);
+  }
+  if (FAILED(result))
+    return 0;
+  device->Release();
+  return 1;
+}
+
+static void winVideoPaintSubtitle(IwinVideo* context, ID2D1RenderTarget* target, POINT offset, int width, int height)
+{
+  ID2D1SolidColorBrush* brush = nullptr;
+  IDWriteTextFormat* format = nullptr;
+  IDWriteTextLayout* layout = nullptr;
+  const char* caption = context->caption_text ? context->caption_text : "";
+  int length = MultiByteToWideChar(CP_UTF8, 0, caption, -1, nullptr, 0);
+  wchar_t* text = length > 0 ? (wchar_t*)malloc((size_t)length * sizeof(wchar_t)) : nullptr;
+  FLOAT size = (FLOAT)context->caption_size * winVideoCaptionDpi(context) / 72.0f;
+  FLOAT picture_width = (FLOAT)width;
+  FLOAT bottom = (FLOAT)height;
+  double aspect = context->aspect;
+  target->SetTransform(D2D1::Matrix3x2F::Translation((FLOAT)offset.x, (FLOAT)offset.y));
+  target->PushAxisAlignedClip(D2D1::RectF(0, 0, (FLOAT)width, (FLOAT)height), D2D1_ANTIALIAS_MODE_ALIASED);
+  target->Clear(D2D1::ColorF(0, 0, 0, 0));
+  if (text)
+    MultiByteToWideChar(CP_UTF8, 0, caption, -1, text, length);
+  if (aspect > 0 && aspect * height > width)
+    bottom = (FLOAT)((height + width / aspect) / 2);
+  else if (aspect > 0)
+    picture_width = (FLOAT)(height * aspect);
+  if (text && SUCCEEDED(context->caption_write->CreateTextFormat(L"Segoe UI", nullptr, DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL,
+                                                                  DWRITE_FONT_STRETCH_NORMAL, size, L"", &format)))
+  {
+    format->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+    if (SUCCEEDED(context->caption_write->CreateTextLayout(text, (UINT32)(length - 1), format, picture_width > 20 ? picture_width - 20 : picture_width,
+                                                           (FLOAT)height, &layout)) &&
+        SUCCEEDED(target->CreateSolidColorBrush(D2D1::ColorF(0, 0, 0, 1), &brush)))
+    {
+      DWRITE_TEXT_METRICS metrics;
+      D2D1_POINT_2F point;
+      layout->GetMetrics(&metrics);
+      point = D2D1::Point2F(((FLOAT)width - picture_width) / 2 + 10, bottom - metrics.height - 10);
+      for (int y = -1; y <= 1; y++)
+      {
+        for (int x = -1; x <= 1; x++)
+        {
+          if (x || y)
+            target->DrawTextLayout(D2D1::Point2F(point.x + x, point.y + y), layout, brush);
+        }
+      }
+      brush->SetColor(D2D1::ColorF(context->caption_red / 255.0f, context->caption_green / 255.0f, context->caption_blue / 255.0f, 1));
+      target->DrawTextLayout(point, layout, brush);
+    }
+  }
+  target->PopAxisAlignedClip();
+  if (brush)
+    brush->Release();
+  if (layout)
+    layout->Release();
+  if (format)
+    format->Release();
+  free(text);
+}
+
+static void winVideoDrawSubtitle(IwinVideo* context)
+{
+  RECT client;
+  IDXGISurface* surface = nullptr;
+  ID2D1RenderTarget* target = nullptr;
+  POINT offset;
+  int width, height, resize;
+  GetClientRect(context->window, &client);
+  width = client.right;
+  height = client.bottom;
+  if (width <= 0 || height <= 0 || (!context->caption_dirty && context->caption_width == width && context->caption_height == height))
+    return;
+  resize = !context->caption_surface || context->caption_width != width || context->caption_height != height;
+  context->caption_width = width;
+  context->caption_height = height;
+  context->caption_dirty = 0;
+  if (!winVideoD2D1CreateFactory || !winVideoDWriteCreateFactory)
+    return;
+  if (!context->caption_d2d && FAILED(winVideoD2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory), nullptr, (void**)&context->caption_d2d)))
+    return;
+  if (!context->caption_write && FAILED(winVideoDWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), (IUnknown**)&context->caption_write)))
+    return;
+  if (!context->caption_visual)
+  {
+    if (FAILED(context->composition->CreateVisual(&context->caption_visual)))
+      return;
+    context->visual->AddVisual(context->caption_visual, TRUE, nullptr);
+  }
+  if (resize)
+  {
+    context->caption_visual->SetContent(nullptr);
+    if (context->caption_surface)
+    {
+      context->caption_surface->Release();
+      context->caption_surface = nullptr;
+    }
+    if (FAILED(context->composition->CreateSurface((UINT)width, (UINT)height, DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_ALPHA_MODE_PREMULTIPLIED, &context->caption_surface)))
+      return;
+    context->caption_visual->SetContent(context->caption_surface);
+  }
+  if (!winVideoLockCaptionDevice(context))
+    return;
+  if (SUCCEEDED(context->caption_surface->BeginDraw(nullptr, __uuidof(IDXGISurface), (void**)&surface, &offset)))
+  {
+    D2D1_RENDER_TARGET_PROPERTIES properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_DEFAULT,
+                                                                            D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED), 96.0f, 96.0f);
+    if (SUCCEEDED(context->caption_d2d->CreateDxgiSurfaceRenderTarget(surface, &properties, &target)))
+    {
+      target->BeginDraw();
+      winVideoPaintSubtitle(context, target, offset, width, height);
+      target->EndDraw();
+      target->Release();
+    }
+    surface->Release();
+    context->caption_surface->EndDraw();
+  }
+  context->manager->UnlockDevice(context->caption_device, FALSE);
+  context->composition->Commit();
 }
 
 static void winVideoLayout(IvideoSession* session, Ihandle* ih)
@@ -300,6 +731,8 @@ static void winVideoLayout(IvideoSession* session, Ihandle* ih)
     ShowWindow(context->window, visible ? SW_SHOWNOACTIVATE : SW_HIDE);
     context->visible = visible;
   }
+  if (context->caption_text || context->caption_surface)
+    winVideoDrawSubtitle(context);
 }
 
 static void winVideoClose(IvideoSession* session)
@@ -309,6 +742,13 @@ static void winVideoClose(IvideoSession* session)
     return;
   if (context->notify)
     context->notify->disconnect();
+  if (context->subtitle_notify)
+    context->subtitle_notify->disconnect();
+  if (context->timed_text)
+  {
+    context->timed_text->RegisterNotifications(nullptr);
+    context->timed_text->Release();
+  }
   if (context->player)
   {
     context->player->Shutdown();
@@ -320,12 +760,23 @@ static void winVideoClose(IvideoSession* session)
     context->composition->Commit();
   if (context->surface)
     context->surface->Release();
+  if (context->caption_surface)
+    context->caption_surface->Release();
+  if (context->caption_visual)
+    context->caption_visual->Release();
+  if (context->caption_write)
+    context->caption_write->Release();
+  if (context->caption_d2d)
+    context->caption_d2d->Release();
+  free(context->caption_text);
   if (context->visual)
     context->visual->Release();
   if (context->target)
     context->target->Release();
   if (context->composition)
     context->composition->Release();
+  if (context->manager && context->caption_device)
+    context->manager->CloseDeviceHandle(context->caption_device);
   if (context->manager)
     context->manager->Release();
   if (context->device)
@@ -334,6 +785,8 @@ static void winVideoClose(IvideoSession* session)
     CloseHandle(context->swapchain);
   if (context->notify)
     context->notify->Release();
+  if (context->subtitle_notify)
+    context->subtitle_notify->Release();
   if (context->window)
     DestroyWindow(context->window);
   if (context->com)
@@ -408,6 +861,18 @@ static int winVideoCreatePlayer(IvideoSession* session, IwinVideo* context)
     attributes->Release();
   if (!winVideoCheck(session, result, "Cannot create Media Foundation engine"))
     return 0;
+  IMFGetService* services = nullptr;
+  if (SUCCEEDED(context->player->QueryInterface(__uuidof(IMFGetService), (void**)&services)))
+  {
+    services->GetService(iwinVideoTextService, iwinVideoTextIID, (void**)&context->timed_text);
+    services->Release();
+  }
+  if (context->timed_text)
+  {
+    context->subtitle_notify = new IwinVideoSubtitleNotify(session);
+    context->timed_text->RegisterNotifications(context->subtitle_notify);
+    context->timed_text->SetInBandEnabled(TRUE);
+  }
   return winVideoCheck(session, context->player->EnableWindowlessSwapchainMode(TRUE), "Cannot enable video swap chain");
 }
 
@@ -535,6 +1000,9 @@ static void winVideoPoll(IvideoSession* session)
     info.height = (int)height;
     context->player->GetVideoAspectRatio(&width, &height);
     info.aspect = height ? (double)width / height : 0;
+    if (context->aspect != info.aspect)
+      context->caption_dirty = 1;
+    context->aspect = info.aspect;
   }
   if (context->notify->takeFormat())
     winVideoAttachSurface(context);
@@ -542,7 +1010,131 @@ static void winVideoPoll(IvideoSession* session)
   iupVideoInfo(session, &info);
 }
 
-static const IvideoBackend winVideoBackend = {"NATIVE", winVideoAvailable, winVideoOpen, winVideoClose, winVideoPlay, winVideoSeek, winVideoVolume, winVideoPoll, winVideoLayout};
+static int winVideoSubtitleCount(IvideoSession* session)
+{
+  IwinVideo* context = (IwinVideo*)session->context;
+  IwinVideoTextTrackList* tracks = nullptr;
+  int count;
+  if (!context->timed_text || FAILED(context->timed_text->GetTextTracks(&tracks)))
+    return 0;
+  count = (int)tracks->GetLength();
+  tracks->Release();
+  return count;
+}
+
+static char* winVideoSubtitleName(IvideoSession* session, int index, int language)
+{
+  IwinVideo* context = (IwinVideo*)session->context;
+  IwinVideoTextTrackList* tracks = nullptr;
+  IwinVideoTextTrack* track = nullptr;
+  char* result = nullptr;
+  if (index < 1 || !context->timed_text || FAILED(context->timed_text->GetTextTracks(&tracks)))
+    return nullptr;
+  if (SUCCEEDED(tracks->GetTrack((DWORD)(index - 1), &track)))
+  {
+    LPWSTR value = nullptr;
+    if (language)
+      track->GetLanguage(&value);
+    else
+      track->GetLabel(&value);
+    if (value)
+    {
+      int length = WideCharToMultiByte(CP_UTF8, 0, value, -1, nullptr, 0, nullptr, nullptr);
+      if (length > 0)
+      {
+        result = iupStrGetMemory(length);
+        WideCharToMultiByte(CP_UTF8, 0, value, -1, result, length, nullptr, nullptr);
+      }
+      CoTaskMemFree(value);
+    }
+    track->Release();
+  }
+  tracks->Release();
+  if (result && *result)
+    return result;
+  return language ? nullptr : iupStrReturnStrf("Track %d", index);
+}
+
+static int winVideoSubtitleSelect(IvideoSession* session, int index, double delay)
+{
+  IwinVideo* context = (IwinVideo*)session->context;
+  IwinVideoTextTrackList* tracks = nullptr;
+  DWORD count;
+  int success = 1;
+  if (!context->timed_text || FAILED(context->timed_text->GetTextTracks(&tracks)))
+    return index <= 0;
+  count = tracks->GetLength();
+  if (index > (int)count)
+  {
+    tracks->Release();
+    return 0;
+  }
+  if (index == -1)
+  {
+    index = 0;
+    for (DWORD i = 0; i < count; i++)
+    {
+      IwinVideoTextTrack* track = nullptr;
+      if (SUCCEEDED(tracks->GetTrack(i, &track)))
+      {
+        if (!index && track->IsActive())
+          index = (int)i + 1;
+        track->Release();
+      }
+    }
+  }
+  for (DWORD i = 0; i < count; i++)
+  {
+    IwinVideoTextTrack* track = nullptr;
+    if (SUCCEEDED(tracks->GetTrack(i, &track)))
+    {
+      BOOL selected = index == (int)i + 1;
+      if (track->IsActive() != selected && FAILED(context->timed_text->SelectTrack(track->GetId(), selected)))
+        success = 0;
+      track->Release();
+    }
+  }
+  if (context->subtitle_delay != delay)
+  {
+    if (SUCCEEDED(context->timed_text->SetCueTimeOffset(delay)))
+      context->subtitle_delay = delay;
+    else
+      success = 0;
+  }
+  tracks->Release();
+  return success;
+}
+
+static int winVideoSubtitleText(IvideoSession* session, const char* text, int size, const char* color)
+{
+  IwinVideo* context = (IwinVideo*)session->context;
+  free(context->caption_text);
+  context->caption_text = iupStrDup(text);
+  context->caption_size = size;
+  iupStrToRGB(color, &context->caption_red, &context->caption_green, &context->caption_blue);
+  context->caption_dirty = 1;
+  if (text || context->caption_surface)
+    winVideoDrawSubtitle(context);
+  return 1;
+}
+
+extern "C" char* iupdrvVideoReadSubtitle(const char* filename)
+{
+  int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, filename, -1, nullptr, 0);
+  wchar_t* path;
+  FILE* file;
+  if (!length)
+    return nullptr;
+  path = (wchar_t*)malloc((size_t)length * sizeof(wchar_t));
+  if (!path)
+    return nullptr;
+  MultiByteToWideChar(CP_UTF8, 0, filename, -1, path, length);
+  file = _wfopen(path, L"rb");
+  free(path);
+  return iupVideoReadSubtitleStream(file);
+}
+
+static const IvideoBackend winVideoBackend = {"NATIVE", winVideoAvailable, winVideoOpen, winVideoClose, winVideoPlay, winVideoSeek, winVideoVolume, winVideoPoll, winVideoLayout, winVideoSubtitleCount, winVideoSubtitleName, winVideoSubtitleSelect, winVideoSubtitleText};
 
 extern "C" const IvideoBackend* iupdrvVideoBackend(int index)
 {

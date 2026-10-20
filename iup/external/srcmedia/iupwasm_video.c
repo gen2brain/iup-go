@@ -47,9 +47,12 @@ EM_JS(int, iupwasmJsVideoOpen, (int vid, int canvas, const char* source, int url
   var buffer = typeof SharedArrayBuffer !== 'undefined' ? new SharedArrayBuffer(8 * 11) : new ArrayBuffer(8 * 11);
   if (!globalThis.__iupVideo) globalThis.__iupVideo = {};
   globalThis.__iupVideo[vid] = new Float64Array(buffer);
+  var subtitles = typeof SharedArrayBuffer !== 'undefined' ? new SharedArrayBuffer(32776) : new ArrayBuffer(32776);
+  if (!globalThis.__iupVideoSubtitles) globalThis.__iupVideoSubtitles = {};
+  globalThis.__iupVideoSubtitles[vid] = new Uint8Array(subtitles);
   var ext = src.split('?')[0].split('.').pop().toLowerCase();
   var types = { mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', mkv: 'video/x-matroska', ogv: 'video/ogg', ogg: 'audio/ogg', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', flac: 'audio/flac' };
-  globalThis.__iupApply({ op: 'vidopen', vid: vid, id: canvas, sab: buffer, url: url ? src : null, data: data ? data.buffer : null, type: data ? (types[ext] || "") : "", bg: UTF8ToString(background) });
+  globalThis.__iupApply({ op: 'vidopen', vid: vid, id: canvas, sab: buffer, subtitles: subtitles, url: url ? src : null, data: data ? data.buffer : null, type: data ? (types[ext] || "") : "", bg: UTF8ToString(background) });
   return 1;
 })
 
@@ -61,6 +64,7 @@ EM_JS(void, iupwasmJsVideoRead, (int vid, double* values), {
 EM_JS(void, iupwasmJsVideoClose, (int vid), {
   globalThis.__iupApply({ op: 'vidclose', vid: vid });
   if (globalThis.__iupVideo) delete globalThis.__iupVideo[vid];
+  if (globalThis.__iupVideoSubtitles) delete globalThis.__iupVideoSubtitles[vid];
 })
 
 EM_JS(void, iupwasmJsVideoPlay, (int vid, int play), {
@@ -77,6 +81,33 @@ EM_JS(void, iupwasmJsVideoVolume, (int vid, int volume, int mute), {
 
 EM_JS(void, iupwasmJsVideoBackground, (int vid, const char* background), {
   globalThis.__iupApply({ op: 'vidbg', vid: vid, bg: UTF8ToString(background) });
+})
+
+EM_JS(int, iupwasmJsVideoSubtitles, (int vid, int index, int language, char* text), {
+  var bytes = globalThis.__iupVideoSubtitles && globalThis.__iupVideoSubtitles[vid];
+  if (!bytes) return 0;
+  var header = new Int32Array(bytes.buffer, 0, 2);
+  for (;;) {
+    var version = Atomics.load(header, 0);
+    if (version & 1) continue;
+    var count = Atomics.load(header, 1);
+    if (text) {
+      HEAPU8[text] = 0;
+      if (index >= 1 && index <= count && index <= 64) {
+        var offset = 8 + (index - 1) * 512 + (language ? 256 : 0);
+        HEAPU8.set(bytes.subarray(offset, offset + 256), text);
+      }
+    }
+    if (Atomics.load(header, 0) === version) return count;
+  }
+})
+
+EM_JS(void, iupwasmJsVideoSubtitleSelect, (int vid, int index, double delay), {
+  globalThis.__iupApply({ op: 'vidsubselect', vid: vid, index: index, delay: delay });
+})
+
+EM_JS(void, iupwasmJsVideoSubtitleText, (int vid, const char* text, int size, const char* color), {
+  globalThis.__iupApply({ op: 'vidsubtext', vid: vid, text: text ? UTF8ToString(text) : "", size: size, color: UTF8ToString(color) });
 })
 
 static void wasmVideoBackground(Ihandle* ih, char* background, size_t size)
@@ -200,7 +231,42 @@ static void wasmVideoPoll(IvideoSession* session)
   iupVideoInfo(session, &info);
 }
 
-static const IvideoBackend wasmVideoBackend = {"NATIVE", wasmVideoAvailable, wasmVideoOpen, wasmVideoClose, wasmVideoPlay, wasmVideoSeek, wasmVideoVolume, wasmVideoPoll, wasmVideoLayout};
+static int wasmVideoSubtitleCount(IvideoSession* session)
+{
+  IwasmVideo* context = (IwasmVideo*)session->context;
+  return iupwasmJsVideoSubtitles(context->vid, 0, 0, NULL);
+}
+
+static char* wasmVideoSubtitleName(IvideoSession* session, int index, int language)
+{
+  IwasmVideo* context = (IwasmVideo*)session->context;
+  char text[256] = "";
+  iupwasmJsVideoSubtitles(context->vid, index, language, text);
+  return text[0] ? iupStrReturnStr(text) : NULL;
+}
+
+static int wasmVideoSubtitleSelect(IvideoSession* session, int index, double delay)
+{
+  IwasmVideo* context = (IwasmVideo*)session->context;
+  if (index > wasmVideoSubtitleCount(session))
+    return 0;
+  iupwasmJsVideoSubtitleSelect(context->vid, index, delay);
+  return 1;
+}
+
+static int wasmVideoSubtitleText(IvideoSession* session, const char* text, int size, const char* color)
+{
+  IwasmVideo* context = (IwasmVideo*)session->context;
+  iupwasmJsVideoSubtitleText(context->vid, text, size, color);
+  return 1;
+}
+
+char* iupdrvVideoReadSubtitle(const char* filename)
+{
+  return iupVideoReadSubtitleStream(fopen(filename, "rb"));
+}
+
+static const IvideoBackend wasmVideoBackend = {"NATIVE", wasmVideoAvailable, wasmVideoOpen, wasmVideoClose, wasmVideoPlay, wasmVideoSeek, wasmVideoVolume, wasmVideoPoll, wasmVideoLayout, wasmVideoSubtitleCount, wasmVideoSubtitleName, wasmVideoSubtitleSelect, wasmVideoSubtitleText};
 
 const IvideoBackend* iupdrvVideoBackend(int index)
 {

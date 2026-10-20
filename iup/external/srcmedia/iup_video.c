@@ -32,6 +32,15 @@ typedef struct
 
 typedef int (*IvideoStringCallback)(Ihandle*, const char*);
 
+#define IVIDEO_SUBTITLE_LIMIT (16 * 1024 * 1024)
+
+typedef struct
+{
+  double start, end, maximum;
+  int order;
+  char* text;
+} IvideoSubtitle;
+
 struct _IcontrolData
 {
   iupCanvas canvas;
@@ -48,9 +57,561 @@ struct _IcontrolData
   int pending_seek;
   double seek_position;
   IvideoInfo info;
+  IvideoSubtitle* subtitles;
+  int subtitle_count, subtitle_loaded, subtitle, subtitle_size, subtitle_dirty, subtitle_native, subtitle_error_pending;
+  int subtitle_tracks, subtitle_ticks;
+  double subtitle_delay;
+  char* subtitle_file;
+  char* subtitle_text;
+  char* subtitle_wrapped;
+  int subtitle_wrap_width;
+  char subtitle_color[32], subtitle_error[512];
 };
 
 static const char* iVideoStates[] = {"EMPTY", "LOADING", "STOPPED", "PLAYING", "PAUSED", "BUFFERING", "ENDED", "ERROR"};
+
+char* iupVideoReadSubtitleStream(FILE* file)
+{
+  size_t limit = IVIDEO_SUBTITLE_LIMIT;
+  size_t capacity = 65536;
+  size_t length = 0;
+  char* text;
+  if (!file)
+    return NULL;
+  if (fseek(file, 0, SEEK_END) == 0)
+  {
+    long size = ftell(file);
+    if (size >= 0)
+      capacity = (unsigned long)size < limit ? (size_t)size + 2 : limit + 2;
+    if (fseek(file, 0, SEEK_SET) != 0)
+    {
+      fclose(file);
+      return NULL;
+    }
+  }
+  text = (char*)malloc(capacity);
+  if (!text)
+  {
+    fclose(file);
+    return NULL;
+  }
+  while (length <= limit)
+  {
+    size_t count;
+    if (length + 1 >= capacity)
+    {
+      size_t next = capacity * 2 > limit + 2 ? limit + 2 : capacity * 2;
+      char* buffer = (char*)realloc(text, next);
+      if (!buffer)
+      {
+        free(text);
+        fclose(file);
+        return NULL;
+      }
+      text = buffer;
+      capacity = next;
+    }
+    count = fread(text + length, 1, capacity - 1 - length, file);
+    if (!count)
+      break;
+    length += count;
+  }
+  if (ferror(file) || memchr(text, 0, length))
+  {
+    free(text);
+    fclose(file);
+    return NULL;
+  }
+  fclose(file);
+  text[length] = 0;
+  return text;
+}
+
+void iupVideoSubtitleCue(IvideoSession* session, const char* text)
+{
+  char* copy = text && *text ? iupStrDup(text) : NULL;
+  iupdrvMutexLock(session->mutex);
+  free(session->subtitle_cue);
+  session->subtitle_cue = copy;
+  iupdrvMutexUnlock(session->mutex);
+}
+
+void iupVideoSubtitleError(IvideoSession* session, const char* message)
+{
+  iupdrvMutexLock(session->mutex);
+  if (!session->closing)
+    iupStrCopyN(session->subtitle_error, sizeof(session->subtitle_error), message);
+  iupdrvMutexUnlock(session->mutex);
+}
+
+static void iVideoSubtitleError(Ihandle* ih, const char* message)
+{
+  iupStrCopyN(ih->data->subtitle_error, sizeof(ih->data->subtitle_error), message);
+  ih->data->subtitle_error_pending = 1;
+  if (ih->handle)
+    IupSetAttribute(ih->data->timer, "RUN", "YES");
+}
+
+static void iVideoFreeSubtitles(IvideoSubtitle* cues, int count)
+{
+  int i;
+  for (i = 0; i < count; i++)
+    free(cues[i].text);
+  free(cues);
+}
+
+static int iVideoSubtitleTime(const char* text, double* value, const char** tail)
+{
+  unsigned parts[3] = {0, 0, 0}, fraction = 0;
+  int count = 0, digits;
+  while (*text == ' ' || *text == '\t')
+    text++;
+  for (;;)
+  {
+    unsigned n = 0;
+    digits = 0;
+    while (iup_isdigit(*text))
+    {
+      digits++;
+      if (digits > 6)
+        return 0;
+      n = n * 10 + (unsigned)(*text - '0');
+      text++;
+    }
+    if (!digits || count == 3)
+      return 0;
+    parts[count] = n;
+    count++;
+    if (*text != ':')
+      break;
+    text++;
+  }
+  if (count < 2 || parts[count - 1] >= 60 || (count == 3 && parts[1] >= 60) || (*text != ',' && *text != '.'))
+    return 0;
+  text++;
+  for (digits = 0; digits < 3; digits++)
+  {
+    if (!iup_isdigit(*text))
+      return 0;
+    fraction = fraction * 10 + (unsigned)(*text - '0');
+    text++;
+  }
+  if (iup_isdigit(*text))
+    return 0;
+  *value = count == 3 ? parts[0] * 3600.0 + parts[1] * 60.0 + parts[2] : parts[0] * 60.0 + parts[1];
+  *value += fraction / 1000.0;
+  *tail = text;
+  return 1;
+}
+
+static int iVideoSubtitleUTF8(const char* text)
+{
+  const unsigned char* p = (const unsigned char*)text;
+  while (*p)
+  {
+    unsigned value, minimum;
+    int remaining;
+    if (*p < 0x80)
+    {
+      p++;
+      continue;
+    }
+    if (*p >= 0xc2 && *p <= 0xdf)
+    {
+      value = *p & 0x1f;
+      remaining = 1;
+      minimum = 0x80;
+    }
+    else if (*p >= 0xe0 && *p <= 0xef)
+    {
+      value = *p & 0x0f;
+      remaining = 2;
+      minimum = 0x800;
+    }
+    else if (*p >= 0xf0 && *p <= 0xf4)
+    {
+      value = *p & 0x07;
+      remaining = 3;
+      minimum = 0x10000;
+    }
+    else
+      return 0;
+    p++;
+    while (remaining--)
+    {
+      if ((*p & 0xc0) != 0x80)
+        return 0;
+      value = (value << 6) | (*p & 0x3f);
+      p++;
+    }
+    if (value < minimum || value > 0x10ffff || (value >= 0xd800 && value <= 0xdfff))
+      return 0;
+  }
+  return 1;
+}
+
+static size_t iVideoSubtitleEncode(char* output, unsigned value)
+{
+  if (value < 0x80)
+  {
+    output[0] = (char)value;
+    return 1;
+  }
+  if (value < 0x800)
+  {
+    output[0] = (char)(0xc0 | (value >> 6));
+    output[1] = (char)(0x80 | (value & 63));
+    return 2;
+  }
+  if (value < 0x10000)
+  {
+    output[0] = (char)(0xe0 | (value >> 12));
+    output[1] = (char)(0x80 | ((value >> 6) & 63));
+    output[2] = (char)(0x80 | (value & 63));
+    return 3;
+  }
+  output[0] = (char)(0xf0 | (value >> 18));
+  output[1] = (char)(0x80 | ((value >> 12) & 63));
+  output[2] = (char)(0x80 | ((value >> 6) & 63));
+  output[3] = (char)(0x80 | (value & 63));
+  return 4;
+}
+
+static char* iVideoSubtitlePlain(const char* text, size_t length)
+{
+  char* result = (char*)malloc(length + 1);
+  size_t i = 0, n = 0;
+  if (!result)
+    return NULL;
+  while (i < length)
+  {
+    if (text[i] == '<')
+    {
+      size_t end = i + 1;
+      while (end < length && text[end] != '>')
+        end++;
+      if (end < length)
+      {
+        if (end - i >= 3 && text[i + 1] == 'b' && text[i + 2] == 'r' &&
+            (end == i + 3 || text[i + 3] == '/' || text[i + 3] == ' '))
+        {
+          result[n] = '\n';
+          n++;
+        }
+        i = end + 1;
+        continue;
+      }
+    }
+    if (text[i] == '&')
+    {
+      static const char* names[] = {"&amp;", "&lt;", "&gt;", "&quot;", "&apos;", "&nbsp;"};
+      static const char values[] = {'&', '<', '>', '"', '\'', ' '};
+      unsigned j;
+      for (j = 0; j < sizeof(values); j++)
+      {
+        size_t size = strlen(names[j]);
+        if (length - i >= size && memcmp(text + i, names[j], size) == 0)
+        {
+          result[n] = values[j];
+          n++;
+          i += size;
+          break;
+        }
+      }
+      if (j < sizeof(values))
+        continue;
+      if (length - i > 3 && text[i + 1] == '#')
+      {
+        size_t end = i + 2;
+        unsigned value = 0, base = 10, digits = 0;
+        if (text[end] == 'x' || text[end] == 'X')
+        {
+          base = 16;
+          end++;
+        }
+        while (end < length && digits < 8)
+        {
+          unsigned digit;
+          if (text[end] >= '0' && text[end] <= '9')
+            digit = (unsigned)(text[end] - '0');
+          else if (text[end] >= 'a' && text[end] <= 'f')
+            digit = (unsigned)(text[end] - 'a' + 10);
+          else if (text[end] >= 'A' && text[end] <= 'F')
+            digit = (unsigned)(text[end] - 'A' + 10);
+          else
+            break;
+          if (digit >= base || value > 0x10ffff / base)
+            break;
+          value = value * base + digit;
+          end++;
+          digits++;
+        }
+        if (digits && end < length && text[end] == ';' && value && value <= 0x10ffff && !(value >= 0xd800 && value <= 0xdfff))
+        {
+          n += iVideoSubtitleEncode(result + n, value);
+          i = end + 1;
+          continue;
+        }
+      }
+    }
+    result[n] = text[i];
+    n++;
+    i++;
+  }
+  while (n && (result[n - 1] == '\n' || result[n - 1] == ' '))
+    n--;
+  result[n] = 0;
+  return result;
+}
+
+static int iVideoSubtitleCompare(const void* first, const void* second)
+{
+  const IvideoSubtitle* a = (const IvideoSubtitle*)first;
+  const IvideoSubtitle* b = (const IvideoSubtitle*)second;
+  if (a->start != b->start)
+    return a->start < b->start ? -1 : 1;
+  if (a->end != b->end)
+    return a->end < b->end ? -1 : 1;
+  return a->order < b->order ? -1 : a->order > b->order;
+}
+
+static int iVideoParseSubtitles(const char* input, IvideoSubtitle** output, int* count)
+{
+  char* data;
+  char* p;
+  char* write;
+  IvideoSubtitle* cues = NULL;
+  int size = 0, capacity = 0, parsed = 0, webvtt, i;
+  double maximum = 0;
+  size_t length = strlen(input);
+  if (length > IVIDEO_SUBTITLE_LIMIT || !iVideoSubtitleUTF8(input))
+    return 0;
+  data = iupStrDup(input);
+  if (!data)
+    return 0;
+  p = data;
+  write = data;
+  if (length >= 3 && memcmp(p, "\xef\xbb\xbf", 3) == 0)
+    p += 3;
+  while (*p)
+  {
+    if (*p == '\r')
+    {
+      *write = '\n';
+      write++;
+      p++;
+      if (*p == '\n')
+        p++;
+    }
+    else
+    {
+      *write = *p;
+      write++;
+      p++;
+    }
+  }
+  *write = 0;
+  p = data;
+  write = data;
+  while (*p)
+  {
+    char* end = strchr(p, '\n');
+    char* space = p;
+    if (!end)
+      end = p + strlen(p);
+    while (space < end && (*space == ' ' || *space == '\t'))
+      space++;
+    if (space != end)
+    {
+      size_t n = (size_t)(end - p);
+      memmove(write, p, n);
+      write += n;
+    }
+    if (!*end)
+      break;
+    *write = '\n';
+    write++;
+    p = end + 1;
+  }
+  *write = 0;
+  p = data;
+  webvtt = strncmp(p, "WEBVTT", 6) == 0 && (p[6] == 0 || p[6] == '\n' || p[6] == ' ' || p[6] == '\t');
+  while (*p)
+  {
+    char* line;
+    char* end;
+    char* arrow;
+    char* text;
+    const char* tail;
+    double start, finish;
+    while (*p == '\n')
+      p++;
+    if (!*p)
+      break;
+    line = p;
+    while (*p && !(p[0] == '\n' && p[1] == '\n'))
+      p++;
+    if (*p)
+    {
+      *p = 0;
+      p += 2;
+    }
+    end = strchr(line, '\n');
+    arrow = strstr(line, "-->");
+    if (!arrow || (end && arrow > end))
+    {
+      if (!end)
+        continue;
+      line = end + 1;
+      end = strchr(line, '\n');
+      arrow = strstr(line, "-->");
+      if (!arrow || (end && arrow > end))
+        continue;
+    }
+    if (!iVideoSubtitleTime(line, &start, &tail))
+      continue;
+    while (*tail == ' ' || *tail == '\t')
+      tail++;
+    if (tail != arrow || !iVideoSubtitleTime(arrow + 3, &finish, &tail) ||
+        (*tail && *tail != ' ' && *tail != '\t' && *tail != '\n'))
+      continue;
+    parsed++;
+    if (finish <= start || !end)
+      continue;
+    text = iVideoSubtitlePlain(end + 1, strlen(end + 1));
+    if (!text)
+      goto failure;
+    if (!*text)
+    {
+      free(text);
+      continue;
+    }
+    if (size == capacity)
+    {
+      IvideoSubtitle* allocation;
+      int next = capacity ? capacity * 2 : 64;
+      if (next > 131072)
+      {
+        free(text);
+        goto failure;
+      }
+      allocation = (IvideoSubtitle*)realloc(cues, (size_t)next * sizeof(IvideoSubtitle));
+      if (!allocation)
+      {
+        free(text);
+        goto failure;
+      }
+      cues = allocation;
+      capacity = next;
+    }
+    cues[size].start = start;
+    cues[size].end = finish;
+    cues[size].order = size;
+    cues[size].text = text;
+    size++;
+  }
+  if (!parsed && !webvtt)
+    goto failure;
+  if (size > 1)
+    qsort(cues, (size_t)size, sizeof(IvideoSubtitle), iVideoSubtitleCompare);
+  for (i = 0; i < size; i++)
+  {
+    if (cues[i].end > maximum)
+      maximum = cues[i].end;
+    cues[i].maximum = maximum;
+  }
+  free(data);
+  *output = cues;
+  *count = size;
+  return 1;
+failure:
+  free(data);
+  iVideoFreeSubtitles(cues, size);
+  return 0;
+}
+
+static void iVideoSelectSubtitle(Ihandle* ih)
+{
+  IvideoSession* session = ih->data->session;
+  if (session && ih->data->ready && session->backend->subtitle_select)
+  {
+    int index = ih->data->subtitle == -2 ? 0 : ih->data->subtitle;
+    if (!session->backend->subtitle_select(session, index, ih->data->subtitle_delay))
+      iVideoSubtitleError(ih, "The subtitle track is not available");
+  }
+  ih->data->subtitle_dirty = 1;
+}
+
+static void iVideoUpdateSubtitle(Ihandle* ih)
+{
+  IvideoSession* session = ih->data->session;
+  char* text = NULL;
+  if (!session)
+    return;
+  if (ih->data->subtitle == -2 && ih->data->ready && ih->data->state != IVIDEO_ERROR &&
+      ih->data->state != IVIDEO_STOPPED && !ih->data->pending_seek)
+  {
+    double time = ih->data->info.position - ih->data->subtitle_delay;
+    int low = 0, high = ih->data->subtitle_count, i, first;
+    size_t length = 0;
+    while (low < high)
+    {
+      int mid = low + (high - low) / 2;
+      if (ih->data->subtitles[mid].maximum <= time)
+        low = mid + 1;
+      else
+        high = mid;
+    }
+    first = low;
+    for (i = first; i < ih->data->subtitle_count && ih->data->subtitles[i].start <= time; i++)
+    {
+      if (time < ih->data->subtitles[i].end)
+        length += strlen(ih->data->subtitles[i].text) + 1;
+    }
+    if (length)
+    {
+      size_t offset = 0;
+      text = (char*)malloc(length);
+      if (text)
+      {
+        for (i = first; i < ih->data->subtitle_count && ih->data->subtitles[i].start <= time; i++)
+        {
+          if (time < ih->data->subtitles[i].end)
+          {
+            size_t n = strlen(ih->data->subtitles[i].text);
+            if (offset)
+            {
+              text[offset] = '\n';
+              offset++;
+            }
+            memcpy(text + offset, ih->data->subtitles[i].text, n);
+            offset += n;
+          }
+        }
+        text[offset] = 0;
+      }
+    }
+  }
+  else if (ih->data->subtitle != 0 && ih->data->subtitle != -2)
+  {
+    iupdrvMutexLock(session->mutex);
+    text = iupStrDup(session->subtitle_cue);
+    iupdrvMutexUnlock(session->mutex);
+  }
+  if (!iupStrEqual(text, ih->data->subtitle_text) || ih->data->subtitle_dirty)
+  {
+    free(ih->data->subtitle_text);
+    ih->data->subtitle_text = text;
+    text = NULL;
+    ih->data->subtitle_dirty = 0;
+    free(ih->data->subtitle_wrapped);
+    ih->data->subtitle_wrapped = NULL;
+    if (session->backend->subtitle_text)
+      ih->data->subtitle_native = session->backend->subtitle_text(session, ih->data->subtitle_text, ih->data->subtitle_size, ih->data->subtitle_color);
+    IupUpdate(ih);
+  }
+  free(text);
+}
 
 void iupVideoInfo(IvideoSession* session, const IvideoInfo* info)
 {
@@ -149,12 +710,20 @@ static void iVideoClose(Ihandle* ih)
     iupdrvMutexUnlock(session->mutex);
     session->backend->close(session);
     free(session->pending);
+    free(session->subtitle_cue);
     iupdrvMutexDestroy(session->mutex);
     free(session);
   }
   ih->data->ready = ih->data->ended = ih->data->reported_error = 0;
   memset(&ih->data->info, 0, sizeof(ih->data->info));
   iVideoReleaseImage(ih);
+  free(ih->data->subtitle_text);
+  ih->data->subtitle_text = NULL;
+  free(ih->data->subtitle_wrapped);
+  ih->data->subtitle_wrapped = NULL;
+  ih->data->subtitle_dirty = 1;
+  ih->data->subtitle_tracks = -1;
+  ih->data->subtitle_ticks = 0;
 }
 
 static void iVideoVolume(Ihandle* ih, int volume, int mute)
@@ -281,11 +850,16 @@ static int iVideoTick(Ihandle* timer)
   lifetime->references++;
   if (session)
   {
+    char subtitle_error[512] = "";
     session->backend->poll(session);
     iupdrvMutexLock(session->mutex);
     info = session->info;
     session->info.ended = 0;
+    iupStrCopyN(subtitle_error, sizeof(subtitle_error), session->subtitle_error);
+    session->subtitle_error[0] = 0;
     iupdrvMutexUnlock(session->mutex);
+    if (subtitle_error[0])
+      iVideoSubtitleError(ih, subtitle_error);
     ih->data->info = info;
     iVideoTakeFrame(ih, session);
     if (!lifetime->ih || lifetime->generation != generation)
@@ -299,6 +873,10 @@ static int iVideoTick(Ihandle* timer)
       if (first)
       {
         iVideoSettings(ih);
+        iVideoSelectSubtitle(ih);
+        if (session->backend->subtitle_count)
+          ih->data->subtitle_tracks = session->backend->subtitle_count(session);
+        ih->data->subtitle_ticks = 0;
         session->backend->play(session, ih->data->intent == 2);
         ih->data->state = ih->data->intent == 2 ? IVIDEO_BUFFERING : (ih->data->intent ? IVIDEO_PAUSED : IVIDEO_STOPPED);
         if (!iVideoCallback(ih, lifetime, "READY_CB"))
@@ -339,6 +917,28 @@ static int iVideoTick(Ihandle* timer)
     if (!lifetime->ih || lifetime->generation != generation)
       goto done;
   }
+  iVideoUpdateSubtitle(ih);
+  if (session && ih->data->ready && session->backend->subtitle_count && ++ih->data->subtitle_ticks >= 16)
+  {
+    int count = session->backend->subtitle_count(session);
+    ih->data->subtitle_ticks = 0;
+    if (count != ih->data->subtitle_tracks)
+    {
+      ih->data->subtitle_tracks = count;
+      iVideoSelectSubtitle(ih);
+    }
+  }
+  if (ih->data->subtitle_error_pending)
+  {
+    IvideoStringCallback cb = (IvideoStringCallback)IupGetCallback(ih, "ERROR_CB");
+    char message[512];
+    iupStrCopyN(message, sizeof(message), ih->data->subtitle_error);
+    ih->data->subtitle_error_pending = 0;
+    if (cb && cb(ih, message) == IUP_CLOSE)
+      IupExitLoop();
+    if (!lifetime->ih || lifetime->generation != generation)
+      goto done;
+  }
   if (ih->data->state == IVIDEO_ERROR && !ih->data->reported_error)
   {
     IvideoStringCallback cb = (IvideoStringCallback)IupGetCallback(ih, "ERROR_CB");
@@ -358,33 +958,147 @@ done:
   return IUP_DEFAULT;
 }
 
+static char* iVideoWrapSubtitle(Ihandle* ih, const char* text, int width)
+{
+  size_t length = strlen(text), used = 0;
+  char* result = (char*)malloc(length * 2 + 1);
+  if (!result)
+    return NULL;
+  while (*text)
+  {
+    const char* end = strchr(text, '\n');
+    size_t count = end ? (size_t)(end - text) : strlen(text);
+    while (count)
+    {
+      int w, h;
+      size_t cut = count;
+      IupDrawGetTextSize(ih, text, (int)count, &w, &h);
+      if (w > width)
+      {
+        size_t low = 0, high = count;
+        while (high > low + 1)
+        {
+          size_t mid = low + (high - low) / 2;
+          while (mid > low && ((unsigned char)text[mid] & 0xc0) == 0x80)
+            mid--;
+          if (mid == low)
+          {
+            mid++;
+            while (mid < count && ((unsigned char)text[mid] & 0xc0) == 0x80)
+              mid++;
+            if (mid >= high)
+              break;
+          }
+          IupDrawGetTextSize(ih, text, (int)mid, &w, &h);
+          if (w <= width)
+            low = mid;
+          else
+            high = mid;
+        }
+        cut = low;
+        if (!cut)
+        {
+          cut = 1;
+          while (cut < count && ((unsigned char)text[cut] & 0xc0) == 0x80)
+            cut++;
+        }
+        else
+        {
+          size_t space = cut;
+          while (space && text[space - 1] != ' ' && text[space - 1] != '\t')
+            space--;
+          if (space)
+            cut = space;
+        }
+      }
+      memcpy(result + used, text, cut);
+      used += cut;
+      text += cut;
+      count -= cut;
+      while (used && (result[used - 1] == ' ' || result[used - 1] == '\t'))
+        used--;
+      while (count && (*text == ' ' || *text == '\t'))
+      {
+        text++;
+        count--;
+      }
+      if (count)
+      {
+        result[used] = '\n';
+        used++;
+      }
+    }
+    if (!end)
+      break;
+    result[used] = '\n';
+    used++;
+    text = end + 1;
+  }
+  result[used] = 0;
+  return result;
+}
+
 static int iVideoRedraw(Ihandle* ih)
 {
-  int w, h, width, height, x = 0, y = 0;
+  int w, h, x, y;
+  int vx = 0, vy = 0, vw, vh;
   double aspect = ih->data->info.aspect;
   IupDrawBegin(ih);
   IupDrawGetSize(ih, &w, &h);
   iupAttribSetStr(ih, "DRAWCOLOR", iupAttribGetStr(ih, "BGCOLOR"));
   iupAttribSet(ih, "DRAWSTYLE", "FILL");
   IupDrawRectangle(ih, 0, 0, w - 1, h - 1);
-  if (ih->data->image && w > 0 && h > 0)
+  if ((!(aspect > 0) || !isfinite(aspect)) && ih->data->image)
+    aspect = (double)ih->data->frame_width / ih->data->frame_height;
+  vw = w;
+  vh = h;
+  if (aspect > 0 && isfinite(aspect) && w > 0 && h > 0)
   {
-    if (!(aspect > 0) || !isfinite(aspect))
-      aspect = (double)ih->data->frame_width / ih->data->frame_height;
-    width = w;
-    height = h;
     if (aspect * h > w)
     {
-      height = (int)(w / aspect);
-      y = (h - height) / 2;
+      vh = (int)(w / aspect);
+      vy = (h - vh) / 2;
     }
     else
     {
-      width = (int)(h * aspect);
-      x = (w - width) / 2;
+      vw = (int)(h * aspect);
+      vx = (w - vw) / 2;
     }
-    if (width > 0 && height > 0)
-      IupDrawImage(ih, ih->data->image_name, x, y, width, height);
+  }
+  if (ih->data->image && vw > 0 && vh > 0)
+    IupDrawImage(ih, ih->data->image_name, vx, vy, vw, vh);
+  if (ih->data->subtitle_text && !ih->data->subtitle_native && vw > 20 && vh > 20)
+  {
+    char font[80];
+    const char* text;
+    int tw, th, dx, dy;
+    snprintf(font, sizeof(font), "Sans, Bold %d", ih->data->subtitle_size);
+    iupAttribSetStr(ih, "DRAWFONT", font);
+    iupAttribSet(ih, "DRAWTEXTALIGNMENT", "ACENTER");
+    iupAttribSet(ih, "DRAWTEXTWRAP", "NO");
+    if (!ih->data->subtitle_wrapped || ih->data->subtitle_wrap_width != vw - 20)
+    {
+      free(ih->data->subtitle_wrapped);
+      ih->data->subtitle_wrapped = iVideoWrapSubtitle(ih, ih->data->subtitle_text, vw - 20);
+      ih->data->subtitle_wrap_width = vw - 20;
+    }
+    text = ih->data->subtitle_wrapped ? ih->data->subtitle_wrapped : ih->data->subtitle_text;
+    IupDrawGetTextSize(ih, text, -1, &tw, &th);
+    tw = vw - 20;
+    x = vx + 10;
+    y = vy + vh - th - 10;
+    IupDrawSetClipRect(ih, vx, vy, vx + vw - 1, vy + vh - 1);
+    iupAttribSet(ih, "DRAWCOLOR", "0 0 0");
+    for (dy = -1; dy <= 1; dy++)
+    {
+      for (dx = -1; dx <= 1; dx++)
+      {
+        if (dx || dy)
+          IupDrawText(ih, text, -1, x + dx, y + dy, tw, th);
+      }
+    }
+    iupAttribSetStr(ih, "DRAWCOLOR", ih->data->subtitle_color);
+    IupDrawText(ih, text, -1, x, y, tw, th);
   }
   IupDrawEnd(ih);
   return IUP_DEFAULT;
@@ -395,6 +1109,16 @@ static int iVideoSetSource(Ihandle* ih, const char* value, int url)
   char* source = value ? iupStrDup(value) : NULL;
   if (value && !source)
     return 0;
+  iVideoFreeSubtitles(ih->data->subtitles, ih->data->subtitle_count);
+  ih->data->subtitles = NULL;
+  ih->data->subtitle_count = 0;
+  ih->data->subtitle_loaded = 0;
+  free(ih->data->subtitle_file);
+  ih->data->subtitle_file = NULL;
+  if (ih->data->subtitle > 0 || ih->data->subtitle == -2)
+    ih->data->subtitle = -1;
+  ih->data->subtitle_error[0] = 0;
+  ih->data->subtitle_error_pending = 0;
   free(ih->data->source);
   ih->data->source = source;
   ih->data->url = url;
@@ -568,6 +1292,195 @@ static int iVideoSetMuteAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int iVideoLoadSubtitle(Ihandle* ih, const char* value, const char* filename)
+{
+  IvideoSubtitle* cues = NULL;
+  int count = 0;
+  char* path = NULL;
+  if (value && strlen(value) > IVIDEO_SUBTITLE_LIMIT)
+  {
+    iVideoSubtitleError(ih, "Subtitles exceed the maximum size of 16 MiB");
+    return 0;
+  }
+  if (value && !iVideoParseSubtitles(value, &cues, &count))
+  {
+    iVideoSubtitleError(ih, "Cannot parse subtitles: expected UTF-8 SRT or WebVTT");
+    return 0;
+  }
+  if (filename)
+  {
+    path = iupStrDup(filename);
+    if (!path)
+    {
+      iVideoFreeSubtitles(cues, count);
+      return 0;
+    }
+  }
+  iVideoFreeSubtitles(ih->data->subtitles, ih->data->subtitle_count);
+  free(ih->data->subtitle_file);
+  ih->data->subtitle_file = path;
+  ih->data->subtitles = cues;
+  ih->data->subtitle_count = count;
+  ih->data->subtitle_loaded = value != NULL;
+  ih->data->subtitle_error[0] = 0;
+  ih->data->subtitle_error_pending = 0;
+  if (value)
+    ih->data->subtitle = -2;
+  else if (ih->data->subtitle == -2)
+    ih->data->subtitle = -1;
+  iVideoSelectSubtitle(ih);
+  if (ih->handle)
+    iVideoUpdateSubtitle(ih);
+  return 0;
+}
+
+static int iVideoSetSubtitleFileAttrib(Ihandle* ih, const char* value)
+{
+  char* data;
+  if (!value)
+    return iVideoLoadSubtitle(ih, NULL, NULL);
+  data = iupdrvVideoReadSubtitle(value);
+  if (!data)
+  {
+    iVideoSubtitleError(ih, "Cannot read the subtitle file");
+    return 0;
+  }
+  iVideoLoadSubtitle(ih, data, value);
+  free(data);
+  return 0;
+}
+
+static int iVideoSetSubtitleDataAttrib(Ihandle* ih, const char* value)
+{
+  return iVideoLoadSubtitle(ih, value, NULL);
+}
+
+static char* iVideoGetSubtitleFileAttrib(Ihandle* ih)
+{
+  return ih->data->subtitle_file;
+}
+
+static char* iVideoGetSubtitleTextAttrib(Ihandle* ih)
+{
+  return ih->data->subtitle_text;
+}
+
+static char* iVideoGetSubtitleErrorAttrib(Ihandle* ih)
+{
+  return ih->data->subtitle_error[0] ? ih->data->subtitle_error : NULL;
+}
+
+static char* iVideoGetSubtitleAttrib(Ihandle* ih)
+{
+  if (ih->data->subtitle == -1)
+    return "AUTO";
+  if (ih->data->subtitle == -2)
+    return "EXTERNAL";
+  if (!ih->data->subtitle)
+    return "OFF";
+  return iupStrReturnInt(ih->data->subtitle);
+}
+
+static int iVideoSetSubtitleAttrib(Ihandle* ih, const char* value)
+{
+  int index;
+  if (!value || iupStrEqualNoCase(value, "AUTO"))
+    index = -1;
+  else if (iupStrEqualNoCase(value, "OFF"))
+    index = 0;
+  else if (iupStrEqualNoCase(value, "EXTERNAL"))
+    index = -2;
+  else if (!iupStrToInt(value, &index) || index <= 0)
+    return 0;
+  if (index == -2 && !ih->data->subtitle_loaded)
+  {
+    iVideoSubtitleError(ih, "No external subtitles are loaded");
+    return 0;
+  }
+  if (index > 0 && ih->data->ready && ih->data->session && ih->data->session->backend->subtitle_count &&
+      index > ih->data->session->backend->subtitle_count(ih->data->session))
+  {
+    iVideoSubtitleError(ih, "The subtitle track is not available");
+    return 0;
+  }
+  ih->data->subtitle = index;
+  ih->data->subtitle_error[0] = 0;
+  ih->data->subtitle_error_pending = 0;
+  iVideoSelectSubtitle(ih);
+  if (ih->handle)
+    iVideoUpdateSubtitle(ih);
+  return 0;
+}
+
+static char* iVideoGetSubtitleCountAttrib(Ihandle* ih)
+{
+  IvideoSession* session = ih->data->session;
+  return iupStrReturnInt(session && ih->data->ready && session->backend->subtitle_count ? session->backend->subtitle_count(session) : 0);
+}
+
+static char* iVideoGetSubtitleNameAttrib(Ihandle* ih, int id)
+{
+  IvideoSession* session = ih->data->session;
+  return session && ih->data->ready && session->backend->subtitle_name ? session->backend->subtitle_name(session, id, 0) : NULL;
+}
+
+static char* iVideoGetSubtitleLanguageAttrib(Ihandle* ih, int id)
+{
+  IvideoSession* session = ih->data->session;
+  return session && ih->data->ready && session->backend->subtitle_name ? session->backend->subtitle_name(session, id, 1) : NULL;
+}
+
+static char* iVideoGetSubtitleDelayAttrib(Ihandle* ih)
+{
+  return iupStrReturnDouble(ih->data->subtitle_delay);
+}
+
+static int iVideoSetSubtitleDelayAttrib(Ihandle* ih, const char* value)
+{
+  double delay = 0;
+  if (value && (!iupStrToDouble(value, &delay) || !isfinite(delay) || fabs(delay) > 86400))
+    return 0;
+  ih->data->subtitle_delay = delay;
+  iVideoSelectSubtitle(ih);
+  if (ih->handle)
+    iVideoUpdateSubtitle(ih);
+  return 0;
+}
+
+static char* iVideoGetSubtitleFontSizeAttrib(Ihandle* ih)
+{
+  return iupStrReturnInt(ih->data->subtitle_size);
+}
+
+static int iVideoSetSubtitleFontSizeAttrib(Ihandle* ih, const char* value)
+{
+  int size = 18;
+  if (value && (!iupStrToInt(value, &size) || size < 6 || size > 96))
+    return 0;
+  ih->data->subtitle_size = size;
+  ih->data->subtitle_dirty = 1;
+  if (ih->handle)
+    iVideoUpdateSubtitle(ih);
+  return 0;
+}
+
+static char* iVideoGetSubtitleColorAttrib(Ihandle* ih)
+{
+  return ih->data->subtitle_color;
+}
+
+static int iVideoSetSubtitleColorAttrib(Ihandle* ih, const char* value)
+{
+  unsigned char r = 255, g = 255, b = 255;
+  if (value && !iupStrToRGB(value, &r, &g, &b))
+    return 0;
+  snprintf(ih->data->subtitle_color, sizeof(ih->data->subtitle_color), "%u %u %u", r, g, b);
+  ih->data->subtitle_dirty = 1;
+  if (ih->handle)
+    iVideoUpdateSubtitle(ih);
+  return 0;
+}
+
 static int iVideoCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
@@ -585,6 +1498,9 @@ static int iVideoCreateMethod(Ihandle* ih, void** params)
   ih->data->lifetime->ih = ih;
   ih->data->lifetime->references = 1;
   strcpy(ih->data->backend, "AUTO");
+  ih->data->subtitle = -1;
+  ih->data->subtitle_size = 18;
+  strcpy(ih->data->subtitle_color, "255 255 255");
   snprintf(ih->data->image_name, sizeof(ih->data->image_name), "_IUP_VIDEO_%p", (void*)ih);
   ih->data->timer = IupTimer();
   if (!ih->data->timer)
@@ -625,6 +1541,8 @@ static void iVideoDestroyMethod(Ihandle* ih)
   if (ih->data->timer)
     IupDestroy(ih->data->timer);
   free(ih->data->source);
+  free(ih->data->subtitle_file);
+  iVideoFreeSubtitles(ih->data->subtitles, ih->data->subtitle_count);
   if (lifetime && --lifetime->references == 0)
     free(lifetime);
 }
@@ -660,6 +1578,7 @@ Iclass* iupVideoNewClass(void)
   ic->nativetype = IUP_TYPECANVAS;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
+  ic->has_attrib_id = 1;
   ic->New = iupVideoNewClass;
   ic->Create = iVideoCreateMethod;
   ic->Map = iVideoMapMethod;
@@ -695,5 +1614,16 @@ Iclass* iupVideoNewClass(void)
   iupClassRegisterAttribute(ic, "LOOP", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", flags);
   iupClassRegisterAttribute(ic, "VOLUME", NULL, iVideoSetVolumeAttrib, IUPAF_SAMEASSYSTEM, "100", flags);
   iupClassRegisterAttribute(ic, "MUTE", NULL, iVideoSetMuteAttrib, IUPAF_SAMEASSYSTEM, "NO", flags);
+  iupClassRegisterAttribute(ic, "SUBTITLE", iVideoGetSubtitleAttrib, iVideoSetSubtitleAttrib, IUPAF_SAMEASSYSTEM, "AUTO", flags);
+  iupClassRegisterAttribute(ic, "SUBTITLEFILE", iVideoGetSubtitleFileAttrib, iVideoSetSubtitleFileAttrib, NULL, NULL, flags);
+  iupClassRegisterAttribute(ic, "SUBTITLEDATA", NULL, iVideoSetSubtitleDataAttrib, NULL, NULL, flags | IUPAF_WRITEONLY);
+  iupClassRegisterAttribute(ic, "SUBTITLECOUNT", iVideoGetSubtitleCountAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);
+  iupClassRegisterAttributeId(ic, "SUBTITLENAME", iVideoGetSubtitleNameAttrib, NULL, flags | IUPAF_READONLY);
+  iupClassRegisterAttributeId(ic, "SUBTITLELANGUAGE", iVideoGetSubtitleLanguageAttrib, NULL, flags | IUPAF_READONLY);
+  iupClassRegisterAttribute(ic, "SUBTITLEDELAY", iVideoGetSubtitleDelayAttrib, iVideoSetSubtitleDelayAttrib, IUPAF_SAMEASSYSTEM, "0", flags);
+  iupClassRegisterAttribute(ic, "SUBTITLEFONTSIZE", iVideoGetSubtitleFontSizeAttrib, iVideoSetSubtitleFontSizeAttrib, IUPAF_SAMEASSYSTEM, "18", flags);
+  iupClassRegisterAttribute(ic, "SUBTITLECOLOR", iVideoGetSubtitleColorAttrib, iVideoSetSubtitleColorAttrib, IUPAF_SAMEASSYSTEM, "255 255 255", flags);
+  iupClassRegisterAttribute(ic, "SUBTITLETEXT", iVideoGetSubtitleTextAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);
+  iupClassRegisterAttribute(ic, "SUBTITLEERROR", iVideoGetSubtitleErrorAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);
   return ic;
 }

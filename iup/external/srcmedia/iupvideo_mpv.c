@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "iup_video.h"
+#include "iup_str.h"
 #include "iupvideo_mpv_dlopen.h"
 
 enum
@@ -26,7 +27,8 @@ enum
   IMPV_VID,
   IMPV_AID,
   IMPV_CORE_IDLE,
-  IMPV_ROTATE
+  IMPV_ROTATE,
+  IMPV_TRACK_LIST
 };
 
 typedef struct
@@ -39,6 +41,9 @@ typedef struct
   pthread_cond_t condition;
   int initialized, started, dirty, quit, width, height;
   int paused, buffering, idle, eof, rotate;
+  int64_t* subtitles;
+  int64_t subtitle_auto;
+  int subtitle_count, subtitle_capacity, subtitle_explicit;
   IvideoInfo info;
 } IvideoMpv;
 
@@ -144,6 +149,7 @@ static void iVideoMpvClose(IvideoSession* session)
   }
   pthread_cond_destroy(&context->condition);
   pthread_mutex_destroy(&context->lock);
+  free(context->subtitles);
   free(context);
   session->context = NULL;
 }
@@ -155,7 +161,7 @@ static int iVideoMpvOpen(IvideoSession* session, Ihandle* ih, const char* source
   const char* command[] = {"loadfile", source, NULL};
   char* path = NULL;
   const char* flags[] = {"pause", "keep-open", "idle"};
-  const char* disabled[] = {"terminal", "osc", "config", "load-scripts", "audio-display", "ytdl", "video-rotate"};
+  const char* disabled[] = {"terminal", "osc", "config", "load-scripts", "audio-display", "ytdl", "video-rotate", "sub-auto"};
   unsigned i;
   (void)ih;
   context = (IvideoMpv*)calloc(1, sizeof(IvideoMpv));
@@ -226,6 +232,7 @@ static int iVideoMpvOpen(IvideoSession* session, Ihandle* ih, const char* source
   mpv_observe_property(context->player, IMPV_AID, "aid", MPV_FORMAT_INT64);
   mpv_observe_property(context->player, IMPV_CORE_IDLE, "core-idle", MPV_FORMAT_FLAG);
   mpv_observe_property(context->player, IMPV_ROTATE, "video-dec-params/rotate", MPV_FORMAT_INT64);
+  mpv_observe_property(context->player, IMPV_TRACK_LIST, "track-list", MPV_FORMAT_NODE);
   if (!url)
   {
     path = realpath(source, NULL);
@@ -296,6 +303,65 @@ static void iVideoMpvRotate(IvideoMpv* context, int64_t rotate)
   mpv_set_property_async(context->player, 0, "vf", MPV_FORMAT_STRING, &filter);
 }
 
+static mpv_node* iVideoMpvField(mpv_node* node, const char* key)
+{
+  int i;
+  if (node->format != MPV_FORMAT_NODE_MAP)
+    return NULL;
+  for (i = 0; i < node->u.list->num; i++)
+  {
+    if (strcmp(node->u.list->keys[i], key) == 0)
+      return &node->u.list->values[i];
+  }
+  return NULL;
+}
+
+static int iVideoMpvFlag(mpv_node* node, const char* key)
+{
+  mpv_node* field = iVideoMpvField(node, key);
+  return field && field->format == MPV_FORMAT_FLAG && field->u.flag;
+}
+
+static int iVideoMpvSubtitleTrack(mpv_node* node)
+{
+  mpv_node* type = iVideoMpvField(node, "type");
+  return type && type->format == MPV_FORMAT_STRING && strcmp(type->u.string, "sub") == 0 && !iVideoMpvFlag(node, "external");
+}
+
+static void iVideoMpvTracks(IvideoMpv* context, mpv_node* tracks)
+{
+  int i, count = 0;
+  int64_t selected = 0;
+  context->subtitle_count = 0;
+  if (tracks->format != MPV_FORMAT_NODE_ARRAY)
+    return;
+  for (i = 0; i < tracks->u.list->num; i++)
+  {
+    if (iVideoMpvSubtitleTrack(&tracks->u.list->values[i]))
+      count++;
+  }
+  if (count > context->subtitle_capacity)
+  {
+    int64_t* subtitles = (int64_t*)realloc(context->subtitles, (size_t)count * sizeof(int64_t));
+    if (!subtitles)
+      return;
+    context->subtitles = subtitles;
+    context->subtitle_capacity = count;
+  }
+  for (i = 0; i < tracks->u.list->num; i++)
+  {
+    mpv_node* track = &tracks->u.list->values[i];
+    mpv_node* id = iVideoMpvField(track, "id");
+    if (!iVideoMpvSubtitleTrack(track) || !id || id->format != MPV_FORMAT_INT64)
+      continue;
+    context->subtitles[context->subtitle_count++] = id->u.int64;
+    if (iVideoMpvFlag(track, "selected"))
+      selected = id->u.int64;
+  }
+  if (!context->subtitle_explicit)
+    context->subtitle_auto = selected;
+}
+
 static void iVideoMpvProperty(IvideoMpv* context, uint64_t id, void* data)
 {
   switch (id)
@@ -339,6 +405,9 @@ static void iVideoMpvProperty(IvideoMpv* context, uint64_t id, void* data)
     break;
   case IMPV_ROTATE:
     iVideoMpvRotate(context, *(int64_t*)data);
+    break;
+  case IMPV_TRACK_LIST:
+    iVideoMpvTracks(context, (mpv_node*)data);
     break;
   }
 }
@@ -392,4 +461,66 @@ static void iVideoMpvPoll(IvideoSession* session)
   context->info.ended = 0;
 }
 
-const IvideoBackend iupVideoMpvBackend = {"MPV", iVideoMpvLoad, iVideoMpvOpen, iVideoMpvClose, iVideoMpvPlay, iVideoMpvSeek, iVideoMpvVolume, iVideoMpvPoll, NULL};
+static int iVideoMpvSubtitleCount(IvideoSession* session)
+{
+  IvideoMpv* context = (IvideoMpv*)session->context;
+  return context->subtitle_count;
+}
+
+static char* iVideoMpvSubtitleName(IvideoSession* session, int index, int language)
+{
+  IvideoMpv* context = (IvideoMpv*)session->context;
+  mpv_node tracks = {0};
+  char* result = NULL;
+  int i, count = 0;
+  if (mpv_get_property(context->player, "track-list", MPV_FORMAT_NODE, &tracks) < 0)
+    return NULL;
+  if (tracks.format == MPV_FORMAT_NODE_ARRAY)
+  {
+    for (i = 0; i < tracks.u.list->num; i++)
+    {
+      mpv_node* field;
+      if (!iVideoMpvSubtitleTrack(&tracks.u.list->values[i]) || ++count != index)
+        continue;
+      field = iVideoMpvField(&tracks.u.list->values[i], language ? "lang" : "title");
+      if (field && field->format == MPV_FORMAT_STRING)
+        result = iupStrReturnStr(field->u.string);
+      else if (!language)
+        result = iupStrReturnStrf("Track %d", index);
+      break;
+    }
+  }
+  mpv_free_node_contents(&tracks);
+  return result;
+}
+
+static void iVideoMpvSubtitleSet(IvideoMpv* context, int64_t id)
+{
+  if (id > 0)
+  {
+    mpv_set_property_async(context->player, 0, "sid", MPV_FORMAT_INT64, &id);
+  }
+  else
+  {
+    const char* value = "no";
+    mpv_set_property_async(context->player, 0, "sid", MPV_FORMAT_STRING, &value);
+  }
+}
+
+static int iVideoMpvSubtitleSelect(IvideoSession* session, int index, double delay)
+{
+  IvideoMpv* context = (IvideoMpv*)session->context;
+  if (index > context->subtitle_count)
+    return 0;
+  if (index >= 0)
+  {
+    context->subtitle_explicit = 1;
+    iVideoMpvSubtitleSet(context, index ? context->subtitles[index - 1] : 0);
+  }
+  else if (context->subtitle_explicit)
+    iVideoMpvSubtitleSet(context, context->subtitle_auto);
+  mpv_set_property_async(context->player, 0, "sub-delay", MPV_FORMAT_DOUBLE, &delay);
+  return 1;
+}
+
+const IvideoBackend iupVideoMpvBackend = {"MPV", iVideoMpvLoad, iVideoMpvOpen, iVideoMpvClose, iVideoMpvPlay, iVideoMpvSeek, iVideoMpvVolume, iVideoMpvPoll, NULL, iVideoMpvSubtitleCount, iVideoMpvSubtitleName, iVideoMpvSubtitleSelect, NULL};

@@ -21,6 +21,8 @@ typedef struct _GstSample GstSample;
 typedef struct _GstBuffer GstBuffer;
 typedef struct _GstMemory GstMemory;
 typedef struct _GstAppSink GstAppSink;
+typedef struct _GstPad GstPad;
+typedef struct _GstEvent GstEvent;
 
 typedef enum
 {
@@ -68,6 +70,17 @@ typedef enum
 {
   GST_MAP_READ = 1 << 0
 } GstMapFlags;
+
+typedef enum
+{
+  GST_EVENT_STREAM_START = (40 << 8) | (1 << 1) | (1 << 2) | (1 << 3)
+} GstEventType;
+
+typedef enum
+{
+  GST_STREAM_FLAG_NONE = 0,
+  GST_STREAM_FLAG_SELECT = 1 << 1
+} GstStreamFlags;
 
 #define GST_SECOND ((int64_t)1000000000)
 
@@ -160,6 +173,10 @@ static void* (*iupgst_g_object_ref_sink)(void*);
 static void (*iupgst_g_error_free)(GError*);
 static void (*iupgst_g_free)(void*);
 static char* (*iupgst_g_canonicalize_filename)(const char*, const char*);
+static void (*iupgst_g_signal_emit_by_name)(void*, const char*, ...);
+static int (*iupgst_tag_list_get_string)(const void*, const char*, char**);
+static GstEvent* (*iupgst_pad_get_sticky_event)(GstPad*, GstEventType, unsigned);
+static void (*iupgst_event_parse_stream_flags)(GstEvent*, GstStreamFlags*);
 
 #define gst_element_factory_make iupgst_element_factory_make
 #define gst_element_factory_find iupgst_element_factory_find
@@ -200,6 +217,10 @@ static char* (*iupgst_g_canonicalize_filename)(const char*, const char*);
 #define g_error_free iupgst_g_error_free
 #define g_free iupgst_g_free
 #define g_canonicalize_filename iupgst_g_canonicalize_filename
+#define g_signal_emit_by_name iupgst_g_signal_emit_by_name
+#define gst_tag_list_get_string iupgst_tag_list_get_string
+#define gst_pad_get_sticky_event iupgst_pad_get_sticky_event
+#define gst_event_parse_stream_flags iupgst_event_parse_stream_flags
 
 static void* iupGstSymbol(void* handle, const char* name, int* missing)
 {
@@ -273,6 +294,10 @@ static int iupGstOpen(void)
     *(void**)&iupgst_g_error_free = iupGstSymbol(handles[3], "g_error_free", &missing);
     *(void**)&iupgst_g_free = iupGstSymbol(handles[3], "g_free", &missing);
     *(void**)&iupgst_g_canonicalize_filename = iupGstSymbol(handles[3], "g_canonicalize_filename", &missing);
+    *(void**)&iupgst_g_signal_emit_by_name = iupGstSymbol(handles[2], "g_signal_emit_by_name", &missing);
+    *(void**)&iupgst_tag_list_get_string = iupGstSymbol(handles[0], "gst_tag_list_get_string", &missing);
+    *(void**)&iupgst_pad_get_sticky_event = iupGstSymbol(handles[0], "gst_pad_get_sticky_event", &missing);
+    *(void**)&iupgst_event_parse_stream_flags = iupGstSymbol(handles[0], "gst_event_parse_stream_flags", &missing);
   }
 
   if (!missing)
