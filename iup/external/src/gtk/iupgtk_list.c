@@ -490,36 +490,17 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 
   if (ih->data->is_dropdown)
   {
-    /* measure the real combo, hidden it reports 0, core adds sb_size after so subtract it here */
-    if (!ih->data->has_editbox && ih->handle && gtk_widget_get_visible(ih->handle) && GTK_IS_COMBO_BOX(ih->handle))
-    {
-      GtkRequisition rnat;
-      int sb_size = iupdrvGetScrollbarSize();
-      int req_w, req_h;
-      gtk_widget_get_size_request(ih->handle, &req_w, &req_h);
-      gtk_widget_set_size_request(ih->handle, -1, -1);
-#if GTK_CHECK_VERSION(3, 0, 0)
-      gtk_widget_get_preferred_size(ih->handle, NULL, &rnat);
-#else
-      gtk_widget_size_request(ih->handle, &rnat);
-#endif
-      gtk_widget_set_size_request(ih->handle, req_w, req_h);
-      *w = rnat.width - sb_size;
-      if (*w < 0) *w = 0;
-      *h = rnat.height;
-      return;
-    }
-
     if (dropdown_border_x == -1)
     {
       GtkWidget* temp_window = gtk_offscreen_window_new();
       GtkListStore* temp_store = gtk_list_store_new(1, G_TYPE_STRING);
       GtkTreeIter iter;
       gtk_list_store_append(temp_store, &iter);
-      gtk_list_store_set(temp_store, &iter, 0, "X", -1);
+      gtk_list_store_set(temp_store, &iter, 0, "XXXXXXXXXXXXXXXX", -1);
 
       GtkWidget* temp_combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(temp_store));
       GtkCellRenderer* renderer = gtk_cell_renderer_text_new();
+      gtk_cell_renderer_set_padding(renderer, 0, 0);
       gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(temp_combo), renderer, TRUE);
       gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(temp_combo), renderer, "text", 0, NULL);
 
@@ -545,6 +526,16 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 
       dropdown_border_y = combo_nat.height - renderer_nat_h;
       if (dropdown_border_y < 0) dropdown_border_y = 0;
+
+#if !GTK_CHECK_VERSION(3, 0, 0)
+      {
+        GtkCellRenderer* x_renderer = gtk_cell_renderer_text_new();
+        g_object_ref_sink(x_renderer);
+        g_object_set(G_OBJECT(x_renderer), "text", "X", NULL);
+        gtk_cell_renderer_get_size(x_renderer, temp_combo, NULL, NULL, NULL, &renderer_nat_w, &renderer_nat_h);
+        g_object_unref(x_renderer);
+      }
+#endif
 
       gtk_widget_destroy(temp_window);
 
@@ -2168,6 +2159,7 @@ static int gtkListMapMethod(Ihandle* ih)
       }
 
       renderer = gtk_cell_renderer_text_new();
+      g_object_set(G_OBJECT(renderer), "ellipsize", PANGO_ELLIPSIZE_END, NULL);
       gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(ih->handle), renderer, TRUE);
       gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(ih->handle), renderer, "text", IUPGTK_LIST_TEXT, NULL);
 
