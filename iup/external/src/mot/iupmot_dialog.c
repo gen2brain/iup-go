@@ -1127,6 +1127,8 @@ static void motDialogConfigureNotify(Widget w, XEvent* evt, String* s, Cardinal*
   /* update dialog size */
   ih->currentwidth = cevent->width + 2*border;
   ih->currentheight = cevent->height + 2*border + caption; /* menu is inside the dialog_manager */
+  iupAttribSetInt(ih, "_IUPMOT_SIZED_WIDTH", ih->currentwidth);
+  iupAttribSetInt(ih, "_IUPMOT_SIZED_HEIGHT", ih->currentheight);
 
   cb = (IFnii)IupGetCallback(ih, "RESIZE_CB");
   if (!cb || cb(ih, cevent->width, cevent->height - menu)!=IUP_IGNORE)  /* width and height here are for the client area */
@@ -1441,12 +1443,15 @@ static void motDialogLayoutUpdateMethod(Ihandle* ih)
   {
     int width = ih->currentwidth - 2*border;
     int height = ih->currentheight - 2*border - caption;
-    if (width > 0 && height > 0)
+    if (width > 0 && height > 0 &&
+        (ih->currentwidth != iupAttribGetInt(ih, "_IUPMOT_SIZED_WIDTH") || ih->currentheight != iupAttribGetInt(ih, "_IUPMOT_SIZED_HEIGHT")))
     {
       XtVaSetValues(ih->handle,
         XmNwidth, (XtArgVal)width,     /* excluding the border */
         XmNheight, (XtArgVal)height,
         NULL);
+      iupAttribSetInt(ih, "_IUPMOT_SIZED_WIDTH", ih->currentwidth);
+      iupAttribSetInt(ih, "_IUPMOT_SIZED_HEIGHT", ih->currentheight);
     }
   }
 
