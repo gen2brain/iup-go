@@ -4,6 +4,19 @@
  * See Copyright Notice in "iup.h"
  */
 
+#if !defined(WINVER) || WINVER < 0x0602
+#undef WINVER
+#define WINVER 0x0602
+#endif
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0602
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0602
+#endif
+#if !defined(NTDDI_VERSION) || NTDDI_VERSION < 0x06020000
+#undef NTDDI_VERSION
+#define NTDDI_VERSION 0x06020000
+#endif
+
 #include <windows.h>
 #include <mfapi.h>
 #include <mfmediaengine.h>
