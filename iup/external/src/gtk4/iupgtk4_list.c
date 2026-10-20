@@ -402,7 +402,7 @@ IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
   static int editbox_border_x = -1, editbox_border_y = -1, editbox_entry_natural_height = -1;
-  static int dropdown_border_x = -1, dropdown_border_y = -1, dropdown_natural_height = -1;
+  static int dropdown_border_x = -1, dropdown_border_y = -1;
   static int dropdown_editbox_border_x = -1, dropdown_editbox_border_y = -1;
   static int scrolled_window_frame_border = -1;
   static int css_frame_border_compensation = -1;
@@ -437,39 +437,28 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 
   if (ih->data->is_dropdown)
   {
-    /* measure the real widget, hidden it reports 0, callers add sb_size after so subtract it here */
-    if (!ih->data->has_editbox && ih->handle && gtk_widget_get_visible(ih->handle) && GTK_IS_DROP_DOWN(ih->handle))
-    {
-      int rnat_w = 0, rnat_h = 0, sb_size = iupdrvGetScrollbarSize();
-      gtk_widget_measure(ih->handle, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &rnat_w, NULL, NULL);
-      gtk_widget_measure(ih->handle, GTK_ORIENTATION_VERTICAL, -1, NULL, &rnat_h, NULL, NULL);
-      *w = rnat_w - sb_size;
-      if (*w < 0) *w = 0;
-      *h = rnat_h;
-      return;
-    }
-
     if (dropdown_border_x == -1)
     {
-      GtkWidget* temp_combo = gtk_drop_down_new(NULL, NULL);
-      int min_w, nat_w, min_h, nat_h;
+      static const char* const sample[] = {"XXXXXXXXXXXXXXXX", NULL};
+      GtkWidget* temp_window = gtk_window_new();
+      GtkWidget* temp_combo = gtk_drop_down_new_from_strings(sample);
+      GtkWidget* temp_label = gtk_label_new(sample[0]);
+      int nat_w, nat_h, label_w, label_h;
 
-      gtk_widget_measure(temp_combo, GTK_ORIENTATION_HORIZONTAL, -1, &min_w, &nat_w, NULL, NULL);
-      gtk_widget_measure(temp_combo, GTK_ORIENTATION_VERTICAL, -1, &min_h, &nat_h, NULL, NULL);
+      gtk_window_set_child(GTK_WINDOW(temp_window), temp_combo);
+      gtk_widget_measure(temp_combo, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &nat_w, NULL, NULL);
+      gtk_widget_measure(temp_combo, GTK_ORIENTATION_VERTICAL, -1, NULL, &nat_h, NULL, NULL);
+      gtk_widget_measure(temp_label, GTK_ORIENTATION_HORIZONTAL, -1, NULL, &label_w, NULL, NULL);
+      gtk_widget_measure(temp_label, GTK_ORIENTATION_VERTICAL, -1, NULL, &label_h, NULL, NULL);
 
-      dropdown_natural_height = nat_h;
-      dropdown_border_x = nat_w - iupdrvGetScrollbarSize();
+      dropdown_border_x = nat_w - label_w - border_size - iupdrvGetScrollbarSize();
       if (dropdown_border_x < 0) dropdown_border_x = 0;
 
-      int char_width, char_height;
-      iupdrvFontGetCharSize(ih, &char_width, &char_height);
-      int typical_item_height = char_height;
-      iupdrvListAddItemSpace(ih, &typical_item_height);
+      dropdown_border_y = nat_h - label_h - border_size;
 
-      dropdown_border_y = dropdown_natural_height - typical_item_height - border_size;
-
-      g_object_ref_sink(temp_combo);
-      g_object_unref(temp_combo);
+      gtk_window_destroy(GTK_WINDOW(temp_window));
+      g_object_ref_sink(temp_label);
+      g_object_unref(temp_label);
     }
 
     if (ih->data->has_editbox)
@@ -1847,6 +1836,8 @@ static void gtk4ListFactory_setup(GtkListItemFactory* factory, GtkListItem* list
 
   gtk_label_set_xalign(GTK_LABEL(label), 0.0);
   gtk_widget_set_hexpand(label, TRUE);
+  if (ih && ih->data->is_dropdown)
+    gtk_label_set_ellipsize(GTK_LABEL(label), PANGO_ELLIPSIZE_END);
 
   gtk_widget_set_valign(picture, GTK_ALIGN_CENTER);
   gtk_widget_set_valign(label, GTK_ALIGN_CENTER);
