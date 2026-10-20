@@ -168,7 +168,7 @@ void iupdrvVideoInhibitScreenSaver(int inhibit)
     unixVideoX11Suspend(0);
   }
 }
-#else
+#elif !defined(__HAIKU__)
 void iupdrvVideoInhibitScreenSaver(int inhibit)
 {
   (void)inhibit;

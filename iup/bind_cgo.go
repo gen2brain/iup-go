@@ -140,6 +140,6 @@ package iup
 #cgo haiku,!qt,!qml,gl LDFLAGS: -lGL
 #cgo haiku,!qt,!qml,web CXXFLAGS: -I/boot/system/develop/headers/private/netservices
 #cgo haiku,!qt,!qml,web LDFLAGS: -lWebKitLegacy -lJavaScriptCore
-#cgo haiku,media LDFLAGS: -lmedia
+#cgo haiku,media LDFLAGS: -lmedia -lgame
 */
 import "C"
