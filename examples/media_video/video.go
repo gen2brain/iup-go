@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -26,7 +27,7 @@ func main() {
 
 	video := iup.Video().SetAttribute("CANFOCUS", "YES")
 	value := func() iup.Ihandle {
-		return iup.Label("-").SetAttribute("EXPAND", "HORIZONTAL")
+		return iup.Label("-").SetAttributes("EXPAND=HORIZONTAL, ELLIPSIS=YES")
 	}
 	name, format, elapsed, status := value(), value(), value(), value()
 	status.SetAttribute("TITLE", video.GetAttribute("STATE"))
@@ -45,8 +46,10 @@ func main() {
 	}))
 
 	source, sourceURL := "", false
+	sourceVersion := 0
 	load := func(text string, url bool) {
 		source, sourceURL = text, url
+		sourceVersion++
 		if url {
 			video.SetAttribute("URL", text)
 			name.SetAttribute("TITLE", text)
@@ -98,6 +101,93 @@ func main() {
 		return iup.DEFAULT
 	}))
 
+	subtitleFiles := []string{}
+	subtitles := iup.List().SetAttributes("DROPDOWN=YES, EXPAND=HORIZONTAL, VISIBLECOLUMNS=6")
+	subtitleCount := 0
+	subtitleSourceVersion := -1
+	updateSubtitles := func(force bool) {
+		count := video.GetInt("SUBTITLECOUNT")
+		if !force && count == subtitleCount && sourceVersion == subtitleSourceVersion {
+			return
+		}
+		subtitleCount = count
+		subtitleSourceVersion = sourceVersion
+		subtitles.SetAttribute("REMOVEITEM", "ALL")
+		for index, label := range []string{"Auto", "Off"} {
+			subtitles.SetAttribute(strconv.Itoa(index+1), label)
+		}
+		for index := 1; index <= count; index++ {
+			label := video.GetAttribute("SUBTITLENAME" + strconv.Itoa(index))
+			if label == "" {
+				label = fmt.Sprintf("Track %d", index)
+			}
+			if language := video.GetAttribute("SUBTITLELANGUAGE" + strconv.Itoa(index)); language != "" {
+				label += " (" + language + ")"
+			}
+			subtitles.SetAttribute(strconv.Itoa(index+2), label)
+		}
+		for index, path := range subtitleFiles {
+			subtitles.SetAttribute(strconv.Itoa(count+index+3), filepath.Base(path))
+		}
+		selection := 1
+		switch video.GetAttribute("SUBTITLE") {
+		case "OFF":
+			selection = 2
+		case "EXTERNAL":
+			for index, path := range subtitleFiles {
+				if path == video.GetAttribute("SUBTITLEFILE") {
+					selection = count + index + 3
+				}
+			}
+		default:
+			if index := video.GetInt("SUBTITLE"); index > 0 {
+				selection = index + 2
+			}
+		}
+		subtitles.SetAttribute("VALUE", selection)
+	}
+	subtitles.SetCallback("ACTION", iup.ListActionFunc(func(_ iup.Ihandle, _ string, index, selected int) int {
+		if selected == 0 {
+			return iup.DEFAULT
+		}
+		switch {
+		case index == 1:
+			video.SetAttribute("SUBTITLE", "AUTO")
+		case index == 2:
+			video.SetAttribute("SUBTITLE", "OFF")
+		case index <= subtitleCount+2:
+			video.SetAttribute("SUBTITLE", index-2)
+		case index-subtitleCount-3 < len(subtitleFiles):
+			video.SetAttribute("SUBTITLEFILE", subtitleFiles[index-subtitleCount-3])
+		}
+		return iup.DEFAULT
+	}))
+	addSubtitleFile := func(path string) {
+		video.SetAttribute("SUBTITLEFILE", path)
+		if video.GetAttribute("SUBTITLEERROR") != "" {
+			return
+		}
+		if !slices.Contains(subtitleFiles, path) {
+			subtitleFiles = append(subtitleFiles, path)
+		}
+		updateSubtitles(true)
+	}
+	openSubtitles := iup.Button("Subtitles...").SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
+		file := iup.FileDlg().SetAttributes(`DIALOGTYPE=OPEN, TITLE="Open Subtitles", EXTFILTER="Subtitles|*.srt;*.vtt|All Files|*.*|"`)
+		iup.Popup(file, iup.CENTER, iup.CENTER)
+		if file.GetInt("STATUS") != -1 {
+			addSubtitleFile(file.GetAttribute("VALUE"))
+		}
+		file.Destroy()
+		return iup.DEFAULT
+	}))
+	delay := iup.Text().SetAttributes("VISIBLECOLUMNS=6, VALUE=0")
+	delay.SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(func(ih iup.Ihandle) int {
+		video.SetAttribute("SUBTITLEDELAY", ih.GetAttribute("VALUE"))
+		return iup.DEFAULT
+	}))
+	updateSubtitles(true)
+
 	loop := iup.Toggle("Loop").SetCallback("ACTION", iup.ToggleActionFunc(func(_ iup.Ihandle, state int) int {
 		video.SetAttribute("LOOP", state)
 		return iup.DEFAULT
@@ -140,6 +230,7 @@ func main() {
 
 	timer := iup.Timer().SetAttributes("TIME=250, RUN=YES")
 	timer.SetCallback("ACTION_CB", iup.TimerActionFunc(func(iup.Ihandle) int {
+		updateSubtitles(false)
 		if seek >= 0 {
 			video.SetAttribute("POSITION", seek)
 			seek = -1
@@ -160,8 +251,9 @@ func main() {
 
 	top := iup.Vbox(
 		iup.Hbox(action("Play", "PLAY"), action("Pause", "PAUSE"), action("Stop", "STOP")).SetAttributes("GAP=5, ALIGNMENT=ACENTER"),
-		iup.Hbox(loop, mute, backend).SetAttributes("GAP=5, ALIGNMENT=ACENTER"),
+		iup.Hbox(loop, mute, iup.Label("Engine"), backend).SetAttributes("GAP=5, ALIGNMENT=ACENTER"),
 		iup.Hbox(url, urlButton, open).SetAttributes("GAP=5, ALIGNMENT=ACENTER"),
+		iup.Hbox(openSubtitles, subtitles, iup.Label("Delay (s)"), delay).SetAttributes("GAP=5, ALIGNMENT=ACENTER"),
 	).SetAttribute("GAP", 5)
 	bottom := iup.GridBox(
 		iup.Label("Source"), name,
@@ -172,7 +264,7 @@ func main() {
 		iup.Label("State"), status,
 	).SetAttributes("NUMDIV=2, SIZECOL=-1, SIZELIN=-1, GAPLIN=5, GAPCOL=10, ALIGNMENTLIN=ACENTER")
 	layout := iup.Vbox(top, video, bottom).SetAttributes("MARGIN=10x10, GAP=5")
-	dialog := iup.Dialog(layout).SetAttribute("TITLE", "Video")
+	dialog := iup.Dialog(layout).SetAttributes(`TITLE="Video", SHRINK=YES`)
 
 	fullscreen := func(on bool) {
 		for _, ih := range []iup.Ihandle{top, bottom} {
@@ -214,6 +306,9 @@ func main() {
 	}
 	if len(os.Args) > 1 {
 		load(os.Args[1], strings.Contains(os.Args[1], "://"))
+	}
+	if len(os.Args) > 3 {
+		addSubtitleFile(os.Args[3])
 	}
 	iup.Show(dialog)
 	iup.MainLoop()
