@@ -54,6 +54,10 @@ struct _IcontrolData
   char backend[16];
   char* source;
   char* audio;
+  int adjust[IVIDEO_ADJUST_COUNT];
+  IvideoAudioDevice* devices;
+  int device_count;
+  const IvideoBackend* device_backend;
   int url, intent, state, ready, ended, reported_error, reported_state, inhibit;
   int pending_seek;
   double seek_position;
@@ -744,6 +748,86 @@ static void iVideoClose(Ihandle* ih)
   ih->data->subtitle_ticks = 0;
 }
 
+int iupVideoAddAudioDevice(IvideoAudioDevice** devices, int count, const char* id, const char* name)
+{
+  IvideoAudioDevice* list = (IvideoAudioDevice*)realloc(*devices, (count + 1) * sizeof(IvideoAudioDevice));
+  if (!list)
+    return count;
+  *devices = list;
+  list[count].id = iupStrDup(id);
+  list[count].name = iupStrDup(name && name[0] ? name : id);
+  if (!list[count].id || !list[count].name)
+  {
+    free(list[count].id);
+    free(list[count].name);
+    return count;
+  }
+  return count + 1;
+}
+
+void iupVideoFreeAudioDevices(IvideoAudioDevice* devices, int count)
+{
+  int i;
+  for (i = 0; i < count; i++)
+  {
+    free(devices[i].id);
+    free(devices[i].name);
+  }
+  free(devices);
+}
+
+static int iVideoBackendUsable(Ihandle* ih, const IvideoBackend* backend)
+{
+  return (iupStrEqualNoCase(ih->data->backend, "AUTO") || iupStrEqualNoCase(ih->data->backend, backend->name)) &&
+         (!ih->data->audio || backend->audio) && backend->available();
+}
+
+static const IvideoBackend* iVideoFirstBackend(Ihandle* ih)
+{
+  int index;
+  const IvideoBackend* backend;
+  for (index = 0; (backend = iupdrvVideoBackend(index)) != NULL; index++)
+    if (iVideoBackendUsable(ih, backend))
+      return backend;
+  return NULL;
+}
+
+static const IvideoBackend* iVideoSelectedBackend(Ihandle* ih)
+{
+  return ih->data->session ? ih->data->session->backend : iVideoFirstBackend(ih);
+}
+
+static void iVideoFreeDevices(Ihandle* ih)
+{
+  iupVideoFreeAudioDevices(ih->data->devices, ih->data->device_count);
+  ih->data->devices = NULL;
+  ih->data->device_count = 0;
+  ih->data->device_backend = NULL;
+}
+
+static void iVideoListDevices(Ihandle* ih, const IvideoBackend* backend)
+{
+  iVideoFreeDevices(ih);
+  if (backend && backend->audio_devices)
+    ih->data->device_count = backend->audio_devices(&ih->data->devices);
+  ih->data->device_backend = backend;
+}
+
+static IvideoAudioDevice* iVideoDevice(Ihandle* ih, const IvideoBackend* backend, int index)
+{
+  if (!backend || index <= 0)
+    return NULL;
+  if (ih->data->device_backend != backend)
+    iVideoListDevices(ih, backend);
+  return index <= ih->data->device_count ? &ih->data->devices[index - 1] : NULL;
+}
+
+static char* iVideoAudioDeviceId(Ihandle* ih, const IvideoBackend* backend, int index)
+{
+  IvideoAudioDevice* device = iVideoDevice(ih, backend, index);
+  return device ? iupStrDup(device->id) : NULL;
+}
+
 static void iVideoVolume(Ihandle* ih, int volume, int mute)
 {
   IvideoSession* session = ih->data->session;
@@ -751,9 +835,17 @@ static void iVideoVolume(Ihandle* ih, int volume, int mute)
     session->backend->volume(session, volume, mute);
 }
 
+static void iVideoAdjust(Ihandle* ih)
+{
+  IvideoSession* session = ih->data->session;
+  if (session && session->backend->adjust)
+    session->backend->adjust(session, ih->data->adjust);
+}
+
 static void iVideoSettings(Ihandle* ih)
 {
   iVideoVolume(ih, iupAttribGetInt(ih, "VOLUME"), iupAttribGetBoolean(ih, "MUTE"));
+  iVideoAdjust(ih);
 }
 
 static void iVideoStart(Ihandle* ih)
@@ -764,6 +856,7 @@ static void iVideoStart(Ihandle* ih)
   for (index = 0; (backend = iupdrvVideoBackend(index)) != NULL; index++)
   {
     IvideoSession* session;
+    char* device;
     if (!iupStrEqualNoCase(ih->data->backend, "AUTO") && !iupStrEqualNoCase(ih->data->backend, backend->name))
       continue;
     if (!backend->available())
@@ -780,14 +873,20 @@ static void iVideoStart(Ihandle* ih)
     session->mutex = iupdrvMutexCreate();
     session->backend = backend;
     session->audio = ih->data->audio;
+    device = !ih->data->device_backend || ih->data->device_backend == backend ? iVideoAudioDeviceId(ih, backend, iupAttribGetInt(ih, "AUDIODEVICE")) : NULL;
+    session->audio_device = device;
     session->info.state = IVIDEO_LOADING;
     ih->data->session = session;
     if (backend->open(session, ih, ih->data->source, ih->data->url))
     {
       session->audio = NULL;
+      session->audio_device = NULL;
+      free(device);
       iVideoSettings(ih);
       return;
     }
+    session->audio_device = NULL;
+    free(device);
     iupdrvMutexLock(session->mutex);
     iupStrCopyN(error, sizeof(error), session->info.error);
     iupdrvMutexUnlock(session->mutex);
@@ -1251,13 +1350,89 @@ static char* iVideoGetAudioUrlAttrib(Ihandle* ih)
 
 static char* iVideoGetAvailableAttrib(Ihandle* ih)
 {
-  int index;
-  const IvideoBackend* backend;
-  for (index = 0; (backend = iupdrvVideoBackend(index)) != NULL; index++)
-    if ((iupStrEqualNoCase(ih->data->backend, "AUTO") || iupStrEqualNoCase(ih->data->backend, backend->name)) &&
-        (!ih->data->audio || backend->audio) && backend->available())
-      return "YES";
-  return "NO";
+  return iupStrReturnBoolean(iVideoFirstBackend(ih) != NULL);
+}
+
+static int iVideoSetAudioDeviceAttrib(Ihandle* ih, const char* value)
+{
+  IvideoSession* session = ih->data->session;
+  int device = 0;
+  if (value && (!iupStrToInt(value, &device) || device < 0))
+    return 0;
+  if (session && session->backend->audio_device)
+  {
+    char* id = iVideoAudioDeviceId(ih, session->backend, device);
+    session->backend->audio_device(session, id);
+    free(id);
+  }
+  return 1;
+}
+
+static char* iVideoGetAudioDeviceCountAttrib(Ihandle* ih)
+{
+  iVideoListDevices(ih, iVideoSelectedBackend(ih));
+  return iupStrReturnInt(ih->data->device_count + 1);
+}
+
+static char* iVideoGetAudioDeviceNameAttrib(Ihandle* ih, int id)
+{
+  IvideoAudioDevice* device;
+  if (id == 0)
+    return "Default";
+  device = iVideoDevice(ih, iVideoSelectedBackend(ih), id);
+  return device ? iupStrReturnStr(device->name) : NULL;
+}
+
+static int iVideoSetAdjust(Ihandle* ih, int index, const char* value)
+{
+  int adjust = 0;
+  if (value && !iupStrToInt(value, &adjust))
+    return 0;
+  if (adjust < -100) adjust = -100;
+  if (adjust > 100) adjust = 100;
+  ih->data->adjust[index] = adjust;
+  iVideoAdjust(ih);
+  return 0;
+}
+
+static int iVideoSetBrightnessAttrib(Ihandle* ih, const char* value)
+{
+  return iVideoSetAdjust(ih, IVIDEO_BRIGHTNESS, value);
+}
+
+static int iVideoSetContrastAttrib(Ihandle* ih, const char* value)
+{
+  return iVideoSetAdjust(ih, IVIDEO_CONTRAST, value);
+}
+
+static int iVideoSetSaturationAttrib(Ihandle* ih, const char* value)
+{
+  return iVideoSetAdjust(ih, IVIDEO_SATURATION, value);
+}
+
+static int iVideoSetGammaAttrib(Ihandle* ih, const char* value)
+{
+  return iVideoSetAdjust(ih, IVIDEO_GAMMA, value);
+}
+
+static char* iVideoGetBrightnessAttrib(Ihandle* ih)
+{
+  return iupStrReturnInt(ih->data->adjust[IVIDEO_BRIGHTNESS]);
+}
+
+static char* iVideoGetContrastAttrib(Ihandle* ih)
+{
+  return iupStrReturnInt(ih->data->adjust[IVIDEO_CONTRAST]);
+}
+
+static char* iVideoGetSaturationAttrib(Ihandle* ih)
+{
+  return iupStrReturnInt(ih->data->adjust[IVIDEO_SATURATION]);
+}
+
+static char* iVideoGetGammaAttrib(Ihandle* ih)
+{
+  return iupStrReturnInt(ih->data->adjust[IVIDEO_GAMMA]);
 }
 
 static int iVideoSetPlayAttrib(Ihandle* ih, const char* value)
@@ -1586,6 +1761,7 @@ static void iVideoDestroyMethod(Ihandle* ih)
   free(ih->data->source);
   free(ih->data->audio);
   free(ih->data->subtitle_file);
+  iVideoFreeDevices(ih);
   iVideoFreeSubtitles(ih->data->subtitles, ih->data->subtitle_count);
   if (lifetime && --lifetime->references == 0)
     free(lifetime);
@@ -1661,6 +1837,13 @@ Iclass* iupVideoNewClass(void)
   iupClassRegisterAttribute(ic, "LOOP", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", flags);
   iupClassRegisterAttribute(ic, "VOLUME", NULL, iVideoSetVolumeAttrib, IUPAF_SAMEASSYSTEM, "100", flags);
   iupClassRegisterAttribute(ic, "MUTE", NULL, iVideoSetMuteAttrib, IUPAF_SAMEASSYSTEM, "NO", flags);
+  iupClassRegisterAttribute(ic, "AUDIODEVICE", NULL, iVideoSetAudioDeviceAttrib, IUPAF_SAMEASSYSTEM, "0", flags);
+  iupClassRegisterAttribute(ic, "AUDIODEVICECOUNT", iVideoGetAudioDeviceCountAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);
+  iupClassRegisterAttributeId(ic, "AUDIODEVICENAME", iVideoGetAudioDeviceNameAttrib, NULL, flags | IUPAF_READONLY);
+  iupClassRegisterAttribute(ic, "BRIGHTNESS", iVideoGetBrightnessAttrib, iVideoSetBrightnessAttrib, IUPAF_SAMEASSYSTEM, "0", flags);
+  iupClassRegisterAttribute(ic, "CONTRAST", iVideoGetContrastAttrib, iVideoSetContrastAttrib, IUPAF_SAMEASSYSTEM, "0", flags);
+  iupClassRegisterAttribute(ic, "SATURATION", iVideoGetSaturationAttrib, iVideoSetSaturationAttrib, IUPAF_SAMEASSYSTEM, "0", flags);
+  iupClassRegisterAttribute(ic, "GAMMA", iVideoGetGammaAttrib, iVideoSetGammaAttrib, IUPAF_SAMEASSYSTEM, "0", flags);
   iupClassRegisterAttribute(ic, "SUBTITLE", iVideoGetSubtitleAttrib, iVideoSetSubtitleAttrib, IUPAF_SAMEASSYSTEM, "AUTO", flags);
   iupClassRegisterAttribute(ic, "SUBTITLEFILE", iVideoGetSubtitleFileAttrib, iVideoSetSubtitleFileAttrib, NULL, NULL, flags);
   iupClassRegisterAttribute(ic, "SUBTITLEDATA", NULL, iVideoSetSubtitleDataAttrib, NULL, NULL, flags | IUPAF_WRITEONLY);

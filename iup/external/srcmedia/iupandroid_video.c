@@ -34,6 +34,56 @@ static int androidVideoAvailable(void)
   return 1;
 }
 
+static void androidVideoAudioDevice(IvideoSession* session, const char* id)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupVideoHelper_audioDevice);
+  IandroidVideo* context = (IandroidVideo*)session->context;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupVideoHelper, env, "io/github/gen2brain/iupgo/IupVideoHelper");
+  jmethodID method = IUPJNI_GetStaticMethodID(IupVideoHelper_audioDevice, env, cls, "audioDevice", "(Ljava/lang/Object;I)V");
+  int device = 0;
+  if (id)
+    iupStrToInt(id, &device);
+  (*env)->CallStaticVoidMethod(env, cls, method, context->player, (jint)device);
+  iupAndroid_CheckException(env, "IupVideoHelper.audioDevice");
+  (*env)->DeleteLocalRef(env, cls);
+}
+
+static int androidVideoAudioDevices(IvideoAudioDevice** devices)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupVideoHelper_audioDevices);
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = IUPJNI_FindClass(IupVideoHelper, env, "io/github/gen2brain/iupgo/IupVideoHelper");
+  jmethodID method = IUPJNI_GetStaticMethodID(IupVideoHelper_audioDevices, env, cls, "audioDevices", "()[Ljava/lang/String;");
+  jobjectArray values = (jobjectArray)(*env)->CallStaticObjectMethod(env, cls, method);
+  int i, total, count = 0;
+  iupAndroid_CheckException(env, "IupVideoHelper.audioDevices");
+  if (values)
+  {
+    total = (int)(*env)->GetArrayLength(env, values);
+    for (i = 0; i + 1 < total; i += 2)
+    {
+      jstring id = (jstring)(*env)->GetObjectArrayElement(env, values, i);
+      jstring name = (jstring)(*env)->GetObjectArrayElement(env, values, i + 1);
+      const char* id_text = id ? (*env)->GetStringUTFChars(env, id, NULL) : NULL;
+      const char* name_text = name ? (*env)->GetStringUTFChars(env, name, NULL) : NULL;
+      if (id_text)
+        count = iupVideoAddAudioDevice(devices, count, id_text, name_text);
+      if (id_text)
+        (*env)->ReleaseStringUTFChars(env, id, id_text);
+      if (name_text)
+        (*env)->ReleaseStringUTFChars(env, name, name_text);
+      if (id)
+        (*env)->DeleteLocalRef(env, id);
+      if (name)
+        (*env)->DeleteLocalRef(env, name);
+    }
+    (*env)->DeleteLocalRef(env, values);
+  }
+  (*env)->DeleteLocalRef(env, cls);
+  return count;
+}
+
 static int androidVideoOpen(IvideoSession* session, Ihandle* ih, const char* source, int url)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupVideoHelper_create);
@@ -74,6 +124,8 @@ static int androidVideoOpen(IvideoSession* session, Ihandle* ih, const char* sou
     iupVideoError(session, "Cannot create Android video player");
     return 0;
   }
+  if (session->audio_device)
+    androidVideoAudioDevice(session, session->audio_device);
   return 1;
 }
 
@@ -324,7 +376,7 @@ char* iupdrvVideoReadSubtitle(const char* filename)
   return text;
 }
 
-static const IvideoBackend androidVideoBackend = {"NATIVE", androidVideoAvailable, androidVideoOpen, androidVideoClose, androidVideoPlay, androidVideoSeek, androidVideoVolume, androidVideoPoll, androidVideoLayout, androidVideoSubtitleCount, androidVideoSubtitleName, androidVideoSubtitleSelect, androidVideoSubtitleText, 0};
+static const IvideoBackend androidVideoBackend = {"NATIVE", androidVideoAvailable, androidVideoOpen, androidVideoClose, androidVideoPlay, androidVideoSeek, androidVideoVolume, androidVideoPoll, androidVideoLayout, androidVideoSubtitleCount, androidVideoSubtitleName, androidVideoSubtitleSelect, androidVideoSubtitleText, 0, androidVideoAudioDevices, androidVideoAudioDevice, NULL};
 
 const IvideoBackend* iupdrvVideoBackend(int index)
 {

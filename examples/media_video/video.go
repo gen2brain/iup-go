@@ -78,6 +78,28 @@ func main() {
 		}))
 	}
 
+	output := iup.List().SetAttributes("DROPDOWN=YES, EXPAND=HORIZONTAL, VISIBLECOLUMNS=10")
+	updateOutputs := func() {
+		output.SetAttribute("REMOVEITEM", "ALL")
+		for index := 0; index < video.GetInt("AUDIODEVICECOUNT"); index++ {
+			output.SetAttribute(strconv.Itoa(index+1), video.GetAttribute("AUDIODEVICENAME"+strconv.Itoa(index)))
+		}
+		output.SetAttribute("VALUE", 1)
+		video.SetAttribute("AUDIODEVICE", 0)
+	}
+	output.SetCallback("ACTION", iup.ListActionFunc(func(_ iup.Ihandle, _ string, index, selected int) int {
+		if selected != 0 {
+			video.SetAttribute("AUDIODEVICE", index-1)
+		}
+		return iup.DEFAULT
+	}))
+	adjustment := func(attribute string) iup.Ihandle {
+		return iup.Val("HORIZONTAL").SetAttributes("MIN=-100, MAX=100, VALUE=0, EXPAND=HORIZONTAL").SetCallback("VALUECHANGED_CB", iup.ValueChangedFunc(func(ih iup.Ihandle) int {
+			video.SetAttribute(attribute, ih.GetInt("VALUE"))
+			return iup.DEFAULT
+		}))
+	}
+
 	engines := []string{"AUTO"}
 	for _, engine := range []string{"NATIVE", "VLC", "GSTREAMER", "MPV"} {
 		video.SetAttribute("BACKEND", engine)
@@ -94,6 +116,7 @@ func main() {
 		if selected != 0 {
 			video.SetAttribute("FILE", nil)
 			video.SetAttribute("BACKEND", text)
+			updateOutputs()
 			if source != "" {
 				load(source, sourceURL)
 			}
@@ -261,6 +284,11 @@ func main() {
 		iup.Label("Time"), elapsed,
 		iup.Label("Position"), position,
 		iup.Label("Volume"), volume,
+		iup.Label("Output"), output,
+		iup.Label("Brightness"), adjustment("BRIGHTNESS"),
+		iup.Label("Contrast"), adjustment("CONTRAST"),
+		iup.Label("Saturation"), adjustment("SATURATION"),
+		iup.Label("Gamma"), adjustment("GAMMA"),
 		iup.Label("State"), status,
 	).SetAttributes("NUMDIV=2, SIZECOL=-1, SIZELIN=-1, GAPLIN=5, GAPCOL=10, ALIGNMENTLIN=ACENTER")
 	layout := iup.Vbox(top, video, bottom).SetAttributes("MARGIN=10x10, GAP=5")
@@ -304,6 +332,7 @@ func main() {
 			}
 		}
 	}
+	updateOutputs()
 	if len(os.Args) > 1 {
 		load(os.Args[1], strings.Contains(os.Args[1], "://"))
 	}

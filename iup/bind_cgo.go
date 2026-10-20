@@ -88,7 +88,7 @@ package iup
 #cgo darwin,!ios LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications -framework CoreLocation
 #cgo darwin,!ios,gl LDFLAGS: -framework OpenGL
 #cgo darwin,!ios,!gtk3,!gtk4,!qt,!qml,!fltk,web LDFLAGS: -framework WebKit
-#cgo darwin,!ios,media LDFLAGS: -framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo
+#cgo darwin,!ios,media LDFLAGS: -framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework CoreImage
 
 #cgo darwin,!ios,gtk3 CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3 -x objective-c
 #cgo darwin,!ios,gtk3,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
@@ -101,7 +101,7 @@ package iup
 #cgo ios CFLAGS: -Iexternal/src/cocoatouch -x objective-c -DIUP_USE_COCOATOUCH
 #cgo ios LDFLAGS: -framework Foundation -framework UIKit -framework CoreGraphics -framework CoreText -framework QuartzCore -framework ImageIO -framework UserNotifications -framework UniformTypeIdentifiers -framework CoreLocation -framework CoreMotion
 #cgo ios,web LDFLAGS: -framework WebKit
-#cgo ios,media LDFLAGS: -framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo
+#cgo ios,media LDFLAGS: -framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework CoreImage
 #cgo ios,gl LDFLAGS: -framework OpenGLES
 
 #cgo efl CFLAGS: -Iexternal/src/efl -DIUP_USE_EFL -DEFL_BETA_API_SUPPORT=1 -DEFL_EO_API_SUPPORT=1

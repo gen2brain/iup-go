@@ -62,7 +62,7 @@ elseif(APPLE AND IUP_BACKEND STREQUAL "cocoatouch")
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_video.m"
     PROPERTIES LANGUAGE OBJC
   )
-  set(_MEDIA_LIBS "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreVideo" "-framework QuartzCore" "-framework UIKit")
+  set(_MEDIA_LIBS "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreVideo" "-framework CoreImage" "-framework QuartzCore" "-framework UIKit")
 
 elseif(APPLE)
   list(APPEND _MEDIA_SOURCES
@@ -75,7 +75,7 @@ elseif(APPLE)
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupapple_video.m"
     PROPERTIES LANGUAGE OBJC
   )
-  set(_MEDIA_LIBS "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreVideo" "-framework QuartzCore" "-framework AppKit")
+  set(_MEDIA_LIBS "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox" "-framework AVFoundation" "-framework CoreMedia" "-framework CoreVideo" "-framework CoreImage" "-framework QuartzCore" "-framework AppKit")
 
 elseif(IUP_BACKEND STREQUAL "android")
   list(APPEND _MEDIA_SOURCES
@@ -152,9 +152,9 @@ set(IUPMEDIA_PC_LIBS_PRIVATE "")
 if(WIN32)
   set(IUPMEDIA_PC_LIBS_PRIVATE "-lmfuuid -lole32 -loleaut32")
 elseif(APPLE AND IUP_BACKEND STREQUAL "cocoatouch")
-  set(IUPMEDIA_PC_LIBS_PRIVATE "-framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework QuartzCore -framework UIKit")
+  set(IUPMEDIA_PC_LIBS_PRIVATE "-framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework CoreImage -framework QuartzCore -framework UIKit")
 elseif(APPLE)
-  set(IUPMEDIA_PC_LIBS_PRIVATE "-framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework QuartzCore -framework AppKit")
+  set(IUPMEDIA_PC_LIBS_PRIVATE "-framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework CoreImage -framework QuartzCore -framework AppKit")
 elseif(IUP_BACKEND STREQUAL "haiku")
   set(IUPMEDIA_PC_LIBS_PRIVATE "-lmedia")
 elseif(NOT WIN32 AND NOT IUP_BACKEND STREQUAL "android" AND NOT EMSCRIPTEN)
