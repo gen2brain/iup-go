@@ -8,7 +8,7 @@
 #define __IUPVIDEO_VLC_DLOPEN_H
 
 #include <stdint.h>
-#include <dlfcn.h>
+#include "iupvideo_os.h"
 
 typedef struct libvlc_instance_t libvlc_instance_t;
 typedef struct libvlc_media_t libvlc_media_t;
@@ -48,6 +48,12 @@ typedef enum
   libvlc_video_orient_right_top,
   libvlc_video_orient_right_bottom
 } libvlc_video_orient_t;
+
+typedef enum
+{
+  libvlc_media_slave_type_subtitle,
+  libvlc_media_slave_type_audio
+} libvlc_media_slave_type_t;
 
 enum
 {
@@ -108,6 +114,7 @@ static libvlc_instance_t* (*iupvlc_new)(int, const char* const*);
 static libvlc_media_t* (*iupvlc_media_new_path)(libvlc_instance_t*, const char*);
 static libvlc_media_t* (*iupvlc_media_new_location)(libvlc_instance_t*, const char*);
 static void (*iupvlc_media_add_option)(libvlc_media_t*, const char*);
+static int (*iupvlc_media_slaves_add)(libvlc_media_t*, libvlc_media_slave_type_t, unsigned, const char*);
 static void (*iupvlc_media_release)(libvlc_media_t*);
 static unsigned (*iupvlc_media_tracks_get)(libvlc_media_t*, libvlc_media_track_t***);
 static void (*iupvlc_media_tracks_release)(libvlc_media_track_t**, unsigned);
@@ -139,6 +146,7 @@ static int64_t (*iupvlc_video_get_spu_delay)(libvlc_media_player_t*);
 #define libvlc_media_new_path iupvlc_media_new_path
 #define libvlc_media_new_location iupvlc_media_new_location
 #define libvlc_media_add_option iupvlc_media_add_option
+#define libvlc_media_slaves_add iupvlc_media_slaves_add
 #define libvlc_media_release iupvlc_media_release
 #define libvlc_media_tracks_get iupvlc_media_tracks_get
 #define libvlc_media_tracks_release iupvlc_media_tracks_release
@@ -167,7 +175,7 @@ static int64_t (*iupvlc_video_get_spu_delay)(libvlc_media_player_t*);
 
 static void* iupVlcSymbol(const char* name, int* missing)
 {
-  void* symbol = dlsym(iupvlc_handle, name);
+  void* symbol = ivideoLibrarySymbol(iupvlc_handle, name);
   if (!symbol)
     *missing = 1;
   return symbol;
@@ -180,7 +188,17 @@ static int iupVlcOpen(void)
   if (iupvlc_handle)
     return 1;
 
-  iupvlc_handle = dlopen("libvlc.so.5", RTLD_NOW | RTLD_LOCAL);
+#ifdef _WIN32
+  iupvlc_handle = ivideoLibraryOpen("libvlc.dll");
+  if (!iupvlc_handle)
+  {
+    wchar_t dir[MAX_PATH];
+    if (ivideoRegistryDir(HKEY_LOCAL_MACHINE, L"Software\\VideoLAN\\VLC", L"InstallDir", dir, MAX_PATH))
+      iupvlc_handle = ivideoLibraryOpenIn(dir, "libvlc.dll");
+  }
+#else
+  iupvlc_handle = ivideoLibraryOpen("libvlc.so.5");
+#endif
   if (!iupvlc_handle)
     return 0;
 
@@ -189,6 +207,7 @@ static int iupVlcOpen(void)
   *(void**)&iupvlc_media_new_path = iupVlcSymbol("libvlc_media_new_path", &missing);
   *(void**)&iupvlc_media_new_location = iupVlcSymbol("libvlc_media_new_location", &missing);
   *(void**)&iupvlc_media_add_option = iupVlcSymbol("libvlc_media_add_option", &missing);
+  *(void**)&iupvlc_media_slaves_add = iupVlcSymbol("libvlc_media_slaves_add", &missing);
   *(void**)&iupvlc_media_release = iupVlcSymbol("libvlc_media_release", &missing);
   *(void**)&iupvlc_media_tracks_get = iupVlcSymbol("libvlc_media_tracks_get", &missing);
   *(void**)&iupvlc_media_tracks_release = iupVlcSymbol("libvlc_media_tracks_release", &missing);
@@ -217,7 +236,7 @@ static int iupVlcOpen(void)
 
   if (missing || libvlc_get_version()[0] != '3')
   {
-    dlclose(iupvlc_handle);
+    ivideoLibraryClose(iupvlc_handle);
     iupvlc_handle = NULL;
     return 0;
   }

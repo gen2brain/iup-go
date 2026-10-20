@@ -362,4 +362,4 @@ static int iVideoGstSubtitleSelect(IvideoSession* session, int index, double del
   return 1;
 }
 
-const IvideoBackend iupVideoGstreamerBackend = {"GSTREAMER", iVideoGstAvailable, iVideoGstOpen, iVideoGstClose, iVideoGstPlay, iVideoGstSeek, iVideoGstVolume, iVideoGstPoll, NULL, iVideoGstSubtitleCount, iVideoGstSubtitleName, iVideoGstSubtitleSelect, NULL};
+const IvideoBackend iupVideoGstreamerBackend = {"GSTREAMER", iVideoGstAvailable, iVideoGstOpen, iVideoGstClose, iVideoGstPlay, iVideoGstSeek, iVideoGstVolume, iVideoGstPoll, NULL, iVideoGstSubtitleCount, iVideoGstSubtitleName, iVideoGstSubtitleSelect, NULL, 0};

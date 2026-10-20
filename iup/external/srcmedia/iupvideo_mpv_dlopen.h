@@ -8,7 +8,7 @@
 #define __IUPVIDEO_MPV_DLOPEN_H
 
 #include <stdint.h>
-#include <dlfcn.h>
+#include "iupvideo_os.h"
 
 typedef struct mpv_handle mpv_handle;
 typedef struct mpv_render_context mpv_render_context;
@@ -39,6 +39,7 @@ typedef enum
   MPV_EVENT_SHUTDOWN = 1,
   MPV_EVENT_COMMAND_REPLY = 5,
   MPV_EVENT_END_FILE = 7,
+  MPV_EVENT_FILE_LOADED = 8,
   MPV_EVENT_PLAYBACK_RESTART = 21,
   MPV_EVENT_PROPERTY_CHANGE = 22
 } mpv_event_id;
@@ -164,7 +165,7 @@ static void (*iupmpv_render_context_free)(mpv_render_context*);
 
 static void* iupMpvSymbol(const char* name, int* missing)
 {
-  void* symbol = dlsym(iupmpv_handle, name);
+  void* symbol = ivideoLibrarySymbol(iupmpv_handle, name);
   if (!symbol)
     *missing = 1;
   return symbol;
@@ -177,7 +178,13 @@ static int iupMpvOpen(void)
   if (iupmpv_handle)
     return 1;
 
-  iupmpv_handle = dlopen("libmpv.so.2", RTLD_NOW | RTLD_LOCAL);
+#ifdef _WIN32
+  iupmpv_handle = ivideoLibraryOpen("libmpv-2.dll");
+  if (!iupmpv_handle)
+    iupmpv_handle = ivideoLibraryOpen("mpv-2.dll");
+#else
+  iupmpv_handle = ivideoLibraryOpen("libmpv.so.2");
+#endif
   if (!iupmpv_handle)
     return 0;
 
@@ -204,7 +211,7 @@ static int iupMpvOpen(void)
 
   if (missing || (mpv_client_api_version() >> 16) != 2)
   {
-    dlclose(iupmpv_handle);
+    ivideoLibraryClose(iupmpv_handle);
     iupmpv_handle = NULL;
     return 0;
   }

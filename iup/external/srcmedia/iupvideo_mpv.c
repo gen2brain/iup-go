@@ -5,17 +5,18 @@
  */
 
 #include <limits.h>
-#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "iup_video.h"
 #include "iup_str.h"
+#include "iup_attrib.h"
 #include "iupvideo_mpv_dlopen.h"
 
 enum
 {
   IMPV_LOADFILE = 1,
+  IMPV_AUDIO_ADD,
   IMPV_TIME_POS,
   IMPV_DURATION,
   IMPV_PAUSE,
@@ -36,11 +37,12 @@ typedef struct
   IvideoSession* session;
   mpv_handle* player;
   mpv_render_context* renderer;
-  pthread_t thread;
-  pthread_mutex_t lock;
-  pthread_cond_t condition;
+  ivideo_thread_t thread;
+  ivideo_mutex_t lock;
+  ivideo_cond_t condition;
   int initialized, started, dirty, quit, width, height;
   int paused, buffering, idle, eof, rotate;
+  char* audio;
   int64_t* subtitles;
   int64_t subtitle_auto;
   int subtitle_count, subtitle_capacity, subtitle_explicit;
@@ -55,13 +57,13 @@ static int iVideoMpvLoad(void)
 static void iVideoMpvUpdate(void* opaque)
 {
   IvideoMpv* context = (IvideoMpv*)opaque;
-  pthread_mutex_lock(&context->lock);
+  ivideoMutexLock(&context->lock);
   context->dirty = 1;
-  pthread_cond_signal(&context->condition);
-  pthread_mutex_unlock(&context->lock);
+  ivideoCondSignal(&context->condition);
+  ivideoMutexUnlock(&context->lock);
 }
 
-static void* iVideoMpvRender(void* opaque)
+IVIDEO_THREAD(iVideoMpvRender, opaque)
 {
   IvideoMpv* context = (IvideoMpv*)opaque;
   unsigned char* pixels = NULL;
@@ -72,14 +74,14 @@ static void* iVideoMpvRender(void* opaque)
     int size[2], quit;
     size_t stride, bytes;
     mpv_render_param params[5];
-    pthread_mutex_lock(&context->lock);
+    ivideoMutexLock(&context->lock);
     while (!context->dirty && !context->quit)
-      pthread_cond_wait(&context->condition, &context->lock);
+      ivideoCondWait(&context->condition, &context->lock);
     quit = context->quit;
     context->dirty = 0;
     size[0] = context->width;
     size[1] = context->height;
-    pthread_mutex_unlock(&context->lock);
+    ivideoMutexUnlock(&context->lock);
     if (quit)
       break;
     if (mpv_render_context_update(context->renderer) & MPV_RENDER_UPDATE_FRAME)
@@ -96,9 +98,9 @@ static void* iVideoMpvRender(void* opaque)
     bytes = stride * size[1];
     if (bytes > capacity)
     {
-      free(pixels);
-      pixels = NULL;
-      if (posix_memalign((void**)&pixels, 64, bytes) != 0)
+      ivideoAlignedFree(pixels);
+      pixels = (unsigned char*)ivideoAlignedAlloc(64, bytes);
+      if (!pixels)
       {
         iupVideoError(context->session, "Cannot allocate mpv video frame");
         break;
@@ -118,8 +120,8 @@ static void* iVideoMpvRender(void* opaque)
     iupVideoFrame(context->session, pixels, size[0], size[1], stride, 4);
     mpv_render_context_report_swap(context->renderer);
   }
-  free(pixels);
-  return NULL;
+  ivideoAlignedFree(pixels);
+  IVIDEO_THREAD_END;
 }
 
 static void iVideoMpvClose(IvideoSession* session)
@@ -129,11 +131,11 @@ static void iVideoMpvClose(IvideoSession* session)
     return;
   if (context->started)
   {
-    pthread_mutex_lock(&context->lock);
+    ivideoMutexLock(&context->lock);
     context->quit = 1;
-    pthread_cond_signal(&context->condition);
-    pthread_mutex_unlock(&context->lock);
-    pthread_join(context->thread, NULL);
+    ivideoCondSignal(&context->condition);
+    ivideoMutexUnlock(&context->lock);
+    ivideoThreadJoin(context->thread);
   }
   if (context->renderer)
   {
@@ -147,11 +149,76 @@ static void iVideoMpvClose(IvideoSession* session)
     else
       mpv_destroy(context->player);
   }
-  pthread_cond_destroy(&context->condition);
-  pthread_mutex_destroy(&context->lock);
+  ivideoCondDestroy(&context->condition);
+  ivideoMutexDestroy(&context->lock);
   free(context->subtitles);
+  free(context->audio);
   free(context);
   session->context = NULL;
+}
+
+static void iVideoMpvOption(mpv_handle* player, char* option)
+{
+  char* name = option;
+  char* value = strchr(option, '=');
+  if (name[0] == '-' && name[1] == '-')
+    name += 2;
+  if (value)
+    *value++ = 0;
+  else if (strncmp(name, "no-", 3) == 0)
+  {
+    name += 3;
+    value = "no";
+  }
+  else
+    value = "yes";
+  if (name[0])
+    mpv_set_option_string(player, name, value);
+}
+
+static void iVideoMpvOptions(mpv_handle* player, const char* options)
+{
+  char* option = (char*)malloc(strlen(options) + 1);
+  if (!option)
+    return;
+  while (*options)
+  {
+    size_t length = 0;
+    int quoted = 0;
+    while (*options == ' ' || *options == '\t' || *options == '\n' || *options == '\r')
+      options++;
+    while (*options && (quoted || (*options != ' ' && *options != '\t' && *options != '\n' && *options != '\r')))
+    {
+      if (*options == '"')
+        quoted = !quoted;
+      else
+        option[length++] = *options;
+      options++;
+    }
+    option[length] = 0;
+    if (length)
+      iVideoMpvOption(player, option);
+  }
+  free(option);
+}
+
+static int iVideoMpvRequired(mpv_handle* player)
+{
+  const char* enabled[] = {"pause", "keep-open", "idle"};
+  const char* disabled[] = {"terminal", "osc", "audio-display", "video-rotate", "sub-auto"};
+  unsigned i;
+  for (i = 0; i < sizeof(enabled) / sizeof(enabled[0]); i++)
+  {
+    if (mpv_set_option_string(player, enabled[i], "yes") < 0)
+      return 0;
+  }
+  for (i = 0; i < sizeof(disabled) / sizeof(disabled[0]); i++)
+  {
+    int status = mpv_set_option_string(player, disabled[i], "no");
+    if (status < 0 && status != MPV_ERROR_OPTION_NOT_FOUND)
+      return 0;
+  }
+  return mpv_set_option_string(player, "vo", "libmpv") >= 0;
 }
 
 static int iVideoMpvOpen(IvideoSession* session, Ihandle* ih, const char* source, int url)
@@ -160,21 +227,19 @@ static int iVideoMpvOpen(IvideoSession* session, Ihandle* ih, const char* source
   mpv_render_param params[] = {{MPV_RENDER_PARAM_API_TYPE, (void*)MPV_RENDER_API_TYPE_SW}, {MPV_RENDER_PARAM_INVALID, NULL}};
   const char* command[] = {"loadfile", source, NULL};
   char* path = NULL;
-  const char* flags[] = {"pause", "keep-open", "idle"};
-  const char* disabled[] = {"terminal", "osc", "config", "load-scripts", "audio-display", "ytdl", "video-rotate", "sub-auto"};
-  unsigned i;
-  (void)ih;
+  const char* options = iupAttribGet(ih, "MPVOPTIONS");
+  int config = iupAttribGetBoolean(ih, "MPVCONFIG");
   context = (IvideoMpv*)calloc(1, sizeof(IvideoMpv));
   if (!context)
     return 0;
-  if (pthread_mutex_init(&context->lock, NULL) != 0)
+  if (!ivideoMutexInit(&context->lock))
   {
     free(context);
     return 0;
   }
-  if (pthread_cond_init(&context->condition, NULL) != 0)
+  if (!ivideoCondInit(&context->condition))
   {
-    pthread_mutex_destroy(&context->lock);
+    ivideoMutexDestroy(&context->lock);
     free(context);
     return 0;
   }
@@ -182,42 +247,48 @@ static int iVideoMpvOpen(IvideoSession* session, Ihandle* ih, const char* source
   context->session = session;
   context->paused = 1;
   context->idle = 1;
+  if (session->audio)
+  {
+    context->audio = iupStrDup(session->audio);
+    if (!context->audio)
+      return 0;
+  }
   context->player = mpv_create();
   if (!context->player)
   {
     iupVideoError(session, "Cannot create mpv player");
     return 0;
   }
-  for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++)
+  mpv_set_option_string(context->player, "config", config ? "yes" : "no");
+  mpv_set_option_string(context->player, "load-scripts", "no");
+  mpv_set_option_string(context->player, "ytdl", "no");
+  if (options)
+    iVideoMpvOptions(context->player, options);
+  if (!iVideoMpvRequired(context->player))
   {
-    if (mpv_set_option_string(context->player, flags[i], "yes") < 0)
-    {
-      iupVideoError(session, "Cannot configure mpv player");
-      return 0;
-    }
+    iupVideoError(session, "Cannot configure mpv player");
+    return 0;
   }
-  for (i = 0; i < sizeof(disabled) / sizeof(disabled[0]); i++)
-  {
-    int status = mpv_set_option_string(context->player, disabled[i], "no");
-    if (status < 0 && status != MPV_ERROR_OPTION_NOT_FOUND)
-    {
-      iupVideoError(session, "Cannot configure mpv player");
-      return 0;
-    }
-  }
-  if (mpv_set_option_string(context->player, "vo", "libmpv") < 0 || mpv_initialize(context->player) < 0)
+  if (mpv_initialize(context->player) < 0)
   {
     iupVideoError(session, "Cannot initialize mpv player");
     return 0;
   }
   context->initialized = 1;
+  if (options)
+    iVideoMpvOptions(context->player, options);
+  if ((config || options) && !iVideoMpvRequired(context->player))
+  {
+    iupVideoError(session, "Cannot configure mpv player");
+    return 0;
+  }
   if (mpv_render_context_create(&context->renderer, context->player, params) < 0)
   {
     iupVideoError(session, "Cannot create mpv software renderer");
     return 0;
   }
   mpv_render_context_set_update_callback(context->renderer, iVideoMpvUpdate, context);
-  if (pthread_create(&context->thread, NULL, iVideoMpvRender, context) != 0)
+  if (!ivideoThreadStart(&context->thread, iVideoMpvRender, context))
     return 0;
   context->started = 1;
   mpv_observe_property(context->player, IMPV_TIME_POS, "time-pos", MPV_FORMAT_DOUBLE);
@@ -235,7 +306,7 @@ static int iVideoMpvOpen(IvideoSession* session, Ihandle* ih, const char* source
   mpv_observe_property(context->player, IMPV_TRACK_LIST, "track-list", MPV_FORMAT_NODE);
   if (!url)
   {
-    path = realpath(source, NULL);
+    path = ivideoFullPath(source);
     if (!path)
     {
       iupVideoError(session, "Cannot open this file");
@@ -429,7 +500,12 @@ static void iVideoMpvPoll(IvideoSession* session)
       if (end->reason == MPV_END_FILE_REASON_ERROR)
         iupVideoError(session, mpv_error_string(end->error));
     }
-    else if (event->event_id == MPV_EVENT_COMMAND_REPLY && event->reply_userdata == IMPV_LOADFILE && event->error < 0)
+    else if (event->event_id == MPV_EVENT_FILE_LOADED && context->audio)
+    {
+      const char* command[] = {"audio-add", context->audio, "select", NULL};
+      mpv_command_async(context->player, IMPV_AUDIO_ADD, command);
+    }
+    else if (event->event_id == MPV_EVENT_COMMAND_REPLY && (event->reply_userdata == IMPV_LOADFILE || event->reply_userdata == IMPV_AUDIO_ADD) && event->error < 0)
       iupVideoError(session, mpv_error_string(event->error));
     else if (event->event_id == MPV_EVENT_PROPERTY_CHANGE)
     {
@@ -441,15 +517,15 @@ static void iVideoMpvPoll(IvideoSession* session)
   if (context->info.width > 0 && context->info.height > 0)
   {
     context->info.aspect = (double)context->info.width / context->info.height;
-    pthread_mutex_lock(&context->lock);
+    ivideoMutexLock(&context->lock);
     if (context->width != context->info.width || context->height != context->info.height)
     {
       context->width = context->info.width;
       context->height = context->info.height;
       context->dirty = 1;
-      pthread_cond_signal(&context->condition);
+      ivideoCondSignal(&context->condition);
     }
-    pthread_mutex_unlock(&context->lock);
+    ivideoMutexUnlock(&context->lock);
   }
   if (!context->info.ready)
     context->info.state = IVIDEO_LOADING;
@@ -523,4 +599,4 @@ static int iVideoMpvSubtitleSelect(IvideoSession* session, int index, double del
   return 1;
 }
 
-const IvideoBackend iupVideoMpvBackend = {"MPV", iVideoMpvLoad, iVideoMpvOpen, iVideoMpvClose, iVideoMpvPlay, iVideoMpvSeek, iVideoMpvVolume, iVideoMpvPoll, NULL, iVideoMpvSubtitleCount, iVideoMpvSubtitleName, iVideoMpvSubtitleSelect, NULL};
+const IvideoBackend iupVideoMpvBackend = {"MPV", iVideoMpvLoad, iVideoMpvOpen, iVideoMpvClose, iVideoMpvPlay, iVideoMpvSeek, iVideoMpvVolume, iVideoMpvPoll, NULL, iVideoMpvSubtitleCount, iVideoMpvSubtitleName, iVideoMpvSubtitleSelect, NULL, 1};

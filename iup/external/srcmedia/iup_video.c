@@ -53,7 +53,8 @@ struct _IcontrolData
   char image_name[48];
   char backend[16];
   char* source;
-  int url, intent, state, ready, ended, reported_error, reported_state;
+  char* audio;
+  int url, intent, state, ready, ended, reported_error, reported_state, inhibit;
   int pending_seek;
   double seek_position;
   IvideoInfo info;
@@ -697,9 +698,26 @@ static void iVideoReleaseImage(Ihandle* ih)
   ih->data->frame_width = ih->data->frame_height = 0;
 }
 
+static int iVideoInhibitCount = 0;
+
+static void iVideoInhibit(Ihandle* ih, int inhibit)
+{
+  if (ih->data->inhibit == inhibit)
+    return;
+  ih->data->inhibit = inhibit;
+  if (inhibit)
+  {
+    if (iVideoInhibitCount++ == 0)
+      iupdrvVideoInhibitScreenSaver(1);
+  }
+  else if (--iVideoInhibitCount == 0)
+    iupdrvVideoInhibitScreenSaver(0);
+}
+
 static void iVideoClose(Ihandle* ih)
 {
   IvideoSession* session = ih->data->session;
+  iVideoInhibit(ih, 0);
   if (ih->data->lifetime)
     ih->data->lifetime->generation++;
   ih->data->session = NULL;
@@ -750,15 +768,23 @@ static void iVideoStart(Ihandle* ih)
       continue;
     if (!backend->available())
       continue;
+    if (ih->data->audio && !backend->audio)
+    {
+      if (!error[0])
+        iupStrCopyN(error, sizeof(error), "The video backend cannot play AUDIOURL");
+      continue;
+    }
     session = (IvideoSession*)calloc(1, sizeof(IvideoSession));
     if (!session)
       break;
     session->mutex = iupdrvMutexCreate();
     session->backend = backend;
+    session->audio = ih->data->audio;
     session->info.state = IVIDEO_LOADING;
     ih->data->session = session;
     if (backend->open(session, ih, ih->data->source, ih->data->url))
     {
+      session->audio = NULL;
       iVideoSettings(ih);
       return;
     }
@@ -908,6 +934,7 @@ static int iVideoTick(Ihandle* timer)
       }
     }
   }
+  iVideoInhibit(ih, ih->data->session && ih->data->info.video && (ih->data->state == IVIDEO_PLAYING || ih->data->state == IVIDEO_BUFFERING));
   if (previous != ih->data->state)
   {
     IvideoStringCallback cb = (IvideoStringCallback)IupGetCallback(ih, "STATECHANGED_CB");
@@ -1207,12 +1234,28 @@ static int iVideoSetBackendAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int iVideoSetAudioUrlAttrib(Ihandle* ih, const char* value)
+{
+  char* audio = value ? iupStrDup(value) : NULL;
+  if (value && !audio)
+    return 0;
+  free(ih->data->audio);
+  ih->data->audio = audio;
+  return 0;
+}
+
+static char* iVideoGetAudioUrlAttrib(Ihandle* ih)
+{
+  return ih->data->audio;
+}
+
 static char* iVideoGetAvailableAttrib(Ihandle* ih)
 {
   int index;
   const IvideoBackend* backend;
   for (index = 0; (backend = iupdrvVideoBackend(index)) != NULL; index++)
-    if ((iupStrEqualNoCase(ih->data->backend, "AUTO") || iupStrEqualNoCase(ih->data->backend, backend->name)) && backend->available())
+    if ((iupStrEqualNoCase(ih->data->backend, "AUTO") || iupStrEqualNoCase(ih->data->backend, backend->name)) &&
+        (!ih->data->audio || backend->audio) && backend->available())
       return "YES";
   return "NO";
 }
@@ -1541,6 +1584,7 @@ static void iVideoDestroyMethod(Ihandle* ih)
   if (ih->data->timer)
     IupDestroy(ih->data->timer);
   free(ih->data->source);
+  free(ih->data->audio);
   free(ih->data->subtitle_file);
   iVideoFreeSubtitles(ih->data->subtitles, ih->data->subtitle_count);
   if (lifetime && --lifetime->references == 0)
@@ -1599,6 +1643,9 @@ Iclass* iupVideoNewClass(void)
   iupClassRegisterAttribute(ic, "FILE", iVideoGetFileAttrib, iVideoSetFileAttrib, NULL, NULL, flags);
   iupClassRegisterAttribute(ic, "URL", iVideoGetUrlAttrib, iVideoSetUrlAttrib, NULL, NULL, flags);
   iupClassRegisterAttribute(ic, "BACKEND", iVideoGetBackendAttrib, iVideoSetBackendAttrib, IUPAF_SAMEASSYSTEM, "AUTO", flags);
+  iupClassRegisterAttribute(ic, "AUDIOURL", iVideoGetAudioUrlAttrib, iVideoSetAudioUrlAttrib, NULL, NULL, flags);
+  iupClassRegisterAttribute(ic, "MPVCONFIG", NULL, NULL, NULL, NULL, flags);
+  iupClassRegisterAttribute(ic, "MPVOPTIONS", NULL, NULL, NULL, NULL, flags);
   iupClassRegisterAttribute(ic, "BACKENDUSED", iVideoGetBackendUsedAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);
   iupClassRegisterAttribute(ic, "AVAILABLE", iVideoGetAvailableAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);
   iupClassRegisterAttribute(ic, "STATE", iVideoGetStateAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);

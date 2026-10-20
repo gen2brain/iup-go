@@ -284,6 +284,11 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupVideoHelper_subtitleCue
   free(text);
 }
 
+void iupdrvVideoInhibitScreenSaver(int inhibit)
+{
+  (void)inhibit;
+}
+
 char* iupdrvVideoReadSubtitle(const char* filename)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupVideoHelper_readSubtitle);
@@ -319,7 +324,7 @@ char* iupdrvVideoReadSubtitle(const char* filename)
   return text;
 }
 
-static const IvideoBackend androidVideoBackend = {"NATIVE", androidVideoAvailable, androidVideoOpen, androidVideoClose, androidVideoPlay, androidVideoSeek, androidVideoVolume, androidVideoPoll, androidVideoLayout, androidVideoSubtitleCount, androidVideoSubtitleName, androidVideoSubtitleSelect, androidVideoSubtitleText};
+static const IvideoBackend androidVideoBackend = {"NATIVE", androidVideoAvailable, androidVideoOpen, androidVideoClose, androidVideoPlay, androidVideoSeek, androidVideoVolume, androidVideoPoll, androidVideoLayout, androidVideoSubtitleCount, androidVideoSubtitleName, androidVideoSubtitleSelect, androidVideoSubtitleText, 0};
 
 const IvideoBackend* iupdrvVideoBackend(int index)
 {

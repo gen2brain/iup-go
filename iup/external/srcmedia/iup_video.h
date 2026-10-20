@@ -43,12 +43,14 @@ typedef struct _IvideoBackend
   char* (*subtitle_name)(IvideoSession* session, int index, int language);
   int (*subtitle_select)(IvideoSession* session, int index, double delay);
   int (*subtitle_text)(IvideoSession* session, const char* text, int size, const char* color);
+  int audio;
 } IvideoBackend;
 
 struct _IvideoSession
 {
   const IvideoBackend* backend;
   void* context;
+  const char* audio;
   void* mutex;
   int closing;
   IvideoInfo info;
@@ -67,6 +69,7 @@ void iupVideoSubtitleCue(IvideoSession* session, const char* text);
 void iupVideoSubtitleError(IvideoSession* session, const char* message);
 char* iupVideoReadSubtitleStream(FILE* file);
 char* iupdrvVideoReadSubtitle(const char* filename);
+void iupdrvVideoInhibitScreenSaver(int inhibit);
 
 #ifdef __cplusplus
 }

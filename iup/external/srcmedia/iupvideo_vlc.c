@@ -5,7 +5,6 @@
  */
 
 #include <limits.h>
-#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -19,7 +18,7 @@ typedef struct
   libvlc_media_t* media;
   libvlc_media_player_t* player;
   libvlc_event_manager_t* events;
-  pthread_mutex_t lock;
+  ivideo_mutex_t lock;
   int ready, play, attached, track, cached_track, scanned, audio, video, width, height;
   int subtitle_auto, subtitle_explicit;
   double aspect;
@@ -29,7 +28,7 @@ typedef struct
 typedef struct
 {
   IvideoSession* session;
-  pthread_mutex_t lock;
+  ivideo_mutex_t lock;
   unsigned char* pixels;
   unsigned width, height, pitch;
 } IvideoVlcPicture;
@@ -102,9 +101,9 @@ static unsigned iVideoVlcFormat(void** opaque, char* chroma, unsigned* width, un
     {
       *width = track_width;
       *height = track_height;
-      pthread_mutex_lock(&context->lock);
+      ivideoMutexLock(&context->lock);
       context->track = tracks[i]->i_id;
-      pthread_mutex_unlock(&context->lock);
+      ivideoMutexUnlock(&context->lock);
       break;
     }
   }
@@ -115,7 +114,7 @@ static unsigned iVideoVlcFormat(void** opaque, char* chroma, unsigned* width, un
   picture = (IvideoVlcPicture*)calloc(1, sizeof(IvideoVlcPicture));
   if (!picture)
     return 0;
-  if (pthread_mutex_init(&picture->lock, NULL) != 0)
+  if (!ivideoMutexInit(&picture->lock))
   {
     free(picture);
     return 0;
@@ -123,9 +122,10 @@ static unsigned iVideoVlcFormat(void** opaque, char* chroma, unsigned* width, un
   picture->session = context->session;
   picture->pitch = (*width * 4 + 31) & ~31u;
   size = (size_t)picture->pitch * *height;
-  if (posix_memalign((void**)&picture->pixels, 32, size) != 0)
+  picture->pixels = (unsigned char*)ivideoAlignedAlloc(32, size);
+  if (!picture->pixels)
   {
-    pthread_mutex_destroy(&picture->lock);
+    ivideoMutexDestroy(&picture->lock);
     free(picture);
     iupVideoError(context->session, "Cannot allocate VLC video frame");
     return 0;
@@ -142,15 +142,15 @@ static unsigned iVideoVlcFormat(void** opaque, char* chroma, unsigned* width, un
 static void iVideoVlcCleanup(void* opaque)
 {
   IvideoVlcPicture* context = (IvideoVlcPicture*)opaque;
-  free(context->pixels);
-  pthread_mutex_destroy(&context->lock);
+  ivideoAlignedFree(context->pixels);
+  ivideoMutexDestroy(&context->lock);
   free(context);
 }
 
 static void* iVideoVlcLock(void* opaque, void** planes)
 {
   IvideoVlcPicture* context = (IvideoVlcPicture*)opaque;
-  pthread_mutex_lock(&context->lock);
+  ivideoMutexLock(&context->lock);
   planes[0] = context->pixels;
   return context->pixels;
 }
@@ -160,15 +160,15 @@ static void iVideoVlcUnlock(void* opaque, void* picture, void* const* planes)
   IvideoVlcPicture* context = (IvideoVlcPicture*)opaque;
   (void)picture;
   (void)planes;
-  pthread_mutex_unlock(&context->lock);
+  ivideoMutexUnlock(&context->lock);
 }
 
 static void iVideoVlcDisplay(void* opaque, void* picture)
 {
   IvideoVlcPicture* context = (IvideoVlcPicture*)opaque;
-  pthread_mutex_lock(&context->lock);
+  ivideoMutexLock(&context->lock);
   iupVideoFrame(context->session, (const unsigned char*)picture, (int)context->width, (int)context->height, context->pitch, 4);
-  pthread_mutex_unlock(&context->lock);
+  ivideoMutexUnlock(&context->lock);
 }
 
 static void iVideoVlcClose(IvideoSession* session)
@@ -185,7 +185,7 @@ static void iVideoVlcClose(IvideoSession* session)
   }
   if (context->media)
     libvlc_media_release(context->media);
-  pthread_mutex_destroy(&context->lock);
+  ivideoMutexDestroy(&context->lock);
   free(context);
   session->context = NULL;
 }
@@ -205,7 +205,7 @@ static int iVideoVlcOpen(IvideoSession* session, Ihandle* ih, const char* source
   context = (IvideoVlc*)calloc(1, sizeof(IvideoVlc));
   if (!context)
     return 0;
-  if (pthread_mutex_init(&context->lock, NULL) != 0)
+  if (!ivideoMutexInit(&context->lock))
   {
     free(context);
     return 0;
@@ -234,6 +234,11 @@ static int iVideoVlcOpen(IvideoSession* session, Ihandle* ih, const char* source
     return 0;
   }
   context->attached = 1;
+  if (session->audio && libvlc_media_slaves_add(context->media, libvlc_media_slave_type_audio, 4, session->audio) != 0)
+  {
+    iupVideoError(session, "VLC cannot open AUDIOURL");
+    return 0;
+  }
   libvlc_media_add_option(context->media, ":start-paused");
   libvlc_media_player_set_media(context->player, context->media);
   libvlc_video_set_callbacks(context->player, iVideoVlcLock, iVideoVlcUnlock, iVideoVlcDisplay, context);
@@ -329,9 +334,9 @@ static void iVideoVlcPoll(IvideoSession* session)
   info.duration = duration > 0 ? duration / 1000.0 : 0;
   if (context->ready)
   {
-    pthread_mutex_lock(&context->lock);
+    ivideoMutexLock(&context->lock);
     track = context->track;
-    pthread_mutex_unlock(&context->lock);
+    ivideoMutexUnlock(&context->lock);
     if (!context->scanned || track != context->cached_track)
       iVideoVlcScanTracks(context, track);
     info.audio = context->audio;
@@ -438,4 +443,4 @@ static int iVideoVlcSubtitleSelect(IvideoSession* session, int index, double del
   return 1;
 }
 
-const IvideoBackend iupVideoVlcBackend = {"VLC", iVideoVlcLoad, iVideoVlcOpen, iVideoVlcClose, iVideoVlcPlay, iVideoVlcSeek, iVideoVlcVolume, iVideoVlcPoll, NULL, iVideoVlcSubtitleCount, iVideoVlcSubtitleName, iVideoVlcSubtitleSelect, NULL};
+const IvideoBackend iupVideoVlcBackend = {"VLC", iVideoVlcLoad, iVideoVlcOpen, iVideoVlcClose, iVideoVlcPlay, iVideoVlcSeek, iVideoVlcVolume, iVideoVlcPoll, NULL, iVideoVlcSubtitleCount, iVideoVlcSubtitleName, iVideoVlcSubtitleSelect, NULL, 1};
