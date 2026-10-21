@@ -34,8 +34,10 @@ typedef struct
 typedef struct
 {
   IvideoSession* session;
+  IvideoVlc* context;
   ivideo_mutex_t lock;
   unsigned char* pixels;
+  unsigned char* shown;
   unsigned width, height, pitch;
 } IvideoVlcPicture;
 
@@ -132,6 +134,7 @@ static unsigned iVideoVlcFormat(void** opaque, char* chroma, unsigned* width, un
     return 0;
   }
   picture->session = context->session;
+  picture->context = context;
   picture->pitch = (*width * 4 + 31) & ~31u;
   size = (size_t)picture->pitch * *height;
   picture->pixels = (unsigned char*)ivideoAlignedAlloc(32, size);
@@ -155,6 +158,7 @@ static void iVideoVlcCleanup(void* opaque)
 {
   IvideoVlcPicture* context = (IvideoVlcPicture*)opaque;
   ivideoAlignedFree(context->pixels);
+  free(context->shown);
   ivideoMutexDestroy(&context->lock);
   free(context);
 }
@@ -178,7 +182,29 @@ static void iVideoVlcUnlock(void* opaque, void* picture, void* const* planes)
 static void iVideoVlcDisplay(void* opaque, void* picture)
 {
   IvideoVlcPicture* context = (IvideoVlcPicture*)opaque;
+  size_t size = (size_t)context->pitch * context->height;
+  int play;
+  ivideoMutexLock(&context->context->lock);
+  play = context->context->play;
+  ivideoMutexUnlock(&context->context->lock);
   ivideoMutexLock(&context->lock);
+  if (play)
+  {
+    free(context->shown);
+    context->shown = NULL;
+  }
+  else
+  {
+    if (context->shown && memcmp(context->shown, picture, size) == 0)
+    {
+      ivideoMutexUnlock(&context->lock);
+      return;
+    }
+    if (!context->shown)
+      context->shown = (unsigned char*)malloc(size);
+    if (context->shown)
+      memcpy(context->shown, picture, size);
+  }
   iupVideoFrame(context->session, (const unsigned char*)picture, (int)context->width, (int)context->height, context->pitch, 4);
   ivideoMutexUnlock(&context->lock);
 }
@@ -244,6 +270,7 @@ static libvlc_instance_t* iVideoVlcNewInstance(int config, const char* options)
   int i;
   if (config)
     iVideoVlcArg(&args, "no-ignore-config");
+  iVideoVlcArg(&args, "swscale-mode=0");
   if (options)
     iupVideoSplitOptions(options, iVideoVlcOption, &args);
   for (i = 0; i < (int)(sizeof(required) / sizeof(required[0])); i++)
@@ -363,7 +390,9 @@ static int iVideoVlcOpen(IvideoSession* session, Ihandle* ih, const char* source
 static void iVideoVlcPlay(IvideoSession* session, int play)
 {
   IvideoVlc* context = (IvideoVlc*)session->context;
+  ivideoMutexLock(&context->lock);
   context->play = play;
+  ivideoMutexUnlock(&context->lock);
   libvlc_media_player_set_pause(context->player, !play);
 }
 
