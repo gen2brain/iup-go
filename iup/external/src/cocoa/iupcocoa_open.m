@@ -328,6 +328,11 @@ static int cocoaOpen(void)
   IupSetGlobal("DRIVER", "Cocoa");
 #ifdef GNUSTEP
   IupSetGlobal("WINDOWING", "X11");
+  {
+    NSString* gui_version = [[NSBundle bundleForClass:[NSApplication class]] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+    if (gui_version)
+      IupStoreGlobal("GNUSTEPVERSION", [gui_version UTF8String]);
+  }
 #else
   IupSetGlobal("WINDOWING", "QUARTZ");
 #endif

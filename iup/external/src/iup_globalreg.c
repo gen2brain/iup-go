@@ -85,6 +85,7 @@ static const iGlobalRegEntry registry[] = {
   { "GL_VENDOR",              R,    ALL },
   { "GL_VERSION",             R,    ALL },
   { "GNUSTEPTHEME",           0,    C },
+  { "GNUSTEPVERSION",         R,    C },
   { "GSKRENDERER",            0,    G4 },
   { "GTKDEVVERSION",          R,    G|G4 },
   { "GTKVERSION",             R,    G|G4 },

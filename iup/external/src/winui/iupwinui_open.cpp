@@ -40,6 +40,7 @@ typedef void (WINAPI* MddDeletePackageDependencyFunc)(PCWSTR);
 static PWSTR winui_dependency_id = nullptr;
 static void* winui_dependency_context = nullptr;
 static HMODULE winui_runtime_module = nullptr;
+static char winui_runtime_version[64] = "";
 
 extern "C" {
 #include "iup.h"
@@ -196,10 +197,25 @@ static int winuiAddDependency(TryCreatePackageDependencyFunc tryCreate, AddPacka
     return 0;
 
   void* context = nullptr;
-  if (FAILED(add(id, 0, 0, &context, nullptr)))
+  PWSTR full_name = nullptr;
+  if (FAILED(add(id, 0, 0, &context, &full_name)))
   {
     HeapFree(GetProcessHeap(), 0, id);
     return 0;
+  }
+
+  if (full_name)
+  {
+    const wchar_t* release = wcschr(full_name, L'_');
+    const wchar_t* version = release ? release + 1 : nullptr;
+    const wchar_t* version_end = version ? wcschr(version, L'_') : nullptr;
+    const wchar_t* name = L"Microsoft.WindowsAppRuntime.";
+    size_t name_length = wcslen(name);
+    if (version_end && _wcsnicmp(full_name, name, name_length) == 0)
+      snprintf(winui_runtime_version, sizeof(winui_runtime_version), "%.*ls (%.*ls)",
+               static_cast<int>(release - full_name - name_length), full_name + name_length,
+               static_cast<int>(version_end - version), version);
+    HeapFree(GetProcessHeap(), 0, full_name);
   }
 
   winui_dependency_id = id;
@@ -455,7 +471,7 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 
   IupSetGlobal("DRIVER", "WinUI");
   IupSetGlobal("WINDOWING", "DWM");
-  IupSetGlobal("WINUIVERSION", "3");
+  IupStoreGlobal("WINUIVERSION", winui_runtime_version[0] ? winui_runtime_version : nullptr);
 
   if (argv && *argv && (*argv)[0] && (*argv)[0][0] != 0)
   {

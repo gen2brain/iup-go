@@ -21,6 +21,7 @@
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #include <mach-o/dyld.h>
+#include <sys/sysctl.h>
 #endif
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
@@ -111,14 +112,14 @@ IUP_SDK_API char* iupdrvGetSystemName(void)
 IUP_SDK_API char* iupdrvGetSystemVersion(void)
 {
   struct utsname un;
+#ifdef __APPLE__
+  char version[64];
+  size_t size = sizeof(version);
+  if (sysctlbyname("kern.osproductversion", version, &size, NULL, 0) == 0)
+    return iupStrReturnStr(version);
+#endif
   uname(&un);
-  if (iupStrEqualNoCase(un.sysname, "Darwin"))
-  {
-    int release = 0; iupStrToInt(un.release, &release);
-    return iupStrReturnInt(release-4);
-  }
-  else
-    return iupStrReturnStrf("%s.%s", un.release, un.version);
+  return iupStrReturnStr(un.release);
 }
 
 IUP_SDK_API int iupdrvSetCurrentDirectory(const char* dir)

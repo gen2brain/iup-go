@@ -28,6 +28,8 @@
  * \ingroup cpi */
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 #include "iup.h"
 
@@ -70,17 +72,114 @@ static int ok_action(Ihandle* ih)
   return IUP_CLOSE;
 }
 
+typedef struct _IversionText
+{
+  char buffer[4096];
+  int len, lines, columns;
+} IversionText;
+
+static void iVersionAppend(IversionText* text, const char* format, ...)
+{
+  int count, size;
+  va_list arglist;
+
+  if (text->lines && text->len < (int)sizeof(text->buffer) - 1)
+    text->buffer[text->len++] = '\n';
+
+  size = (int)sizeof(text->buffer) - text->len;
+  if (size <= 1)
+    return;
+
+  va_start(arglist, format);
+  count = vsnprintf(text->buffer + text->len, size, format, arglist);
+  va_end(arglist);
+
+  if (count < 0)
+    count = 0;
+  if (count >= size)
+    count = size - 1;
+
+  text->len += count;
+  text->buffer[text->len] = 0;
+  text->lines++;
+  if (count > text->columns)
+    text->columns = count;
+}
+
+static void iVersionAppendGlobal(IversionText* text, const char* title, const char* name)
+{
+  char* value = IupGetGlobal(name);
+  if (value)
+    iVersionAppend(text, "%s: %s", title, value);
+}
+
 IUP_API void IupVersionShow(void)
 {
   Ihandle* dlg, *info, *ok;
-  char* value;
+  IversionText text;
+
+  text.len = 0;
+  text.lines = 0;
+  text.columns = 0;
+  text.buffer[0] = 0;
+
+  iVersionAppend(&text, "%s", IUP_NAME);
+  iVersionAppend(&text, "%s", IUP_COPYRIGHT);
+  iVersionAppend(&text, "%s", "");
+
+  iVersionAppend(&text, "IUP %s - %s", IupVersion(), IupVersionDate());
+  iVersionAppendGlobal(&text, "   Driver", "DRIVER");
+  iVersionAppendGlobal(&text, "   System", "SYSTEM");
+  iVersionAppendGlobal(&text, "   System Version", "SYSTEMVERSION");
+  iVersionAppendGlobal(&text, "   Motif Version", "MOTIFVERSION");
+  iVersionAppendGlobal(&text, "   GTK Version", "GTKVERSION");
+  iVersionAppendGlobal(&text, "   Qt Version", "QTVERSION");
+  iVersionAppendGlobal(&text, "   EFL Version", "EFLVERSION");
+  iVersionAppendGlobal(&text, "   FLTK Version", "FLTKVERSION");
+  iVersionAppendGlobal(&text, "   GNUstep Version", "GNUSTEPVERSION");
+  iVersionAppendGlobal(&text, "   WinUI Version", "WINUIVERSION");
+  iVersionAppendGlobal(&text, "   Screen Size", "SCREENSIZE");
+  iVersionAppend(&text, "   Screen DPI: %d", IupGetInt(NULL, "SCREENDPI"));
+  iVersionAppendGlobal(&text, "   Default Font", "DEFAULTFONT");
+
+  if (IupGetGlobal("_IUP_CONTROLS_OPEN") || IupGetGlobal("_IUP_GLCANVAS_OPEN") || IupGetGlobal("_IUP_WEBBROWSER_OPEN") ||
+      IupGetGlobal("_IUP_PLOT_OPEN") || IupGetGlobal("_IUP_MEDIA_OPEN"))
+  {
+    iVersionAppend(&text, "%s", "");
+    iVersionAppend(&text, "Iup Libraries Open:");
+
+    if (IupGetGlobal("_IUP_CONTROLS_OPEN"))
+      iVersionAppend(&text, "   IupControlsOpen");
+
+    if (IupGetGlobal("_IUP_GLCANVAS_OPEN"))
+    {
+      iVersionAppend(&text, "   IupGLCanvasOpen");
+
+      if (IupGetGlobal("GL_VERSION"))
+      {
+        iVersionAppendGlobal(&text, "      OpenGL Vendor", "GL_VENDOR");
+        iVersionAppendGlobal(&text, "      OpenGL Renderer", "GL_RENDERER");
+        iVersionAppendGlobal(&text, "      OpenGL Version", "GL_VERSION");
+      }
+    }
+
+    if (IupGetGlobal("_IUP_WEBBROWSER_OPEN"))
+      iVersionAppend(&text, "   IupWebBrowserOpen");
+
+    if (IupGetGlobal("_IUP_PLOT_OPEN"))
+      iVersionAppend(&text, "   IupPlotOpen");
+
+    if (IupGetGlobal("_IUP_MEDIA_OPEN"))
+      iVersionAppend(&text, "   IupMediaOpen");
+  }
 
   info = IupText();
   IupSetAttribute(info, "MULTILINE", "Yes");
   IupSetAttribute(info, "EXPAND", "Yes");
   IupSetAttribute(info, "READONLY", "Yes");
-  IupSetAttribute(info, "VISIBLELINES", "10");
-  IupSetAttribute(info, "VISIBLECOLUMNS", "30");
+  IupSetInt(info, "VISIBLELINES", text.lines);
+  IupSetInt(info, "VISIBLECOLUMNS", text.columns);
+  IupSetStrAttribute(info, "VALUE", text.buffer);
 
   ok = IupButton("_@IUP_OK");
   IupSetStrAttribute(ok, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
@@ -98,63 +197,6 @@ IUP_API void IupVersionShow(void)
   IupSetAttribute(dlg, "PARENTDIALOG", IupGetGlobal("PARENTDIALOG"));
   IupSetAttribute(dlg, "ICON", IupGetGlobal("ICON"));
   IupSetAttributeHandle(dlg, "DEFAULTESC", ok);
-
-  IupMap(dlg);
-
-  IupSetAttribute(info, "APPEND", IUP_NAME);
-  IupSetAttribute(info, "APPEND", IUP_COPYRIGHT);
-  IupSetAttribute(info, "APPEND", "");
-
-  IupSetStrf(info, "APPEND", "IUP %s - %s", IupVersion(), IupVersionDate());
-  IupSetStrf(info, "APPEND", "   Driver: %s", IupGetGlobal("DRIVER"));
-  IupSetStrf(info, "APPEND", "   System: %s", IupGetGlobal("SYSTEM"));
-  IupSetStrf(info, "APPEND", "   System Version: %s", IupGetGlobal("SYSTEMVERSION"));
-
-  value = IupGetGlobal("MOTIFVERSION");
-  if (value) IupSetStrf(info, "APPEND", "   Motif Version: %s", value);
-
-  value = IupGetGlobal("GTKVERSION");
-  if (value) IupSetStrf(info, "APPEND", "   GTK Version: %s", value);
-
-  value = IupGetGlobal("QTVERSION");
-  if (value) IupSetStrf(info, "APPEND", "   Qt Version: %s", value);
-
-  value = IupGetGlobal("EFLVERSION");
-  if (value) IupSetStrf(info, "APPEND", "   EFL Version: %s", value);
-
-  value = IupGetGlobal("FLTKVERSION");
-  if (value) IupSetStrf(info, "APPEND", "   FLTK Version: %s", value);
-
-  value = IupGetGlobal("WINUIVERSION");
-  if (value) IupSetStrf(info, "APPEND", "   WinUI Version: %s", value);
-
-  IupSetStrf(info, "APPEND", "   Screen Size: %s", IupGetGlobal("SCREENSIZE"));
-  IupSetStrf(info, "APPEND", "   Screen DPI: %d", IupGetInt(NULL, "SCREENDPI"));
-  IupSetStrf(info, "APPEND", "   Default Font: %s", IupGetGlobal("DEFAULTFONT"));
-
-  IupSetAttribute(info, "APPEND", "");
-  IupSetAttribute(info, "APPEND", "Iup Libraries Open:");
-
-  if (IupGetGlobal("_IUP_CONTROLS_OPEN"))
-    IupSetAttribute(info, "APPEND", "   IupControlsOpen");
-
-  if (IupGetGlobal("_IUP_GLCANVAS_OPEN"))
-  {
-    IupSetAttribute(info, "APPEND", "   IupGLCanvasOpen");
-
-    if (IupGetGlobal("GL_VERSION"))
-    {
-      IupSetStrf(info, "APPEND", "      OpenGL Vendor: %s", IupGetGlobal("GL_VENDOR"));
-      IupSetStrf(info, "APPEND", "      OpenGL Renderer: %s", IupGetGlobal("GL_RENDERER"));
-      IupSetStrf(info, "APPEND", "      OpenGL Version: %s", IupGetGlobal("GL_VERSION"));
-    }
-  }
-
-  if (IupGetGlobal("_IUP_WEBBROWSER_OPEN"))
-    IupSetAttribute(info, "APPEND", "   IupWebBrowserOpen");
-
-  if (IupGetGlobal("_IUP_PLOT_OPEN"))
-    IupSetAttribute(info, "APPEND", "   IupPlotOpen");
 
   IupPopup(dlg, IUP_CENTERPARENT, IUP_CENTERPARENT);
   IupDestroy(dlg);

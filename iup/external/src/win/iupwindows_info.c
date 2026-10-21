@@ -108,32 +108,17 @@ IUP_SDK_API char* iupdrvGetSystemVersion(void)
 {
   char* str = iupStrGetMemory(256);
   OSVERSIONINFOW osvi;
-  SYSTEM_INFO si;
-
-  ZeroMemory(&si, sizeof(SYSTEM_INFO));
-  GetSystemInfo(&si);
 
   iupwinGetVersionInfo(&osvi);
 
   snprintf(str, 256, "%d.%d.%d", (int)osvi.dwMajorVersion, (int)osvi.dwMinorVersion, (int)osvi.dwBuildNumber);
 
+  if (osvi.szCSDVersion[0] != 0)
   {
+    char csd[128];
     int pos = (int)strlen(str);
-
-    /* Display service pack (if any). */
-    if (osvi.szCSDVersion[0] != 0)
-    {
-      char csd[128];
-      WideCharToMultiByte(CP_ACP, 0, osvi.szCSDVersion, -1, csd, sizeof(csd), NULL, NULL);
-      pos += snprintf(str + pos, 256 - pos, " %s", csd);
-    }
-
-    if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_IA64)
-      snprintf(str + pos, 256 - pos, " (IA64)");
-    else if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)
-      snprintf(str + pos, 256 - pos, " (x64)");
-    else
-      snprintf(str + pos, 256 - pos, " (x86)");
+    WideCharToMultiByte(CP_ACP, 0, osvi.szCSDVersion, -1, csd, sizeof(csd), NULL, NULL);
+    snprintf(str + pos, 256 - pos, " %s", csd);
   }
 
   return str;

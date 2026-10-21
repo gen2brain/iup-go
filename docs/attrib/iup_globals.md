@@ -289,14 +289,17 @@ Informs the current operating system. On UNIX, it is equivalent to the command "
 > - "Win10"
 > - "Win11"
 > - "Haiku"
+> - "WebAssembly"
 
 ### SYSTEMVERSION (read-only)
 
 Informs the current operating system version number.
 
-On UNIX, it is equivalent to the command "uname -r" (release).
-On Windows, it identifies the system version number and service pack version.
-On macOS is system version.
+On UNIX, it is the kernel release, the same as the command "uname -r".
+On Windows, it is the system version number, e.g. "10.0.26200", followed by the service pack when there is one.
+On macOS and iOS, it is the system version, e.g. "26.1".
+On Android, it is the Android release, e.g. "15".
+In WebAssembly, it is the browser name and version.
 
 ### SYSTEMLANGUAGE (read-only)
 
@@ -556,9 +559,13 @@ Setting NULL or empty restores the theme from the user defaults, or the built-in
 
 When read, returns the current theme name; the built-in theme is `"GNUstep"`.
 
+### GNUSTEPVERSION (read-only) [GNUstep Only]
+
+Returns the run time version of the GNUstep GUI library.
+
 ### WINUIVERSION (read-only) [WinUI Only]
 
-Returns the WinUI version.
+Returns the version of the Windows App Runtime in use followed by its framework package version, e.g. `"1.8 (8000.994.2142.0)"`.
 
 ## Screen Information
 
