@@ -81,6 +81,7 @@ void iupVideoSubtitleCue(IvideoSession* session, const char* text);
 void iupVideoSubtitleError(IvideoSession* session, const char* message);
 int iupVideoAddAudioDevice(IvideoAudioDevice** devices, int count, const char* id, const char* name);
 void iupVideoFreeAudioDevices(IvideoAudioDevice* devices, int count);
+void iupVideoSplitOptions(const char* options, void (*func)(char* option, void* user), void* user);
 char* iupVideoReadSubtitleStream(FILE* file);
 char* iupdrvVideoReadSubtitle(const char* filename);
 void iupdrvVideoInhibitScreenSaver(int inhibit);

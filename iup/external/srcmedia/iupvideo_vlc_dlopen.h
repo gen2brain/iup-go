@@ -128,6 +128,8 @@ static void* iupvlc_handle = NULL;
 
 static const char* (*iupvlc_get_version)(void);
 static libvlc_instance_t* (*iupvlc_new)(int, const char* const*);
+static void (*iupvlc_retain)(libvlc_instance_t*);
+static void (*iupvlc_release)(libvlc_instance_t*);
 static libvlc_media_t* (*iupvlc_media_new_path)(libvlc_instance_t*, const char*);
 static libvlc_media_t* (*iupvlc_media_new_location)(libvlc_instance_t*, const char*);
 static void (*iupvlc_media_add_option)(libvlc_media_t*, const char*);
@@ -165,6 +167,8 @@ static void (*iupvlc_video_set_adjust_float)(libvlc_media_player_t*, unsigned, f
 
 #define libvlc_get_version iupvlc_get_version
 #define libvlc_new iupvlc_new
+#define libvlc_retain iupvlc_retain
+#define libvlc_release iupvlc_release
 #define libvlc_media_new_path iupvlc_media_new_path
 #define libvlc_media_new_location iupvlc_media_new_location
 #define libvlc_media_add_option iupvlc_media_add_option
@@ -259,6 +263,8 @@ static int iupVlcOpen(void)
 
   *(void**)&iupvlc_get_version = iupVlcSymbol("libvlc_get_version", &missing);
   *(void**)&iupvlc_new = iupVlcSymbol("libvlc_new", &missing);
+  *(void**)&iupvlc_retain = iupVlcSymbol("libvlc_retain", &missing);
+  *(void**)&iupvlc_release = iupVlcSymbol("libvlc_release", &missing);
   *(void**)&iupvlc_media_new_path = iupVlcSymbol("libvlc_media_new_path", &missing);
   *(void**)&iupvlc_media_new_location = iupVlcSymbol("libvlc_media_new_location", &missing);
   *(void**)&iupvlc_media_add_option = iupVlcSymbol("libvlc_media_add_option", &missing);

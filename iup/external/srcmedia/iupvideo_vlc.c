@@ -11,11 +11,13 @@
 
 #include "iup_video.h"
 #include "iup_str.h"
+#include "iup_attrib.h"
 #include "iupvideo_vlc_dlopen.h"
 
 typedef struct
 {
   IvideoSession* session;
+  libvlc_instance_t* instance;
   libvlc_media_t* media;
   libvlc_media_player_t* player;
   libvlc_event_manager_t* events;
@@ -36,6 +38,12 @@ typedef struct
   unsigned char* pixels;
   unsigned width, height, pitch;
 } IvideoVlcPicture;
+
+typedef struct
+{
+  char** argv;
+  int argc, failed;
+} IvideoVlcArgs;
 
 static libvlc_instance_t* ivlc_instance = NULL;
 
@@ -195,22 +203,69 @@ static void iVideoVlcClose(IvideoSession* session)
   iVideoVlcReleasePlayer(session, context);
   if (context->media)
     libvlc_media_release(context->media);
+  if (context->instance)
+    libvlc_release(context->instance);
   ivideoMutexDestroy(&context->lock);
   free(context);
   session->context = NULL;
 }
 
+static void iVideoVlcArg(IvideoVlcArgs* args, const char* option)
+{
+  char** argv = (char**)realloc(args->argv, (args->argc + 1) * sizeof(char*));
+  char* arg;
+  if (!argv)
+  {
+    args->failed = 1;
+    return;
+  }
+  args->argv = argv;
+  arg = (char*)malloc(strlen(option) + 3);
+  if (!arg)
+  {
+    args->failed = 1;
+    return;
+  }
+  strcpy(arg, "--");
+  strcpy(arg + 2, option);
+  argv[args->argc++] = arg;
+}
+
+static void iVideoVlcOption(char* option, void* user)
+{
+  iVideoVlcArg((IvideoVlcArgs*)user, option);
+}
+
+static libvlc_instance_t* iVideoVlcNewInstance(int config, const char* options)
+{
+  const char* required[] = {"quiet", "no-video-title-show", "no-osd", "no-sub-autodetect-file"};
+  IvideoVlcArgs args = {NULL, 0, 0};
+  libvlc_instance_t* instance = NULL;
+  int i;
+  if (config)
+    iVideoVlcArg(&args, "no-ignore-config");
+  if (options)
+    iupVideoSplitOptions(options, iVideoVlcOption, &args);
+  for (i = 0; i < (int)(sizeof(required) / sizeof(required[0])); i++)
+    iVideoVlcArg(&args, required[i]);
+  if (!args.failed)
+    instance = libvlc_new(args.argc, (const char* const*)args.argv);
+  for (i = 0; i < args.argc; i++)
+    free(args.argv[i]);
+  free(args.argv);
+  return instance;
+}
+
 static int iVideoVlcInstance(void)
 {
-  const char* options[] = {"--quiet", "--no-video-title-show", "--no-osd", "--no-sub-autodetect-file"};
   if (!ivlc_instance)
-    ivlc_instance = libvlc_new((int)(sizeof(options) / sizeof(options[0])), options);
+    ivlc_instance = iVideoVlcNewInstance(0, NULL);
   return ivlc_instance != NULL;
 }
 
 static libvlc_media_player_t* iVideoVlcNewPlayer(IvideoSession* session, IvideoVlc* context, const char* device)
 {
-  libvlc_media_player_t* player = libvlc_media_player_new(ivlc_instance);
+  libvlc_media_player_t* player = libvlc_media_player_new(context->instance);
   libvlc_event_manager_t* events;
   if (!player)
   {
@@ -249,26 +304,47 @@ static int iVideoVlcOpen(IvideoSession* session, Ihandle* ih, const char* source
 {
   IvideoVlc* context;
   libvlc_media_player_t* player;
-  (void)ih;
-  if (!iVideoVlcInstance())
+  libvlc_instance_t* instance;
+  const char* options = iupAttribGet(ih, "VLCOPTIONS");
+  int config = iupAttribGetBoolean(ih, "VLCCONFIG");
+  if (config || (options && options[0]))
   {
-    iupVideoError(session, "Cannot initialize VLC");
-    return 0;
+    instance = iVideoVlcNewInstance(config, options);
+    if (!instance)
+    {
+      iupVideoError(session, options && options[0] ? "VLC rejected VLCOPTIONS" : "Cannot initialize VLC");
+      return 0;
+    }
+  }
+  else
+  {
+    if (!iVideoVlcInstance())
+    {
+      iupVideoError(session, "Cannot initialize VLC");
+      return 0;
+    }
+    instance = ivlc_instance;
+    libvlc_retain(instance);
   }
   context = (IvideoVlc*)calloc(1, sizeof(IvideoVlc));
   if (!context)
+  {
+    libvlc_release(instance);
     return 0;
+  }
   if (!ivideoMutexInit(&context->lock))
   {
+    libvlc_release(instance);
     free(context);
     return 0;
   }
   session->context = context;
   context->session = session;
+  context->instance = instance;
   context->track = -1;
   context->cached_track = -1;
   context->subtitle_auto = -1;
-  context->media = url ? libvlc_media_new_location(ivlc_instance, source) : libvlc_media_new_path(ivlc_instance, source);
+  context->media = url ? libvlc_media_new_location(instance, source) : libvlc_media_new_path(instance, source);
   if (!context->media)
   {
     iupVideoError(session, "VLC cannot open this source");
