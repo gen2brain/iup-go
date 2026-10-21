@@ -43,12 +43,14 @@ Supported by "VLC", "MPV" and "NATIVE" in macOS and iOS. "AUTO" skips the other 
 
 **MPVOPTIONS** (non-inheritable): Additional mpv options applied when "MPV" loads the source, after the configuration loaded by MPVCONFIG. Options are separated by spaces, each "name=value", "name" (same as "name=yes") or "no-name" (same as "name=no"), with an optional leading "--". Double quotes keep spaces in a value. Unknown options are ignored.
 The options IupVideo needs to render and control playback, such as "vo", "pause", "idle" and "keep-open", cannot be changed.
+IupVideo sets "sws-fast=yes" before MPVCONFIG and MPVOPTIONS apply, so both can change it.
 
 **VLCCONFIG** (non-inheritable): Loads the user VLC configuration (vlcrc) when "VLC" loads the source. Can be "YES" or "NO". Default: "NO".
 VLC writes the configuration file again when the source is closed; options from VLCOPTIONS are not saved to it.
 
 **VLCOPTIONS** (non-inheritable): Additional VLC options applied when "VLC" loads the source, after the configuration loaded by VLCCONFIG. Options are separated by spaces, each "name=value", "name" or "no-name", with an optional leading "--". Double quotes keep spaces in a value. When VLC rejects an option, the source fails to load and STATE becomes "ERROR".
 The options IupVideo needs to render and control playback, such as "no-sub-autodetect-file", cannot be changed.
+IupVideo sets "swscale-mode=0" before VLCOPTIONS apply, so VLCOPTIONS can change it.
 
 **AVAILABLE** (read-only): Returns "YES" if an engine selected by BACKEND can be loaded, "NO" otherwise. While AUDIOURL is set, only engines that support it count. Which formats play depends on the engine and its installed codecs.
 
