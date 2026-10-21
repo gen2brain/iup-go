@@ -111,7 +111,7 @@ IVIDEO_THREAD(iVideoMpvRender, opaque)
       capacity = bytes;
     }
     params[0] = (mpv_render_param){MPV_RENDER_PARAM_SW_SIZE, size};
-    params[1] = (mpv_render_param){MPV_RENDER_PARAM_SW_FORMAT, (void*)"rgb0"};
+    params[1] = (mpv_render_param){MPV_RENDER_PARAM_SW_FORMAT, (void*)"bgr0"};
     params[2] = (mpv_render_param){MPV_RENDER_PARAM_SW_STRIDE, &stride};
     params[3] = (mpv_render_param){MPV_RENDER_PARAM_SW_POINTER, pixels};
     params[4] = (mpv_render_param){MPV_RENDER_PARAM_INVALID, NULL};
@@ -120,7 +120,7 @@ IVIDEO_THREAD(iVideoMpvRender, opaque)
       iupVideoError(context->session, "mpv video rendering failed");
       break;
     }
-    iupVideoFrame(context->session, pixels, size[0], size[1], stride, 4);
+    iupVideoFrame(context->session, pixels, size[0], size[1], stride);
     mpv_render_context_report_swap(context->renderer);
   }
   ivideoAlignedFree(pixels);

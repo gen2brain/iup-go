@@ -13,6 +13,7 @@
 #include <QStringList>
 #include <QPixmap>
 #include <QImage>
+#include <QSysInfo>
 #include <QPainterPath>
 #include <QVector>
 #include <QTextLayout>
@@ -915,6 +916,22 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
 /****************************************************************************
  * Image Draw
  ****************************************************************************/
+
+extern "C" IUP_SDK_API int iupdrvDrawBitmap(IdrawCanvas* dc, const unsigned char* data, int width, int height, int stride, int x, int y, int w, int h, int quality)
+{
+  if (!dc || !dc->painter || QSysInfo::ByteOrder != QSysInfo::LittleEndian)
+    return 0;
+
+  QImage image(data, width, height, stride, QImage::Format_RGB32);
+  if (image.isNull())
+    return 0;
+
+  dc->painter->save();
+  dc->painter->setRenderHint(QPainter::SmoothPixmapTransform, quality != IUP_DRAW_IMAGE_NEAREST);
+  dc->painter->drawImage(QRect(x, y, w, h), image);
+  dc->painter->restore();
+  return 1;
+}
 
 extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {

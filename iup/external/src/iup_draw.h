@@ -34,6 +34,7 @@ IUP_SDK_API long iupDrawColor(unsigned char red, unsigned char green, unsigned c
 IUP_SDK_API void iupDrawCalcShadows(long bgcolor, long* light_shadow, long* mid_shadow, long* dark_shadow);
 IUP_SDK_API long iupDrawCalcSeparatorColor(long bgcolor);
 IUP_SDK_API long iupDrawColorMakeInactive(long color, long bgcolor);
+IUP_SDK_API int iupDrawBitmap(Ihandle* ih, const unsigned char* data, int width, int height, int stride, int x, int y, int w, int h);
 
 #define iupDrawAlpha(_c)    (unsigned char)(~(((_c) >> 24) & 0xFF))   /* 0=transparent, 255=opaque (default is opaque, internally stored as 0) */
 #define iupDrawRed(_c)      (unsigned char)(((_c) >> 16) & 0xFF)

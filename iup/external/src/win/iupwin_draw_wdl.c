@@ -1041,6 +1041,19 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   wdDestroyBrush(brush);
 }
 
+IUP_SDK_API int iupdrvDrawBitmap(IdrawCanvas* dc, const unsigned char* data, int width, int height, int stride, int x, int y, int w, int h, int quality)
+{
+  WD_RECT rect;
+
+  rect.x0 = iupInt2Float(x);
+  rect.y0 = iupInt2Float(y);
+  rect.x1 = iupInt2Float(x + w);
+  rect.y1 = iupInt2Float(y + h);
+
+  wdBitBltBuffer(dc->hCanvas, width, height, stride, data, &rect, quality == IUP_DRAW_IMAGE_NEAREST);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   WD_HIMAGE hImage = iupwinWdlImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);

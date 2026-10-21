@@ -1088,6 +1088,25 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   free(wtext);
 }
 
+extern "C" IUP_SDK_API int iupdrvDrawBitmap(IdrawCanvas* dc, const unsigned char* data, int width, int height, int stride, int x, int y, int w, int h, int quality)
+{
+  if (!dc || !dc->d2dContext)
+    return 0;
+
+  D2D1_BITMAP_PROPERTIES bitmapProps = D2D1::BitmapProperties(
+    D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE));
+
+  com_ptr<ID2D1Bitmap> d2dBitmap;
+  HRESULT hr = dc->d2dContext->CreateBitmap(D2D1::SizeU(width, height), data, stride, bitmapProps, d2dBitmap.put());
+  if (FAILED(hr) || !d2dBitmap)
+    return 0;
+
+  D2D1_RECT_F destRect = D2D1::RectF(static_cast<float>(x), static_cast<float>(y), static_cast<float>(x + w), static_cast<float>(y + h));
+  dc->d2dContext->DrawBitmap(d2dBitmap.get(), destRect, 1.0f,
+    quality == IUP_DRAW_IMAGE_NEAREST ? D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR : D2D1_BITMAP_INTERPOLATION_MODE_LINEAR);
+  return 1;
+}
+
 extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   if (!dc || !dc->d2dContext || !name)

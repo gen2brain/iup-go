@@ -113,6 +113,63 @@ wdBitBltImageEx(WD_HCANVAS hCanvas, const WD_HIMAGE hImage,
 }
 
 void
+wdBitBltBuffer(WD_HCANVAS hCanvas, UINT uWidth, UINT uHeight, UINT uStride,
+               const BYTE* pBuffer, const WD_RECT* pDestRect, BOOL bNearest)
+{
+    if(d2d_enabled()) {
+        d2d_canvas_t* c = (d2d_canvas_t*) hCanvas;
+        dummy_D2D1_SIZE_U size = { uWidth, uHeight };
+        dummy_D2D1_BITMAP_PROPERTIES props = {
+                { dummy_DXGI_FORMAT_B8G8R8A8_UNORM, dummy_D2D1_ALPHA_MODE_IGNORE }, 0.0f, 0.0f };
+        dummy_ID2D1Bitmap* b;
+        HRESULT hr;
+        dummy_D2D1_RECT_F dest = {
+                pDestRect->x0 - D2D_BASEDELTA_X,
+                pDestRect->y0 - D2D_BASEDELTA_Y,
+                pDestRect->x1 - D2D_BASEDELTA_X,
+                pDestRect->y1 - D2D_BASEDELTA_Y
+        };
+
+        hr = dummy_ID2D1RenderTarget_CreateBitmap(c->target, size, pBuffer, uStride, &props, &b);
+        if(FAILED(hr)) {
+            WD_TRACE_HR("wdBitBltBuffer: "
+                        "ID2D1RenderTarget::CreateBitmap() failed.");
+            return;
+        }
+
+        dummy_ID2D1RenderTarget_DrawBitmap(c->target, b, &dest, 1.0f,
+                bNearest ? dummy_D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR
+                         : dummy_D2D1_BITMAP_INTERPOLATION_MODE_LINEAR,
+                NULL);
+        dummy_ID2D1Bitmap_Release(b);
+    } else {
+        gdix_canvas_t* c = (gdix_canvas_t*) hCanvas;
+        dummy_GpBitmap* b = NULL;
+        int status;
+
+        status = gdix_vtable->fn_CreateBitmapFromScan0(uWidth, uHeight, uStride,
+                    dummy_PixelFormat32bppRGB, (BYTE*) pBuffer, &b);
+        if(status != 0) {
+            WD_TRACE("wdBitBltBuffer: "
+                     "GdipCreateBitmapFromScan0() failed. [%d]", status);
+            return;
+        }
+
+        if(bNearest)
+            gdix_vtable->fn_SetInterpolationMode(c->graphics, dummy_InterpolationModeNearestNeighbor);
+
+        gdix_vtable->fn_DrawImageRectRect(c->graphics, (dummy_GpImage*) b,
+                 pDestRect->x0, pDestRect->y0, pDestRect->x1 - pDestRect->x0, pDestRect->y1 - pDestRect->y0,
+                 0.0f, 0.0f, (float) uWidth, (float) uHeight, dummy_UnitPixel, NULL, NULL, NULL);
+
+        if(bNearest)
+            gdix_vtable->fn_SetInterpolationMode(c->graphics, dummy_InterpolationModeDefault);
+
+        gdix_vtable->fn_DisposeImage((dummy_GpImage*) b);
+    }
+}
+
+void
 wdBitBltImage(WD_HCANVAS hCanvas, const WD_HIMAGE hImage,
                const WD_RECT* pDestRect, const WD_RECT* pSourceRect)
 {

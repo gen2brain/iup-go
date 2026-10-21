@@ -1185,6 +1185,34 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   }
 }
 
+IUP_SDK_API int iupdrvDrawBitmap(IdrawCanvas* dc, const unsigned char* data, int width, int height, int stride, int x, int y, int w, int h, int quality)
+{
+  CGContextRef cg_context = dc->cgContext;
+  CGColorSpaceRef cs;
+  CGDataProviderRef provider;
+  CGImageRef image;
+
+  if (!cg_context || __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__)
+    return 0;
+
+  cs = CGColorSpaceCreateDeviceRGB();
+  provider = CGDataProviderCreateWithData(NULL, data, (size_t)stride * height, NULL);
+  image = CGImageCreate(width, height, 8, 32, stride, cs, kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little, provider, NULL, false, kCGRenderingIntentDefault);
+  CGDataProviderRelease(provider);
+  CGColorSpaceRelease(cs);
+  if (!image)
+    return 0;
+
+  CGContextSaveGState(cg_context);
+  CGContextSetInterpolationQuality(cg_context, quality == IUP_DRAW_IMAGE_NEAREST ? kCGInterpolationNone : kCGInterpolationDefault);
+  CGContextTranslateCTM(cg_context, x, y + h);
+  CGContextScaleCTM(cg_context, 1.0, -1.0);
+  CGContextDrawImage(cg_context, CGRectMake(0, 0, w, h), image);
+  CGContextRestoreGState(cg_context);
+  CGImageRelease(image);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   NSImage* user_image = (NSImage*)iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);

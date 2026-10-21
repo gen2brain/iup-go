@@ -44,6 +44,7 @@ typedef INT dummy_GpPixelFormat;
 #define    dummy_PixelFormatPAlpha       0x00080000 // Pre-multiplied alpha
 #define    dummy_PixelFormatCanonical    0x00200000 
 #define    dummy_PixelFormat24bppRGB        (8 | (24 << 8) | dummy_PixelFormatGDI)
+#define    dummy_PixelFormat32bppRGB        (9 | (32 << 8) | dummy_PixelFormatGDI)
 #define    dummy_PixelFormat32bppARGB       (10 | (32 << 8) | dummy_PixelFormatAlpha | dummy_PixelFormatGDI | dummy_PixelFormatCanonical)
 #define    dummy_PixelFormat32bppPARGB      (11 | (32 << 8) | dummy_PixelFormatAlpha | dummy_PixelFormatPAlpha | dummy_PixelFormatGDI)
 

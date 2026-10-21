@@ -596,6 +596,8 @@ void wdBitBltImage(WD_HCANVAS hCanvas, const WD_HIMAGE hImage,
                 const WD_RECT* pDestRect, const WD_RECT* pSourceRect);
 void wdBitBltImageEx(WD_HCANVAS hCanvas, const WD_HIMAGE hImage,
                 const WD_RECT* pDestRect, const WD_RECT* pSourceRect, BOOL bNearest, float fOpacity);
+void wdBitBltBuffer(WD_HCANVAS hCanvas, UINT uWidth, UINT uHeight, UINT uStride,
+                const BYTE* pBuffer, const WD_RECT* pDestRect, BOOL bNearest);
 void wdBitBltCachedImage(WD_HCANVAS hCanvas, const WD_HCACHEDIMAGE hCachedImage,
                 float x, float y);
 void wdBitBltHICON(WD_HCANVAS hCanvas, HICON hIcon,

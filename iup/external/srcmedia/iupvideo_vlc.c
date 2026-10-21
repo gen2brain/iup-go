@@ -148,7 +148,7 @@ static unsigned iVideoVlcFormat(void** opaque, char* chroma, unsigned* width, un
   picture->width = *width;
   picture->height = *height;
   *opaque = picture;
-  memcpy(chroma, "RGBA", 4);
+  memcpy(chroma, "RV32", 4);
   pitches[0] = picture->pitch;
   lines[0] = *height;
   return 1;
@@ -205,7 +205,7 @@ static void iVideoVlcDisplay(void* opaque, void* picture)
     if (context->shown)
       memcpy(context->shown, picture, size);
   }
-  iupVideoFrame(context->session, (const unsigned char*)picture, (int)context->width, (int)context->height, context->pitch, 4);
+  iupVideoFrame(context->session, (const unsigned char*)picture, (int)context->width, (int)context->height, context->pitch);
   ivideoMutexUnlock(&context->lock);
 }
 
