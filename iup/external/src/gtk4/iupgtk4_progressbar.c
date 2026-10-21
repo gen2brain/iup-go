@@ -122,7 +122,7 @@ static void gtk4ProgressBarApplyProgressStyle(Ihandle* ih)
   unsigned char r, g, b;
   char* fg = iupAttribGet(ih, "FGCOLOR");
   if (fg && iupStrToRGB(fg, &r, &g, &b))
-    g_snprintf(decl, sizeof(decl), "background-color: rgb(%d,%d,%d);", r, g, b);
+    g_snprintf(decl, sizeof(decl), "background-color: rgb(%d,%d,%d); border-color: rgb(%d,%d,%d);", r, g, b, r, g, b);
   if (ih->data->dashed)
   {
     char extra[200];
