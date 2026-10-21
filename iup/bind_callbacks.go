@@ -123,6 +123,7 @@ func clearGlobalHandle(slot *goHandle) {
 //export goIupLDestroyCB
 func goIupLDestroyCB(ih unsafe.Pointer) C.int {
 	h := (Ihandle)(ih)
+	releasePostPayloads(h)
 	list := h.GetAttribute(iupgoRegistryAttr)
 	if list == "" {
 		return 0
@@ -1090,6 +1091,46 @@ func setSpinFunc(ih Ihandle, f SpinFunc) {
 // PostMessageFunc for POSTMESSAGE_CB callback.
 type PostMessageFunc func(Ihandle, string, int, any) int
 
+// Payload handles of posted messages not yet delivered, per element with a Go POSTMESSAGE_CB.
+var (
+	postMu      sync.Mutex
+	postPending = map[Ihandle]map[goHandle]struct{}{}
+)
+
+func newPostPayload(ih Ihandle, p any) goHandle {
+	postMu.Lock()
+	defer postMu.Unlock()
+	pending, ok := postPending[ih]
+	if !ok {
+		return 0
+	}
+	h := newGoHandle(p)
+	pending[h] = struct{}{}
+	return h
+}
+
+func takePostPayload(ih Ihandle, h goHandle) (any, bool) {
+	postMu.Lock()
+	_, ok := postPending[ih][h]
+	delete(postPending[ih], h)
+	postMu.Unlock()
+	if !ok {
+		return nil, false
+	}
+	p := h.Value()
+	h.Delete()
+	return p, true
+}
+
+func releasePostPayloads(ih Ihandle) {
+	postMu.Lock()
+	defer postMu.Unlock()
+	for h := range postPending[ih] {
+		h.Delete()
+	}
+	delete(postPending, ih)
+}
+
 //export goIupPostMessageCB
 func goIupPostMessageCB(ih unsafe.Pointer, s unsafe.Pointer, i C.int, d C.double, p unsafe.Pointer) C.int {
 	_ = d
@@ -1097,9 +1138,10 @@ func goIupPostMessageCB(ih unsafe.Pointer, s unsafe.Pointer, i C.int, d C.double
 
 	var payload any
 	if p != nil {
-		ph := goHandle(uintptr(p))
-		payload = ph.Value()
-		ph.Delete()
+		var ok bool
+		if payload, ok = takePostPayload((Ihandle)(ih), goHandle(uintptr(p))); !ok {
+			return C.int(DEFAULT)
+		}
 	}
 
 	return C.int(f((Ihandle)(ih), C.GoString((*C.char)(s)), int(i), payload))
@@ -1108,6 +1150,12 @@ func goIupPostMessageCB(ih unsafe.Pointer, s unsafe.Pointer, i C.int, d C.double
 // setPostMessageFunc for POSTMESSAGE_CB.
 func setPostMessageFunc(ih Ihandle, f PostMessageFunc) {
 	storeCallback(ih, "_IUPGO_POSTMESSAGE_CB", f)
+
+	postMu.Lock()
+	if postPending[ih] == nil {
+		postPending[ih] = map[goHandle]struct{}{}
+	}
+	postMu.Unlock()
 
 	C.goIupSetPostMessageFunc(ih.ptr())
 }
