@@ -12,7 +12,6 @@
 #include "iup_assert.h"
 #include "iup_attrib.h"
 #include "iup_drvfont.h"
-#include "iup_drvinfo.h"
 #include "iup_object.h"
 #include "iup_str.h"
 
@@ -169,16 +168,7 @@ IUP_DRV_API IupCocoaFont* iupcocoaFindFont(const char* iup_font_name)
                    &def_bold, &def_italic, &def_underline, &def_strikeout);
   }
 
-  /* a negative IUP size is in pixels, NSFont works in points */
-  if (font_size < 0)
-  {
-    double dpi = iupdrvGetScreenDpi();
-    final_font_size = (CGFloat)((-font_size * 72.0) / dpi);
-  }
-  else
-  {
-    final_font_size = (CGFloat)font_size;
-  }
+  final_font_size = (CGFloat)(font_size < 0 ? -font_size : font_size);
 
   if (final_font_size == 0)
   {

@@ -170,7 +170,7 @@ static int androidFrameSetFrameColorAttrib(Ihandle* ih, const char* value)
 #define IUPANDROID_FRAME_TYPEFACE_BOLD        1
 #define IUPANDROID_FRAME_TYPEFACE_ITALIC      2
 #define IUPANDROID_FRAME_TYPEFACE_BOLD_ITALIC 3
-#define IUPANDROID_FRAME_COMPLEX_UNIT_PX      0
+#define IUPANDROID_FRAME_COMPLEX_UNIT_DIP     1
 #define IUPANDROID_FRAME_COMPLEX_UNIT_SP      2
 
 static int androidFrameSetFontAttrib(Ihandle* ih, const char* value)
@@ -189,14 +189,14 @@ static int androidFrameSetFontAttrib(Ihandle* ih, const char* value)
   else if (is_bold)         style = IUPANDROID_FRAME_TYPEFACE_BOLD;
   else if (is_italic)       style = IUPANDROID_FRAME_TYPEFACE_ITALIC;
 
-  int size_unit = (size < 0) ? IUPANDROID_FRAME_COMPLEX_UNIT_PX : IUPANDROID_FRAME_COMPLEX_UNIT_SP;
+  int size_unit = (size < 0) ? IUPANDROID_FRAME_COMPLEX_UNIT_DIP : IUPANDROID_FRAME_COMPLEX_UNIT_SP;
   float size_value = (size < 0) ? (float)(-size) : (float)size;
 
   /* Default-font frames render the title a touch smaller than body text. */
   const char* defaults = IupGetGlobal("DEFAULTFONT");
   if (defaults && iupStrEqual(value, defaults))
   {
-    float min_size = (size_unit == IUPANDROID_FRAME_COMPLEX_UNIT_PX) ? 8.0f : 11.0f;
+    float min_size = 11.0f;
     size_value -= 3.0f;
     if (size_value < min_size) size_value = min_size;
   }

@@ -70,9 +70,13 @@ The DEFAULTFONT is the system font at the system size.
 
 In GNUstep, the DEFAULTFONT is the NSFont user default, seeded with "DejaVu Sans" when not set.
 
+Negative sizes are points.
+
 #### Cocoa Touch
 
 The DEFAULTFONT is the system font at the label size.
+
+Negative sizes are points.
 
 #### Qt
 
