@@ -1,5 +1,5 @@
 /** \file
- * \brief libVLC 3 Dynamic Loading Support
+ * \brief libVLC 3 and 4 Dynamic Loading Support
  *
  * See Copyright Notice in "iup.h"
  */
@@ -7,6 +7,7 @@
 #ifndef __IUPVIDEO_VLC_DLOPEN_H
 #define __IUPVIDEO_VLC_DLOPEN_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "iupvideo_os.h"
 
@@ -15,6 +16,7 @@ typedef struct libvlc_media_t libvlc_media_t;
 typedef struct libvlc_media_player_t libvlc_media_player_t;
 typedef struct libvlc_event_manager_t libvlc_event_manager_t;
 typedef struct libvlc_event_t libvlc_event_t;
+typedef struct libvlc_media_tracklist_t libvlc_media_tracklist_t;
 typedef int64_t libvlc_time_t;
 
 typedef enum
@@ -28,6 +30,17 @@ typedef enum
   libvlc_Ended,
   libvlc_Error
 } libvlc_state_t;
+
+enum
+{
+  libvlc4_NothingSpecial = 0,
+  libvlc4_Opening,
+  libvlc4_Playing,
+  libvlc4_Paused,
+  libvlc4_Stopped,
+  libvlc4_Stopping,
+  libvlc4_Error
+};
 
 typedef enum
 {
@@ -125,6 +138,7 @@ typedef unsigned (*libvlc_video_format_cb)(void** opaque, char* chroma, unsigned
 typedef void (*libvlc_video_cleanup_cb)(void* opaque);
 
 static void* iupvlc_handle = NULL;
+static int iupvlc_major = 0;
 
 static const char* (*iupvlc_get_version)(void);
 static libvlc_instance_t* (*iupvlc_new)(int, const char* const*);
@@ -143,6 +157,7 @@ static void (*iupvlc_media_player_set_media)(libvlc_media_player_t*, libvlc_medi
 static int (*iupvlc_media_player_play)(libvlc_media_player_t*);
 static void (*iupvlc_media_player_stop)(libvlc_media_player_t*);
 static void (*iupvlc_media_player_set_pause)(libvlc_media_player_t*, int);
+static void (*iupvlc_media_player_next_frame)(libvlc_media_player_t*);
 static libvlc_state_t (*iupvlc_media_player_get_state)(libvlc_media_player_t*);
 static libvlc_time_t (*iupvlc_media_player_get_time)(libvlc_media_player_t*);
 static void (*iupvlc_media_player_set_time)(libvlc_media_player_t*, libvlc_time_t);
@@ -165,6 +180,23 @@ static void (*iupvlc_audio_output_device_set)(libvlc_media_player_t*, const char
 static void (*iupvlc_video_set_adjust_int)(libvlc_media_player_t*, unsigned, int);
 static void (*iupvlc_video_set_adjust_float)(libvlc_media_player_t*, unsigned, float);
 
+static libvlc_media_t* (*iupvlc4_media_new_path)(const char*);
+static libvlc_media_t* (*iupvlc4_media_new_location)(const char*);
+static libvlc_media_tracklist_t* (*iupvlc4_media_get_tracklist)(libvlc_media_t*, libvlc_track_type_t);
+static size_t (*iupvlc4_media_tracklist_count)(const libvlc_media_tracklist_t*);
+static libvlc_media_track_t* (*iupvlc4_media_tracklist_at)(libvlc_media_tracklist_t*, size_t);
+static void (*iupvlc4_media_tracklist_delete)(libvlc_media_tracklist_t*);
+static void (*iupvlc4_media_track_release)(libvlc_media_track_t*);
+static libvlc_media_player_t* (*iupvlc4_media_player_new)(libvlc_instance_t*, const void*, void*);
+static int (*iupvlc4_media_player_stop_async)(libvlc_media_player_t*);
+static int (*iupvlc4_media_player_set_time)(libvlc_media_player_t*, libvlc_time_t, bool);
+static bool (*iupvlc4_media_player_is_seekable)(libvlc_media_player_t*);
+static libvlc_media_tracklist_t* (*iupvlc4_media_player_get_tracklist)(libvlc_media_player_t*, libvlc_track_type_t, bool);
+static void (*iupvlc4_media_player_select_track)(libvlc_media_player_t*, const libvlc_media_track_t*);
+static void (*iupvlc4_media_player_unselect_track_type)(libvlc_media_player_t*, libvlc_track_type_t);
+static libvlc_media_track_t* (*iupvlc4_media_player_get_selected_track)(libvlc_media_player_t*, libvlc_track_type_t);
+static int (*iupvlc4_audio_output_device_set)(libvlc_media_player_t*, const char*);
+
 #define libvlc_get_version iupvlc_get_version
 #define libvlc_new iupvlc_new
 #define libvlc_retain iupvlc_retain
@@ -182,6 +214,7 @@ static void (*iupvlc_video_set_adjust_float)(libvlc_media_player_t*, unsigned, f
 #define libvlc_media_player_play iupvlc_media_player_play
 #define libvlc_media_player_stop iupvlc_media_player_stop
 #define libvlc_media_player_set_pause iupvlc_media_player_set_pause
+#define libvlc_media_player_next_frame iupvlc_media_player_next_frame
 #define libvlc_media_player_get_state iupvlc_media_player_get_state
 #define libvlc_media_player_get_time iupvlc_media_player_get_time
 #define libvlc_media_player_set_time iupvlc_media_player_set_time
@@ -212,10 +245,91 @@ static void* iupVlcSymbol(const char* name, int* missing)
   return symbol;
 }
 
-static int iupVlcOpen(void)
+static int iupVlcLoad(void)
 {
   int missing = 0;
 
+  *(void**)&iupvlc_get_version = iupVlcSymbol("libvlc_get_version", &missing);
+  if (missing)
+    return 0;
+  iupvlc_major = libvlc_get_version()[0] - '0';
+  if (iupvlc_major != 3 && iupvlc_major != 4)
+    return 0;
+
+  *(void**)&iupvlc_new = iupVlcSymbol("libvlc_new", &missing);
+  *(void**)&iupvlc_retain = iupVlcSymbol("libvlc_retain", &missing);
+  *(void**)&iupvlc_release = iupVlcSymbol("libvlc_release", &missing);
+  *(void**)&iupvlc_media_add_option = iupVlcSymbol("libvlc_media_add_option", &missing);
+  *(void**)&iupvlc_media_slaves_add = iupVlcSymbol("libvlc_media_slaves_add", &missing);
+  *(void**)&iupvlc_media_release = iupVlcSymbol("libvlc_media_release", &missing);
+  *(void**)&iupvlc_media_player_release = iupVlcSymbol("libvlc_media_player_release", &missing);
+  *(void**)&iupvlc_media_player_set_media = iupVlcSymbol("libvlc_media_player_set_media", &missing);
+  *(void**)&iupvlc_media_player_play = iupVlcSymbol("libvlc_media_player_play", &missing);
+  *(void**)&iupvlc_media_player_set_pause = iupVlcSymbol("libvlc_media_player_set_pause", &missing);
+  *(void**)&iupvlc_media_player_next_frame = iupVlcSymbol("libvlc_media_player_next_frame", &missing);
+  *(void**)&iupvlc_media_player_get_state = iupVlcSymbol("libvlc_media_player_get_state", &missing);
+  *(void**)&iupvlc_media_player_get_time = iupVlcSymbol("libvlc_media_player_get_time", &missing);
+  *(void**)&iupvlc_media_player_get_length = iupVlcSymbol("libvlc_media_player_get_length", &missing);
+  *(void**)&iupvlc_audio_set_volume = iupVlcSymbol("libvlc_audio_set_volume", &missing);
+  *(void**)&iupvlc_audio_set_mute = iupVlcSymbol("libvlc_audio_set_mute", &missing);
+  *(void**)&iupvlc_video_set_callbacks = iupVlcSymbol("libvlc_video_set_callbacks", &missing);
+  *(void**)&iupvlc_video_set_format_callbacks = iupVlcSymbol("libvlc_video_set_format_callbacks", &missing);
+  *(void**)&iupvlc_video_set_spu_delay = iupVlcSymbol("libvlc_video_set_spu_delay", &missing);
+  *(void**)&iupvlc_video_get_spu_delay = iupVlcSymbol("libvlc_video_get_spu_delay", &missing);
+  *(void**)&iupvlc_audio_output_device_enum = iupVlcSymbol("libvlc_audio_output_device_enum", &missing);
+  *(void**)&iupvlc_audio_output_device_list_release = iupVlcSymbol("libvlc_audio_output_device_list_release", &missing);
+  *(void**)&iupvlc_video_set_adjust_int = iupVlcSymbol("libvlc_video_set_adjust_int", &missing);
+  *(void**)&iupvlc_video_set_adjust_float = iupVlcSymbol("libvlc_video_set_adjust_float", &missing);
+
+  if (iupvlc_major == 3)
+  {
+    *(void**)&iupvlc_media_new_path = iupVlcSymbol("libvlc_media_new_path", &missing);
+    *(void**)&iupvlc_media_new_location = iupVlcSymbol("libvlc_media_new_location", &missing);
+    *(void**)&iupvlc_media_tracks_get = iupVlcSymbol("libvlc_media_tracks_get", &missing);
+    *(void**)&iupvlc_media_tracks_release = iupVlcSymbol("libvlc_media_tracks_release", &missing);
+    *(void**)&iupvlc_media_player_new = iupVlcSymbol("libvlc_media_player_new", &missing);
+    *(void**)&iupvlc_media_player_stop = iupVlcSymbol("libvlc_media_player_stop", &missing);
+    *(void**)&iupvlc_media_player_set_time = iupVlcSymbol("libvlc_media_player_set_time", &missing);
+    *(void**)&iupvlc_media_player_is_seekable = iupVlcSymbol("libvlc_media_player_is_seekable", &missing);
+    *(void**)&iupvlc_media_player_event_manager = iupVlcSymbol("libvlc_media_player_event_manager", &missing);
+    *(void**)&iupvlc_event_attach = iupVlcSymbol("libvlc_event_attach", &missing);
+    *(void**)&iupvlc_event_detach = iupVlcSymbol("libvlc_event_detach", &missing);
+    *(void**)&iupvlc_video_set_spu = iupVlcSymbol("libvlc_video_set_spu", &missing);
+    *(void**)&iupvlc_video_get_spu = iupVlcSymbol("libvlc_video_get_spu", &missing);
+    *(void**)&iupvlc_audio_output_device_set = iupVlcSymbol("libvlc_audio_output_device_set", &missing);
+  }
+  else
+  {
+    *(void**)&iupvlc4_media_new_path = iupVlcSymbol("libvlc_media_new_path", &missing);
+    *(void**)&iupvlc4_media_new_location = iupVlcSymbol("libvlc_media_new_location", &missing);
+    *(void**)&iupvlc4_media_get_tracklist = iupVlcSymbol("libvlc_media_get_tracklist", &missing);
+    *(void**)&iupvlc4_media_tracklist_count = iupVlcSymbol("libvlc_media_tracklist_count", &missing);
+    *(void**)&iupvlc4_media_tracklist_at = iupVlcSymbol("libvlc_media_tracklist_at", &missing);
+    *(void**)&iupvlc4_media_tracklist_delete = iupVlcSymbol("libvlc_media_tracklist_delete", &missing);
+    *(void**)&iupvlc4_media_track_release = iupVlcSymbol("libvlc_media_track_release", &missing);
+    *(void**)&iupvlc4_media_player_new = iupVlcSymbol("libvlc_media_player_new", &missing);
+    *(void**)&iupvlc4_media_player_stop_async = iupVlcSymbol("libvlc_media_player_stop_async", &missing);
+    *(void**)&iupvlc4_media_player_set_time = iupVlcSymbol("libvlc_media_player_set_time", &missing);
+    *(void**)&iupvlc4_media_player_is_seekable = iupVlcSymbol("libvlc_media_player_is_seekable", &missing);
+    *(void**)&iupvlc4_media_player_get_tracklist = iupVlcSymbol("libvlc_media_player_get_tracklist", &missing);
+    *(void**)&iupvlc4_media_player_select_track = iupVlcSymbol("libvlc_media_player_select_track", &missing);
+    *(void**)&iupvlc4_media_player_unselect_track_type = iupVlcSymbol("libvlc_media_player_unselect_track_type", &missing);
+    *(void**)&iupvlc4_media_player_get_selected_track = iupVlcSymbol("libvlc_media_player_get_selected_track", &missing);
+    *(void**)&iupvlc4_audio_output_device_set = iupVlcSymbol("libvlc_audio_output_device_set", &missing);
+  }
+
+  return !missing;
+}
+
+static void iupVlcClose(void)
+{
+  ivideoLibraryClose(iupvlc_handle);
+  iupvlc_handle = NULL;
+  iupvlc_major = 0;
+}
+
+static int iupVlcOpen(void)
+{
   if (iupvlc_handle)
     return 1;
 
@@ -256,54 +370,26 @@ static int iupVlcOpen(void)
     }
   }
 #else
-  iupvlc_handle = ivideoLibraryOpen("libvlc.so.5");
+  {
+    const char* names[] = {"libvlc.so.12", "libvlc.so.5"};
+    int i;
+    for (i = 0; i < 2; i++)
+    {
+      iupvlc_handle = ivideoLibraryOpen(names[i]);
+      if (iupvlc_handle && iupVlcLoad())
+        return 1;
+      if (iupvlc_handle)
+        iupVlcClose();
+    }
+    return 0;
+  }
 #endif
   if (!iupvlc_handle)
     return 0;
 
-  *(void**)&iupvlc_get_version = iupVlcSymbol("libvlc_get_version", &missing);
-  *(void**)&iupvlc_new = iupVlcSymbol("libvlc_new", &missing);
-  *(void**)&iupvlc_retain = iupVlcSymbol("libvlc_retain", &missing);
-  *(void**)&iupvlc_release = iupVlcSymbol("libvlc_release", &missing);
-  *(void**)&iupvlc_media_new_path = iupVlcSymbol("libvlc_media_new_path", &missing);
-  *(void**)&iupvlc_media_new_location = iupVlcSymbol("libvlc_media_new_location", &missing);
-  *(void**)&iupvlc_media_add_option = iupVlcSymbol("libvlc_media_add_option", &missing);
-  *(void**)&iupvlc_media_slaves_add = iupVlcSymbol("libvlc_media_slaves_add", &missing);
-  *(void**)&iupvlc_media_release = iupVlcSymbol("libvlc_media_release", &missing);
-  *(void**)&iupvlc_media_tracks_get = iupVlcSymbol("libvlc_media_tracks_get", &missing);
-  *(void**)&iupvlc_media_tracks_release = iupVlcSymbol("libvlc_media_tracks_release", &missing);
-  *(void**)&iupvlc_media_player_new = iupVlcSymbol("libvlc_media_player_new", &missing);
-  *(void**)&iupvlc_media_player_release = iupVlcSymbol("libvlc_media_player_release", &missing);
-  *(void**)&iupvlc_media_player_set_media = iupVlcSymbol("libvlc_media_player_set_media", &missing);
-  *(void**)&iupvlc_media_player_play = iupVlcSymbol("libvlc_media_player_play", &missing);
-  *(void**)&iupvlc_media_player_stop = iupVlcSymbol("libvlc_media_player_stop", &missing);
-  *(void**)&iupvlc_media_player_set_pause = iupVlcSymbol("libvlc_media_player_set_pause", &missing);
-  *(void**)&iupvlc_media_player_get_state = iupVlcSymbol("libvlc_media_player_get_state", &missing);
-  *(void**)&iupvlc_media_player_get_time = iupVlcSymbol("libvlc_media_player_get_time", &missing);
-  *(void**)&iupvlc_media_player_set_time = iupVlcSymbol("libvlc_media_player_set_time", &missing);
-  *(void**)&iupvlc_media_player_get_length = iupVlcSymbol("libvlc_media_player_get_length", &missing);
-  *(void**)&iupvlc_media_player_is_seekable = iupVlcSymbol("libvlc_media_player_is_seekable", &missing);
-  *(void**)&iupvlc_media_player_event_manager = iupVlcSymbol("libvlc_media_player_event_manager", &missing);
-  *(void**)&iupvlc_audio_set_volume = iupVlcSymbol("libvlc_audio_set_volume", &missing);
-  *(void**)&iupvlc_audio_set_mute = iupVlcSymbol("libvlc_audio_set_mute", &missing);
-  *(void**)&iupvlc_video_set_callbacks = iupVlcSymbol("libvlc_video_set_callbacks", &missing);
-  *(void**)&iupvlc_video_set_format_callbacks = iupVlcSymbol("libvlc_video_set_format_callbacks", &missing);
-  *(void**)&iupvlc_event_attach = iupVlcSymbol("libvlc_event_attach", &missing);
-  *(void**)&iupvlc_event_detach = iupVlcSymbol("libvlc_event_detach", &missing);
-  *(void**)&iupvlc_video_set_spu = iupVlcSymbol("libvlc_video_set_spu", &missing);
-  *(void**)&iupvlc_video_get_spu = iupVlcSymbol("libvlc_video_get_spu", &missing);
-  *(void**)&iupvlc_video_set_spu_delay = iupVlcSymbol("libvlc_video_set_spu_delay", &missing);
-  *(void**)&iupvlc_video_get_spu_delay = iupVlcSymbol("libvlc_video_get_spu_delay", &missing);
-  *(void**)&iupvlc_audio_output_device_enum = iupVlcSymbol("libvlc_audio_output_device_enum", &missing);
-  *(void**)&iupvlc_audio_output_device_list_release = iupVlcSymbol("libvlc_audio_output_device_list_release", &missing);
-  *(void**)&iupvlc_audio_output_device_set = iupVlcSymbol("libvlc_audio_output_device_set", &missing);
-  *(void**)&iupvlc_video_set_adjust_int = iupVlcSymbol("libvlc_video_set_adjust_int", &missing);
-  *(void**)&iupvlc_video_set_adjust_float = iupVlcSymbol("libvlc_video_set_adjust_float", &missing);
-
-  if (missing || libvlc_get_version()[0] != '3')
+  if (!iupVlcLoad())
   {
-    ivideoLibraryClose(iupvlc_handle);
-    iupvlc_handle = NULL;
+    iupVlcClose();
     return 0;
   }
 
