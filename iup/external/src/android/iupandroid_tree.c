@@ -28,7 +28,7 @@
 #define IUPANDROID_TREE_TYPEFACE_BOLD        1
 #define IUPANDROID_TREE_TYPEFACE_ITALIC      2
 #define IUPANDROID_TREE_TYPEFACE_BOLD_ITALIC 3
-#define IUPANDROID_TREE_COMPLEX_UNIT_PX      0
+#define IUPANDROID_TREE_COMPLEX_UNIT_DIP     1
 #define IUPANDROID_TREE_COMPLEX_UNIT_SP      2
 
 static jclass androidTreeFindClass(JNIEnv* env)
@@ -753,7 +753,7 @@ static int androidTreeSetTitleFontIdAttrib(Ihandle* ih, int id, const char* valu
     if (is_bold && is_italic) style = IUPANDROID_TREE_TYPEFACE_BOLD_ITALIC;
     else if (is_bold)         style = IUPANDROID_TREE_TYPEFACE_BOLD;
     else if (is_italic)       style = IUPANDROID_TREE_TYPEFACE_ITALIC;
-    if (size < 0) { size_unit = IUPANDROID_TREE_COMPLEX_UNIT_PX; size_value = (float)(-size); }
+    if (size < 0) { size_unit = IUPANDROID_TREE_COMPLEX_UNIT_DIP; size_value = (float)(-size); }
     else          { size_unit = IUPANDROID_TREE_COMPLEX_UNIT_SP; size_value = (float)size; }
   }
 

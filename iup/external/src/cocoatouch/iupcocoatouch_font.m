@@ -16,7 +16,6 @@
 #include "iup_str.h"
 #include "iup_attrib.h"
 #include "iup_drvfont.h"
-#include "iup_drvinfo.h"
 #include "iup_object.h"
 
 #include "iupcocoatouch_drv.h"
@@ -206,18 +205,7 @@ IUP_DRV_API IupCocoaTouchFont* iupCocoaTouchFindFont(const char* iup_font_name)
 		return nil;
 	}
 
-	/* negative IUP sizes are pixels; convert to points via screen DPI */
-	CGFloat point_size;
-	if (font_size < 0)
-	{
-		double dpi = iupdrvGetScreenDpi();
-		if (dpi <= 0) dpi = 72.0;
-		point_size = (CGFloat)((-font_size * 72.0) / dpi);
-	}
-	else
-	{
-		point_size = (CGFloat)font_size;
-	}
+	CGFloat point_size = (CGFloat)(font_size < 0 ? -font_size : font_size);
 	if (point_size == 0) return nil;
 
 	const char* mapped = iupCocoaTouchFontFaceName(type_face);

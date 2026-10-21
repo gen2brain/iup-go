@@ -151,6 +151,8 @@ static int cocoaTouchFontDlgPopup(Ihandle* ih, int x, int y)
 	int  initial_size = 12;
 	if (value)
 		iupGetFontInfo(value, initial_face, &initial_size, &initial_bold, &initial_italic, &initial_underline, &initial_strikeout);
+	if (initial_size < 0)
+		initial_size = -initial_size;
 
 	UIFontPickerViewControllerConfiguration* config = [[[UIFontPickerViewControllerConfiguration alloc] init] autorelease];
 	config.includeFaces = YES;
