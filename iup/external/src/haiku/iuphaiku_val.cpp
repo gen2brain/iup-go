@@ -163,10 +163,10 @@ static int haikuValSetStepAttrib(Ihandle* ih, const char* value)
 static hash_mark_location haikuValHashLocation(Ihandle* ih)
 {
   const char* pos = iupAttribGet(ih, "TICKSPOS");
-  if (!pos) return B_HASH_MARKS_BOTTOM;
+  if (!pos) return B_HASH_MARKS_TOP;
   if (iupStrEqualNoCase(pos, "BOTH"))    return B_HASH_MARKS_BOTH;
-  if (iupStrEqualNoCase(pos, "REVERSE")) return B_HASH_MARKS_TOP;
-  return B_HASH_MARKS_BOTTOM;
+  if (iupStrEqualNoCase(pos, "REVERSE")) return B_HASH_MARKS_BOTTOM;
+  return B_HASH_MARKS_TOP;
 }
 
 static int haikuValSetShowTicksAttrib(Ihandle* ih, const char* value)

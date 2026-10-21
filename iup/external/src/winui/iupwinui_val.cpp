@@ -138,7 +138,7 @@ static int winuiValSetShowTicksAttrib(Ihandle* ih, const char* value)
       double freq = WINUI_VAL_MAX / static_cast<double>(ticks - 1);
       slider.TickFrequency(freq);
       if (slider.TickPlacement() == Primitives::TickPlacement::None)
-        slider.TickPlacement(Primitives::TickPlacement::BottomRight);
+        slider.TickPlacement(Primitives::TickPlacement::TopLeft);
     }
     else
     {
@@ -156,11 +156,11 @@ static int winuiValSetTicksPosAttrib(Ihandle* ih, const char* value)
     return 1;
 
   if (iupStrEqualNoCase(value, "REVERSE"))
-    slider.TickPlacement(Primitives::TickPlacement::TopLeft);
+    slider.TickPlacement(Primitives::TickPlacement::BottomRight);
   else if (iupStrEqualNoCase(value, "BOTH"))
     slider.TickPlacement(Primitives::TickPlacement::Outside);
   else
-    slider.TickPlacement(Primitives::TickPlacement::BottomRight);
+    slider.TickPlacement(Primitives::TickPlacement::TopLeft);
 
   return 1;
 }

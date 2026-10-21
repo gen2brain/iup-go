@@ -80,8 +80,9 @@ static const void* IUP_COCOATOUCH_VAL_TARGET_OBJ_KEY = "IUP_COCOATOUCH_VAL_TARGE
 	CGRect track = [self trackRectForBounds:self.bounds];
 	CGFloat tick_len = 6.0;
 	UIColor* color = [UIColor labelColor];
-	BOOL below = (_ticksPos != 1);  /* NORMAL or BOTH */
-	BOOL above = (_ticksPos == 1) || (_ticksPos == 2);  /* REVERSE or BOTH */
+	BOOL flip = _vertical && !_inverted;
+	BOOL above = (_ticksPos == 2) || ((_ticksPos == 1) == flip);
+	BOOL below = (_ticksPos == 2) || ((_ticksPos == 1) != flip);
 	for (int i = 0; i < n; i++)
 	{
 		CGFloat t = (CGFloat)i / (CGFloat)(n - 1);
@@ -198,6 +199,7 @@ static int cocoaTouchValSetInvertedAttrib(Ihandle* ih, const char* value)
 	{
 		slider.inverted = inv ? YES : NO;
 		[slider applyOrientationTransform];
+		[slider refreshTicks];
 	}
 	return 1;
 }

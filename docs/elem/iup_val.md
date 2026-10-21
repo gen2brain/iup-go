@@ -50,7 +50,7 @@ Not supported in Android.
 
 **TICKSPOS** (creation-only): Allows to position the ticks in both sides (BOTH) or in the reverse side (REVERSE).
 Default: NORMAL. The normal position for horizontal orientation is at the top of the control, and for vertical orientation is at the left of the control.
-Not supported in EFL, Motif and Android. In Motif and Android the ticks position is fixed.
+Not supported in Cocoa, EFL, Motif, Android and WebAssembly. In Cocoa, Motif, Android and WebAssembly the ticks position is fixed.
 
 **ORIENTATION** (creation-only) (non-inheritable):  Informs whether the valuator is "VERTICAL" or "HORIZONTAL".
 Vertical valuators are bottom to up, and horizontal valuators are left to right variations of min to max (but can be inverted using INVERTED).

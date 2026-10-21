@@ -251,13 +251,13 @@ static void gtkValUpdateTicks(Ihandle* ih, int num_ticks)
   both = iupStrEqualNoCase(tickspos, "BOTH");
   if (ih->data->orientation == IVAL_HORIZONTAL)
   {
-    pos  = (iupStrEqualNoCase(tickspos, "REVERSE")) ? GTK_POS_TOP : GTK_POS_BOTTOM;
-    pos2 = GTK_POS_TOP;
+    pos  = (iupStrEqualNoCase(tickspos, "REVERSE")) ? GTK_POS_BOTTOM : GTK_POS_TOP;
+    pos2 = GTK_POS_BOTTOM;
   }
   else
   {
-    pos  = (iupStrEqualNoCase(tickspos, "REVERSE")) ? GTK_POS_LEFT : GTK_POS_RIGHT;
-    pos2 = GTK_POS_LEFT;
+    pos  = (iupStrEqualNoCase(tickspos, "REVERSE")) ? GTK_POS_RIGHT : GTK_POS_LEFT;
+    pos2 = GTK_POS_RIGHT;
   }
 
   for (i = 0; i < num_ticks; i++)
