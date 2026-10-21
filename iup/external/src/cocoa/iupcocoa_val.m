@@ -294,15 +294,15 @@ static int cocoaValSetTicksPosAttrib(Ihandle* ih, const char* value)
   if (iupStrEqualNoCase(value, "BOTH"))
   {
     /* NSSlider doesn't support ticks on both sides, default to NORMAL */
-    [slider setTickMarkPosition: is_vertical ? NSTickMarkPositionLeading : NSTickMarkPositionBelow];
+    [slider setTickMarkPosition: is_vertical ? NSTickMarkPositionLeading : NSTickMarkPositionAbove];
   }
   else if (iupStrEqualNoCase(value, "REVERSE"))
   {
-    [slider setTickMarkPosition: is_vertical ? NSTickMarkPositionTrailing : NSTickMarkPositionAbove];
+    [slider setTickMarkPosition: is_vertical ? NSTickMarkPositionTrailing : NSTickMarkPositionBelow];
   }
   else /* "NORMAL" */
   {
-    [slider setTickMarkPosition: is_vertical ? NSTickMarkPositionLeading : NSTickMarkPositionBelow];
+    [slider setTickMarkPosition: is_vertical ? NSTickMarkPositionLeading : NSTickMarkPositionAbove];
   }
   return 1;
 }

@@ -298,14 +298,14 @@ static int qtValSetShowTicksAttrib(Ihandle* ih, const char* value)
       else if (iupStrEqualNoCase(tickspos, "REVERSE"))
       {
         if (ih->data->orientation == IVAL_HORIZONTAL)
-          slider->setTickPosition(QSlider::TicksAbove);
+          slider->setTickPosition(QSlider::TicksBelow);
         else
           slider->setTickPosition(QSlider::TicksRight);
       }
       else
       {
         if (ih->data->orientation == IVAL_HORIZONTAL)
-          slider->setTickPosition(QSlider::TicksBelow);
+          slider->setTickPosition(QSlider::TicksAbove);
         else
           slider->setTickPosition(QSlider::TicksLeft);
       }
@@ -335,14 +335,14 @@ static int qtValSetTicksPosAttrib(Ihandle* ih, const char* value)
   else if (iupStrEqualNoCase(value, "REVERSE"))
   {
     if (ih->data->orientation == IVAL_HORIZONTAL)
-      slider->setTickPosition(QSlider::TicksAbove);
+      slider->setTickPosition(QSlider::TicksBelow);
     else
       slider->setTickPosition(QSlider::TicksRight);
   }
   else
   {
     if (ih->data->orientation == IVAL_HORIZONTAL)
-      slider->setTickPosition(QSlider::TicksBelow);
+      slider->setTickPosition(QSlider::TicksAbove);
     else
       slider->setTickPosition(QSlider::TicksLeft);
   }

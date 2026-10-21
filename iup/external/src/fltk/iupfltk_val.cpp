@@ -80,8 +80,8 @@ public:
       for (int i = 0; i < n; i++)
       {
         int xi = x_track + (i * track_len) / (n - 1);
-        if (ticks_pos != 1) fl_yxline(xi, y_bot, y_bot - tick_len);    /* NORMAL or BOTH */
-        if (ticks_pos == 1 || ticks_pos == 2) fl_yxline(xi, y_top, y_top + tick_len);  /* REVERSE or BOTH */
+        if (ticks_pos != 1) fl_yxline(xi, y_top, y_top + tick_len);    /* NORMAL or BOTH */
+        if (ticks_pos == 1 || ticks_pos == 2) fl_yxline(xi, y_bot, y_bot - tick_len);  /* REVERSE or BOTH */
       }
     }
     else

@@ -771,13 +771,13 @@
       } break;
       case 'valticks': {
         if (el) {
-          if (c.n <= 0) { el.removeAttribute('list'); }
+          if (c.n < 2) { el.removeAttribute('list'); }
           else {
             var lid = 'iupticks' + c.id;
             var dl = document.getElementById(lid);
             if (!dl) { dl = document.createElement('datalist'); dl.id = lid; document.body.appendChild(dl); }
             dl.innerHTML = '';
-            for (var ti = 0; ti <= c.n; ti++) { var o = document.createElement('option'); o.value = Math.round(ti * 1000 / c.n); dl.appendChild(o); }
+            for (var ti = 0; ti < c.n; ti++) { var o = document.createElement('option'); o.value = Math.round(ti * 1000 / (c.n - 1)); dl.appendChild(o); }
             el.setAttribute('list', lid);
           }
         }

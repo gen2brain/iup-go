@@ -114,17 +114,6 @@ static int wasmValSetPageStepAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-/* datalist tick marks render on the UA-chosen side only; REVERSE/BOTH fall back to NORMAL */
-static int wasmValSetTicksPosAttrib(Ihandle* ih, const char* value)
-{
-  int id = iupwasmIdOf(ih), n;
-  (void)value;
-  n = iupAttribGetInt(ih, "SHOWTICKS");
-  if (id && n > 1)
-    iupwasmJsValTicks(id, n);
-  return 1;
-}
-
 static int wasmValMapMethod(Ihandle* ih)
 {
   int vertical = (ih->data->orientation == IVAL_VERTICAL);
@@ -162,6 +151,6 @@ IUP_SDK_API void iupdrvValInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "STEP", iupValGetStepAttrib, wasmValSetStepAttrib, IUPAF_SAMEASSYSTEM, "0.01", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PAGESTEP", iupValGetPageStepAttrib, wasmValSetPageStepAttrib, IUPAF_SAMEASSYSTEM, "0.1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWTICKS", iupValGetShowTicksAttrib, wasmValSetShowTicksAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, wasmValSetTicksPosAttrib, IUPAF_SAMEASSYSTEM, "NORMAL", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "TICKSPOS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, NULL, NULL, IUPAF_DEFAULT);
 }
