@@ -14,6 +14,7 @@
 #include <QRect>
 #include <QString>
 #include <QSysInfo>
+#include <QOperatingSystemVersion>
 #include <QDir>
 #include <QStandardPaths>
 
@@ -21,6 +22,7 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <langinfo.h>
+#include <sys/utsname.h>
 #else
 #include <windows.h>
 #endif
@@ -211,13 +213,34 @@ extern "C" IUP_SDK_API char* iupdrvGetUserName(void)
 
 extern "C" IUP_SDK_API char* iupdrvGetSystemName(void)
 {
-  QString os_name = QSysInfo::productType();
-  return iupStrReturnStr(os_name.toUtf8().constData());
+#if defined(Q_OS_MACOS)
+  return iupStrReturnStr("macOS");
+#elif defined(Q_OS_WIN)
+  QOperatingSystemVersion os = QOperatingSystemVersion::current();
+  if (os.majorVersion() == 10)
+    return iupStrReturnStr(os.microVersion() >= 22000 ? "Win11" : "Win10");
+  if (os.majorVersion() == 6 && os.minorVersion() == 3)
+    return iupStrReturnStr("Win81");
+  if (os.majorVersion() == 6 && os.minorVersion() == 2)
+    return iupStrReturnStr("Win8");
+  if (os.majorVersion() == 6 && os.minorVersion() == 1)
+    return iupStrReturnStr("Win7");
+  return iupStrReturnStr("Windows");
+#else
+  struct utsname un;
+  if (uname(&un) == 0)
+    return iupStrReturnStr(un.sysname);
+  return iupStrReturnStr(QSysInfo::kernelType().toUtf8().constData());
+#endif
 }
 
 extern "C" IUP_SDK_API char* iupdrvGetSystemVersion(void)
 {
+#ifdef Q_OS_MACOS
   QString os_version = QSysInfo::productVersion();
+#else
+  QString os_version = QSysInfo::kernelVersion();
+#endif
   return iupStrReturnStr(os_version.toUtf8().constData());
 }
 

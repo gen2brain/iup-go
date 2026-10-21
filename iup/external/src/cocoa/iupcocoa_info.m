@@ -199,47 +199,7 @@ IUP_SDK_API void iupdrvGetKeyState(char* key)
 static char * cocoaGetSystemName(void)
 {
 #ifndef GNUSTEP
-  NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
-  const char* codename = NULL;
-
-  /* Starting with macOS 11 (Big Sur), the major version number is the primary identifier. */
-  if (version.majorVersion >= 11)
-  {
-    switch (version.majorVersion)
-    {
-      case 27: codename = "Golden Gate"; break;
-      case 26: codename = "Tahoe"; break;
-      case 15: codename = "Sequoia"; break;
-      case 14: codename = "Sonoma"; break;
-      case 13: codename = "Ventura"; break;
-      case 12: codename = "Monterey"; break;
-      case 11: codename = "Big Sur"; break;
-    }
-  }
-  else if (version.majorVersion == 10)
-  {
-    switch (version.minorVersion)
-    {
-      case 15: codename = "Catalina"; break;
-      case 14: codename = "Mojave"; break;
-      case 13: codename = "High Sierra"; break;
-      case 12: codename = "Sierra"; break;
-      case 11: codename = "El Capitan"; break;
-      case 10: codename = "Yosemite"; break;
-    }
-  }
-
-  char buffer[100];
-  if (codename)
-  {
-    snprintf(buffer, sizeof(buffer), "macOS %s", codename);
-  }
-  else
-  {
-    iupStrCopyN(buffer, sizeof(buffer), "macOS");
-  }
-
-  return iupStrReturnStr(buffer);
+  return iupStrReturnStr("macOS");
 #else
   struct utsname systemInfo;
   if (uname(&systemInfo) == 0)
@@ -261,17 +221,14 @@ static char * cocoaGetSystemVersion(void)
 
 #ifndef GNUSTEP
   NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
-  snprintf(str, 100, "%ld.%ld.%ld", (long)version.majorVersion, (long)version.minorVersion, (long)version.patchVersion);
-
-  struct utsname systemInfo;
-  if (uname(&systemInfo) == 0)
-  {
-    snprintf(str + strlen(str), 100 - strlen(str), " (%s)", systemInfo.machine);
-  }
+  if (version.patchVersion)
+    snprintf(str, 100, "%ld.%ld.%ld", (long)version.majorVersion, (long)version.minorVersion, (long)version.patchVersion);
+  else
+    snprintf(str, 100, "%ld.%ld", (long)version.majorVersion, (long)version.minorVersion);
 #else
   struct utsname systemInfo;
   if (uname(&systemInfo) == 0)
-    snprintf(str, 100, "%s (%s)", systemInfo.release, systemInfo.machine);
+    iupStrCopyN(str, 100, systemInfo.release);
   else
     iupStrCopyN(str, 100, "unknown");
 #endif

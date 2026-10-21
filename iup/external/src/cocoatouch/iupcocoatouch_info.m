@@ -147,12 +147,10 @@ IUP_SDK_API char* iupdrvGetSystemName(void)
 
 static char* cocoaTouchGetSystemVersion(void)
 {
-	NSString* version = [[NSProcessInfo processInfo] operatingSystemVersionString];
-	const char* c_str = [version UTF8String];
-	size_t len = strlen(c_str);
-	char* out = iupStrGetMemory((int)len);
-	strlcpy(out, c_str, len + 1);
-	return out;
+	NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
+	if (version.patchVersion)
+		return iupStrReturnStrf("%ld.%ld.%ld", (long)version.majorVersion, (long)version.minorVersion, (long)version.patchVersion);
+	return iupStrReturnStrf("%ld.%ld", (long)version.majorVersion, (long)version.minorVersion);
 }
 
 IUP_SDK_API char* iupdrvGetSystemVersion(void)

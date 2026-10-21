@@ -44,6 +44,12 @@ func main() {
 	if v := g("EFLVERSION"); v != "" {
 		fmt.Printf("  EFLVERSION:    %s\n", v)
 	}
+	if v := g("FLTKVERSION"); v != "" {
+		fmt.Printf("  FLTKVERSION:   %s\n", v)
+	}
+	if v := g("GNUSTEPVERSION"); v != "" {
+		fmt.Printf("  GNUSTEPVERSION:%s\n", v)
+	}
 	if v := g("WINUIVERSION"); v != "" {
 		fmt.Printf("  WINUIVERSION:  %s\n", v)
 	}
