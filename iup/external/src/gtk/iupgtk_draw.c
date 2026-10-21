@@ -747,6 +747,37 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     cairo_restore(dc->image_cr);
 }
 
+IUP_SDK_API int iupdrvDrawBitmap(IdrawCanvas* dc, const unsigned char* data, int width, int height, int stride, int x, int y, int w, int h, int quality)
+{
+  cairo_surface_t* surface;
+
+  if (G_BYTE_ORDER != G_LITTLE_ENDIAN || width <= 0 || height <= 0 || stride % 4)
+    return 0;
+
+  surface = cairo_image_surface_create_for_data((unsigned char*)data, CAIRO_FORMAT_RGB24, width, height, stride);
+  if (cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS)
+  {
+    cairo_surface_destroy(surface);
+    return 0;
+  }
+
+  cairo_save(dc->image_cr);
+
+  cairo_rectangle(dc->image_cr, x, y, w, h);
+  cairo_clip(dc->image_cr);
+
+  cairo_translate(dc->image_cr, x, y);
+  cairo_scale(dc->image_cr, (double)w / width, (double)h / height);
+
+  cairo_set_source_surface(dc->image_cr, surface, 0, 0);
+  cairo_pattern_set_filter(cairo_get_source(dc->image_cr), quality == IUP_DRAW_IMAGE_NEAREST ? CAIRO_FILTER_NEAREST : CAIRO_FILTER_GOOD);
+  cairo_paint(dc->image_cr);
+
+  cairo_restore(dc->image_cr);
+  cairo_surface_destroy(surface);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   int bpp, img_w, img_h;

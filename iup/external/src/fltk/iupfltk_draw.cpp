@@ -1588,6 +1588,33 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
     free(text_buf);
 }
 
+extern "C" IUP_SDK_API int iupdrvDrawBitmap(IdrawCanvas* dc, const unsigned char* data, int width, int height, int stride, int x, int y, int w, int h, int quality)
+{
+  if (!dc || !fltkDrawIdentity(dc))
+    return 0;
+
+  std::vector<unsigned char> rgb(static_cast<size_t>(width) * height * 3);
+  for (int yy = 0; yy < height; yy++)
+  {
+    const unsigned char* sp = data + static_cast<size_t>(yy) * stride;
+    unsigned char* dp = rgb.data() + static_cast<size_t>(yy) * width * 3;
+    for (int xx = 0; xx < width; xx++, sp += 4, dp += 3)
+    {
+      dp[0] = sp[2];
+      dp[1] = sp[1];
+      dp[2] = sp[0];
+    }
+  }
+
+  Fl_RGB_Image image(rgb.data(), width, height, 3);
+  Fl_RGB_Scaling old_scaling = Fl_Image::RGB_scaling();
+  Fl_Image::RGB_scaling(quality == IUP_DRAW_IMAGE_NEAREST ? FL_RGB_SCALING_NEAREST : FL_RGB_SCALING_BILINEAR);
+  image.scale(w, h, 0, 1);
+  image.draw(x, y);
+  Fl_Image::RGB_scaling(old_scaling);
+  return 1;
+}
+
 extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   if (!dc || !name) return;

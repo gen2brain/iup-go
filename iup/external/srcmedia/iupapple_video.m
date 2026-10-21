@@ -38,8 +38,6 @@
   CATextLayer* caption;
   CGRect captionRect;
   id endObserver;
-  unsigned char* rgba;
-  size_t capacity;
   int ended;
   NSMutableData* adjust;
   int adjustPending;
@@ -81,7 +79,6 @@
   [item release];
   [player release];
   [adjust release];
-  free(rgba);
   [super dealloc];
 }
 @end
@@ -373,36 +370,6 @@ static void iappleVideoVolume(IvideoSession* session, int volume, int mute)
   context->player.muted = mute != 0;
 }
 
-static void iappleVideoCopy(IupAppleVideo* context, const unsigned char* pixels, size_t width, size_t height, size_t stride)
-{
-  size_t size = width * height * 4;
-  size_t x, y;
-  if (size > context->capacity)
-  {
-    unsigned char* allocation = (unsigned char*)realloc(context->rgba, size);
-    if (!allocation)
-    {
-      iupVideoError(context->session, "Cannot allocate AVPlayer video frame");
-      return;
-    }
-    context->rgba = allocation;
-    context->capacity = size;
-  }
-  for (y = 0; y < height; y++)
-  {
-    const unsigned char* input = pixels + y * stride;
-    unsigned char* output = context->rgba + y * width * 4;
-    for (x = 0; x < width; x++)
-    {
-      output[x * 4] = input[x * 4 + 2];
-      output[x * 4 + 1] = input[x * 4 + 1];
-      output[x * 4 + 2] = input[x * 4];
-      output[x * 4 + 3] = 255;
-    }
-  }
-  iupVideoFrame(context->session, context->rgba, (int)width, (int)height, width * 4, 4);
-}
-
 static void iappleVideoFrame(IupAppleVideo* context)
 {
   CMTime time = [context->output itemTimeForHostTime:CACurrentMediaTime()];
@@ -419,7 +386,7 @@ static void iappleVideoFrame(IupAppleVideo* context)
     size_t stride = CVPixelBufferGetBytesPerRow(buffer);
     const unsigned char* pixels = (const unsigned char*)CVPixelBufferGetBaseAddress(buffer);
     if (pixels && width && height && width <= INT_MAX / 4 && height <= INT_MAX / 4 / width && stride >= width * 4)
-      iappleVideoCopy(context, pixels, width, height, stride);
+      iupVideoFrame(context->session, pixels, (int)width, (int)height, stride);
     CVPixelBufferUnlockBaseAddress(buffer, kCVPixelBufferLock_ReadOnly);
   }
   CVPixelBufferRelease(buffer);

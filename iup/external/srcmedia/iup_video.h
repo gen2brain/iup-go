@@ -76,7 +76,7 @@ Iclass* iupVideoNewClass(void);
 const IvideoBackend* iupdrvVideoBackend(int index);
 void iupVideoInfo(IvideoSession* session, const IvideoInfo* info);
 void iupVideoError(IvideoSession* session, const char* message);
-void iupVideoFrame(IvideoSession* session, const unsigned char* pixels, int width, int height, size_t stride, int channels);
+void iupVideoFrame(IvideoSession* session, const unsigned char* pixels, int width, int height, size_t stride);
 void iupVideoSubtitleCue(IvideoSession* session, const char* text);
 void iupVideoSubtitleError(IvideoSession* session, const char* message);
 int iupVideoAddAudioDevice(IvideoAudioDevice** devices, int count, const char* id, const char* name);

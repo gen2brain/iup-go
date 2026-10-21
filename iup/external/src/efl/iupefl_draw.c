@@ -1655,6 +1655,42 @@ static void eflDrawImageSample(const IeflImageSampler* s, int ix, int iy, int* p
   *pb = (b * a) / 255;
 }
 
+IUP_SDK_API int iupdrvDrawBitmap(IdrawCanvas* dc, const unsigned char* data, int width, int height, int stride, int x, int y, int w, int h, int quality)
+{
+  Evas_Object* img;
+  unsigned char* dst;
+  int dst_stride, yy;
+
+  if (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ || !iDrawIsIdentity(dc))
+    return 0;
+
+  img = evas_object_image_filled_add(dc->frame_evas);
+  evas_object_image_colorspace_set(img, EVAS_COLORSPACE_ARGB8888);
+  evas_object_image_alpha_set(img, EINA_FALSE);
+  evas_object_image_size_set(img, width, height);
+  evas_object_image_smooth_scale_set(img, quality != IUP_DRAW_IMAGE_NEAREST);
+
+  dst = (unsigned char*)evas_object_image_data_get(img, EINA_TRUE);
+  if (!dst)
+  {
+    evas_object_del(img);
+    return 0;
+  }
+  dst_stride = evas_object_image_stride_get(img);
+  for (yy = 0; yy < height; yy++)
+    memcpy(dst + (size_t)yy * dst_stride, data + (size_t)yy * stride, (size_t)width * 4);
+  evas_object_image_data_set(img, dst);
+  evas_object_image_data_update_add(img, 0, 0, width, height);
+
+  efl_gfx_entity_position_set(img, EINA_POSITION2D(x, y));
+  efl_gfx_entity_size_set(img, EINA_SIZE2D(w, h));
+  efl_gfx_entity_visible_set(img, EINA_TRUE);
+
+  iDrawTrackObject(dc, img, &dc->matrix);
+  iDrawNewLayer(dc);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   Ihandle* img_ih;

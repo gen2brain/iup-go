@@ -44,7 +44,7 @@ static GstFlowReturn iVideoGstFrame(IvideoGst* context, GstSample* sample)
       width > 0 && height > 0 && gst_buffer_map(buffer, &map, GST_MAP_READ))
   {
     if (map.size / (size_t)height / 4 >= (size_t)width)
-      iupVideoFrame(context->session, map.data, width, height, (size_t)width * 4, 4);
+      iupVideoFrame(context->session, map.data, width, height, (size_t)width * 4);
     gst_buffer_unmap(buffer, &map);
     if (!gst_structure_get_fraction(structure, "pixel-aspect-ratio", &par_n, &par_d) || par_n <= 0 || par_d <= 0)
     {
@@ -213,7 +213,7 @@ static int iVideoGstOpen(IvideoSession* session, Ihandle* ih, const char* source
     iupVideoError(session, "Cannot create GStreamer playbin");
     return 0;
   }
-  caps = gst_caps_from_string("video/x-raw,format=RGBA");
+  caps = gst_caps_from_string("video/x-raw,format=BGRx");
   if (!caps)
     return 0;
   gst_app_sink_set_caps((GstAppSink*)context->sink, caps);

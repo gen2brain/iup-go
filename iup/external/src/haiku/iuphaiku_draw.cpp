@@ -1036,6 +1036,30 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
   dc->bm->Unlock();
 }
 
+extern "C" IUP_SDK_API int iupdrvDrawBitmap(IdrawCanvas* dc, const unsigned char* data, int width, int height, int stride, int x, int y, int w, int h, int quality)
+{
+  if (!dc || !dc->bm)
+    return 0;
+
+  BBitmap bitmap(BRect(0, 0, width - 1, height - 1), B_RGB32);
+  if (!bitmap.IsValid())
+    return 0;
+
+  auto* bits = static_cast<uint8*>(bitmap.Bits());
+  int32 bpr = bitmap.BytesPerRow();
+  for (int yy = 0; yy < height; yy++)
+    memcpy(bits + static_cast<size_t>(yy) * bpr, data + static_cast<size_t>(yy) * stride, static_cast<size_t>(width) * 4);
+
+  BRect dst(x, y, x + w - 1, y + h - 1);
+  dc->bm->Lock();
+  dc->view->PushState();
+  dc->view->SetDrawingMode(B_OP_COPY);
+  dc->view->DrawBitmap(&bitmap, bitmap.Bounds(), dst, quality == IUP_DRAW_IMAGE_NEAREST ? 0 : B_FILTER_BITMAP_BILINEAR);
+  dc->view->PopState();
+  dc->bm->Unlock();
+  return 1;
+}
+
 extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   if (!dc || !dc->bm || !name) return;

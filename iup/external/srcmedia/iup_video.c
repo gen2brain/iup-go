@@ -16,6 +16,8 @@
 #include "iupmedia.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
+#include "iup_drvdraw.h"
+#include "iup_draw.h"
 #include "iup_str.h"
 #include "iup_register.h"
 #include "iup_thread.h"
@@ -49,7 +51,7 @@ struct _IcontrolData
   Ihandle* timer;
   Ihandle* image;
   unsigned char* frame;
-  int frame_width, frame_height;
+  int frame_width, frame_height, image_stale;
   char image_name[48];
   char backend[16];
   char* source;
@@ -641,14 +643,13 @@ void iupVideoError(IvideoSession* session, const char* message)
   iupdrvMutexUnlock(session->mutex);
 }
 
-void iupVideoFrame(IvideoSession* session, const unsigned char* pixels, int width, int height, size_t stride, int channels)
+void iupVideoFrame(IvideoSession* session, const unsigned char* pixels, int width, int height, size_t stride)
 {
   size_t size;
-  int x, y;
-  if (!pixels || width <= 0 || height <= 0 || (channels != 3 && channels != 4) ||
-      width > INT_MAX / channels || height > INT_MAX / 3 / width || stride < (size_t)width * channels)
+  int y;
+  if (!pixels || width <= 0 || height <= 0 || width > INT_MAX / 4 || height > INT_MAX / 4 / width || stride < (size_t)width * 4)
     return;
-  size = (size_t)width * height * 3;
+  size = (size_t)width * height * 4;
   iupdrvMutexLock(session->mutex);
   if (session->closing)
   {
@@ -669,21 +670,12 @@ void iupVideoFrame(IvideoSession* session, const unsigned char* pixels, int widt
     session->pending_width = width;
     session->pending_height = height;
   }
-  for (y = 0; y < height; y++)
+  if (stride == (size_t)width * 4)
+    memcpy(session->pending, pixels, size);
+  else
   {
-    const unsigned char* row = pixels + (size_t)y * stride;
-    unsigned char* output = session->pending + (size_t)y * width * 3;
-    if (channels == 3)
-      memcpy(output, row, (size_t)width * 3);
-    else
-    {
-      for (x = 0; x < width; x++)
-      {
-        output[x * 3] = row[x * 4];
-        output[x * 3 + 1] = row[x * 4 + 1];
-        output[x * 3 + 2] = row[x * 4 + 2];
-      }
-    }
+    for (y = 0; y < height; y++)
+      memcpy(session->pending + (size_t)y * width * 4, pixels + (size_t)y * stride, (size_t)width * 4);
   }
   session->pending_ready = 1;
   iupdrvMutexUnlock(session->mutex);
@@ -951,6 +943,36 @@ static int iVideoCallback(Ihandle* ih, IvideoLifetime* lifetime, const char* nam
   return lifetime->ih != NULL && lifetime->generation == generation;
 }
 
+static void iVideoUpdateImage(Ihandle* ih)
+{
+  int width = ih->data->frame_width, height = ih->data->frame_height;
+  const unsigned char* input = ih->data->frame;
+  unsigned char* output;
+  size_t i, count = (size_t)width * height;
+  if (ih->data->image && (IupGetInt(ih->data->image, "WIDTH") != width || IupGetInt(ih->data->image, "HEIGHT") != height))
+  {
+    IupSetHandle(ih->data->image_name, NULL);
+    IupDestroy(ih->data->image);
+    ih->data->image = NULL;
+  }
+  if (!ih->data->image)
+  {
+    ih->data->image = IupImageRGB(width, height, NULL);
+    if (!ih->data->image)
+      return;
+    IupSetHandle(ih->data->image_name, ih->data->image);
+  }
+  output = (unsigned char*)iupAttribGet(ih->data->image, "WID");
+  for (i = 0; i < count; i++)
+  {
+    output[i * 3] = input[i * 4 + 2];
+    output[i * 3 + 1] = input[i * 4 + 1];
+    output[i * 3 + 2] = input[i * 4];
+  }
+  IupSetAttribute(ih->data->image, "CLEARCACHE", "YES");
+  ih->data->image_stale = 0;
+}
+
 static void iVideoTakeFrame(Ihandle* ih, IvideoSession* session)
 {
   unsigned char* old;
@@ -973,26 +995,7 @@ static void iVideoTakeFrame(Ihandle* ih, IvideoSession* session)
   iupdrvMutexUnlock(session->mutex);
   if (!changed)
     return;
-  width = ih->data->frame_width;
-  height = ih->data->frame_height;
-  if (ih->data->image && (IupGetInt(ih->data->image, "WIDTH") != width || IupGetInt(ih->data->image, "HEIGHT") != height))
-  {
-    IupSetHandle(ih->data->image_name, NULL);
-    IupDestroy(ih->data->image);
-    ih->data->image = NULL;
-  }
-  if (!ih->data->image)
-  {
-    ih->data->image = IupImageRGB(width, height, ih->data->frame);
-    if (ih->data->image)
-      IupSetHandle(ih->data->image_name, ih->data->image);
-  }
-  else
-  {
-    unsigned char* pixels = (unsigned char*)iupAttribGet(ih->data->image, "WID");
-    memcpy(pixels, ih->data->frame, (size_t)width * height * 3);
-    IupSetAttribute(ih->data->image, "CLEARCACHE", "YES");
-  }
+  ih->data->image_stale = 1;
   IupUpdate(ih);
 }
 
@@ -1206,7 +1209,7 @@ static int iVideoRedraw(Ihandle* ih)
   iupAttribSetStr(ih, "DRAWCOLOR", iupAttribGetStr(ih, "BGCOLOR"));
   iupAttribSet(ih, "DRAWSTYLE", "FILL");
   IupDrawRectangle(ih, 0, 0, w - 1, h - 1);
-  if ((!(aspect > 0) || !isfinite(aspect)) && ih->data->image)
+  if ((!(aspect > 0) || !isfinite(aspect)) && ih->data->frame)
     aspect = (double)ih->data->frame_width / ih->data->frame_height;
   vw = w;
   vh = h;
@@ -1223,8 +1226,16 @@ static int iVideoRedraw(Ihandle* ih)
       vx = (w - vw) / 2;
     }
   }
-  if (ih->data->image && vw > 0 && vh > 0)
-    IupDrawImage(ih, ih->data->image_name, vx, vy, vw, vh);
+  if (ih->data->frame && vw > 0 && vh > 0)
+  {
+    if (!iupDrawBitmap(ih, ih->data->frame, ih->data->frame_width, ih->data->frame_height, ih->data->frame_width * 4, vx, vy, vw, vh))
+    {
+      if (ih->data->image_stale || !ih->data->image)
+        iVideoUpdateImage(ih);
+      if (ih->data->image)
+        IupDrawImage(ih, ih->data->image_name, vx, vy, vw, vh);
+    }
+  }
   if (ih->data->subtitle_text && !ih->data->subtitle_native && vw > 20 && vh > 20)
   {
     char font[80];

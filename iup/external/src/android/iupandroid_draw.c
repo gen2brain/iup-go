@@ -443,6 +443,21 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
+IUP_SDK_API int iupdrvDrawBitmap(IdrawCanvas* dc, const unsigned char* data, int width, int height, int stride, int x, int y, int w, int h, int quality)
+{
+  (void)dc;
+  (void)data;
+  (void)width;
+  (void)height;
+  (void)stride;
+  (void)x;
+  (void)y;
+  (void)w;
+  (void)h;
+  (void)quality;
+  return 0;
+}
+
 IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   if (!dc || !dc->ih->handle) return;

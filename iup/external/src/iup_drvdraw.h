@@ -159,6 +159,10 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality);
 
+/** Draws 32-bit pixels, bytes B,G,R,X in memory, scaled into x,y,w,h. Returns 0 when the driver cannot draw them.
+ * \ingroup drvdraw */
+IUP_SDK_API int iupdrvDrawBitmap(IdrawCanvas* dc, const unsigned char* data, int width, int height, int stride, int x, int y, int w, int h, int quality);
+
 /** Sets a rectangle clipping area.
  * \ingroup drvdraw */
 IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2);

@@ -298,6 +298,12 @@ struct dummy_D2D1_PIXEL_FORMAT_tag {
     dummy_D2D1_ALPHA_MODE alphaMode;
 };
 
+struct dummy_D2D1_BITMAP_PROPERTIES_tag {
+    dummy_D2D1_PIXEL_FORMAT pixelFormat;
+    FLOAT dpiX;
+    FLOAT dpiY;
+};
+
 typedef struct dummy_D2D1_RENDER_TARGET_PROPERTIES_tag dummy_D2D1_RENDER_TARGET_PROPERTIES;
 struct dummy_D2D1_RENDER_TARGET_PROPERTIES_tag {
     dummy_D2D1_RENDER_TARGET_TYPE type;
@@ -1020,7 +1026,7 @@ struct dummy_ID2D1RenderTargetVtbl_tag {
     STDMETHOD(dummy_GetFactory)(void);
 
     /* ID2D1RenderTarget methods */
-    STDMETHOD(dummy_CreateBitmap)(void);
+    STDMETHOD(CreateBitmap)(dummy_ID2D1RenderTarget*, dummy_D2D1_SIZE_U, const void*, UINT32, const dummy_D2D1_BITMAP_PROPERTIES*, dummy_ID2D1Bitmap**);
     STDMETHOD(CreateBitmapFromWicBitmap)(dummy_ID2D1RenderTarget*, IWICBitmapSource*, const dummy_D2D1_BITMAP_PROPERTIES*, dummy_ID2D1Bitmap**);
     STDMETHOD(dummy_CreateSharedBitmap)(void);
     STDMETHOD(dummy_CreateBitmapBrush)(void);
@@ -1083,6 +1089,7 @@ struct dummy_ID2D1RenderTarget_tag {
 #define dummy_ID2D1RenderTarget_QueryInterface(self,a,b)                (self)->vtbl->QueryInterface(self,a,b)
 #define dummy_ID2D1RenderTarget_AddRef(self)                            (self)->vtbl->AddRef(self)
 #define dummy_ID2D1RenderTarget_Release(self)                           (self)->vtbl->Release(self)
+#define dummy_ID2D1RenderTarget_CreateBitmap(self,a,b,c,d,e)             (self)->vtbl->CreateBitmap(self,a,b,c,d,e)
 #define dummy_ID2D1RenderTarget_CreateBitmapFromWicBitmap(self,a,b,c)   (self)->vtbl->CreateBitmapFromWicBitmap(self,a,b,c)
 #define dummy_ID2D1RenderTarget_CreateSolidColorBrush(self,a,b,c)       (self)->vtbl->CreateSolidColorBrush(self,a,b,c)
 #define dummy_ID2D1RenderTarget_CreateGradientStopCollection(self,a,b,c,d,e)  (self)->vtbl->CreateGradientStopCollection(self,a,b,c,d,e)

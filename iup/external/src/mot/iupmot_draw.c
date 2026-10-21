@@ -2002,6 +2002,54 @@ static Pixmap motDrawGetImageARGB(IdrawCanvas* dc, const char* name, int make_in
   return pixmap;
 }
 
+IUP_SDK_API int iupdrvDrawBitmap(IdrawCanvas* dc, const unsigned char* data, int width, int height, int stride, int x, int y, int w, int h, int quality)
+{
+  XRenderPictFormat* fmt;
+  XImage* image;
+  Pixmap pixmap;
+  Picture src;
+  GC gc;
+  XTransform xf;
+
+  if (!dc->pict || motDrawTransformActive(dc) ||
+      iupmot_visual->red_mask != 0xff0000 || iupmot_visual->green_mask != 0xff00 || iupmot_visual->blue_mask != 0xff)
+    return 0;
+
+  fmt = XRenderFindVisualFormat(iupmot_display, iupmot_visual);
+  if (!fmt)
+    return 0;
+
+  image = XCreateImage(iupmot_display, iupmot_visual, fmt->depth, ZPixmap, 0, (char*)data, width, height, 32, stride);
+  if (!image)
+    return 0;
+  if (image->bits_per_pixel != 32)
+  {
+    image->data = NULL;
+    XDestroyImage(image);
+    return 0;
+  }
+  image->byte_order = LSBFirst;
+
+  pixmap = XCreatePixmap(iupmot_display, dc->pixmap, width, height, fmt->depth);
+  gc = XCreateGC(iupmot_display, pixmap, 0, NULL);
+  XPutImage(iupmot_display, pixmap, gc, image, 0, 0, 0, 0, width, height);
+  XFreeGC(iupmot_display, gc);
+  image->data = NULL;
+  XDestroyImage(image);
+
+  src = XRenderCreatePicture(iupmot_display, pixmap, fmt, 0, NULL);
+  memset(&xf, 0, sizeof(xf));
+  xf.matrix[0][0] = XDoubleToFixed((double)width / w);
+  xf.matrix[1][1] = XDoubleToFixed((double)height / h);
+  xf.matrix[2][2] = XDoubleToFixed(1.0);
+  XRenderSetPictureTransform(iupmot_display, src, &xf);
+  XRenderSetPictureFilter(iupmot_display, src, quality == IUP_DRAW_IMAGE_NEAREST ? FilterNearest : FilterBilinear, NULL, 0);
+  XRenderComposite(iupmot_display, PictOpSrc, src, None, dc->pict, 0, 0, 0, 0, x, y, w, h);
+  XRenderFreePicture(iupmot_display, src);
+  XFreePixmap(iupmot_display, pixmap);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
   int img_w, img_h;

@@ -2337,6 +2337,24 @@ static void iDrawGetImageRGBA(const char* name, int make_inactive, const char* b
   *out_rgba = iupImageGetRGBAData(img_ih, make_inactive, bgcolor, out_w, out_h);
 }
 
+IUP_SDK_API int iupDrawBitmap(Ihandle* ih, const unsigned char* data, int width, int height, int stride, int x, int y, int w, int h)
+{
+  IdrawCanvas* dc;
+  int quality = IUP_DRAW_IMAGE_LINEAR;
+
+  if (!iupObjectCheck(ih) || IUP_SVG_GET(ih))
+    return 0;
+
+  dc = (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC");
+  if (!dc)
+    return 0;
+
+  if (iupStrEqualNoCase(iupAttribGetStr(ih, "DRAWIMAGEQUALITY"), "NEAREST"))
+    quality = IUP_DRAW_IMAGE_NEAREST;
+
+  return iupdrvDrawBitmap(dc, data, width, height, stride, x, y, w, h, quality);
+}
+
 IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, int h)
 {
   char* bgcolor;
