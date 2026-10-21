@@ -160,12 +160,11 @@ static void iVideoMpvClose(IvideoSession* session)
   session->context = NULL;
 }
 
-static void iVideoMpvOption(mpv_handle* player, char* option)
+static void iVideoMpvOption(char* option, void* user)
 {
+  mpv_handle* player = (mpv_handle*)user;
   char* name = option;
   char* value = strchr(option, '=');
-  if (name[0] == '-' && name[1] == '-')
-    name += 2;
   if (value)
     *value++ = 0;
   else if (strncmp(name, "no-", 3) == 0)
@@ -177,32 +176,6 @@ static void iVideoMpvOption(mpv_handle* player, char* option)
     value = "yes";
   if (name[0])
     mpv_set_option_string(player, name, value);
-}
-
-static void iVideoMpvOptions(mpv_handle* player, const char* options)
-{
-  char* option = (char*)malloc(strlen(options) + 1);
-  if (!option)
-    return;
-  while (*options)
-  {
-    size_t length = 0;
-    int quoted = 0;
-    while (*options == ' ' || *options == '\t' || *options == '\n' || *options == '\r')
-      options++;
-    while (*options && (quoted || (*options != ' ' && *options != '\t' && *options != '\n' && *options != '\r')))
-    {
-      if (*options == '"')
-        quoted = !quoted;
-      else
-        option[length++] = *options;
-      options++;
-    }
-    option[length] = 0;
-    if (length)
-      iVideoMpvOption(player, option);
-  }
-  free(option);
 }
 
 static int iVideoMpvRequired(mpv_handle* player)
@@ -268,7 +241,7 @@ static int iVideoMpvOpen(IvideoSession* session, Ihandle* ih, const char* source
   if (session->audio_device)
     mpv_set_option_string(context->player, "audio-device", session->audio_device);
   if (options)
-    iVideoMpvOptions(context->player, options);
+    iupVideoSplitOptions(options, iVideoMpvOption, context->player);
   if (!iVideoMpvRequired(context->player))
   {
     iupVideoError(session, "Cannot configure mpv player");
@@ -281,7 +254,7 @@ static int iVideoMpvOpen(IvideoSession* session, Ihandle* ih, const char* source
   }
   context->initialized = 1;
   if (options)
-    iVideoMpvOptions(context->player, options);
+    iupVideoSplitOptions(options, iVideoMpvOption, context->player);
   if ((config || options) && !iVideoMpvRequired(context->player))
   {
     iupVideoError(session, "Cannot configure mpv player");

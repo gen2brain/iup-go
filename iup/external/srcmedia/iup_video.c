@@ -776,6 +776,38 @@ void iupVideoFreeAudioDevices(IvideoAudioDevice* devices, int count)
   free(devices);
 }
 
+void iupVideoSplitOptions(const char* options, void (*func)(char* option, void* user), void* user)
+{
+  char* option = (char*)malloc(strlen(options) + 1);
+  if (!option)
+    return;
+  while (*options)
+  {
+    size_t length = 0;
+    int quoted = 0;
+    while (*options == ' ' || *options == '\t' || *options == '\n' || *options == '\r')
+      options++;
+    while (*options && (quoted || (*options != ' ' && *options != '\t' && *options != '\n' && *options != '\r')))
+    {
+      if (*options == '"')
+        quoted = !quoted;
+      else
+        option[length++] = *options;
+      options++;
+    }
+    option[length] = 0;
+    if (length)
+    {
+      char* name = option;
+      if (name[0] == '-' && name[1] == '-')
+        name += 2;
+      if (name[0])
+        func(name, user);
+    }
+  }
+  free(option);
+}
+
 static int iVideoBackendUsable(Ihandle* ih, const IvideoBackend* backend)
 {
   return (iupStrEqualNoCase(ih->data->backend, "AUTO") || iupStrEqualNoCase(ih->data->backend, backend->name)) &&
@@ -1822,6 +1854,8 @@ Iclass* iupVideoNewClass(void)
   iupClassRegisterAttribute(ic, "AUDIOURL", iVideoGetAudioUrlAttrib, iVideoSetAudioUrlAttrib, NULL, NULL, flags);
   iupClassRegisterAttribute(ic, "MPVCONFIG", NULL, NULL, NULL, NULL, flags);
   iupClassRegisterAttribute(ic, "MPVOPTIONS", NULL, NULL, NULL, NULL, flags);
+  iupClassRegisterAttribute(ic, "VLCCONFIG", NULL, NULL, NULL, NULL, flags);
+  iupClassRegisterAttribute(ic, "VLCOPTIONS", NULL, NULL, NULL, NULL, flags);
   iupClassRegisterAttribute(ic, "BACKENDUSED", iVideoGetBackendUsedAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);
   iupClassRegisterAttribute(ic, "AVAILABLE", iVideoGetAvailableAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);
   iupClassRegisterAttribute(ic, "STATE", iVideoGetStateAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);
