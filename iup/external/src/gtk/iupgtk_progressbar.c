@@ -104,7 +104,7 @@ static void gtkProgressBarApplyColors(Ihandle* ih)
       "progress { background-color: transparent; background-image:"
       " repeating-linear-gradient(to right, currentColor 0, currentColor 8px, transparent 8px, transparent 10px); }\n");
   else if (fg && iupStrToRGB(fg, &r, &g, &b))
-    g_string_append_printf(css, "progress { background-image: none; background-color: rgb(%d,%d,%d); }\n", r, g, b);
+    g_string_append_printf(css, "progress { background-image: none; background-color: rgb(%d,%d,%d); border-color: rgb(%d,%d,%d); }\n", r, g, b, r, g, b);
 
   provider = (GtkCssProvider*)g_object_get_data(G_OBJECT(ih->handle), "_IUPGTK_PBAR_CSS");
   if (!provider)
