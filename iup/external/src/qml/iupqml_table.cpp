@@ -1241,7 +1241,7 @@ static const char* qmlTableQml =
   "  signal iupRowDropped(int row, point pos)\n"
   "  function iupScrollTo(row, column) { view.forceLayout(); view.positionViewAtCell(Qt.point(column, row), TableView.Contain) }\n"
   "  function iupScrollVisible() { return (view.ScrollBar.horizontal.visible ? 1 : 0) + (view.ScrollBar.vertical.visible ? 2 : 0) }\n"
-  "  function iupHeaderHeight() { return header.height }\n"
+  "  function iupHeaderHeight() { return header.leftColumn >= 0 ? header.height : 0 }\n"
   "  Rectangle {\n"
   "    id: back\n"
   "    anchors.fill: parent\n"

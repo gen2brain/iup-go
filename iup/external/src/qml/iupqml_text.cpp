@@ -194,26 +194,29 @@ static void qmlTextEnsureVisible(Ihandle* ih, int pos)
  * Size
  ****************************************************************************/
 
+static QQuickItem* qmlTextSpinTemplate()
+{
+  return iupqmlTemplateItem(IUPQML_IMPORTS "SpinBox { from: 0; to: 100; editable: true }");
+}
+
 extern "C" IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
-  QQuickItem* spin = iupqmlTemplateItem(IUPQML_IMPORTS "SpinBox { from: 0; to: 100; editable: true }");
-  int spin_min_width = 130;
+  QQuickItem* spin = qmlTextSpinTemplate();
   (void)h;
   (void)ih;
 
   if (spin)
-  {
-    spin_min_width = static_cast<int>(spin->implicitWidth());
-    (*w) += static_cast<int>(iupqmlGetProperty(spin, "up.implicitIndicatorWidth").toDouble() +
-                  iupqmlGetProperty(spin, "down.implicitIndicatorWidth").toDouble());
-  }
-
-  if (*w < spin_min_width)
-    *w = spin_min_width;
+    (*w) += static_cast<int>(spin->property("leftPadding").toDouble() + spin->property("rightPadding").toDouble() -
+                             2 * spin->property("padding").toDouble());
+  else
+    (*w) += 16;
 }
 
 static QQuickItem* qmlTextTemplate(Ihandle* ih)
 {
+  if (iupAttribGetBoolean(ih, "SPIN"))
+    return qmlTextSpinTemplate();
+
   if (!iupAttribGetBoolean(ih, "_IUP_MULTILINE_TEXT"))
     return iupqmlTemplateItem(IUPQML_IMPORTS "TextField { text: \"X\" }");
 
@@ -227,7 +230,10 @@ extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 
   if (item)
   {
-    (*w) += static_cast<int>(item->property("leftPadding").toDouble() + item->property("rightPadding").toDouble());
+    if (iupAttribGetBoolean(ih, "SPIN"))
+      (*w) += static_cast<int>(2 * item->property("padding").toDouble());
+    else
+      (*w) += static_cast<int>(item->property("leftPadding").toDouble() + item->property("rightPadding").toDouble());
     (*h) += static_cast<int>(item->property("topPadding").toDouble() + item->property("bottomPadding").toDouble());
 
     int min_h = static_cast<int>(item->property("implicitBackgroundHeight").toDouble());
