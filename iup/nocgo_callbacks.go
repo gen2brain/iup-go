@@ -95,6 +95,7 @@ func clearCallback(ih Ihandle, key string) {
 
 var ldestroyCB = purego.NewCallback(func(ih uintptr) int {
 	h := Ihandle(ih)
+	releasePostPayloads(h)
 	list := h.GetAttribute(iupgoRegistryAttr)
 	if list == "" {
 		return 0
@@ -119,6 +120,9 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	}
 	if fn == nil {
 		clearCallback(ih, "_IUPGO_"+name)
+		if name == "POSTMESSAGE_CB" {
+			releasePostPayloads(ih)
+		}
 		iupSetCallback(uintptr(ih), name, 0)
 		return
 	}
@@ -2147,6 +2151,46 @@ func setValueChangingFunc(ih Ihandle, f ValueChangingFunc) {
 
 type PostMessageFunc func(Ihandle, string, int, any) int
 
+// Payload ids of posted messages not yet delivered, per element with a Go POSTMESSAGE_CB.
+var (
+	postMu      sync.Mutex
+	postPending = map[Ihandle]map[uint64]struct{}{}
+)
+
+func newPostPayload(ih Ihandle, p any) uint64 {
+	postMu.Lock()
+	defer postMu.Unlock()
+	pending, ok := postPending[ih]
+	if !ok {
+		return 0
+	}
+	id := cbStore(p)
+	pending[id] = struct{}{}
+	return id
+}
+
+func takePostPayload(ih Ihandle, id uint64) (any, bool) {
+	postMu.Lock()
+	_, ok := postPending[ih][id]
+	delete(postPending[ih], id)
+	postMu.Unlock()
+	if !ok {
+		return nil, false
+	}
+	p := cbLoad(id)
+	cbDelete(id)
+	return p, true
+}
+
+func releasePostPayloads(ih Ihandle) {
+	postMu.Lock()
+	defer postMu.Unlock()
+	for id := range postPending[ih] {
+		cbDelete(id)
+	}
+	delete(postPending, ih)
+}
+
 var postMessageCB = sync.OnceValue(func() uintptr {
 	return newFloatCallback(func(ih, s uintptr, i int32, d float64, p uintptr) int {
 		_ = d
@@ -2156,8 +2200,9 @@ var postMessageCB = sync.OnceValue(func() uintptr {
 		}
 		var payload any
 		if p != 0 {
-			payload = cbLoad(uint64(p))
-			cbDelete(uint64(p))
+			if payload, ok = takePostPayload(Ihandle(ih), uint64(p)); !ok {
+				return DEFAULT
+			}
 		}
 		return f(Ihandle(ih), goString(s), int(i), payload)
 	})
@@ -2165,13 +2210,20 @@ var postMessageCB = sync.OnceValue(func() uintptr {
 
 func setPostMessageFunc(ih Ihandle, f PostMessageFunc) {
 	storeCallback(ih, "_IUPGO_POSTMESSAGE_CB", f)
+
+	postMu.Lock()
+	if postPending[ih] == nil {
+		postPending[ih] = map[uint64]struct{}{}
+	}
+	postMu.Unlock()
+
 	iupSetCallback(uintptr(ih), "POSTMESSAGE_CB", postMessageCB())
 }
 
 func PostMessage(ih Ihandle, s string, i int, p any) {
 	var id uint64
 	if p != nil {
-		id = cbStore(p)
+		id = newPostPayload(ih, p)
 	}
 	iupPostMessage(uintptr(ih), s, int32(i), 0.0, uintptr(id))
 }

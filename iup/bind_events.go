@@ -62,7 +62,7 @@ func ExitLoop() {
 }
 
 // PostMessage sends data to an element, that will be received by a callback when the main loop regains control.
-// It is expected to be thread safe.
+// It is expected to be thread safe. The payload p is delivered only when ih has a POSTMESSAGE_CB at the time of the call.
 //
 // https://gen2brain.github.io/iup-go/func/iup_postmessage.html
 func PostMessage(ih Ihandle, s string, i int, p any) {
@@ -71,7 +71,7 @@ func PostMessage(ih Ihandle, s string, i int, p any) {
 
 	var h C.uintptr_t
 	if p != nil {
-		h = C.uintptr_t(newGoHandle(p))
+		h = C.uintptr_t(newPostPayload(ih, p))
 	}
 
 	C.goIupPostMessageHandle(ih.ptr(), cS, C.int(i), h)
@@ -109,6 +109,9 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		defer C.free(unsafe.Pointer(cName))
 
 		clearCallback(ih, "_IUPGO_"+name)
+		if name == "POSTMESSAGE_CB" {
+			releasePostPayloads(ih)
+		}
 
 		C.IupSetCallback(ih.ptr(), cName, nil)
 		return

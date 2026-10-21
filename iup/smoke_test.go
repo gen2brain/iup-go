@@ -500,6 +500,72 @@ func TestPostMessagePayload(t *testing.T) {
 	}
 }
 
+// PostMessage payloads that are never delivered are released by Destroy or by removing POSTMESSAGE_CB.
+func TestPostMessageDroppedPayload(t *testing.T) {
+	pending := func(ih Ihandle) (int, bool) {
+		postMu.Lock()
+		defer postMu.Unlock()
+		m, ok := postPending[ih]
+		return len(m), ok
+	}
+	drain := func() {
+		for i := 0; i < 20; i++ {
+			LoopStep()
+			time.Sleep(5 * time.Millisecond)
+		}
+	}
+
+	fired := 0
+	b := Button("p")
+	SetCallback(b, "POSTMESSAGE_CB", PostMessageFunc(func(Ihandle, string, int, any) int {
+		fired++
+		return DEFAULT
+	}))
+	dlg := Dialog(b)
+	Map(dlg)
+	PostMessage(b, "late", 1, &struct{ n int }{1})
+	PostMessage(b, "late", 2, &struct{ n int }{2})
+	if n, _ := pending(b); n != 2 {
+		t.Fatalf("pending payloads before Destroy = %d, want 2", n)
+	}
+	Destroy(dlg)
+	if n, ok := pending(b); n != 0 || ok {
+		t.Fatalf("pending payloads after Destroy = %d (entry %v), want none", n, ok)
+	}
+	drain()
+	if fired != 0 {
+		t.Fatalf("POSTMESSAGE_CB fired %d times for a destroyed element", fired)
+	}
+
+	plain := Button("q")
+	dlg = Dialog(plain)
+	Map(dlg)
+	PostMessage(plain, "none", 0, &struct{ n int }{3})
+	if _, ok := pending(plain); ok {
+		t.Fatal("payload kept for an element without a Go POSTMESSAGE_CB")
+	}
+	drain()
+	Destroy(dlg)
+
+	c := Button("r")
+	SetCallback(c, "POSTMESSAGE_CB", PostMessageFunc(func(Ihandle, string, int, any) int {
+		fired++
+		return DEFAULT
+	}))
+	dlg = Dialog(c)
+	Map(dlg)
+	PostMessage(c, "cleared", 0, &struct{ n int }{4})
+	SetCallback(c, "POSTMESSAGE_CB", nil)
+	if n, ok := pending(c); n != 0 || ok {
+		t.Fatalf("pending payloads after removing POSTMESSAGE_CB = %d (entry %v), want none", n, ok)
+	}
+	drain()
+	Destroy(dlg)
+	if fired != 0 {
+		t.Fatalf("POSTMESSAGE_CB fired %d times after removal", fired)
+	}
+}
+
 // Every typed callback name is accepted by SetCallback and registered in IUP.
 func TestCallbackTable(t *testing.T) {
 	for name, types := range callbackTypes {
