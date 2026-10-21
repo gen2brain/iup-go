@@ -26,23 +26,15 @@ extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 {
   QQuickItem* horiz = iupqmlTemplateItem(IUPQML_IMPORTS "Slider { orientation: Qt.Horizontal }");
   QQuickItem* vert = iupqmlTemplateItem(IUPQML_IMPORTS "Slider { orientation: Qt.Vertical }");
-  int horiz_min_w = 20, horiz_min_h = 20, vert_min_w = 20, vert_min_h = 20;
+  int horiz_min_h = 20, vert_min_w = 20;
 
   if (horiz)
-  {
-    horiz_min_w = static_cast<int>(horiz->implicitWidth());
     horiz_min_h = static_cast<int>(horiz->implicitHeight());
-  }
   if (vert)
-  {
     vert_min_w = static_cast<int>(vert->implicitWidth());
-    vert_min_h = static_cast<int>(vert->implicitHeight());
-  }
 
-  if (horiz_min_w < 20) horiz_min_w = 20;
   if (horiz_min_h < 20) horiz_min_h = 20;
   if (vert_min_w < 20) vert_min_w = 20;
-  if (vert_min_h < 20) vert_min_h = 20;
 
   int ticks_room = 0;
   if (ih->data->show_ticks > 1)
@@ -50,13 +42,13 @@ extern "C" IUP_SDK_API void iupdrvValGetMinSize(Ihandle* ih, int* w, int* h)
 
   if (ih->data->orientation == IVAL_HORIZONTAL)
   {
-    *w = horiz_min_w;
+    *w = 100;
     *h = horiz_min_h + ticks_room;
   }
   else
   {
     *w = vert_min_w + ticks_room;
-    *h = vert_min_h;
+    *h = 100;
   }
 }
 

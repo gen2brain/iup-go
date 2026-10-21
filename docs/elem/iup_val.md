@@ -36,9 +36,8 @@ When changed the display will not be updated until VALUE is set.
 The increment size is "pagestep*(max-min)", so it must be 0<pagestep<1. Default is "0.1".
 Not supported in Android.
 
-[RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): The initial size is the native widget's natural size on both axes.
-If there are ticks then they are added to the natural size on the minor axis.
-Set to NULL to allow the automatic layout to use smaller values.
+[SIZE](../attrib/iup_size.md) (non-inheritable): The natural size is 100 pixels along the orientation (84 in Qt, 80 in Haiku and WebAssembly, 180 in iOS, 200 in Android) and the native thickness across it.
+In Win32, Motif, Cocoa, FLTK, Qt, QML and iOS the ticks are added to the thickness.
 
 **SHOWTICKS**: The number of tick marks along the valuator trail.
 Minimum value is "2". Default is "0", in this case the ticks are not shown.
@@ -64,7 +63,7 @@ Default: "0.0".
 >
 > ------------------------------------------------------------------------
 
-[ACTIVE](../attrib/iup_active.md), [EXPAND](../attrib/iup_expand.md), [FONT](../attrib/iup_font.md), [SCREENPOSITION](../attrib/iup_screenposition.md), [POSITION](../attrib/iup_position.md), [MINSIZE](../attrib/iup_minsize.md), [MAXSIZE](../attrib/iup_maxsize.md), [WID](../attrib/iup_wid.md), [TIP](../attrib/iup_tip.md), [SIZE](../attrib/iup_size.md), [ZORDER](../attrib/iup_zorder.md), [VISIBLE](../attrib/iup_visible.md), [THEME](../attrib/iup_theme.md): also accepted. 
+[ACTIVE](../attrib/iup_active.md), [EXPAND](../attrib/iup_expand.md), [FONT](../attrib/iup_font.md), [SCREENPOSITION](../attrib/iup_screenposition.md), [POSITION](../attrib/iup_position.md), [MINSIZE](../attrib/iup_minsize.md), [MAXSIZE](../attrib/iup_maxsize.md), [WID](../attrib/iup_wid.md), [TIP](../attrib/iup_tip.md), [RASTERSIZE](../attrib/iup_rastersize.md), [ZORDER](../attrib/iup_zorder.md), [VISIBLE](../attrib/iup_visible.md), [THEME](../attrib/iup_theme.md): also accepted. 
 
 ### Callbacks
 
