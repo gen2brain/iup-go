@@ -481,13 +481,10 @@ IUP_SDK_API void iupImageColorMakeInactive(unsigned char* r, unsigned char* g, u
 
 /**************************************************************************************************/
 
-void iupImageSetHandleFromLoaded(const char* name, void* handle)
+static void iImageSetLoaded(const char* name, const char* handle_name, void* handle, int w, int h, int bpp)
 {
-  int w, h, bpp;
   unsigned char* imgdata;
   Ihandle* ih;
-
-  iupdrvImageGetInfo(handle, &w, &h, &bpp);
 
   if (bpp == 32)
     ih = IupImageRGBA(w, h, NULL);
@@ -496,18 +493,33 @@ void iupImageSetHandleFromLoaded(const char* name, void* handle)
   else
     ih = IupImage(w, h, NULL);
 
+  if (!ih)
+    return;
+
   imgdata = (unsigned char*)iupAttribGet(ih, "WID");
   free(imgdata);
   iupAttribSet(ih, "WID", NULL);
 
-  iupAttribSet(ih, "_IUPIMAGE_LOADED_HANDLE", (char*)handle);
+  iupAttribSet(ih, handle_name, (char*)handle);
   IupSetHandle(name, ih);
+}
+
+void iupImageSetHandleFromLoaded(const char* name, void* handle)
+{
+  int w, h, bpp;
+  iupdrvImageGetInfo(handle, &w, &h, &bpp);
+  iImageSetLoaded(name, "_IUPIMAGE_LOADED_HANDLE", handle, w, h, bpp);
+}
+
+void iupImageSetDrawHandleFromLoaded(const char* name, void* handle, int w, int h)
+{
+  iImageSetLoaded(name, "_IUPIMAGE_LOADED_DRAW_HANDLE", handle, w, h, 32);
 }
 
 Ihandle* iupImageGetImageFromName(const char* name)
 {
   Ihandle* ih = IupGetHandle(name);
-  if (ih && !iupAttribGet(ih, "_IUPIMAGE_LOADED_HANDLE") && !iupAttribGet(ih, "_IUPIMAGE_LOADED_WD_HANDLE"))
+  if (ih && !iupAttribGet(ih, "_IUPIMAGE_LOADED_HANDLE") && !iupAttribGet(ih, "_IUPIMAGE_LOADED_DRAW_HANDLE"))
   {
     char* autoscale = iupAttribGet(ih, "AUTOSCALE");
     if (!autoscale) autoscale = IupGetGlobal("IMAGEAUTOSCALE");
@@ -1175,13 +1187,12 @@ static void iImageClearCache(Ihandle* ih)
   name = iupTableFirst(ih->attrib);
   while (name)
   {
-    if (iupStrEqualPartial(name, "_IUPIMAGE_WD_IMAGE"))
+    if (iupStrEqualPartial(name, "_IUPIMAGE_DRAWIMAGE"))
     {
       handle = iupTableGetCurr(ih->attrib);
       if (handle)
       {
-        Icallback wdImageDestroy = IupGetFunction("_IUPIMAGE_WD_IMAGEDESTROY");
-        if (wdImageDestroy) wdImageDestroy((Ihandle*)handle);
+        iupdrvImageDestroy(handle, IUPIMAGE_DRAWIMAGE);
         iupTableSetCurr(ih->attrib, NULL, IUPTABLE_POINTER);
       }
     }
@@ -1196,12 +1207,11 @@ static void iImageClearCache(Ihandle* ih)
     iupAttribSet(ih, "_IUPIMAGE_LOADED_HANDLE", NULL);
   }
 
-  handle = iupAttribGet(ih, "_IUPIMAGE_LOADED_WD_HANDLE");
+  handle = iupAttribGet(ih, "_IUPIMAGE_LOADED_DRAW_HANDLE");
   if (handle)
   {
-    Icallback wdImageDestroy = IupGetFunction("_IUPIMAGE_WD_IMAGEDESTROY");
-    if (wdImageDestroy) wdImageDestroy((Ihandle*)handle);
-    iupAttribSet(ih, "_IUPIMAGE_LOADED_WD_HANDLE", NULL);
+    iupdrvImageDestroy(handle, IUPIMAGE_DRAWIMAGE);
+    iupAttribSet(ih, "_IUPIMAGE_LOADED_DRAW_HANDLE", NULL);
   }
 
   /* additional image buffer when an IupImage is converted to one (OpenGL, etc.) */
@@ -1233,7 +1243,7 @@ static int iImageSetReshapeAttrib(Ihandle* ih, const char* value)
 {
   int w, h;
 
-  if (iupAttribGet(ih, "_IUPIMAGE_LOADED_HANDLE") || iupAttribGet(ih, "_IUPIMAGE_LOADED_WD_HANDLE"))
+  if (iupAttribGet(ih, "_IUPIMAGE_LOADED_HANDLE") || iupAttribGet(ih, "_IUPIMAGE_LOADED_DRAW_HANDLE"))
     return 0;
 
   if (iupStrToIntInt(value, &w, &h, 'x') == 2)
@@ -1266,7 +1276,7 @@ static int iImageSetResizeAttrib(Ihandle* ih, const char* value)
 {
   int new_width, new_height;
 
-  if (iupAttribGet(ih, "_IUPIMAGE_LOADED_HANDLE") || iupAttribGet(ih, "_IUPIMAGE_LOADED_WD_HANDLE"))
+  if (iupAttribGet(ih, "_IUPIMAGE_LOADED_HANDLE") || iupAttribGet(ih, "_IUPIMAGE_LOADED_DRAW_HANDLE"))
     return 0;
 
   if (iupStrToIntInt(value, &new_width, &new_height, 'x') == 2)

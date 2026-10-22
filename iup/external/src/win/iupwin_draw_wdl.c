@@ -28,7 +28,6 @@
 #include "backend-gdix.h"
 
 /* From iupwin_image_wdl.c */
-IUP_DRV_API void iupwinWdlImageInit(void);
 IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor);
 IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImageTint(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor, long tint);
 
@@ -81,8 +80,6 @@ IUP_DRV_API void iupwinDrawInit(void)
   iupwinDrawThemeInit();
 
   wdInitialize(wdl_flags);
-
-  iupwinWdlImageInit();
 
   if (wdBackend() == WD_BACKEND_D2D)
     gdix_init();  /* if WDL is using Direct2D must manually initialize GDI+ */

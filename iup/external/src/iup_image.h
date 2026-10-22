@@ -15,7 +15,7 @@ extern "C" {
 #endif
 
 
-enum {IUPIMAGE_IMAGE, IUPIMAGE_ICON, IUPIMAGE_CURSOR};
+enum {IUPIMAGE_IMAGE, IUPIMAGE_ICON, IUPIMAGE_CURSOR, IUPIMAGE_DRAWIMAGE};
 
 typedef struct _iupColor {
   unsigned char r, g, b, a;
@@ -60,6 +60,7 @@ void iupImageResizeRGBA(int src_width, int src_height, unsigned char* src_map, i
 #define iupALPHABLEND(_src,_dst,_alpha) (unsigned char)(((_src) * (_alpha) + (_dst) * (255 - (_alpha))) / 255)
 
 void iupImageSetHandleFromLoaded(const char* name, void* handle);
+void iupImageSetDrawHandleFromLoaded(const char* name, void* handle, int w, int h);
 Ihandle* iupImageGetImageFromName(const char* name);
 
 void iupImageStockInit(void);

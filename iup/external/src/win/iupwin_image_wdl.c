@@ -30,16 +30,9 @@
 #include "backend-gdix.h"
 
 
-static int wdlImageDestroy(Ihandle* ih)
+IUP_DRV_API void iupwinWdlImageDestroy(void* handle)
 {
-  WD_HIMAGE hImage = (WD_HIMAGE)ih;
-  wdDestroyImage(hImage);
-  return 0;
-}
-
-IUP_DRV_API void iupwinWdlImageInit(void)
-{
-  IupSetFunction("_IUPIMAGE_WD_IMAGEDESTROY", wdlImageDestroy);
+  wdDestroyImage((WD_HIMAGE)handle);
 }
 
 static void wdBufferRGB2Bitmap(BYTE* Scan0, INT dstStride, INT srcStride, UINT channels, UINT width, UINT height, const BYTE* rgb, const char* bgcolor, int make_inactive)
@@ -309,13 +302,11 @@ static WD_HIMAGE wdlImageCreateImage(Ihandle* ih, const char* bgcolor, int make_
   return hImage;
 }
 
-static void wdlImageSetHandleFromLoaded(const char* name, void* handle)
+static void wdlImageSetHandleFromLoaded(const char* name, WD_HIMAGE handle)
 {
-  Ihandle* ih;
-  iupImageSetHandleFromLoaded(name, handle);
-  ih = IupGetHandle(name);
-  iupAttribSet(ih, "_IUPIMAGE_LOADED_HANDLE", NULL);
-  iupAttribSet(ih, "_IUPIMAGE_LOADED_WD_HANDLE", (char*)handle);
+  UINT w, h;
+  wdGetImageSize(handle, &w, &h);
+  iupImageSetDrawHandleFromLoaded(name, handle, (int)w, (int)h);
 }
 
 IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor)
@@ -359,7 +350,7 @@ IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_paren
       return NULL;
   }
 
-  handle = (WD_HIMAGE)iupAttribGet(ih, "_IUPIMAGE_LOADED_WD_HANDLE");
+  handle = (WD_HIMAGE)iupAttribGet(ih, "_IUPIMAGE_LOADED_DRAW_HANDLE");
   if (handle)
     return handle;
 
@@ -373,9 +364,9 @@ IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_paren
     bgcolor = img_bgcolor;
 
   if (make_inactive)
-    pos = snprintf(cache_name, sizeof(cache_name), "_IUPIMAGE_WD_IMAGE_INACTIVE");
+    pos = snprintf(cache_name, sizeof(cache_name), "_IUPIMAGE_DRAWIMAGE_INACTIVE");
   else
-    pos = snprintf(cache_name, sizeof(cache_name), "_IUPIMAGE_WD_IMAGE");
+    pos = snprintf(cache_name, sizeof(cache_name), "_IUPIMAGE_DRAWIMAGE");
 
   if (iupAttribGet(ih, "_IUP_BGCOLOR_DEPEND") && bgcolor)
   {
@@ -437,7 +428,7 @@ IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImageTint(const char* name, Ihandle* ih_p
   tb = iupDrawBlue(tint);
   ta = iupDrawAlpha(tint);
 
-  pos = snprintf(cache_name, sizeof(cache_name), "_IUPIMAGE_WD_IMAGE_TINT%s(%d %d %d %d)", make_inactive? "_INACTIVE": "", tr, tg, tb, ta);
+  pos = snprintf(cache_name, sizeof(cache_name), "_IUPIMAGE_DRAWIMAGE_TINT%s(%d %d %d %d)", make_inactive? "_INACTIVE": "", tr, tg, tb, ta);
   if (bgcolor)
     snprintf(cache_name + pos, sizeof(cache_name) - pos, "(%s)", bgcolor);
 
