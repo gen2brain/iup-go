@@ -551,7 +551,7 @@ public:
         }
         break;
     }
-    int ret = Fl_Text_Editor::handle(event);
+    int ret = is_readonly ? Fl_Text_Display::handle(event) : Fl_Text_Editor::handle(event);
 
     if (event == FL_MOVE && iup_handle->data->has_formatting &&
         text_area.w > 0 && text_area.h > 0 && buffer()->length() > 0)

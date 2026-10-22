@@ -157,6 +157,9 @@ IUP_DRV_API int iupqmlStyleLocked()
 
 static void qmlStyleLocked()
 {
+  static const struct { const char* name; QPalette::ColorGroup group; } groups[] = {
+    {"active", QPalette::Active}, {"inactive", QPalette::Inactive}, {"disabled", QPalette::Disabled},
+  };
   static const struct { const char* name; QPalette::ColorRole role; } roles[] = {
     {"window", QPalette::Window}, {"windowText", QPalette::WindowText}, {"base", QPalette::Base},
     {"text", QPalette::Text}, {"highlight", QPalette::Highlight}, {"link", QPalette::Link},
@@ -170,11 +173,18 @@ static void qmlStyleLocked()
     QObject* style = control ? qvariant_cast<QObject*>(control->property("palette")) : nullptr;
     if (style)
     {
-      for (const auto& r : roles)
+      for (const auto& g : groups)
       {
-        auto color = style->property(r.name).value<QColor>();
-        if (color.isValid())
-          palette.setColor(r.role, color);
+        auto* group = qvariant_cast<QObject*>(style->property(g.name));
+        if (!group)
+          continue;
+
+        for (const auto& r : roles)
+        {
+          auto color = group->property(r.name).value<QColor>();
+          if (color.isValid())
+            palette.setColor(g.group, r.role, color);
+        }
       }
     }
     delete control;
