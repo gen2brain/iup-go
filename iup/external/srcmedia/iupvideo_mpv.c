@@ -310,7 +310,7 @@ static void iVideoMpvPlay(IvideoSession* session, int play)
   mpv_set_property_async(context->player, 0, "pause", MPV_FORMAT_FLAG, &pause);
 }
 
-static void iVideoMpvSeek(IvideoSession* session, double position)
+static void iVideoMpvSeek(IvideoSession* session, double position, int fast)
 {
   IvideoMpv* context = (IvideoMpv*)session->context;
   mpv_node arguments[3], command;
@@ -321,7 +321,7 @@ static void iVideoMpvSeek(IvideoSession* session, double position)
   arguments[1].format = MPV_FORMAT_DOUBLE;
   arguments[1].u.double_ = position;
   arguments[2].format = MPV_FORMAT_STRING;
-  arguments[2].u.string = (char*)"absolute+exact";
+  arguments[2].u.string = (char*)(fast ? "absolute+keyframes" : "absolute+exact");
   list.num = 3;
   list.values = arguments;
   list.keys = NULL;

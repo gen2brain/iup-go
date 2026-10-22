@@ -1008,10 +1008,13 @@ static void winVideoPlay(IvideoSession* session, int play)
     iupVideoError(session, "Media Foundation playback state change failed");
 }
 
-static void winVideoSeek(IvideoSession* session, double position)
+static void winVideoSeek(IvideoSession* session, double position, int fast)
 {
   IwinVideo* context = (IwinVideo*)session->context;
-  context->player->SetCurrentTime(position);
+  if (fast)
+    context->player->SetCurrentTimeEx(position, MF_MEDIA_ENGINE_SEEK_MODE_APPROXIMATE);
+  else
+    context->player->SetCurrentTime(position);
 }
 
 static void winVideoVolume(IvideoSession* session, int volume, int mute)

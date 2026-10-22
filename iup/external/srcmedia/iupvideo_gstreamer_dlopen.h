@@ -58,7 +58,8 @@ typedef enum
 {
   GST_MESSAGE_EOS = 1 << 0,
   GST_MESSAGE_ERROR = 1 << 1,
-  GST_MESSAGE_BUFFERING = 1 << 5
+  GST_MESSAGE_BUFFERING = 1 << 5,
+  GST_MESSAGE_ASYNC_DONE = 1 << 21
 } GstMessageType;
 
 typedef enum
@@ -76,7 +77,11 @@ typedef enum
 typedef enum
 {
   GST_SEEK_FLAG_FLUSH = 1 << 0,
-  GST_SEEK_FLAG_ACCURATE = 1 << 1
+  GST_SEEK_FLAG_ACCURATE = 1 << 1,
+  GST_SEEK_FLAG_KEY_UNIT = 1 << 2,
+  GST_SEEK_FLAG_SNAP_BEFORE = 1 << 5,
+  GST_SEEK_FLAG_SNAP_AFTER = 1 << 6,
+  GST_SEEK_FLAG_SNAP_NEAREST = GST_SEEK_FLAG_SNAP_BEFORE | GST_SEEK_FLAG_SNAP_AFTER
 } GstSeekFlags;
 
 typedef enum

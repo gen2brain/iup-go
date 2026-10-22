@@ -71,9 +71,9 @@ public final class IupVideoHelper
     }
 
     @Keep
-    public static void seek(Object object, double position)
+    public static void seek(Object object, double position, boolean fast)
     {
-        ((Player)object).seek(position);
+        ((Player)object).seek(position, fast);
     }
 
     @Keep
@@ -305,6 +305,7 @@ public final class IupVideoHelper
         int placedX, placedY, placedW, placedH, placedWidth, placedHeight;
         boolean mute;
         double pendingSeek = -1;
+        boolean pendingFast;
 
         Player(View host, long session, String source, boolean url)
         {
@@ -378,8 +379,9 @@ public final class IupVideoHelper
                 if (!closed && pendingSeek >= 0)
                 {
                     double position = pendingSeek;
+                    boolean fast = pendingFast;
                     pendingSeek = -1;
-                    seek(position);
+                    seek(position, fast);
                 }
                 else if (!closed && !requested)
                 {
@@ -538,13 +540,14 @@ public final class IupVideoHelper
             }
         }
 
-        void seek(double position)
+        void seek(double position, boolean fast)
         {
             if (closed || failed || !prepared)
                 return;
             if (seeking)
             {
                 pendingSeek = position;
+                pendingFast = fast;
                 return;
             }
             if (position > Integer.MAX_VALUE / 1000.0)
@@ -555,7 +558,7 @@ public final class IupVideoHelper
                 cancelSubtitlePreview();
                 ended = false;
                 if (Build.VERSION.SDK_INT >= 26)
-                    media.seekTo((long)(position * 1000), MediaPlayer.SEEK_CLOSEST);
+                    media.seekTo((long)(position * 1000), fast ? MediaPlayer.SEEK_CLOSEST_SYNC : MediaPlayer.SEEK_CLOSEST);
                 else
                     media.seekTo((int)(position * 1000));
             }

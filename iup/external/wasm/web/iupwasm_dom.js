@@ -2802,7 +2802,7 @@
       } break;
       case 'vidseek': {
         var VK = globalThis.__iupVid && globalThis.__iupVid[c.vid];
-        if (VK) { try { VK.el.currentTime = c.t; } catch (e) {} }
+        if (VK) { try { if (c.fast && VK.el.fastSeek) VK.el.fastSeek(c.t); else VK.el.currentTime = c.t; } catch (e) {} }
       } break;
       case 'vidvol': {
         var VL = globalThis.__iupVid && globalThis.__iupVid[c.vid];

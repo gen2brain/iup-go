@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "iup_drv.h"
 #include "iup_video.h"
 #include "iup_thread.h"
 #include "iup_str.h"
@@ -22,6 +23,9 @@ typedef struct
   GstElement* gamma;
   GstBus* bus;
   int play, buffering, live;
+  int seeking, next_fast;
+  unsigned int seek_ticks;
+  double next_seek;
   int64_t restore_position;
   int width, height;
   double aspect;
@@ -202,6 +206,7 @@ static int iVideoGstOpen(IvideoSession* session, Ihandle* ih, const char* source
     return 0;
   session->context = context;
   context->session = session;
+  context->next_seek = -1;
   context->player = gst_element_factory_make("playbin", NULL);
   context->sink = gst_element_factory_make("appsink", NULL);
   if (context->player)
@@ -286,12 +291,31 @@ static void iVideoGstPlay(IvideoSession* session, int play)
     iupVideoError(session, "GStreamer playback state change failed");
 }
 
-static void iVideoGstSeek(IvideoSession* session, double position)
+static void iVideoGstSeek(IvideoSession* session, double position, int fast)
 {
   IvideoGst* context = (IvideoGst*)session->context;
+  GstSeekFlags flags = fast ? GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT | GST_SEEK_FLAG_SNAP_NEAREST : GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE;
   if (position > (double)INT64_MAX / GST_SECOND)
     return;
-  gst_element_seek_simple(context->player, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE, (int64_t)(position * GST_SECOND));
+  if (context->seeking)
+  {
+    context->next_seek = position;
+    context->next_fast = fast;
+    return;
+  }
+  context->seeking = gst_element_seek_simple(context->player, GST_FORMAT_TIME, flags, (int64_t)(position * GST_SECOND)) != 0;
+  context->seek_ticks = iupdrvGetTickCount();
+}
+
+static void iVideoGstSeekDone(IvideoSession* session, IvideoGst* context)
+{
+  context->seeking = 0;
+  if (context->next_seek >= 0)
+  {
+    double position = context->next_seek;
+    context->next_seek = -1;
+    iVideoGstSeek(session, position, context->next_fast);
+  }
 }
 
 static void iVideoGstVolume(IvideoSession* session, int volume, int mute)
@@ -318,6 +342,8 @@ static void iVideoGstMessages(IvideoSession* session, IvideoGst* context)
     }
     else if (message->type == GST_MESSAGE_EOS)
       context->info.ended = 1;
+    else if (message->type == GST_MESSAGE_ASYNC_DONE && context->seeking)
+      iVideoGstSeekDone(session, context);
     else if (message->type == GST_MESSAGE_BUFFERING)
     {
       int percent;
@@ -338,6 +364,8 @@ static void iVideoGstPoll(IvideoSession* session)
   GstQuery* query;
   int video = 0, audio = 0;
   iVideoGstMessages(session, context);
+  if (context->seeking && iupdrvGetTickCount() - context->seek_ticks > 1000)
+    iVideoGstSeekDone(session, context);
   if (gst_element_get_state(context->player, &state, &pending, 0) == GST_STATE_CHANGE_FAILURE)
   {
     iupVideoError(session, "GStreamer playback state query failed");

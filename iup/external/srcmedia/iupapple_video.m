@@ -353,14 +353,15 @@ static void iappleVideoPlay(IvideoSession* session, int play)
     [context->player pause];
 }
 
-static void iappleVideoSeek(IvideoSession* session, double position)
+static void iappleVideoSeek(IvideoSession* session, double position, int fast)
 {
   IupAppleVideo* context = (IupAppleVideo*)session->context;
   if (position > (double)LLONG_MAX / 600)
     return;
   context->ended = 0;
   context->restoring = 0;
-  [context->player seekToTime:CMTimeMakeWithSeconds(position, 600) toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
+  CMTime tolerance = fast ? kCMTimePositiveInfinity : kCMTimeZero;
+  [context->player seekToTime:CMTimeMakeWithSeconds(position, 600) toleranceBefore:tolerance toleranceAfter:tolerance];
 }
 
 static void iappleVideoVolume(IvideoSession* session, int volume, int mute)

@@ -161,14 +161,14 @@ static void androidVideoPlay(IvideoSession* session, int play)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-static void androidVideoSeek(IvideoSession* session, double position)
+static void androidVideoSeek(IvideoSession* session, double position, int fast)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupVideoHelper_seek);
   IandroidVideo* context = (IandroidVideo*)session->context;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupVideoHelper, env, "io/github/gen2brain/iupgo/IupVideoHelper");
-  jmethodID method = IUPJNI_GetStaticMethodID(IupVideoHelper_seek, env, cls, "seek", "(Ljava/lang/Object;D)V");
-  (*env)->CallStaticVoidMethod(env, cls, method, context->player, position);
+  jmethodID method = IUPJNI_GetStaticMethodID(IupVideoHelper_seek, env, cls, "seek", "(Ljava/lang/Object;DZ)V");
+  (*env)->CallStaticVoidMethod(env, cls, method, context->player, position, (jboolean)(fast != 0));
   iupAndroid_CheckException(env, "IupVideoHelper.seek");
   (*env)->DeleteLocalRef(env, cls);
 }

@@ -71,8 +71,8 @@ EM_JS(void, iupwasmJsVideoPlay, (int vid, int play), {
   globalThis.__iupApply({ op: 'vidplay', vid: vid, play: play });
 })
 
-EM_JS(void, iupwasmJsVideoSeek, (int vid, double position), {
-  globalThis.__iupApply({ op: 'vidseek', vid: vid, t: position });
+EM_JS(void, iupwasmJsVideoSeek, (int vid, double position, int fast), {
+  globalThis.__iupApply({ op: 'vidseek', vid: vid, t: position, fast: fast });
 })
 
 EM_JS(void, iupwasmJsVideoVolume, (int vid, int volume, int mute), {
@@ -218,10 +218,10 @@ static void wasmVideoPlay(IvideoSession* session, int play)
   iupwasmJsVideoPlay(context->vid, play);
 }
 
-static void wasmVideoSeek(IvideoSession* session, double position)
+static void wasmVideoSeek(IvideoSession* session, double position, int fast)
 {
   IwasmVideo* context = (IwasmVideo*)session->context;
-  iupwasmJsVideoSeek(context->vid, position);
+  iupwasmJsVideoSeek(context->vid, position, fast);
 }
 
 static void wasmVideoVolume(IvideoSession* session, int volume, int mute)

@@ -43,7 +43,7 @@ typedef struct _IvideoBackend
   int (*open)(IvideoSession* session, Ihandle* ih, const char* source, int url);
   void (*close)(IvideoSession* session);
   void (*play)(IvideoSession* session, int play);
-  void (*seek)(IvideoSession* session, double position);
+  void (*seek)(IvideoSession* session, double position, int fast);
   void (*volume)(IvideoSession* session, int volume, int mute);
   void (*poll)(IvideoSession* session);
   void (*layout)(IvideoSession* session, Ihandle* ih);
