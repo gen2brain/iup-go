@@ -68,6 +68,28 @@ static const void* IUP_COCOATOUCH_VAL_TARGET_OBJ_KEY = "IUP_COCOATOUCH_VAL_TARGE
 	[self refreshTicks];
 }
 
+- (BOOL)beginTrackingWithTouch:(UITouch*)touch withEvent:(UIEvent*)event
+{
+	CGRect track = [self trackRectForBounds:self.bounds];
+	CGRect thumb = [self thumbRectForBounds:self.bounds trackRect:track value:self.value];
+	CGPoint p = [touch locationInView:self];
+
+	if (!CGRectContainsPoint(thumb, p))
+	{
+		CGFloat span = track.size.width - thumb.size.width;
+		if (span > 0)
+		{
+			CGFloat t = (p.x - track.origin.x - thumb.size.width / 2) / span;
+			if (t < 0) t = 0;
+			if (t > 1) t = 1;
+			[self setValue:self.minimumValue + t * (self.maximumValue - self.minimumValue) animated:NO];
+			[self sendActionsForControlEvents:UIControlEventValueChanged];
+		}
+	}
+
+	return [super beginTrackingWithTouch:touch withEvent:event];
+}
+
 - (void)refreshTicks
 {
 	if (!_tickViews) _tickViews = [[NSMutableArray alloc] init];

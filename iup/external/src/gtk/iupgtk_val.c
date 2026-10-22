@@ -124,6 +124,37 @@ static int gtkValSetValueAttrib(Ihandle* ih, const char* value)
 
 /*********************************************************************************************/
 
+#if !GTK_CHECK_VERSION(3, 0, 0)
+static gboolean gtkValButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihandle* ih)
+{
+  if (evt->button != 1)
+    return FALSE;
+
+  if (evt->type == GDK_BUTTON_PRESS)
+  {
+    gboolean primary_warps;
+    gint start, end;
+    double pos = (ih->data->orientation == IVAL_HORIZONTAL)? evt->x: evt->y;
+
+    g_object_get(gtk_widget_get_settings(widget), "gtk-primary-button-warps-slider", &primary_warps, NULL);
+    gtk_range_get_slider_range(GTK_RANGE(widget), &start, &end);
+
+    if (!primary_warps && (pos < start || pos > end))
+    {
+      evt->button = 2;
+      iupAttribSet(ih, "_IUPGTK_VAL_WARP", "1");
+    }
+  }
+  else if (evt->type == GDK_BUTTON_RELEASE && iupAttribGet(ih, "_IUPGTK_VAL_WARP"))
+  {
+    evt->button = 2;
+    iupAttribSet(ih, "_IUPGTK_VAL_WARP", NULL);
+  }
+
+  return FALSE;
+}
+#endif
+
 static gboolean gtkValChangeValue(GtkRange* range, GtkScrollType scroll, double fval, Ihandle* ih)
 {
   double old_val = ih->data->val;
@@ -220,6 +251,10 @@ static int gtkValMapMethod(Ihandle* ih)
 
   g_signal_connect(G_OBJECT(ih->handle), "key-press-event",    G_CALLBACK(gtkValKeyPressEvent),   ih);
   g_signal_connect(G_OBJECT(ih->handle), "change-value",  G_CALLBACK(gtkValChangeValue),  ih);
+#if !GTK_CHECK_VERSION(3, 0, 0)
+  g_signal_connect(G_OBJECT(ih->handle), "button-press-event",   G_CALLBACK(gtkValButtonEvent), ih);
+  g_signal_connect(G_OBJECT(ih->handle), "button-release-event", G_CALLBACK(gtkValButtonEvent), ih);
+#endif
 
   /* configure the scale */
   gtk_scale_set_draw_value(GTK_SCALE(ih->handle), FALSE);

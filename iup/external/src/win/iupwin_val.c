@@ -159,6 +159,42 @@ static void winValIncPageValue(Ihandle* ih, int dir)
   winValCustomScroll(ih, 0);
 }
 
+static void winValMoveThumbTo(Ihandle* ih, int x, int y)
+{
+  RECT thumb, channel;
+  POINT pt;
+  int thumb_len, pos, span, ival;
+
+  pt.x = x;
+  pt.y = y;
+  SendMessage(ih->handle, TBM_GETTHUMBRECT, 0, (LPARAM)&thumb);
+  if (PtInRect(&thumb, pt))
+    return;
+
+  SendMessage(ih->handle, TBM_GETCHANNELRECT, 0, (LPARAM)&channel);
+  if (ih->data->orientation == IVAL_HORIZONTAL)
+  {
+    thumb_len = thumb.right - thumb.left;
+    pos = x;
+  }
+  else
+  {
+    thumb_len = thumb.bottom - thumb.top;
+    pos = y;
+  }
+
+  span = channel.right - channel.left - thumb_len;
+  if (span <= 0)
+    return;
+
+  ival = (int)(((double)(pos - channel.left - thumb_len / 2) / span) * SHRT_MAX + 0.5);
+  if (ival < 0) ival = 0;
+  if (ival > SHRT_MAX) ival = SHRT_MAX;
+  SendMessage(ih->handle, TBM_SETPOS, TRUE, ival);
+
+  winValCustomScroll(ih, 0);
+}
+
 static int winValCtlColor(Ihandle* ih, HDC hdc, LRESULT* result)
 {
   COLORREF cr;
@@ -174,8 +210,6 @@ static int winValCtlColor(Ihandle* ih, HDC hdc, LRESULT* result)
 
 static int winValMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* result)
 {
-  (void)lp;
-
   switch (msg)
   {
   case WM_SETFOCUS:
@@ -192,6 +226,9 @@ static int winValMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* r
       }
       break;
     }
+  case WM_LBUTTONDOWN:
+    winValMoveThumbTo(ih, (short)LOWORD(lp), (short)HIWORD(lp));
+    break;
   case WM_ERASEBKGND:
     {
       RECT rect;
