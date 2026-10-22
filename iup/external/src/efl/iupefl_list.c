@@ -1144,11 +1144,12 @@ static int eflListSetValueAttrib(Ihandle* ih, const char* value)
       return 0;
 
     pos = 0; iupStrToInt(value, &pos);
-    if (pos > 0)
     {
-      Elm_Object_Item* item = elm_genlist_nth_item_get(vlist, pos - 1);
+      Elm_Object_Item* item = pos > 0 ? elm_genlist_nth_item_get(vlist, pos - 1) : NULL;
       if (item)
         elm_genlist_item_selected_set(item, EINA_TRUE);
+      else if ((item = elm_genlist_selected_item_get(vlist)) != NULL)
+        elm_genlist_item_selected_set(item, EINA_FALSE);
     }
     return 0;
   }
@@ -1177,7 +1178,7 @@ static int eflListSetValueAttrib(Ihandle* ih, const char* value)
   }
 
   pos = 0; iupStrToInt(value, &pos);
-  if (pos > 0)
+  if (pos > 0 && pos <= efl_content_count(list))
   {
     Eo* item = efl_pack_content_get(list, pos - 1);
     if (item)
@@ -1190,7 +1191,20 @@ static int eflListSetValueAttrib(Ihandle* ih, const char* value)
 
       if (is_dropdown)
         eflDropdownSetText(ih, efl_text_get(item));
+      return 0;
     }
+  }
+
+  {
+    Eo* selected = efl_ui_selectable_last_selected_get(list);
+    if (selected)
+    {
+      iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
+      efl_ui_selectable_selected_set(selected, EINA_FALSE);
+    }
+    iupAttribSet(ih, "_IUPEFL_LIST_VALUE", NULL);
+    if (is_dropdown)
+      eflDropdownSetText(ih, "");
   }
 
   return 0;
