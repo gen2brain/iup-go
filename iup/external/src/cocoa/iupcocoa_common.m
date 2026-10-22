@@ -655,16 +655,111 @@ IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
   iupcocoaUpdateTip(ih);
 }
 
+@interface IUPCursorTrackingDelegate : NSObject
+{
+  NSCursor* _cursor;
+  BOOL _hidden;
+#ifdef GNUSTEP
+  NSView* _view;
+  NSTrackingRectTag _tag;
+#endif
+}
+@property(nonatomic, retain) NSCursor* cursor;
+- (void)mouseEntered:(NSEvent*)event;
+- (void)mouseExited:(NSEvent*)event;
+#ifdef GNUSTEP
+- (void)trackView:(NSView*)view;
+- (void)untrackView;
+#endif
+- (void)dealloc;
+@end
+
+@implementation IUPCursorTrackingDelegate
+@synthesize cursor = _cursor;
+
+- (void)mouseEntered:(NSEvent*)event
+{
+  if (self.cursor)
+    [self.cursor set];
+  else if (!_hidden)
+  {
+    [NSCursor hide];
+    _hidden = YES;
+  }
+}
+
+- (void)mouseExited:(NSEvent*)event
+{
+  if (_hidden)
+  {
+    [NSCursor unhide];
+    _hidden = NO;
+  }
+  [[NSCursor arrowCursor] set];
+}
+
+#ifdef GNUSTEP
+- (void)trackView:(NSView*)view
+{
+  _view = view;
+  _tag = [view addTrackingRect:[view bounds] owner:self userData:NULL assumeInside:NO];
+  [view setPostsFrameChangedNotifications:YES];
+  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(viewFrameChanged:) name:NSViewFrameDidChangeNotification object:view];
+}
+
+- (void)viewFrameChanged:(NSNotification*)notification
+{
+  (void)notification;
+  [_view removeTrackingRect:_tag];
+  _tag = [_view addTrackingRect:[_view bounds] owner:self userData:NULL assumeInside:NO];
+}
+
+- (void)untrackView
+{
+  if (!_view)
+    return;
+  [[NSNotificationCenter defaultCenter] removeObserver:self name:NSViewFrameDidChangeNotification object:_view];
+  [_view removeTrackingRect:_tag];
+  _view = nil;
+}
+#endif
+
+- (void)dealloc
+{
+  if (_hidden)
+    [NSCursor unhide];
+  self.cursor = nil;
+  [super dealloc];
+}
+@end
+
+static void cocoaCursorRemove(Ihandle* ih, NSView* main_view)
+{
+  IUPCursorTrackingDelegate* old_delegate = (IUPCursorTrackingDelegate*)iupAttribGet(ih, "_IUPCOCOA_CURSOR_DELEGATE");
+  if (!old_delegate)
+    return;
+
+#ifdef GNUSTEP
+  (void)main_view;
+  [old_delegate untrackView];
+#else
+  NSTrackingArea* old_area = (NSTrackingArea*)iupAttribGet(ih, "_IUPCOCOA_TRACKINGAREA");
+  if (old_area)
+    [main_view removeTrackingArea:old_area];
+#endif
+
+  [old_delegate release];
+  iupAttribSet(ih, "_IUPCOCOA_CURSOR_DELEGATE", NULL);
+  iupAttribSet(ih, "_IUPCOCOA_TRACKINGAREA", NULL);
+}
+
 IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 {
   if (!ih->handle) return;
 
   iupcocoaCommonBaseDestroyContextMenu(ih);
 
-  if (iupAttribGet(ih, "_IUPCOCOA_CURSOR_DELEGATE"))
-  {
-    iupdrvBaseSetCursorAttrib(ih, "NONE");
-  }
+  cocoaCursorRemove(ih, iupcocoaGetMainView(ih));
 
   iupcocoaTipsDestroy(ih);
 
@@ -1008,51 +1103,6 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-@interface IUPCursorTrackingDelegate : NSObject
-{
-  NSCursor* _cursor;
-  BOOL _hidden;
-}
-@property(nonatomic, retain) NSCursor* cursor;
-- (void)mouseEntered:(NSEvent*)event;
-- (void)mouseExited:(NSEvent*)event;
-- (void)dealloc;
-@end
-
-@implementation IUPCursorTrackingDelegate
-@synthesize cursor = _cursor;
-
-- (void)mouseEntered:(NSEvent*)event
-{
-  if (self.cursor)
-    [self.cursor set];
-  else if (!_hidden)
-  {
-    [NSCursor hide];
-    _hidden = YES;
-  }
-}
-
-- (void)mouseExited:(NSEvent*)event
-{
-  if (_hidden)
-  {
-    [NSCursor unhide];
-    _hidden = NO;
-  }
-  [[NSCursor arrowCursor] set];
-}
-
-- (void)dealloc
-{
-  if (_hidden)
-    [NSCursor unhide];
-  self.cursor = nil;
-  [super dealloc];
-}
-@end
-
-
 #ifndef GNUSTEP
 static NSCursor* cocoaGetResizeCursor(const char* name)
 {
@@ -1168,17 +1218,7 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
   NSView* main_view = iupcocoaGetMainView(ih);
   if (!main_view) return 0;
 
-  IUPCursorTrackingDelegate* old_delegate = (IUPCursorTrackingDelegate*)iupAttribGet(ih, "_IUPCOCOA_CURSOR_DELEGATE");
-  if (old_delegate)
-  {
-    NSTrackingArea* old_area = (NSTrackingArea*)iupAttribGet(ih, "_IUPCOCOA_TRACKINGAREA");
-    if (old_area)
-      [main_view removeTrackingArea:old_area];
-
-    [old_delegate release];
-    iupAttribSet(ih, "_IUPCOCOA_CURSOR_DELEGATE", NULL);
-    iupAttribSet(ih, "_IUPCOCOA_TRACKINGAREA", NULL);
-  }
+  cocoaCursorRemove(ih, main_view);
 
   NSCursor* cursor = iupCocoaGetCursor(ih, value);
   int hide = iupStrEqualNoCase(value, "NONE") || iupStrEqualNoCase(value, "NULL");
@@ -1186,7 +1226,11 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
   {
     IUPCursorTrackingDelegate* delegate = [[IUPCursorTrackingDelegate alloc] init];
     delegate.cursor = cursor;
+    iupAttribSet(ih, "_IUPCOCOA_CURSOR_DELEGATE", (char*)delegate);
 
+#ifdef GNUSTEP
+    [delegate trackView:main_view];
+#else
     NSTrackingArea* area = [[NSTrackingArea alloc] initWithRect:[main_view bounds]
                                                         options:(NSTrackingMouseEnteredAndExited | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect)
                                                           owner:delegate
@@ -1194,9 +1238,9 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
     [main_view addTrackingArea:area];
 
     /* the view retains the tracking area */
-    iupAttribSet(ih, "_IUPCOCOA_CURSOR_DELEGATE", (char*)delegate);
     iupAttribSet(ih, "_IUPCOCOA_TRACKINGAREA", (char*)area);
     [area release];
+#endif
 
     NSWindow* window = [main_view window];
     if (window)
