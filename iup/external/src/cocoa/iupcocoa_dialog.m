@@ -712,6 +712,21 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w,
   }
 }
 
+static void cocoaDialogKeyNextWindow(NSWindow* the_window)
+{
+  if ([NSApp keyWindow] && [NSApp keyWindow] != the_window)
+    return;
+
+  for (NSWindow* win in [NSApp orderedWindows])
+  {
+    if (win != the_window && [win isVisible] && ![win isMiniaturized] && [win canBecomeKeyWindow])
+    {
+      [win makeKeyWindow];
+      return;
+    }
+  }
+}
+
 static void cocoaDialogSetVisible(Ihandle* ih, int visible)
 {
   NSWindow* the_window = iupcocoaDialogGetWindow(ih);
@@ -771,6 +786,8 @@ static void cocoaDialogSetVisible(Ihandle* ih, int visible)
       }
     }
 
+    BOOL was_key = [the_window isKeyWindow];
+
     if (parent_window && iupObjectCheck(parent_ih))
     {
       [NSApp activateIgnoringOtherApps:YES];
@@ -782,6 +799,10 @@ static void cocoaDialogSetVisible(Ihandle* ih, int visible)
     if (parent_window && iupObjectCheck(parent_ih))
     {
       IupSetFocus(parent_ih);
+    }
+    else if (was_key)
+    {
+      cocoaDialogKeyNextWindow(the_window);
     }
   }
 }
@@ -1662,7 +1683,10 @@ static void cocoaDialogUnMapMethod(Ihandle* ih)
 
   objc_setAssociatedObject(the_window, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
 
+  BOOL was_key = [the_window isKeyWindow];
   [the_window close];
+  if (was_key)
+    cocoaDialogKeyNextWindow(the_window);
 
   IupCocoaWindowDelegate* window_delegate = [the_window delegate];
   [the_window setDelegate:nil];

@@ -1496,12 +1496,7 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
 
     if ([self isActived])
     {
-      if (!windowActive)
-      {
-        [[NSColor unemphasizedSelectedContentBackgroundColor] set];
-        [pill fill];
-      }
-      else if (accentActive)
+      if (accentActive)
       {
         [[NSColor controlAccentColor] set];
         [pill fill];
