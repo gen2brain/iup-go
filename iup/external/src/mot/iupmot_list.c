@@ -423,7 +423,7 @@ static int motListSetValueAttrib(Ihandle* ih, const char* value)
     if (ih->data->is_dropdown)
     {
       int pos;
-      if (iupStrToInt(value, &pos)==1)
+      if (iupStrToInt(value, &pos)==1 && pos > 0 && pos <= iupdrvListGetCount(ih))
       {
         XtRemoveCallback(ih->handle, XmNselectionCallback, (XtCallbackProc)motListComboBoxSelectionCallback, (XtPointer)ih);
 
@@ -438,7 +438,7 @@ static int motListSetValueAttrib(Ihandle* ih, const char* value)
       if (!ih->data->is_multiple)
       {
         int pos;
-        if (iupStrToInt(value, &pos)==1)
+        if (iupStrToInt(value, &pos)==1 && pos > 0 && pos <= iupdrvListGetCount(ih))
         {
           XmListSelectPos(ih->handle, pos, FALSE);   /* XmListSelectPos starts at 1 */
           iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos);
