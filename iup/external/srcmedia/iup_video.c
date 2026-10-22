@@ -71,7 +71,7 @@ struct _IcontrolData
   char* subtitle_file;
   char* subtitle_text;
   char* subtitle_wrapped;
-  int subtitle_wrap_width;
+  int subtitle_wrap_width, subtitle_wrap_size, subtitle_scaled_size;
   char subtitle_color[32], subtitle_error[512];
 };
 
@@ -549,6 +549,43 @@ static void iVideoSelectSubtitle(Ihandle* ih)
   ih->data->subtitle_dirty = 1;
 }
 
+static void iVideoPictureRect(Ihandle* ih, int w, int h, int* vx, int* vy, int* vw, int* vh)
+{
+  double aspect = ih->data->info.aspect;
+  if ((!(aspect > 0) || !isfinite(aspect)) && ih->data->frame)
+    aspect = (double)ih->data->frame_width / ih->data->frame_height;
+  *vx = 0;
+  *vy = 0;
+  *vw = w;
+  *vh = h;
+  if (aspect > 0 && isfinite(aspect) && w > 0 && h > 0)
+  {
+    if (aspect * h > w)
+    {
+      *vh = (int)(w / aspect);
+      *vy = (h - *vh) / 2;
+    }
+    else
+    {
+      *vw = (int)(h * aspect);
+      *vx = (w - *vw) / 2;
+    }
+  }
+}
+
+static int iVideoSubtitleScaledSize(Ihandle* ih, int picture_height)
+{
+  int size = iupRound(ih->data->subtitle_size * picture_height / 540.0);
+  return size < 6 ? 6 : size;
+}
+
+static int iVideoSubtitleCanvasSize(Ihandle* ih)
+{
+  int vx, vy, vw, vh;
+  iVideoPictureRect(ih, ih->currentwidth, ih->currentheight, &vx, &vy, &vw, &vh);
+  return iVideoSubtitleScaledSize(ih, vh);
+}
+
 static void iVideoUpdateSubtitle(Ihandle* ih)
 {
   IvideoSession* session = ih->data->session;
@@ -613,8 +650,9 @@ static void iVideoUpdateSubtitle(Ihandle* ih)
     ih->data->subtitle_dirty = 0;
     free(ih->data->subtitle_wrapped);
     ih->data->subtitle_wrapped = NULL;
+    ih->data->subtitle_scaled_size = iVideoSubtitleCanvasSize(ih);
     if (session->backend->subtitle_text)
-      ih->data->subtitle_native = session->backend->subtitle_text(session, ih->data->subtitle_text, ih->data->subtitle_size, ih->data->subtitle_color);
+      ih->data->subtitle_native = session->backend->subtitle_text(session, ih->data->subtitle_text, ih->data->subtitle_scaled_size, ih->data->subtitle_color);
     IupUpdate(ih);
   }
   free(text);
@@ -1202,30 +1240,13 @@ static char* iVideoWrapSubtitle(Ihandle* ih, const char* text, int width)
 static int iVideoRedraw(Ihandle* ih)
 {
   int w, h, x, y;
-  int vx = 0, vy = 0, vw, vh;
-  double aspect = ih->data->info.aspect;
+  int vx, vy, vw, vh;
   IupDrawBegin(ih);
   IupDrawGetSize(ih, &w, &h);
   iupAttribSetStr(ih, "DRAWCOLOR", iupAttribGetStr(ih, "BGCOLOR"));
   iupAttribSet(ih, "DRAWSTYLE", "FILL");
   IupDrawRectangle(ih, 0, 0, w - 1, h - 1);
-  if ((!(aspect > 0) || !isfinite(aspect)) && ih->data->frame)
-    aspect = (double)ih->data->frame_width / ih->data->frame_height;
-  vw = w;
-  vh = h;
-  if (aspect > 0 && isfinite(aspect) && w > 0 && h > 0)
-  {
-    if (aspect * h > w)
-    {
-      vh = (int)(w / aspect);
-      vy = (h - vh) / 2;
-    }
-    else
-    {
-      vw = (int)(h * aspect);
-      vx = (w - vw) / 2;
-    }
-  }
+  iVideoPictureRect(ih, w, h, &vx, &vy, &vw, &vh);
   if (ih->data->frame && vw > 0 && vh > 0)
   {
     if (!iupDrawBitmap(ih, ih->data->frame, ih->data->frame_width, ih->data->frame_height, ih->data->frame_width * 4, vx, vy, vw, vh))
@@ -1241,15 +1262,17 @@ static int iVideoRedraw(Ihandle* ih)
     char font[80];
     const char* text;
     int tw, th, dx, dy;
-    snprintf(font, sizeof(font), "Sans, Bold %d", ih->data->subtitle_size);
+    int size = iVideoSubtitleScaledSize(ih, vh);
+    snprintf(font, sizeof(font), "Sans, Bold %d", size);
     iupAttribSetStr(ih, "DRAWFONT", font);
     iupAttribSet(ih, "DRAWTEXTALIGNMENT", "ACENTER");
     iupAttribSet(ih, "DRAWTEXTWRAP", "NO");
-    if (!ih->data->subtitle_wrapped || ih->data->subtitle_wrap_width != vw - 20)
+    if (!ih->data->subtitle_wrapped || ih->data->subtitle_wrap_width != vw - 20 || ih->data->subtitle_wrap_size != size)
     {
       free(ih->data->subtitle_wrapped);
       ih->data->subtitle_wrapped = iVideoWrapSubtitle(ih, ih->data->subtitle_text, vw - 20);
       ih->data->subtitle_wrap_width = vw - 20;
+      ih->data->subtitle_wrap_size = size;
     }
     text = ih->data->subtitle_wrapped ? ih->data->subtitle_wrapped : ih->data->subtitle_text;
     IupDrawGetTextSize(ih, text, -1, &tw, &th);
@@ -1816,6 +1839,11 @@ static void iVideoLayoutUpdateMethod(Ihandle* ih)
   IvideoSession* session = ih->data->session;
   if (session && session->backend->layout)
     session->backend->layout(session, ih);
+  if (session && ih->handle && ih->data->subtitle_scaled_size != iVideoSubtitleCanvasSize(ih))
+  {
+    ih->data->subtitle_dirty = 1;
+    iVideoUpdateSubtitle(ih);
+  }
 }
 
 static void iVideoComputeNaturalSizeMethod(Ihandle* ih, int* width, int* height, int* expand)
