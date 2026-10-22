@@ -1018,6 +1018,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
 
   NSPoint p = [theEvent locationInWindow];
   p = [self convertPoint:p fromView:nil];
+  pressPoint = p;
 
   if ([self isOverflowing] && NSPointInRect(p, [self rectForScrollArrows]))
   {
@@ -1223,28 +1224,31 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
     return;
   }
 
+  NSPoint p = [theEvent locationInWindow];
+  p = [self convertPoint:p fromView:nil];
+
+  if (!isDragging && fabs(p.x - pressPoint.x) < kTabDragThreshold && fabs(p.y - pressPoint.y) < kTabDragThreshold)
+    return;
+
   {
     NSUInteger i;
     for (i = 0; i < [tabs count]; i++)
       [[tabs objectAtIndex:i] setIsPressed:NO];
   }
 
-  NSPoint p = [theEvent locationInWindow];
-  p = [self convertPoint:p fromView:nil];
-
   if (!isDragging)
   {
     if (isSettling)
       [self stopDragAnimation];
     [draggingTab release];
-    draggingTab = [[self tabCellInPoint:p] retain];
+    draggingTab = [[self tabCellInPoint:pressPoint] retain];
     isDragging = YES;
     if (draggingTab != nil)
     {
       NSUInteger i;
       sourceIndex = [tabs indexOfObject:draggingTab];
       dragOrigin = [self tabRectFromIndex:sourceIndex].origin;
-      dragGrabOffset = (self.orientation == IupCocoaTabBarHorizontal) ? p.x - dragOrigin.x : p.y - dragOrigin.y;
+      dragGrabOffset = (self.orientation == IupCocoaTabBarHorizontal) ? pressPoint.x - dragOrigin.x : pressPoint.y - dragOrigin.y;
       [draggingTab setIsDraggingTab:YES];
       for (i = 0; i < [tabs count]; i++)
       {

@@ -577,6 +577,11 @@ static CGFloat cocoaTabsMaxTabWidth(Ihandle* ih)
     iupArrayRemove(visible_array, old_pos, 1);
     iupArrayInsert(visible_array, new_pos, 1);
     ((int*)iupArrayGetData(visible_array))[new_pos] = old_visible;
+
+    IupCocoaTabBarView* tab_bar_view = [(IupTabsRootView*)(ih->handle) tabBarView];
+    NSUInteger selected_native = [[tab_bar_view tabs] indexOfObject:[tab_bar_view selectedTab]];
+    if (selected_native != NSNotFound)
+      self.previousIupPos = cocoaTabsPosFixFromNative(ih, (int)selected_native);
   }
 
   return YES;
