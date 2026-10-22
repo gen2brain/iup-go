@@ -52,6 +52,9 @@ public class IupAndroidVerticalSlider extends ViewGroup
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev)
     {
+        if (ev.getActionMasked() == MotionEvent.ACTION_DOWN && getParent() != null)
+            getParent().requestDisallowInterceptTouchEvent(true);
+
         /* invert the -90 draw rotation: getHeight()-y, x land in slider local coords */
         MotionEvent mapped = MotionEvent.obtain(ev);
         mapped.setLocation(getHeight() - ev.getY(), ev.getX());
