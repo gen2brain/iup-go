@@ -27,6 +27,9 @@
 #include "iupcocoa_drv.h"
 
 #ifdef GNUSTEP
+static char iupGnustepTrackingAreasKey;
+static char iupGnustepTrackingTagKey;
+
 /* No-op stubs for AppKit methods GNUstep lacks; the feature does nothing instead of crashing */
 
 @implementation NSControl (IupGnustepShimImpl)
@@ -52,11 +55,41 @@
 - (void)setAccessibilityLabel:(NSString*)label { (void)label; }
 - (NSSize)fittingSize { return [self frame].size; }
 - (NSRect)convertRectToBacking:(NSRect)rect { return rect; }
-/* Tracking areas are accepted but never wired on GNUstep */
+/* Tracking areas map to GNUstep tracking rects; GNUstep clips each rect to the visible rect on every event */
 - (void)updateTrackingAreas { }
-- (NSArray*)trackingAreas { return @[]; }
-- (void)addTrackingArea:(NSTrackingArea*)area { (void)area; }
-- (void)removeTrackingArea:(NSTrackingArea*)area { (void)area; }
+- (NSArray*)trackingAreas
+{
+  NSArray* areas = objc_getAssociatedObject(self, &iupGnustepTrackingAreasKey);
+  return areas ? [[areas copy] autorelease] : @[];
+}
+- (void)addTrackingArea:(NSTrackingArea*)area
+{
+  NSMutableArray* areas = objc_getAssociatedObject(self, &iupGnustepTrackingAreasKey);
+  NSRect rect = [area rect];
+  NSTrackingRectTag tag;
+
+  if (!areas)
+  {
+    areas = [NSMutableArray array];
+    objc_setAssociatedObject(self, &iupGnustepTrackingAreasKey, areas, OBJC_ASSOCIATION_RETAIN);
+  }
+
+  if (([area options] & NSTrackingInVisibleRect) || NSEqualRects(rect, [self bounds]))
+    rect = NSMakeRect(-1.0e7, -1.0e7, 2.0e7, 2.0e7);
+
+  tag = [self addTrackingRect:rect owner:[area owner] userData:NULL assumeInside:NO];
+  objc_setAssociatedObject(area, &iupGnustepTrackingTagKey, [NSNumber numberWithInteger:tag], OBJC_ASSOCIATION_RETAIN);
+  [areas addObject:area];
+}
+- (void)removeTrackingArea:(NSTrackingArea*)area
+{
+  NSMutableArray* areas = objc_getAssociatedObject(self, &iupGnustepTrackingAreasKey);
+  NSNumber* tag = objc_getAssociatedObject(area, &iupGnustepTrackingTagKey);
+
+  if (tag)
+    [self removeTrackingRect:[tag integerValue]];
+  [areas removeObject:area];
+}
 /* viewWillDraw is a 10.5+ hook GNUstep doesn't invoke; subclasses call super. */
 - (void)viewWillDraw { }
 /* NSLayoutAnchor/constraints absent; empty array so iterators find nothing to remove. */
@@ -609,13 +642,27 @@ IUP_DRV_API NSView* iupcocoaCommonBaseLayoutGetChildView(Ihandle* ih)
   return the_view;
 }
 
+#ifdef GNUSTEP
+static void cocoaUpdateTrackingAreas(NSView* view)
+{
+  [view updateTrackingAreas];
+  for (NSView* subview in [view subviews])
+    cocoaUpdateTrackingAreas(subview);
+}
+#endif
+
 void iupcocoaSetViewFrame(NSView* view, NSRect rect)
 {
 #ifdef GNUSTEP
-  /* GNUstep never invalidates the area a moved view leaves behind */
+  /* GNUstep never invalidates the area a moved view leaves behind, nor calls updateTrackingAreas */
   NSRect old_rect = [view frame];
   if (!NSEqualRects(old_rect, rect))
+  {
     [[view superview] setNeedsDisplayInRect:NSUnionRect(old_rect, rect)];
+    [view setFrame:rect];
+    cocoaUpdateTrackingAreas(view);
+    return;
+  }
 #endif
   [view setFrame:rect];
 }
@@ -659,18 +706,10 @@ IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 {
   NSCursor* _cursor;
   BOOL _hidden;
-#ifdef GNUSTEP
-  NSView* _view;
-  NSTrackingRectTag _tag;
-#endif
 }
 @property(nonatomic, retain) NSCursor* cursor;
 - (void)mouseEntered:(NSEvent*)event;
 - (void)mouseExited:(NSEvent*)event;
-#ifdef GNUSTEP
-- (void)trackView:(NSView*)view;
-- (void)untrackView;
-#endif
 - (void)dealloc;
 @end
 
@@ -698,32 +737,6 @@ IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
   [[NSCursor arrowCursor] set];
 }
 
-#ifdef GNUSTEP
-- (void)trackView:(NSView*)view
-{
-  _view = view;
-  _tag = [view addTrackingRect:[view bounds] owner:self userData:NULL assumeInside:NO];
-  [view setPostsFrameChangedNotifications:YES];
-  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(viewFrameChanged:) name:NSViewFrameDidChangeNotification object:view];
-}
-
-- (void)viewFrameChanged:(NSNotification*)notification
-{
-  (void)notification;
-  [_view removeTrackingRect:_tag];
-  _tag = [_view addTrackingRect:[_view bounds] owner:self userData:NULL assumeInside:NO];
-}
-
-- (void)untrackView
-{
-  if (!_view)
-    return;
-  [[NSNotificationCenter defaultCenter] removeObserver:self name:NSViewFrameDidChangeNotification object:_view];
-  [_view removeTrackingRect:_tag];
-  _view = nil;
-}
-#endif
-
 - (void)dealloc
 {
   if (_hidden)
@@ -739,14 +752,9 @@ static void cocoaCursorRemove(Ihandle* ih, NSView* main_view)
   if (!old_delegate)
     return;
 
-#ifdef GNUSTEP
-  (void)main_view;
-  [old_delegate untrackView];
-#else
   NSTrackingArea* old_area = (NSTrackingArea*)iupAttribGet(ih, "_IUPCOCOA_TRACKINGAREA");
   if (old_area)
     [main_view removeTrackingArea:old_area];
-#endif
 
   [old_delegate release];
   iupAttribSet(ih, "_IUPCOCOA_CURSOR_DELEGATE", NULL);
@@ -1228,9 +1236,6 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
     delegate.cursor = cursor;
     iupAttribSet(ih, "_IUPCOCOA_CURSOR_DELEGATE", (char*)delegate);
 
-#ifdef GNUSTEP
-    [delegate trackView:main_view];
-#else
     NSTrackingArea* area = [[NSTrackingArea alloc] initWithRect:[main_view bounds]
                                                         options:(NSTrackingMouseEnteredAndExited | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect)
                                                           owner:delegate
@@ -1240,7 +1245,6 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
     /* the view retains the tracking area */
     iupAttribSet(ih, "_IUPCOCOA_TRACKINGAREA", (char*)area);
     [area release];
-#endif
 
     NSWindow* window = [main_view window];
     if (window)
