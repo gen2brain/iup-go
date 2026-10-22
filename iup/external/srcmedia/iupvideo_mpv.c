@@ -321,7 +321,7 @@ static void iVideoMpvSeek(IvideoSession* session, double position, int fast)
   arguments[1].format = MPV_FORMAT_DOUBLE;
   arguments[1].u.double_ = position;
   arguments[2].format = MPV_FORMAT_STRING;
-  arguments[2].u.string = (char*)(fast ? "absolute+keyframes" : "absolute+exact");
+  arguments[2].u.string = (char*)(fast && !context->audio ? "absolute+keyframes" : "absolute+exact");
   list.num = 3;
   list.values = arguments;
   list.keys = NULL;

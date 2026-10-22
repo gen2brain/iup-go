@@ -583,7 +583,7 @@ static void iVideoVlcSeek(IvideoSession* session, double position, int fast)
     context->previous = libvlc_Opening;
     context->restarting = iupvlc_major == 4;
   }
-  iVideoVlcSetTime(context->player, (libvlc_time_t)(position * 1000), fast);
+  iVideoVlcSetTime(context->player, (libvlc_time_t)(position * 1000), fast && !session->audio);
   if (iupvlc_major == 4 && iVideoVlcState(context->player) == libvlc_Paused)
     libvlc_media_player_next_frame(context->player);
 }
