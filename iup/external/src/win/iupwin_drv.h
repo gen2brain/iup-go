@@ -68,6 +68,7 @@ IUP_DRV_API void iupwinDestroyDragDrop(Ihandle* ih);
 
 /* image */
 IUP_DRV_API HBITMAP iupwinWdlLoadImageFile(const TCHAR* filename);
+IUP_DRV_API void iupwinWdlImageDestroy(void* handle);
 
 /* menu */
 IUP_DRV_API void iupwinMenuDialogProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp);

@@ -745,6 +745,9 @@ IUP_SDK_API void iupdrvImageDestroy(void* handle, int type)
     type_str = "CURSOR";
     DestroyCursor((HCURSOR)handle);
     break;
+  case IUPIMAGE_DRAWIMAGE:
+    iupwinWdlImageDestroy(handle);
+    return;
   }
 
   /* internal callback for memory monitoring called after release */
