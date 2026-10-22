@@ -830,12 +830,31 @@ static GdkCursor* gtkGetCursor(Ihandle* ih, const char* name)
   return cur;
 }
 
+static GdkWindow* gtkGetCursorWindow(GtkWidget* widget)
+{
+  GdkWindow* window = iupgtkGetWindow(widget);
+
+  if (window && !gtk_widget_get_has_window(widget))
+  {
+    GList* child;
+    for (child = gdk_window_peek_children(window); child; child = child->next)
+    {
+      gpointer data = NULL;
+      gdk_window_get_user_data((GdkWindow*)child->data, &data);
+      if (data == (gpointer)widget)
+        return (GdkWindow*)child->data;
+    }
+  }
+
+  return window;
+}
+
 IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
 {
   GdkCursor* cur = gtkGetCursor(ih, value);
   if (cur)
   {
-    GdkWindow* window = iupgtkGetWindow(ih->handle);
+    GdkWindow* window = gtkGetCursorWindow(ih->handle);
     if (window)
     {
       gdk_window_set_cursor(window, cur);
