@@ -129,7 +129,7 @@ When loading fails, the previous subtitles are kept, SUBTITLEERROR is set and ER
 **SUBTITLEDELAY** (non-inheritable): Subtitle offset in seconds, from -86400 to 86400. Positive values show subtitles later. Default: "0".
 In macOS, iOS and Android, applies only to external subtitles.
 
-**SUBTITLEFONTSIZE** (non-inheritable): Font size in points of the subtitles drawn by the element, from 6 to 96. Default: "18".
+**SUBTITLEFONTSIZE** (non-inheritable): Font size in points of the subtitles drawn by the element for a picture 540 units high, from 6 to 96. The drawn size follows the height of the displayed picture. Default: "18".
 
 **SUBTITLECOLOR** (non-inheritable): Text color of the subtitles drawn by the element. Default: "255 255 255".
 
