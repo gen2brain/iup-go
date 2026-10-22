@@ -342,6 +342,7 @@ In C unwanted values can be NULL.
     Ihandle* IupDrawGetImage(Ihandle* ih);
 
 Returns the offscreen drawing buffer as an IupImage.
+The image has the size of the drawing area, also when [SCREENSCALE](../attrib/iup_globals.md#screenscale-read-only) is above 1.
 Must be called between IupDrawBegin and IupDrawEnd.
 
     char* IupDrawGetSvg(Ihandle* ih);

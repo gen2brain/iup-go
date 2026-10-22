@@ -283,8 +283,8 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
 
     if (buffer)
     {
-      if ([buffer pixelsWide] == (NSInteger)bounds.size.width &&
-          [buffer pixelsHigh] == (NSInteger)bounds.size.height)
+      if ((NSInteger)[buffer size].width == (NSInteger)bounds.size.width &&
+          (NSInteger)[buffer size].height == (NSInteger)bounds.size.height)
       {
         cocoaCanvasDrawBuffer(buffer, bounds);
         iupAttribSet(_ih, "_IUPCOCOA_BUFFER_PENDING", NULL);

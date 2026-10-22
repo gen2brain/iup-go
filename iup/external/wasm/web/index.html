@@ -131,6 +131,7 @@
           if (tgt && tgt.getContext) {
             if (tgt.width !== m.bitmap.width) tgt.width = m.bitmap.width;
             if (tgt.height !== m.bitmap.height) tgt.height = m.bitmap.height;
+            if (m.w && (m.bitmap.width !== m.w || m.bitmap.height !== m.h)) { tgt.style.width = m.w + 'px'; tgt.style.height = m.h + 'px'; }
             tgt.getContext('2d').drawImage(m.bitmap, 0, 0);
           }
           m.bitmap.close();
