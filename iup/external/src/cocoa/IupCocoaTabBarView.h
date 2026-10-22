@@ -21,6 +21,7 @@
 #define kTabCloseButtonArea 20.0
 #define kMinOverflowTabWidth 90
 #define kScrollArrowsWidth 36
+#define kTabDragThreshold 4.0
 
 @protocol IupCocoaTabBarViewDelegate;
 @class IupCocoaTabCell;
@@ -56,6 +57,7 @@ typedef NS_ENUM(NSUInteger, IupCocoaTabTextOrientation) {
   IupCocoaTabCell* draggingTab;
   NSPoint dragOrigin;
   CGFloat dragGrabOffset;
+  NSPoint pressPoint;
   NSTimer* dragTimer;
 
   IupCocoaTabCell* selectedTab;
