@@ -677,6 +677,32 @@ IUP_DRV_API void iupqtPaletteSetForeground(QPalette& palette, int role, const QC
   palette.setColor(QPalette::Disabled, static_cast<QPalette::ColorRole>(role), disabled);
 }
 
+IUP_DRV_API void iupqtUpdatePlaceholderColor(QWidget* widget)
+{
+  QPalette palette = widget->palette();
+  QPalette app_palette = QApplication::palette(widget);
+
+  if (!palette.isBrushSet(QPalette::Active, QPalette::Text) &&
+      app_palette.color(QPalette::Active, QPalette::PlaceholderText) != app_palette.color(QPalette::Active, QPalette::Text))
+    return;
+
+  bool changed = false;
+  for (int group = 0; group < QPalette::NColorGroups; group++)
+  {
+    auto color_group = static_cast<QPalette::ColorGroup>(group);
+    QColor color = palette.color(color_group, QPalette::Text);
+    color.setAlpha(color.alpha() / 2);
+    if (palette.color(color_group, QPalette::PlaceholderText) != color)
+    {
+      palette.setColor(color_group, QPalette::PlaceholderText, color);
+      changed = true;
+    }
+  }
+
+  if (changed)
+    widget->setPalette(palette);
+}
+
 extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle || !value)

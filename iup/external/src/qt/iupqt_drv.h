@@ -122,6 +122,7 @@ IUP_DRV_API char* iupqtGetQFontAttrib(Ihandle* ih);
 IUP_DRV_API void iupqtUpdateWidgetFont(Ihandle* ih, QWidget* widget);
 IUP_DRV_API void iupqtSetWidgetPalette(QWidget* widget, const QPalette& palette);
 IUP_DRV_API void iupqtPaletteSetForeground(QPalette& palette, int role, const QColor& color);
+IUP_DRV_API void iupqtUpdatePlaceholderColor(QWidget* widget);
 IUP_DRV_API int iupqtIsSelfActive(Ihandle* ih);
 
 /****************************************************************************
