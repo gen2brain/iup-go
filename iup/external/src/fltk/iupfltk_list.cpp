@@ -59,12 +59,12 @@ static int fltkListBrowserHandleMouseEvent(B* browser, Ihandle* ih, int event)
       int my = Fl::event_y() - browser->y();
 
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupfltkButtonKeySetStatus(Fl::event_state(), button, status, (event == FL_PUSH && Fl::event_clicks() > 0) ? 1 : 0);
+      iupfltkButtonKeySetStatus(Fl::event_state(), button, status, (event == FL_PUSH && Fl::event_clicks() == 1) ? 1 : 0);
 
       cb(ih, button, pressed, mx, my, status);
     }
 
-    if (event == FL_PUSH && Fl::event_clicks() > 0 && Fl::event_button() == FL_LEFT_MOUSE)
+    if (event == FL_PUSH && Fl::event_clicks() == 1 && Fl::event_button() == FL_LEFT_MOUSE)
     {
       auto dblclick_cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "DBLCLICK_CB"));
       if (dblclick_cb)

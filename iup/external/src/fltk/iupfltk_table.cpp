@@ -706,7 +706,7 @@ protected:
             redraw();
           }
 
-          if (Fl::event_clicks() > 0)
+          if (Fl::event_clicks() == 1)
           {
             auto dblclick_cb = reinterpret_cast<IFniis>(IupGetCallback(iup_handle, "DBLCLICK_CB"));
             if (dblclick_cb)

@@ -53,7 +53,7 @@ static void fltkGlobalEventHandler(int event)
         int button = fltkGlobalButton(Fl::event_button());
         if (!button) break;
         int pressed = (event == FL_PUSH) ? 1 : 0;
-        int doubleclick = (event == FL_PUSH && Fl::event_clicks() > 0) ? 1 : 0;
+        int doubleclick = (event == FL_PUSH && Fl::event_clicks() == 1) ? 1 : 0;
         char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
         iupfltkButtonKeySetStatus(Fl::event_state(), button, status, doubleclick);
         cb(button, pressed, Fl::event_x_root(), Fl::event_y_root(), status);

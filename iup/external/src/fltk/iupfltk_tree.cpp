@@ -343,7 +343,7 @@ public:
           return 1;
         }
 
-        if (Fl::event_clicks() > 0)
+        if (Fl::event_clicks() == 1)
         {
           Fl_Tree_Item* item = find_clicked();
           if (item)
