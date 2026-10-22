@@ -22,6 +22,7 @@
 #include <QString>
 #include <QGuiApplication>
 #include <QStyleHints>
+#include <QKeyEvent>
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0)
   #include <QtGui/qguiapplication_platform.h>
@@ -428,6 +429,48 @@ extern "C" IUP_SDK_API int iupdrvIsSystemDarkMode(void)
  * Driver Initialization
  ****************************************************************************/
 
+/* styles that underline mnemonics only while Alt is held repaint just the top-levels, which skips opaque children */
+class IupQtMnemonicFilter : public QObject
+{
+private:
+  bool alt_down = false;
+
+  void setAltDown(bool down)
+  {
+    if (alt_down == down)
+      return;
+    alt_down = down;
+
+    for (QWidget* widget : QApplication::allWidgets())
+    {
+      if (widget->autoFillBackground() && widget->isVisible())
+        widget->update();
+    }
+  }
+
+public:
+  explicit IupQtMnemonicFilter(QObject* parent) : QObject(parent) {}
+
+  bool eventFilter(QObject* obj, QEvent* event) override
+  {
+    (void)obj;
+    switch (event->type())
+    {
+    case QEvent::KeyPress:
+    case QEvent::KeyRelease:
+      if (static_cast<QKeyEvent*>(event)->key() == Qt::Key_Alt)
+        setAltDown(event->type() == QEvent::KeyPress);
+      break;
+    case QEvent::ApplicationStateChange:
+      setAltDown(false);
+      break;
+    default:
+      break;
+    }
+    return false;
+  }
+};
+
 extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
   if (!QApplication::instance())
@@ -473,6 +516,8 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 
     QGuiApplication::setQuitOnLastWindowClosed(false);
   }
+
+  qt_application->installEventFilter(new IupQtMnemonicFilter(qt_application));
 
   setlocale(LC_NUMERIC, "C");
 
