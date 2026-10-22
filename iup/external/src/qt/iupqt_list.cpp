@@ -320,9 +320,19 @@ private:
 
 public:
   explicit IupQtListLineEdit(Ihandle* ih_param, QWidget* parent = nullptr)
-    : QLineEdit(parent), ih(ih_param) {}
+    : QLineEdit(parent), ih(ih_param)
+  {
+    iupqtUpdatePlaceholderColor(this);
+  }
 
 protected:
+  void changeEvent(QEvent* event) override
+  {
+    QLineEdit::changeEvent(event);
+    if (event->type() == QEvent::PaletteChange || event->type() == QEvent::StyleChange)
+      iupqtUpdatePlaceholderColor(this);
+  }
+
   void focusInEvent(QFocusEvent* event) override
   {
     QLineEdit::focusInEvent(event);

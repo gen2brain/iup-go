@@ -90,6 +90,7 @@ public:
   explicit IupQtLineEdit(Ihandle* ihandle) : QLineEdit(), ih(ihandle), overwrite_mode(false)
   {
     setAcceptDrops(true);
+    iupqtUpdatePlaceholderColor(this);
   }
 
   void setIupOverwriteMode(bool mode) { overwrite_mode = mode; }
@@ -104,6 +105,13 @@ public:
   }
 
 protected:
+  void changeEvent(QEvent* event) override
+  {
+    QLineEdit::changeEvent(event);
+    if (event->type() == QEvent::PaletteChange || event->type() == QEvent::StyleChange)
+      iupqtUpdatePlaceholderColor(this);
+  }
+
   void wheelEvent(QWheelEvent* event) override
   {
     if (!qtTextWheelEvent(ih, event))
