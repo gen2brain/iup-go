@@ -257,10 +257,7 @@ static NSImage* iupCocoaTintedSymbol(NSString* symbol_name, NSColor* tint_color)
       total += w;
     }
 
-    /* NSTabView centers the tabs when they all fit */
-    if (total <= available)
-      x += (available - total) / 2.0;
-    else
+    if (total > available)
       x += scrollOffset;
 
     if (self.tabPosition == IupCocoaTabPositionBottom)
