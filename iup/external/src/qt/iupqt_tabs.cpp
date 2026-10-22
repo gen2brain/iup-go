@@ -258,11 +258,32 @@ protected:
   QSize tabSizeHint(int index) const override
   {
     QSize size = QTabBar::tabSizeHint(index);
+    QTabBar::Shape tabShape = shape();
+    bool vertical = tabShape == RoundedWest || tabShape == RoundedEast ||
+                    tabShape == TriangularWest || tabShape == TriangularEast;
+
+    /* reserve the icon height on tabs without one, so setting TABIMAGE does not change the bar size */
+    if (tabIcon(index).isNull())
+    {
+      int content = fontMetrics().height();
+      for (ButtonPosition side : {LeftSide, RightSide})
+      {
+        QWidget* button = tabButton(index, side);
+        if (button)
+          content = qMax(content, vertical ? button->width() : button->height());
+      }
+      int extra = iconSize().height() - content;
+      if (extra > 0)
+      {
+        if (vertical)
+          size.setWidth(size.width() + extra);
+        else
+          size.setHeight(size.height() + extra);
+      }
+    }
 
     /* Qt sizes a vertical tab for rotated text; horizontal text needs the sides swapped */
-    QTabBar::Shape tabShape = shape();
-    if (tabShape == RoundedWest || tabShape == RoundedEast ||
-        tabShape == TriangularWest || tabShape == TriangularEast)
+    if (vertical)
     {
       if (ih && ih->data->orientation == ITABS_HORIZONTAL)
       {
