@@ -81,6 +81,9 @@ Default: "0.0".
 
 ### Notes
 
+Pressing the primary mouse button on the track moves the handle to that point, and dragging continues from there.
+In GTK 3 and GTK 4 this follows the gtk-primary-button-warps-slider setting, which is TRUE by default.
+
 In Motif, after the user clicks the handler a KILLFOCUS will be ignored when the control loses its focus.
 
 #### Keyboard Mapping

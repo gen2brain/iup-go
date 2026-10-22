@@ -6,6 +6,7 @@
 
 #include <Xm/Xm.h>
 #include <Xm/Scale.h>
+#include <Xm/ScrollBarP.h>
 #include <Xm/SeparatoG.h>
 #include <X11/keysym.h>
 
@@ -317,7 +318,6 @@ static void motValValueChangedCallback(Widget w, Ihandle* ih, XmScaleCallbackStr
 
 static void motValButtonPressReleaseEvent(Widget w, Ihandle* ih, XButtonEvent* evt, Boolean* cont)
 {
-  (void)w;
   (void)cont;
 
   /* When Button1 is pressed, the Scrollbar loses its focus to the scale,
@@ -326,7 +326,19 @@ static void motValButtonPressReleaseEvent(Widget w, Ihandle* ih, XButtonEvent* e
 
   if (evt->type==ButtonPress && evt->button==Button1)
   {
+    XmScrollBarWidget sb = (XmScrollBarWidget)w;
+    int in_area = evt->x >= sb->scrollBar.slider_area_x && evt->x <= sb->scrollBar.slider_area_x + sb->scrollBar.slider_area_width &&
+                  evt->y >= sb->scrollBar.slider_area_y && evt->y <= sb->scrollBar.slider_area_y + sb->scrollBar.slider_area_height;
+    int in_slider = evt->x >= sb->scrollBar.slider_x && evt->x <= sb->scrollBar.slider_x + sb->scrollBar.slider_width &&
+                    evt->y >= sb->scrollBar.slider_y && evt->y <= sb->scrollBar.slider_y + sb->scrollBar.slider_height;
+
     iupAttribSet(ih, "_IUPVAL_IGNOREFOCUS", "1");
+
+    if (in_area && !in_slider && !(evt->state & (ShiftMask|ControlMask|Mod1Mask)))
+    {
+      XmProcessTraversal(w, XmTRAVERSE_CURRENT);
+      evt->button = Button2;
+    }
   }
   if (evt->type==ButtonRelease && evt->button==Button1)
   {
@@ -422,7 +434,7 @@ static int motValMapMethod(Ihandle* ih)
     {
       XtAddEventHandler(sb, FocusChangeMask, False, (XtEventHandler)motValFocusChangeEvent, (XtPointer)ih);
       XtAddEventHandler(sb, KeyPressMask,    False, (XtEventHandler)motValKeyPressEvent, (XtPointer)ih);
-      XtAddEventHandler(sb, ButtonPressMask|ButtonReleaseMask, False, (XtEventHandler)motValButtonPressReleaseEvent, (XtPointer)ih);
+      XtInsertEventHandler(sb, ButtonPressMask|ButtonReleaseMask, False, (XtEventHandler)motValButtonPressReleaseEvent, (XtPointer)ih, XtListHead);
     }
   }
 

@@ -11,6 +11,8 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QFocusEvent>
+#include <QStyle>
+#include <QStyleOptionSlider>
 
 extern "C" {
 #include "iup.h"
@@ -41,6 +43,28 @@ public:
   {
     setRange(0, IVAL_RANGE);
     setTracking(true);
+  }
+
+private:
+  void moveHandleTo(QMouseEvent* event)
+  {
+    QStyleOptionSlider opt;
+    initStyleOption(&opt);
+    QRect handle = style()->subControlRect(QStyle::CC_Slider, &opt, QStyle::SC_SliderHandle, this);
+    QRect groove = style()->subControlRect(QStyle::CC_Slider, &opt, QStyle::SC_SliderGroove, this);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QPoint pos = event->position().toPoint();
+#else
+    QPoint pos = event->pos();
+#endif
+    if (handle.contains(pos))
+      return;
+
+    pos -= handle.center() - handle.topLeft();
+    if (orientation() == Qt::Horizontal)
+      setSliderPosition(QStyle::sliderValueFromPosition(minimum(), maximum(), pos.x() - groove.x(), groove.width() - handle.width(), opt.upsideDown));
+    else
+      setSliderPosition(QStyle::sliderValueFromPosition(minimum(), maximum(), pos.y() - groove.y(), groove.height() - handle.height(), opt.upsideDown));
   }
 
 protected:
@@ -123,6 +147,9 @@ protected:
 
   void mousePressEvent(QMouseEvent* event) override
   {
+    if (event->button() == Qt::LeftButton && !(style()->styleHint(QStyle::SH_Slider_AbsoluteSetButtons, nullptr, this) & Qt::LeftButton))
+      moveHandleTo(event);
+
     QSlider::mousePressEvent(event);
     iupqtMouseButtonEvent(this, event, iup_handle);
   }
