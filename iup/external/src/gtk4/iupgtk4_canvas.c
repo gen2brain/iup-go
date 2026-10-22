@@ -280,8 +280,7 @@ static void gtk4CanvasDraw(GtkDrawingArea* area, cairo_t* cr, int width, int hei
   }
 
   buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK4_CANVAS_BUFFER");
-  if (buffer && (cairo_image_surface_get_width(buffer) != width ||
-                 cairo_image_surface_get_height(buffer) != height))
+  if (buffer && !iupgtk4SurfaceMatches(buffer, GTK_WIDGET(area), width, height))
   {
     cairo_surface_destroy(buffer);
     iupAttribSet(ih, "_IUPGTK4_CANVAS_BUFFER", NULL);
@@ -346,10 +345,9 @@ static int gtk4CanvasUpdateRetained(Ihandle* ih, iupGtk4Canvas* canvas, int widt
   int x1 = 0, y1 = 0, x2 = width - 1, y2 = height - 1;
   GdkTexture* texture;
   GBytes* bytes;
-  int stride;
+  int stride, pixel_w, pixel_h, scale;
 
-  if (buffer && (cairo_image_surface_get_width(buffer) != width ||
-                 cairo_image_surface_get_height(buffer) != height))
+  if (buffer && !iupgtk4SurfaceMatches(buffer, GTK_WIDGET(canvas), width, height))
   {
     cairo_surface_destroy(buffer);
     buffer = NULL;
@@ -357,7 +355,7 @@ static int gtk4CanvasUpdateRetained(Ihandle* ih, iupGtk4Canvas* canvas, int widt
 
   if (!buffer)
   {
-    buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
+    buffer = iupgtk4SurfaceCreate(GTK_WIDGET(canvas), width, height);
     iupAttribSet(ih, "_IUPGTK4_CANVAS_BUFFER", (char*)buffer);
     full = 1;
     changed = 0;
@@ -365,8 +363,8 @@ static int gtk4CanvasUpdateRetained(Ihandle* ih, iupGtk4Canvas* canvas, int widt
   }
 
   if (!canvas->texture ||
-      gdk_texture_get_width(canvas->texture) != width ||
-      gdk_texture_get_height(canvas->texture) != height)
+      gdk_texture_get_width(canvas->texture) != cairo_image_surface_get_width(buffer) ||
+      gdk_texture_get_height(canvas->texture) != cairo_image_surface_get_height(buffer))
   {
     full = 1;
     update = NULL;
@@ -412,20 +410,23 @@ static int gtk4CanvasUpdateRetained(Ihandle* ih, iupGtk4Canvas* canvas, int widt
 
   cairo_surface_flush(buffer);
   stride = cairo_image_surface_get_stride(buffer);
-  bytes = g_bytes_new(cairo_image_surface_get_data(buffer), (gsize)stride * height);
+  pixel_w = cairo_image_surface_get_width(buffer);
+  pixel_h = cairo_image_surface_get_height(buffer);
+  scale = pixel_w / width;
+  bytes = g_bytes_new(cairo_image_surface_get_data(buffer), (gsize)stride * pixel_h);
 
 #if GTK_CHECK_VERSION(4, 16, 0)
   {
     GdkMemoryTextureBuilder* builder = gdk_memory_texture_builder_new();
     gdk_memory_texture_builder_set_bytes(builder, bytes);
     gdk_memory_texture_builder_set_stride(builder, stride);
-    gdk_memory_texture_builder_set_width(builder, width);
-    gdk_memory_texture_builder_set_height(builder, height);
+    gdk_memory_texture_builder_set_width(builder, pixel_w);
+    gdk_memory_texture_builder_set_height(builder, pixel_h);
     gdk_memory_texture_builder_set_format(builder, GDK_MEMORY_DEFAULT);
 
     if (!full)
     {
-      cairo_rectangle_int_t rect = { x1, y1, x2 - x1 + 1, y2 - y1 + 1 };
+      cairo_rectangle_int_t rect = { x1 * scale, y1 * scale, (x2 - x1 + 1) * scale, (y2 - y1 + 1) * scale };
       cairo_region_t* region = cairo_region_create_rectangle(&rect);
       gdk_memory_texture_builder_set_update_texture(builder, canvas->texture);
       gdk_memory_texture_builder_set_update_region(builder, region);
@@ -436,7 +437,7 @@ static int gtk4CanvasUpdateRetained(Ihandle* ih, iupGtk4Canvas* canvas, int widt
     g_object_unref(builder);
   }
 #else
-  texture = gdk_memory_texture_new(width, height, GDK_MEMORY_DEFAULT, bytes, stride);
+  texture = gdk_memory_texture_new(pixel_w, pixel_h, GDK_MEMORY_DEFAULT, bytes, stride);
 #endif
 
   g_bytes_unref(bytes);

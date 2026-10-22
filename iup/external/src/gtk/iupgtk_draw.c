@@ -45,7 +45,10 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
   cairo_surface_t* surface;
+#if GTK_CHECK_VERSION(3, 0, 0)
   cairo_surface_t* buffer;
+  int scale = 1;
+#endif
 
   dc->ih = ih;
 
@@ -59,13 +62,19 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   dc->h = gtk_widget_get_allocated_height(dc->widget);
 #endif
 
+#if GTK_CHECK_VERSION(3, 10, 0)
+  scale = gtk_widget_get_scale_factor(dc->widget);
+  if (scale < 1)
+    scale = 1;
+#endif
+
 #if GTK_CHECK_VERSION(3, 0, 0)
   buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK3_CANVAS_BUFFER");
   if (buffer)
   {
     int buf_w = cairo_image_surface_get_width(buffer);
     int buf_h = cairo_image_surface_get_height(buffer);
-    if (buf_w != dc->w || buf_h != dc->h)
+    if (buf_w != dc->w * scale || buf_h != dc->h * scale)
     {
       cairo_surface_destroy(buffer);
       buffer = NULL;
@@ -74,7 +83,10 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
   if (!buffer)
   {
-    buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w, dc->h);
+    buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w * scale, dc->h * scale);
+#if GTK_CHECK_VERSION(3, 10, 0)
+    cairo_surface_set_device_scale(buffer, scale, scale);
+#endif
     iupAttribSet(ih, "_IUPGTK3_CANVAS_BUFFER", (char*)buffer);
   }
 #endif
@@ -1017,49 +1029,53 @@ static void iDrawCopyBgraPremulToRgba(unsigned char* dst, const unsigned char* s
   }
 }
 
-IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
+static int gdkDrawSurfaceGetImageData(cairo_surface_t* surface, unsigned char* data, int w, int h)
 {
-  cairo_surface_t* surface = cairo_get_target(dc->image_cr);
+  cairo_surface_t* target = surface;
   unsigned char* src;
-  int stride;
+  double scale_x = 1, scale_y = 1;
 
   cairo_surface_flush(surface);
 
-  src = cairo_image_surface_get_data(surface);
-  if (!src)
-    return 0;
+#if GTK_CHECK_VERSION(3, 10, 0)
+  cairo_surface_get_device_scale(surface, &scale_x, &scale_y);
+#endif
+  if (scale_x != 1 || scale_y != 1 || cairo_image_surface_get_width(surface) != w || cairo_image_surface_get_height(surface) != h)
+  {
+    cairo_t* cr;
+    target = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
+    cr = cairo_create(target);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_surface(cr, surface, 0, 0);
+    cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_GOOD);
+    cairo_paint(cr);
+    cairo_destroy(cr);
+    cairo_surface_flush(target);
+  }
 
-  stride = cairo_image_surface_get_stride(surface);
+  src = cairo_image_surface_get_data(target);
+  if (src)
+    iDrawCopyBgraPremulToRgba(data, src, w, h, cairo_image_surface_get_stride(target));
 
-  iDrawCopyBgraPremulToRgba(data, src, dc->w, dc->h, stride);
-  return 1;
+  if (target != surface)
+    cairo_surface_destroy(target);
+  return src != NULL;
+}
+
+IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
+{
+  return gdkDrawSurfaceGetImageData(cairo_get_target(dc->image_cr), data, dc->w, dc->h);
 }
 
 IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
   cairo_surface_t* surface = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK3_CANVAS_BUFFER");
-  unsigned char* src;
-  int stride;
 
   if (!surface)
     return 0;
 
-  cairo_surface_flush(surface);
-
-  src = cairo_image_surface_get_data(surface);
-  if (!src)
-    return 0;
-
-  stride = cairo_image_surface_get_stride(surface);
-
-  if (w > cairo_image_surface_get_width(surface))
-    w = cairo_image_surface_get_width(surface);
-  if (h > cairo_image_surface_get_height(surface))
-    h = cairo_image_surface_get_height(surface);
-
-  iDrawCopyBgraPremulToRgba(data, src, w, h, stride);
-  return 1;
+  return gdkDrawSurfaceGetImageData(surface, data, w, h);
 #else
   GdkDrawable* drawable = (GdkDrawable*)IupGetAttribute(ih, "DRAWABLE");
   GdkPixbuf* pixbuf;

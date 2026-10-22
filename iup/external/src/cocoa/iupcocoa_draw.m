@@ -172,10 +172,18 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
   {
     NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_BUFFER");
+    NSWindow* window = [dc->canvasView window];
+    CGFloat scale = window ? [window backingScaleFactor] : [[NSScreen mainScreen] backingScaleFactor];
+    NSInteger pixels_w, pixels_h;
+
+    if (scale < 1)
+      scale = 1;
+    pixels_w = (NSInteger)(dc->w * scale + 0.5);
+    pixels_h = (NSInteger)(dc->h * scale + 0.5);
 
     if (buffer)
     {
-      if ([buffer pixelsWide] != (NSInteger)dc->w || [buffer pixelsHigh] != (NSInteger)dc->h)
+      if ([buffer pixelsWide] != pixels_w || [buffer pixelsHigh] != pixels_h)
       {
         [buffer release];
         buffer = nil;
@@ -186,8 +194,8 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
     {
       buffer = [[NSBitmapImageRep alloc]
         initWithBitmapDataPlanes:NULL
-        pixelsWide:(NSInteger)dc->w
-        pixelsHigh:(NSInteger)dc->h
+        pixelsWide:pixels_w
+        pixelsHigh:pixels_h
         bitsPerSample:8
         samplesPerPixel:4
         hasAlpha:YES
@@ -195,6 +203,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
         colorSpaceName:NSCalibratedRGBColorSpace
         bytesPerRow:0
         bitsPerPixel:0];
+      [buffer setSize:NSMakeSize(dc->w, dc->h)];
 
       iupAttribSet(ih, "_IUPCOCOA_CANVAS_BUFFER", (char*)buffer);
     }
@@ -220,6 +229,8 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
       free(dc);
       return NULL;
     }
+
+    CGContextScaleCTM(cgContext, (CGFloat)pixels_w / dc->w, (CGFloat)pixels_h / dc->h);
 
     NSGraphicsContext* graphicsContext = [NSGraphicsContext graphicsContextWithCGContext:cgContext flipped:YES];
 
@@ -1561,20 +1572,68 @@ static void iCocoaCopyPremulToRgba(unsigned char* dst, const unsigned char* src,
   }
 }
 
+static int iCocoaBufferGetImageData(NSBitmapImageRep* buffer, unsigned char* data, int w, int h)
+{
+  unsigned char* src = [buffer bitmapData];
+  int buf_w = (int)[buffer pixelsWide];
+  int buf_h = (int)[buffer pixelsHigh];
+  int stride = (int)[buffer bytesPerRow];
+  double scale_x = [buffer size].width > 0 ? buf_w / [buffer size].width : 1;
+  double scale_y = [buffer size].height > 0 ? buf_h / [buffer size].height : 1;
+  unsigned char* sampled;
+  int x, y;
+
+  if (!src || buf_w <= 0 || buf_h <= 0)
+    return 0;
+
+  if (scale_x == 1 && scale_y == 1 && buf_w >= w && buf_h >= h)
+  {
+    iCocoaCopyPremulToRgba(data, src, w, h, stride);
+    return 1;
+  }
+
+  sampled = (unsigned char*)malloc((size_t)w * h * 4);
+  if (!sampled)
+    return 0;
+
+  for (y = 0; y < h; y++)
+  {
+    int sy1 = (int)(y * scale_y), sy2 = (int)((y + 1) * scale_y);
+    if (sy2 <= sy1) sy2 = sy1 + 1;
+    if (sy2 > buf_h) sy2 = buf_h;
+    for (x = 0; x < w; x++)
+    {
+      int sx1 = (int)(x * scale_x), sx2 = (int)((x + 1) * scale_x);
+      unsigned int sum[4] = {0, 0, 0, 0}, count = 0;
+      int sx, sy, c;
+      if (sx2 <= sx1) sx2 = sx1 + 1;
+      if (sx2 > buf_w) sx2 = buf_w;
+      for (sy = sy1; sy < sy2; sy++)
+      {
+        const unsigned char* p = src + (size_t)sy * stride + (size_t)sx1 * 4;
+        for (sx = sx1; sx < sx2; sx++, p += 4, count++)
+          for (c = 0; c < 4; c++)
+            sum[c] += p[c];
+      }
+      for (c = 0; c < 4; c++)
+        sampled[((size_t)y * w + x) * 4 + c] = (unsigned char)(count ? (sum[c] + count / 2) / count : 0);
+    }
+  }
+
+  iCocoaCopyPremulToRgba(data, sampled, w, h, w * 4);
+  free(sampled);
+  return 1;
+}
+
 IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
   NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(dc->ih, "_IUPCOCOA_CANVAS_BUFFER");
   if (!buffer)
     return 0;
 
-  unsigned char* src = [buffer bitmapData];
-  if (!src)
-    return 0;
-
   CGContextFlush(dc->cgContext);
 
-  iCocoaCopyPremulToRgba(data, src, (int)dc->w, (int)dc->h, (int)[buffer bytesPerRow]);
-  return 1;
+  return iCocoaBufferGetImageData(buffer, data, (int)dc->w, (int)dc->h);
 }
 
 IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
@@ -1583,15 +1642,5 @@ IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w
   if (!buffer)
     return 0;
 
-  unsigned char* src = [buffer bitmapData];
-  if (!src)
-    return 0;
-
-  if (w > (int)[buffer pixelsWide])
-    w = (int)[buffer pixelsWide];
-  if (h > (int)[buffer pixelsHigh])
-    h = (int)[buffer pixelsHigh];
-
-  iCocoaCopyPremulToRgba(data, src, w, h, (int)[buffer bytesPerRow]);
-  return 1;
+  return iCocoaBufferGetImageData(buffer, data, w, h);
 }

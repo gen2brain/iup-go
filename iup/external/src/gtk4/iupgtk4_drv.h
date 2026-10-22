@@ -51,6 +51,10 @@ IUP_DRV_API void iupgtk4NativeContainerSetBounds(GtkWidget* container, GtkWidget
 IUP_DRV_API void iupgtk4FixedMove(iupGtk4Fixed* fixed, GtkWidget* widget, int x, int y);
 IUP_DRV_API void iupgtk4NativeContainerSetBorder(GtkWidget* container, int enable);
 
+/* Draw */
+IUP_DRV_API cairo_surface_t* iupgtk4SurfaceCreate(GtkWidget* widget, int w, int h);
+IUP_DRV_API int iupgtk4SurfaceMatches(cairo_surface_t* surface, GtkWidget* widget, int w, int h);
+
 /* Image */
 IUP_DRV_API void iupgtk4TextureSetScale(GdkTexture* texture, double scale);
 IUP_DRV_API double iupgtk4ImageGetScale(void* image);

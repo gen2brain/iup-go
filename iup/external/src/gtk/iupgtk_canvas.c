@@ -395,8 +395,14 @@ static gboolean gtkCanvasExposeEvent(GtkWidget* widget, GdkEventExpose* evt, Iha
       GdkRectangle rect;
       gdk_cairo_get_clip_rectangle(cr, &rect);
 
-      int buf_w = cairo_image_surface_get_width(buffer);
-      int buf_h = cairo_image_surface_get_height(buffer);
+      double scale_x = 1, scale_y = 1;
+      int buf_w, buf_h;
+
+#if GTK_CHECK_VERSION(3, 10, 0)
+      cairo_surface_get_device_scale(buffer, &scale_x, &scale_y);
+#endif
+      buf_w = iupRound(cairo_image_surface_get_width(buffer) / scale_x);
+      buf_h = iupRound(cairo_image_surface_get_height(buffer) / scale_y);
 
       if (buf_w == rect.width && buf_h == rect.height)
       {

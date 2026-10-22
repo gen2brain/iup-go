@@ -18,6 +18,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_image.h"
+#include "iup_drvinfo.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
 
@@ -77,21 +78,30 @@ EM_JS(void, iupwasmJsCanvasInit, (void), {
   };
 })
 
-EM_JS(void, iupwasmJsCanvasReset, (int cid, int w, int h), {
+EM_JS(void, iupwasmJsCanvasReset, (int cid, int w, int h, double scale), {
   delete globalThis.__iupLayers[cid];
   var el = globalThis.__iupBaseCanvasOf(cid); if (!el) return;
-  el.width = w;
-  el.height = h;
+  el.width = Math.round(w * scale);
+  el.height = Math.round(h * scale);
+  el.__iupW = w;
+  el.__iupH = h;
+  if (scale !== 1 && typeof document !== 'undefined') {
+    el.style.width = w + 'px';
+    el.style.height = h + 'px';
+  }
   var ctx = el.getContext("2d");
   ctx.setLineDash([]);
-  ctx.__iupTransform = [1, 0, 0, 1, 0, 0];
+  ctx.__iupScale = scale;
+  ctx.__iupTransform = [scale, 0, 0, scale, 0, 0];
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
   ctx.save();
 })
 
 EM_JS(void, iupwasmJsSetTransform, (int cid, double a, double b, double c, double d, double e, double f), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
-  ctx.__iupTransform = [a, b, c, d, e, f];
-  ctx.setTransform(a, b, c, d, e, f);
+  var s = ctx.__iupScale || 1;
+  ctx.__iupTransform = [a * s, b * s, c * s, d * s, e * s, f * s];
+  ctx.setTransform(a * s, b * s, c * s, d * s, e * s, f * s);
 })
 
 EM_JS(int, iupwasmJsCanvasClientW, (int cid), {
@@ -390,8 +400,11 @@ EM_JS(void, iupwasmJsBeginLayer, (int cid), {
     oc.height = cv.height || 1;
   } else
     oc = new OffscreenCanvas(cv.width || 1, cv.height || 1);
+  var base = cv.getContext("2d");
   var ctx = oc.getContext("2d");
-  ctx.__iupTransform = [1, 0, 0, 1, 0, 0];
+  ctx.__iupScale = base.__iupScale || 1;
+  ctx.__iupTransform = (base.__iupTransform || [1, 0, 0, 1, 0, 0]).slice();
+  ctx.setTransform.apply(ctx, ctx.__iupTransform);
   ctx.save();
   var stack = globalThis.__iupLayers[cid] || (globalThis.__iupLayers[cid] = []);
   stack.push(oc);
@@ -416,8 +429,17 @@ EM_JS(void, iupwasmJsLayerClear, (int cid), {
 
 EM_JS(int, iupwasmJsCanvasGetImageData, (int cid, int ptr, int w, int h), {
   var cv = globalThis.__iupBaseCanvasOf(cid); if (!cv) return 0;
-  var ctx = cv.getContext("2d");
-  var img = ctx.getImageData(0, 0, w, h);
+  var src = cv;
+  var s = cv.getContext("2d").__iupScale || 1;
+  if (s !== 1) {
+    src = (typeof document !== 'undefined') ? document.createElement('canvas') : new OffscreenCanvas(w, h);
+    src.width = w;
+    src.height = h;
+    var sctx = src.getContext("2d");
+    sctx.imageSmoothingQuality = "high";
+    sctx.drawImage(cv, 0, 0, w * s, h * s, 0, 0, w, h);
+  }
+  var img = src.getContext("2d").getImageData(0, 0, w, h);
   HEAPU8.set(img.data, ptr);
   return 1;
 })
@@ -432,7 +454,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   iupwasmJsCanvasInit();
   dc->w = iupwasmJsCanvasClientW(dc->cid);
   dc->h = iupwasmJsCanvasClientH(dc->cid);
-  iupwasmJsCanvasReset(dc->cid, dc->w, dc->h);
+  iupwasmJsCanvasReset(dc->cid, dc->w, dc->h, iupdrvGetScreenScale());
 
   iupAttribSet(ih, "DRAWDRIVER", "CANVAS2D");
   return dc;
@@ -466,7 +488,7 @@ EM_JS(void, iupwasmJsCanvasBlit, (int cid), {
   var local = globalThis.__iupLocal && globalThis.__iupLocal[cid];
   if (!local || !local.width || !local.height) return;
   var bmp = local.transferToImageBitmap();
-  self.postMessage({ __iupBlit: 1, cid: cid, bitmap: bmp }, [bmp]);
+  self.postMessage({ __iupBlit: 1, cid: cid, bitmap: bmp, w: local.__iupW, h: local.__iupH }, [bmp]);
 })
 
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
