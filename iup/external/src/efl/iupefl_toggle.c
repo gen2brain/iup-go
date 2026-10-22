@@ -763,6 +763,14 @@ static int eflToggleMapMethod(Ihandle* ih)
     if (!callback_widget)
       callback_widget = toggle;
     iupeflBaseAddCallbacks(ih, callback_widget);
+
+    if (callback_widget != toggle)
+    {
+      efl_event_callback_del(callback_widget, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
+      efl_event_callback_del(callback_widget, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
+      efl_event_callback_add(toggle, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
+      efl_event_callback_add(toggle, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
+    }
   }
 
   if (ih->data->type == IUP_TOGGLE_IMAGE || iupAttribGetBoolean(ih, "SWITCH"))
@@ -823,6 +831,8 @@ static void eflToggleUnMapMethod(Ihandle* ih)
       }
     }
 
+    efl_event_callback_del(widget, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
+    efl_event_callback_del(widget, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
     efl_del(widget);
   }
 

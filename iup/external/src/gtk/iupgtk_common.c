@@ -830,21 +830,34 @@ static GdkCursor* gtkGetCursor(Ihandle* ih, const char* name)
   return cur;
 }
 
-static GdkWindow* gtkGetCursorWindow(GtkWidget* widget)
+static GdkWindow* gtkGetOwnWindow(GtkWidget* widget)
 {
   GdkWindow* window = iupgtkGetWindow(widget);
+  GList* child;
 
-  if (window && !gtk_widget_get_has_window(widget))
+  if (!window || gtk_widget_get_has_window(widget))
+    return window;
+
+  for (child = gdk_window_peek_children(window); child; child = child->next)
   {
-    GList* child;
-    for (child = gdk_window_peek_children(window); child; child = child->next)
-    {
-      gpointer data = NULL;
-      gdk_window_get_user_data((GdkWindow*)child->data, &data);
-      if (data == (gpointer)widget)
-        return (GdkWindow*)child->data;
-    }
+    gpointer data = NULL;
+    gdk_window_get_user_data((GdkWindow*)child->data, &data);
+    if (data == (gpointer)widget)
+      return (GdkWindow*)child->data;
   }
+
+  return NULL;
+}
+
+static GdkWindow* gtkGetCursorWindow(Ihandle* ih)
+{
+  GtkWidget* extra_parent = (GtkWidget*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
+  GdkWindow* window = gtkGetOwnWindow(ih->handle);
+
+  if (!window && extra_parent)
+    window = gtkGetOwnWindow(extra_parent);
+  if (!window)
+    window = iupgtkGetWindow(ih->handle);
 
   return window;
 }
@@ -854,7 +867,7 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
   GdkCursor* cur = gtkGetCursor(ih, value);
   if (cur)
   {
-    GdkWindow* window = gtkGetCursorWindow(ih->handle);
+    GdkWindow* window = gtkGetCursorWindow(ih);
     if (window)
     {
       gdk_window_set_cursor(window, cur);

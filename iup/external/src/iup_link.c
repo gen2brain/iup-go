@@ -95,7 +95,6 @@ Iclass* iupLinkNewClass(void)
 
   /* attributes */
   iupClassRegisterAttribute(ic, "URL", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CURSOR", NULL, iupdrvBaseSetCursorAttrib, IUPAF_SAMEASSYSTEM, "ARROW", IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
 
   iupClassRegisterReplaceAttribDef(ic, "FGCOLOR", "LINKFGCOLOR", NULL);
 

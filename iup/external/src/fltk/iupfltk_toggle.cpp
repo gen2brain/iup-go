@@ -154,17 +154,9 @@ public:
         iupfltkFocusInOutEvent(this, iup_handle, event);
         break;
       case FL_ENTER:
-      {
-        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "ENTERWINDOW_CB"));
-        if (cb) cb(iup_handle);
-        break;
-      }
       case FL_LEAVE:
-      {
-        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "LEAVEWINDOW_CB"));
-        if (cb) cb(iup_handle);
+        iupfltkEnterLeaveEvent(this, iup_handle, event);
         break;
-      }
     }
     return Fl_Check_Button::handle(event);
   }
@@ -217,8 +209,7 @@ public:
         break;
       case FL_ENTER:
       {
-        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "ENTERWINDOW_CB"));
-        if (cb) cb(iup_handle);
+        iupfltkEnterLeaveEvent(this, iup_handle, event);
         if (iup_handle->data->flat)
           box(FL_UP_BOX);
         redraw();
@@ -226,8 +217,7 @@ public:
       }
       case FL_LEAVE:
       {
-        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "LEAVEWINDOW_CB"));
-        if (cb) cb(iup_handle);
+        iupfltkEnterLeaveEvent(this, iup_handle, event);
         if (iup_handle->data->flat && !value())
           box(FL_FLAT_BOX);
         redraw();

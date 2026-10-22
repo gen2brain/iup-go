@@ -61,9 +61,7 @@ public:
         break;
       case FL_ENTER:
       {
-        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "ENTERWINDOW_CB"));
-        if (cb)
-          cb(iup_handle);
+        iupfltkEnterLeaveEvent(this, iup_handle, event);
         if (iupAttribGetBoolean(iup_handle, "FLAT"))
           box(FL_UP_BOX);
         redraw();
@@ -71,9 +69,7 @@ public:
       }
       case FL_LEAVE:
       {
-        IFn cb = static_cast<IFn>(IupGetCallback(iup_handle, "LEAVEWINDOW_CB"));
-        if (cb)
-          cb(iup_handle);
+        iupfltkEnterLeaveEvent(this, iup_handle, event);
         if (iupAttribGetBoolean(iup_handle, "FLAT"))
           box(FL_FLAT_BOX);
         redraw();
