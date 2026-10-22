@@ -89,15 +89,6 @@ public:
       else
         iup_state = IUP_RESTORE;
 
-      /* leaving fullscreen on macOS does not restore the previous position */
-      if (iup_state == IUP_RESTORE && iupAttribGet(ih, "_IUPQML_FS_X") && !iupAttribGet(ih, "_IUPQML_FS_STYLE"))
-      {
-        QPoint old_pos(iupAttribGetInt(ih, "_IUPQML_FS_X"), iupAttribGetInt(ih, "_IUPQML_FS_Y"));
-        iupAttribSet(ih, "_IUPQML_FS_X", nullptr);
-        iupAttribSet(ih, "_IUPQML_FS_Y", nullptr);
-        QTimer::singleShot(0, this, [this, old_pos]() { setFramePosition(old_pos); });
-      }
-
       if (ih->data->show_state != iup_state)
       {
         IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "SHOW_CB"));
@@ -928,10 +919,6 @@ static int qmlDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       iupAttribSet(ih, "RESIZE", "NO");
       iupAttribSet(ih, "BORDER", "NO");
 
-#ifdef Q_OS_MACOS
-      iupAttribSetInt(ih, "_IUPQML_FS_X", window->framePosition().x());
-      iupAttribSetInt(ih, "_IUPQML_FS_Y", window->framePosition().y());
-#endif
       window->setWindowState(Qt::WindowFullScreen);
 
       iupAttribSet(ih, "_IUPQML_FS_STYLE", "YES");
@@ -956,6 +943,8 @@ static int qmlDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
       {
         ih->currentwidth = iupAttribGetInt(ih, "_IUPQML_FS_WIDTH");
         ih->currentheight = iupAttribGetInt(ih, "_IUPQML_FS_HEIGHT");
+        iupAttribSetInt(ih, "_IUPQML_SIZED_WIDTH", ih->currentwidth);
+        iupAttribSetInt(ih, "_IUPQML_SIZED_HEIGHT", ih->currentheight);
       }
 
       iupAttribSet(ih, "_IUPQML_FS_MAXBOX", nullptr);
