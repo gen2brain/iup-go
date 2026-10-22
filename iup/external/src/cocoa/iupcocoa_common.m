@@ -64,9 +64,15 @@ static char iupGnustepTrackingTagKey;
 }
 - (void)addTrackingArea:(NSTrackingArea*)area
 {
-  NSMutableArray* areas = objc_getAssociatedObject(self, &iupGnustepTrackingAreasKey);
-  NSRect rect = [area rect];
+  NSMutableArray* areas;
+  NSRect rect;
   NSTrackingRectTag tag;
+
+  if (!area)
+    return;
+
+  areas = objc_getAssociatedObject(self, &iupGnustepTrackingAreasKey);
+  rect = [area rect];
 
   if (!areas)
   {
@@ -83,9 +89,14 @@ static char iupGnustepTrackingTagKey;
 }
 - (void)removeTrackingArea:(NSTrackingArea*)area
 {
-  NSMutableArray* areas = objc_getAssociatedObject(self, &iupGnustepTrackingAreasKey);
-  NSNumber* tag = objc_getAssociatedObject(area, &iupGnustepTrackingTagKey);
+  NSMutableArray* areas;
+  NSNumber* tag;
 
+  if (!area)
+    return;
+
+  areas = objc_getAssociatedObject(self, &iupGnustepTrackingAreasKey);
+  tag = objc_getAssociatedObject(area, &iupGnustepTrackingTagKey);
   if (tag)
     [self removeTrackingRect:[tag integerValue]];
   [areas removeObject:area];
