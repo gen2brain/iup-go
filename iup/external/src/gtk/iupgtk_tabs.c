@@ -217,23 +217,24 @@ static void gtkTabsApplyTabImage(Ihandle* ih, GtkImage* tab_image, GdkPixbuf* pi
 {
   if (!pixbuf)
   {
-    gtk_image_set_from_pixbuf(tab_image, NULL);
+    iupgtkImageSetPixbuf(tab_image, NULL);
     return;
   }
 
   {
-    int raw_w = gdk_pixbuf_get_width(pixbuf);
-    int raw_h = gdk_pixbuf_get_height(pixbuf);
-    int box_w, box_h;
+    int scale = iupgtkPixbufGetScale(pixbuf);
+    int raw_w, raw_h, box_w, box_h;
+    iupgtkPixbufGetSize(pixbuf, &raw_w, &raw_h);
     iupTabsScaleImageSize(ih, raw_w, raw_h, &box_w, &box_h);
     if (box_w != raw_w || box_h != raw_h)
     {
-      GdkPixbuf* scaled = gdk_pixbuf_scale_simple(pixbuf, box_w, box_h, GDK_INTERP_BILINEAR);
-      gtk_image_set_from_pixbuf(tab_image, scaled);
+      GdkPixbuf* scaled = gdk_pixbuf_scale_simple(pixbuf, box_w * scale, box_h * scale, GDK_INTERP_BILINEAR);
+      iupgtkPixbufSetScale(scaled, scale);
+      iupgtkImageSetPixbuf(tab_image, scaled);
       if (scaled) g_object_unref(scaled);
     }
     else
-      gtk_image_set_from_pixbuf(tab_image, pixbuf);
+      iupgtkImageSetPixbuf(tab_image, pixbuf);
   }
 }
 
@@ -731,7 +732,7 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
     if (img)
     {
       int img_w, img_h;
-      iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+      iupgtkPixbufGetSize((GdkPixbuf*)img, &img_w, &img_h);
       iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
       width += img_w;
       if (tab_title)

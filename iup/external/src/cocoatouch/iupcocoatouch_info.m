@@ -96,6 +96,19 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
 	}
 }
 
+IUP_SDK_API double iupdrvGetScreenScale(void)
+{
+	@autoreleasepool
+	{
+		return [cocoaTouchGetScreen() scale];
+	}
+}
+
+IUP_SDK_API double iupdrvGetDevicePixelRatio(void)
+{
+	return iupdrvGetScreenScale();
+}
+
 extern void iupCocoaTouchGetLastTouchScreen(CGPoint* out);
 
 static void cocoaTouchGetCursorPos(int* x, int* y)

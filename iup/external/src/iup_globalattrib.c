@@ -489,6 +489,8 @@ IUP_API char* IupGetGlobal(const char* name)
     double dpi = iupdrvGetScreenDpi();
     return iupStrReturnDouble(dpi);
   }
+  if (iupStrEqual(name, "SCREENSCALE"))
+    return iupStrReturnDouble(iupdrvGetScreenScale());
   if (iupStrEqual(name, "DARKMODE"))
     return iupStrReturnBoolean(iupGlobalIsDarkMode());
   if (iupStrEqual(name, "APPEARANCE"))

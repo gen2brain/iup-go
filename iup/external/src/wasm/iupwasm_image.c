@@ -22,7 +22,7 @@
 
 
 /* main builds the <img> data URL; entry.canvas is a worker-local raster for drawImage */
-EM_JS(int, iupwasmJsImageCreate, (int w, int h, int ptr), {
+EM_JS(int, iupwasmJsImageCreate, (int w, int h, int ptr, int lw, int lh), {
   if (!globalThis.__iupImg) globalThis.__iupImg = { map: {}, next: 1 };
   var id = globalThis.__iupImg.next++;
   var entry = { w: w, h: h };
@@ -35,7 +35,7 @@ EM_JS(int, iupwasmJsImageCreate, (int w, int h, int ptr), {
     entry.canvas = cv;
   }
   globalThis.__iupImg.map[id] = entry;
-  globalThis.__iupApply({ op: 'imagecreate', imgId: id, w: w, h: h, rgba: HEAPU8.slice(ptr, ptr + w * h * 4) });
+  globalThis.__iupApply({ op: 'imagecreate', imgId: id, w: w, h: h, lw: lw, lh: lh, rgba: HEAPU8.slice(ptr, ptr + w * h * 4) });
   return id;
 })
 
@@ -50,25 +50,26 @@ void iupwasmJsSetImage(int elId, int imgId)
 }
 
 
-typedef struct { int w, h, bpp; } wasmImgInfo;
+typedef struct { int w, h, bpp, lw, lh; } wasmImgInfo;
 static wasmImgInfo* s_imginfo = NULL;
 static int s_imginfo_count = 0;
 
-static void wasmImgInfoSet(int id, int w, int h, int bpp)
+static void wasmImgInfoSet(int id, int w, int h, int bpp, int lw, int lh)
 {
   if (id >= s_imginfo_count)
   {
     int i, n = id + 16;
     s_imginfo = (wasmImgInfo*)realloc(s_imginfo, n * sizeof(wasmImgInfo));
-    for (i = s_imginfo_count; i < n; i++) { s_imginfo[i].w = s_imginfo[i].h = s_imginfo[i].bpp = 0; }
+    for (i = s_imginfo_count; i < n; i++) { s_imginfo[i].w = s_imginfo[i].h = s_imginfo[i].bpp = s_imginfo[i].lw = s_imginfo[i].lh = 0; }
     s_imginfo_count = n;
   }
   s_imginfo[id].w = w; s_imginfo[id].h = h; s_imginfo[id].bpp = bpp;
+  s_imginfo[id].lw = lw; s_imginfo[id].lh = lh;
 }
 
-static void* wasmImageCreateRGBA(int width, int height, int bpp, iupColor* colors, unsigned char* imgdata)
+static void* wasmImageCreateRGBA(int width, int height, int bpp, iupColor* colors, unsigned char* imgdata, double scale)
 {
-  int x, y, id;
+  int x, y, id, lw, lh;
   unsigned char* rgba;
   if (width <= 0 || height <= 0 || !imgdata)
     return NULL;
@@ -98,10 +99,12 @@ static void* wasmImageCreateRGBA(int width, int height, int bpp, iupColor* color
     }
   }
 
-  id = iupwasmJsImageCreate(width, height, (int)(intptr_t)rgba);
+  lw = iupRound(width / scale);
+  lh = iupRound(height / scale);
+  id = iupwasmJsImageCreate(width, height, (int)(intptr_t)rgba, lw, lh);
   free(rgba);
   if (id)
-    wasmImgInfoSet(id, width, height, bpp);
+    wasmImgInfoSet(id, width, height, bpp, lw, lh);
   return (void*)(intptr_t)id;
 }
 
@@ -118,7 +121,7 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int m
     iupImageInitColorTable(ih, colors, &colors_count);
 
   imgdata = (unsigned char*)iupAttribGetStr(ih, "WID");
-  return wasmImageCreateRGBA(ih->currentwidth, ih->currentheight, bpp, colors, imgdata);
+  return wasmImageCreateRGBA(ih->currentwidth, ih->currentheight, bpp, colors, imgdata, iupImageGetPixelScale(ih));
 }
 
 IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)
@@ -154,7 +157,7 @@ IUP_SDK_API void* iupdrvImageLoad(const char* name, int type)
   (void)type;
   if (!rgba)
     return NULL;
-  handle = wasmImageCreateRGBA(w, h, 32, NULL, rgba);
+  handle = wasmImageCreateRGBA(w, h, 32, NULL, rgba, 1.0);
   free(rgba);
   return handle;
 }
@@ -176,6 +179,14 @@ IUP_SDK_API int iupdrvImageGetInfo(void* handle, int* w, int* h, int* bpp)
   if (h) *h = s_imginfo[id].h;
   if (bpp) *bpp = s_imginfo[id].bpp;
   return 1;
+}
+
+void iupwasmImageGetSize(void* handle, int* w, int* h)
+{
+  int id = (int)(intptr_t)handle;
+  int valid = id > 0 && id < s_imginfo_count;
+  if (w) *w = valid ? s_imginfo[id].lw : 0;
+  if (h) *h = valid ? s_imginfo[id].lh : 0;
 }
 
 EM_JS(void, iupwasmJsImageGetRGBA, (int imgId, int ptr, int w, int h), {

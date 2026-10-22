@@ -75,6 +75,12 @@ Image contents is ignored and it will contain trash after the reshape.
 
 **RESIZE** (write-only): given a new size if format "*width*x*height*", changes WIDTH and HEIGHT attributes, and resizes the image contents using bilinear interpolation for RGB and RGBA images and nearest neighborhood for 8 bits.
 
+**SCALE**: number of image pixels in a logical unit of the screen.
+When defined, the image occupies WIDTH/SCALE x HEIGHT/SCALE logical units, and the first time the image is used its pixels are resampled to the screen scale ([SCREENSCALE](../attrib/iup_globals.md#screenscale-read-only)), so an image with SCALE equal to SCREENSCALE is shown with all its pixels.
+RGB and RGBA images are resampled with a smoothing filter, images created with **IupImage** with nearest neighbor.
+When defined, AUTOSCALE and IMAGEAUTOSCALE are ignored. Changing it after the image is used has no effect. (non-inheritable)
+Not supported for cursors and dialog icons.
+
 **SCALED** (read-only): returns YES if the image has been resized.
 
 **ORIGINALSCALE** (read-only): returns the width and height before the image was scaled.

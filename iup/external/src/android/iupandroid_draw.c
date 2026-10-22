@@ -475,8 +475,8 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
     sw = img_w;
     sh = img_h;
   }
-  if (w <= 0) w = sw;
-  if (h <= 0) h = sh;
+  if (w <= 0) w = iupRound(sw / iupImageGetPixelScale(iupImageGetImageFromName(name)));
+  if (h <= 0) h = iupRound(sh / iupImageGetPixelScale(iupImageGetImageFromName(name)));
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);

@@ -126,7 +126,7 @@ IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_title, const 
       if (img)
       {
         int img_w, img_h;
-        iupdrvImageGetInfo(img, &img_w, &img_h, NULL);
+        iupgtk4ImageGetSize(img, &img_w, &img_h);
         iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
         width += img_w;
         if (tab_title)
@@ -302,17 +302,16 @@ static void gtk4TabsApplyTabImage(Ihandle* ih, GtkImage* tab_image, GdkPaintable
   }
 
   {
-    int raw_w = gdk_paintable_get_intrinsic_width(paintable);
-    int raw_h = gdk_paintable_get_intrinsic_height(paintable);
+    GdkPaintable* shown = iupgtk4ImageNewPaintable(paintable);
+    int raw_w = gdk_paintable_get_intrinsic_width(shown);
+    int raw_h = gdk_paintable_get_intrinsic_height(shown);
     int box_w, box_h, side;
+    gtk_image_set_from_paintable(tab_image, shown);
+    g_object_unref(shown);
     if (raw_w <= 0 || raw_h <= 0)
-    {
-      gtk_image_set_from_paintable(tab_image, paintable);
       return;
-    }
     iupTabsScaleImageSize(ih, raw_w, raw_h, &box_w, &box_h);
     side = box_w > box_h ? box_w : box_h;
-    gtk_image_set_from_paintable(tab_image, paintable);
     if (side != raw_w || side != raw_h)
       gtk_image_set_pixel_size(tab_image, side);
     else

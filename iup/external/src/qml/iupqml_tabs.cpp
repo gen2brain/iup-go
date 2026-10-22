@@ -368,7 +368,8 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
       if (pixmap)
       {
         int img_w, img_h;
-        iupTabsScaleImageSize(ih, pixmap->width(), pixmap->height(), &img_w, &img_h);
+        iupqmlPixmapGetSize(pixmap, &img_w, &img_h);
+        iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
         iupqmlSetProperty(button, "icon.source", QUrl(iupqmlImageUrl(pixmap)));
         iupqmlSetProperty(button, "icon.width", img_w);
         iupqmlSetProperty(button, "icon.height", img_h);
@@ -625,7 +626,8 @@ static void qmlTabsUpdateButton(Ihandle* ih, Ihandle* child)
     if (pixmap)
     {
       int img_w, img_h;
-      iupTabsScaleImageSize(ih, pixmap->width(), pixmap->height(), &img_w, &img_h);
+      iupqmlPixmapGetSize(pixmap, &img_w, &img_h);
+      iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
       iupqmlSetProperty(button, "icon.source", QUrl(iupqmlImageUrl(pixmap)));
       iupqmlSetProperty(button, "icon.width", img_w);
       iupqmlSetProperty(button, "icon.height", img_h);

@@ -72,6 +72,16 @@ extern "C" IUP_SDK_API double iupdrvGetScreenDpi(void)
   return 96.0;
 }
 
+extern "C" IUP_SDK_API double iupdrvGetScreenScale(void)
+{
+  return be_plain_font ? be_plain_font->Size() / 12.0 : 1.0;
+}
+
+extern "C" IUP_SDK_API double iupdrvGetDevicePixelRatio(void)
+{
+  return 1.0;
+}
+
 extern "C" IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   BPoint where;

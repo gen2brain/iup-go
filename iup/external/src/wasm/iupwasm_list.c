@@ -589,7 +589,7 @@ static void wasmListItemImageHandle(Ihandle* ih, int pos, void* img)
   if (img)
   {
     int avail;
-    iupdrvImageGetInfo(img, &w, &h, NULL);
+    iupwasmImageGetSize(img, &w, &h);
     iupdrvFontGetCharSize(ih, NULL, &ch);
     avail = ch + 2 * ih->data->spacing;
     if (ih->data->fit_image && h > avail) { w = (w * avail) / h; h = avail; }

@@ -44,6 +44,16 @@ IUP_DRV_API void iupgtkNativeContainerSetGLCanvas(int is_gl);
 IUP_DRV_API void iupgtkNativeContainerAdd(GtkWidget* container, GtkWidget* widget);
 IUP_DRV_API void iupgtkNativeContainerMove(GtkWidget* container, GtkWidget* widget, int x, int y);
 
+/* image */
+IUP_DRV_API int iupgtkPixbufGetScale(GdkPixbuf* pixbuf);
+IUP_DRV_API void iupgtkPixbufSetScale(GdkPixbuf* pixbuf, int scale);
+IUP_DRV_API void iupgtkPixbufGetSize(GdkPixbuf* pixbuf, int* w, int* h);
+IUP_DRV_API GdkPixbuf* iupgtkPixbufFitHeight(GdkPixbuf* pixbuf, int height);
+IUP_DRV_API void iupgtkImageSetPixbuf(GtkImage* image, GdkPixbuf* pixbuf);
+IUP_DRV_API GdkPixbuf* iupgtkImageGetPixbuf(GtkImage* image);
+IUP_DRV_API GtkWidget* iupgtkImageNewFromPixbuf(GdkPixbuf* pixbuf);
+IUP_DRV_API void iupgtkCellRendererSetPixbuf(GtkCellRenderer* renderer, GdkPixbuf* pixbuf);
+
 /* str */
 IUP_DRV_API void  iupgtkStrRelease(void);
 IUP_DRV_API char* iupgtkStrConvertToSystem(const char* str);

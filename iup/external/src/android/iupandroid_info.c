@@ -108,6 +108,16 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   return (double)s_screen_dpi;
 }
 
+IUP_SDK_API double iupdrvGetScreenScale(void)
+{
+  return (double)iupAndroid_GetDisplayDensity();
+}
+
+IUP_SDK_API double iupdrvGetDevicePixelRatio(void)
+{
+  return iupdrvGetScreenScale();
+}
+
 IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   if (x) *x = 0;

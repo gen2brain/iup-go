@@ -89,6 +89,30 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   return 96.0;
 }
 
+IUP_SDK_API double iupdrvGetScreenScale(void)
+{
+  GListModel* monitors = gdk_display_get_monitors(gdk_display_get_default());
+  GdkMonitor* monitor = g_list_model_get_item(monitors, 0);
+  double scale = 1;
+
+  if (monitor)
+  {
+#if GTK_CHECK_VERSION(4, 14, 0)
+    scale = gdk_monitor_get_scale(monitor);
+#else
+    scale = gdk_monitor_get_scale_factor(monitor);
+#endif
+    g_object_unref(monitor);
+  }
+
+  return scale > 0 ? scale : 1;
+}
+
+IUP_SDK_API double iupdrvGetDevicePixelRatio(void)
+{
+  return iupdrvGetScreenScale();
+}
+
 IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
 #ifdef GDK_WINDOWING_X11

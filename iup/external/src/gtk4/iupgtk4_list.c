@@ -1879,7 +1879,9 @@ static void gtk4ListItem_onPropertyUpdate(GObject* object, GParamSpec* pspec, gp
   GdkTexture* texture = iup_list_item_get_image(item);
   if (texture)
   {
-    gtk_picture_set_paintable(GTK_PICTURE(picture), GDK_PAINTABLE(texture));
+    GdkPaintable* paintable = iupgtk4ImageNewPaintable(texture);
+    gtk_picture_set_paintable(GTK_PICTURE(picture), paintable);
+    g_object_unref(paintable);
     gtk_widget_set_visible(picture, TRUE);
   }
   else
@@ -1917,7 +1919,9 @@ static void gtk4ListFactory_bind(GtkListItemFactory* factory, GtkListItem* list_
   GdkTexture* texture = iup_list_item_get_image(item);
   if (texture)
   {
-    gtk_picture_set_paintable(GTK_PICTURE(picture), GDK_PAINTABLE(texture));
+    GdkPaintable* paintable = iupgtk4ImageNewPaintable(texture);
+    gtk_picture_set_paintable(GTK_PICTURE(picture), paintable);
+    g_object_unref(paintable);
     gtk_widget_set_visible(picture, TRUE);
   }
   else

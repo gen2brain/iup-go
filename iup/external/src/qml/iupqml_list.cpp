@@ -68,6 +68,7 @@ public:
     roles[Qt::DisplayRole] = "text";
     roles[Qt::UserRole + 1] = "image";
     roles[Qt::UserRole + 2] = "selected";
+    roles[Qt::UserRole + 3] = "imagesize";
     return roles;
   }
 
@@ -87,7 +88,7 @@ public:
       return texts.at(row);
     }
 
-    if (role == Qt::UserRole + 1)
+    if (role == Qt::UserRole + 1 || role == Qt::UserRole + 3)
     {
       QPixmap* pixmap = nullptr;
       if (ih->data->is_virtual)
@@ -99,6 +100,8 @@ public:
       else if (row < images.size())
         pixmap = images.at(row);
 
+      if (role == Qt::UserRole + 3)
+        return iupqmlImageSourceSize(pixmap);
       return pixmap ? iupqmlImageUrl(pixmap) : QString();
     }
 
@@ -200,7 +203,7 @@ static const char* qmlListDelegate =
   "delegate: Rectangle { id: del; width: ListView.view ? ListView.view.width : 0; height: ListView.view ? ListView.view.iupRowHeight : 20;"
   " color: model.selected ? palette.highlight : \"transparent\"; required property var model; required property int index\n"
   "  Row { anchors.fill: parent; anchors.leftMargin: 3; spacing: 4\n"
-  "    Image { visible: del.ListView.view && del.ListView.view.iupShowImage && source != \"\"; source: del.model.image; fillMode: Image.PreserveAspectFit; height: Math.min(implicitHeight, parent.height - 2); width: visible ? implicitWidth * (height / Math.max(1, implicitHeight)) : 0; anchors.verticalCenter: parent.verticalCenter; cache: false }\n"
+  "    Image { visible: del.ListView.view && del.ListView.view.iupShowImage && source != \"\"; source: del.model.image; sourceSize: del.model.imagesize; fillMode: Image.PreserveAspectFit; height: Math.min(implicitHeight, parent.height - 2); width: visible ? implicitWidth * (height / Math.max(1, implicitHeight)) : 0; anchors.verticalCenter: parent.verticalCenter; cache: false }\n"
   "    Text { text: del.model.text; color: del.model.selected ? palette.highlightedText : palette.text; anchors.verticalCenter: parent.verticalCenter; font: del.ListView.view ? del.ListView.view.iupFont : Qt.application.font }\n"
   "  }\n"
   "  Rectangle { anchors.fill: parent; color: \"transparent\"; border.width: 1; border.color: del.model.selected ? palette.highlightedText : palette.highlight; visible: del.ListView.isCurrentItem && del.ListView.view && del.ListView.view.activeFocus && del.ListView.view.iupKeyFocus }\n"
@@ -976,11 +979,13 @@ static int qmlListSetImageAttrib(Ihandle* ih, int id, const char* value)
 
   if (pixmap)
   {
-    if (pixmap->width() > ih->data->maximg_w)
-      ih->data->maximg_w = pixmap->width();
-    if (pixmap->height() > ih->data->maximg_h)
+    int img_w, img_h;
+    iupqmlPixmapGetSize(pixmap, &img_w, &img_h);
+    if (img_w > ih->data->maximg_w)
+      ih->data->maximg_w = img_w;
+    if (img_h > ih->data->maximg_h)
     {
-      ih->data->maximg_h = pixmap->height();
+      ih->data->maximg_h = img_h;
       qmlListUpdateRowHeight(ih);
     }
   }

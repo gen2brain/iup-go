@@ -949,8 +949,8 @@ extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, i
     sw = pixmap->width();
     sh = pixmap->height();
   }
-  if (w <= 0) w = sw;
-  if (h <= 0) h = sh;
+  if (w <= 0) w = qRound(sw / pixmap->devicePixelRatio());
+  if (h <= 0) h = qRound(sh / pixmap->devicePixelRatio());
 
   dc->painter->save();
   dc->painter->setRenderHint(QPainter::SmoothPixmapTransform, quality != IUP_DRAW_IMAGE_NEAREST);

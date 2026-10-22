@@ -51,6 +51,12 @@ IUP_DRV_API void iupgtk4NativeContainerSetBounds(GtkWidget* container, GtkWidget
 IUP_DRV_API void iupgtk4FixedMove(iupGtk4Fixed* fixed, GtkWidget* widget, int x, int y);
 IUP_DRV_API void iupgtk4NativeContainerSetBorder(GtkWidget* container, int enable);
 
+/* Image */
+IUP_DRV_API void iupgtk4TextureSetScale(GdkTexture* texture, double scale);
+IUP_DRV_API double iupgtk4ImageGetScale(void* image);
+IUP_DRV_API GdkPaintable* iupgtk4ImageNewPaintable(void* image);
+IUP_DRV_API void iupgtk4ImageGetSize(void* image, int* w, int* h);
+
 /* Str */
 IUP_DRV_API void  iupgtk4StrRelease(void);
 IUP_DRV_API char* iupgtk4StrConvertToSystem(const char* str);

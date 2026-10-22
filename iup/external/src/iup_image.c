@@ -9,6 +9,7 @@
 #include <string.h>
 #include <memory.h>
 #include <stdint.h>
+#include <math.h>
 
 #include "iup.h"
 
@@ -82,6 +83,126 @@ void iupImageResizeRGBA(int src_width, int src_height, unsigned char* src_map, i
   free(T);
 }
 
+static float* iImageResampleWeights(int src_size, int dst_size, int* first, int* count, int* max_count)
+{
+  double factor = (double)src_size / (double)dst_size;
+  double support = factor > 1 ? factor : 1;
+  int i, j, n = (int)(2 * support) + 2;
+  float* weights = (float*)calloc((size_t)dst_size * n, sizeof(float));
+  if (!weights)
+    return NULL;
+
+  for (i = 0; i < dst_size; i++)
+  {
+    double center = (i + 0.5) * factor - 0.5;
+    int start = (int)floor(center - support) + 1;
+    double total = 0;
+    float* w = weights + (size_t)i * n;
+
+    if (start < 0) start = 0;
+    count[i] = 0;
+    for (j = start; j < src_size && j <= center + support && count[i] < n; j++)
+    {
+      double d = 1 - (j > center ? j - center : center - j) / support;
+      if (d < 0) d = 0;
+      w[count[i]++] = (float)d;
+      total += d;
+    }
+
+    if (total <= 0)
+    {
+      start = iupRound(center);
+      if (start < 0) start = 0;
+      if (start > src_size - 1) start = src_size - 1;
+      w[0] = 1;
+      count[i] = 1;
+      total = 1;
+    }
+
+    first[i] = start;
+    for (j = 0; j < count[i]; j++)
+      w[j] = (float)(w[j] / total);
+  }
+
+  *max_count = n;
+  return weights;
+}
+
+static void iImageResampleRGBA(int src_width, int src_height, const unsigned char* src_map, int dst_width, int dst_height, unsigned char* dst_map, int depth)
+{
+  int x, y, c, k, nx, ny;
+  int* xfirst = (int*)malloc(dst_width * sizeof(int) * 2);
+  int* yfirst = (int*)malloc(dst_height * sizeof(int) * 2);
+  int* xcount = xfirst ? xfirst + dst_width : NULL;
+  int* ycount = yfirst ? yfirst + dst_height : NULL;
+  float* xw = xfirst ? iImageResampleWeights(src_width, dst_width, xfirst, xcount, &nx) : NULL;
+  float* yw = yfirst ? iImageResampleWeights(src_height, dst_height, yfirst, ycount, &ny) : NULL;
+  float* rows = (float*)malloc((size_t)src_height * dst_width * depth * sizeof(float));
+
+  if (!xw || !yw || !rows)
+  {
+    free(xfirst); free(yfirst); free(xw); free(yw); free(rows);
+    iupImageResizeRGBA(src_width, src_height, (unsigned char*)src_map, dst_width, dst_height, dst_map, depth);
+    return;
+  }
+
+  for (y = 0; y < src_height; y++)
+  {
+    const unsigned char* line = src_map + (size_t)y * src_width * depth;
+    float* out = rows + (size_t)y * dst_width * depth;
+    for (x = 0; x < dst_width; x++)
+    {
+      float acc[4] = {0, 0, 0, 0};
+      const float* w = xw + (size_t)x * nx;
+      for (k = 0; k < xcount[x]; k++)
+      {
+        const unsigned char* p = line + (size_t)(xfirst[x] + k) * depth;
+        float a = depth == 4 ? p[3] / 255.0f : 1.0f;
+        for (c = 0; c < 3; c++)
+          acc[c] += w[k] * p[c] * a;
+        if (depth == 4)
+          acc[3] += w[k] * p[3];
+      }
+      for (c = 0; c < depth; c++)
+        out[x * depth + c] = acc[c];
+    }
+  }
+
+  for (y = 0; y < dst_height; y++)
+  {
+    const float* w = yw + (size_t)y * ny;
+    for (x = 0; x < dst_width; x++)
+    {
+      float acc[4] = {0, 0, 0, 0};
+      for (k = 0; k < ycount[y]; k++)
+      {
+        const float* p = rows + ((size_t)(yfirst[y] + k) * dst_width + x) * depth;
+        for (c = 0; c < depth; c++)
+          acc[c] += w[k] * p[c];
+      }
+
+      if (depth == 4)
+      {
+        float a = acc[3] / 255.0f;
+        for (c = 0; c < 3; c++)
+        {
+          float v = a > 0 ? acc[c] / a : 0;
+          dst_map[c] = (unsigned char)(v > 255 ? 255 : (v < 0 ? 0 : v + 0.5f));
+        }
+        dst_map[3] = (unsigned char)(acc[3] > 255 ? 255 : (acc[3] < 0 ? 0 : acc[3] + 0.5f));
+      }
+      else
+      {
+        for (c = 0; c < depth; c++)
+          dst_map[c] = (unsigned char)(acc[c] > 255 ? 255 : (acc[c] < 0 ? 0 : acc[c] + 0.5f));
+      }
+      dst_map += depth;
+    }
+  }
+
+  free(xfirst); free(yfirst); free(xw); free(yw); free(rows);
+}
+
 static void iDataStretchMap(int src_width, int src_height, unsigned char* src_map, int dst_width, int dst_height, unsigned char* dst_map)
 {
   int x, y, offset;
@@ -138,6 +259,64 @@ static void iImageResize(Ihandle* ih, int new_width, int new_height)
 
   free(imgdata);
   iupAttribSet(ih, "WID", (char*)new_imgdata);
+}
+
+static void iImageApplyScale(Ihandle* ih)
+{
+  double scale = iupAttribGetDouble(ih, "SCALE");
+  double screen_scale = iupdrvGetScreenScale();
+  int new_width, new_height;
+
+  if (scale <= 0) scale = 1;
+  if (screen_scale <= 0) screen_scale = 1;
+
+  new_width = iupRound(ih->currentwidth * screen_scale / scale);
+  new_height = iupRound(ih->currentheight * screen_scale / scale);
+  if (new_width < 1) new_width = 1;
+  if (new_height < 1) new_height = 1;
+
+  if (new_width != ih->currentwidth || new_height != ih->currentheight)
+  {
+    unsigned char* imgdata = (unsigned char*)iupAttribGet(ih, "WID");
+    int channels = iupAttribGetInt(ih, "CHANNELS");
+    char* hotspot = iupAttribGet(ih, "HOTSPOT");
+    unsigned char* new_imgdata = NULL;
+
+    if (imgdata && new_width <= 32767 && new_height <= 32767)
+      new_imgdata = (unsigned char*)malloc((size_t)new_width * new_height * channels);
+
+    if (new_imgdata)
+    {
+      iupAttribSet(ih, "SCALED", "Yes");
+      iupAttribSetStrf(ih, "ORIGINALSCALE", "%dx%d", ih->currentwidth, ih->currentheight);
+
+      if (iupAttribGetInt(ih, "BPP") == 8)
+        iDataStretchMap(ih->currentwidth, ih->currentheight, imgdata, new_width, new_height, new_imgdata);
+      else
+        iImageResampleRGBA(ih->currentwidth, ih->currentheight, imgdata, new_width, new_height, new_imgdata, channels);
+
+      if (hotspot)
+      {
+        int x = 0, y = 0;
+        iupStrToIntInt(hotspot, &x, &y, ':');
+        iupAttribSetStrf(ih, "HOTSPOT", "%d:%d", (x * new_width) / ih->currentwidth, (y * new_height) / ih->currentheight);
+      }
+
+      ih->currentwidth = new_width;
+      ih->currentheight = new_height;
+
+      free(imgdata);
+      iupAttribSet(ih, "WID", (char*)new_imgdata);
+    }
+  }
+
+  iupAttribSetDouble(ih, "_IUPIMAGE_PIXELSCALE", iupdrvGetDevicePixelRatio());
+}
+
+IUP_SDK_API double iupImageGetPixelScale(Ihandle* ih)
+{
+  double scale = ih ? iupAttribGetDouble(ih, "_IUPIMAGE_PIXELSCALE") : 0;
+  return scale > 0 ? scale : 1;
 }
 
 /**************************************************************************************************/
@@ -521,7 +700,16 @@ Ihandle* iupImageGetImageFromName(const char* name)
   Ihandle* ih = IupGetHandle(name);
   if (ih && !iupAttribGet(ih, "_IUPIMAGE_LOADED_HANDLE") && !iupAttribGet(ih, "_IUPIMAGE_LOADED_DRAW_HANDLE"))
   {
-    char* autoscale = iupAttribGet(ih, "AUTOSCALE");
+    char* autoscale;
+
+    if (iupAttribGet(ih, "SCALE"))
+    {
+      if (!iupAttribGet(ih, "_IUPIMAGE_PIXELSCALE"))
+        iImageApplyScale(ih);
+      return ih;
+    }
+
+    autoscale = iupAttribGet(ih, "AUTOSCALE");
     if (!autoscale) autoscale = IupGetGlobal("IMAGEAUTOSCALE");
     if (autoscale && !iupAttribGet(ih, "SCALED"))
     {
@@ -888,6 +1076,7 @@ IUP_SDK_API void* iupImageGetImageTint(const char* name, Ihandle* ih_parent, int
 
   if (ih_parent && iupAttribGetStr(ih_parent, "FLAT_ALPHA"))
     iupAttribSet(tmp, "FLAT_ALPHA", "1");
+  iupAttribSetStr(tmp, "_IUPIMAGE_PIXELSCALE", iupAttribGet(ih, "_IUPIMAGE_PIXELSCALE"));
 
   handle = iupdrvImageCreateImage(tmp, bgcolor, 0);
   IupDestroy(tmp);
@@ -937,8 +1126,8 @@ IUP_SDK_API void iupImageGetInfo(const char* name, int* w, int* h, int* bpp)
       return;
   }
 
-  if (w) *w = ih->currentwidth;
-  if (h) *h = ih->currentheight;
+  if (w) *w = iupRound(ih->currentwidth / iupImageGetPixelScale(ih));
+  if (h) *h = iupRound(ih->currentheight / iupImageGetPixelScale(ih));
   if (bpp) *bpp = IupGetInt(ih, "BPP");
 }
 
@@ -1594,6 +1783,7 @@ static Iclass* iImageNewClassBase(const char* name, const char* cons)
   iupClassRegisterAttribute(ic, "SCALED", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORIGINALSCALE", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOSCALE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCALE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DPI", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   return ic;

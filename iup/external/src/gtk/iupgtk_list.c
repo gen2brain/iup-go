@@ -165,13 +165,10 @@ static void iup_gtk_virtual_list_model_get_value(GtkTreeModel* tree_model, GtkTr
           int charheight;
           iupdrvFontGetCharSize(model->ih, NULL, &charheight);
           int available_height = charheight + 2 * model->ih->data->spacing;
-          int img_height = gdk_pixbuf_get_height(pixImage);
-          int img_width = gdk_pixbuf_get_width(pixImage);
+          GdkPixbuf* scaled = model->ih->data->fit_image ? iupgtkPixbufFitHeight(pixImage, available_height) : NULL;
 
-          if (model->ih->data->fit_image && img_height > available_height)
+          if (scaled)
           {
-            int scaled_width = (img_width * available_height) / img_height;
-            GdkPixbuf* scaled = gdk_pixbuf_scale_simple(pixImage, scaled_width, available_height, GDK_INTERP_BILINEAR);
             g_value_set_object(value, scaled);
             g_object_unref(scaled);
           }
@@ -328,6 +325,17 @@ static void iup_gtk_virtual_list_model_notify_count_changed(IupGtkVirtualListMod
   model->stamp = g_random_int();
 
   gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(model));
+}
+
+static void gtkListImageCellDataFunc(GtkCellLayout* layout, GtkCellRenderer* renderer, GtkTreeModel* model, GtkTreeIter* iter, gpointer data)
+{
+  GdkPixbuf* pixbuf = NULL;
+  gtk_tree_model_get(model, iter, IUPGTK_LIST_IMAGE, &pixbuf, -1);
+  iupgtkCellRendererSetPixbuf(renderer, pixbuf);
+  if (pixbuf)
+    g_object_unref(pixbuf);
+  (void)layout;
+  (void)data;
 }
 
 /* Cell data function for virtual mode, called only for visible rows */
@@ -1480,13 +1488,10 @@ static int gtkListSetImageAttrib(Ihandle* ih, int id, const char* value)
     int charheight;
     iupdrvFontGetCharSize(ih, NULL, &charheight);
     int available_height = charheight + 2 * ih->data->spacing;
-    int img_height = gdk_pixbuf_get_height(pixImage);
-    int img_width = gdk_pixbuf_get_width(pixImage);
+    GdkPixbuf* scaled = ih->data->fit_image ? iupgtkPixbufFitHeight(pixImage, available_height) : NULL;
 
-    if (ih->data->fit_image && img_height > available_height)
+    if (scaled)
     {
-      int scaled_width = (img_width * available_height) / img_height;
-      GdkPixbuf* scaled = gdk_pixbuf_scale_simple(pixImage, scaled_width, available_height, GDK_INTERP_BILINEAR);
       gtk_list_store_set(GTK_LIST_STORE(model), &iter, IUPGTK_LIST_IMAGE, scaled, -1);
       g_object_unref(scaled);
     }
@@ -2114,7 +2119,7 @@ static int gtkListMapMethod(Ihandle* ih)
     {
       renderer_img = gtk_cell_renderer_pixbuf_new();
       gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(ih->handle), renderer_img, FALSE);
-      gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(ih->handle), renderer_img, "pixbuf", IUPGTK_LIST_IMAGE, NULL);
+      gtk_cell_layout_set_cell_data_func(GTK_CELL_LAYOUT(ih->handle), renderer_img, gtkListImageCellDataFunc, NULL, NULL);
       iupAttribSet(ih, "_IUPGTK_RENDERER_IMG", (char*)renderer_img);
     }
 
@@ -2328,7 +2333,7 @@ static int gtkListMapMethod(Ihandle* ih)
     {
       renderer_img = gtk_cell_renderer_pixbuf_new();
       gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(column), renderer_img, FALSE);
-      gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_img, "pixbuf", IUPGTK_LIST_IMAGE, NULL);
+      gtk_cell_layout_set_cell_data_func(GTK_CELL_LAYOUT(column), renderer_img, gtkListImageCellDataFunc, NULL, NULL);
       iupAttribSet(ih, "_IUPGTK_RENDERER_IMG", (char*)renderer_img);
     }
 

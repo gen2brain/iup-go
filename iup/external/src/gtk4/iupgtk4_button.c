@@ -473,11 +473,12 @@ static void gtk4ButtonSetPaintable(Ihandle* ih, const char* name, int make_inact
 
   if (name && picture)
   {
-    GdkPaintable* paintable = (GdkPaintable*)iupImageGetImage(name, ih, make_inactive, NULL);
+    GdkPaintable* paintable = iupgtk4ImageNewPaintable(iupImageGetImage(name, ih, make_inactive, NULL));
     if (paintable)
     {
       gtk_picture_set_content_fit(picture, GTK_CONTENT_FIT_SCALE_DOWN);
       gtk_picture_set_paintable(picture, paintable);
+      g_object_unref(paintable);
       return;
     }
   }
@@ -746,11 +747,12 @@ static int gtk4ButtonMapMethod(Ihandle* ih)
     value = iupAttribGet(ih, "IMAGE");
     if (value)
     {
-      GdkPaintable* paintable = (GdkPaintable*)iupImageGetImage(value, ih, 0, NULL);
+      GdkPaintable* paintable = iupgtk4ImageNewPaintable(iupImageGetImage(value, ih, 0, NULL));
       if (paintable)
       {
         gtk_picture_set_content_fit(GTK_PICTURE(image), GTK_CONTENT_FIT_SCALE_DOWN);
         gtk_picture_set_paintable(GTK_PICTURE(image), paintable);
+        g_object_unref(paintable);
       }
     }
   }

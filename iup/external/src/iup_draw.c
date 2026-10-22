@@ -2387,7 +2387,14 @@ IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, in
   if (value && iupStrToRect(value, &sx, &sy, &sw, &sh) && sw > 0 && sh > 0)
   {
     int img_w = 0, img_h = 0;
-    iupImageGetInfo(name, &img_w, &img_h, NULL);
+    Ihandle* image = iupImageGetImageFromName(name);
+    if (image)
+    {
+      img_w = image->currentwidth;
+      img_h = image->currentheight;
+    }
+    else
+      iupImageGetInfo(name, &img_w, &img_h, NULL);
     if (img_w > 0 && img_h > 0)
     {
       if (sx < 0) sx = 0;
@@ -2441,8 +2448,8 @@ IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, in
         }
       }
 
-      if (w == -1 || w == 0) w = img_w;
-      if (h == -1 || h == 0) h = img_h;
+      if (w == -1 || w == 0) w = iupRound(img_w / iupImageGetPixelScale(iupImageGetImageFromName(name)));
+      if (h == -1 || h == 0) h = iupRound(img_h / iupImageGetPixelScale(iupImageGetImageFromName(name)));
       iupSvgDrawImageRGBA(svg, rgba, img_w, img_h, x, y, w, h, quality);
       free(rgba);
     }

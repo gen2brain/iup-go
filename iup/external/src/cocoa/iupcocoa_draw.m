@@ -1221,15 +1221,24 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
   @autoreleasepool {
     NSSize image_size = [user_image size];
+    CGFloat scale = 1.0;
+    for (NSImageRep* r in [user_image representations])
+    {
+      if ([r isKindOfClass:[NSBitmapImageRep class]] && image_size.width > 0)
+      {
+        scale = [r pixelsWide] / image_size.width;
+        break;
+      }
+    }
     if (sw <= 0 || sh <= 0)
     {
       sx = 0;
       sy = 0;
-      sw = image_size.width;
-      sh = image_size.height;
+      sw = iupRound(image_size.width * scale);
+      sh = iupRound(image_size.height * scale);
     }
-    if (w == -1 || w == 0) w = sw;
-    if (h == -1 || h == 0) h = sh;
+    if (w == -1 || w == 0) w = iupRound(sw / scale);
+    if (h == -1 || h == 0) h = iupRound(sh / scale);
 
     CGContextRef cg_context = dc->cgContext;
 
@@ -1299,7 +1308,7 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
     CGRect target_rect = CGRectMake(x, y, w, h);
     /* fromRect is in the image's Y-up space */
-    NSRect from_rect = NSMakeRect(sx, image_size.height - sy - sh, sw, sh);
+    NSRect from_rect = NSMakeRect(sx / scale, image_size.height - (sy + sh) / scale, sw / scale, sh / scale);
     [user_image drawInRect:target_rect fromRect:from_rect operation:NSCompositingOperationSourceOver fraction:opacity / 255.0 respectFlipped:YES hints:nil];
 
     [NSGraphicsContext restoreGraphicsState];

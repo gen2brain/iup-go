@@ -152,6 +152,13 @@ IUP_DRV_API int iupqtSystemPaletteChanged();
 IUP_DRV_API QApplication* iupqtGetApplication();
 
 /****************************************************************************
+ * Images
+ ****************************************************************************/
+
+IUP_DRV_API void iupqtPixmapGetSize(const QPixmap* pixmap, int* w, int* h);
+IUP_DRV_API QPixmap iupqtPixmapScaledToHeight(const QPixmap* pixmap, int height);
+
+/****************************************************************************
  * Canvas Support
  ****************************************************************************/
 

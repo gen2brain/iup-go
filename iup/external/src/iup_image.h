@@ -48,6 +48,10 @@ IUP_SDK_API void* iupImageGetImageTint(const char* name, Ihandle* parent, int ma
  * \ingroup image */
 IUP_SDK_API unsigned char* iupImageGetRGBAData(Ihandle* ih, int make_inactive, const char* bgcolor, int* img_w, int* img_h);
 IUP_SDK_API void iupImageGetInfo(const char* name, int* w, int* h, int* bpp);
+
+/** Returns the number of image pixels in a layout unit, 1 unless the image has SCALE on a driver whose layout is not in screen pixels.
+ * \ingroup image */
+IUP_SDK_API double iupImageGetPixelScale(Ihandle* ih);
 void iupImageRemoveFromCache(Ihandle* ih, void* handle);
 
 IUP_SDK_API int iupImageInitColorTable(Ihandle* ih, iupColor* colors, int* colors_count);

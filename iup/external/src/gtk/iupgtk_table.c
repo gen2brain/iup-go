@@ -165,13 +165,9 @@ static void iup_gtk_virtual_model_get_value(GtkTreeModel* tree_model, GtkTreeIte
       {
         int charheight;
         iupdrvFontGetCharSize(model->ih, NULL, &charheight);
-        int available_height = charheight + 4;
-        int img_height = gdk_pixbuf_get_height(pixbuf);
-        if (img_height > available_height)
+        GdkPixbuf* scaled = iupgtkPixbufFitHeight(pixbuf, charheight + 4);
+        if (scaled)
         {
-          int img_width = gdk_pixbuf_get_width(pixbuf);
-          int scaled_width = (img_width * available_height) / img_height;
-          GdkPixbuf* scaled = gdk_pixbuf_scale_simple(pixbuf, scaled_width, available_height, GDK_INTERP_BILINEAR);
           g_value_take_object(value, scaled);
           return;
         }
@@ -363,6 +359,16 @@ static int gtkTableTextModelCol(Ihandle* ih, int iup_col)
 static int gtkTableImageModelCol(int iup_col)
 {
   return iup_col * 2;
+}
+
+static void gtkTableImageCellDataFunc(GtkTreeViewColumn* column, GtkCellRenderer* renderer, GtkTreeModel* model, GtkTreeIter* iter, gpointer data)
+{
+  GdkPixbuf* pixbuf = NULL;
+  gtk_tree_model_get(model, iter, GPOINTER_TO_INT(data), &pixbuf, -1);
+  iupgtkCellRendererSetPixbuf(renderer, pixbuf);
+  if (pixbuf)
+    g_object_unref(pixbuf);
+  (void)column;
 }
 
 /* Sort rows in place; GtkListStore auto-sort reorders on every cell set, so setting cells by row index breaks. col_index is 1-based. */
@@ -1707,7 +1713,7 @@ static void gtkTableCreateColumns(Ihandle* ih)
       {
         GtkCellRenderer* pix_renderer = gtk_cell_renderer_pixbuf_new();
         gtk_tree_view_column_pack_start(column, pix_renderer, FALSE);
-        gtk_tree_view_column_add_attribute(column, pix_renderer, "pixbuf", gtkTableImageModelCol(col));
+        gtk_tree_view_column_set_cell_data_func(column, pix_renderer, gtkTableImageCellDataFunc, GINT_TO_POINTER(gtkTableImageModelCol(col)), NULL);
       }
 
       gtk_tree_view_column_pack_start(column, renderer, TRUE);
@@ -2595,13 +2601,9 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
       {
         int charheight;
         iupdrvFontGetCharSize(ih, NULL, &charheight);
-        int available_height = charheight + 4;
-        int img_height = gdk_pixbuf_get_height(pixbuf);
-        if (img_height > available_height)
+        GdkPixbuf* scaled = iupgtkPixbufFitHeight(pixbuf, charheight + 4);
+        if (scaled)
         {
-          int img_width = gdk_pixbuf_get_width(pixbuf);
-          int scaled_width = (img_width * available_height) / img_height;
-          GdkPixbuf* scaled = gdk_pixbuf_scale_simple(pixbuf, scaled_width, available_height, GDK_INTERP_BILINEAR);
           gtk_list_store_set(gtk_data->store, &iter, model_col, scaled, -1);
           g_object_unref(scaled);
           gtk_tree_path_free(path);

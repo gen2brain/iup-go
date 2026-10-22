@@ -157,6 +157,20 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   }
 }
 
+IUP_SDK_API double iupdrvGetScreenScale(void)
+{
+  @autoreleasepool {
+    NSScreen* screen = [NSScreen mainScreen];
+    CGFloat scale = screen ? [screen backingScaleFactor] : 1.0;
+    return scale > 0 ? scale : 1.0;
+  }
+}
+
+IUP_SDK_API double iupdrvGetDevicePixelRatio(void)
+{
+  return iupdrvGetScreenScale();
+}
+
 static void cocoaGetCursorPos(int* x, int* y)
 {
   /* [NSEvent mouseLocation] origin is bottom-left of the primary screen. */

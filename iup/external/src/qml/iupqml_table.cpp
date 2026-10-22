@@ -53,6 +53,7 @@ extern "C" {
 #define IUPQML_TABLE_ROLE_SORTSIGN   (Qt::UserRole + 7)
 #define IUPQML_TABLE_ROLE_CELLSEL    (Qt::UserRole + 8)
 #define IUPQML_TABLE_ROLE_ROWHEIGHT  (Qt::UserRole + 9)
+#define IUPQML_TABLE_ROLE_IMAGESIZE  (Qt::UserRole + 10)
 
 #define IUPQML_TABLE_SELECT_SINGLE   0
 #define IUPQML_TABLE_SELECT_EXTENDED 2
@@ -154,6 +155,7 @@ public:
     roles[IUPQML_TABLE_ROLE_ALIGNMENT] = "alignment";
     roles[IUPQML_TABLE_ROLE_SORTSIGN] = "sortsign";
     roles[IUPQML_TABLE_ROLE_CELLSEL] = "cellselected";
+    roles[IUPQML_TABLE_ROLE_IMAGESIZE] = "imagesize";
     return roles;
   }
 
@@ -213,6 +215,9 @@ public:
         return pixmap ? iupqmlImageUrl(pixmap) : QString();
       }
 
+    case IUPQML_TABLE_ROLE_IMAGESIZE:
+      return iupqmlImageSourceSize(cellImage(lin, col));
+
     case IUPQML_TABLE_ROLE_CELLSEL:
       return iupTableCellsIsSelected(ih, lin, col) ? true : false;
 
@@ -224,8 +229,11 @@ public:
           for (int c = 1; c <= num_col; c++)
           {
             QPixmap* pixmap = cellImage(lin, c);
-            if (pixmap && pixmap->height() + 4 > height)
-              height = pixmap->height() + 4;
+            int img_h = 0;
+            if (pixmap)
+              iupqmlPixmapGetSize(pixmap, nullptr, &img_h);
+            if (img_h + 4 > height)
+              height = img_h + 4;
           }
         }
         return height;
@@ -1339,6 +1347,7 @@ static const char* qmlTableQml =
   "        Image {\n"
   "          id: img\n"
   "          source: root.iupShowImage ? cell.model.image : \"\"\n"
+  "          sourceSize: cell.model.imagesize\n"
   "          visible: source != \"\"\n"
   "          width: visible ? (root.iupFitImage ? implicitWidth * (height / Math.max(1, implicitHeight)) : implicitWidth) : 0\n"
   "          height: root.iupFitImage ? Math.min(implicitHeight, parent.height - 2) : implicitHeight\n"

@@ -627,7 +627,7 @@ extern "C" IUP_SDK_API void iupdrvTabsGetTabSize(Ihandle* ih, const char* tab_ti
     if (img)
     {
       int img_w, img_h;
-      iupdrvImageGetInfo(img, &img_w, &img_h, nullptr);
+      iupqtPixmapGetSize(static_cast<QPixmap*>(img), &img_w, &img_h);
       iupTabsScaleImageSize(ih, img_w, img_h, &img_w, &img_h);
       width += img_w;
       width += 4;  /* Qt adds 4px padding when icon is present */

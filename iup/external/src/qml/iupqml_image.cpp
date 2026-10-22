@@ -203,6 +203,7 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgc
 
   auto* pixmap = new QPixmap();
   *pixmap = QPixmap::fromImage(image);
+  pixmap->setDevicePixelRatio(iupImageGetPixelScale(ih));
 
   if (make_inactive || (has_alpha && flat_alpha))
     iupAttribSet(ih, "_IUP_BGCOLOR_DEPEND", "1");

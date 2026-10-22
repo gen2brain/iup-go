@@ -26,6 +26,8 @@ extern "C" {
 #include "iup_image.h"
 }
 
+#include "iupqt_drv.h"
+
 /****************************************************************************
  * Image Data Extraction
  ****************************************************************************/
@@ -79,6 +81,21 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
         line_data[x * channels + 3] = qAlpha(pixel);
     }
   }
+}
+
+IUP_DRV_API void iupqtPixmapGetSize(const QPixmap* pixmap, int* w, int* h)
+{
+  qreal dpr = pixmap->devicePixelRatio();
+  if (w) *w = qRound(pixmap->width() / dpr);
+  if (h) *h = qRound(pixmap->height() / dpr);
+}
+
+IUP_DRV_API QPixmap iupqtPixmapScaledToHeight(const QPixmap* pixmap, int height)
+{
+  qreal dpr = pixmap->devicePixelRatio();
+  QPixmap scaled = pixmap->scaledToHeight(qRound(height * dpr), Qt::SmoothTransformation);
+  scaled.setDevicePixelRatio(dpr);
+  return scaled;
 }
 
 /****************************************************************************
@@ -203,6 +220,7 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgc
 
   auto* pixmap = new QPixmap();
   *pixmap = QPixmap::fromImage(image);
+  pixmap->setDevicePixelRatio(iupImageGetPixelScale(ih));
 
   if (make_inactive || (has_alpha && flat_alpha))
     iupAttribSet(ih, "_IUP_BGCOLOR_DEPEND", "1");

@@ -27,7 +27,7 @@ static void cocoaTouchImageReleaseMallocPixels(void* info, const void* data, siz
 }
 
 /* wraps premultiplied-RGBA32 pixels in a UIImage; provider owns and frees `pixels` */
-static UIImage* cocoaTouchImageFromRGBA(unsigned char* pixels, int width, int height)
+static UIImage* cocoaTouchImageFromRGBA(unsigned char* pixels, int width, int height, double scale)
 {
 	size_t row_bytes = (size_t)width * 4;
 	CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
@@ -35,7 +35,7 @@ static UIImage* cocoaTouchImageFromRGBA(unsigned char* pixels, int width, int he
 	CGImageRef cg_image = CGImageCreate(width, height, 8, 32, row_bytes, cs,
 	                                    kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big,
 	                                    provider, NULL, false, kCGRenderingIntentDefault);
-	UIImage* ui_image = cg_image ? [UIImage imageWithCGImage:cg_image] : nil;
+	UIImage* ui_image = cg_image ? [UIImage imageWithCGImage:cg_image scale:scale orientation:UIImageOrientationUp] : nil;
 	if (cg_image) CGImageRelease(cg_image);
 	CGDataProviderRelease(provider);
 	CGColorSpaceRelease(cs);
@@ -199,7 +199,7 @@ static void* cocoaTouchImageCreateImage(Ihandle* ih, const char* bgcolor, int ma
 		bpp == 8 ? palette : NULL, palette_has_alpha, make_inactive, bg);
 	if (!rgba) return NULL;
 
-	UIImage* ui_image = cocoaTouchImageFromRGBA(rgba, width, height);
+	UIImage* ui_image = cocoaTouchImageFromRGBA(rgba, width, height, iupImageGetPixelScale(ih));
 	if (make_inactive) iupAttribSetStr(ih, "_IUP_BGCOLOR_DEPEND", "1");
 	return [ui_image retain];
 }

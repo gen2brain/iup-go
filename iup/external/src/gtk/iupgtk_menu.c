@@ -251,11 +251,11 @@ static void gtkMenuItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
     GtkWidget* image = gtkMenuItemGetImageWidget(ih);
     if (image)
     {
-      gtk_image_set_from_pixbuf(GTK_IMAGE(image), pixbuf);
+      iupgtkImageSetPixbuf(GTK_IMAGE(image), pixbuf);
     }
     else
     {
-      image = gtk_image_new_from_pixbuf(pixbuf);
+      image = iupgtkImageNewFromPixbuf(pixbuf);
       gtk_box_pack_start(GTK_BOX(child), image, FALSE, FALSE, 0);
       gtk_box_reorder_child(GTK_BOX(child), image, 0);
       gtk_widget_show(image);
@@ -274,7 +274,7 @@ static void gtkMenuItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
 #else
     box = gtk_hbox_new(FALSE, 6);
 #endif
-    image = gtk_image_new_from_pixbuf(pixbuf);
+    image = iupgtkImageNewFromPixbuf(pixbuf);
 
     gtk_box_pack_start(GTK_BOX(box), image, FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(box), child, TRUE, TRUE, 0);
@@ -341,8 +341,8 @@ static void gtkMenuItemUpdateImage(Ihandle* ih, const char* value, const char* i
       gtk_image_menu_item_set_image((GtkImageMenuItem*)ih->handle, image_label);
     }
 
-    if (pixbuf != gtk_image_get_pixbuf((GtkImage*)image_label))
-      gtk_image_set_from_pixbuf((GtkImage*)image_label, pixbuf);
+    if (pixbuf != iupgtkImageGetPixbuf((GtkImage*)image_label))
+      iupgtkImageSetPixbuf((GtkImage*)image_label, pixbuf);
   }
   else
     gtk_image_menu_item_set_image((GtkImageMenuItem*)ih->handle, NULL);

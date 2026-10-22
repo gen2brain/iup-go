@@ -958,30 +958,35 @@ static void gtk4TableUpdateCellFocusRect(Ihandle* ih, GtkWidget* box, int row_in
 static GdkPaintable* gtk4TableCellPaintable(Ihandle* ih, GdkPaintable* paintable)
 {
   if (!ih->data->fit_image || !GDK_IS_TEXTURE(paintable))
-    return g_object_ref(paintable);
+    return iupgtk4ImageNewPaintable(paintable);
 
   GdkTexture* texture = GDK_TEXTURE(paintable);
   int width = gdk_texture_get_width(texture);
   int height = gdk_texture_get_height(texture);
+  double scale = iupgtk4ImageGetScale(texture);
   int charheight;
   iupdrvFontGetCharSize(ih, NULL, &charheight);
-  if (height <= charheight || charheight <= 0)
-    return g_object_ref(paintable);
+  if (height <= iupRound(charheight * scale) || charheight <= 0)
+    return iupgtk4ImageNewPaintable(paintable);
 
-  int new_width = (width * charheight) / height;
+  int new_height = iupRound(charheight * scale);
+  int new_width = (width * new_height) / height;
   if (new_width < 1)
     new_width = 1;
 
   guchar* src = g_malloc((gsize)width * height * 4);
   gdk_texture_download(texture, src, (gsize)width * 4);
-  guchar* dst = g_malloc((gsize)new_width * charheight * 4);
-  iupImageResizeRGBA(width, height, src, new_width, charheight, dst, 4);
+  guchar* dst = g_malloc((gsize)new_width * new_height * 4);
+  iupImageResizeRGBA(width, height, src, new_width, new_height, dst, 4);
   g_free(src);
 
-  GBytes* bytes = g_bytes_new_take(dst, (gsize)new_width * charheight * 4);
-  GdkTexture* scaled = gdk_memory_texture_new(new_width, charheight, GDK_MEMORY_DEFAULT, bytes, (gsize)new_width * 4);
+  GBytes* bytes = g_bytes_new_take(dst, (gsize)new_width * new_height * 4);
+  GdkTexture* scaled = gdk_memory_texture_new(new_width, new_height, GDK_MEMORY_DEFAULT, bytes, (gsize)new_width * 4);
   g_bytes_unref(bytes);
-  return GDK_PAINTABLE(scaled);
+  iupgtk4TextureSetScale(scaled, scale);
+  GdkPaintable* shown = iupgtk4ImageNewPaintable(scaled);
+  g_object_unref(scaled);
+  return shown;
 }
 
 static void gtk4TableSetCellImage(Ihandle* ih, GtkWidget* picture, GdkPaintable* paintable)
