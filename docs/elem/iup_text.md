@@ -168,6 +168,7 @@ Not supported in Motif.
 **READONLY**: Allows the user only to read the contents, without changing it.
 Restricts keyboard input only, text value can still be changed using attributes.
 Navigation keys are still available. Possible values: "YES", "NO". Default: NO.
+In iOS a single-line read-only text cannot be selected.
 
 **SCROLLBAR** (creation-only): Valid only when MULTILINE=YES.
 Associates an automatic horizontal and/or vertical scrollbar to the multiline.
