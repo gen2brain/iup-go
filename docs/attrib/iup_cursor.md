@@ -70,7 +70,7 @@ Attention: the cursor cannot be in use when it is destroyed.
 
 ### Affects
 
-[IupDialog](../dlg/iup_dialog.md), [IupCanvas](../elem/iup_canvas.md)
+[IupDialog](../dlg/iup_dialog.md), [IupCanvas](../elem/iup_canvas.md), [IupLink](../elem/iup_link.md), [IupVal](../elem/iup_val.md)
 
 ### See Also
 
