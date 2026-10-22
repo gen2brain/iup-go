@@ -717,6 +717,9 @@ IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
     gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
     iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
 
+    if (!ih->data->is_dropdown)
+      gtk_tree_view_columns_autosize((GtkTreeView*)ih->handle);
+
     iupListUpdateOldValue(ih, pos, 1);
   }
 }
@@ -727,6 +730,9 @@ IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
   gtk_list_store_clear(GTK_LIST_STORE(model));
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
+
+  if (!ih->data->is_dropdown)
+    gtk_tree_view_columns_autosize((GtkTreeView*)ih->handle);
 }
 
 
@@ -995,7 +1001,7 @@ static int gtkListSetValueAttrib(Ihandle* ih, const char* value)
       {
         int pos;
         iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
-        if (iupStrToInt(value, &pos) == 1)
+        if (iupStrToInt(value, &pos) == 1 && pos > 0 && pos <= iupdrvListGetCount(ih))
         {
           GtkTreePath* path = gtk_tree_path_new_from_indices(pos-1, -1);   /* IUP starts at 1 */
           gtk_tree_selection_select_path(selection, path);
