@@ -67,7 +67,10 @@ While the element is not mapped, a set source is "STOPPED". Unmapping closes the
 While "PLAYING" or "BUFFERING" a source with video, the screen saver and display sleep are inhibited.
 In Linux and FreeBSD this requires the org.freedesktop.ScreenSaver D-Bus service or an X11 session.
 
-**POSITION** (non-inheritable): Playback position in seconds, as a floating point number. Setting it seeks asynchronously. Ignored when the source is not seekable.
+**POSITION** (non-inheritable): Playback position in seconds, as a floating point number. Setting it seeks asynchronously, as selected by SEEKMODE. Ignored when the source is not seekable.
+
+**SEEKMODE** (non-inheritable): How setting POSITION seeks. Can be "EXACT" (to the given position) or "FAST" (to a nearby keyframe). Default: "EXACT".
+With "VLC" 3, and in WebAssembly in browsers without HTMLMediaElement.fastSeek, "FAST" seeks like "EXACT".
 
 **DURATION** (read-only): Length of the source in seconds, as a floating point number, or "0" when unknown.
 

@@ -61,7 +61,7 @@ struct _IcontrolData
   int device_count;
   const IvideoBackend* device_backend;
   int url, intent, state, ready, ended, reported_error, reported_state, inhibit;
-  int pending_seek;
+  int pending_seek, seek_fast;
   double seek_position;
   IvideoInfo info;
   IvideoSubtitle* subtitles;
@@ -1047,7 +1047,7 @@ static int iVideoTick(Ihandle* timer)
       if (ih->data->pending_seek)
       {
         if (info.seekable)
-          session->backend->seek(session, ih->data->seek_position);
+          session->backend->seek(session, ih->data->seek_position, ih->data->seek_fast);
         ih->data->pending_seek = 0;
         info.ended = 0;
       }
@@ -1055,7 +1055,7 @@ static int iVideoTick(Ihandle* timer)
       {
         if (iupAttribGetBoolean(ih, "LOOP") && info.seekable)
         {
-          session->backend->seek(session, 0);
+          session->backend->seek(session, 0, 0);
           session->backend->play(session, ih->data->intent == 2);
         }
         else
@@ -1488,7 +1488,7 @@ static int iVideoSetPlayAttrib(Ihandle* ih, const char* value)
   if (session && ih->data->ready && ih->data->state != IVIDEO_ERROR)
   {
     if (ih->data->ended)
-      session->backend->seek(session, 0);
+      session->backend->seek(session, 0, 0);
     ih->data->ended = 0;
     session->backend->play(session, 1);
   }
@@ -1517,7 +1517,7 @@ static int iVideoSetStopAttrib(Ihandle* ih, const char* value)
   {
     ih->data->session->backend->play(ih->data->session, 0);
     if (ih->data->info.seekable)
-      ih->data->session->backend->seek(ih->data->session, 0);
+      ih->data->session->backend->seek(ih->data->session, 0, 0);
     ih->data->pending_seek = 0;
   }
   return 0;
@@ -1530,6 +1530,7 @@ static int iVideoSetPositionAttrib(Ihandle* ih, const char* value)
   {
     ih->data->pending_seek = 1;
     ih->data->seek_position = position;
+    ih->data->seek_fast = iupStrEqualNoCase(iupAttribGetStr(ih, "SEEKMODE"), "FAST");
     ih->data->ended = 0;
   }
   return 0;
@@ -1874,6 +1875,7 @@ Iclass* iupVideoNewClass(void)
   iupClassRegisterAttribute(ic, "PAUSE", NULL, iVideoSetPauseAttrib, NULL, NULL, flags | IUPAF_WRITEONLY);
   iupClassRegisterAttribute(ic, "STOP", NULL, iVideoSetStopAttrib, NULL, NULL, flags | IUPAF_WRITEONLY);
   iupClassRegisterAttribute(ic, "POSITION", iVideoGetPositionAttrib, iVideoSetPositionAttrib, NULL, NULL, flags);
+  iupClassRegisterAttribute(ic, "SEEKMODE", NULL, NULL, IUPAF_SAMEASSYSTEM, "EXACT", flags);
   iupClassRegisterAttribute(ic, "DURATION", iVideoGetDurationAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);
   iupClassRegisterAttribute(ic, "VIDEOSIZE", iVideoGetVideoSizeAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);
   iupClassRegisterAttribute(ic, "SEEKABLE", iVideoGetSeekableAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);

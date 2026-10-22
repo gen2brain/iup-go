@@ -187,12 +187,12 @@ static libvlc_time_t iVideoVlcGetLength(libvlc_media_player_t* player)
   return iupvlc_major == 3 || length < 0 ? length : length / 1000;
 }
 
-static void iVideoVlcSetTime(libvlc_media_player_t* player, libvlc_time_t time)
+static void iVideoVlcSetTime(libvlc_media_player_t* player, libvlc_time_t time, int fast)
 {
   if (iupvlc_major == 3)
     libvlc_media_player_set_time(player, time);
   else
-    iupvlc4_media_player_set_time(player, time * 1000, false);
+    iupvlc4_media_player_set_time(player, time * 1000, fast != 0);
 }
 
 static int iVideoVlcSeekable(libvlc_media_player_t* player)
@@ -570,7 +570,7 @@ static void iVideoVlcPlay(IvideoSession* session, int play)
   libvlc_media_player_set_pause(context->player, !play);
 }
 
-static void iVideoVlcSeek(IvideoSession* session, double position)
+static void iVideoVlcSeek(IvideoSession* session, double position, int fast)
 {
   IvideoVlc* context = (IvideoVlc*)session->context;
   if (position > (double)LLONG_MAX / 1000)
@@ -583,7 +583,7 @@ static void iVideoVlcSeek(IvideoSession* session, double position)
     context->previous = libvlc_Opening;
     context->restarting = iupvlc_major == 4;
   }
-  iVideoVlcSetTime(context->player, (libvlc_time_t)(position * 1000));
+  iVideoVlcSetTime(context->player, (libvlc_time_t)(position * 1000), fast);
   if (iupvlc_major == 4 && iVideoVlcState(context->player) == libvlc_Paused)
     libvlc_media_player_next_frame(context->player);
 }
@@ -782,7 +782,7 @@ static int iVideoVlcSubtitleSelect(IvideoSession* session, int index, double del
     changed = 1;
   }
   if (changed && iVideoVlcState(context->player) == libvlc_Paused && iVideoVlcSeekable(context->player))
-    iVideoVlcSetTime(context->player, iVideoVlcGetTime(context->player));
+    iVideoVlcSetTime(context->player, iVideoVlcGetTime(context->player), 0);
   return 1;
 }
 
@@ -844,7 +844,7 @@ static void iVideoVlcAudioDevice(IvideoSession* session, const char* id)
   if (!iVideoVlcStart(session, context, player))
     return;
   if (time > 0)
-    iVideoVlcSetTime(context->player, time);
+    iVideoVlcSetTime(context->player, time, 0);
   context->previous = libvlc_Opening;
   if (context->ready)
   {
