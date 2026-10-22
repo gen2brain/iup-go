@@ -291,11 +291,14 @@ static void qtTableSetFullIcon(QTableWidget* table, QTableWidgetItem* item, int 
 {
   item->setIcon(QIcon(*pixmap));
 
-  QSize size = table->iconSize().expandedTo(pixmap->size());
+  int img_w, img_h;
+  iupqtPixmapGetSize(pixmap, &img_w, &img_h);
+
+  QSize size = table->iconSize().expandedTo(QSize(img_w, img_h));
   if (size != table->iconSize())
     table->setIconSize(size);
 
-  int height = pixmap->height() + 4;
+  int height = img_h + 4;
   if (table->rowHeight(row) < height)
     table->setRowHeight(row, height);
 }
@@ -370,9 +373,11 @@ public:
                 int charheight;
                 iupdrvFontGetCharSize(ih, nullptr, &charheight);
                 int available_height = charheight + 4;
-                if (pixImage->height() > available_height)
+                int img_h;
+                iupqtPixmapGetSize(pixImage, nullptr, &img_h);
+                if (img_h > available_height)
                 {
-                  QPixmap scaled = pixImage->scaledToHeight(available_height, Qt::SmoothTransformation);
+                  QPixmap scaled = iupqtPixmapScaledToHeight(pixImage, available_height);
                   existingItem->setIcon(QIcon(scaled));
                 }
                 else
@@ -1684,9 +1689,11 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
         int charheight;
         iupdrvFontGetCharSize(ih, nullptr, &charheight);
         int available_height = charheight + 4;
-        if (pixImage->height() > available_height)
+        int img_h;
+        iupqtPixmapGetSize(pixImage, nullptr, &img_h);
+        if (img_h > available_height)
         {
-          QPixmap scaled = pixImage->scaledToHeight(available_height, Qt::SmoothTransformation);
+          QPixmap scaled = iupqtPixmapScaledToHeight(pixImage, available_height);
           item->setIcon(QIcon(scaled));
         }
         else

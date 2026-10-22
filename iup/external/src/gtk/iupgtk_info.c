@@ -123,6 +123,32 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   return gdk_screen_get_resolution(gdk_screen_get_default());
 }
 
+IUP_SDK_API double iupdrvGetScreenScale(void)
+{
+#if GTK_CHECK_VERSION(3, 22, 0)
+  GdkDisplay* display = gdk_display_get_default();
+  GdkMonitor* monitor = gdk_display_get_primary_monitor(display);
+  if (!monitor)
+    monitor = gdk_display_get_monitor(display, 0);
+  return monitor ? gdk_monitor_get_scale_factor(monitor) : 1;
+#elif GTK_CHECK_VERSION(3, 10, 0)
+  GdkScreen* screen = gdk_screen_get_default();
+  return gdk_screen_get_monitor_scale_factor(screen, gdk_screen_get_primary_monitor(screen));
+#else
+  double dpi = iupdrvGetScreenDpi();
+  return dpi > 0 ? (int)(dpi / 24.0 + 0.5) / 4.0 : 1;
+#endif
+}
+
+IUP_SDK_API double iupdrvGetDevicePixelRatio(void)
+{
+#if GTK_CHECK_VERSION(3, 0, 0)
+  return iupdrvGetScreenScale();
+#else
+  return 1;
+#endif
+}
+
 IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
 #if GTK_CHECK_VERSION(3, 20, 0)

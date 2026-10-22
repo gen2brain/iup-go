@@ -389,6 +389,13 @@ static NSImage* iupCocoaCreateNSImage(Ihandle* ih, const char* bgcolor, int make
     }
   }
 
+  {
+    double scale = iupImageGetPixelScale(ih);
+    width = iupRound(width / scale);
+    height = iupRound(height / scale);
+    [bitmap_image setSize:NSMakeSize(width, height)];
+  }
+
   NSImage* ns_image = cocoaImageWrapBitmapRep(bitmap_image, width, height);
 
   if (make_inactive || flat_alpha)
@@ -453,7 +460,8 @@ static void* cocoaImageCreateCursor(Ihandle* ih)
   }
 
   NSSize size = [image size];
-  NSPoint hotSpot = NSMakePoint(hx, size.height - 1 - hy);
+  double scale = iupImageGetPixelScale(ih);
+  NSPoint hotSpot = NSMakePoint(hx / scale, size.height - 1 - hy / scale);
 
   NSCursor* cursor = [[NSCursor alloc] initWithImage:image hotSpot:hotSpot];
   [image release];

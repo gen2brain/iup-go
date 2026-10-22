@@ -297,6 +297,7 @@ See also [IupImage](../elem/iup_image.md).
 The **DRAWMAKEINACTIVE** attribute can be used to force the image to be drawn with an inactive state appearance.
 The **DRAWBGCOLOR** can be used to control the inactive state background color or when transparency is flattened.
 w and h are optional and can be -1 or 0, then the source size will be used, and no zoom will be performed.
+For an image with [SCALE](../elem/iup_image.md) the default size is the size the image occupies, as returned by **IupDrawGetImageInfo**.
 
 The **DRAWIMAGESRCRECT** attribute selects a source sub-rectangle in the format "X Y W H" (in image pixels), so a region of the image can be drawn without creating a new image. Default: NULL (whole image).
 
@@ -335,6 +336,7 @@ Returns the font vertical metrics for the font defined by DRAWFONT, if not defin
     void IupDrawGetImageInfo(const char* name, int *w, int *h, int *bpp);
 
 Returns the given image size and bits per pixel. bpp can be 8, 24 or 32.
+For an image with [SCALE](../elem/iup_image.md) it returns the size the image occupies, not its number of pixels.
 In C unwanted values can be NULL.
 
     Ihandle* IupDrawGetImage(Ihandle* ih);

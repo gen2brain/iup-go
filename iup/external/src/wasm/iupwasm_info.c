@@ -75,6 +75,16 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   return iupwasmScreenDpi();
 }
 
+IUP_SDK_API double iupdrvGetScreenScale(void)
+{
+  return iupwasmScreenDpi() / 96.0;
+}
+
+IUP_SDK_API double iupdrvGetDevicePixelRatio(void)
+{
+  return iupdrvGetScreenScale();
+}
+
 EM_JS(char*, iupwasmJsBrowserVersion, (void), {
   var s = "";
   try {

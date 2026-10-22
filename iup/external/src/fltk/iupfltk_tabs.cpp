@@ -532,7 +532,9 @@ static void fltkTabsAssignTabImage(Ihandle* ih, Ihandle* child, Fl_Widget* page,
   {
     Fl_RGB_Scaling prev = Fl_Image::RGB_scaling();
     Fl_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
-    Fl_Image* scaled = src->copy(dst_w, dst_h);
+    Fl_Image* scaled = src->copy(dst_w * src->data_w() / raw_w, dst_h * src->data_h() / raw_h);
+    if (scaled)
+      scaled->scale(dst_w, dst_h, 0, 1);
     Fl_Image::RGB_scaling(prev);
     page->image(scaled);
     iupAttribSet(child, "_IUPFLTK_TABIMAGE_OWNED", reinterpret_cast<char*>(scaled));

@@ -202,6 +202,16 @@ extern "C" IUP_SDK_API double iupdrvGetScreenDpi(void)
   return dpi;
 }
 
+extern "C" IUP_SDK_API double iupdrvGetScreenScale(void)
+{
+  return static_cast<int>(iupdrvGetScreenDpi() / 24.0 + 0.5) / 4.0;
+}
+
+extern "C" IUP_SDK_API double iupdrvGetDevicePixelRatio(void)
+{
+  return 1.0;
+}
+
 extern "C" IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   POINT cursorPoint;

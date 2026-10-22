@@ -173,6 +173,10 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgc
   auto* image = new Fl_RGB_Image(data, ih->currentwidth, ih->currentheight, channels);
   image->alloc_array = 1;
 
+  double scale = iupImageGetPixelScale(ih);
+  if (scale != 1.0)
+    image->scale(iupRound(ih->currentwidth / scale), iupRound(ih->currentheight / scale), 0, 1);
+
   if (make_inactive || (has_alpha && flat_alpha))
     iupAttribSet(ih, "_IUP_BGCOLOR_DEPEND", "1");
 

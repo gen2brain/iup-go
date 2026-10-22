@@ -59,6 +59,7 @@ void iupwasmJsToggleSwitchMode(int id);
 int  iupwasmJsToggleGetValue(int id);
 void iupwasmJsToggleWire(int id);
 void iupwasmJsSetImage(int elId, int imgId);
+void iupwasmImageGetSize(void* handle, int* w, int* h);
 void iupwasmJsSetInactiveImage(int elId, int imgId, int isBg);
 void iupwasmJsButtonStyle(int id);
 void iupwasmJsButtonAlign(int id, const char* css);

@@ -123,6 +123,7 @@ static const iGlobalRegEntry registry[] = {
   { "SB_BGCOLOR",             0,    M|G|G4 },
   { "SCREENDEPTH",            R,    ALL },
   { "SCREENDPI",              R,    ALL },
+  { "SCREENSCALE",            R,    ALL },
   { "SCREENSIZE",             R,    ALL },
   { "SCROLLBARSIZE",          R,    ALL },
   { "SHIFTKEY",               R,    ALL },

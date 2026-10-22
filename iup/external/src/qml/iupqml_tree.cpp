@@ -54,6 +54,7 @@ extern "C" {
 #define IUPQML_ROLE_TOGGLE         (Qt::UserRole + 6)
 #define IUPQML_ROLE_TOGGLEVISIBLE  (Qt::UserRole + 7)
 #define IUPQML_ROLE_KIND           (Qt::UserRole + 8)
+#define IUPQML_ROLE_IMAGESIZE      (Qt::UserRole + 9)
 
 struct IupQmlTreeNode
 {
@@ -191,6 +192,7 @@ public:
     roles[IUPQML_ROLE_TOGGLE] = "toggle";
     roles[IUPQML_ROLE_TOGGLEVISIBLE] = "togglevisible";
     roles[IUPQML_ROLE_KIND] = "kind";
+    roles[IUPQML_ROLE_IMAGESIZE] = "imagesize";
     return roles;
   }
 
@@ -232,6 +234,8 @@ public:
         QPixmap* pixmap = nodeImage(node);
         return pixmap ? iupqmlImageUrl(pixmap) : QString();
       }
+    case IUPQML_ROLE_IMAGESIZE:
+      return iupqmlImageSourceSize(nodeImage(node));
     case IUPQML_ROLE_FGCOLOR:
       return node->fg.isValid() ? QVariant(node->fg) : QVariant();
     case IUPQML_ROLE_BGCOLOR:
@@ -2368,6 +2372,7 @@ static const char* qmlTreeViewQml =
   "      }\n"
   "      Image {\n"
   "        source: d.model.image\n"
+  "        sourceSize: d.model.imagesize\n"
   "        visible: d.model.image !== \"\"\n"
   "        width: visible ? implicitWidth : 0\n"
   "        anchors.verticalCenter: parent.verticalCenter\n"

@@ -2200,6 +2200,24 @@ static gboolean gtkTreeRenameFocusOut(GtkWidget* entry, GdkEventFocus* evt, Ihan
   return FALSE;
 }
 
+static void gtkTreeImageCellDataFunc(GtkCellLayout* layout, GtkCellRenderer* renderer, GtkTreeModel* model, GtkTreeIter* iter, gpointer data)
+{
+  GdkPixbuf* pixbuf = NULL;
+  gboolean is_expander = FALSE, is_expanded = FALSE;
+
+  g_object_get(G_OBJECT(renderer), "is-expander", &is_expander, "is-expanded", &is_expanded, NULL);
+  if (is_expander && is_expanded)
+    gtk_tree_model_get(model, iter, IUPGTK_NODE_IMAGE_EXPANDED, &pixbuf, -1);
+  if (!pixbuf)
+    gtk_tree_model_get(model, iter, IUPGTK_NODE_IMAGE, &pixbuf, -1);
+
+  iupgtkCellRendererSetPixbuf(renderer, pixbuf);
+  if (pixbuf)
+    g_object_unref(pixbuf);
+  (void)layout;
+  (void)data;
+}
+
 static void gtkTreeCellTextEditingCanceled(GtkCellRenderer* cell, Ihandle* ih)
 {
   iupAttribSet(ih, "_IUPGTK_EDIT_PATH", NULL);
@@ -3173,10 +3191,7 @@ static int gtkTreeMapMethod(Ihandle* ih)
 
   renderer_img = gtk_cell_renderer_pixbuf_new();
   gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(column), renderer_img, FALSE);
-  gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_img, "pixbuf", IUPGTK_NODE_IMAGE,
-                                                          "pixbuf-expander-open", IUPGTK_NODE_IMAGE_EXPANDED,
-                                                        "pixbuf-expander-closed", IUPGTK_NODE_IMAGE,
-                                                            NULL);
+  gtk_cell_layout_set_cell_data_func(GTK_CELL_LAYOUT(column), renderer_img, gtkTreeImageCellDataFunc, NULL, NULL);
   iupAttribSet(ih, "_IUPGTK_RENDERER_IMG", (char*)renderer_img);
 
   renderer_txt = gtk_cell_renderer_text_new();

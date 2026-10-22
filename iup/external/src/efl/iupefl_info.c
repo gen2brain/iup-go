@@ -57,6 +57,17 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   return 96.0;
 }
 
+IUP_SDK_API double iupdrvGetScreenScale(void)
+{
+  double scale = elm_config_scale_get();
+  return scale > 0 ? scale : 1.0;
+}
+
+IUP_SDK_API double iupdrvGetDevicePixelRatio(void)
+{
+  return 1.0;
+}
+
 IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   Eo* win = iupeflGetMainWindow();

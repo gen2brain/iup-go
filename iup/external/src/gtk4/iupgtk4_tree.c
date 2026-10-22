@@ -908,7 +908,9 @@ iupgtk4TreeRowExpandedChanged(GObject* row, GParamSpec* pspec, gpointer user_dat
 
   if (texture && widgets->image)
   {
-    gtk_image_set_from_paintable(GTK_IMAGE(widgets->image), GDK_PAINTABLE(texture));
+    GdkPaintable* paintable = iupgtk4ImageNewPaintable(texture);
+    gtk_image_set_from_paintable(GTK_IMAGE(widgets->image), paintable);
+    g_object_unref(paintable);
   }
 
   if (!iupAttribGet(ih, "_IUPTREE_IGNORE_BRANCH_CB"))
@@ -1067,7 +1069,9 @@ iupgtk4TreeUpdateItemWidgets(Ihandle* ih, IupGtk4TreeItemWidgets* widgets, IupGt
 
   if (texture)
   {
-    gtk_image_set_from_paintable(GTK_IMAGE(widgets->image), GDK_PAINTABLE(texture));
+    GdkPaintable* paintable = iupgtk4ImageNewPaintable(texture);
+    gtk_image_set_from_paintable(GTK_IMAGE(widgets->image), paintable);
+    g_object_unref(paintable);
   }
   else
   {

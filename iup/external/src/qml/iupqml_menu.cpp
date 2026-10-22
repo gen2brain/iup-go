@@ -193,8 +193,10 @@ static void qmlMenuItemUpdateImage(Ihandle* ih, const char* value, const char* i
   if (pixmap)
   {
     iupqmlSetProperty(item, "icon.source", QUrl(iupqmlImageUrl(pixmap)));
-    iupqmlSetProperty(item, "icon.width", pixmap->width());
-    iupqmlSetProperty(item, "icon.height", pixmap->height());
+    int img_w, img_h;
+    iupqmlPixmapGetSize(pixmap, &img_w, &img_h);
+    iupqmlSetProperty(item, "icon.width", img_w);
+    iupqmlSetProperty(item, "icon.height", img_h);
   }
   else
     iupqmlSetProperty(item, "icon.source", QUrl());

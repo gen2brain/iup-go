@@ -277,7 +277,9 @@ static void qtButtonSetPixmap(Ihandle* ih, const char* name, int make_inactive)
   if (pixmap && !pixmap->isNull())
   {
     button->setIcon(QIcon(*pixmap));
-    button->setIconSize(pixmap->size());
+    int img_w, img_h;
+    iupqtPixmapGetSize(pixmap, &img_w, &img_h);
+    button->setIconSize(QSize(img_w, img_h));
   }
   else
   {

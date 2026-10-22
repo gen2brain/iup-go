@@ -425,7 +425,16 @@ static Fl_Image* fltkListFitImage(Ihandle* ih, Fl_Image* image)
   if (image->h() > available_height && available_height > 0)
   {
     int scaled_w = (image->w() * available_height) / image->h();
-    return image->copy(scaled_w, available_height);
+    if (image->data_w() == image->w() && image->data_h() == image->h())
+      return image->copy(scaled_w, available_height);
+
+    Fl_RGB_Scaling prev = Fl_Image::RGB_scaling();
+    Fl_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
+    Fl_Image* fitted = image->copy(scaled_w * image->data_w() / image->w(), available_height * image->data_h() / image->h());
+    Fl_Image::RGB_scaling(prev);
+    if (fitted)
+      fitted->scale(scaled_w, available_height, 0, 1);
+    return fitted;
   }
 
   return image;

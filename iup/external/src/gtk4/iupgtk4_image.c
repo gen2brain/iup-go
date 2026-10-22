@@ -18,6 +18,107 @@
 #include "iupgtk4_drv.h"
 
 
+typedef struct _IupGtk4ScaledPaintable
+{
+  GObject parent;
+  GdkPaintable* paintable;
+  int width, height;
+} IupGtk4ScaledPaintable;
+
+typedef struct _IupGtk4ScaledPaintableClass
+{
+  GObjectClass parent_class;
+} IupGtk4ScaledPaintableClass;
+
+static void iup_gtk4_scaled_paintable_iface_init(GdkPaintableInterface* iface);
+
+G_DEFINE_TYPE_WITH_CODE(IupGtk4ScaledPaintable, iup_gtk4_scaled_paintable, G_TYPE_OBJECT,
+                        G_IMPLEMENT_INTERFACE(GDK_TYPE_PAINTABLE, iup_gtk4_scaled_paintable_iface_init))
+
+static void iup_gtk4_scaled_paintable_snapshot(GdkPaintable* paintable, GdkSnapshot* snapshot, double width, double height)
+{
+  IupGtk4ScaledPaintable* self = (IupGtk4ScaledPaintable*)paintable;
+  gdk_paintable_snapshot(self->paintable, snapshot, width, height);
+}
+
+static int iup_gtk4_scaled_paintable_get_intrinsic_width(GdkPaintable* paintable)
+{
+  return ((IupGtk4ScaledPaintable*)paintable)->width;
+}
+
+static int iup_gtk4_scaled_paintable_get_intrinsic_height(GdkPaintable* paintable)
+{
+  return ((IupGtk4ScaledPaintable*)paintable)->height;
+}
+
+static GdkPaintableFlags iup_gtk4_scaled_paintable_get_flags(GdkPaintable* paintable)
+{
+  (void)paintable;
+  return GDK_PAINTABLE_STATIC_SIZE | GDK_PAINTABLE_STATIC_CONTENTS;
+}
+
+static void iup_gtk4_scaled_paintable_iface_init(GdkPaintableInterface* iface)
+{
+  iface->snapshot = iup_gtk4_scaled_paintable_snapshot;
+  iface->get_intrinsic_width = iup_gtk4_scaled_paintable_get_intrinsic_width;
+  iface->get_intrinsic_height = iup_gtk4_scaled_paintable_get_intrinsic_height;
+  iface->get_flags = iup_gtk4_scaled_paintable_get_flags;
+}
+
+static void iup_gtk4_scaled_paintable_dispose(GObject* object)
+{
+  IupGtk4ScaledPaintable* self = (IupGtk4ScaledPaintable*)object;
+  g_clear_object(&self->paintable);
+  G_OBJECT_CLASS(iup_gtk4_scaled_paintable_parent_class)->dispose(object);
+}
+
+static void iup_gtk4_scaled_paintable_class_init(IupGtk4ScaledPaintableClass* klass)
+{
+  G_OBJECT_CLASS(klass)->dispose = iup_gtk4_scaled_paintable_dispose;
+}
+
+static void iup_gtk4_scaled_paintable_init(IupGtk4ScaledPaintable* self)
+{
+  (void)self;
+}
+
+IUP_DRV_API void iupgtk4TextureSetScale(GdkTexture* texture, double scale)
+{
+  if (texture && scale > 0 && scale != 1.0)
+    g_object_set_data_full(G_OBJECT(texture), "_IUPGTK4_SCALE", g_memdup2(&scale, sizeof(double)), g_free);
+}
+
+IUP_DRV_API double iupgtk4ImageGetScale(void* image)
+{
+  double* scale = (image && GDK_IS_TEXTURE(image)) ? (double*)g_object_get_data(G_OBJECT(image), "_IUPGTK4_SCALE") : NULL;
+  return scale ? *scale : 1.0;
+}
+
+IUP_DRV_API GdkPaintable* iupgtk4ImageNewPaintable(void* image)
+{
+  IupGtk4ScaledPaintable* wrapper;
+  double scale = iupgtk4ImageGetScale(image);
+
+  if (!image)
+    return NULL;
+  if (scale == 1.0)
+    return GDK_PAINTABLE(g_object_ref(image));
+
+  wrapper = g_object_new(iup_gtk4_scaled_paintable_get_type(), NULL);
+  wrapper->paintable = GDK_PAINTABLE(g_object_ref(image));
+  wrapper->width = iupRound(gdk_texture_get_width(GDK_TEXTURE(image)) / scale);
+  wrapper->height = iupRound(gdk_texture_get_height(GDK_TEXTURE(image)) / scale);
+  return GDK_PAINTABLE(wrapper);
+}
+
+IUP_DRV_API void iupgtk4ImageGetSize(void* image, int* w, int* h)
+{
+  double scale = iupgtk4ImageGetScale(image);
+  GdkPaintable* paintable = image ? GDK_PAINTABLE(image) : NULL;
+  if (w) *w = paintable ? iupRound(gdk_paintable_get_intrinsic_width(paintable) / scale) : 0;
+  if (h) *h = paintable ? iupRound(gdk_paintable_get_intrinsic_height(paintable) / scale) : 0;
+}
+
 IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgdata)
 {
   GdkTexture* texture = (GdkTexture*)handle;
@@ -138,6 +239,8 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int m
   bytes = g_bytes_new_take(pixdata, (gsize)ih->currentwidth * ih->currentheight * 4);
   texture = gdk_memory_texture_new(ih->currentwidth, ih->currentheight, GDK_MEMORY_R8G8B8A8, bytes, (gsize)ih->currentwidth * 4);
   g_bytes_unref(bytes);
+
+  iupgtk4TextureSetScale(texture, iupImageGetPixelScale(ih));
 
   return texture;
 }

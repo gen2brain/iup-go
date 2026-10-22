@@ -429,21 +429,21 @@ public:
           int available_height = font_height + 2 * ih->data->spacing;
           int img_x = rect.left() + ih->data->spacing;
 
-          QPixmap scaled_pixmap;
-          if (ih->data->fit_image && pixmap->height() > available_height)
+          int img_w, img_h;
+          iupqtPixmapGetSize(pixmap, &img_w, &img_h);
+          if (ih->data->fit_image && img_h > available_height)
           {
-            scaled_pixmap = pixmap->scaled(QSize(pixmap->width(), available_height),
-                                           Qt::KeepAspectRatio, Qt::SmoothTransformation);
-            int img_y = rect.top() + (rect.height() - scaled_pixmap.height()) / 2;
+            QPixmap scaled_pixmap = iupqtPixmapScaledToHeight(pixmap, available_height);
+            iupqtPixmapGetSize(&scaled_pixmap, &img_w, &img_h);
+            int img_y = rect.top() + (rect.height() - img_h) / 2;
             painter->drawPixmap(img_x, img_y, scaled_pixmap);
-            image_width = scaled_pixmap.width() + 2 * ih->data->spacing;
           }
           else
           {
-            int img_y = rect.top() + (rect.height() - pixmap->height()) / 2;
+            int img_y = rect.top() + (rect.height() - img_h) / 2;
             painter->drawPixmap(img_x, img_y, *pixmap);
-            image_width = pixmap->width() + 2 * ih->data->spacing;
           }
+          image_width = img_w + 2 * ih->data->spacing;
 
           opt.rect.setLeft(opt.rect.left() + image_width);
         }
@@ -1232,10 +1232,12 @@ static int qtListSetImageAttrib(Ihandle* ih, int id, const char* value)
 
       if (pixmap)
       {
-        if (pixmap->width() > ih->data->maximg_w)
-          ih->data->maximg_w = pixmap->width();
-        if (pixmap->height() > ih->data->maximg_h)
-          ih->data->maximg_h = pixmap->height();
+        int img_w, img_h;
+        iupqtPixmapGetSize(pixmap, &img_w, &img_h);
+        if (img_w > ih->data->maximg_w)
+          ih->data->maximg_w = img_w;
+        if (img_h > ih->data->maximg_h)
+          ih->data->maximg_h = img_h;
       }
     }
   }
@@ -1264,10 +1266,12 @@ static int qtListSetImageAttrib(Ihandle* ih, int id, const char* value)
 
         if (pixmap)
         {
-          if (pixmap->width() > ih->data->maximg_w)
-            ih->data->maximg_w = pixmap->width();
-          if (pixmap->height() > ih->data->maximg_h)
-            ih->data->maximg_h = pixmap->height();
+          int img_w, img_h;
+          iupqtPixmapGetSize(pixmap, &img_w, &img_h);
+          if (img_w > ih->data->maximg_w)
+            ih->data->maximg_w = img_w;
+          if (img_h > ih->data->maximg_h)
+            ih->data->maximg_h = img_h;
         }
       }
     }

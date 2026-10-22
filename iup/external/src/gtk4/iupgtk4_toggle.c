@@ -205,10 +205,11 @@ static void gtk4ToggleSetPaintable(Ihandle* ih, const char* name, int make_inact
   {
     if (name)
     {
-      GdkPaintable* paintable = (GdkPaintable*)iupImageGetImage(name, ih, make_inactive, NULL);
+      GdkPaintable* paintable = iupgtk4ImageNewPaintable(iupImageGetImage(name, ih, make_inactive, NULL));
       if (paintable)
       {
         gtk_picture_set_paintable(GTK_PICTURE(child), paintable);
+        g_object_unref(paintable);
         return;
       }
     }

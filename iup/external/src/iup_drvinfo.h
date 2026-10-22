@@ -47,6 +47,14 @@ IUP_SDK_API int iupdrvGetScreenDepth(void);
  * \ingroup drvinfo */
 IUP_SDK_API double iupdrvGetScreenDpi(void);
 
+/** Returns the number of screen pixels in a logical unit of the default desktop (1 at 100%, 2 at 200%).
+ * \ingroup drvinfo */
+IUP_SDK_API double iupdrvGetScreenScale(void);
+
+/** Returns the number of screen pixels in a layout unit, 1 when the layout is in screen pixels.
+ * \ingroup drvinfo */
+IUP_SDK_API double iupdrvGetDevicePixelRatio(void);
+
 /** Returns a string with the system version number.
  * \ingroup drvinfo */
 IUP_SDK_API char* iupdrvGetSystemVersion(void);

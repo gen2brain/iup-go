@@ -144,6 +144,16 @@ IUP_SDK_API double iupdrvGetScreenDpi(void)
   return dpi * 25.4;  /* mm to inch */
 }
 
+IUP_SDK_API double iupdrvGetScreenScale(void)
+{
+  return 1.0;
+}
+
+IUP_SDK_API double iupdrvGetDevicePixelRatio(void)
+{
+  return 1.0;
+}
+
 IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
   Window root, child;

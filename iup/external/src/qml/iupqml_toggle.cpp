@@ -192,8 +192,10 @@ static void qmlToggleSetPixmap(Ihandle* ih, const char* name, int make_inactive)
   if (pixmap && !pixmap->isNull())
   {
     iupqmlSetProperty(button, "icon.source", QUrl(iupqmlImageUrl(pixmap)));
-    iupqmlSetProperty(button, "icon.width", pixmap->width());
-    iupqmlSetProperty(button, "icon.height", pixmap->height());
+    int img_w, img_h;
+    iupqmlPixmapGetSize(pixmap, &img_w, &img_h);
+    iupqmlSetProperty(button, "icon.width", img_w);
+    iupqmlSetProperty(button, "icon.height", img_h);
     iupqmlSetProperty(button, "icon.color", QColor(Qt::transparent));
     iupqmlSetProperty(button, "icon.cache", false);
     iupqmlButtonImageContent(button);

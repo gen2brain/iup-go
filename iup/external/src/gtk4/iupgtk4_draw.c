@@ -809,8 +809,8 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
     sw = img_w;
     sh = img_h;
   }
-  if (w == -1 || w == 0) w = sw;
-  if (h == -1 || h == 0) h = sh;
+  if (w == -1 || w == 0) w = iupRound(sw / iupgtk4ImageGetScale(texture));
+  if (h == -1 || h == 0) h = iupRound(sh / iupgtk4ImageGetScale(texture));
 
   surface = (cairo_surface_t*)g_object_get_data(G_OBJECT(texture), "_IUPGTK4_SURFACE");
   if (!surface)

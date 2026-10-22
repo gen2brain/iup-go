@@ -128,6 +128,17 @@ extern "C" IUP_SDK_API double iupdrvGetScreenDpi(void)
   return 96.0;
 }
 
+extern "C" IUP_SDK_API double iupdrvGetScreenScale(void)
+{
+  QScreen* screen = QGuiApplication::primaryScreen();
+  return screen ? screen->devicePixelRatio() : 1.0;
+}
+
+extern "C" IUP_SDK_API double iupdrvGetDevicePixelRatio(void)
+{
+  return iupdrvGetScreenScale();
+}
+
 /****************************************************************************
  * Cursor and Keyboard State
  ****************************************************************************/

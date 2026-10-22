@@ -591,6 +591,12 @@ Returns the screen depth in bits per pixel.
 
 Returns a real value with the screen resolution in pixels per inch (same as dots per inch - DPI).
 
+### SCREENSCALE (read-only)
+
+Returns a real value with the number of screen pixels in a logical unit of the main screen: 1 at 100% scaling, 2 at 200%.
+An image created with this number of pixels per logical unit and [SCALE](../elem/iup_image.md) set to it is shown without resampling.
+In Motif it is always 1.
+
 ### TRUECOLORCANVAS (read-only)
 
 Indicates if the display allows creating TrueColor (> 8bpp) **IupCanvas** controls, even if PseudoColor is the default, i.e., even if SCREENDEPTH<=8.

@@ -69,6 +69,8 @@ IUP_DRV_API int iupqmlCallMethod(QObject* obj, const char* method, const QVarian
 /* Images */
 IUP_DRV_API QString iupqmlImageUrl(QPixmap* pixmap);
 IUP_DRV_API void iupqmlImageRelease(QPixmap* pixmap);
+IUP_DRV_API void iupqmlPixmapGetSize(const QPixmap* pixmap, int* w, int* h);
+IUP_DRV_API QSize iupqmlImageSourceSize(const QPixmap* pixmap);
 
 /* Item helpers */
 IUP_DRV_API QQuickItem* iupqmlGetItem(Ihandle* ih);

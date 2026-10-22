@@ -70,6 +70,22 @@ static jobject androidImageAllocBitmap(JNIEnv* jni_env, int width, int height, u
   return java_bitmap;
 }
 
+static void androidImageSetScale(JNIEnv* jni_env, jobject java_bitmap, double scale)
+{
+  jclass bitmap_class;
+  jmethodID method_id;
+
+  if (scale == 1.0)
+    return;
+
+  bitmap_class = (*jni_env)->GetObjectClass(jni_env, java_bitmap);
+  method_id = (*jni_env)->GetMethodID(jni_env, bitmap_class, "setDensity", "(I)V");
+  if (method_id)
+    (*jni_env)->CallVoidMethod(jni_env, java_bitmap, method_id, (jint)iupRound(160 * scale));
+  iupAndroid_CheckException(jni_env, "Bitmap.setDensity");
+  (*jni_env)->DeleteLocalRef(jni_env, bitmap_class);
+}
+
 /* ARGB_8888 stores premultiplied pixels; IUP image data is straight alpha */
 static unsigned char androidImagePremul(unsigned char c, unsigned char a)
 {
@@ -246,6 +262,8 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int m
 
   if (make_inactive)
     iupAttribSetStr(ih, "_IUP_BGCOLOR_DEPEND", "1");
+
+  androidImageSetScale(jni_env, java_bitmap, iupImageGetPixelScale(ih));
 
   return androidImageFinalize(jni_env, java_bitmap);
 }

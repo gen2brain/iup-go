@@ -84,7 +84,7 @@ static void* wasmTabsScaledImage(Ihandle* ih, const char* name, int* out_w, int*
   int w = 0, h = 0;
   if (img)
   {
-    iupdrvImageGetInfo(img, &w, &h, NULL);
+    iupwasmImageGetSize(img, &w, &h);
     iupTabsScaleImageSize(ih, w, h, &w, &h);
   }
   *out_w = w;

@@ -44,7 +44,10 @@ static void qmlLabelSetPixmap(Ihandle* ih, const char* name, int make_inactive)
   auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(name, ih, make_inactive, bgcolor));
 
   if (pixmap && !pixmap->isNull())
+  {
+    image->setProperty("sourceSize", iupqmlImageSourceSize(pixmap));
     image->setProperty("source", QUrl(iupqmlImageUrl(pixmap)));
+  }
   else
     image->setProperty("source", QUrl());
 }

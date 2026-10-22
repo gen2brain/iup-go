@@ -156,7 +156,106 @@ IUP_SDK_API void* iupdrvImageCreateImage(Ihandle* ih, const char* bgcolor, int m
     }
   }
 
+  iupgtkPixbufSetScale(pixbuf, iupRound(iupImageGetPixelScale(ih)));
+
   return pixbuf;
+}
+
+IUP_DRV_API void iupgtkPixbufSetScale(GdkPixbuf* pixbuf, int scale)
+{
+#if GTK_CHECK_VERSION(3, 10, 0)
+  if (pixbuf && scale > 1)
+    g_object_set_data(G_OBJECT(pixbuf), "_IUPGTK_SCALE", GINT_TO_POINTER(scale));
+#else
+  (void)pixbuf;
+  (void)scale;
+#endif
+}
+
+IUP_DRV_API int iupgtkPixbufGetScale(GdkPixbuf* pixbuf)
+{
+  int scale = pixbuf ? GPOINTER_TO_INT(g_object_get_data(G_OBJECT(pixbuf), "_IUPGTK_SCALE")) : 0;
+  return scale > 1 ? scale : 1;
+}
+
+IUP_DRV_API void iupgtkPixbufGetSize(GdkPixbuf* pixbuf, int* w, int* h)
+{
+  int scale = iupgtkPixbufGetScale(pixbuf);
+  if (w) *w = iupRound((double)gdk_pixbuf_get_width(pixbuf) / scale);
+  if (h) *h = iupRound((double)gdk_pixbuf_get_height(pixbuf) / scale);
+}
+
+IUP_DRV_API GdkPixbuf* iupgtkPixbufFitHeight(GdkPixbuf* pixbuf, int height)
+{
+  int scale = iupgtkPixbufGetScale(pixbuf);
+  int img_w, img_h;
+  GdkPixbuf* scaled;
+
+  iupgtkPixbufGetSize(pixbuf, &img_w, &img_h);
+  if (img_h <= height || height <= 0)
+    return NULL;
+
+  scaled = gdk_pixbuf_scale_simple(pixbuf, ((img_w * height) / img_h) * scale, height * scale, GDK_INTERP_BILINEAR);
+  iupgtkPixbufSetScale(scaled, scale);
+  return scaled;
+}
+
+#if GTK_CHECK_VERSION(3, 10, 0)
+static cairo_surface_t* gtkPixbufGetSurface(GdkPixbuf* pixbuf)
+{
+  cairo_surface_t* surface = (cairo_surface_t*)g_object_get_data(G_OBJECT(pixbuf), "_IUPGTK_SURFACE");
+  if (!surface)
+  {
+    surface = gdk_cairo_surface_create_from_pixbuf(pixbuf, iupgtkPixbufGetScale(pixbuf), NULL);
+    g_object_set_data_full(G_OBJECT(pixbuf), "_IUPGTK_SURFACE", surface, (GDestroyNotify)cairo_surface_destroy);
+  }
+  return surface;
+}
+#endif
+
+IUP_DRV_API void iupgtkImageSetPixbuf(GtkImage* image, GdkPixbuf* pixbuf)
+{
+#if GTK_CHECK_VERSION(3, 10, 0)
+  if (iupgtkPixbufGetScale(pixbuf) > 1)
+  {
+    gtk_image_set_from_surface(image, gtkPixbufGetSurface(pixbuf));
+    g_object_set_data(G_OBJECT(image), "_IUPGTK_PIXBUF", pixbuf);
+    return;
+  }
+  g_object_set_data(G_OBJECT(image), "_IUPGTK_PIXBUF", NULL);
+#endif
+  gtk_image_set_from_pixbuf(image, pixbuf);
+}
+
+IUP_DRV_API GdkPixbuf* iupgtkImageGetPixbuf(GtkImage* image)
+{
+#if GTK_CHECK_VERSION(3, 10, 0)
+  GdkPixbuf* pixbuf = (GdkPixbuf*)g_object_get_data(G_OBJECT(image), "_IUPGTK_PIXBUF");
+  if (pixbuf && gtk_image_get_storage_type(image) == GTK_IMAGE_SURFACE)
+    return pixbuf;
+  if (gtk_image_get_storage_type(image) != GTK_IMAGE_PIXBUF)
+    return NULL;
+#endif
+  return gtk_image_get_pixbuf(image);
+}
+
+IUP_DRV_API GtkWidget* iupgtkImageNewFromPixbuf(GdkPixbuf* pixbuf)
+{
+  GtkWidget* image = gtk_image_new();
+  iupgtkImageSetPixbuf((GtkImage*)image, pixbuf);
+  return image;
+}
+
+IUP_DRV_API void iupgtkCellRendererSetPixbuf(GtkCellRenderer* renderer, GdkPixbuf* pixbuf)
+{
+#if GTK_CHECK_VERSION(3, 10, 0)
+  if (iupgtkPixbufGetScale(pixbuf) > 1)
+  {
+    g_object_set(G_OBJECT(renderer), "surface", gtkPixbufGetSurface(pixbuf), NULL);
+    return;
+  }
+#endif
+  g_object_set(G_OBJECT(renderer), "pixbuf", pixbuf, NULL);
 }
 
 IUP_SDK_API void* iupdrvImageCreateIcon(Ihandle* ih)

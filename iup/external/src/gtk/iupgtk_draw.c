@@ -794,8 +794,8 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
     sw = img_w;
     sh = img_h;
   }
-  if (w == -1 || w == 0) w = sw;
-  if (h == -1 || h == 0) h = sh;
+  if (w == -1 || w == 0) w = iupRound((double)sw / iupgtkPixbufGetScale(pixbuf));
+  if (h == -1 || h == 0) h = iupRound((double)sh / iupgtkPixbufGetScale(pixbuf));
 
   cairo_save (dc->image_cr);
 

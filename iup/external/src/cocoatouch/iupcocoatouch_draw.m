@@ -947,23 +947,25 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
 	@autoreleasepool
 	{
-		CGSize size = [ui_image size];
+		CGFloat scale = [ui_image scale];
+		int img_w = (int)CGImageGetWidth([ui_image CGImage]);
+		int img_h = (int)CGImageGetHeight([ui_image CGImage]);
 		if (sw <= 0 || sh <= 0)
 		{
 			sx = 0;
 			sy = 0;
-			sw = (int)size.width;
-			sh = (int)size.height;
+			sw = img_w;
+			sh = img_h;
 		}
-		if (w <= 0) w = sw;
-		if (h <= 0) h = sh;
+		if (w <= 0) w = iupRound(sw / scale);
+		if (h <= 0) h = iupRound(sh / scale);
 
-		if (sx != 0 || sy != 0 || sw != (int)size.width || sh != (int)size.height)
+		if (sx != 0 || sy != 0 || sw != img_w || sh != img_h)
 		{
 			CGImageRef sub_img = CGImageCreateWithImageInRect([ui_image CGImage], CGRectMake(sx, sy, sw, sh));
 			if (sub_img)
 			{
-				ui_image = [UIImage imageWithCGImage:sub_img];
+				ui_image = [UIImage imageWithCGImage:sub_img scale:scale orientation:UIImageOrientationUp];
 				CGImageRelease(sub_img);
 			}
 		}

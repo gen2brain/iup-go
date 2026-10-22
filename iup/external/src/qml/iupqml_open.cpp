@@ -114,6 +114,22 @@ IUP_DRV_API QString iupqmlImageUrl(QPixmap* pixmap)
   return QString("image://iup/") + id;
 }
 
+IUP_DRV_API void iupqmlPixmapGetSize(const QPixmap* pixmap, int* w, int* h)
+{
+  qreal dpr = pixmap->devicePixelRatio();
+  if (w) *w = qRound(pixmap->width() / dpr);
+  if (h) *h = qRound(pixmap->height() / dpr);
+}
+
+IUP_DRV_API QSize iupqmlImageSourceSize(const QPixmap* pixmap)
+{
+  int w, h;
+  if (!pixmap || pixmap->devicePixelRatio() == 1.0)
+    return {};
+  iupqmlPixmapGetSize(pixmap, &w, &h);
+  return {w, h};
+}
+
 IUP_DRV_API void iupqmlImageRelease(QPixmap* pixmap)
 {
   if (!pixmap || !qml_image_provider)

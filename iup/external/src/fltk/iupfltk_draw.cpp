@@ -1179,7 +1179,14 @@ static void fltkDrawImageNative(Fl_Image* image, int img_w, int img_h, int x, in
 {
   if (sx == 0 && sy == 0 && sw == img_w && sh == img_h)
   {
-    if (w != sw || h != sh)
+    if (image->w() != img_w || image->h() != img_h)
+    {
+      int old_w = image->w(), old_h = image->h();
+      image->scale(w, h, 0, 1);
+      image->draw(x, y);
+      image->scale(old_w, old_h, 0, 1);
+    }
+    else if (w != sw || h != sh)
     {
       Fl_Image* scaled = image->copy(w, h);
       if (scaled) { scaled->draw(x, y); delete scaled; }
@@ -1632,8 +1639,8 @@ extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, i
     sw = img_w;
     sh = img_h;
   }
-  if (w <= 0) w = sw;
-  if (h <= 0) h = sh;
+  if (w <= 0) w = static_cast<int>(lround(static_cast<double>(sw) * image->w() / img_w));
+  if (h <= 0) h = static_cast<int>(lround(static_cast<double>(sh) * image->h() / img_h));
 
   if (!fltkDrawIdentity(dc))
   {

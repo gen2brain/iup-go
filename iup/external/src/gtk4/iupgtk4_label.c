@@ -204,13 +204,14 @@ static void gtk4LabelSetPaintable(Ihandle* ih, const char* name, int make_inacti
 
   if (name)
   {
-    GdkPaintable* paintable = (GdkPaintable*)iupImageGetImage(name, ih, make_inactive, NULL);
+    GdkPaintable* paintable = iupgtk4ImageNewPaintable(iupImageGetImage(name, ih, make_inactive, NULL));
     if (paintable)
     {
       int pw = gdk_paintable_get_intrinsic_width(paintable);
       int ph = gdk_paintable_get_intrinsic_height(paintable);
 
       gtk_picture_set_paintable(picture, paintable);
+      g_object_unref(paintable);
 
       gtk_widget_set_size_request(GTK_WIDGET(picture), pw, ph);
 
