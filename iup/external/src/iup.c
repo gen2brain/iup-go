@@ -129,6 +129,7 @@ IUP_API void IupVersionShow(void)
 
   iVersionAppend(&text, "IUP %s - %s", IupVersion(), IupVersionDate());
   iVersionAppendGlobal(&text, "   Driver", "DRIVER");
+  iVersionAppendGlobal(&text, "   Windowing", "WINDOWING");
   iVersionAppendGlobal(&text, "   System", "SYSTEM");
   iVersionAppendGlobal(&text, "   System Version", "SYSTEMVERSION");
   iVersionAppendGlobal(&text, "   Motif Version", "MOTIFVERSION");
