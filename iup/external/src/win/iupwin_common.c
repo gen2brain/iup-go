@@ -1619,11 +1619,8 @@ IUP_DRV_API void iupwinTitleBarThemeColor(HWND hwnd)
     BOOL value = dark_mode ? TRUE : FALSE;
     DWORD attribute = 20;
 
-    if (iupwinCheckWindowsVersion(10, 0))
-    {
-      if (iupwinGetBuildNumber() >= 18985)
-        attribute = 19;
-    }
+    if (iupwinCheckWindowsVersion(10, 0) && iupwinGetBuildNumber() < 18985)
+      attribute = 19;
 
     dwmSetWindowAttribute(hwnd, attribute, &value, sizeof(value));
   }
