@@ -172,6 +172,8 @@ extern "C" IUP_SDK_API void iupdrvScrollbarUpdate(Ihandle* ih)
   if (ipos > imax) ipos = imax;
   if (ih->data->inverted) ipos = imax - ipos;
 
+  LooperLockGuard guard(sb->Looper());
+
   sb->SetSuppress(true);
   sb->SetRange(0.0f, static_cast<float>(imax));
   sb->SetSteps(static_cast<float>(istep), static_cast<float>(ipagestep));

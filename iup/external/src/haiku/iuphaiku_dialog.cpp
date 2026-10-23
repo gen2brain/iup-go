@@ -212,18 +212,29 @@ public:
     }
   }
 
+  static void QuitRequestedThunk(void* p)
+  {
+    static_cast<IupHaikuWindow*>(p)->QuitRequestedDirect();
+  }
+
+  void QuitRequestedDirect()
+  {
+    Icallback cb = IupGetCallback(fIhandle, "CLOSE_CB");
+    int ret = IUP_DEFAULT;
+    if (cb) ret = cb(fIhandle);
+
+    if (ret == IUP_IGNORE)     return;
+    if (ret == IUP_CLOSE)      IupExitLoop();
+    else                       IupHide(fIhandle);
+  }
+
   bool QuitRequested() override
   {
     if (!fIhandle || !iupObjectCheck(fIhandle) || !iupdrvIsActive(fIhandle))
       return false;
 
-    Icallback cb = IupGetCallback(fIhandle, "CLOSE_CB");
-    int ret = IUP_DEFAULT;
-    if (cb) ret = cb(fIhandle);
-
-    if (ret == IUP_IGNORE)     return false;
-    if (ret == IUP_CLOSE)      IupExitLoop();
-    else                       IupHide(fIhandle);
+    if (!iuphaikuRunOnLoopThread(QuitRequestedThunk, this))
+      QuitRequestedDirect();
     return false;
   }
 

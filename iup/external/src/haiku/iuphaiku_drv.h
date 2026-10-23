@@ -104,6 +104,14 @@ IUP_DRV_API void iuphaikuSingleInstanceDispatch(BMessage* msg);
 IUP_DRV_API int iuphaikuLockLooper(BLooper* looper);
 IUP_DRV_API void iuphaikuUnlockLooper(BLooper* looper);
 
+IUP_DRV_API void iuphaikuTimerRunDue(void);
+IUP_DRV_API bigtime_t iuphaikuTimerNextWait(void);
+
+typedef void (*IhaikuLoopWork)(void*);
+IUP_DRV_API bool iuphaikuRunOnLoopThread(IhaikuLoopWork fn, void* data);
+IUP_DRV_API void iuphaikuDrainLoopWork(void);
+IUP_DRV_API bool iuphaikuCanLockAppLooper(void);
+
 IUP_DRV_API void iuphaikuModalBegin();
 IUP_DRV_API void iuphaikuModalEnd();
 IUP_DRV_API bool iuphaikuIsModalStaleInput(BMessage* msg);
