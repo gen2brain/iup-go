@@ -70,6 +70,8 @@ IUP_DRV_API NSString* iupcocoaStrToNSString(const char* str);
 IUP_DRV_API int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height);
 IUP_DRV_API int iupcocoaComputeIupScreenHeightFromCartesian(int cartesian_height);
 
+IUP_DRV_API void iupcocoaLoopWakeStep(void);
+
 IUP_DRV_API void iupcocoaUpdateTip(Ihandle* ih);
 IUP_DRV_API void iupcocoaTipsDestroy(Ihandle* ih);
 

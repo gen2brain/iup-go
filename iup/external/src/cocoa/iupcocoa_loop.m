@@ -18,6 +18,7 @@
 static IFidle mac_idle_cb = NULL;
 static int mac_main_loop_should_quit = 0;
 static int mac_main_loop_level = 0;
+static int mac_step_waiting = 0;
 
 IUP_SDK_API void iupdrvSetEntryFunction(Icallback func)
 {
@@ -90,6 +91,23 @@ void IupExitLoop(void)
   cocoaExitLoop();
 }
 
+IUP_DRV_API void iupcocoaLoopWakeStep(void)
+{
+#ifndef GNUSTEP
+  if (mac_step_waiting)
+  {
+    CFRunLoopRef run_loop = CFRunLoopGetCurrent();
+    CFStringRef mode = CFRunLoopCopyCurrentMode(run_loop);
+    if (mode)
+    {
+      if (CFEqual(mode, kCFRunLoopDefaultMode))
+        CFRunLoopStop(run_loop);
+      CFRelease(mode);
+    }
+  }
+#endif
+}
+
 static int macLoopProcessMessage(NSEvent* event)
 {
   [NSApp sendEvent:event];
@@ -104,7 +122,9 @@ int IupMainLoopLevel(void)
 int IupMainLoop(void)
 {
   static int has_done_entry = 0;
+  int step_waiting = mac_step_waiting;
 
+  mac_step_waiting = 0;
   mac_main_loop_level++;
 
   if (0 == has_done_entry)
@@ -150,6 +170,7 @@ int IupMainLoop(void)
   mac_main_loop_should_quit = 0;
 
   mac_main_loop_level--;
+  mac_step_waiting = step_waiting;
 
   if (mac_main_loop_level == 0)
   {
@@ -175,9 +196,21 @@ int IupLoopStepWait(void)
 {
   @autoreleasepool {
     NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                                        untilDate:[NSDate distantFuture]
+                                        untilDate:[NSDate distantPast]
                                            inMode:NSDefaultRunLoopMode
                                           dequeue:YES];
+    if (event == nil)
+    {
+      int step_waiting = mac_step_waiting;
+      mac_step_waiting = 1;
+      [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
+      mac_step_waiting = step_waiting;
+
+      event = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                 untilDate:[NSDate distantPast]
+                                    inMode:NSDefaultRunLoopMode
+                                   dequeue:YES];
+    }
     if (event != nil)
       macLoopProcessMessage(event);
   }
