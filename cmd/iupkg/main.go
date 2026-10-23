@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -410,11 +411,10 @@ func (c *config) resolve() error {
 	c.pkgDir = dir
 	c.exe = filepath.Base(dir)
 
-	out, err = goList(c, "-m", "-f", "{{.Dir}}", "github.com/gen2brain/iup-go/iup")
+	c.iupDir, err = iupModuleDir(c)
 	if err != nil {
-		return fmt.Errorf("github.com/gen2brain/iup-go/iup is not a dependency of %s", c.pkg)
+		return err
 	}
-	c.iupDir = strings.TrimSpace(out)
 
 	if c.name == "" {
 		c.name = c.exe
@@ -498,6 +498,32 @@ func goList(c *config, args ...string) (string, error) {
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	return string(out), err
+}
+
+func iupModuleDir(c *config) (string, error) {
+	const module = "github.com/gen2brain/iup-go/iup"
+	out, err := goList(c, "-m", "-f", "{{.Dir}}", module)
+	if err != nil {
+		return "", fmt.Errorf("%s is not a dependency of %s", module, c.pkg)
+	}
+	if dir := strings.TrimSpace(out); dir != "" {
+		return dir, nil
+	}
+	out, err = goList(c, "-mod=mod", "-m", "-f", "{{.Dir}}", module)
+	if dir := strings.TrimSpace(out); err == nil && dir != "" {
+		return dir, nil
+	}
+	cmd := exec.Command("go", "mod", "download", "-json", module)
+	cmd.Stderr = os.Stderr
+	data, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("cannot download %s: %w", module, err)
+	}
+	var info struct{ Dir, Error string }
+	if err := json.Unmarshal(data, &info); err != nil || info.Dir == "" {
+		return "", fmt.Errorf("cannot download %s: %s", module, info.Error)
+	}
+	return info.Dir, nil
 }
 
 func (c *config) goEnv(goarch string) []string {
