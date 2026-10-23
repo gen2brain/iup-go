@@ -74,16 +74,23 @@ static int winVideoCheck(IvideoSession* session, HRESULT result, const char* ope
   return 1;
 }
 
+static int winVideoDeviceLost(HRESULT result)
+{
+  return result == DXGI_ERROR_DEVICE_REMOVED || result == DXGI_ERROR_DEVICE_RESET ||
+         result == DXGI_ERROR_DEVICE_HUNG || result == DXGI_ERROR_DRIVER_INTERNAL_ERROR;
+}
+
 class IwinVideoNotify final : public IMFMediaEngineNotify
 {
   LONG references;
   LONG format;
+  LONG lost;
   LONG seeked;
   CRITICAL_SECTION lock;
   IvideoSession* session;
 
 public:
-  explicit IwinVideoNotify(IvideoSession* value) : references(1), format(0), seeked(0), session(value)
+  explicit IwinVideoNotify(IvideoSession* value) : references(1), format(0), lost(0), seeked(0), session(value)
   {
     InitializeCriticalSection(&lock);
   }
@@ -101,6 +108,11 @@ public:
   int takeSeeked()
   {
     return InterlockedExchange(&seeked, 0) != 0;
+  }
+
+  int takeLost()
+  {
+    return InterlockedExchange(&lost, 0) != 0;
   }
 
   void disconnect()
@@ -144,6 +156,11 @@ public:
       InterlockedExchange(&format, 1);
     if (event == MF_MEDIA_ENGINE_EVENT_SEEKED)
       InterlockedExchange(&seeked, 1);
+    if (event == MF_MEDIA_ENGINE_EVENT_ERROR && winVideoDeviceLost((HRESULT)second))
+    {
+      InterlockedExchange(&lost, 1);
+      return S_OK;
+    }
     EnterCriticalSection(&lock);
     if (session)
     {
@@ -413,7 +430,10 @@ typedef struct _IwinVideo
   IUnknown* surface;
   ID3D11Device* device;
   IMFDXGIDeviceManager* manager;
-  int attach_pending;
+  UINT token;
+  BSTR source;
+  double resume_position;
+  int resume, resume_play, attach_pending;
   HANDLE swapchain;
   HWND window;
   HWND parent;
@@ -617,6 +637,8 @@ static void winVideoDrawSubtitle(IwinVideo* context)
   ID2D1RenderTarget* target = nullptr;
   POINT offset;
   int width, height, resize;
+  if (!context->composition)
+    return;
   GetClientRect(context->window, &client);
   width = client.right;
   height = client.bottom;
@@ -745,6 +767,55 @@ static void winVideoLayout(IvideoSession* session, Ihandle* ih)
     winVideoDrawSubtitle(context);
 }
 
+static void winVideoReleaseDevice(IwinVideo* context)
+{
+  if (context->caption_surface)
+  {
+    context->caption_surface->Release();
+    context->caption_surface = nullptr;
+  }
+  if (context->caption_visual)
+  {
+    context->caption_visual->Release();
+    context->caption_visual = nullptr;
+  }
+  if (context->surface)
+  {
+    context->surface->Release();
+    context->surface = nullptr;
+  }
+  if (context->visual)
+  {
+    context->visual->Release();
+    context->visual = nullptr;
+  }
+  if (context->target)
+  {
+    context->target->Release();
+    context->target = nullptr;
+  }
+  if (context->composition)
+  {
+    context->composition->Release();
+    context->composition = nullptr;
+  }
+  if (context->manager && context->caption_device)
+  {
+    context->manager->CloseDeviceHandle(context->caption_device);
+    context->caption_device = nullptr;
+  }
+  if (context->device)
+  {
+    context->device->Release();
+    context->device = nullptr;
+  }
+  if (context->swapchain)
+  {
+    CloseHandle(context->swapchain);
+    context->swapchain = nullptr;
+  }
+}
+
 static void winVideoClose(IvideoSession* session)
 {
   IwinVideo* context = (IwinVideo*)session->context;
@@ -768,31 +839,16 @@ static void winVideoClose(IvideoSession* session)
     context->target->SetRoot(nullptr);
   if (context->composition)
     context->composition->Commit();
-  if (context->surface)
-    context->surface->Release();
-  if (context->caption_surface)
-    context->caption_surface->Release();
-  if (context->caption_visual)
-    context->caption_visual->Release();
+  winVideoReleaseDevice(context);
   if (context->caption_write)
     context->caption_write->Release();
   if (context->caption_d2d)
     context->caption_d2d->Release();
   free(context->caption_text);
-  if (context->visual)
-    context->visual->Release();
-  if (context->target)
-    context->target->Release();
-  if (context->composition)
-    context->composition->Release();
-  if (context->manager && context->caption_device)
-    context->manager->CloseDeviceHandle(context->caption_device);
   if (context->manager)
     context->manager->Release();
-  if (context->device)
-    context->device->Release();
-  if (context->swapchain)
-    CloseHandle(context->swapchain);
+  if (context->source)
+    SysFreeString(context->source);
   if (context->notify)
     context->notify->Release();
   if (context->subtitle_notify)
@@ -809,7 +865,6 @@ static int winVideoCreateDevice(IvideoSession* session, IwinVideo* context)
 {
   ID3D10Multithread* multithread = nullptr;
   IDXGIDevice* dxgi = nullptr;
-  UINT token;
   HRESULT result = winVideoD3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_VIDEO_SUPPORT,
                                              nullptr, 0, D3D11_SDK_VERSION, &context->device, nullptr, nullptr);
   if (FAILED(result))
@@ -822,9 +877,9 @@ static int winVideoCreateDevice(IvideoSession* session, IwinVideo* context)
     multithread->SetMultithreadProtected(TRUE);
     multithread->Release();
   }
-  result = winVideoMFCreateDXGIDeviceManager(&token, &context->manager);
+  result = context->manager ? S_OK : winVideoMFCreateDXGIDeviceManager(&context->token, &context->manager);
   if (SUCCEEDED(result))
-    result = context->manager->ResetDevice(context->device, token);
+    result = context->manager->ResetDevice(context->device, context->token);
   if (!winVideoCheck(session, result, "Cannot create video DXGI manager"))
     return 0;
   result = context->device->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgi);
@@ -1001,8 +1056,8 @@ static int winVideoOpen(IvideoSession* session, Ihandle* ih, const char* source,
   }
   if (session->audio_device)
     winVideoAudioEndpoint(session, session->audio_device);
+  context->source = uri;
   result = context->player->SetSource(uri);
-  SysFreeString(uri);
   if (FAILED(result))
     iupVideoError(session, "Media Foundation could not load this source");
   winVideoLayout(session, ih);
@@ -1012,7 +1067,13 @@ static int winVideoOpen(IvideoSession* session, Ihandle* ih, const char* source,
 static void winVideoPlay(IvideoSession* session, int play)
 {
   IwinVideo* context = (IwinVideo*)session->context;
-  HRESULT result = play ? context->player->Play() : context->player->Pause();
+  HRESULT result;
+  if (context->resume)
+  {
+    context->resume_play = play;
+    return;
+  }
+  result = play ? context->player->Play() : context->player->Pause();
   if (FAILED(result))
     iupVideoError(session, "Media Foundation playback state change failed");
 }
@@ -1020,6 +1081,11 @@ static void winVideoPlay(IvideoSession* session, int play)
 static void winVideoSeek(IvideoSession* session, double position, int fast)
 {
   IwinVideo* context = (IwinVideo*)session->context;
+  if (context->resume)
+  {
+    context->resume_position = position;
+    return;
+  }
   if (fast)
     context->player->SetCurrentTimeEx(position, MF_MEDIA_ENGINE_SEEK_MODE_APPROXIMATE);
   else
@@ -1036,6 +1102,8 @@ static void winVideoVolume(IvideoSession* session, int volume, int mute)
 static void winVideoAttachSurface(IwinVideo* context)
 {
   HANDLE swapchain = nullptr;
+  if (!context->composition)
+    return;
   if (context->surface)
   {
     context->visual->SetContent(nullptr);
@@ -1063,6 +1131,28 @@ static void winVideoAttachSurface(IwinVideo* context)
     CloseHandle(swapchain);
 }
 
+static void winVideoRecoverDevice(IvideoSession* session, IwinVideo* context)
+{
+  IMFMediaError* error = nullptr;
+  double position = context->player->GetCurrentTime();
+  int paused = context->player->IsPaused();
+  int failed = SUCCEEDED(context->player->GetError(&error)) && error;
+  if (error)
+    error->Release();
+  winVideoReleaseDevice(context);
+  if (!winVideoCreateDevice(session, context))
+    return;
+  if (failed && context->source)
+  {
+    context->resume_position = isfinite(position) && position > 0 ? position : 0;
+    context->resume_play = !paused;
+    context->resume = 1;
+    context->player->SetSource(context->source);
+  }
+  winVideoAttachSurface(context);
+  context->caption_dirty = 1;
+}
+
 static void winVideoPoll(IvideoSession* session)
 {
   IwinVideo* context = (IwinVideo*)session->context;
@@ -1070,6 +1160,18 @@ static void winVideoPoll(IvideoSession* session)
   IMFMediaTimeRange* range = nullptr;
   DWORD width = 0, height = 0;
   double position, duration;
+  if (context->notify->takeLost() || (context->device && context->device->GetDeviceRemovedReason() != S_OK))
+    winVideoRecoverDevice(session, context);
+  if (!context->device)
+    return;
+  if (context->resume && context->player->GetReadyState() >= MF_MEDIA_ENGINE_READY_HAVE_METADATA)
+  {
+    context->resume = 0;
+    if (context->resume_position > 0)
+      context->player->SetCurrentTime(context->resume_position);
+    if (context->resume_play)
+      context->player->Play();
+  }
   iupdrvMutexLock(session->mutex);
   info = session->info;
   iupdrvMutexUnlock(session->mutex);
@@ -1084,6 +1186,11 @@ static void winVideoPoll(IvideoSession* session)
   duration = context->player->GetDuration();
   info.position = isfinite(position) && position > 0 ? position : 0;
   info.duration = isfinite(duration) && duration > 0 ? duration : 0;
+  if (context->resume)
+  {
+    info.state = IVIDEO_BUFFERING;
+    info.position = context->resume_position;
+  }
   if (SUCCEEDED(context->player->GetSeekable(&range)))
   {
     info.seekable = range->GetLength() > 0;
