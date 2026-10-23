@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #include "iup.h"
-#include "iupcontrols.h"
+#include "iupctrl.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
