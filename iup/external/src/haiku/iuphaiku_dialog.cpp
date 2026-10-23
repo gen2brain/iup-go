@@ -419,8 +419,11 @@ public:
 
     iupdrvDialogGetSize(fIhandle, nullptr, &fIhandle->currentwidth, &fIhandle->currentheight);
 
+    int menu_h = fIhandle->data->menu ? iupdrvMenuGetMenuBarSize(fIhandle->data->menu) : 0;
+
     auto cb = reinterpret_cast<IFnii>(IupGetCallback(fIhandle, "RESIZE_CB"));
-    if (!cb || cb(fIhandle, static_cast<int>(w + 1), static_cast<int>(h + 1)) != IUP_IGNORE)
+    if (!cb || cb(fIhandle, static_cast<int>(w + 1),
+                  static_cast<int>(h + 1) - menu_h) != IUP_IGNORE)
     {
       fIhandle->data->ignore_resize = 1;
       IupRefresh(fIhandle);
