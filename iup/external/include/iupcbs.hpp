@@ -232,6 +232,13 @@
     __class* obj = IUP_CLASS_GET_OBJECT(ih, __class); \
     return obj->__cb(ih, i1, i2, s); \
   }
+#define IUP_CLASS_DECLARECALLBACK_IFniV(__class, __cb) \
+  int __cb(Ihandle* ih, int i1, void* v); \
+  static int CB_##__cb(Ihandle* ih, int i1, void* v) \
+  { \
+    __class* obj = IUP_CLASS_GET_OBJECT(ih, __class); \
+    return obj->__cb(ih, i1, v); \
+  }
 #define IUP_CLASS_DECLARECALLBACK_IFniiV(__class, __cb) \
   int __cb(Ihandle* ih, int i1, int i2, void* v); \
   static int CB_##__cb(Ihandle* ih, int i1, int i2, void* v) \
