@@ -3,9 +3,10 @@
 package iup
 
 import (
+	"fmt"
 	"os"
 	"reflect"
-	"runtime"
+	"runtime/debug"
 	"testing"
 	"time"
 	"unsafe"
@@ -16,668 +17,763 @@ func TestMain(m *testing.M) {
 	if Open() == ERROR {
 		os.Exit(1)
 	}
-	code := m.Run()
-	Close()
-	os.Exit(code)
+	done := make(chan int)
+	go func() { done <- m.Run() }()
+	for {
+		select {
+		case f := <-mainQueue:
+			f()
+		case code := <-done:
+			Close()
+			os.Exit(code)
+		}
+	}
+}
+
+var mainQueue = make(chan func())
+
+type failNow struct{}
+
+type mainTB struct{ testing.TB }
+
+func (m mainTB) FailNow() {
+	m.TB.Fail()
+	panic(failNow{})
+}
+
+func (m mainTB) Fatal(args ...any) {
+	m.TB.Helper()
+	m.TB.Error(args...)
+	panic(failNow{})
+}
+
+func (m mainTB) Fatalf(format string, args ...any) {
+	m.TB.Helper()
+	m.TB.Errorf(format, args...)
+	panic(failNow{})
+}
+
+// onMain runs a test body on the main thread.
+func onMain(t *testing.T, body func(t testing.TB)) {
+	t.Helper()
+	res := make(chan any, 1)
+	mainQueue <- func() {
+		defer func() {
+			r := recover()
+			if r != nil {
+				if _, ok := r.(failNow); !ok {
+					r = fmt.Sprintf("%v\n%s", r, debug.Stack())
+				}
+			}
+			res <- r
+		}()
+		body(mainTB{t})
+	}
+	switch r := <-res; r.(type) {
+	case nil:
+	case failNow:
+		t.FailNow()
+	default:
+		t.Fatalf("panic: %v", r)
+	}
 }
 
 // Public API end-to-end; runs under both the cgo and nocgo backend.
 func TestSmoke(t *testing.T) {
-	if v := Version(); v == "" {
-		t.Fatal("empty Version()")
-	} else {
-		t.Logf("IUP %s (%d)", v, VersionNumber())
-	}
-
-	btn := Button("Click me")
-	if btn == 0 {
-		t.Fatal("Button returned nil handle")
-	}
-
-	btn.SetAttribute("NAME", "SMOKE_BTN")
-	if got := btn.GetAttribute("NAME"); got != "SMOKE_BTN" {
-		t.Fatalf("attribute round-trip failed: got %q", got)
-	}
-
-	// int round-trip (IupSetInt/IupGetInt)
-	SetAttribute(btn, "GAP", 7)
-	if got := GetInt(btn, "GAP"); got != 7 {
-		t.Fatalf("int round-trip failed: got %d", got)
-	}
-
-	// RGB out-param round-trip (IupSetRGB / IupGetRGB writes through *uint8)
-	SetRGB(btn, "BGCOLOR", 10, 20, 30)
-	if r, g, b := GetRGB(btn, "BGCOLOR"); r != 10 || g != 20 || b != 30 {
-		t.Fatalf("RGB out-param round-trip failed: got %d,%d,%d", r, g, b)
-	}
-
-	// char** out-array (IupGetAllAttributes)
-	if attrs := GetAllAttributes(btn); len(attrs) == 0 {
-		t.Fatal("GetAllAttributes returned nothing")
-	}
-
-	// global round-trip
-	SetGlobal("SMOKE_GLOBAL", "on")
-	if got := GetGlobal("SMOKE_GLOBAL"); got != "on" {
-		t.Fatalf("global round-trip failed: got %q", got)
-	}
-
-	SetCallback(btn, "ACTION", ActionFunc(func(Ihandle) int { return DEFAULT }))
-	if GetCallback(btn, "ACTION") == 0 {
-		t.Fatal("ACTION callback not installed on native side")
-	}
-
-	// Multi-arg callbacks install their native trampolines without panicking.
-	SetCallback(btn, "BUTTON_CB", ButtonFunc(func(Ihandle, int, int, int, int, string) int { return DEFAULT }))
-	SetCallback(btn, "MOTION_CB", MotionFunc(func(Ihandle, int, int, string) int { return DEFAULT }))
-	SetCallback(btn, "K_ANY", KAnyFunc(func(Ihandle, int) int { return CONTINUE }))
-	for _, cb := range []string{"BUTTON_CB", "MOTION_CB", "K_ANY"} {
-		if GetCallback(btn, cb) == 0 {
-			t.Fatalf("%s not installed on native side", cb)
+	onMain(t, func(t testing.TB) {
+		if v := Version(); v == "" {
+			t.Fatal("empty Version()")
+		} else {
+			t.Logf("IUP %s (%d)", v, VersionNumber())
 		}
-	}
 
-	// Every constructor must return a non-nil handle.
-	for name, h := range map[string]Ihandle{
-		"Label":       Label("x"),
-		"Toggle":      Toggle("t"),
-		"Text":        Text(),
-		"List":        List(),
-		"Tree":        Tree(),
-		"Canvas":      Canvas(),
-		"ProgressBar": ProgressBar(),
-		"Val":         Val("HORIZONTAL"),
-		"Frame":       Frame(Fill()),
-		"Tabs":        Tabs(Vbox(Label("a")), Vbox(Label("b"))),
-		"Zbox":        Zbox(Fill(), Fill()),
-		"ScrollBox":   ScrollBox(Fill()),
-		"Split":       Split(Fill(), Fill()),
-		"FileDlg":     FileDlg(),
-		"ColorDlg":    ColorDlg(),
-	} {
-		if h == 0 {
-			t.Fatalf("%s returned nil handle", name)
+		btn := Button("Click me")
+		if btn == 0 {
+			t.Fatal("Button returned nil handle")
 		}
-	}
 
-	dlg := Dialog(Vbox(btn, Label("hello"), Hbox(Fill(), Toggle("ok"))))
-	if dlg == 0 {
-		t.Fatal("Dialog returned nil handle")
-	}
-	Destroy(dlg)
+		btn.SetAttribute("NAME", "SMOKE_BTN")
+		if got := btn.GetAttribute("NAME"); got != "SMOKE_BTN" {
+			t.Fatalf("attribute round-trip failed: got %q", got)
+		}
+
+		// int round-trip (IupSetInt/IupGetInt)
+		SetAttribute(btn, "GAP", 7)
+		if got := GetInt(btn, "GAP"); got != 7 {
+			t.Fatalf("int round-trip failed: got %d", got)
+		}
+
+		// RGB out-param round-trip (IupSetRGB / IupGetRGB writes through *uint8)
+		SetRGB(btn, "BGCOLOR", 10, 20, 30)
+		if r, g, b := GetRGB(btn, "BGCOLOR"); r != 10 || g != 20 || b != 30 {
+			t.Fatalf("RGB out-param round-trip failed: got %d,%d,%d", r, g, b)
+		}
+
+		// char** out-array (IupGetAllAttributes)
+		if attrs := GetAllAttributes(btn); len(attrs) == 0 {
+			t.Fatal("GetAllAttributes returned nothing")
+		}
+
+		// global round-trip
+		SetGlobal("SMOKE_GLOBAL", "on")
+		if got := GetGlobal("SMOKE_GLOBAL"); got != "on" {
+			t.Fatalf("global round-trip failed: got %q", got)
+		}
+
+		SetCallback(btn, "ACTION", ActionFunc(func(Ihandle) int { return DEFAULT }))
+		if GetCallback(btn, "ACTION") == 0 {
+			t.Fatal("ACTION callback not installed on native side")
+		}
+
+		// Multi-arg callbacks install their native trampolines without panicking.
+		SetCallback(btn, "BUTTON_CB", ButtonFunc(func(Ihandle, int, int, int, int, string) int { return DEFAULT }))
+		SetCallback(btn, "MOTION_CB", MotionFunc(func(Ihandle, int, int, string) int { return DEFAULT }))
+		SetCallback(btn, "K_ANY", KAnyFunc(func(Ihandle, int) int { return CONTINUE }))
+		for _, cb := range []string{"BUTTON_CB", "MOTION_CB", "K_ANY"} {
+			if GetCallback(btn, cb) == 0 {
+				t.Fatalf("%s not installed on native side", cb)
+			}
+		}
+
+		// Every constructor must return a non-nil handle.
+		for name, h := range map[string]Ihandle{
+			"Label":       Label("x"),
+			"Toggle":      Toggle("t"),
+			"Text":        Text(),
+			"List":        List(),
+			"Tree":        Tree(),
+			"Canvas":      Canvas(),
+			"ProgressBar": ProgressBar(),
+			"Val":         Val("HORIZONTAL"),
+			"Frame":       Frame(Fill()),
+			"Tabs":        Tabs(Vbox(Label("a")), Vbox(Label("b"))),
+			"Zbox":        Zbox(Fill(), Fill()),
+			"ScrollBox":   ScrollBox(Fill()),
+			"Split":       Split(Fill(), Fill()),
+			"FileDlg":     FileDlg(),
+			"ColorDlg":    ColorDlg(),
+		} {
+			if h == 0 {
+				t.Fatalf("%s returned nil handle", name)
+			}
+		}
+
+		dlg := Dialog(Vbox(btn, Label("hello"), Hbox(Fill(), Toggle("ok"))))
+		if dlg == 0 {
+			t.Fatal("Dialog returned nil handle")
+		}
+		Destroy(dlg)
+	})
 }
 
 // Runtime element callback (Timer ACTION_CB) delivered through the loop.
 func TestTimerCallback(t *testing.T) {
-	ticks := 0
-	tmr := Timer()
-	tmr.SetAttribute("TIME", 20)
-	SetCallback(tmr, "ACTION_CB", TimerActionFunc(func(Ihandle) int {
-		ticks++
-		return DEFAULT
-	}))
-	tmr.SetAttribute("RUN", "YES")
+	onMain(t, func(t testing.TB) {
+		ticks := 0
+		tmr := Timer()
+		tmr.SetAttribute("TIME", 20)
+		SetCallback(tmr, "ACTION_CB", TimerActionFunc(func(Ihandle) int {
+			ticks++
+			return DEFAULT
+		}))
+		tmr.SetAttribute("RUN", "YES")
 
-	deadline := time.Now().Add(3 * time.Second)
-	for ticks < 3 && time.Now().Before(deadline) {
-		LoopStep()
-		time.Sleep(5 * time.Millisecond)
-	}
-	tmr.SetAttribute("RUN", "NO")
-	Destroy(tmr)
+		deadline := time.Now().Add(3 * time.Second)
+		for ticks < 3 && time.Now().Before(deadline) {
+			LoopStep()
+			time.Sleep(5 * time.Millisecond)
+		}
+		tmr.SetAttribute("RUN", "NO")
+		Destroy(tmr)
 
-	if ticks < 3 {
-		t.Fatalf("Timer ACTION_CB fired %d times, want >= 3", ticks)
-	}
-	t.Logf("Timer ACTION_CB fired %d times through the loop", ticks)
+		if ticks < 3 {
+			t.Fatalf("Timer ACTION_CB fired %d times, want >= 3", ticks)
+		}
+		t.Logf("Timer ACTION_CB fired %d times through the loop", ticks)
+	})
 }
 
 // Multi-arg callback (RESIZE_CB) delivered with correct args on map.
 func TestResizeCallback(t *testing.T) {
-	var gotW, gotH int
-	fired := false
+	onMain(t, func(t testing.TB) {
+		var gotW, gotH int
+		fired := false
 
-	cv := Canvas()
-	cv.SetAttribute("RASTERSIZE", "150x80")
-	SetCallback(cv, "RESIZE_CB", ResizeFunc(func(ih Ihandle, w, h int) int {
-		fired, gotW, gotH = true, w, h
-		return DEFAULT
-	}))
+		cv := Canvas()
+		cv.SetAttribute("RASTERSIZE", "150x80")
+		SetCallback(cv, "RESIZE_CB", ResizeFunc(func(ih Ihandle, w, h int) int {
+			fired, gotW, gotH = true, w, h
+			return DEFAULT
+		}))
 
-	dlg := Dialog(cv)
-	dlg.SetAttribute("TITLE", "resize test")
-	Show(dlg)
+		dlg := Dialog(cv)
+		dlg.SetAttribute("TITLE", "resize test")
+		Show(dlg)
 
-	deadline := time.Now().Add(2 * time.Second)
-	for !fired && time.Now().Before(deadline) {
-		LoopStep()
-		time.Sleep(5 * time.Millisecond)
-	}
-	Hide(dlg)
-	Destroy(dlg)
+		deadline := time.Now().Add(2 * time.Second)
+		for !fired && time.Now().Before(deadline) {
+			LoopStep()
+			time.Sleep(5 * time.Millisecond)
+		}
+		Hide(dlg)
+		Destroy(dlg)
 
-	if !fired {
-		t.Fatal("RESIZE_CB never fired")
-	}
-	if gotW <= 0 || gotH <= 0 {
-		t.Fatalf("RESIZE_CB delivered bad args: %dx%d", gotW, gotH)
-	}
-	t.Logf("RESIZE_CB fired with %dx%d", gotW, gotH)
+		if !fired {
+			t.Fatal("RESIZE_CB never fired")
+		}
+		if gotW <= 0 || gotH <= 0 {
+			t.Fatalf("RESIZE_CB delivered bad args: %dx%d", gotW, gotH)
+		}
+		t.Logf("RESIZE_CB fired with %dx%d", gotW, gotH)
+	})
 }
 
 func TestDrawTransformState(t *testing.T) {
-	ran := false
-	var initial, transformed, restored, singular, reset [6]float64
-	var color, antialias string
+	onMain(t, func(t testing.TB) {
+		ran := false
+		var initial, transformed, restored, singular, reset [6]float64
+		var color, antialias string
 
-	cv := Canvas()
-	cv.SetAttribute("RASTERSIZE", "150x80")
-	SetCallback(cv, "ACTION", ActionFunc(func(ih Ihandle) int {
-		DrawBegin(ih)
-		initial[0], initial[1], initial[2], initial[3], initial[4], initial[5] = DrawGetTransform(ih)
-		DrawTranslate(ih, 10, 20)
-		DrawScale(ih, 2, 3)
-		transformed[0], transformed[1], transformed[2], transformed[3], transformed[4], transformed[5] = DrawGetTransform(ih)
-		ih.SetAttribute("DRAWCOLOR", "1 2 3")
-		ih.SetAttribute("DRAWANTIALIAS", "YES")
-		DrawSave(ih)
-		DrawSetTransform(ih, 1, 2, 3, 4, 5, 6)
-		ih.SetAttribute("DRAWCOLOR", "4 5 6")
-		ih.SetAttribute("DRAWANTIALIAS", "NO")
-		DrawRestore(ih)
-		restored[0], restored[1], restored[2], restored[3], restored[4], restored[5] = DrawGetTransform(ih)
-		color = ih.GetAttribute("DRAWCOLOR")
-		antialias = ih.GetAttribute("DRAWANTIALIAS")
-		DrawSetTransform(ih, 1, 0, 0, 0, 0, 0)
-		singular[0], singular[1], singular[2], singular[3], singular[4], singular[5] = DrawGetTransform(ih)
-		DrawResetTransform(ih)
-		reset[0], reset[1], reset[2], reset[3], reset[4], reset[5] = DrawGetTransform(ih)
-		DrawEnd(ih)
-		ran = true
-		return DEFAULT
-	}))
+		cv := Canvas()
+		cv.SetAttribute("RASTERSIZE", "150x80")
+		SetCallback(cv, "ACTION", ActionFunc(func(ih Ihandle) int {
+			DrawBegin(ih)
+			initial[0], initial[1], initial[2], initial[3], initial[4], initial[5] = DrawGetTransform(ih)
+			DrawTranslate(ih, 10, 20)
+			DrawScale(ih, 2, 3)
+			transformed[0], transformed[1], transformed[2], transformed[3], transformed[4], transformed[5] = DrawGetTransform(ih)
+			ih.SetAttribute("DRAWCOLOR", "1 2 3")
+			ih.SetAttribute("DRAWANTIALIAS", "YES")
+			DrawSave(ih)
+			DrawSetTransform(ih, 1, 2, 3, 4, 5, 6)
+			ih.SetAttribute("DRAWCOLOR", "4 5 6")
+			ih.SetAttribute("DRAWANTIALIAS", "NO")
+			DrawRestore(ih)
+			restored[0], restored[1], restored[2], restored[3], restored[4], restored[5] = DrawGetTransform(ih)
+			color = ih.GetAttribute("DRAWCOLOR")
+			antialias = ih.GetAttribute("DRAWANTIALIAS")
+			DrawSetTransform(ih, 1, 0, 0, 0, 0, 0)
+			singular[0], singular[1], singular[2], singular[3], singular[4], singular[5] = DrawGetTransform(ih)
+			DrawResetTransform(ih)
+			reset[0], reset[1], reset[2], reset[3], reset[4], reset[5] = DrawGetTransform(ih)
+			DrawEnd(ih)
+			ran = true
+			return DEFAULT
+		}))
 
-	dlg := Dialog(cv)
-	Show(dlg)
-	deadline := time.Now().Add(2 * time.Second)
-	for !ran && time.Now().Before(deadline) {
-		LoopStep()
-		time.Sleep(5 * time.Millisecond)
-	}
-	Hide(dlg)
-	Destroy(dlg)
+		dlg := Dialog(cv)
+		Show(dlg)
+		deadline := time.Now().Add(2 * time.Second)
+		for !ran && time.Now().Before(deadline) {
+			LoopStep()
+			time.Sleep(5 * time.Millisecond)
+		}
+		Hide(dlg)
+		Destroy(dlg)
 
-	if !ran {
-		t.Fatal("ACTION never fired")
-	}
-	if initial != [6]float64{1, 0, 0, 1, 0, 0} {
-		t.Fatalf("initial transform = %v", initial)
-	}
-	if transformed != [6]float64{2, 0, 0, 3, 10, 20} {
-		t.Fatalf("composed transform = %v", transformed)
-	}
-	if restored != transformed {
-		t.Fatalf("restored transform = %v, want %v", restored, transformed)
-	}
-	if color != "1 2 3" {
-		t.Fatalf("restored DRAWCOLOR = %q", color)
-	}
-	if antialias != "YES" {
-		t.Fatalf("restored DRAWANTIALIAS = %q", antialias)
-	}
-	if singular != transformed {
-		t.Fatalf("transform after singular matrix = %v, want %v", singular, transformed)
-	}
-	if reset != initial {
-		t.Fatalf("reset transform = %v, want %v", reset, initial)
-	}
+		if !ran {
+			t.Fatal("ACTION never fired")
+		}
+		if initial != [6]float64{1, 0, 0, 1, 0, 0} {
+			t.Fatalf("initial transform = %v", initial)
+		}
+		if transformed != [6]float64{2, 0, 0, 3, 10, 20} {
+			t.Fatalf("composed transform = %v", transformed)
+		}
+		if restored != transformed {
+			t.Fatalf("restored transform = %v, want %v", restored, transformed)
+		}
+		if color != "1 2 3" {
+			t.Fatalf("restored DRAWCOLOR = %q", color)
+		}
+		if antialias != "YES" {
+			t.Fatalf("restored DRAWANTIALIAS = %q", antialias)
+		}
+		if singular != transformed {
+			t.Fatalf("transform after singular matrix = %v, want %v", singular, transformed)
+		}
+		if reset != initial {
+			t.Fatalf("reset transform = %v, want %v", reset, initial)
+		}
+	})
 }
 
 // Global callback (IDLE_ACTION via SetFunction) delivered through the loop.
 func TestIdleGlobal(t *testing.T) {
-	ticks := 0
-	SetFunction("IDLE_ACTION", IdleFunc(func() int {
-		ticks++
-		return DEFAULT
-	}))
-	defer SetFunction("IDLE_ACTION", nil)
+	onMain(t, func(t testing.TB) {
+		ticks := 0
+		SetFunction("IDLE_ACTION", IdleFunc(func() int {
+			ticks++
+			return DEFAULT
+		}))
+		defer SetFunction("IDLE_ACTION", nil)
 
-	deadline := time.Now().Add(2 * time.Second)
-	for ticks < 3 && time.Now().Before(deadline) {
-		LoopStep()
-		time.Sleep(2 * time.Millisecond)
-	}
-	if ticks < 3 {
-		t.Fatalf("IDLE_ACTION fired %d times, want >= 3", ticks)
-	}
-	t.Logf("IDLE_ACTION fired %d times through the loop", ticks)
+		deadline := time.Now().Add(2 * time.Second)
+		for ticks < 3 && time.Now().Before(deadline) {
+			LoopStep()
+			time.Sleep(2 * time.Millisecond)
+		}
+		if ticks < 3 {
+			t.Fatalf("IDLE_ACTION fired %d times, want >= 3", ticks)
+		}
+		t.Logf("IDLE_ACTION fired %d times through the loop", ticks)
+	})
 }
 
 // Layout tree navigation.
 func TestLayout(t *testing.T) {
-	a, b := Label("a"), Label("b")
-	box := Vbox(a, b)
-	if n := GetChildCount(box); n != 2 {
-		t.Fatalf("GetChildCount = %d, want 2", n)
-	}
-	if GetChild(box, 0) != a {
-		t.Fatal("GetChild(box,0) != a")
-	}
-	if GetParent(a) != box {
-		t.Fatal("GetParent(a) != box")
-	}
-	if p := GetChildPos(box, b); p != 1 {
-		t.Fatalf("GetChildPos(box,b) = %d, want 1", p)
-	}
-	Append(box, Label("c"))
-	if n := GetChildCount(box); n != 3 {
-		t.Fatalf("after Append GetChildCount = %d, want 3", n)
-	}
-	dlg := Dialog(box)
-	if GetDialog(a) != dlg {
-		t.Fatal("GetDialog(a) != dlg")
-	}
-	Destroy(dlg)
+	onMain(t, func(t testing.TB) {
+		a, b := Label("a"), Label("b")
+		box := Vbox(a, b)
+		if n := GetChildCount(box); n != 2 {
+			t.Fatalf("GetChildCount = %d, want 2", n)
+		}
+		if GetChild(box, 0) != a {
+			t.Fatal("GetChild(box,0) != a")
+		}
+		if GetParent(a) != box {
+			t.Fatal("GetParent(a) != box")
+		}
+		if p := GetChildPos(box, b); p != 1 {
+			t.Fatalf("GetChildPos(box,b) = %d, want 1", p)
+		}
+		Append(box, Label("c"))
+		if n := GetChildCount(box); n != 3 {
+			t.Fatalf("after Append GetChildCount = %d, want 3", n)
+		}
+		dlg := Dialog(box)
+		if GetDialog(a) != dlg {
+			t.Fatal("GetDialog(a) != dlg")
+		}
+		Destroy(dlg)
+	})
 }
 
 // Image pixel-array marshaling + menu construction.
 func TestResources(t *testing.T) {
-	img := ImageRGB(2, 2, []byte{255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 0})
-	if img == 0 {
-		t.Fatal("ImageRGB returned nil")
-	}
-	menu := Menu(MenuItem("File"), MenuSeparator(), Submenu("Edit", Menu(MenuItem("Copy"))))
-	if menu == 0 {
-		t.Fatal("Menu returned nil")
-	}
-	if n := GetChildCount(menu); n != 3 {
-		t.Fatalf("menu child count = %d, want 3", n)
-	}
-	Destroy(menu)
-	Destroy(img)
+	onMain(t, func(t testing.TB) {
+		img := ImageRGB(2, 2, []byte{255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 0})
+		if img == 0 {
+			t.Fatal("ImageRGB returned nil")
+		}
+		menu := Menu(MenuItem("File"), MenuSeparator(), Submenu("Edit", Menu(MenuItem("Copy"))))
+		if menu == 0 {
+			t.Fatal("Menu returned nil")
+		}
+		if n := GetChildCount(menu); n != 3 {
+			t.Fatalf("menu child count = %d, want 3", n)
+		}
+		Destroy(menu)
+		Destroy(img)
+	})
 }
 
 // Config variable round-trips (str/int/double + default).
 func TestConfig(t *testing.T) {
-	cfg := Config()
-	if cfg == 0 {
-		t.Fatal("Config returned nil")
-	}
-	ConfigSetVariableStr(cfg, "MainWindow", "Title", "hello")
-	ConfigSetVariableInt(cfg, "MainWindow", "Width", 800)
-	ConfigSetVariableDouble(cfg, "MainWindow", "Zoom", 1.5)
-	if v := ConfigGetVariableStr(cfg, "MainWindow", "Title"); v != "hello" {
-		t.Fatalf("str = %q, want hello", v)
-	}
-	if v := ConfigGetVariableInt(cfg, "MainWindow", "Width"); v != 800 {
-		t.Fatalf("int = %d, want 800", v)
-	}
-	if v := ConfigGetVariableDouble(cfg, "MainWindow", "Zoom"); v != 1.5 {
-		t.Fatalf("double = %v, want 1.5", v)
-	}
-	if v := ConfigGetVariableStrDef(cfg, "MainWindow", "Missing", "def"); v != "def" {
-		t.Fatalf("default = %q, want def", v)
-	}
-	Destroy(cfg)
+	onMain(t, func(t testing.TB) {
+		cfg := Config()
+		if cfg == 0 {
+			t.Fatal("Config returned nil")
+		}
+		ConfigSetVariableStr(cfg, "MainWindow", "Title", "hello")
+		ConfigSetVariableInt(cfg, "MainWindow", "Width", 800)
+		ConfigSetVariableDouble(cfg, "MainWindow", "Zoom", 1.5)
+		if v := ConfigGetVariableStr(cfg, "MainWindow", "Title"); v != "hello" {
+			t.Fatalf("str = %q, want hello", v)
+		}
+		if v := ConfigGetVariableInt(cfg, "MainWindow", "Width"); v != 800 {
+			t.Fatalf("int = %d, want 800", v)
+		}
+		if v := ConfigGetVariableDouble(cfg, "MainWindow", "Zoom"); v != 1.5 {
+			t.Fatalf("double = %v, want 1.5", v)
+		}
+		if v := ConfigGetVariableStrDef(cfg, "MainWindow", "Missing", "def"); v != "def" {
+			t.Fatalf("default = %q, want def", v)
+		}
+		Destroy(cfg)
+	})
 }
 
 // Registry introspection (char** arrays at scale + class lookup).
 func TestIntrospect(t *testing.T) {
-	classes := GetAllClasses()
-	if len(classes) < 20 {
-		t.Fatalf("GetAllClasses = %d, want many", len(classes))
-	}
-	globals := GetAllGlobals()
-	if len(globals) < 20 {
-		t.Fatalf("GetAllGlobals = %d, want many", len(globals))
-	}
-	attrs := GetClassAttributes("button")
-	if len(attrs) == 0 {
-		t.Fatal("button reported no attributes")
-	}
-	if cn := GetClassName(Button("x")); cn != "button" {
-		t.Fatalf("GetClassName = %q, want button", cn)
-	}
-	t.Logf("%d classes, %d globals, button has %d attributes", len(classes), len(globals), len(attrs))
+	onMain(t, func(t testing.TB) {
+		classes := GetAllClasses()
+		if len(classes) < 20 {
+			t.Fatalf("GetAllClasses = %d, want many", len(classes))
+		}
+		globals := GetAllGlobals()
+		if len(globals) < 20 {
+			t.Fatalf("GetAllGlobals = %d, want many", len(globals))
+		}
+		attrs := GetClassAttributes("button")
+		if len(attrs) == 0 {
+			t.Fatal("button reported no attributes")
+		}
+		if cn := GetClassName(Button("x")); cn != "button" {
+			t.Fatalf("GetClassName = %q, want button", cn)
+		}
+		t.Logf("%d classes, %d globals, button has %d attributes", len(classes), len(globals), len(attrs))
+	})
 }
 
 // Tree + drag-drop callbacks dispatch and install their trampolines.
 func TestTreeCallbacks(t *testing.T) {
-	tree := Tree()
-	SetCallback(tree, "SELECTION_CB", SelectionFunc(func(Ihandle, int, int) int { return DEFAULT }))
-	SetCallback(tree, "MULTISELECTION_CB", MultiSelectionFunc(func(Ihandle, []int, int) int { return DEFAULT }))
-	SetCallback(tree, "BRANCHOPEN_CB", BranchOpenFunc(func(Ihandle, int) int { return DEFAULT }))
-	SetCallback(tree, "EXECUTELEAF_CB", ExecuteLeafFunc(func(Ihandle, int) int { return DEFAULT }))
-	SetCallback(tree, "RENAME_CB", RenameFunc(func(Ihandle, int, string) int { return DEFAULT }))
-	SetCallback(tree, "DRAGDROP_CB", DragDropFunc(func(Ihandle, int, int, int, int) int { return DEFAULT }))
-	SetCallback(tree, "DROPDATA_CB", DropDataFunc(func(Ihandle, string, unsafe.Pointer, int, int, int) int { return DEFAULT }))
-	for _, cb := range []string{"SELECTION_CB", "MULTISELECTION_CB", "BRANCHOPEN_CB", "EXECUTELEAF_CB", "RENAME_CB", "DRAGDROP_CB", "DROPDATA_CB"} {
-		if GetCallback(tree, cb) == 0 {
-			t.Fatalf("%s not installed", cb)
+	onMain(t, func(t testing.TB) {
+		tree := Tree()
+		SetCallback(tree, "SELECTION_CB", SelectionFunc(func(Ihandle, int, int) int { return DEFAULT }))
+		SetCallback(tree, "MULTISELECTION_CB", MultiSelectionFunc(func(Ihandle, []int, int) int { return DEFAULT }))
+		SetCallback(tree, "BRANCHOPEN_CB", BranchOpenFunc(func(Ihandle, int) int { return DEFAULT }))
+		SetCallback(tree, "EXECUTELEAF_CB", ExecuteLeafFunc(func(Ihandle, int) int { return DEFAULT }))
+		SetCallback(tree, "RENAME_CB", RenameFunc(func(Ihandle, int, string) int { return DEFAULT }))
+		SetCallback(tree, "DRAGDROP_CB", DragDropFunc(func(Ihandle, int, int, int, int) int { return DEFAULT }))
+		SetCallback(tree, "DROPDATA_CB", DropDataFunc(func(Ihandle, string, unsafe.Pointer, int, int, int) int { return DEFAULT }))
+		for _, cb := range []string{"SELECTION_CB", "MULTISELECTION_CB", "BRANCHOPEN_CB", "EXECUTELEAF_CB", "RENAME_CB", "DRAGDROP_CB", "DROPDATA_CB"} {
+			if GetCallback(tree, cb) == 0 {
+				t.Fatalf("%s not installed", cb)
+			}
 		}
-	}
-	Destroy(tree)
+		Destroy(tree)
+	})
 }
 
 // Attribute typing, multi-set, empty-clears, reset (same hash semantics both backends).
 func TestAttributeTypes(t *testing.T) {
-	e := Text()
+	onMain(t, func(t testing.TB) {
+		e := Text()
 
-	e.SetAttribute("VALUE", "hello")
-	if got := e.GetAttribute("VALUE"); got != "hello" {
-		t.Fatalf("VALUE = %q", got)
-	}
+		e.SetAttribute("VALUE", "hello")
+		if got := e.GetAttribute("VALUE"); got != "hello" {
+			t.Fatalf("VALUE = %q", got)
+		}
 
-	SetAttribute(e, "TI", 42)
-	if GetInt(e, "TI") != 42 {
-		t.Fatalf("GetInt = %d", GetInt(e, "TI"))
-	}
-	SetAttribute(e, "TD", "1.5")
-	if GetDouble(e, "TD") != 1.5 || GetFloat(e, "TD") != 1.5 {
-		t.Fatalf("GetDouble/Float = %v / %v", GetDouble(e, "TD"), GetFloat(e, "TD"))
-	}
-	SetAttribute(e, "TB", "YES")
-	if !GetBool(e, "TB") {
-		t.Fatal("GetBool = false, want true")
-	}
+		SetAttribute(e, "TI", 42)
+		if GetInt(e, "TI") != 42 {
+			t.Fatalf("GetInt = %d", GetInt(e, "TI"))
+		}
+		SetAttribute(e, "TD", "1.5")
+		if GetDouble(e, "TD") != 1.5 || GetFloat(e, "TD") != 1.5 {
+			t.Fatalf("GetDouble/Float = %v / %v", GetDouble(e, "TD"), GetFloat(e, "TD"))
+		}
+		SetAttribute(e, "TB", "YES")
+		if !GetBool(e, "TB") {
+			t.Fatal("GetBool = false, want true")
+		}
 
-	SetAttributes(e, "CUEBANNER=hint, NC=5")
-	if e.GetAttribute("CUEBANNER") != "hint" || GetInt(e, "NC") != 5 {
-		t.Fatalf("SetAttributes: CUEBANNER=%q NC=%d", e.GetAttribute("CUEBANNER"), GetInt(e, "NC"))
-	}
+		SetAttributes(e, "CUEBANNER=hint, NC=5")
+		if e.GetAttribute("CUEBANNER") != "hint" || GetInt(e, "NC") != 5 {
+			t.Fatalf("SetAttributes: CUEBANNER=%q NC=%d", e.GetAttribute("CUEBANNER"), GetInt(e, "NC"))
+		}
 
-	// "" clears the attribute (cgo cStrOrNull and nocgo both route ""->NULL).
-	SetAttribute(e, "TMP", "x")
-	SetAttribute(e, "TMP", "")
-	if got := e.GetAttribute("TMP"); got != "" {
-		t.Fatalf("empty-set did not clear: %q", got)
-	}
+		// "" clears the attribute (cgo cStrOrNull and nocgo both route ""->NULL).
+		SetAttribute(e, "TMP", "x")
+		SetAttribute(e, "TMP", "")
+		if got := e.GetAttribute("TMP"); got != "" {
+			t.Fatalf("empty-set did not clear: %q", got)
+		}
 
-	SetAttribute(e, "R", "y")
-	ResetAttribute(e, "R")
-	if got := e.GetAttribute("R"); got != "" {
-		t.Fatalf("ResetAttribute did not clear: %q", got)
-	}
-	Destroy(e)
+		SetAttribute(e, "R", "y")
+		ResetAttribute(e, "R")
+		if got := e.GetAttribute("R"); got != "" {
+			t.Fatalf("ResetAttribute did not clear: %q", got)
+		}
+		Destroy(e)
+	})
 }
 
 // Named-handle registry round-trip.
 func TestHandleName(t *testing.T) {
-	b := Button("h")
-	SetHandle("SMOKE_HANDLE", b)
-	if GetHandle("SMOKE_HANDLE") != b {
-		t.Fatal("GetHandle != set handle")
-	}
-	if got := GetName(b); got != "SMOKE_HANDLE" {
-		t.Fatalf("GetName = %q", got)
-	}
-	SetHandle("SMOKE_HANDLE", 0)
-	Destroy(b)
+	onMain(t, func(t testing.TB) {
+		b := Button("h")
+		SetHandle("SMOKE_HANDLE", b)
+		if GetHandle("SMOKE_HANDLE") != b {
+			t.Fatal("GetHandle != set handle")
+		}
+		if got := GetName(b); got != "SMOKE_HANDLE" {
+			t.Fatalf("GetName = %q", got)
+		}
+		SetHandle("SMOKE_HANDLE", 0)
+		Destroy(b)
+	})
 }
 
 // Built-in globals are populated after Open.
 func TestGlobals(t *testing.T) {
-	if GetGlobal("DRIVER") == "" {
-		t.Fatal("DRIVER global empty")
-	}
-	if GetGlobal("DEFAULTFONT") == "" {
-		t.Fatal("DEFAULTFONT global empty")
-	}
-	t.Logf("DRIVER=%s", GetGlobal("DRIVER"))
+	onMain(t, func(t testing.TB) {
+		if GetGlobal("DRIVER") == "" {
+			t.Fatal("DRIVER global empty")
+		}
+		if GetGlobal("DEFAULTFONT") == "" {
+			t.Fatal("DEFAULTFONT global empty")
+		}
+		t.Logf("DRIVER=%s", GetGlobal("DRIVER"))
+	})
 }
 
 // List model: items via id attributes, COUNT, VALUE selection.
 func TestListItems(t *testing.T) {
-	l := List()
-	l.SetAttribute("1", "Apple")
-	l.SetAttribute("2", "Banana")
-	l.SetAttribute("3", "Cherry")
+	onMain(t, func(t testing.TB) {
+		l := List()
+		l.SetAttribute("1", "Apple")
+		l.SetAttribute("2", "Banana")
+		l.SetAttribute("3", "Cherry")
 
-	dlg := Dialog(l)
-	Show(dlg)
+		dlg := Dialog(l)
+		Show(dlg)
 
-	if n := GetInt(l, "COUNT"); n != 3 {
-		t.Fatalf("COUNT = %d, want 3", n)
-	}
-	if got := l.GetAttribute("2"); got != "Banana" {
-		t.Fatalf("item 2 = %q", got)
-	}
-	l.SetAttribute("VALUE", "2")
-	if got := l.GetAttribute("VALUE"); got != "2" {
-		t.Fatalf("VALUE = %q, want 2", got)
-	}
-	Hide(dlg)
-	Destroy(dlg)
+		if n := GetInt(l, "COUNT"); n != 3 {
+			t.Fatalf("COUNT = %d, want 3", n)
+		}
+		if got := l.GetAttribute("2"); got != "Banana" {
+			t.Fatalf("item 2 = %q", got)
+		}
+		l.SetAttribute("VALUE", "2")
+		if got := l.GetAttribute("VALUE"); got != "2" {
+			t.Fatalf("VALUE = %q, want 2", got)
+		}
+		Hide(dlg)
+		Destroy(dlg)
+	})
 }
 
 // Widget-lifecycle callback (MAP_CB) fires when the element is mapped.
 func TestMapCallback(t *testing.T) {
-	mapped := false
-	b := Button("m")
-	SetCallback(b, "MAP_CB", MapFunc(func(Ihandle) int {
-		mapped = true
-		return DEFAULT
-	}))
-	dlg := Dialog(b)
-	Show(dlg)
-	Hide(dlg)
-	Destroy(dlg)
-	if !mapped {
-		t.Fatal("MAP_CB did not fire on Show")
-	}
+	onMain(t, func(t testing.TB) {
+		mapped := false
+		b := Button("m")
+		SetCallback(b, "MAP_CB", MapFunc(func(Ihandle) int {
+			mapped = true
+			return DEFAULT
+		}))
+		dlg := Dialog(b)
+		Show(dlg)
+		Hide(dlg)
+		Destroy(dlg)
+		if !mapped {
+			t.Fatal("MAP_CB did not fire on Show")
+		}
+	})
 }
 
 // Replaced callbacks and PostMessage payloads survive the round trip through C and are released once.
 func TestPostMessagePayload(t *testing.T) {
-	type payload struct{ n int }
+	onMain(t, func(t testing.TB) {
+		type payload struct{ n int }
 
-	var got []any
-	b := Button("p")
-	SetCallback(b, "POSTMESSAGE_CB", PostMessageFunc(func(Ihandle, string, int, any) int {
-		t.Error("replaced POSTMESSAGE_CB fired")
-		return DEFAULT
-	}))
-	SetCallback(b, "POSTMESSAGE_CB", PostMessageFunc(func(_ Ihandle, s string, i int, p any) int {
-		got = append(got, s, i, p)
-		return DEFAULT
-	}))
-	dlg := Dialog(b)
-	Map(dlg)
+		var got []any
+		b := Button("p")
+		SetCallback(b, "POSTMESSAGE_CB", PostMessageFunc(func(Ihandle, string, int, any) int {
+			t.Error("replaced POSTMESSAGE_CB fired")
+			return DEFAULT
+		}))
+		SetCallback(b, "POSTMESSAGE_CB", PostMessageFunc(func(_ Ihandle, s string, i int, p any) int {
+			got = append(got, s, i, p)
+			return DEFAULT
+		}))
+		dlg := Dialog(b)
+		Map(dlg)
 
-	PostMessage(b, "hello", 7, &payload{42})
-	deadline := time.Now().Add(2 * time.Second)
-	for len(got) == 0 && time.Now().Before(deadline) {
-		LoopStep()
-		time.Sleep(5 * time.Millisecond)
-	}
-	Destroy(dlg)
+		PostMessage(b, "hello", 7, &payload{42})
+		deadline := time.Now().Add(2 * time.Second)
+		for len(got) == 0 && time.Now().Before(deadline) {
+			LoopStep()
+			time.Sleep(5 * time.Millisecond)
+		}
+		Destroy(dlg)
 
-	if len(got) != 3 {
-		t.Fatal("POSTMESSAGE_CB never fired")
-	}
-	if p, ok := got[2].(*payload); got[0] != "hello" || got[1] != 7 || !ok || p.n != 42 {
-		t.Fatalf("POSTMESSAGE_CB got %v", got)
-	}
+		if len(got) != 3 {
+			t.Fatal("POSTMESSAGE_CB never fired")
+		}
+		if p, ok := got[2].(*payload); got[0] != "hello" || got[1] != 7 || !ok || p.n != 42 {
+			t.Fatalf("POSTMESSAGE_CB got %v", got)
+		}
+	})
 }
 
 // PostMessage payloads that are never delivered are released by Destroy or by removing POSTMESSAGE_CB.
 func TestPostMessageDroppedPayload(t *testing.T) {
-	pending := func(ih Ihandle) (int, bool) {
-		postMu.Lock()
-		defer postMu.Unlock()
-		m, ok := postPending[ih]
-		return len(m), ok
-	}
-	drain := func() {
-		for i := 0; i < 20; i++ {
-			LoopStep()
-			time.Sleep(5 * time.Millisecond)
+	onMain(t, func(t testing.TB) {
+		pending := func(ih Ihandle) (int, bool) {
+			postMu.Lock()
+			defer postMu.Unlock()
+			m, ok := postPending[ih]
+			return len(m), ok
 		}
-	}
+		drain := func() {
+			for i := 0; i < 20; i++ {
+				LoopStep()
+				time.Sleep(5 * time.Millisecond)
+			}
+		}
 
-	fired := 0
-	b := Button("p")
-	SetCallback(b, "POSTMESSAGE_CB", PostMessageFunc(func(Ihandle, string, int, any) int {
-		fired++
-		return DEFAULT
-	}))
-	dlg := Dialog(b)
-	Map(dlg)
-	PostMessage(b, "late", 1, &struct{ n int }{1})
-	PostMessage(b, "late", 2, &struct{ n int }{2})
-	if n, _ := pending(b); n != 2 {
-		t.Fatalf("pending payloads before Destroy = %d, want 2", n)
-	}
-	Destroy(dlg)
-	if n, ok := pending(b); n != 0 || ok {
-		t.Fatalf("pending payloads after Destroy = %d (entry %v), want none", n, ok)
-	}
-	drain()
-	if fired != 0 {
-		t.Fatalf("POSTMESSAGE_CB fired %d times for a destroyed element", fired)
-	}
+		fired := 0
+		b := Button("p")
+		SetCallback(b, "POSTMESSAGE_CB", PostMessageFunc(func(Ihandle, string, int, any) int {
+			fired++
+			return DEFAULT
+		}))
+		dlg := Dialog(b)
+		Map(dlg)
+		PostMessage(b, "late", 1, &struct{ n int }{1})
+		PostMessage(b, "late", 2, &struct{ n int }{2})
+		if n, _ := pending(b); n != 2 {
+			t.Fatalf("pending payloads before Destroy = %d, want 2", n)
+		}
+		Destroy(dlg)
+		if n, ok := pending(b); n != 0 || ok {
+			t.Fatalf("pending payloads after Destroy = %d (entry %v), want none", n, ok)
+		}
+		drain()
+		if fired != 0 {
+			t.Fatalf("POSTMESSAGE_CB fired %d times for a destroyed element", fired)
+		}
 
-	plain := Button("q")
-	dlg = Dialog(plain)
-	Map(dlg)
-	PostMessage(plain, "none", 0, &struct{ n int }{3})
-	if _, ok := pending(plain); ok {
-		t.Fatal("payload kept for an element without a Go POSTMESSAGE_CB")
-	}
-	drain()
-	Destroy(dlg)
+		plain := Button("q")
+		dlg = Dialog(plain)
+		Map(dlg)
+		PostMessage(plain, "none", 0, &struct{ n int }{3})
+		if _, ok := pending(plain); ok {
+			t.Fatal("payload kept for an element without a Go POSTMESSAGE_CB")
+		}
+		drain()
+		Destroy(dlg)
 
-	c := Button("r")
-	SetCallback(c, "POSTMESSAGE_CB", PostMessageFunc(func(Ihandle, string, int, any) int {
-		fired++
-		return DEFAULT
-	}))
-	dlg = Dialog(c)
-	Map(dlg)
-	PostMessage(c, "cleared", 0, &struct{ n int }{4})
-	SetCallback(c, "POSTMESSAGE_CB", nil)
-	if n, ok := pending(c); n != 0 || ok {
-		t.Fatalf("pending payloads after removing POSTMESSAGE_CB = %d (entry %v), want none", n, ok)
-	}
-	drain()
-	Destroy(dlg)
-	if fired != 0 {
-		t.Fatalf("POSTMESSAGE_CB fired %d times after removal", fired)
-	}
+		c := Button("r")
+		SetCallback(c, "POSTMESSAGE_CB", PostMessageFunc(func(Ihandle, string, int, any) int {
+			fired++
+			return DEFAULT
+		}))
+		dlg = Dialog(c)
+		Map(dlg)
+		PostMessage(c, "cleared", 0, &struct{ n int }{4})
+		SetCallback(c, "POSTMESSAGE_CB", nil)
+		if n, ok := pending(c); n != 0 || ok {
+			t.Fatalf("pending payloads after removing POSTMESSAGE_CB = %d (entry %v), want none", n, ok)
+		}
+		drain()
+		Destroy(dlg)
+		if fired != 0 {
+			t.Fatalf("POSTMESSAGE_CB fired %d times after removal", fired)
+		}
+	})
 }
 
 // Every typed callback name is accepted by SetCallback and registered in IUP.
 func TestCallbackTable(t *testing.T) {
-	for name, types := range callbackTypes {
-		for _, ct := range types {
-			ih := User()
-			fn := reflect.MakeFunc(ct, func(args []reflect.Value) []reflect.Value {
-				out := make([]reflect.Value, ct.NumOut())
-				for i := range out {
-					out[i] = reflect.Zero(ct.Out(i))
+	onMain(t, func(t testing.TB) {
+		for name, types := range callbackTypes {
+			for _, ct := range types {
+				ih := User()
+				fn := reflect.MakeFunc(ct, func(args []reflect.Value) []reflect.Value {
+					out := make([]reflect.Value, ct.NumOut())
+					for i := range out {
+						out[i] = reflect.Zero(ct.Out(i))
+					}
+					return out
+				}).Interface()
+				SetCallback(ih, name, fn)
+				if GetCallback(ih, name) == 0 && name != "NUMERICGETVALUE_CB" { // purego cannot return a C double
+					t.Errorf("%s with %s was not registered", name, ct)
 				}
-				return out
-			}).Interface()
-			SetCallback(ih, name, fn)
-			if GetCallback(ih, name) == 0 && name != "NUMERICGETVALUE_CB" { // purego cannot return a C double
-				t.Errorf("%s with %s was not registered", name, ct)
+				Destroy(ih)
 			}
-			Destroy(ih)
 		}
-	}
+	})
 }
 
 // SetCallback converts a function literal, clears on a nil function and panics on mistakes.
 func TestSetCallbackCheck(t *testing.T) {
-	ih := User()
-	defer Destroy(ih)
+	onMain(t, func(t testing.TB) {
+		ih := User()
+		defer Destroy(ih)
 
-	SetCallback(ih, "MAP_CB", func(Ihandle) int { return DEFAULT })
-	if GetCallback(ih, "MAP_CB") == 0 {
-		t.Fatal("function literal for MAP_CB was not registered")
-	}
-	SetCallback(ih, "MAP_CB", MapFunc(nil))
-	if GetCallback(ih, "MAP_CB") != 0 {
-		t.Fatal("nil MapFunc did not clear MAP_CB")
-	}
+		SetCallback(ih, "MAP_CB", func(Ihandle) int { return DEFAULT })
+		if GetCallback(ih, "MAP_CB") == 0 {
+			t.Fatal("function literal for MAP_CB was not registered")
+		}
+		SetCallback(ih, "MAP_CB", MapFunc(nil))
+		if GetCallback(ih, "MAP_CB") != 0 {
+			t.Fatal("nil MapFunc did not clear MAP_CB")
+		}
 
-	for _, c := range []struct {
-		name string
-		fn   any
-	}{
-		{"MAP_CB", ActionFunc(func(Ihandle) int { return DEFAULT })},
-		{"ACTION", func(Ihandle, float64) int { return DEFAULT }},
-		{"MAPCB", MapFunc(func(Ihandle) int { return DEFAULT })},
-		{"VALUE_CB", func(Ihandle, int, int) string { return "" }},
-	} {
-		func() {
-			defer func() {
-				if r := recover(); r == nil {
-					t.Errorf("%s with %T did not panic", c.name, c.fn)
-				} else {
-					t.Logf("%s: %v", c.name, r)
-				}
+		for _, c := range []struct {
+			name string
+			fn   any
+		}{
+			{"MAP_CB", ActionFunc(func(Ihandle) int { return DEFAULT })},
+			{"ACTION", func(Ihandle, float64) int { return DEFAULT }},
+			{"MAPCB", MapFunc(func(Ihandle) int { return DEFAULT })},
+			{"VALUE_CB", func(Ihandle, int, int) string { return "" }},
+		} {
+			func() {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Errorf("%s with %T did not panic", c.name, c.fn)
+					} else {
+						t.Logf("%s: %v", c.name, r)
+					}
+				}()
+				SetCallback(ih, c.name, c.fn)
 			}()
-			SetCallback(ih, c.name, c.fn)
-		}()
-	}
+		}
+	})
 }
 
 // On takes a function literal for a typed callback and the callback fires.
 func TestOnCallback(t *testing.T) {
-	mapped := false
-	b := On(Button("m"), MapCB, func(Ihandle) int {
-		mapped = true
-		return DEFAULT
+	onMain(t, func(t testing.TB) {
+		mapped := false
+		b := On(Button("m"), MapCB, func(Ihandle) int {
+			mapped = true
+			return DEFAULT
+		})
+		dlg := Dialog(b)
+		Show(dlg)
+		Hide(dlg)
+		Destroy(dlg)
+		if !mapped {
+			t.Fatal("MAP_CB set with On did not fire")
+		}
 	})
-	dlg := Dialog(b)
-	Show(dlg)
-	Hide(dlg)
-	Destroy(dlg)
-	if !mapped {
-		t.Fatal("MAP_CB set with On did not fire")
-	}
 }
 
 // An attribute call from another goroutine panics instead of reaching the toolkit.
 func TestUIThreadGuard(t *testing.T) {
-	btn := Button("guard")
-	defer Destroy(btn)
+	onMain(t, func(t testing.TB) {
+		btn := Button("guard")
+		defer Destroy(btn)
 
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
+		saved := uiThread.Load()
+		markUIThread()
+		defer uiThread.Store(saved)
 
-	saved := uiThread.Load()
-	markUIThread()
-	defer uiThread.Store(saved)
+		var trusted []any
+		iupThreads.Range(func(id, _ any) bool {
+			trusted = append(trusted, id)
+			iupThreads.Delete(id)
+			return true
+		})
+		defer func() {
+			for _, id := range trusted {
+				iupThreads.Store(id, struct{}{})
+			}
+		}()
 
-	var trusted []any
-	iupThreads.Range(func(id, _ any) bool {
-		trusted = append(trusted, id)
-		iupThreads.Delete(id)
-		return true
-	})
-	defer func() {
-		for _, id := range trusted {
-			iupThreads.Store(id, struct{}{})
+		btn.SetAttribute("TITLE", "from the main thread")
+
+		done := make(chan any, 1)
+		go func() {
+			defer func() { done <- recover() }()
+			btn.SetAttribute("TITLE", "from a goroutine")
+		}()
+
+		r := <-done
+		if r == nil {
+			t.Fatal("attribute call from a goroutine did not panic")
 		}
-	}()
+		t.Logf("recovered: %v", r)
 
-	btn.SetAttribute("TITLE", "from the main thread")
-
-	done := make(chan any, 1)
-	go func() {
-		defer func() { done <- recover() }()
-		btn.SetAttribute("TITLE", "from a goroutine")
-	}()
-
-	r := <-done
-	if r == nil {
-		t.Fatal("attribute call from a goroutine did not panic")
-	}
-	t.Logf("recovered: %v", r)
-
-	if got := btn.GetAttribute("TITLE"); got != "from the main thread" {
-		t.Fatalf("main thread call broken after the guard fired: got %q", got)
-	}
+		if got := btn.GetAttribute("TITLE"); got != "from the main thread" {
+			t.Fatalf("main thread call broken after the guard fired: got %q", got)
+		}
+	})
 }
