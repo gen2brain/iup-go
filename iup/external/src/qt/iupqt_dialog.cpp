@@ -628,7 +628,7 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
   const int est_border = qt_last_caption ? qt_last_border : 5;
   const int est_caption = qt_last_caption ? qt_last_caption : 25;
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
   /* On macOS, Qt uses the native global menu bar */
   *menu = 0;
 #else
