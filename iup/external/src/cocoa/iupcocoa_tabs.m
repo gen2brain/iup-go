@@ -1127,6 +1127,23 @@ static int cocoaTabsSetBgColorAttrib(Ihandle* ih, const char* value)
  ===============================================================================
  */
 
+static void cocoaTabsSyncPageVisibility(Ihandle* ih)
+{
+  Ihandle* child;
+  int pos = 0;
+  int current = iupdrvTabsGetCurrentTab(ih);
+
+  if (current < 0)
+    return;
+
+  for (child = ih->firstchild; child; child = child->brother, pos++)
+  {
+    NSView* content_container = (NSView*)iupAttribGet(child, "_IUPTAB_CONTAINER");
+    if (content_container)
+      [content_container setHidden:(pos != current)];
+  }
+}
+
 static void cocoaTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 {
   if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
@@ -1149,6 +1166,8 @@ static void cocoaTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     [content_area addSubview:content_container];
     iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)content_container);
+
+    cocoaTabsSyncPageVisibility(ih);
   }
 }
 
@@ -1194,6 +1213,8 @@ static void cocoaTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int pos)
 
   iupArrayRemove(visible_array, pos, 1);
   iupAttribSet(child, "_IUPTAB_CONTAINER", NULL);
+
+  cocoaTabsSyncPageVisibility(ih);
 
   [tab_bar_view redraw];
 }
