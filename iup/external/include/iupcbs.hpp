@@ -13,7 +13,7 @@
 #define IUP_CLASS_SETCALLBACK(__ih, __name, __cb) \
   IupSetCallback(__ih, __name, (Icallback)CB_##__cb)
 
-#ifdef __IUP_PLUS_H
+#ifdef __IUPPLUS_H
 
 #define IUP_PLUS_GET_OBJECT(__elem, __class) dynamic_cast<__class*>((__class*)IupGetAttribute(__elem.GetHandle(), #__class "->this"))
 
