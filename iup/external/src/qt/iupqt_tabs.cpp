@@ -291,7 +291,7 @@ protected:
       }
     }
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     /* QMacStyle::tabLayout() reserves icon space on both sides of the text rect,
        while tabSizeHint() counts the icon width once. */
     QIcon icon = tabIcon(index);
