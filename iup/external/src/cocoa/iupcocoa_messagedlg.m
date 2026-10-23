@@ -139,6 +139,7 @@ static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
 
     /* the first button added gets the Return key equivalent */
     int default_idx = button_def - 1;
+    NSButton* esc_button = nil;
     if (default_idx >= 0 && default_idx < [[alert buttons] count])
     {
         NSButton* firstButton = [[alert buttons] objectAtIndex:0];
@@ -147,6 +148,8 @@ static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
         {
             [firstButton setKeyEquivalent:@""];
             NSButton* defaultButton = [[alert buttons] objectAtIndex:default_idx];
+            if ([[defaultButton keyEquivalent] isEqualToString:@"\033"])
+              esc_button = defaultButton;
             [defaultButton setKeyEquivalent:@"\r"];
         }
         else
@@ -160,6 +163,23 @@ static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
       [alert setShowsHelp:YES];
     }
 
+#ifndef GNUSTEP
+    id esc_monitor = nil;
+    if (esc_button)
+    {
+      esc_monitor = [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskKeyDown handler:^NSEvent*(NSEvent* event) {
+        if ([[event charactersIgnoringModifiers] isEqualToString:@"\033"])
+        {
+          [esc_button performClick:nil];
+          return nil;
+        }
+        return event;
+      }];
+    }
+#else
+    (void)esc_button;
+#endif
+
     if (parentWindow) {
         [alert beginSheetModalForWindow:parentWindow completionHandler:^(NSModalResponse returnCode) {
             [NSApp stopModalWithCode:returnCode];
@@ -168,6 +188,11 @@ static int cocoaMessageDlgPopup(Ihandle* ih, int x, int y)
     } else {
         response = [alert runModal];
     }
+
+#ifndef GNUSTEP
+    if (esc_monitor)
+      [NSEvent removeMonitor:esc_monitor];
+#endif
 
     [alert release];
 
