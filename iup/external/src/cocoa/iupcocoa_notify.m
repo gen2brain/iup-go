@@ -444,9 +444,12 @@ IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
   const char* title = IupGetAttribute(ih, "TITLE");
   const char* body = IupGetAttribute(ih, "BODY");
   const char* subtitle = IupGetAttribute(ih, "SUBTITLE");
-  const char* icon = IupGetAttribute(ih, "ICON");
+  const char* image = IupGetAttribute(ih, "IMAGE");
   const char* threadId = IupGetAttribute(ih, "THREADID");
   int silent = IupGetInt(ih, "SILENT");
+
+  if (!image || !image[0])
+    image = IupGetAttribute(ih, "ICON");
 
   NSString* ns_str;
 
@@ -473,12 +476,12 @@ IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
     notify->tempImagePath = nil;
   }
 
-  if (icon && icon[0])
+  if (image && image[0])
   {
     int img_width, img_height;
     unsigned char* pixels = NULL;
 
-    if (iupdrvGetIconPixels(ih, icon, &img_width, &img_height, &pixels))
+    if (iupdrvGetIconPixels(ih, image, &img_width, &img_height, &pixels))
     {
       unsigned char* use_pixels = pixels;
       int use_width = img_width;

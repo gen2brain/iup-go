@@ -22,9 +22,10 @@ Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/
 See also [IupImage](iup_image.md).
 On iOS, ICON is honored only with STYLE=TOAST.
 
-**IMAGE** [Android, iOS and Haiku Only] (non-inheritable): Image name shown as the expanded content/preview image.
+**IMAGE** [macOS, Android, iOS and Haiku Only] (non-inheritable): Image name shown as the expanded content/preview image.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 On Android, TITLE and BODY are reused as the expanded title and summary.
+On macOS it becomes the notification attachment, and ICON is used instead when IMAGE is not set.
 
 **SUBTITLE** [macOS / iOS Only] (non-inheritable): The notification subtitle, displayed below the title.
 
