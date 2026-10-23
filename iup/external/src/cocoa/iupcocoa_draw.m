@@ -55,7 +55,16 @@ static CGColorRef iupCocoaDrawCreateColor(long color)
   unsigned char a = iupDrawAlpha(color);
 
   CGFloat inv_byte = 1.0/255.0;
-  CGColorRef the_color = CGColorCreateGenericRGB(r*inv_byte, g*inv_byte, b*inv_byte, a*inv_byte);
+  CGFloat components[4];
+  CGColorSpaceRef color_space = iupcocoaGetRGBColorSpace();
+  CGColorRef the_color;
+
+  components[0] = r*inv_byte;
+  components[1] = g*inv_byte;
+  components[2] = b*inv_byte;
+  components[3] = a*inv_byte;
+
+  the_color = CGColorCreate(color_space, components);
   CFAutorelease(the_color);
   return the_color;
 }
@@ -192,7 +201,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
     if (!buffer)
     {
-      buffer = [[NSBitmapImageRep alloc]
+      NSBitmapImageRep* device_buffer = [[NSBitmapImageRep alloc]
         initWithBitmapDataPlanes:NULL
         pixelsWide:pixels_w
         pixelsHigh:pixels_h
@@ -200,16 +209,18 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
         samplesPerPixel:4
         hasAlpha:YES
         isPlanar:NO
-        colorSpaceName:NSCalibratedRGBColorSpace
+        colorSpaceName:NSDeviceRGBColorSpace
         bytesPerRow:0
         bitsPerPixel:0];
+
+      buffer = iupcocoaRetagBitmapRepSRGB(device_buffer);
       [buffer setSize:NSMakeSize(dc->w, dc->h)];
 
       iupAttribSet(ih, "_IUPCOCOA_CANVAS_BUFFER", (char*)buffer);
     }
 
     /* the bitmap context is flipped to match the flipped view */
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGColorSpaceRef colorSpace = iupcocoaGetRGBColorSpace();
 
     CGBitmapInfo bitmapInfo = kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big;
 
@@ -222,7 +233,6 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
       colorSpace,
       bitmapInfo
     );
-    CGColorSpaceRelease(colorSpace);
 
     if (!cgContext)
     {
@@ -773,7 +783,7 @@ static void iupCocoaDrawGradientPathGNUstep(IdrawCanvas* dc, const IupDrawSource
     return;
 
   {
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGColorSpaceRef colorSpace = iupcocoaGetRGBColorSpace();
     CGGradientRef gradient = iupCocoaCreateGradient(colorSpace, src);
     size_t bpr = 4 * iw;
     unsigned char* tmp = calloc((size_t)ih * bpr, 1);
@@ -821,7 +831,6 @@ static void iupCocoaDrawGradientPathGNUstep(IdrawCanvas* dc, const IupDrawSource
     }
 
     CGGradientRelease(gradient);
-    CGColorSpaceRelease(colorSpace);
   }
 }
 #endif
@@ -854,11 +863,10 @@ IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int
   CGContextSaveGState(ctx);
   iupCocoaClipPath(ctx, rule);
   {
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGColorSpaceRef colorSpace = iupcocoaGetRGBColorSpace();
     CGGradientRef gradient = iupCocoaCreateGradient(colorSpace, src);
     iupCocoaDrawGradient(ctx, gradient, src);
     CGGradientRelease(gradient);
-    CGColorSpaceRelease(colorSpace);
   }
   CGContextRestoreGState(ctx);
 #endif
@@ -897,11 +905,10 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
   CGContextSaveGState(ctx);
   CGContextClip(ctx);
   {
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGColorSpaceRef colorSpace = iupcocoaGetRGBColorSpace();
     CGGradientRef gradient = iupCocoaCreateGradient(colorSpace, src);
     iupCocoaDrawGradient(ctx, gradient, src);
     CGGradientRelease(gradient);
-    CGColorSpaceRelease(colorSpace);
   }
   CGContextRestoreGState(ctx);
 #endif
@@ -1206,11 +1213,10 @@ IUP_SDK_API int iupdrvDrawBitmap(IdrawCanvas* dc, const unsigned char* data, int
   if (!cg_context || __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__)
     return 0;
 
-  cs = CGColorSpaceCreateDeviceRGB();
+  cs = iupcocoaGetRGBColorSpace();
   provider = CGDataProviderCreateWithData(NULL, data, (size_t)stride * height, NULL);
   image = CGImageCreate(width, height, 8, 32, stride, cs, kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little, provider, NULL, false, kCGRenderingIntentDefault);
   CGDataProviderRelease(provider);
-  CGColorSpaceRelease(cs);
   if (!image)
     return 0;
 
@@ -1270,7 +1276,7 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
       unsigned char* data = [rep bitmapData];
       if (!data) return;
 
-      CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+      CGColorSpaceRef cs = iupcocoaGetRGBColorSpace();
       CGBitmapInfo info;
       if (spp == 4)
         info = kCGImageAlphaLast | kCGBitmapByteOrder32Big;
@@ -1281,7 +1287,6 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
       CGImageRef cgimg = CGImageCreate([rep pixelsWide], [rep pixelsHigh], bps, bpp, bpr,
                                         cs, info, provider, NULL, false, kCGRenderingIntentDefault);
       CGDataProviderRelease(provider);
-      CGColorSpaceRelease(cs);
 
       if (cgimg)
       {
@@ -1375,7 +1380,7 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
 IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
   CGContextRef cg_context = dc->cgContext;
-  CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+  CGColorSpaceRef colorSpace = iupcocoaGetRGBColorSpace();
 
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
@@ -1446,13 +1451,12 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
 #endif
 
   CGGradientRelease(gradient);
-  CGColorSpaceRelease(colorSpace);
 }
 
 IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
   CGContextRef cg_context = dc->cgContext;
-  CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+  CGColorSpaceRef colorSpace = iupcocoaGetRGBColorSpace();
 
   long colorEdge = colors[count - 1];
   CGFloat components[IUP_GRADIENT_MAX_STOPS * 4];
@@ -1540,7 +1544,6 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
   (void)center;
 
   CGGradientRelease(gradient);
-  CGColorSpaceRelease(colorSpace);
 }
 
 static void iCocoaCopyPremulToRgba(unsigned char* dst, const unsigned char* src, int w, int h, int src_stride)

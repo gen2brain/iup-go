@@ -318,6 +318,42 @@ IUP_DRV_API NSView* iupcocoaGetRootView(Ihandle* ih)
   return cocoaGetAssociatedView(ih, ROOTVIEW_ASSOCIATED_OBJ_KEY);
 }
 
+IUP_DRV_API CGColorSpaceRef iupcocoaGetRGBColorSpace(void)
+{
+  static CGColorSpaceRef color_space = NULL;
+
+  if (!color_space)
+  {
+#ifdef GNUSTEP
+    color_space = CGColorSpaceCreateDeviceRGB();
+#else
+    color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+#endif
+  }
+
+  return color_space;
+}
+
+IUP_DRV_API NSBitmapImageRep* iupcocoaRetagBitmapRepSRGB(NSBitmapImageRep* rep)
+{
+#ifdef GNUSTEP
+  return rep;
+#else
+  NSBitmapImageRep* tagged;
+
+  if (!rep)
+    return nil;
+
+  tagged = [rep bitmapImageRepByRetaggingWithColorSpace:[NSColorSpace sRGBColorSpace]];
+  if (!tagged || tagged == rep)
+    return rep;
+
+  [tagged retain];
+  [rep release];
+  return tagged;
+#endif
+}
+
 IUP_DRV_API NSView* iupcocoaGetMainView(Ihandle* ih)
 {
   return cocoaGetAssociatedView(ih, MAINVIEW_ASSOCIATED_OBJ_KEY);
