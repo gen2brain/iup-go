@@ -405,6 +405,7 @@ typedef struct _IwinVideo
   IUnknown* surface;
   ID3D11Device* device;
   IMFDXGIDeviceManager* manager;
+  int attach_pending;
   HANDLE swapchain;
   HWND window;
   HWND parent;
@@ -1038,9 +1039,12 @@ static void winVideoAttachSurface(IwinVideo* context)
     CloseHandle(context->swapchain);
     context->swapchain = nullptr;
   }
-  if (SUCCEEDED(context->player->GetVideoSwapchainHandle(&swapchain)) &&
+  context->attach_pending = 1;
+  context->placed = 0;
+  if (SUCCEEDED(context->player->GetVideoSwapchainHandle(&swapchain)) && swapchain &&
       SUCCEEDED(context->composition->CreateSurfaceFromHandle(swapchain, &context->surface)))
   {
+    context->attach_pending = 0;
     context->swapchain = swapchain;
     context->visual->SetContent(context->surface);
     context->target->SetRoot(context->visual);
@@ -1087,7 +1091,7 @@ static void winVideoPoll(IvideoSession* session)
       context->caption_dirty = 1;
     context->aspect = info.aspect;
   }
-  if (context->notify->takeFormat())
+  if (context->notify->takeFormat() || context->attach_pending)
     winVideoAttachSurface(context);
   winVideoLayout(session, context->ih);
   iupVideoInfo(session, &info);
