@@ -18,6 +18,8 @@ elseif(_IUP_BACKEND STREQUAL "motif")
   find_dependency(PkgConfig)
 elseif(_IUP_BACKEND STREQUAL "efl")
   find_dependency(PkgConfig)
+elseif(_IUP_BACKEND STREQUAL "fltk" AND "@FLTK_FOUND@")
+  find_dependency(FLTK 1.4 CONFIG)
 endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/IUPTargets.cmake")
