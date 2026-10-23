@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "iup_drv.h"
 #include "iup_video.h"
+#include "iup_drv.h"
 #include "iup_thread.h"
 #include "iup_str.h"
 #include "iupvideo_gstreamer_dlopen.h"
