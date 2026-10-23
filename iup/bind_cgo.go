@@ -118,6 +118,8 @@ package iup
 #cgo fltk CXXFLAGS: -Iexternal/src/fltk -Iexternal/src/unix -DIUP_USE_FLTK -std=c++17
 #cgo fltk LDFLAGS: -lfltk -lfltk_images
 #cgo windows,fltk LDFLAGS: -static-libgcc -static-libstdc++
+#cgo darwin,!ios,arm64,fltk CXXFLAGS: -I/opt/homebrew/include
+#cgo darwin,!ios,arm64,fltk LDFLAGS: -L/opt/homebrew/lib
 #cgo windows,fltk,web CXXFLAGS: -DIUPWEB_HOSTED
 #cgo darwin,!ios,fltk,web LDFLAGS: -framework WebKit
 #cgo fltk,gl,!windows,!darwin,!android,!nopkgconfig pkg-config: wayland-egl egl gl
