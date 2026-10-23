@@ -35,7 +35,7 @@ extern "C" {
 #include "iuphaiku_drv.h"
 
 
-void iuphaikuCanvasOnDraw(Ihandle* ih, BView* view, BRect dirty)
+static void iuphaikuCanvasOnDrawDirect(Ihandle* ih, BView* view, BRect dirty)
 {
   if (!ih || !ih->data) return;
   if (ih->data->inside_resize)
@@ -71,7 +71,7 @@ void iuphaikuCanvasOnDraw(Ihandle* ih, BView* view, BRect dirty)
   else { iupAttribSet(ih, "CLIPRECT", nullptr); }
 }
 
-void iuphaikuCanvasOnFrameResized(Ihandle* ih, BView* view, float new_w, float new_h)
+static void iuphaikuCanvasOnFrameResizedDirect(Ihandle* ih, BView* view, float new_w, float new_h)
 {
   (void)view;
   if (!ih || !ih->data) return;
@@ -81,7 +81,7 @@ void iuphaikuCanvasOnFrameResized(Ihandle* ih, BView* view, float new_w, float n
   ih->data->inside_resize = 0;
 }
 
-void iuphaikuCanvasOnAttachedToWindow(Ihandle* ih, BView* view)
+static void iuphaikuCanvasOnAttachedToWindowDirect(Ihandle* ih, BView* view)
 {
   /* BView::ResizeTo skips FrameResized when detached: catch up here. */
   if (!ih || !ih->data) return;
@@ -95,13 +95,13 @@ void iuphaikuCanvasOnAttachedToWindow(Ihandle* ih, BView* view)
   ih->data->inside_resize = 0;
 }
 
-void iuphaikuCanvasOnMakeFocus(Ihandle* ih, BView* view, bool focused)
+static void iuphaikuCanvasOnMakeFocusDirect(Ihandle* ih, BView* view, bool focused)
 {
   (void)view;
   iuphaikuFocusInOutEvent(ih, focused ? 1 : 0);
 }
 
-void iuphaikuCanvasOnMouseDown(Ihandle* ih, BView* view, BPoint where)
+static void iuphaikuCanvasOnMouseDownDirect(Ihandle* ih, BView* view, BPoint where)
 {
   if (!ih) return;
   if (!iupdrvIsActive(ih)) return;
@@ -134,7 +134,7 @@ void iuphaikuCanvasOnMouseDown(Ihandle* ih, BView* view, BPoint where)
   if (cb) cb(ih, btn, 1, static_cast<int>(where.x), static_cast<int>(where.y), status);
 }
 
-void iuphaikuCanvasOnMouseUp(Ihandle* ih, BView* view, BPoint where)
+static void iuphaikuCanvasOnMouseUpDirect(Ihandle* ih, BView* view, BPoint where)
 {
   if (!ih) return;
 
@@ -153,7 +153,7 @@ void iuphaikuCanvasOnMouseUp(Ihandle* ih, BView* view, BPoint where)
   if (cb) cb(ih, btn, 0, static_cast<int>(where.x), static_cast<int>(where.y), status);
 }
 
-void iuphaikuCanvasOnMouseMoved(Ihandle* ih, BView* view, BPoint where, unsigned int transit, const BMessage* drag)
+static void iuphaikuCanvasOnMouseMovedDirect(Ihandle* ih, BView* view, BPoint where, unsigned int transit, const BMessage* drag)
 {
   if (!ih) return;
   if (!iupdrvIsActive(ih)) return;
@@ -211,7 +211,7 @@ static bool haikuCanvasTextInput(Ihandle* ih, const char* bytes, int numBytes, i
   return iupKeyCallTextInputCb(ih, utf8) == IUP_IGNORE;
 }
 
-bool iuphaikuCanvasOnKeyDown(Ihandle* ih, BView* view, const char* bytes, int numBytes)
+static bool iuphaikuCanvasOnKeyDownDirect(Ihandle* ih, BView* view, const char* bytes, int numBytes)
 {
   if (!ih || numBytes < 1) return false;
 
@@ -238,7 +238,7 @@ bool iuphaikuCanvasOnKeyDown(Ihandle* ih, BView* view, const char* bytes, int nu
   return true;
 }
 
-bool iuphaikuCanvasOnKeyUp(Ihandle* ih, BView* view, const char* bytes, int numBytes)
+static bool iuphaikuCanvasOnKeyUpDirect(Ihandle* ih, BView* view, const char* bytes, int numBytes)
 {
   if (!ih || numBytes < 1) return false;
 
@@ -257,7 +257,7 @@ bool iuphaikuCanvasOnKeyUp(Ihandle* ih, BView* view, const char* bytes, int numB
   return code != 0;
 }
 
-bool iuphaikuCanvasOnMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
+static bool iuphaikuCanvasOnMessageReceivedDirect(Ihandle* ih, BView* view, BMessage* msg)
 {
   if (iuphaikuHandleDropFiles(ih, view, msg)) return true;
   if (iuphaikuDnDMessageReceived(ih, view, msg)) return true;
@@ -804,4 +804,211 @@ extern "C" IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "DY",   nullptr,                   haikuCanvasSetDYAttrib,   nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "POSX", iupCanvasGetPosXAttrib, haikuCanvasSetPosXAttrib, "0",  nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "POSY", iupCanvasGetPosYAttrib, haikuCanvasSetPosYAttrib, "0",  nullptr, IUPAF_NO_INHERIT);
+}
+
+typedef struct {
+  Ihandle* ih;
+  BView* view;
+  BRect dirty;
+} IhaikuOnDrawArgs;
+
+static void haikuOnDrawThunk(void* p)
+{
+  auto* a = static_cast<IhaikuOnDrawArgs*>(p);
+  iuphaikuCanvasOnDrawDirect(a->ih, a->view, a->dirty);
+}
+
+void iuphaikuCanvasOnDraw(Ihandle* ih, BView* view, BRect dirty)
+{
+  IhaikuOnDrawArgs args = { ih, view, dirty };
+  if (iuphaikuRunOnLoopThread(haikuOnDrawThunk, &args))
+    return;
+  iuphaikuCanvasOnDrawDirect(ih, view, dirty);
+}
+
+typedef struct {
+  Ihandle* ih;
+  BView* view;
+  float new_w;
+  float new_h;
+} IhaikuOnFrameResizedArgs;
+
+static void haikuOnFrameResizedThunk(void* p)
+{
+  auto* a = static_cast<IhaikuOnFrameResizedArgs*>(p);
+  iuphaikuCanvasOnFrameResizedDirect(a->ih, a->view, a->new_w, a->new_h);
+}
+
+void iuphaikuCanvasOnFrameResized(Ihandle* ih, BView* view, float new_w, float new_h)
+{
+  IhaikuOnFrameResizedArgs args = { ih, view, new_w, new_h };
+  if (iuphaikuRunOnLoopThread(haikuOnFrameResizedThunk, &args))
+    return;
+  iuphaikuCanvasOnFrameResizedDirect(ih, view, new_w, new_h);
+}
+
+typedef struct {
+  Ihandle* ih;
+  BView* view;
+} IhaikuOnAttachedToWindowArgs;
+
+static void haikuOnAttachedToWindowThunk(void* p)
+{
+  auto* a = static_cast<IhaikuOnAttachedToWindowArgs*>(p);
+  iuphaikuCanvasOnAttachedToWindowDirect(a->ih, a->view);
+}
+
+void iuphaikuCanvasOnAttachedToWindow(Ihandle* ih, BView* view)
+{
+  IhaikuOnAttachedToWindowArgs args = { ih, view };
+  if (iuphaikuRunOnLoopThread(haikuOnAttachedToWindowThunk, &args))
+    return;
+  iuphaikuCanvasOnAttachedToWindowDirect(ih, view);
+}
+
+typedef struct {
+  Ihandle* ih;
+  BView* view;
+  bool focused;
+} IhaikuOnMakeFocusArgs;
+
+static void haikuOnMakeFocusThunk(void* p)
+{
+  auto* a = static_cast<IhaikuOnMakeFocusArgs*>(p);
+  iuphaikuCanvasOnMakeFocusDirect(a->ih, a->view, a->focused);
+}
+
+void iuphaikuCanvasOnMakeFocus(Ihandle* ih, BView* view, bool focused)
+{
+  IhaikuOnMakeFocusArgs args = { ih, view, focused };
+  if (iuphaikuRunOnLoopThread(haikuOnMakeFocusThunk, &args))
+    return;
+  iuphaikuCanvasOnMakeFocusDirect(ih, view, focused);
+}
+
+typedef struct {
+  Ihandle* ih;
+  BView* view;
+  BPoint where;
+} IhaikuOnMouseDownArgs;
+
+static void haikuOnMouseDownThunk(void* p)
+{
+  auto* a = static_cast<IhaikuOnMouseDownArgs*>(p);
+  iuphaikuCanvasOnMouseDownDirect(a->ih, a->view, a->where);
+}
+
+void iuphaikuCanvasOnMouseDown(Ihandle* ih, BView* view, BPoint where)
+{
+  IhaikuOnMouseDownArgs args = { ih, view, where };
+  if (iuphaikuRunOnLoopThread(haikuOnMouseDownThunk, &args))
+    return;
+  iuphaikuCanvasOnMouseDownDirect(ih, view, where);
+}
+
+typedef struct {
+  Ihandle* ih;
+  BView* view;
+  BPoint where;
+} IhaikuOnMouseUpArgs;
+
+static void haikuOnMouseUpThunk(void* p)
+{
+  auto* a = static_cast<IhaikuOnMouseUpArgs*>(p);
+  iuphaikuCanvasOnMouseUpDirect(a->ih, a->view, a->where);
+}
+
+void iuphaikuCanvasOnMouseUp(Ihandle* ih, BView* view, BPoint where)
+{
+  IhaikuOnMouseUpArgs args = { ih, view, where };
+  if (iuphaikuRunOnLoopThread(haikuOnMouseUpThunk, &args))
+    return;
+  iuphaikuCanvasOnMouseUpDirect(ih, view, where);
+}
+
+typedef struct {
+  Ihandle* ih;
+  BView* view;
+  BPoint where;
+  unsigned int transit;
+  const BMessage* drag;
+} IhaikuOnMouseMovedArgs;
+
+static void haikuOnMouseMovedThunk(void* p)
+{
+  auto* a = static_cast<IhaikuOnMouseMovedArgs*>(p);
+  iuphaikuCanvasOnMouseMovedDirect(a->ih, a->view, a->where, a->transit, a->drag);
+}
+
+void iuphaikuCanvasOnMouseMoved(Ihandle* ih, BView* view, BPoint where, unsigned int transit, const BMessage* drag)
+{
+  IhaikuOnMouseMovedArgs args = { ih, view, where, transit, drag };
+  if (iuphaikuRunOnLoopThread(haikuOnMouseMovedThunk, &args))
+    return;
+  iuphaikuCanvasOnMouseMovedDirect(ih, view, where, transit, drag);
+}
+
+typedef struct {
+  Ihandle* ih;
+  BView* view;
+  const char* bytes;
+  int numBytes;
+  bool result;
+} IhaikuOnKeyDownArgs;
+
+static void haikuOnKeyDownThunk(void* p)
+{
+  auto* a = static_cast<IhaikuOnKeyDownArgs*>(p);
+  a->result = iuphaikuCanvasOnKeyDownDirect(a->ih, a->view, a->bytes, a->numBytes);
+}
+
+bool iuphaikuCanvasOnKeyDown(Ihandle* ih, BView* view, const char* bytes, int numBytes)
+{
+  IhaikuOnKeyDownArgs args = { ih, view, bytes, numBytes, false };
+  if (iuphaikuRunOnLoopThread(haikuOnKeyDownThunk, &args))
+    return args.result;
+  return iuphaikuCanvasOnKeyDownDirect(ih, view, bytes, numBytes);
+}
+
+typedef struct {
+  Ihandle* ih;
+  BView* view;
+  const char* bytes;
+  int numBytes;
+  bool result;
+} IhaikuOnKeyUpArgs;
+
+static void haikuOnKeyUpThunk(void* p)
+{
+  auto* a = static_cast<IhaikuOnKeyUpArgs*>(p);
+  a->result = iuphaikuCanvasOnKeyUpDirect(a->ih, a->view, a->bytes, a->numBytes);
+}
+
+bool iuphaikuCanvasOnKeyUp(Ihandle* ih, BView* view, const char* bytes, int numBytes)
+{
+  IhaikuOnKeyUpArgs args = { ih, view, bytes, numBytes, false };
+  if (iuphaikuRunOnLoopThread(haikuOnKeyUpThunk, &args))
+    return args.result;
+  return iuphaikuCanvasOnKeyUpDirect(ih, view, bytes, numBytes);
+}
+
+typedef struct {
+  Ihandle* ih;
+  BView* view;
+  BMessage* msg;
+  bool result;
+} IhaikuOnMessageReceivedArgs;
+
+static void haikuOnMessageReceivedThunk(void* p)
+{
+  auto* a = static_cast<IhaikuOnMessageReceivedArgs*>(p);
+  a->result = iuphaikuCanvasOnMessageReceivedDirect(a->ih, a->view, a->msg);
+}
+
+bool iuphaikuCanvasOnMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
+{
+  IhaikuOnMessageReceivedArgs args = { ih, view, msg, false };
+  if (iuphaikuRunOnLoopThread(haikuOnMessageReceivedThunk, &args))
+    return args.result;
+  return iuphaikuCanvasOnMessageReceivedDirect(ih, view, msg);
 }
