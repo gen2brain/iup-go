@@ -9,6 +9,7 @@
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_dialog.h"
 
 #include "iupgtk4_drv.h"
 
@@ -120,7 +121,7 @@ static int gtk4MessageDlgPopup(Ihandle* ih, int x, int y)
   if (data.button_response >= 0)
     IupSetInt(ih, "BUTTONRESPONSE", data.button_response + 1);
   else
-    IupSetAttribute(ih, "BUTTONRESPONSE", "1");
+    iupMessageDlgSetCancelResponse(ih);
 
   g_object_unref(dialog);
 

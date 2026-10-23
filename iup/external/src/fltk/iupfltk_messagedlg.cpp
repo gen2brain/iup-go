@@ -13,6 +13,7 @@ extern "C" {
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_dialog.h"
 }
 
 #include "iupfltk_drv.h"
@@ -25,17 +26,20 @@ static void fltkMessageDlgSetPosition(Ihandle* ih)
     fl_message_position(parent_win);
 }
 
-static int fltkMessageDlgShowChoice(const char* value, const char* b0, const char* b1, const char* b2)
+static int fltkMessageDlgShowChoice(int* dismissed, const char* value, const char* b0, const char* b1, const char* b2)
 {
-  if (b2)
-    return fl_choice_n("%s", b0, b1, b2, value);
-  else
-    return fl_choice_n("%s", b0, b1, nullptr, value);
+  int r = b2 ? fl_choice_n("%s", b0, b1, b2, value) : fl_choice_n("%s", b0, b1, nullptr, value);
+
+  if (r < 0)
+    *dismissed = 1;
+
+  return r;
 }
 
 static int fltkMessageDlgPopup(Ihandle* ih, int x, int y)
 {
   int response = 1;
+  int dismissed = 0;
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
@@ -98,12 +102,12 @@ static int fltkMessageDlgPopup(Ihandle* ih, int x, int y)
 
     if (buttondefault == 2)
     {
-      int r = fltkMessageDlgShowChoice(value, ok_str, cancel_str, nullptr);
+      int r = fltkMessageDlgShowChoice(&dismissed, value, ok_str, cancel_str, nullptr);
       response = (r == 1) ? 2 : 1;
     }
     else
     {
-      int r = fltkMessageDlgShowChoice(value, cancel_str, ok_str, nullptr);
+      int r = fltkMessageDlgShowChoice(&dismissed, value, cancel_str, ok_str, nullptr);
       response = (r == 1) ? 1 : 2;
     }
   }
@@ -114,12 +118,12 @@ static int fltkMessageDlgPopup(Ihandle* ih, int x, int y)
 
     if (buttondefault == 2)
     {
-      int r = fltkMessageDlgShowChoice(value, retry_str, cancel_str, nullptr);
+      int r = fltkMessageDlgShowChoice(&dismissed, value, retry_str, cancel_str, nullptr);
       response = (r == 1) ? 2 : 1;
     }
     else
     {
-      int r = fltkMessageDlgShowChoice(value, cancel_str, retry_str, nullptr);
+      int r = fltkMessageDlgShowChoice(&dismissed, value, cancel_str, retry_str, nullptr);
       response = (r == 1) ? 1 : 2;
     }
   }
@@ -127,12 +131,12 @@ static int fltkMessageDlgPopup(Ihandle* ih, int x, int y)
   {
     if (buttondefault == 2)
     {
-      int r = fltkMessageDlgShowChoice(value, yes_str, no_str, nullptr);
+      int r = fltkMessageDlgShowChoice(&dismissed, value, yes_str, no_str, nullptr);
       response = (r == 1) ? 2 : 1;
     }
     else
     {
-      int r = fltkMessageDlgShowChoice(value, no_str, yes_str, nullptr);
+      int r = fltkMessageDlgShowChoice(&dismissed, value, no_str, yes_str, nullptr);
       response = (r == 1) ? 1 : 2;
     }
   }
@@ -140,17 +144,17 @@ static int fltkMessageDlgPopup(Ihandle* ih, int x, int y)
   {
     if (buttondefault == 2)
     {
-      int r = fltkMessageDlgShowChoice(value, cancel_str, no_str, yes_str);
+      int r = fltkMessageDlgShowChoice(&dismissed, value, cancel_str, no_str, yes_str);
       response = (r == 0) ? 3 : (r == 1) ? 2 : 1;
     }
     else if (buttondefault == 3)
     {
-      int r = fltkMessageDlgShowChoice(value, yes_str, cancel_str, no_str);
+      int r = fltkMessageDlgShowChoice(&dismissed, value, yes_str, cancel_str, no_str);
       response = (r == 0) ? 1 : (r == 1) ? 3 : 2;
     }
     else
     {
-      int r = fltkMessageDlgShowChoice(value, cancel_str, yes_str, no_str);
+      int r = fltkMessageDlgShowChoice(&dismissed, value, cancel_str, yes_str, no_str);
       if (r == 1)
         response = 1;
       else if (r == 2)
@@ -160,7 +164,10 @@ static int fltkMessageDlgPopup(Ihandle* ih, int x, int y)
     }
   }
 
-  iupAttribSet(ih, "BUTTONRESPONSE", iupStrReturnInt(response));
+  if (dismissed)
+    iupMessageDlgSetCancelResponse(ih);
+  else
+    iupAttribSet(ih, "BUTTONRESPONSE", iupStrReturnInt(response));
 
   return IUP_NOERROR;
 }

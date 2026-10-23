@@ -13,6 +13,7 @@
 #include "iup_attrib.h"
 #include "iup_class.h"
 #include "iup_str.h"
+#include "iup_dialog.h"
 
 #include "iupandroid_drv.h"
 #include "iupandroid_jnimacros.h"
@@ -117,30 +118,14 @@ static int androidMessageDlgPopup(Ihandle* ih, int x, int y)
     {
       Icallback cb = IupGetCallback(ih, "HELP_CB");
       if (cb && cb(ih) == IUP_CLOSE)
-      {
-        if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
-          response = 3;
-        else if (iupStrEqualNoCase(buttons, "OK") || !buttons)
-          response = 1;
-        else
-          response = 2;
-      }
+        response = ANDROID_MSGDLG_CANCELED;
     }
   } while (response == ANDROID_MSGDLG_HELP);
 
   if (response == ANDROID_MSGDLG_CANCELED)
-  {
-    if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
-      response = 3;
-    else if (iupStrEqualNoCase(buttons, "OKCANCEL") ||
-             iupStrEqualNoCase(buttons, "RETRYCANCEL") ||
-             iupStrEqualNoCase(buttons, "YESNO"))
-      response = 2;
-    else
-      response = 1;
-  }
-
-  IupSetInt(ih, "BUTTONRESPONSE", response);
+    iupMessageDlgSetCancelResponse(ih);
+  else
+    IupSetInt(ih, "BUTTONRESPONSE", response);
   return IUP_NOERROR;
 }
 

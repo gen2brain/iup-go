@@ -173,8 +173,8 @@ static int winMessageDlgPopupTaskDialog(Ihandle* ih, InativeHandle* parent, char
 
   if (nButton == IDOK || nButton == IDYES || nButton == IDRETRY)
     iupAttribSet(ih, "BUTTONRESPONSE", "1");
-  else if (nButton == IDCANCEL && iupStrEqualNoCase(buttons, "YESNOCANCEL"))
-    iupAttribSet(ih, "BUTTONRESPONSE", "3");
+  else if (nButton == IDCANCEL)
+    iupMessageDlgSetCancelResponse(ih);
   else
     iupAttribSet(ih, "BUTTONRESPONSE", "2");
 
@@ -254,8 +254,8 @@ static int winMessageDlgPopup(Ihandle* ih, int x, int y)
 
     if (result == IDOK || result == IDYES || result == IDRETRY)
       iupAttribSet(ih, "BUTTONRESPONSE", "1");
-    else if (result == IDCANCEL && iupStrEqualNoCase(buttons, "YESNOCANCEL"))
-      iupAttribSet(ih, "BUTTONRESPONSE", "3");
+    else if (result == IDCANCEL)
+      iupMessageDlgSetCancelResponse(ih);
     else
       iupAttribSet(ih, "BUTTONRESPONSE", "2");
   }

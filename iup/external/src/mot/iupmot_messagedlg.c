@@ -29,10 +29,7 @@ static void motMessageDlgDeleteWindowCallback(Widget w, XtPointer client_data, X
   if (!ih) return;
   (void)call_data;
   (void)w;
-  if (iupStrEqualNoCase(iupAttribGetStr(ih, "BUTTONS"), "OK"))
-    iupAttribSet(ih, "BUTTONRESPONSE", "1");
-  else
-    iupAttribSet(ih, "BUTTONRESPONSE", "2");
+  iupMessageDlgSetCancelResponse(ih);
   iupAttribSet(ih, "_IUP_WM_DELETE", "1");
 }
 
@@ -42,7 +39,7 @@ static void motMessageDlgCallback(Widget w, Ihandle* ih, XmAnyCallbackStruct* ca
   if (call_data->reason == XmCR_OK)
     iupAttribSet(ih, "BUTTONRESPONSE", "1");
   else if (call_data->reason == XmCR_CANCEL)
-    iupAttribSet(ih, "BUTTONRESPONSE", "2");
+    iupMessageDlgSetCancelResponse(ih);
 }
 
 static void motMessageDlgHelpCallback(Widget w, XtPointer client_data, XtPointer call_data)
@@ -50,12 +47,7 @@ static void motMessageDlgHelpCallback(Widget w, XtPointer client_data, XtPointer
   Ihandle* ih = (Ihandle*)client_data;
   Icallback cb = (Icallback)IupGetCallback(ih, "HELP_CB");
   if (cb && cb(ih) == IUP_CLOSE)
-  {
-    if (iupStrEqualNoCase(iupAttribGetStr(ih, "BUTTONS"), "OK"))
-      iupAttribSet(ih, "BUTTONRESPONSE", "1");
-    else
-      iupAttribSet(ih, "BUTTONRESPONSE", "2");
-  }
+    iupMessageDlgSetCancelResponse(ih);
 
   (void)call_data;
   (void)w;

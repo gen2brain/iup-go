@@ -168,14 +168,12 @@ static void winuiMsgDlgConfigureButtons(ContentDialog& dialog, Ihandle* ih)
 
 static void winuiMsgDlgSetResult(Ihandle* ih, ContentDialogResult dialogResult)
 {
-  char* buttons = iupAttribGetStr(ih, "BUTTONS");
-
   if (dialogResult == ContentDialogResult::Primary)
     iupAttribSet(ih, "BUTTONRESPONSE", "1");
   else if (dialogResult == ContentDialogResult::Secondary)
     iupAttribSet(ih, "BUTTONRESPONSE", "2");
   else
-    iupAttribSet(ih, "BUTTONRESPONSE", iupStrEqualNoCase(buttons, "YESNOCANCEL") ? "3" : "2");
+    iupMessageDlgSetCancelResponse(ih);
 }
 
 static void winuiMsgDlgRunMessageLoop(bool& dialogCompleted)
