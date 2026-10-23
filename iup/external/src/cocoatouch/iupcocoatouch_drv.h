@@ -67,6 +67,7 @@ IUP_DRV_API const char* iupCocoaTouchFontFaceName(const char* face);
 IUP_DRV_API IupCocoaTouchFont* iupCocoaTouchFindFont(const char* iup_font_name);
 IUP_DRV_API IupCocoaTouchFont* iupCocoaTouchGetFont(Ihandle* ih);
 
+IUP_DRV_API CGColorSpaceRef iupCocoaTouchGetRGBColorSpace(void);
 IUP_DRV_API UIColor* iupCocoaTouchToNativeColor(const char* color);
 IUP_DRV_API char* iupCocoaTouchColorFromNative(UIColor* color);
 

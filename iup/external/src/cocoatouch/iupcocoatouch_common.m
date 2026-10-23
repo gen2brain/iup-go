@@ -129,6 +129,16 @@ IUP_DRV_API void iupCocoaTouchRemoveFromParent(Ihandle* ih)
 	}
 }
 
+IUP_DRV_API CGColorSpaceRef iupCocoaTouchGetRGBColorSpace(void)
+{
+	static CGColorSpaceRef color_space = NULL;
+
+	if (!color_space)
+		color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+
+	return color_space;
+}
+
 IUP_DRV_API UIColor* iupCocoaTouchToNativeColor(const char* color)
 {
 	unsigned char r, g, b, a;

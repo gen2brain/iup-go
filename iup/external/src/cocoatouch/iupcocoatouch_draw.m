@@ -147,10 +147,9 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 	unsigned char* pixels = iupCocoaTouchCanvasEnsurePixels(ih, view, &pixel_w, &pixel_h, &scale);
 	if (!pixels) return NULL;
 
-	CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+	CGColorSpaceRef cs = iupCocoaTouchGetRGBColorSpace();
 	CGBitmapInfo info = kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big;
 	CGContextRef ctx = CGBitmapContextCreate(pixels, pixel_w, pixel_h, 8, pixel_w * 4, cs, info);
-	CGColorSpaceRelease(cs);
 	if (!ctx) return NULL;
 
 	CGContextTranslateCTM(ctx, 0.0, (CGFloat)pixel_h);
@@ -612,7 +611,7 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
 
 static CGGradientRef cocoaTouchDrawCreateGradient(const long* colors, const float* offsets, int count)
 {
-	CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+	CGColorSpaceRef cs = iupCocoaTouchGetRGBColorSpace();
 	CGFloat comps[IUP_GRADIENT_MAX_STOPS * 4];
 	CGFloat locations[IUP_GRADIENT_MAX_STOPS];
 	int i;
@@ -625,7 +624,6 @@ static CGGradientRef cocoaTouchDrawCreateGradient(const long* colors, const floa
 		locations[i] = offsets[i];
 	}
 	CGGradientRef gradient = CGGradientCreateWithColorComponents(cs, comps, locations, count);
-	CGColorSpaceRelease(cs);
 	return gradient;
 }
 
