@@ -449,11 +449,10 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 	if (pixels && view_ctx && pixel_w > 0 && pixel_h > 0)
 	{
 		CGDataProviderRef provider = CGDataProviderCreateWithData(NULL, pixels, pixel_w * pixel_h * 4, NULL);
-		CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+		CGColorSpaceRef cs = iupCocoaTouchGetRGBColorSpace();
 		CGImageRef snapshot = CGImageCreate(pixel_w, pixel_h, 8, 32, pixel_w * 4, cs,
 			kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big,
 			provider, NULL, false, kCGRenderingIntentDefault);
-		CGColorSpaceRelease(cs);
 		CGDataProviderRelease(provider);
 		if (snapshot)
 		{
