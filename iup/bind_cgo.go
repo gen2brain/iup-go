@@ -67,18 +67,21 @@ package iup
 #cgo windows,!winui LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32
 #cgo windows,gl LDFLAGS: -lopengl32
 #cgo windows,media LDFLAGS: -lmfuuid -lole32
-#cgo windows,!gtk3,!gtk4,!qt,!qml,!winui,!efl,!fltk,web LDFLAGS: -static-libgcc -static-libstdc++
-#cgo windows,!gtk3,!gtk4,!qt,!qml,!winui,!efl,!fltk,plot LDFLAGS: -static-libgcc -static-libstdc++
+#cgo windows,!gtk3,!gtk4,!qt,!qml,!winui,!efl,!fltk,web LDFLAGS: -static
+#cgo windows,!gtk3,!gtk4,!qt,!qml,!winui,!efl,!fltk,plot LDFLAGS: -static
+#cgo windows,!gtk3,!gtk4,!qt,!qml,!winui,!efl,!fltk,media LDFLAGS: -static
 
 #cgo windows,gtk3 CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3
 #cgo windows,gtk3,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
 #cgo windows,gtk3,web CXXFLAGS: -DIUPWEB_HOSTED
 #cgo windows,gtk3,web LDFLAGS: -static-libstdc++
+#cgo windows,gtk3,media LDFLAGS: -static-libstdc++
 
 #cgo windows,gtk4 CFLAGS: -Iexternal/src/gtk4 -Iexternal/src/unix -DIUP_USE_GTK4
 #cgo windows,gtk4,!nopkgconfig pkg-config: gtk4
 #cgo windows,gtk4,web CXXFLAGS: -DIUPWEB_HOSTED
 #cgo windows,gtk4,web LDFLAGS: -static-libstdc++
+#cgo windows,gtk4,media LDFLAGS: -static-libstdc++
 
 #cgo winui CFLAGS: -Iexternal/src/winui -DIUP_USE_WINUI -DUNICODE -D_UNICODE -D_WIN32_WINNT=0x0A00 -DNTDDI_VERSION=0x0A000000
 #cgo winui CXXFLAGS: -Iexternal/src/winui -DIUP_USE_WINUI -D_WIN32_WINNT=0x0A00 -DNTDDI_VERSION=0x0A000000 -DUNICODE -D_UNICODE -std=c++20 -stdlib=libc++
