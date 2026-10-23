@@ -69,6 +69,13 @@ namespace Iup
   inline int GetAllClasses(char** names, int n) { return IupGetAllClasses(names, n); }
   inline int GetClassAttributes(const char* classname, char** names, int n) { return IupGetClassAttributes(classname, names, n); }
   inline int GetClassCallbacks(const char* classname, char** names, int n) { return IupGetClassCallbacks(classname, names, n); }
+  inline int GetClassAttributeInfo(const char* classname, const char* name, char* &default_value, char* &system_default, int &flags) { return IupGetClassAttributeInfo(classname, name, &default_value, &system_default, &flags); }
+  inline char* GetClassCallbackFormat(const char* classname, const char* name) { return IupGetClassCallbackFormat(classname, name); }
+  inline int GetClassInfo(const char* classname, char* &parent, char* &native_type, int &child_type, int &is_interactive, int &has_attrib_id) { return IupGetClassInfo(classname, &parent, &native_type, &child_type, &is_interactive, &has_attrib_id); }
+  inline int GetClassConstructor(const char* classname, char* &format, char* &format_attr) { return IupGetClassConstructor(classname, &format, &format_attr); }
+  inline int GetAllGlobals(char** names, int n) { return IupGetAllGlobals(names, n); }
+  inline int GetGlobalInfo(const char* name, int &flags, int &drivers) { return IupGetGlobalInfo(name, &flags, &drivers); }
+  inline int GetAllFunctions(char** names, int n) { return IupGetAllFunctions(names, n); }
   inline void SetClassDefaultAttribute(const char* classname, const char* name, const char* value) { IupSetClassDefaultAttribute(classname, name, value); }
 
   inline void SetGlobal(const char* name, const char* value) { IupSetGlobal(name, value); }
@@ -158,6 +165,7 @@ namespace Iup
     Element SetAttributes(const char* str) { return IupSetAttributes(ih, str); }
     void ResetAttribute(const char* name) { IupResetAttribute(ih, name); }
     int GetAllAttributes(char** names, int n) { return IupGetAllAttributes(ih, names, n); }
+    char* GetAttributes() { return IupGetAttributes(ih); }
     void CopyAttributes(Ihandle* dst_ih) { IupCopyAttributes(ih, dst_ih); }
     void SetAttributeHandle(const char* name, const  Element& elem) { IupSetAttributeHandle(ih, name, elem.GetHandle()); }
     Element GetAttributeHandle(const char* name) { return IupGetAttributeHandle(ih, name); }
@@ -184,6 +192,7 @@ namespace Iup
 
   };
 
+  inline Element Create(const char* classname) { return Element(IupCreate(classname)); }
   inline void PostMessage(const Element& elem, const char* s, int i, double d, void* p) { IupPostMessage(elem.GetHandle(), s, i, d, p); }
 
   inline Icallback GetFunction(const char* name) { return IupGetFunction(name); }
@@ -323,6 +332,17 @@ namespace Iup
     int Save(const char* filename, const char* format) { return IupImageSave(ih, filename, format); }
     unsigned char* SaveToBuffer(const char* format, int* size) { return IupImageSaveToBuffer(ih, format, size); }
   };
+  class DrawPath : public Element
+  {
+  public:
+    DrawPath() : Element(IupDrawPathCreate()) {}
+    DrawPath(Ihandle* _ih) : Element(_ih) {}
+    DrawPath(const Element& elem) : Element(elem.GetHandle()) {}
+    void Clear() { IupDrawPathClear(ih); }
+    int SetSvg(const char* data) { return IupDrawPathSetSvg(ih, data); }
+    void GetBounds(int &x1, int &y1, int &x2, int &y2) { IupDrawPathGetBounds(ih, &x1, &y1, &x2, &y2); }
+    int Contains(int x, int y, int rule) { return IupDrawPathContains(ih, x, y, rule); }
+  };
   class Clipboard : public Element
   {
   public:
@@ -411,6 +431,7 @@ namespace Iup
     void DrawEnd() { IupDrawEnd(ih); }
     void DrawSave() { IupDrawSave(ih); }
     void DrawRestore() { IupDrawRestore(ih); }
+    void DrawSaveLayer(int alpha) { IupDrawSaveLayer(ih, alpha); }
     void DrawTransform(double a, double b, double c, double d, double e, double f) { IupDrawTransform(ih, a, b, c, d, e, f); }
     void DrawSetTransform(double a, double b, double c, double d, double e, double f) { IupDrawSetTransform(ih, a, b, c, d, e, f); }
     void DrawResetTransform() { IupDrawResetTransform(ih); }
@@ -443,6 +464,12 @@ namespace Iup
     void DrawPathQuadTo(int x1, int y1, int x2, int y2) { IupDrawPathQuadTo(ih, x1, y1, x2, y2); }
     void DrawPathArcTo(int cx, int cy, int rx, int ry, double a1, double a2) { IupDrawPathArcTo(ih, cx, cy, rx, ry, a1, a2); }
     void DrawPathClose() { IupDrawPathClose(ih); }
+    void DrawPathMoveToF(double x, double y) { IupDrawPathMoveToF(ih, x, y); }
+    void DrawPathLineToF(double x, double y) { IupDrawPathLineToF(ih, x, y); }
+    void DrawPathCurveToF(double x1, double y1, double x2, double y2, double x3, double y3) { IupDrawPathCurveToF(ih, x1, y1, x2, y2, x3, y3); }
+    void DrawPathQuadToF(double x1, double y1, double x2, double y2) { IupDrawPathQuadToF(ih, x1, y1, x2, y2); }
+    void DrawPathArcToF(double cx, double cy, double rx, double ry, double a1, double a2) { IupDrawPathArcToF(ih, cx, cy, rx, ry, a1, a2); }
+    void DrawSetPath(const Element& path) { IupDrawSetPath(ih, path.GetHandle()); }
     void DrawPathFill(int rule) { IupDrawPathFill(ih, rule); }
     void DrawPathStroke() { IupDrawPathStroke(ih); }
     void DrawSetClipPath(int rule) { IupDrawSetClipPath(ih, rule); }
@@ -634,6 +661,13 @@ namespace Iup
     Text(Ihandle* _ih) : Control(_ih) {}
     Text(const Element& elem) : Control(elem.GetHandle()) {}
   };
+  class MultiLine : public Control
+  {
+  public:
+    MultiLine() : Control(IupMultiLine()) {}
+    MultiLine(Ihandle* _ih) : Control(_ih) {}
+    MultiLine(const Element& elem) : Control(elem.GetHandle()) {}
+  };
   class Terminal : public Control
   {
   public:
@@ -727,6 +761,7 @@ namespace Iup
     void DrawEnd() { IupDrawEnd(ih); }
     void DrawSave() { IupDrawSave(ih); }
     void DrawRestore() { IupDrawRestore(ih); }
+    void DrawSaveLayer(int alpha) { IupDrawSaveLayer(ih, alpha); }
     void DrawTransform(double a, double b, double c, double d, double e, double f) { IupDrawTransform(ih, a, b, c, d, e, f); }
     void DrawSetTransform(double a, double b, double c, double d, double e, double f) { IupDrawSetTransform(ih, a, b, c, d, e, f); }
     void DrawResetTransform() { IupDrawResetTransform(ih); }
@@ -759,6 +794,12 @@ namespace Iup
     void DrawPathQuadTo(int x1, int y1, int x2, int y2) { IupDrawPathQuadTo(ih, x1, y1, x2, y2); }
     void DrawPathArcTo(int cx, int cy, int rx, int ry, double a1, double a2) { IupDrawPathArcTo(ih, cx, cy, rx, ry, a1, a2); }
     void DrawPathClose() { IupDrawPathClose(ih); }
+    void DrawPathMoveToF(double x, double y) { IupDrawPathMoveToF(ih, x, y); }
+    void DrawPathLineToF(double x, double y) { IupDrawPathLineToF(ih, x, y); }
+    void DrawPathCurveToF(double x1, double y1, double x2, double y2, double x3, double y3) { IupDrawPathCurveToF(ih, x1, y1, x2, y2, x3, y3); }
+    void DrawPathQuadToF(double x1, double y1, double x2, double y2) { IupDrawPathQuadToF(ih, x1, y1, x2, y2); }
+    void DrawPathArcToF(double cx, double cy, double rx, double ry, double a1, double a2) { IupDrawPathArcToF(ih, cx, cy, rx, ry, a1, a2); }
+    void DrawSetPath(const Element& path) { IupDrawSetPath(ih, path.GetHandle()); }
     void DrawPathFill(int rule) { IupDrawPathFill(ih, rule); }
     void DrawPathStroke() { IupDrawPathStroke(ih); }
     void DrawSetClipPath(int rule) { IupDrawSetClipPath(ih, rule); }
@@ -1054,6 +1095,13 @@ namespace Iup
     Camera() : Control(IupCamera()) {}
     Camera(Ihandle* _ih) : Control(_ih) {}
     Camera(const Element& elem) : Control(elem.GetHandle()) {}
+  };
+  class Video : public Control
+  {
+  public:
+    Video() : Control(IupVideo()) {}
+    Video(Ihandle* _ih) : Control(_ih) {}
+    Video(const Element& elem) : Control(elem.GetHandle()) {}
   };
   class Microphone : public Element
   {
