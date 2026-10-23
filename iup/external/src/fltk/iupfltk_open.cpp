@@ -203,12 +203,30 @@ IUP_DRV_API void iupfltkSetGlobalColors()
 static unsigned char fltk_system_bg[3] = { 192, 192, 192 };
 static unsigned char fltk_system_fg[3] = { 0, 0, 0 };
 static unsigned char fltk_system_bg2[3] = { 255, 255, 255 };
+static unsigned char fltk_system_sel[3] = { 0, 0, 128 };
 static int fltk_portal_fd = -1;
 
 extern "C" IUP_SDK_API int iupdrvIsSystemDarkMode(void)
 {
   int luminance = static_cast<int>(0.299 * fltk_system_bg[0] + 0.587 * fltk_system_bg[1] + 0.114 * fltk_system_bg[2]);
   return (luminance < 128) ? 1 : 0;
+}
+
+static void fltkSetDarkColors()
+{
+  const int bg = 53;
+  const int gray = FL_GRAY - FL_GRAY_RAMP;
+
+  Fl::background(bg, bg, bg);
+  for (int i = 0; i < FL_NUM_GRAY; i++)
+  {
+    int v = (i <= gray) ? (bg * (2 * gray + 3 * i)) / (5 * gray) : bg + (i - gray) * 10;
+    Fl::set_color(fl_gray_ramp(i), static_cast<uchar>(v), static_cast<uchar>(v), static_cast<uchar>(v));
+  }
+
+  Fl::foreground(238, 238, 236);
+  Fl::background2(45, 45, 45);
+  Fl::set_color(FL_SELECTION_COLOR, 21, 83, 158);
 }
 
 extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
@@ -225,18 +243,16 @@ extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
     Fl::background(fltk_system_bg[0], fltk_system_bg[1], fltk_system_bg[2]);
     Fl::foreground(fltk_system_fg[0], fltk_system_fg[1], fltk_system_fg[2]);
     Fl::background2(fltk_system_bg2[0], fltk_system_bg2[1], fltk_system_bg2[2]);
+    Fl::set_color(FL_SELECTION_COLOR, fltk_system_sel[0], fltk_system_sel[1], fltk_system_sel[2]);
   }
   else if (dark)
-  {
-    Fl::background(32, 32, 32);
-    Fl::foreground(255, 255, 255);
-    Fl::background2(45, 45, 45);
-  }
+    fltkSetDarkColors();
   else
   {
     Fl::background(240, 240, 240);
     Fl::foreground(0, 0, 0);
     Fl::background2(255, 255, 255);
+    Fl::set_color(FL_SELECTION_COLOR, fltk_system_sel[0], fltk_system_sel[1], fltk_system_sel[2]);
   }
 
   iupfltkSetGlobalColors();
@@ -322,6 +338,7 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
   Fl::get_color(FL_BACKGROUND_COLOR, fltk_system_bg[0], fltk_system_bg[1], fltk_system_bg[2]);
   Fl::get_color(FL_FOREGROUND_COLOR, fltk_system_fg[0], fltk_system_fg[1], fltk_system_fg[2]);
   Fl::get_color(FL_BACKGROUND2_COLOR, fltk_system_bg2[0], fltk_system_bg2[1], fltk_system_bg2[2]);
+  Fl::get_color(FL_SELECTION_COLOR, fltk_system_sel[0], fltk_system_sel[1], fltk_system_sel[2]);
 
   fltk_portal_fd = iupUnixPortalSettingsOpen();
   if (fltk_portal_fd >= 0)
