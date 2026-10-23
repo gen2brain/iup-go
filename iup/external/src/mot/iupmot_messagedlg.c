@@ -11,6 +11,7 @@
 #include <Xm/Xm.h>
 #include <Xm/MwmUtil.h>
 #include <Xm/MessageB.h>
+#include <Xm/PushB.h>
 #include <Xm/Protocols.h>
 
 #include "iup.h"
@@ -42,6 +43,14 @@ static void motMessageDlgCallback(Widget w, Ihandle* ih, XmAnyCallbackStruct* ca
     iupMessageDlgSetCancelResponse(ih);
 }
 
+static void motMessageDlgNoCallback(Widget w, XtPointer client_data, XtPointer call_data)
+{
+  Ihandle* ih = (Ihandle*)client_data;
+  (void)call_data;
+  (void)w;
+  iupAttribSet(ih, "BUTTONRESPONSE", "2");
+}
+
 static void motMessageDlgHelpCallback(Widget w, XtPointer client_data, XtPointer call_data)
 {
   Ihandle* ih = (Ihandle*)client_data;
@@ -56,10 +65,10 @@ static void motMessageDlgHelpCallback(Widget w, XtPointer client_data, XtPointer
 static int motMessageDlgPopup(Ihandle* ih, int x, int y)
 {
   InativeHandle* parent = iupDialogGetNativeParent(ih);
-  Widget msgbox, dialog;
+  Widget msgbox, dialog, no_button = NULL;
   int style = XmDIALOG_FULL_APPLICATION_MODAL;
   int type = XmDIALOG_MESSAGE;
-  int num_but = 2;
+  int num_but = 2, button_def;
   char* value;
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);   /* used in iupDialogUpdatePosition */
@@ -129,11 +138,25 @@ static int motMessageDlgPopup(Ihandle* ih, int x, int y)
     iupmotSetXmString(msgbox, XmNokLabelString, IupGetLanguageString("IUP_YES"));
     iupmotSetXmString(msgbox, XmNcancelLabelString, IupGetLanguageString("IUP_NO"));
   }
+  else if (iupStrEqualNoCase(value, "RETRYCANCEL"))
+    iupmotSetXmString(msgbox, XmNokLabelString, IupGetLanguageString("IUP_RETRY"));
+  else if (iupStrEqualNoCase(value, "YESNOCANCEL"))
+  {
+    iupmotSetXmString(msgbox, XmNokLabelString, IupGetLanguageString("IUP_YES"));
+    no_button = XmCreatePushButton(msgbox, "no", NULL, 0);
+    iupmotSetXmString(no_button, XmNlabelString, IupGetLanguageString("IUP_NO"));
+    XtAddCallback(no_button, XmNactivateCallback, motMessageDlgNoCallback, (XtPointer)ih);
+    XtManageChild(no_button);
+    num_but = 3;
+  }
 
   if (!IupGetCallback(ih, "HELP_CB"))
     XtUnmanageChild(XtNameToWidget(msgbox, "Help"));
 
-  if (num_but == 2 && iupAttribGetInt(ih, "BUTTONDEFAULT") == 2)
+  button_def = iupAttribGetInt(ih, "BUTTONDEFAULT");
+  if (no_button && button_def == 2)
+    XtVaSetValues(msgbox, XmNdefaultButton, no_button, XmNinitialFocus, no_button, NULL);
+  else if (num_but > 1 && button_def == num_but)
     XtVaSetValues(msgbox, XmNdefaultButtonType, XmDIALOG_CANCEL_BUTTON, NULL);
   else
     XtVaSetValues(msgbox, XmNdefaultButtonType, XmDIALOG_OK_BUTTON, NULL);

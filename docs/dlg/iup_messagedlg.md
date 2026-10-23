@@ -12,7 +12,7 @@ The dialog can be shown with the IupPopup function only.
 ### Attributes
 
 **BUTTONDEFAULT**: Number of the default button.
-Can be "1", "2" or "3". "2" is valid only for "RETRYCANCEL", "OKCANCEL" and "YESNO" button configurations. "3" is valid only for "YESNOCANCEL".
+Can be "1", "2" or "3". "2" is not valid for "OK". "3" is valid only for "YESNOCANCEL".
 Default: "1".
 Not supported in QML.
 
