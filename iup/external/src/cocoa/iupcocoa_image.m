@@ -657,7 +657,7 @@ static NSData* iCocoaImageEncode(unsigned char* imgdata, int width, int height, 
   samplesPerPixel = channels;
   hasAlpha = (channels == 4) ? YES : NO;
 
-  bitmap = [[NSBitmapImageRep alloc]
+  bitmap = iupcocoaRetagBitmapRepSRGB([[NSBitmapImageRep alloc]
     initWithBitmapDataPlanes:NULL
     pixelsWide:width
     pixelsHigh:height
@@ -665,9 +665,9 @@ static NSData* iCocoaImageEncode(unsigned char* imgdata, int width, int height, 
     samplesPerPixel:samplesPerPixel
     hasAlpha:hasAlpha
     isPlanar:NO
-    colorSpaceName:NSCalibratedRGBColorSpace
+    colorSpaceName:NSDeviceRGBColorSpace
     bytesPerRow:width * channels
-    bitsPerPixel:channels * 8];
+    bitsPerPixel:channels * 8]);
 
   if (bitmap)
   {
