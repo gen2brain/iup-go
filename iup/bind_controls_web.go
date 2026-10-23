@@ -1,4 +1,4 @@
-//go:build web
+//go:build web && !efl && !motif && !gnustep && (!fltk || windows || (darwin && !ios))
 
 package iup
 
