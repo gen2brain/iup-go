@@ -17,6 +17,8 @@ Default: "1".
 Not supported in QML.
 
 **BUTTONRESPONSE**: Number of the pressed button. Can be "1", "2" or "3". Default: "1".
+When the dialog is closed without pressing a button, with Esc or with the window close button, it returns the cancel button: "3" for YESNOCANCEL, "2" for OKCANCEL, RETRYCANCEL and YESNO, and "1" for OK.
+In Haiku and Android it can only be closed with a button. In macOS and iOS Esc closes it only when the buttons include a Cancel.
 
 **BUTTONS**: Buttons configuration. Can have values: "OK", "OKCANCEL", "RETRYCANCEL", "YESNO", or "YESNOCANCEL".
 Default: "OK". Additionally, the "Help" button is displayed if the HELP_CB callback is defined.

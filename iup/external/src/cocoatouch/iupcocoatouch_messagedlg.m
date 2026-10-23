@@ -25,6 +25,7 @@
 #include "iup_class.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_dialog.h"
 
 #include "iupcocoatouch_drv.h"
 
@@ -353,16 +354,6 @@ static UIWindow* cocoaTouchMessageDlgResolveWindow(Ihandle* ih)
 	return nil;
 }
 
-static void cocoaTouchMessageDlgSetCancelResponse(Ihandle* ih, const char* buttons_str)
-{
-	if (iupStrEqualNoCase(buttons_str, "YESNOCANCEL"))
-		iupAttribSet(ih, "BUTTONRESPONSE", "3");
-	else if (iupStrEqualNoCase(buttons_str, "OK"))
-		iupAttribSet(ih, "BUTTONRESPONSE", "1");
-	else
-		iupAttribSet(ih, "BUTTONRESPONSE", "2");
-}
-
 static int cocoaTouchMessageDlgFillButtons(const char* buttons_str, cocoaTouchMessageDlgButton* out, int max_out)
 {
 	int count = 0;
@@ -430,7 +421,7 @@ static int cocoaTouchMessageDlgPopup(Ihandle* ih, int x, int y)
 		UIWindow* window = cocoaTouchMessageDlgResolveWindow(ih);
 		if (!window)
 		{
-			cocoaTouchMessageDlgSetCancelResponse(ih, buttons_str);
+			iupMessageDlgSetCancelResponse(ih);
 			return IUP_NOERROR;
 		}
 
@@ -490,7 +481,7 @@ static int cocoaTouchMessageDlgPopup(Ihandle* ih, int x, int y)
 			Icallback cb = IupGetCallback(ih, "HELP_CB");
 			if (cb && cb(ih) == IUP_CLOSE)
 			{
-				cocoaTouchMessageDlgSetCancelResponse(ih, buttons_str);
+				iupMessageDlgSetCancelResponse(ih);
 				return IUP_NOERROR;
 			}
 			keep_showing = YES;

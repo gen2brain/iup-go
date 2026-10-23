@@ -77,7 +77,7 @@ static int haikuMessageDlgPopup(Ihandle* ih, int /*x*/, int /*y*/)
     int r = haikuRunAlert(title, text, at, "Cancel", "No", "Yes", def);
     if      (r == 3) result = 1;  /* Yes */
     else if (r == 2) result = 2;  /* No  */
-    else             result = 3;  /* Cancel (also B_ESCAPE -> r==1) */
+    else             result = 3;  /* Cancel */
   }
   else /* "OK" or unknown */
     result = haikuRunAlert(title, text, at, "OK", nullptr, nullptr, btn_default == 1 ? 0 : -1);

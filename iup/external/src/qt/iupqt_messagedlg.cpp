@@ -23,6 +23,7 @@ extern "C" {
 #define IUP_RESPONSE_1    1
 #define IUP_RESPONSE_2    2
 #define IUP_RESPONSE_3    3
+#define IUP_RESPONSE_CANCEL (-500)
 #define IUP_RESPONSE_HELP 4
 
 /****************************************************************************
@@ -148,14 +149,7 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
       response = IUP_RESPONSE_HELP;
       Icallback cb = IupGetCallback(ih, "HELP_CB");
       if (cb && cb(ih) == IUP_CLOSE)
-      {
-        if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
-          response = IUP_RESPONSE_3;
-        else if (iupStrEqualNoCase(buttons, "OK"))
-          response = IUP_RESPONSE_1;
-        else
-          response = IUP_RESPONSE_2;
-      }
+        response = IUP_RESPONSE_CANCEL;
     }
     else if (clicked_button == button1)
       response = IUP_RESPONSE_1;
@@ -164,14 +158,7 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
     else if (clicked_button == button3)
       response = IUP_RESPONSE_3;
     else
-    {
-      if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
-        response = IUP_RESPONSE_3; /* Cancel */
-      else if (iupStrEqualNoCase(buttons, "OK"))
-        response = IUP_RESPONSE_1; /* OK */
-      else
-        response = IUP_RESPONSE_2; /* Cancel/No */
-    }
+      response = IUP_RESPONSE_CANCEL;
 
   } while (response == IUP_RESPONSE_HELP);
 
@@ -179,8 +166,10 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
     IupSetAttribute(ih, "BUTTONRESPONSE", "3");
   else if (response == IUP_RESPONSE_2)
     IupSetAttribute(ih, "BUTTONRESPONSE", "2");
-  else
+  else if (response == IUP_RESPONSE_1)
     IupSetAttribute(ih, "BUTTONRESPONSE", "1");
+  else
+    iupMessageDlgSetCancelResponse(ih);
 
   delete dialog;
 

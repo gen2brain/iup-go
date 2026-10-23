@@ -39,6 +39,19 @@ static void eflMessageDlgCloseCallback(void* data, const Efl_Event* ev)
   iupeflModalLoopQuit();
 }
 
+static void eflMessageDlgKeyDownCallback(void* data, const Efl_Event* ev)
+{
+  const char* keyname = efl_input_key_name_get(ev->info);
+
+  (void)data;
+
+  if (keyname && iupStrEqual(keyname, "Escape"))
+  {
+    efl_msgdlg_response = 0;
+    iupeflModalLoopQuit();
+  }
+}
+
 static void eflMessageDlgMeasureText(Evas* evas, const char* text, int* w, int* h)
 {
   Evas_Object* measure;
@@ -120,6 +133,7 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
   iupeflSetWindowAppID(win);
 
   efl_event_callback_add(win, EFL_UI_WIN_EVENT_DELETE_REQUEST, eflMessageDlgCloseCallback, NULL);
+  efl_event_callback_add(win, EFL_EVENT_KEY_DOWN, eflMessageDlgKeyDownCallback, NULL);
 
   vbox = efl_add(EFL_UI_BOX_CLASS, win,
                  efl_ui_layout_orientation_set(efl_added, EFL_UI_LAYOUT_ORIENTATION_VERTICAL),
@@ -341,16 +355,7 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
   } while (efl_msgdlg_response == -1);
 
   if (efl_msgdlg_response == 0)
-  {
-    if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
-      IupSetAttribute(ih, "BUTTONRESPONSE", "3");
-    else if (iupStrEqualNoCase(buttons, "OKCANCEL") ||
-             iupStrEqualNoCase(buttons, "RETRYCANCEL") ||
-             iupStrEqualNoCase(buttons, "YESNO"))
-      IupSetAttribute(ih, "BUTTONRESPONSE", "2");
-    else
-      IupSetAttribute(ih, "BUTTONRESPONSE", "1");
-  }
+    iupMessageDlgSetCancelResponse(ih);
   else if (efl_msgdlg_response == 3)
     IupSetAttribute(ih, "BUTTONRESPONSE", "3");
   else if (efl_msgdlg_response == 2)

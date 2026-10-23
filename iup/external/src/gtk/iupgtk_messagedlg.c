@@ -163,8 +163,10 @@ static int gtkMessageDlgPopup(Ihandle* ih, int x, int y)
     IupSetAttribute(ih, "BUTTONRESPONSE", "3");
   else if (response == IUP_RESPONSE_2)
     IupSetAttribute(ih, "BUTTONRESPONSE", "2");
-  else
+  else if (response == IUP_RESPONSE_1)
     IupSetAttribute(ih, "BUTTONRESPONSE", "1");
+  else
+    iupMessageDlgSetCancelResponse(ih);
 
   gtk_widget_destroy(dialog);
 

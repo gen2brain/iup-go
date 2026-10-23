@@ -54,6 +54,9 @@ IUP_SDK_API int iupDialogDeferDestroyDone(Ihandle* ih);
    Used mostly by the native pre-defined dialogs. */
 void iupDialogUpdatePosition(Ihandle* ih);
 
+/* Sets BUTTONRESPONSE of an IupMessageDlg closed without a button. */
+IUP_SDK_API void iupMessageDlgSetCancelResponse(Ihandle* ih);
+
 /* For external modal dialog stack control */
 void iupDialogLeaveModal(int popup_level);
 void iupDialogEnterModal(Ihandle* ih_popup, int popup_level);

@@ -13,11 +13,25 @@
 #include "iup.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
+#include "iup_dialog.h"
 #include "iup_stdcontrols.h"
 #include "iup_register.h"
 #include "iup_str.h"
 #include "iup_varg.h"
 
+
+IUP_SDK_API void iupMessageDlgSetCancelResponse(Ihandle* ih)
+{
+  char* buttons = iupAttribGetStr(ih, "BUTTONS");
+
+  if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
+    iupAttribSet(ih, "BUTTONRESPONSE", "3");
+  else if (iupStrEqualNoCase(buttons, "OK"))
+    iupAttribSet(ih, "BUTTONRESPONSE", "1");
+  else
+    iupAttribSet(ih, "BUTTONRESPONSE", "2");
+}
 
 IUP_API Ihandle* IupMessageDlg(void)
 {
