@@ -78,11 +78,12 @@ class IwinVideoNotify final : public IMFMediaEngineNotify
 {
   LONG references;
   LONG format;
+  LONG seeked;
   CRITICAL_SECTION lock;
   IvideoSession* session;
 
 public:
-  explicit IwinVideoNotify(IvideoSession* value) : references(1), format(0), session(value)
+  explicit IwinVideoNotify(IvideoSession* value) : references(1), format(0), seeked(0), session(value)
   {
     InitializeCriticalSection(&lock);
   }
@@ -95,6 +96,11 @@ public:
   int takeFormat()
   {
     return InterlockedExchange(&format, 0) != 0;
+  }
+
+  int takeSeeked()
+  {
+    return InterlockedExchange(&seeked, 0) != 0;
   }
 
   void disconnect()
@@ -136,6 +142,8 @@ public:
     (void)first;
     if (event == MF_MEDIA_ENGINE_EVENT_FORMATCHANGE || event == MF_MEDIA_ENGINE_EVENT_FIRSTFRAMEREADY)
       InterlockedExchange(&format, 1);
+    if (event == MF_MEDIA_ENGINE_EVENT_SEEKED)
+      InterlockedExchange(&seeked, 1);
     EnterCriticalSection(&lock);
     if (session)
     {
@@ -1091,6 +1099,8 @@ static void winVideoPoll(IvideoSession* session)
       context->caption_dirty = 1;
     context->aspect = info.aspect;
   }
+  if (context->notify->takeSeeked() && context->player->IsPaused())
+    context->player->FrameStep(TRUE);
   if (context->notify->takeFormat() || context->attach_pending)
     winVideoAttachSurface(context);
   winVideoLayout(session, context->ih);
