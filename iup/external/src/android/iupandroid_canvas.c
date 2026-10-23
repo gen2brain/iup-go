@@ -207,7 +207,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "DY", NULL, androidCanvasSetDYAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
-  iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
+  iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIIII");
   iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 
   iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);

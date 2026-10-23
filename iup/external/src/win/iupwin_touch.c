@@ -154,7 +154,7 @@ IUP_DRV_API int iupwinGestureProcessInfo(Ihandle* ih, void* lp)
 IUP_DRV_API void iupwinTouchRegisterAttrib(Iclass* ic)
 {
   iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
-  iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
+  iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIIII");
   iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 
   iupClassRegisterAttribute(ic, "TOUCH", winGetTouchAttrib, winSetTouchAttrib, NULL, NULL, IUPAF_NO_INHERIT);

@@ -407,7 +407,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 
   iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
-  iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
+  iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIIII");
   iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 
   iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, "YES", NULL, IUPAF_NO_INHERIT);
