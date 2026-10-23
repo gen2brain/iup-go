@@ -143,35 +143,11 @@ IUP_API void IupVersionShow(void)
   iVersionAppend(&text, "   Screen DPI: %d", IupGetInt(NULL, "SCREENDPI"));
   iVersionAppendGlobal(&text, "   Default Font", "DEFAULTFONT");
 
-  if (IupGetGlobal("_IUP_CONTROLS_OPEN") || IupGetGlobal("_IUP_GLCANVAS_OPEN") || IupGetGlobal("_IUP_WEBBROWSER_OPEN") ||
-      IupGetGlobal("_IUP_PLOT_OPEN") || IupGetGlobal("_IUP_MEDIA_OPEN"))
+  if (IupGetGlobal("GL_VERSION"))
   {
-    iVersionAppend(&text, "%s", "");
-    iVersionAppend(&text, "Iup Libraries Open:");
-
-    if (IupGetGlobal("_IUP_CONTROLS_OPEN"))
-      iVersionAppend(&text, "   IupControlsOpen");
-
-    if (IupGetGlobal("_IUP_GLCANVAS_OPEN"))
-    {
-      iVersionAppend(&text, "   IupGLCanvasOpen");
-
-      if (IupGetGlobal("GL_VERSION"))
-      {
-        iVersionAppendGlobal(&text, "      OpenGL Vendor", "GL_VENDOR");
-        iVersionAppendGlobal(&text, "      OpenGL Renderer", "GL_RENDERER");
-        iVersionAppendGlobal(&text, "      OpenGL Version", "GL_VERSION");
-      }
-    }
-
-    if (IupGetGlobal("_IUP_WEBBROWSER_OPEN"))
-      iVersionAppend(&text, "   IupWebBrowserOpen");
-
-    if (IupGetGlobal("_IUP_PLOT_OPEN"))
-      iVersionAppend(&text, "   IupPlotOpen");
-
-    if (IupGetGlobal("_IUP_MEDIA_OPEN"))
-      iVersionAppend(&text, "   IupMediaOpen");
+    iVersionAppendGlobal(&text, "   OpenGL Vendor", "GL_VENDOR");
+    iVersionAppendGlobal(&text, "   OpenGL Renderer", "GL_RENDERER");
+    iVersionAppendGlobal(&text, "   OpenGL Version", "GL_VERSION");
   }
 
   info = IupText();
