@@ -12,7 +12,7 @@ So the existence of this callback defines the mode the matrix will operate.
 ### Initialization and Usage
 
 The **IupControlsOpen** function must be called after **IupOpen**.
-The "iupcontrols.h" file must also be included in the source code.
+The "iupctrl.h" file must also be included in the source code.
 The program must be linked to the controls library (iupctrl).
 
 ### Creation

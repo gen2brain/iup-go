@@ -9,7 +9,7 @@
 #include <string.h>
 
 #include "iup.h"
-#include "iupcontrols.h"
+#include "iupctrl.h"
 
 #include "iupdraw.h"
 #include "iup_drvdraw.h"

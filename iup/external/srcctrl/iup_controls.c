@@ -5,7 +5,7 @@
  */
 
 #include "iup.h"
-#include "iupcontrols.h"
+#include "iupctrl.h"
 
 #include "iup_object.h"
 #include "iup_childtree.h"

@@ -9,7 +9,7 @@ import (
 /*
 #include <stdlib.h>
 #include "iup.h"
-#include "iupcontrols.h"
+#include "iupctrl.h"
 */
 import "C"
 

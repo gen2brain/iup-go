@@ -4,8 +4,8 @@
  * See Copyright Notice in "iup.h"
  */
 
-#ifndef __IUPCONTROLS_H
-#define __IUPCONTROLS_H
+#ifndef __IUPCTRL_H
+#define __IUPCTRL_H
 
 #ifdef __cplusplus
 extern "C" {
