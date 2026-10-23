@@ -1356,7 +1356,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 #if GTK_CHECK_VERSION(3, 14, 0)
   iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
   iupClassRegisterCallback(ic, "TOUCH_CB", "iiis");
-  iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIII");
+  iupClassRegisterCallback(ic, "MULTITOUCH_CB", "iIIII");
   iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 #endif
 
