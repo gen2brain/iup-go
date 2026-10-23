@@ -699,6 +699,8 @@ static void haikuTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
   auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
   int pos = IupGetChildPos(ih, child);
 
+  LooperLockGuard guard(tabs->Looper());
+
   auto* page = new BView(BRect(0, 0, 0, 0), "iup_tab_page", B_FOLLOW_ALL_SIDES, B_WILL_DRAW);
   page->SetViewColor(tabs->ViewColor());
   page->SetLowColor(tabs->ViewColor());
@@ -726,7 +728,6 @@ static void haikuTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     tab->SetFgColor(true, c);
   }
 
-  LooperLockGuard guard(tabs->Looper());
   tabs->InsertBTab(tab, haikuTabsBTabIndex(ih, pos));
   haikuTabsUpdateStripHeight(ih);
 
