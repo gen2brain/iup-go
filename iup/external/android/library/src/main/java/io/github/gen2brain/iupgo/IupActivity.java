@@ -51,6 +51,7 @@ public class IupActivity extends AppCompatActivity
     private ActionBarDrawerToggle drawerToggle;
     private long drawerIhandle = 0;
     private boolean closeAsked;
+    private boolean stale;
     private OnBackPressedCallback backCallback;
 
     /* Latest RESUMED IupActivity; weak to avoid static Context leak. */
@@ -348,6 +349,18 @@ public class IupActivity extends AppCompatActivity
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+        if (!IupLaunchActivity.librariesLoaded())
+        {
+            stale = true;
+            Intent launch = getPackageManager().getLaunchIntentForPackage(getPackageName());
+            if (launch != null)
+            {
+                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(launch);
+            }
+            finish();
+            return;
+        }
         sLiveCount++;
 
         final Intent intent = getIntent();
@@ -467,6 +480,11 @@ public class IupActivity extends AppCompatActivity
     @Override
     protected void onDestroy()
     {
+        if (stale)
+        {
+            super.onDestroy();
+            return;
+        }
         /* extra cleared = IUP already disposed; else treat back/OOM as a forced close */
         Intent intent = getIntent();
         long ihandlePtr = intent.getLongExtra("Ihandle", 0);

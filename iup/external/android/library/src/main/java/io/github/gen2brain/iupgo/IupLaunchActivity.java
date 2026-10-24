@@ -21,6 +21,12 @@ public class IupLaunchActivity extends Activity
 
     private boolean loadLibraryFailed = false;
     private boolean entryStarted = false;
+    private static boolean sLibrariesLoaded = false;
+
+    static boolean librariesLoaded()
+    {
+        return sLibrariesLoaded;
+    }
 
     /* Override to add libraries (no lib prefix, no .so suffix). Must include "iup". */
     protected String[] getLibraries()
@@ -46,6 +52,7 @@ public class IupLaunchActivity extends Activity
         {
             System.loadLibrary(lib);
         }
+        sLibrariesLoaded = true;
         Log.i(TAG, "IupLaunchActivity.loadLibraries loaded " + java.util.Arrays.toString(libs));
     }
 
