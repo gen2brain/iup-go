@@ -1506,7 +1506,15 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
     }
     else
       text_obj = evas_object_text_add(dc->frame_evas);
-    evas_object_text_font_set(text_obj, font_with_style, fontsize);
+    {
+      /* resolving the font again for every run is the dominant cost when drawing text */
+      const char* cur_font = NULL;
+      Evas_Font_Size cur_size = 0;
+
+      evas_object_text_font_get(text_obj, &cur_font, &cur_size);
+      if (cur_size != (Evas_Font_Size)fontsize || !cur_font || strcmp(cur_font, font_with_style) != 0)
+        evas_object_text_font_set(text_obj, font_with_style, fontsize);
+    }
     evas_object_text_text_set(text_obj, text);
     efl_gfx_color_set(text_obj, r, g, b, a);
 
