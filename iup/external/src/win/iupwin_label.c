@@ -111,16 +111,26 @@ static void winLabelDrawText(Ihandle* ih, HDC hDC, int rect_width, int rect_heig
   else  /* ALEFT */
     style = DT_LEFT;
 
+  /* let DrawText do the horizontal alignment */
+  x = xpad;
+  width = rect_width - 2*xpad;
+
+  if (ih->data->text_style & DT_WORDBREAK)
+  {
+    RECT calc;
+    HFONT hOldFont = (HFONT)SelectObject(hDC, hFont);
+    SetRect(&calc, 0, 0, width, 0);
+    DrawText(hDC, iupwinStrToSystem(title), -1, &calc, style | DT_WORDBREAK | DT_CALCRECT);
+    SelectObject(hDC, hOldFont);
+    height = calc.bottom;
+  }
+
   if (ih->data->vert_alignment == IUP_ALIGN_ABOTTOM)
     y = rect_height - (height + 2*ypad);
   else if (ih->data->vert_alignment == IUP_ALIGN_ATOP)
     y = 0;
   else  /* ACENTER */
     y = (rect_height - (height + 2*ypad))/2;
-
-  /* let DrawText do the horizontal alignment */
-  x = xpad;
-  width = rect_width - 2*xpad;
   y += ypad;
 
   if (iupdrvIsActive(ih))
