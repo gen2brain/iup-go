@@ -156,7 +156,7 @@ public class IupActivity extends AppCompatActivity
     }
 
 
-    /** Back closes the drawer, then asks CLOSE_CB before the default back handling. */
+    /** Back closes the drawer, then asks CLOSE_CB after the key dispatch before the default back handling. */
     private void onBack()
     {
         if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START))
@@ -164,10 +164,22 @@ public class IupActivity extends AppCompatActivity
             drawerLayout.closeDrawer(GravityCompat.START);
             return;
         }
-        long ihandlePtr = getIntent().getLongExtra("Ihandle", 0);
-        if (ihandlePtr != 0 && !CloseRequested(ihandlePtr))
+        final long ihandlePtr = getIntent().getLongExtra("Ihandle", 0);
+        if (ihandlePtr == 0)
+        {
+            defaultBack();
             return;
-        closeAsked = ihandlePtr != 0;
+        }
+        getWindow().getDecorView().post(() -> {
+            if (isFinishing() || isDestroyed() || !CloseRequested(ihandlePtr))
+                return;
+            closeAsked = true;
+            defaultBack();
+        });
+    }
+
+    private void defaultBack()
+    {
         backCallback.setEnabled(false);
         getOnBackPressedDispatcher().onBackPressed();
         backCallback.setEnabled(true);
