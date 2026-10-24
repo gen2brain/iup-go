@@ -62,7 +62,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchBu
 
   /* IUP button codes are the ASCII digits '1'..'5', not integer indices. */
   int iup_button = '0' + button;
-  cb(ih, iup_button, pressed, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y), status);
+  cb(ih, iup_button, pressed, x < 0 ? -1 : iupAndroid_PxToDpRound(x), y < 0 ? -1 : iupAndroid_PxToDpRound(y), status);
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchMotion(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint x, jint y, jint meta_state, jint button_state)

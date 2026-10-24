@@ -148,8 +148,10 @@ public final class IupGLCanvasHelper
                     return true;
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
-                    if (!rightClickFired)
+                    if (!rightClickFired && ev.getActionMasked() == MotionEvent.ACTION_UP)
                         IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, x, y, mods, false);
+                    else if (!rightClickFired)
+                        IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, -1, -1, mods, false);
                     if (!rightClickFired && ev.getActionMasked() == MotionEvent.ACTION_UP)
                         doubleTap.release(ev);
                     else
