@@ -49,13 +49,13 @@ IUP_SDK_API int iupdrvFdWatchStart(Ihandle* ih)
   if (!id)
     return 0;
 
-  iupAttribSetInt(ih, "_IUPMOT_FDWATCH", (int)id);
+  iupAttribSet(ih, "_IUPMOT_FDWATCH", (char*)id);
   return 1;
 }
 
 IUP_SDK_API void iupdrvFdWatchStop(Ihandle* ih)
 {
-  XtInputId id = (XtInputId)iupAttribGetInt(ih, "_IUPMOT_FDWATCH");
+  XtInputId id = (XtInputId)iupAttribGet(ih, "_IUPMOT_FDWATCH");
   if (id)
   {
     XtRemoveInput(id);
