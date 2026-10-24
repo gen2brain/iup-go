@@ -277,6 +277,11 @@ EM_JS(int, iupwasmJsFontListGet, (int i), {
   return ptr;
 })
 
+IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+  return iupFontGetFamilyFlagsByMeasure(family);
+}
+
 IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
   int i, count = iupwasmJsFontListCount();

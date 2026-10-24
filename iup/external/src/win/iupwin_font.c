@@ -449,6 +449,45 @@ static int CALLBACK winFontFamilyEnumProc(const LOGFONTW* lf, const TEXTMETRICW*
   return TRUE;
 }
 
+static int CALLBACK winFontFlagsEnumProc(const LOGFONTW* lf, const TEXTMETRICW* tm, DWORD type, LPARAM param)
+{
+  int* flags = (int*)param;
+
+  (void)tm;
+  (void)type;
+
+  if ((lf->lfPitchAndFamily & 0x03) == FIXED_PITCH)
+    *flags |= IUP_FONTFAMILY_MONOSPACE;
+
+  return FALSE;
+}
+
+IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+  HDC hdc;
+  LOGFONTW lf;
+  int flags = 0;
+  WCHAR* wname;
+
+  if (!family)
+    return 0;
+
+  wname = iupwinStrChar2Wide(family);
+  if (!wname)
+    return 0;
+
+  memset(&lf, 0, sizeof(lf));
+  lf.lfCharSet = DEFAULT_CHARSET;
+  lstrcpynW(lf.lfFaceName, wname, LF_FACESIZE);
+  free(wname);
+
+  hdc = GetDC(NULL);
+  EnumFontFamiliesExW(hdc, &lf, (FONTENUMPROCW)winFontFlagsEnumProc, (LPARAM)&flags, 0);
+  ReleaseDC(NULL, hdc);
+
+  return flags;
+}
+
 static int winFontFamilyCompare(const void* a, const void* b)
 {
   return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);

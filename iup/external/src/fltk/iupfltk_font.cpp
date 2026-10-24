@@ -415,6 +415,11 @@ static int fltkFontFamilyCompare(const void* a, const void* b)
   return iupStrCompare(*static_cast<const char* const*>(a), *static_cast<const char* const*>(b), 0, 1);
 }
 
+extern "C" IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+  return iupFontGetFamilyFlagsByMeasure(family);
+}
+
 extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
   Fl_Font total = Fl::set_fonts(nullptr);

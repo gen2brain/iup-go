@@ -506,6 +506,11 @@ static int eflFontFamilyCompare(const void* a, const void* b)
   return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
 }
 
+IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+  return iupFontGetFamilyFlagsByMeasure(family);
+}
+
 IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
   Evas* evas;

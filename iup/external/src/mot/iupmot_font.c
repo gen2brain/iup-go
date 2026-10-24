@@ -1062,6 +1062,41 @@ static void motFontGetFamilyFromXLFD(const char* xlfd, char* family, int family_
 }
 
 #ifdef IUP_USE_XFT
+IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+  FcPattern* pattern;
+  FcObjectSet* os;
+  FcFontSet* fs;
+  int i, spacing, flags = 0;
+
+  if (!family)
+    return 0;
+
+  pattern = FcPatternCreate();
+  FcPatternAddString(pattern, FC_FAMILY, (const FcChar8*)family);
+  os = FcObjectSetBuild(FC_SPACING, (char*)NULL);
+  fs = FcFontList(NULL, pattern, os);
+
+  FcPatternDestroy(pattern);
+  FcObjectSetDestroy(os);
+
+  if (fs)
+  {
+    for (i = 0; i < fs->nfont; i++)
+    {
+      if (FcPatternGetInteger(fs->fonts[i], FC_SPACING, 0, &spacing) == FcResultMatch &&
+          (spacing == FC_MONO || spacing == FC_CHARCELL))
+      {
+        flags |= IUP_FONTFAMILY_MONOSPACE;
+        break;
+      }
+    }
+    FcFontSetDestroy(fs);
+  }
+
+  return flags;
+}
+
 IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
   FcPattern* pattern;
@@ -1124,6 +1159,11 @@ IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
   return count;
 }
 #else
+IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+  return iupFontGetFamilyFlagsByMeasure(family);
+}
+
 IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
   int i, n = 0, count = 0;

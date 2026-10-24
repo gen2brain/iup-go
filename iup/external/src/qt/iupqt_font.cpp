@@ -479,6 +479,20 @@ extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
   return count;
 }
 
+extern "C" IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+  if (!family)
+    return 0;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+  bool fixed = QFontDatabase::isFixedPitch(QString::fromUtf8(family));
+#else
+  bool fixed = QFontDatabase().isFixedPitch(QString::fromUtf8(family));
+#endif
+
+  return fixed ? IUP_FONTFAMILY_MONOSPACE : 0;
+}
+
 /****************************************************************************
  * Font Initialization and Cleanup
  ****************************************************************************/

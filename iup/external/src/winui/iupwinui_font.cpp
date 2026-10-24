@@ -12,6 +12,7 @@
 
 #include <windows.h>
 #include <dwrite.h>
+#include <dwrite_1.h>
 
 extern "C" {
 #include "iup.h"
@@ -586,6 +587,51 @@ IUP_DRV_API void iupwinuiUpdateTextBlockFont(Ihandle* ih, winrt::Microsoft::UI::
 static int winuiFontFamilyCompare(const void* a, const void* b)
 {
   return iupStrCompare(*static_cast<const char* const*>(a), *static_cast<const char* const*>(b), 0, 1);
+}
+
+extern "C" IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+  IDWriteFontCollection* collection = nullptr;
+  IDWriteFontFamily* font_family = nullptr;
+  IDWriteFont* font = nullptr;
+  IDWriteFont1* font1 = nullptr;
+  UINT32 index = 0;
+  BOOL exists = FALSE;
+  int flags = 0;
+  int wlen;
+
+  if (!family || !winui_dwrite_factory)
+    return 0;
+
+  wlen = MultiByteToWideChar(CP_UTF8, 0, family, -1, nullptr, 0);
+  if (wlen <= 0)
+    return 0;
+
+  std::wstring wname(wlen, L'\0');
+  MultiByteToWideChar(CP_UTF8, 0, family, -1, &wname[0], wlen);
+
+  winui_dwrite_factory->GetSystemFontCollection(&collection, FALSE);
+  if (collection)
+  {
+    collection->FindFamilyName(wname.c_str(), &index, &exists);
+    if (exists && SUCCEEDED(collection->GetFontFamily(index, &font_family)) && font_family)
+    {
+      if (SUCCEEDED(font_family->GetFont(0, &font)) && font)
+      {
+        if (SUCCEEDED(font->QueryInterface(__uuidof(IDWriteFont1), (void**)&font1)) && font1)
+        {
+          if (font1->IsMonospacedFont())
+            flags |= IUP_FONTFAMILY_MONOSPACE;
+          font1->Release();
+        }
+        font->Release();
+      }
+      font_family->Release();
+    }
+    collection->Release();
+  }
+
+  return flags;
 }
 
 extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)

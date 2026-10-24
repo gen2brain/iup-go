@@ -451,6 +451,25 @@ static int cocoaTouchFontFamilyCompare(const void* a, const void* b)
 	return iupStrCompare(*(const char**)a, *(const char**)b, 0, 1);
 }
 
+IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+	if (!family)
+		return 0;
+
+	@autoreleasepool
+	{
+		NSString* name = [NSString stringWithUTF8String:family];
+		UIFontDescriptor* descriptor = [UIFontDescriptor fontDescriptorWithFontAttributes:
+										  @{ UIFontDescriptorFamilyAttribute: name }];
+		UIFontDescriptor* matched = [[descriptor matchingFontDescriptorsWithMandatoryKeys:nil] firstObject];
+
+		if (!matched)
+			return 0;
+
+		return ([matched symbolicTraits] & UIFontDescriptorTraitMonoSpace) ? IUP_FONTFAMILY_MONOSPACE : 0;
+	}
+}
+
 IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
 	@autoreleasepool

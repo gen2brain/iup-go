@@ -137,6 +137,21 @@ const char* iupFontGetAndroidName(const char* typeface)
   return NULL;
 }
 
+IUP_SDK_API int iupFontGetFamilyFlagsByMeasure(const char* family)
+{
+  char font[256];
+  int wide = 0, narrow = 0, h = 0;
+
+  if (!family || !family[0])
+    return 0;
+
+  snprintf(font, sizeof(font), "%s, 12", family);
+  iupdrvFontGetTextSize(font, "W", 1, &wide, &h);
+  iupdrvFontGetTextSize(font, "i", 1, &narrow, &h);
+
+  return (wide > 0 && wide == narrow) ? IUP_FONTFAMILY_MONOSPACE : 0;
+}
+
 IUP_SDK_API char* iupGetFontValue(Ihandle* ih)
 {
   char* value = iupAttribGetStr(ih, "FONT");

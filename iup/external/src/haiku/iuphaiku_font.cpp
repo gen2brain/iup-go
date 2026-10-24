@@ -504,6 +504,24 @@ static int haikuFamilyCompare(const void* a, const void* b)
   return strcasecmp(sa, sb);
 }
 
+extern "C" IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+  if (!family)
+    return 0;
+
+  int32 family_count = count_font_families();
+  for (int32 i = 0; i < family_count; ++i)
+  {
+    font_family fam;
+    uint32 fam_flags = 0;
+
+    if (get_font_family(i, &fam, &fam_flags) == B_OK && iupStrEqualNoCase(fam, family))
+      return (fam_flags & B_IS_FIXED) ? IUP_FONTFAMILY_MONOSPACE : 0;
+  }
+
+  return 0;
+}
+
 extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
   if (list) *list = nullptr;

@@ -508,6 +508,32 @@ IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
   return n_families;
 }
 
+IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+  PangoFontFamily** families;
+  int i, n_families, flags = 0;
+
+  if (!family || !gtk4_fonts_context)
+    return 0;
+
+  pango_context_list_families(gtk4_fonts_context, &families, &n_families);
+  if (!families)
+    return 0;
+
+  for (i = 0; i < n_families; i++)
+  {
+    if (iupStrEqualNoCase(pango_font_family_get_name(families[i]), family))
+    {
+      if (pango_font_family_is_monospace(families[i]))
+        flags |= IUP_FONTFAMILY_MONOSPACE;
+      break;
+    }
+  }
+
+  g_free(families);
+  return flags;
+}
+
 IUP_SDK_API void iupdrvFontInit(void)
 {
   gtk4_fonts = iupArrayCreate(50, sizeof(Igtk4Font));
