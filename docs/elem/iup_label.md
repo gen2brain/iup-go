@@ -66,6 +66,7 @@ The "&" is always consumed (so "&&" shows "&" in all drivers), but the "Alt+key"
 
 **WORDWRAP**: enables or disable the wrapping of lines that does not fit in the label.
 Can be "YES" or "NO". Default: "NO". Can only set WORDWRAP=YES if ALIGNMENT=ALEFT.
+When the width is set by SIZE or RASTERSIZE, the natural height includes the wrapped lines.
 Not supported in Motif.
 
 **SELECTABLE** (non-inheritable): Makes the label text selectable by the user for copy/paste.
