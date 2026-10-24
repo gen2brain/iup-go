@@ -67,7 +67,7 @@ The natural size of the child (and its children) defines the virtual space size.
 So the **IupScrollBox** does not depend on its child's size or expansion, and its natural size is always 0x0, except for the first time when it expands to the child natural size.
 
 The user can move the box contents by dragging the background.
-In Android a drag that starts on a child also moves them.
+In Android and iOS a drag that starts on a child also moves them.
 Also, the mouse wheel scrolls the contents vertically.
 
 The box can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).

@@ -49,7 +49,7 @@
 	IFniiiis cb = (IFniiiis)IupGetCallback(_ihandle, "BUTTON_CB");
 	if (!cb) return;
 	UITouch* touch = [touches anyObject];
-	CGPoint p = [touch locationInView:self];
+	CGPoint p = touch ? [touch locationInView:self] : CGPointMake(-1, -1);
 	UIKeyModifierFlags mods = event ? [event modifierFlags] : 0;
 	char status[IUPKEY_STATUS_SIZE];
 	iupCocoaTouchButtonKeySetStatus(event, mods, pressed ? 1 : 0, 0, status);
@@ -78,7 +78,7 @@
 	[super touchesCancelled:touches withEvent:event];
 	if (!_activeTouch || ![touches containsObject:_activeTouch]) return;
 	_activeTouch = nil;
-	[self fireButtonCallback:touches event:event pressed:0];
+	[self fireButtonCallback:nil event:event pressed:0];
 }
 
 @end
