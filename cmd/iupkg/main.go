@@ -74,6 +74,7 @@ type config struct {
 	copyright   string
 	license     string
 	permissions []string
+	cleartext   []string
 	data        []string
 	sign        string
 	signer      string
@@ -198,6 +199,10 @@ func newFlagSet(c *config) *flag.FlagSet {
 		c.permissions = splitList(s)
 		return nil
 	})
+	fs.Func("cleartext", "android: comma-separated `list` of hosts allowed plain HTTP: localhost", func(s string) error {
+		c.cleartext = splitList(s)
+		return nil
+	})
 	fs.Func("data", "`file` or directory shipped with the application, read back from the RESOURCEDIR global; a directory keeps its name; repeatable", func(s string) error {
 		c.data = append(c.data, s)
 		return nil
@@ -283,6 +288,14 @@ func runPackage(args []string) error {
 	for _, p := range c.permissions {
 		if !slices.Contains([]string{"camera", "microphone", "location", "notifications", "internet"}, p) {
 			return fmt.Errorf("unknown permission %q", p)
+		}
+	}
+	if len(c.cleartext) > 0 && c.goos != "android" {
+		return errors.New("--cleartext is for android packages")
+	}
+	for _, h := range c.cleartext {
+		if h != "localhost" {
+			return fmt.Errorf("unknown cleartext host %q", h)
 		}
 	}
 

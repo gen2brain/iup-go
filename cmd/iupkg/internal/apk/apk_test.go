@@ -94,7 +94,7 @@ func TestPatchManifest(t *testing.T) {
 	}
 }
 
-func TestLauncherIconPaths(t *testing.T) {
+func TestNetworkSecurityConfigPaths(t *testing.T) {
 	entries, err := ReadTemplate(templateAPK(t))
 	if err != nil {
 		t.Fatal(err)
@@ -103,7 +103,27 @@ func TestLauncherIconPaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	paths, err := LauncherIconPaths(table, "ic_launcher")
+	for _, name := range []string{"iup_network_security", "iup_network_security_localhost"} {
+		paths, err := ResourcePaths(table, "xml", name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(paths) != 1 || Find(entries, paths[0]) == nil {
+			t.Fatalf("%s: paths %v", name, paths)
+		}
+	}
+}
+
+func TestResourcePaths(t *testing.T) {
+	entries, err := ReadTemplate(templateAPK(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	table, err := Find(entries, "resources.arsc").Content()
+	if err != nil {
+		t.Fatal(err)
+	}
+	paths, err := ResourcePaths(table, "mipmap", "ic_launcher")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +173,7 @@ func TestRenamePackage(t *testing.T) {
 	if got := string(utf16.Decode(name)); got != "com.example.renamed" {
 		t.Errorf("package name = %q", got)
 	}
-	if _, err := LauncherIconPaths(out, "ic_launcher"); err != nil {
+	if _, err := ResourcePaths(out, "mipmap", "ic_launcher"); err != nil {
 		t.Error(err)
 	}
 	if _, err := RenamePackage(table, strings.Repeat("a", arscNameLen)); err == nil {

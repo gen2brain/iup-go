@@ -57,6 +57,7 @@ iupkg staple <app>
  | `--copyright`                                        |                     | Windows and Haiku copyright line                                                                                            |
  | `--license`                                          | `Unknown`           | rpm and haiku license name                                                                                                  |
  | `--permissions`                                      |                     | comma list of `camera`, `microphone`, `location`, `notifications`, `internet`                                               |
+ | `--cleartext`                                        |                     | android: comma list of hosts that may use plain HTTP; `localhost` allows `localhost` and `127.0.0.1`                        |
  | `--sign`                                             |                     | signing identity, see Signing                                                                                               |
  | `--signer`                                           | `iupkg`             | `iupkg`; darwin, ios: `codesign` (the default on a Mac); linux: `gpg`                                                       |
  | `--timestamp`                                        | `true`              | add a trusted timestamp when signing with a certificate                                                                     |
@@ -131,6 +132,7 @@ iupkg package --os linux --format deb,rpm --vendor "Jane Doe <jane@example.com>"
 `<exe>.apk`, built from the template APK shipped in the iup module. Only the Android NDK is needed: set `ANDROID_NDK_HOME`, or install it under `$ANDROID_SDK_ROOT/ndk`.
 The Go program is compiled as a shared library per ABI; the manifest, launcher icons and native libraries are written into the template, then the APK is aligned and signed (v1 and v2).
 No permission is requested unless listed. `--install` runs `adb install`.
+Plain HTTP is blocked, as Android does by default; `--cleartext localhost` allows it to `localhost` and `127.0.0.1` only, for an app that serves media to IupVideo on the loopback address.
 
 ```sh
 iupkg package --os android --arch arm64,amd64 --name "My App" --id com.example.myapp --permissions camera,internet --install ./cmd/myapp
