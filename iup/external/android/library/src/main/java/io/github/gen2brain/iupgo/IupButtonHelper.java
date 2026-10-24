@@ -132,8 +132,10 @@ public final class IupButtonHelper
                 final int y = (int)ev.getY();
                 if (a == MotionEvent.ACTION_DOWN)
                     v.post(() -> dispatchButton(ihandlePtr, 1, 1, x, y));
-                else if (a == MotionEvent.ACTION_UP || a == MotionEvent.ACTION_CANCEL)
+                else if (a == MotionEvent.ACTION_UP)
                     v.post(() -> dispatchButton(ihandlePtr, 1, 0, x, y));
+                else if (a == MotionEvent.ACTION_CANCEL)
+                    v.post(() -> dispatchButton(ihandlePtr, 1, 0, -1, -1));
                 return false;
             }
         });

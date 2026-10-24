@@ -373,6 +373,30 @@ public class IupAndroidCanvas extends IupAndroidFixed
     }
 
     @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev)
+    {
+        if (ihandlePtr == 0 || !isEnabled() || !IupCanvasHelper.isScrollable(ihandlePtr)) return false;
+
+        switch (ev.getActionMasked())
+        {
+            case MotionEvent.ACTION_DOWN:
+                touchStartX = touchLastX = ev.getX();
+                touchStartY = touchLastY = ev.getY();
+                if (getParent() != null)
+                    getParent().requestDisallowInterceptTouchEvent(true);
+                return false;
+            case MotionEvent.ACTION_MOVE:
+                if (ev.getPointerCount() != 1 || Math.hypot(ev.getX() - touchStartX, ev.getY() - touchStartY) <= touchSlop)
+                    return false;
+                touchState = TOUCH_SCROLL;
+                touchLastX = ev.getX();
+                touchLastY = ev.getY();
+                return true;
+        }
+        return false;
+    }
+
+    @Override
     public boolean onTouchEvent(MotionEvent ev)
     {
         if (ihandlePtr == 0 || !isEnabled()) return false;
@@ -460,8 +484,10 @@ public class IupAndroidCanvas extends IupAndroidFixed
                     IupCanvasHelper.dispatchButton(ihandlePtr, 1, 1, x, y, mods, doubleTap.press(this, ev));
                     IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, x, y, mods, false);
                 }
-                else if (touchState == TOUCH_DIRECT)
+                else if (touchState == TOUCH_DIRECT && action == MotionEvent.ACTION_UP)
                     IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, x, y, mods, false);
+                else if (touchState == TOUCH_DIRECT)
+                    IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, -1, -1, mods, false);
                 if (action == MotionEvent.ACTION_UP && (touchState == TOUCH_PENDING || touchState == TOUCH_DIRECT))
                     doubleTap.release(ev);
                 else

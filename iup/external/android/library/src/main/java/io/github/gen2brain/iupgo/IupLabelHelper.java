@@ -100,7 +100,7 @@ public final class IupLabelHelper
             {
                 final boolean wasUp = (a == MotionEvent.ACTION_UP);
                 v.post(() -> {
-                    IupButtonHelper.dispatchButton(ihandlePtr, 1, 0, x, y);
+                    IupButtonHelper.dispatchButton(ihandlePtr, 1, 0, wasUp ? x : -1, wasUp ? y : -1);
                     if (wasUp) v.performClick();
                 });
             }
