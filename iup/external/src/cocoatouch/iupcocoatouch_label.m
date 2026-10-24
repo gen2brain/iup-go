@@ -34,7 +34,7 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 	IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
 	if (!cb) return;
 	UITouch* touch = [touches anyObject];
-	CGPoint p = touch ? [touch locationInView:view] : CGPointZero;
+	CGPoint p = touch ? [touch locationInView:view] : CGPointMake(-1, -1);
 	UIKeyModifierFlags mods = event ? [event modifierFlags] : 0;
 	char status[IUPKEY_STATUS_SIZE];
 	iupCocoaTouchButtonKeySetStatus(event, mods, pressed ? 1 : 0, 0, status);
@@ -136,7 +136,7 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 	[super touchesCancelled:touches withEvent:event];
 	if (!_activeTouch || ![touches containsObject:_activeTouch]) return;
 	_activeTouch = nil;
-	cocoaTouchLabelFireButtonCb(self, touches, event, 0);
+	cocoaTouchLabelFireButtonCb(self, nil, event, 0);
 }
 
 @end
@@ -169,7 +169,7 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 	[super touchesCancelled:touches withEvent:event];
 	if (!_activeTouch || ![touches containsObject:_activeTouch]) return;
 	_activeTouch = nil;
-	cocoaTouchLabelFireButtonCb(self, touches, event, 0);
+	cocoaTouchLabelFireButtonCb(self, nil, event, 0);
 }
 
 @end
