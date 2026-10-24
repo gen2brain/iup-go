@@ -8,7 +8,6 @@
 #include <stdlib.h>
 
 #include <gtk/gtk.h>
-#include <glib-unix.h>
 
 #include "iup.h"
 
@@ -17,11 +16,11 @@
 #include "iup_fdwatch.h"
 
 
-static gboolean gtkFdWatchProc(gint fd, GIOCondition condition, gpointer data)
+static gboolean gtkFdWatchProc(GIOChannel* source, GIOCondition condition, gpointer data)
 {
   Ihandle* ih = (Ihandle*)data;
 
-  (void)fd;
+  (void)source;
   (void)condition;
 
   if (!iupObjectCheck(ih))
@@ -35,6 +34,7 @@ IUP_SDK_API int iupdrvFdWatchStart(Ihandle* ih)
 {
   int mode = iupFdWatchGetMode(ih);
   GIOCondition condition = 0;
+  GIOChannel* channel;
 
   if (ih->serial > 0)
     return 1;
@@ -44,7 +44,16 @@ IUP_SDK_API int iupdrvFdWatchStart(Ihandle* ih)
   if (mode & IUP_FDWATCH_WRITE)
     condition |= G_IO_OUT;
 
-  ih->serial = g_unix_fd_add(iupFdWatchGetFd(ih), condition, gtkFdWatchProc, (gpointer)ih);
+#ifdef G_OS_WIN32
+  channel = g_io_channel_win32_new_socket(iupFdWatchGetFd(ih));
+#else
+  channel = g_io_channel_unix_new(iupFdWatchGetFd(ih));
+#endif
+  if (!channel)
+    return 0;
+
+  ih->serial = g_io_add_watch(channel, condition, gtkFdWatchProc, (gpointer)ih);
+  g_io_channel_unref(channel);
   return ih->serial > 0;
 }
 
