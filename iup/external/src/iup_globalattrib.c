@@ -439,8 +439,9 @@ IUP_API char* IupGetGlobal(const char* name)
     iupdrvGetKeyState(str);
     return str;
   }
-  if (iupStrEqual(name, "FONTLIST"))
+  if (iupStrEqual(name, "FONTLIST") || iupStrEqual(name, "MONOSPACEFONTLIST"))
   {
+    int filter = iupStrEqual(name, "MONOSPACEFONTLIST") ? IUP_FONTFAMILY_MONOSPACE : 0;
     char** families;
     int i, count = iupdrvFontGetFamilyList(&families);
     char* str = NULL;
@@ -456,8 +457,11 @@ IUP_API char* IupGetGlobal(const char* name)
 
       for (i = 0; i < count; i++)
       {
-        strcat(str, families[i]);
-        strcat(str, "\n");
+        if (!filter || (iupdrvFontGetFamilyFlags(families[i]) & filter))
+        {
+          strcat(str, families[i]);
+          strcat(str, "\n");
+        }
         free(families[i]);
       }
     }

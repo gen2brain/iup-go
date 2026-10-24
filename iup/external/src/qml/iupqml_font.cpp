@@ -402,6 +402,14 @@ static int qmlFontFamilyCompare(const void* a, const void* b)
   return iupStrCompare(*static_cast<const char* const*>(a), *static_cast<const char* const*>(b), 0, 1);
 }
 
+extern "C" IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+  if (!family)
+    return 0;
+
+  return QFontDatabase::isFixedPitch(QString::fromUtf8(family)) ? IUP_FONTFAMILY_MONOSPACE : 0;
+}
+
 extern "C" IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
   QStringList families = QFontDatabase::families();

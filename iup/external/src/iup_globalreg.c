@@ -78,6 +78,7 @@ static const iGlobalRegEntry registry[] = {
   { "FLTKTHEME",              0,    F },
   { "FLTKVERSION",            R,    F },
   { "FONTLIST",               R,    ALL },
+  { "MONOSPACEFONTLIST",      R,    ALL },
   { "FULLSIZE",               R,    ALL },
   { "GLOBALLAYOUTRESIZEKEY",  0,    ALL },
   { "GLOBALMENU",             0,    G },

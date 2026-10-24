@@ -61,6 +61,18 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value);
  * \ingroup drvfont */
 IUP_SDK_API int iupdrvFontGetFamilyList(char*** list);
 
+/** Font family capabilities returned by \ref iupdrvFontGetFamilyFlags.
+ * \ingroup drvfont */
+#define IUP_FONTFAMILY_MONOSPACE 0x0001
+
+/** Retrieve the capabilities of a font family, 0 when the driver cannot tell.
+ * \ingroup drvfont */
+IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family);
+
+/** Family capabilities derived by measuring, for drivers whose toolkit has no font metadata.
+ * \ingroup drvfont */
+IUP_SDK_API int iupFontGetFamilyFlagsByMeasure(const char* family);
+
 /** Compensates IupMatrix limitation in Get FONT.
   * \ingroup drvfont */
 IUP_SDK_API char* iupGetFontValue(Ihandle* ih);

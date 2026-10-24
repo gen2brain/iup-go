@@ -525,6 +525,26 @@ IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
   }
 }
 
+IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+  if (!family)
+    return 0;
+
+  @autoreleasepool {
+    NSString* name = [NSString stringWithUTF8String:family];
+    NSFontDescriptor* descriptor = [NSFontDescriptor fontDescriptorWithFontAttributes:
+                                     @{ NSFontFamilyAttribute: name }];
+    NSFontDescriptor* matched = [[descriptor matchingFontDescriptorsWithMandatoryKeys:nil] firstObject];
+    NSFontSymbolicTraits traits;
+
+    if (!matched)
+      return 0;
+
+    traits = [matched symbolicTraits];
+    return (traits & NSFontDescriptorTraitMonoSpace) ? IUP_FONTFAMILY_MONOSPACE : 0;
+  }
+}
+
 static void cocoaFontInit(void)
 {
   if (nil == s_mapOfFonts)

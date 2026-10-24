@@ -245,6 +245,11 @@ IUP_SDK_API void iupdrvFontGetFontDim(const char* font, int* max_width, int* lin
   if (descent)     *descent     = iupAndroid_PxToDp(vals[3]);
 }
 
+IUP_SDK_API int iupdrvFontGetFamilyFlags(const char* family)
+{
+  return iupFontGetFamilyFlagsByMeasure(family);
+}
+
 IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
 {
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();

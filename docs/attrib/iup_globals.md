@@ -316,6 +316,11 @@ Returns the character encoding used by the C runtime, like "UTF-8". On Windows i
 Returns the names of the font families available in the system, sorted alphabetically.
 Each name is terminated by a "\n" character.
 
+### MONOSPACEFONTLIST (read-only)
+
+Same as [FONTLIST](#fontlist-read-only), restricted to the families the system reports as monospaced.
+Drivers whose toolkit does not expose that information compare the advance of "W" and "i" instead.
+
 ### SCROLLBARSIZE (read-only)
 
 Returns the width of the vertical scrollbar (the same as the height of the horizontal scrollbar).
