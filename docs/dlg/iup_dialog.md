@@ -179,9 +179,10 @@ If RESIZE=NO then MAXBOX will be set to NO.
 In Motif the decorations are controlled by the Window Manager and may not be possible to be changed from IUP.
 
 **RESIZEINC**: Size step for the interactive resize, in raster units (pixels). The dialog size changes in multiples of these values, counted from MINSIZE. Default: NULL.
-Not supported in Haiku, Android, iOS and WebAssembly.
+Not supported in EFL, Haiku, Android, iOS and WebAssembly.
 In GTK 4, Qt, QML and FLTK it requires X11.
 In macOS the steps are counted from the current size.
+Since the step grid starts at MINSIZE, set MINSIZE and the dialog size so that their difference is a multiple of the step, or the window manager will round the size down to the grid.
 
 [SHRINK](../attrib/iup_shrink.md): Allows changing the elements’ distribution when the dialog is smaller than the minimum size.
 Default: NO. Android and iOS default to YES.

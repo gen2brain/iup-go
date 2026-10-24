@@ -429,6 +429,8 @@ public:
       IupRefresh(fIhandle);
       fIhandle->data->ignore_resize = 0;
     }
+
+    iupDialogUpdateClientSize(fIhandle);
   }
 
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }

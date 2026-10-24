@@ -518,6 +518,8 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
     ih->data->ignore_resize = 0;
   }
 
+  iupDialogUpdateClientSize(ih);
+
   if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM"))
   {
     char* background = iupAttribGet(ih, "BACKGROUND");

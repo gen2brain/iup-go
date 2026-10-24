@@ -129,6 +129,8 @@ public:
       IupRefresh(ih);
       ih->data->ignore_resize = 0;
     }
+
+    iupDialogUpdateClientSize(ih);
   }
 
   void updateWindowFlags()

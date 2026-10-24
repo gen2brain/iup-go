@@ -571,6 +571,10 @@ void gtk4DialogSizeAllocate(GtkWidget* widget, int width, int height, int baseli
     IupRefresh(ih);
     ih->data->ignore_resize = 0;
   }
+
+  /* the CSD paths keep their own notion of the client area */
+  if (!gtk_widget_has_css_class(GTK_WIDGET(ih->handle), "csd"))
+    iupDialogUpdateClientSize(ih);
 }
 
 static void gtk4DialogThemeChanged(GtkSettings* settings, GParamSpec* pspec, Ihandle* ih)
