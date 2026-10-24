@@ -125,7 +125,11 @@ public final class IupMenuHelper
             if (childIh == 0) continue;
             int type = nativeGetType(childIh);
             if (type == TYPE_SEPARATOR) group++;
-            else if (type == TYPE_ITEM) addItem(androidMenu, childIh, null, group);
+            else if (type == TYPE_ITEM)
+            {
+                MenuItem mi = addItem(androidMenu, childIh, null, group);
+                if (mi.getIcon() != null) mi.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            }
             else if (type == TYPE_SUBMENU) addSubmenu(androidMenu, childIh, null, group);
         }
     }
@@ -432,7 +436,7 @@ public final class IupMenuHelper
         addItem(androidMenu, itemIh, pickedSlot, Menu.NONE);
     }
 
-    private static void addItem(Menu androidMenu, final long itemIh, final long[] pickedSlot, int group)
+    private static MenuItem addItem(Menu androidMenu, final long itemIh, final long[] pickedSlot, int group)
     {
         String title = nativeGetTitle(itemIh);
         MenuItem mi = androidMenu.add(group, ID_BASE, Menu.NONE, title != null ? title : "");
@@ -441,7 +445,11 @@ public final class IupMenuHelper
         if (a != null)
         {
             Drawable icon = resolveItemIcon(itemIh, a);
-            if (icon != null) mi.setIcon(icon);
+            if (icon != null)
+            {
+                if (!mi.isEnabled()) icon.setAlpha(97);
+                mi.setIcon(icon);
+            }
         }
         /* RADIO members are always checkable so all radios render the indicator from the start. */
         String value = nativeGetStringAttribute(itemIh, "VALUE");
@@ -458,6 +466,7 @@ public final class IupMenuHelper
                 new Handler(Looper.getMainLooper()).post(() -> nativeDispatchAction(itemIh));
             return true;
         });
+        return mi;
     }
 
     /* IUP Submenu's first child is the inner Menu whose children are the visible items. */
