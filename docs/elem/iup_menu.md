@@ -54,6 +54,10 @@ It is not necessary to call **IupGetDialog**.
 
 The menu can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md). 
 
+On Android and iOS, the menu bar of a dialog is shown as an overflow menu button in the title bar.
+An item directly in the menu bar that has an image (TITLEIMAGE, IMAGE or IMPRESS) is shown as an icon button in the title bar instead, dimmed when inactive.
+In Android, icons that do not fit in the title bar stay in the overflow menu.
+
 On Android and iOS, an optional navigation drawer can be attached alongside the menu via the [DRAWER](../dlg/iup_dialog.md#exclusive-android-and-ios) attribute on IupDialog. Independent of MENU; a dialog may set either, both, or neither.
 
 ### Examples
