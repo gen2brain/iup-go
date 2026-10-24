@@ -179,12 +179,12 @@ JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_isScro
   return iupAndroid_CanvasIsScrollable(ih) ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchScroll(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jfloat move_x, jfloat move_y, jint width, jint height)
+JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchScroll(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jfloat move_x, jfloat move_y, jint width, jint height)
 {
   (void)jni_env; (void)cls;
   Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
-  if (!ih || !iupObjectCheck(ih)) return;
-  iupAndroid_CanvasScrollBy(ih, move_x, move_y, width, height);
+  if (!ih || !iupObjectCheck(ih)) return JNI_FALSE;
+  return iupAndroid_CanvasScrollBy(ih, move_x, move_y, width, height) ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_isTouchEnabled(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
