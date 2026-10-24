@@ -119,8 +119,9 @@ VALUE0 contains the path (same value returned in DIRECTORY), and VALUE1, VALUE2,
 **MULTIVALUEPATH**: force a full path in MULTIVALUE and VALUE attributes when MULTIPLEFILES=YES (id=0 will still contain the path of the first file).
 In Windows and Motif, only files in the same folder may be selected, but in GTK when using the "Recent Files" files from different folders can be selected.
 
-**VALUE_URI** [Android Only] (read-only) (non-inheritable): the `content://` URI of the selected file. Use it with `IupConfigRecentUpdate`.
-The URI stays valid after the application restarts.
+**VALUE_URI** [Android and iOS Only] (read-only) (non-inheritable): the URI of the selected file, the first one when MULTIPLEFILES=YES.
+In Android it is a `content://` URI that stays valid after the application restarts. Use it with `IupConfigRecentUpdate`.
+In iOS it is the `file://` URL of VALUE in OPEN mode and of the selected location in SAVE mode.
 
 ### Callbacks
 
@@ -205,7 +206,8 @@ The underlying native widget per driver:
 - **Haiku**: BFilePanel.
 - **WebAssembly**: the browser file picker; OPEN reads one file, SAVE downloads. No directory selection or filesystem paths. EXTFILTER and FILTER are mapped to the picker extension list, `*.*` accepting everything.
 
-On Android, VALUE is a copy of the selected file in a directory under the application cache, named as the file. In SAVE mode the copy is written back to the selected document when the dialog is destroyed. DIALOGTYPE=DIR is not supported. Only the first pattern of EXTFILTER or FILTER is used, as a MIME type.
+On Android and iOS, VALUE is a copy of the selected file, named as the file, in the application cache (Android) or temporary directory (iOS). In SAVE mode VALUE is an empty file that is copied to the selected location when the dialog is destroyed. DIALOGTYPE=DIR is not supported.
+The picker uses one filter: the FILTERUSED group of EXTFILTER, or FILTER. All files are shown when a pattern is not `*.ext` or an extension has no known file type.
 
 ### Examples
 

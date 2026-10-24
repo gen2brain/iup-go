@@ -80,63 +80,90 @@ static void cocoaTouchFileDlgPumpUntil(int* state)
 	}
 }
 
-static NSArray<UTType*>* cocoaTouchFileDlgContentTypes(Ihandle* ih)
+static char* cocoaTouchFileDlgGetPatterns(Ihandle* ih, int* index)
 {
-	const char* pattern = NULL;
-	const char* ext_filter = iupAttribGet(ih, "EXTFILTER");
-	char buf[256];
-	if (ext_filter && *ext_filter)
+	const char* p = iupAttribGet(ih, "EXTFILTER");
+	int bars;
+
+	*index = 0;
+	if (!p)
+		return iupStrDup(iupAttribGet(ih, "FILTER"));
+
+	*index = iupAttribGetInt(ih, "FILTERUSED");
+	if (*index < 1)
+		*index = 1;
+
+	for (bars = 2 * *index - 1; bars > 0; bars--)
 	{
-		const char* first_bar = strchr(ext_filter, '|');
-		if (first_bar)
-		{
-			const char* second_bar = strchr(first_bar + 1, '|');
-			size_t len = second_bar ? (size_t)(second_bar - first_bar - 1) : strlen(first_bar + 1);
-			if (len >= sizeof(buf)) len = sizeof(buf) - 1;
-			memcpy(buf, first_bar + 1, len);
-			buf[len] = '\0';
-			pattern = buf;
-		}
-		else
-		{
-			pattern = ext_filter;
-		}
-	}
-	else
-	{
-		pattern = iupAttribGet(ih, "FILTER");
+		p = strchr(p, '|');
+		if (!p)
+			return NULL;
+		p++;
 	}
 
-	if (!pattern || !*pattern) return @[UTTypeItem];
-
-	const char* dot = strrchr(pattern, '.');
-	if (!dot) return @[UTTypeItem];
-	dot++;
-	NSString* ext = iupCocoaTouchStrToNSString(dot);
-	UTType* type = [UTType typeWithFilenameExtension:ext];
-	return type ? @[type] : @[UTTypeItem];
+	return strchr(p, '|') ? iupStrDupUntil(&p, '|') : iupStrDup(p);
 }
 
-/* multi-pick VALUE = "dir|name1|name2|..." per IUP convention */
-static void cocoaTouchFileDlgStoreUrls(Ihandle* ih, NSArray<NSURL*>* urls)
+static NSArray<UTType*>* cocoaTouchFileDlgContentTypes(Ihandle* ih, int* filter_used)
 {
-	if (!urls || urls.count == 0) return;
+	char* patterns = cocoaTouchFileDlgGetPatterns(ih, filter_used);
+	NSMutableArray<UTType*>* types = [NSMutableArray array];
+
+	if (patterns && *patterns)
+	{
+		for (NSString* p in [iupCocoaTouchStrToNSString(patterns) componentsSeparatedByString:@";"])
+		{
+			NSString* pattern = [p stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+			NSString* ext = [pattern hasPrefix:@"*."] ? [pattern substringFromIndex:2] : nil;
+			UTType* type = nil;
+
+			if (ext.length && [ext rangeOfCharacterFromSet:[NSCharacterSet characterSetWithCharactersInString:@"*?"]].location == NSNotFound)
+				type = [UTType typeWithFilenameExtension:[ext lowercaseString]];
+
+			if (!type || type.isDynamic)
+			{
+				[types removeAllObjects];
+				break;
+			}
+			if (![types containsObject:type])
+				[types addObject:type];
+		}
+	}
+
+	free(patterns);
+	return types.count ? types : @[UTTypeItem];
+}
+
+static void cocoaTouchFileDlgStoreFiles(Ihandle* ih, NSArray<NSURL*>* urls)
+{
+	NSString* dir = [[urls[0] path] stringByDeletingLastPathComponent];
+	BOOL full_path = iupAttribGetBoolean(ih, "MULTIVALUEPATH");
+	NSInteger i;
+
+	iupAttribSetStr(ih, "DIRECTORY", [[dir stringByAppendingString:@"/"] UTF8String]);
+
+	if (iupAttribGetBoolean(ih, "MULTIPLEFILES"))
+	{
+		iupAttribSetStrId(ih, "MULTIVALUE", 0, [[dir stringByAppendingString:@"/"] UTF8String]);
+		for (i = 0; i < (NSInteger)urls.count; i++)
+			iupAttribSetStrId(ih, "MULTIVALUE", (int)i + 1, [(full_path ? [urls[i] path] : [[urls[i] path] lastPathComponent]) UTF8String]);
+		iupAttribSetInt(ih, "MULTIVALUECOUNT", (int)urls.count + 1);
+	}
 
 	if (urls.count == 1)
-	{
 		iupAttribSetStr(ih, "VALUE", [[urls[0] path] UTF8String]);
-		iupAttribSetStr(ih, "VALUE_URI", [[urls[0] absoluteString] UTF8String]);
-		return;
+	else
+	{
+		NSMutableString* value = [NSMutableString stringWithString:dir];
+		for (NSURL* u in urls)
+		{
+			[value appendString:@"|"];
+			[value appendString:full_path ? [u path] : [[u path] lastPathComponent]];
+		}
+		[value appendString:@"|"];
+		iupAttribSetStr(ih, "VALUE", [value UTF8String]);
 	}
 
-	NSString* dir = [[urls[0] path] stringByDeletingLastPathComponent];
-	NSMutableString* value = [NSMutableString stringWithString:dir];
-	for (NSURL* u in urls)
-	{
-		[value appendString:@"|"];
-		[value appendString:[[u path] lastPathComponent]];
-	}
-	iupAttribSetStr(ih, "VALUE", [value UTF8String]);
 	iupAttribSetStr(ih, "VALUE_URI", [[urls[0] absoluteString] UTF8String]);
 }
 
@@ -163,7 +190,8 @@ static int cocoaTouchFileDlgPopup(Ihandle* ih, int x, int y)
 		return IUP_NOERROR;
 	}
 
-	NSArray<UTType*>* types = cocoaTouchFileDlgContentTypes(ih);
+	int filter_used;
+	NSArray<UTType*>* types = cocoaTouchFileDlgContentTypes(ih, &filter_used);
 
 	UIDocumentPickerViewController* picker = nil;
 	NSString* scratch_path = nil;
@@ -173,7 +201,7 @@ static int cocoaTouchFileDlgPopup(Ihandle* ih, int x, int y)
 		const char* file_name = iupAttribGet(ih, "FILE");
 		if (!file_name || !*file_name) file_name = "untitled";
 		scratch_path = [NSTemporaryDirectory() stringByAppendingPathComponent:
-			iupCocoaTouchStrToNSString(file_name)];
+			[iupCocoaTouchStrToNSString(file_name) lastPathComponent]];
 		[[NSData data] writeToFile:scratch_path atomically:YES];
 		NSURL* scratch_url = [NSURL fileURLWithPath:scratch_path];
 		picker = [[[UIDocumentPickerViewController alloc]
@@ -201,16 +229,21 @@ static int cocoaTouchFileDlgPopup(Ihandle* ih, int x, int y)
 	{
 		if (scratch_path) [[NSFileManager defaultManager] removeItemAtPath:scratch_path error:nil];
 		iupAttribSet(ih, "STATUS", "-1");
+		iupAttribSet(ih, "FILTERUSED", NULL);
 		iupAttribSet(ih, "VALUE", NULL);
 		iupAttribSet(ih, "VALUE_URI", NULL);
 		return IUP_NOERROR;
 	}
+
+	if (filter_used)
+		iupAttribSetInt(ih, "FILTERUSED", filter_used);
 
 	if (is_save)
 	{
 		/* caller writes to scratch; Destroy flushes scratch over the picker's destination */
 		NSURL* dest_url = delegate.pickedUrls[0];
 		iupAttribSetStr(ih, "VALUE", [scratch_path UTF8String]);
+		iupAttribSetStr(ih, "DIRECTORY", [[[scratch_path stringByDeletingLastPathComponent] stringByAppendingString:@"/"] UTF8String]);
 		iupAttribSetStr(ih, "VALUE_URI", [[dest_url absoluteString] UTF8String]);
 		iupAttribSet(ih, "STATUS", "1");
 		iupAttribSet(ih, "FILEEXIST", "NO");
@@ -219,7 +252,7 @@ static int cocoaTouchFileDlgPopup(Ihandle* ih, int x, int y)
 	}
 	else
 	{
-		cocoaTouchFileDlgStoreUrls(ih, delegate.pickedUrls);
+		cocoaTouchFileDlgStoreFiles(ih, delegate.pickedUrls);
 		iupAttribSet(ih, "STATUS", "0");
 		iupAttribSet(ih, "FILEEXIST", "YES");
 	}
