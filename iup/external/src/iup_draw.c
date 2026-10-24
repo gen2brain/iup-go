@@ -2159,10 +2159,17 @@ IUP_API void IupDrawText(Ihandle* ih, const char* text, int len, int x, int y, i
 
   if (len != 0)
   {
-    int txt_w, txt_h;
-    char* font = iupDrawGetTextSize(ih, text, len, &txt_w, &txt_h, text_orientation);
-    if (w == -1 || w == 0) w = txt_w;
-    if (h == -1 || h == 0) h = txt_h;
+    char* font;
+
+    if (w == -1 || w == 0 || h == -1 || h == 0)
+    {
+      int txt_w, txt_h;
+      font = iupDrawGetTextSize(ih, text, len, &txt_w, &txt_h, text_orientation);
+      if (w == -1 || w == 0) w = txt_w;
+      if (h == -1 || h == 0) h = txt_h;
+    }
+    else
+      font = iupDrawGetTextSize(ih, NULL, 0, NULL, NULL, 0);
 
     svg = IUP_SVG_GET(ih);
     if (svg)
