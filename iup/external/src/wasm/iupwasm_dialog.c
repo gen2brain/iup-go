@@ -141,6 +141,8 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDialogResize(int id, int w, int h)
       iupAttribSet(ih, "_IUPWASM_INRESIZE", NULL);
     }
   }
+
+  iupDialogUpdateClientSize(ih);
 }
 
 static int wasmDialogSetTitleAttrib(Ihandle* ih, const char* value)

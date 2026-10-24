@@ -77,7 +77,31 @@ int iupDialogSetClientSizeAttrib(Ihandle* ih, const char* value)
   if (width) width = width + 2*border;
   if (height) height = height + 2*border + caption + menu;
   IupSetfAttribute(ih, "RASTERSIZE", "%dx%d", width, height);
+  iupAttribSetStr(ih, "_IUPDIALOG_CLIENTSIZE", value);
   return 0;
+}
+
+void iupDialogUpdateClientSize(Ihandle* ih)
+{
+  char* client = iupAttribGet(ih, "_IUPDIALOG_CLIENTSIZE");
+  int decorwidth, decorheight;
+  char* decor;
+
+  if (!client || ih->data->ignore_resize)
+    return;
+
+  iupDialogGetDecorSize(ih, &decorwidth, &decorheight);
+
+  decor = iupStrReturnIntInt(decorwidth, decorheight, 'x');
+  if (iupStrEqual(decor, iupAttribGet(ih, "_IUPDIALOG_CLIENTDECOR")))
+    return;
+
+  iupAttribSetStr(ih, "_IUPDIALOG_CLIENTDECOR", decor);
+
+  ih->currentwidth = 0;
+  ih->currentheight = 0;
+
+  IupRefresh(ih);
 }
 
 static void iDialogAdjustPos(Ihandle* ih, int* x, int* y)
@@ -313,6 +337,29 @@ static void iDialogComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* ch
     iDialogSetMenuAttrib(ih, value);
 
   iupDialogGetDecorSize(ih, &decorwidth, &decorheight);
+
+  {
+    char* client = iupAttribGet(ih, "_IUPDIALOG_CLIENTSIZE");
+
+    /* after map only while the driver is honouring it, see iupDialogUpdateClientSize */
+    if (client && (!ih->handle || iupAttribGet(ih, "_IUPDIALOG_CLIENTDECOR")))
+    {
+      int client_width = 0, client_height = 0;
+      iupStrToIntInt(client, &client_width, &client_height, 'x');
+
+      if (client_width)
+      {
+        ih->userwidth = client_width + decorwidth;
+        ih->naturalwidth = ih->userwidth;
+      }
+      if (client_height)
+      {
+        ih->userheight = client_height + decorheight;
+        ih->naturalheight = ih->userheight;
+      }
+    }
+  }
+
   *w = decorwidth;
   *h = decorheight;
 
@@ -1055,6 +1102,9 @@ static char* iDialogGetMinimizedAttrib(Ihandle* ih)
 
 static int iDialogSetSizeAttrib(Ihandle* ih, const char* value)
 {
+  iupAttribSet(ih, "_IUPDIALOG_CLIENTSIZE", NULL);
+  iupAttribSet(ih, "_IUPDIALOG_CLIENTDECOR", NULL);
+
   if (!value)
   {
     ih->userwidth = 0;
@@ -1136,6 +1186,9 @@ static char* iDialogGetSizeAttrib(Ihandle* ih)
 
 static int iDialogSetRasterSizeAttrib(Ihandle* ih, const char* value)
 {
+  iupAttribSet(ih, "_IUPDIALOG_CLIENTSIZE", NULL);
+  iupAttribSet(ih, "_IUPDIALOG_CLIENTDECOR", NULL);
+
   if (!value)
   {
     ih->userwidth = 0;

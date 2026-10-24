@@ -317,6 +317,8 @@ public:
       IupRefresh(iup_handle);
       iup_handle->data->ignore_resize = 0;
     }
+
+    iupDialogUpdateClientSize(iup_handle);
   }
 };
 

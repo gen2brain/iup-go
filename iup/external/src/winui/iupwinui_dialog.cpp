@@ -100,6 +100,8 @@ static void winuiDialogResize(Ihandle* ih, int width, int height)
     IupRefresh(ih);
     ih->data->ignore_resize = 0;
   }
+
+  iupDialogUpdateClientSize(ih);
 }
 
 static void winuiDialogRefreshThemeColors(Ihandle* ih)

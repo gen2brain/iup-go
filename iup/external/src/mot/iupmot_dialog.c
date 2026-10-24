@@ -683,6 +683,14 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
                                    Attributes
 ****************************************************************************/
 
+static void motDialogGetShellDecor(Ihandle* ih, int* decorwidth, int* decorheight)
+{
+  int border = 0, caption = 0, menu = 0;
+  iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+  *decorwidth = 2*border;
+  *decorheight = 2*border + caption;  /* the menu is inside the shell */
+}
+
 static void motDialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int min_h)
 {
   int decorwidth = 0, decorheight = 0;
@@ -698,7 +706,7 @@ static void motDialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int
     return;
   }
 
-  iupDialogGetDecorSize(ih, &decorwidth, &decorheight);
+  motDialogGetShellDecor(ih, &decorwidth, &decorheight);
 
   XtVaSetValues(ih->handle, XmNbaseWidth, min_w > decorwidth? min_w-decorwidth: 0,
                             XmNbaseHeight, min_h > decorheight? min_h-decorheight: 0,
@@ -722,8 +730,7 @@ static int motDialogSetMinSizeAttrib(Ihandle* ih, const char* value)
   int min_w = 1, min_h = 1;          /* MINSIZE default value */
   iupStrToIntInt(value, &min_w, &min_h, 'x');
 
-  /* The minmax size restricts the client area */
-  iupDialogGetDecorSize(ih, &decorwidth, &decorheight);
+  motDialogGetShellDecor(ih, &decorwidth, &decorheight);
 
   if (min_w > decorwidth)
     XtVaSetValues(ih->handle, XmNminWidth, min_w-decorwidth, NULL);
@@ -742,8 +749,7 @@ static int motDialogSetMaxSizeAttrib(Ihandle* ih, const char* value)
   int max_w = 65535, max_h = 65535;  /* MAXSIZE default value */
   iupStrToIntInt(value, &max_w, &max_h, 'x');
 
-  /* The minmax size restricts the client area */
-  iupDialogGetDecorSize(ih, &decorwidth, &decorheight);
+  motDialogGetShellDecor(ih, &decorwidth, &decorheight);
 
   if (max_w > decorwidth)
     XtVaSetValues(ih->handle, XmNmaxWidth, max_w-decorwidth, NULL);
@@ -1137,6 +1143,8 @@ static void motDialogConfigureNotify(Widget w, XEvent* evt, String* s, Cardinal*
     IupRefresh(ih);
     ih->data->ignore_resize = 0;
   }
+
+  iupDialogUpdateClientSize(ih);
 }
 
 static void motDialogCheckMove(Ihandle* ih)

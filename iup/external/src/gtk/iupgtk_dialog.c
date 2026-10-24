@@ -590,6 +590,8 @@ static gboolean gtkDialogConfigureEvent(GtkWidget* widget, GdkEventConfigure* ev
       }
     }
 
+    iupDialogUpdateClientSize(ih);
+
 #if !GTK_CHECK_VERSION(3, 0, 0)
     if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM") && iupAttribGet(ih, "_IUPGTK_BACKGROUND_IMAGE"))
     {

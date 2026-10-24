@@ -156,6 +156,8 @@ static void eflDialogResizeCallback(void* data, const Efl_Event* ev)
     }
   }
 
+  iupDialogUpdateClientSize(ih);
+
   {
     Eo* bg_rect = (Eo*)iupAttribGet(ih, "_IUP_EFL_BGRECT");
     Eo* bg_img = (Eo*)iupAttribGet(ih, "_IUP_EFL_BACKGROUND_IMAGE");
@@ -208,6 +210,8 @@ static void eflDialogMoveCallback(void* data, const Efl_Event* ev)
       IupRefresh(ih);
     }
   }
+
+  iupDialogUpdateClientSize(ih);
 
   /* EFL fires this twice per move; dedup. */
   if (x == iupAttribGetInt(ih, "_IUPEFL_OLD_X") && y == iupAttribGetInt(ih, "_IUPEFL_OLD_Y"))
@@ -551,11 +555,15 @@ static void eflDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int
     ecore_evas_size_max_set(ee, 65535, 65535);
 }
 
+/* the size set and the size the resize event reports differ by the frame, so a step grid snaps */
 static void eflDialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int min_h)
 {
   Eo* win = iupeflGetWidget(ih);
   Ecore_Evas* ee;
-  int inc_w = 0, inc_h = 0;
+
+  (void)value;
+  (void)min_w;
+  (void)min_h;
 
   if (!win || !efl_gfx_entity_visible_get(win))
     return;
@@ -564,24 +572,8 @@ static void eflDialogSetResizeInc(Ihandle* ih, const char* value, int min_w, int
   if (!ee)
     return;
 
-  if (!iupStrToIntInt(value, &inc_w, &inc_h, 'x') || (inc_w <= 1 && inc_h <= 1))
-  {
-    ecore_evas_size_base_set(ee, 0, 0);
-    ecore_evas_size_step_set(ee, 0, 0);
-    return;
-  }
-
-  {
-    int border, caption, menu;
-    iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
-    min_w -= 2 * border;
-    min_h -= 2 * border + caption;
-    if (min_w < 1) min_w = 1;
-    if (min_h < 1) min_h = 1;
-  }
-
-  ecore_evas_size_base_set(ee, min_w, min_h);
-  ecore_evas_size_step_set(ee, inc_w > 1? inc_w: 1, inc_h > 1? inc_h: 1);
+  ecore_evas_size_base_set(ee, 0, 0);
+  ecore_evas_size_step_set(ee, 0, 0);
 }
 
 /* the limits are applied once the surface is configured, Wayland rejects them before that */

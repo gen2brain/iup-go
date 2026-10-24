@@ -221,6 +221,8 @@ protected:
       iup_handle->data->ignore_resize = 0;
     }
 
+    iupDialogUpdateClientSize(iup_handle);
+
     if (iupAttribGetBoolean(iup_handle, "BACKIMAGEZOOM"))
     {
       auto* pixmap = reinterpret_cast<QPixmap*>(iupAttribGet(iup_handle, "_IUPQT_BACKGROUND_IMAGE"));

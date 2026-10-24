@@ -460,6 +460,8 @@ static void winDialogResize(Ihandle* ih, int width, int height)
     ih->data->ignore_resize = 0;
   }
 
+  iupDialogUpdateClientSize(ih);
+
   if (iupAttribGetBoolean(ih, "BACKIMAGEZOOM") && iupAttribGet(ih, "_IUPWIN_BACKGROUND_BITMAP"))
     RedrawWindow(ih->handle, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
 }

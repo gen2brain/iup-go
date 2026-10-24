@@ -110,6 +110,9 @@ struct _IcontrolData
 int iupDialogSetClientSizeAttrib(Ihandle* ih, const char* value);
 char* iupDialogGetClientSizeAttrib(Ihandle* ih);
 
+/* re-apply a CLIENTSIZE set before the decoration was known, from the dialog resize handler. */
+void iupDialogUpdateClientSize(Ihandle* ih);
+
 
 #endif
 
