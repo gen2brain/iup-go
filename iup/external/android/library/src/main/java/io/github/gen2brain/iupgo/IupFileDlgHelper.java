@@ -7,6 +7,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.OpenableColumns;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 import androidx.annotation.Keep;
 
 import java.io.File;
@@ -15,6 +16,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.LinkedHashSet;
+import java.util.Locale;
 
 
 /* SAF gives content:// URIs, IUP wants fopen paths; stage through getCacheDir(). DIR unsupported. */
@@ -55,14 +58,21 @@ public final class IupFileDlgHelper
 
     /* Returns newline-joined cache paths, or "" on cancel. */
     @Keep
-    public static String pickOpen(String mimeType, boolean allowMultiple)
+    public static String pickOpen(String patterns, boolean allowMultiple)
     {
         Activity a = IupActivity.currentActivity();
         if (a == null) return "";
 
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType(mimeType != null ? mimeType : "*/*");
+        String[] types = mimeTypes(patterns);
+        if (types != null && types.length == 1)
+            intent.setType(types[0]);
+        else
+        {
+            intent.setType("*/*");
+            if (types != null) intent.putExtra(Intent.EXTRA_MIME_TYPES, types);
+        }
         if (allowMultiple) intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
 
         resetState();
@@ -78,12 +88,13 @@ public final class IupFileDlgHelper
         IupCommon.pumpUntilDone(sDone);
         if (sStatus != 0) return "";
 
+        File dir = stageDir(a);
         if (allowMultiple && sResultUris != null)
         {
             StringBuilder sb = new StringBuilder();
             for (Uri u : sResultUris)
             {
-                String p = copyUriToCache(a, u);
+                String p = copyUriToCache(a, u, dir);
                 if (p == null) continue;
                 if (sb.length() > 0) sb.append('\n');
                 sb.append(p);
@@ -92,7 +103,7 @@ public final class IupFileDlgHelper
         }
         if (sResultUri != null)
         {
-            String p = copyUriToCache(a, sResultUri);
+            String p = copyUriToCache(a, sResultUri, dir);
             return p != null ? p : "";
         }
         return "";
@@ -100,14 +111,26 @@ public final class IupFileDlgHelper
 
     /* Returns a writable cache path. commitSave() flushes to the SAF URI. */
     @Keep
-    public static String pickSave(String mimeType, String defaultName)
+    public static String pickSave(String patterns, String defaultName)
     {
         Activity a = IupActivity.currentActivity();
         if (a == null) return "";
 
+        String mimeType = null;
+        if (defaultName != null)
+        {
+            int dot = defaultName.lastIndexOf('.');
+            if (dot >= 0) mimeType = mimeFromExtension(defaultName.substring(dot + 1));
+        }
+        if (mimeType == null)
+        {
+            String[] types = mimeTypes(patterns);
+            mimeType = types != null ? types[0] : "application/octet-stream";
+        }
+
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType(mimeType != null ? mimeType : "*/*");
+        intent.setType(mimeType);
         if (defaultName != null && !defaultName.isEmpty())
             intent.putExtra(Intent.EXTRA_TITLE, defaultName);
 
@@ -305,18 +328,50 @@ public final class IupFileDlgHelper
         return s;
     }
 
-    private static File stageFile(Activity a, String name)
+    /* null means all files */
+    private static String[] mimeTypes(String patterns)
     {
-        File dir = new File(a.getCacheDir(), "iup_filedlg_" + System.currentTimeMillis());
-        dir.mkdirs();
-        return new File(dir, name);
+        if (patterns == null || patterns.isEmpty()) return null;
+        LinkedHashSet<String> types = new LinkedHashSet<>();
+        for (String p : patterns.split(";"))
+        {
+            p = p.trim();
+            if (!p.startsWith("*.")) return null;
+            String mime = mimeFromExtension(p.substring(2));
+            if (mime == null) return null;
+            types.add(mime);
+        }
+        return types.isEmpty() ? null : types.toArray(new String[0]);
     }
 
-    private static String copyUriToCache(Activity a, Uri uri)
+    private static String mimeFromExtension(String ext)
+    {
+        if (ext.isEmpty() || ext.contains("*") || ext.contains("?")) return null;
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext.toLowerCase(Locale.ROOT));
+    }
+
+    private static File stageDir(Activity a)
+    {
+        File dir = new File(a.getCacheDir(), "iup_filedlg_" + System.nanoTime());
+        dir.mkdirs();
+        return dir;
+    }
+
+    private static File stageFile(Activity a, String name)
+    {
+        return new File(stageDir(a), name);
+    }
+
+    private static String copyUriToCache(Activity a, Uri uri, File dir)
     {
         String name = queryDisplayName(a, uri);
         if (name == null || name.isEmpty()) name = "file";
-        File cache = stageFile(a, name);
+        File cache = new File(dir, name);
+        int dot = name.lastIndexOf('.');
+        String stem = dot > 0 ? name.substring(0, dot) : name;
+        String ext = dot > 0 ? name.substring(dot) : "";
+        for (int i = 2; cache.exists(); i++)
+            cache = new File(dir, stem + " (" + i + ")" + ext);
         try (InputStream in = a.getContentResolver().openInputStream(uri);
              OutputStream out = new FileOutputStream(cache))
         {
