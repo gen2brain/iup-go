@@ -43,7 +43,7 @@ static BOOL cocoaTouchCanvasCanScroll(Ihandle* ih)
 	return NO;
 }
 
-static void cocoaTouchCanvasScrollBy(Ihandle* ih, CGFloat move_x, CGFloat move_y, CGSize size)
+static BOOL cocoaTouchCanvasScrollBy(Ihandle* ih, CGFloat move_x, CGFloat move_y, CGSize size)
 {
 	double posx = ih->data->posx, posy = ih->data->posy;
 
@@ -53,7 +53,7 @@ static void cocoaTouchCanvasScrollBy(Ihandle* ih, CGFloat move_x, CGFloat move_y
 		IupSetDouble(ih, "POSY", posy - move_y * iupAttribGetDouble(ih, "DY") / size.height);
 
 	if (ih->data->posx == posx && ih->data->posy == posy)
-		return;
+		return NO;
 
 	IFniff scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
 	if (scroll_cb)
@@ -65,6 +65,7 @@ static void cocoaTouchCanvasScrollBy(Ihandle* ih, CGFloat move_x, CGFloat move_y
 	}
 	else if (IupGetCallback(ih, "ACTION"))
 		iupdrvRedrawNow(ih);
+	return YES;
 }
 
 enum { IUPCOCOATOUCH_TOUCH_IDLE, IUPCOCOATOUCH_TOUCH_PENDING, IUPCOCOATOUCH_TOUCH_DIRECT, IUPCOCOATOUCH_TOUCH_CONSUMED };
@@ -81,6 +82,9 @@ enum { IUPCOCOATOUCH_TOUCH_IDLE, IUPCOCOATOUCH_TOUCH_PENDING, IUPCOCOATOUCH_TOUC
 @property(nonatomic, retain) UIRotationGestureRecognizer* rotateGesture;
 @property(nonatomic, retain) UIPanGestureRecognizer* panGesture;
 @property(nonatomic, retain) UIPanGestureRecognizer* dragGesture;
+@property(nonatomic, retain) CADisplayLink* flingLink;
+@property(nonatomic, assign) CGPoint flingVelocity;
+@property(nonatomic, assign) CFTimeInterval flingTime;
 @property(nonatomic, retain) UITapGestureRecognizer* singleTapGesture;
 @property(nonatomic, retain) UITapGestureRecognizer* doubleTapGesture;
 @property(nonatomic, retain) NSMutableArray<UISwipeGestureRecognizer*>* swipeGestures;
@@ -220,8 +224,51 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 	if (!_ihandle) return;
 	CGPoint t = [g translationInView:self];
 	[g setTranslation:CGPointZero inView:self];
+	if (g.state == UIGestureRecognizerStateBegan)
+		[self stopFling];
 	if (g.state == UIGestureRecognizerStateBegan || g.state == UIGestureRecognizerStateChanged)
 		cocoaTouchCanvasScrollBy(_ihandle, t.x, t.y, self.bounds.size);
+	else if (g.state == UIGestureRecognizerStateEnded)
+		[self startFling:[g velocityInView:self]];
+}
+
+- (void)startFling:(CGPoint)velocity
+{
+	[self stopFling];
+	if (hypot(velocity.x, velocity.y) < 50) return;
+	_flingVelocity = velocity;
+	_flingTime = 0;
+	_flingLink = [[CADisplayLink displayLinkWithTarget:self selector:@selector(onFling:)] retain];
+	[_flingLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+}
+
+- (void)didMoveToWindow
+{
+	[super didMoveToWindow];
+	if (!self.window) [self stopFling];
+}
+
+- (void)stopFling
+{
+	[_flingLink invalidate];
+	[_flingLink release];
+	_flingLink = nil;
+}
+
+- (void)onFling:(CADisplayLink*)link
+{
+	CFTimeInterval dt = _flingTime ? link.timestamp - _flingTime : link.duration;
+	_flingTime = link.timestamp;
+	if (!_ihandle || !iupObjectCheck(_ihandle))
+	{
+		[self stopFling];
+		return;
+	}
+	CGFloat decay = pow(UIScrollViewDecelerationRateNormal, dt * 1000.0);
+	_flingVelocity = CGPointMake(_flingVelocity.x * decay, _flingVelocity.y * decay);
+	if (hypot(_flingVelocity.x, _flingVelocity.y) < 10 ||
+	    !cocoaTouchCanvasScrollBy(_ihandle, _flingVelocity.x * dt, _flingVelocity.y * dt, self.bounds.size))
+		[self stopFling];
 }
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer*)a shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer*)b
@@ -239,6 +286,8 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 	[_rotateGesture release];
 	[_panGesture release];
 	[_dragGesture release];
+	[_flingLink invalidate];
+	[_flingLink release];
 	[_singleTapGesture release];
 	[_doubleTapGesture release];
 	[_swipeGestures release];
@@ -634,6 +683,7 @@ static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* eve
 	if (_canFocus && !self.isFirstResponder && _ihandle && IupGetCallback(_ihandle, "TEXTINPUT_CB"))
 		[self becomeFirstResponder];
 
+	[self stopFling];
 	UITouch* t = [touches anyObject];
 	if (_touchState == IUPCOCOATOUCH_TOUCH_IDLE)
 	{
