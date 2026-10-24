@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "iup.h"
 
@@ -121,6 +122,44 @@ static int iLabelCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
+static char* iLabelWrapText(Ihandle* ih, const char* str, int width)
+{
+  int len = (int)strlen(str);
+  char* wrapped = (char*)malloc(len + 1);
+  char* line = wrapped;
+  char* last_space = NULL;
+  char* p;
+
+  memcpy(wrapped, str, len + 1);
+
+  for (p = wrapped; *p; p++)
+  {
+    if (*p == '\n')
+    {
+      line = p + 1;
+      last_space = NULL;
+    }
+    else if (*p == ' ')
+    {
+      int w;
+      *p = 0;
+      w = iupdrvFontGetStringWidth(ih, line);
+      *p = ' ';
+      if (w > width && last_space)
+      {
+        *last_space = '\n';
+        line = last_space + 1;
+      }
+      last_space = p;
+    }
+  }
+
+  if (last_space && iupdrvFontGetStringWidth(ih, line) > width)
+    *last_space = '\n';
+
+  return wrapped;
+}
+
 static void iLabelComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
 {
   int natural_w = 0,
@@ -144,7 +183,19 @@ static void iLabelComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* chi
     /* must use IupGetAttribute to check from the native implementation */
     char* title = IupGetAttribute(ih, "TITLE");
     char* str = iupStrProcessMnemonic(title, NULL, 0);   /* remove & */
-    iupFontGetMultiLineStringSize(ih, str, &natural_w, &natural_h);
+    int wrap_flags = IUPAF_NOT_SUPPORTED;
+    iupClassRegisterGetAttribute(ih->iclass, "WORDWRAP", NULL, NULL, NULL, NULL, &wrap_flags);
+    if (str && ih->userwidth > 0 && !(wrap_flags & IUPAF_NOT_SUPPORTED) && iupAttribGetBoolean(ih, "WORDWRAP"))
+    {
+      int extra_w = 0, extra_h = 0;
+      char* wrapped;
+      iupdrvLabelAddExtraPadding(ih, &extra_w, &extra_h);
+      wrapped = iLabelWrapText(ih, str, ih->userwidth - 2*ih->data->horiz_padding - extra_w);
+      iupFontGetMultiLineStringSize(ih, wrapped, &natural_w, &natural_h);
+      free(wrapped);
+    }
+    else
+      iupFontGetMultiLineStringSize(ih, str, &natural_w, &natural_h);
     if (str && str!=title) free(str);
 
     natural_w += 2*ih->data->horiz_padding;
