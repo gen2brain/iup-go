@@ -140,6 +140,11 @@ static UIImage* cocoaTouchMenuResolveImage(Ihandle* item_ih)
 
 static UIMenu* cocoaTouchMenuBuildUIMenu(Ihandle* menu_ih);
 
+static BOOL cocoaTouchMenuIsBarAction(Ihandle* child)
+{
+	return child && child->iclass && iupStrEqual(child->iclass->name, "menuitem") && cocoaTouchMenuResolveImage(child) != nil;
+}
+
 static UIMenuElement* cocoaTouchMenuBuildChildElement(Ihandle* child)
 {
 	if (!child || !child->iclass || !child->iclass->name) return nil;
@@ -230,7 +235,7 @@ static void cocoaTouchMenuAppendRecentUIActions(NSMutableArray<UIMenuElement*>* 
 	}
 }
 
-static UIMenu* cocoaTouchMenuBuildUIMenu(Ihandle* menu_ih)
+static UIMenu* cocoaTouchMenuBuildUIMenuSkip(Ihandle* menu_ih, BOOL skip_bar_actions)
 {
 	if (!menu_ih) return nil;
 
@@ -250,6 +255,8 @@ static UIMenu* cocoaTouchMenuBuildUIMenu(Ihandle* menu_ih)
 			}
 			continue;
 		}
+		if (skip_bar_actions && cocoaTouchMenuIsBarAction(child))
+			continue;
 		UIMenuElement* element = cocoaTouchMenuBuildChildElement(child);
 		if (element) [section addObject:element];
 	}
@@ -270,6 +277,11 @@ static UIMenu* cocoaTouchMenuBuildUIMenu(Ihandle* menu_ih)
 	                  identifier:nil
 	                     options:0
 	                    children:elements];
+}
+
+static UIMenu* cocoaTouchMenuBuildUIMenu(Ihandle* menu_ih)
+{
+	return cocoaTouchMenuBuildUIMenuSkip(menu_ih, NO);
 }
 
 
@@ -745,7 +757,28 @@ static void cocoaTouchMenuInstallMenuBarButton(Ihandle* menu_ih)
 	Ihandle* dialog_ih = menu_ih ? menu_ih->parent : NULL;
 	if (!dialog_ih || ![(id)dialog_ih->handle isKindOfClass:[IupViewController class]]) return;
 	IupViewController* vc = (IupViewController*)dialog_ih->handle;
-	vc.navigationItem.rightBarButtonItem = cocoaTouchMenuMakeBarButton(menu_ih, @"ellipsis.circle");
+
+	NSMutableArray<UIBarButtonItem*>* items = [NSMutableArray array];
+	UIMenu* overflow = cocoaTouchMenuBuildUIMenuSkip(menu_ih, YES);
+	if (overflow.children.count)
+	{
+		UIBarButtonItem* more = [[[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"ellipsis.circle"] menu:overflow] autorelease];
+		objc_setAssociatedObject(more, IUPCOCOATOUCH_BARBUTTON_MENU_IH_KEY, (id)menu_ih, OBJC_ASSOCIATION_ASSIGN);
+		[items addObject:more];
+	}
+
+	for (int i = IupGetChildCount(menu_ih) - 1; i >= 0; i--)
+	{
+		Ihandle* child = IupGetChild(menu_ih, i);
+		if (!cocoaTouchMenuIsBarAction(child)) continue;
+		UIAction* action = (UIAction*)cocoaTouchMenuBuildChildElement(child);
+		UIBarButtonItem* button = [[[UIBarButtonItem alloc] initWithPrimaryAction:action] autorelease];
+		button.enabled = !(iupAttribGet(child, "ACTIVE") && !iupAttribGetBoolean(child, "ACTIVE"));
+		objc_setAssociatedObject(button, IUPCOCOATOUCH_BARBUTTON_MENU_IH_KEY, (id)menu_ih, OBJC_ASSOCIATION_ASSIGN);
+		[items addObject:button];
+	}
+
+	vc.navigationItem.rightBarButtonItems = items;
 }
 
 static void cocoaTouchMenuRemoveMenuBarButton(Ihandle* menu_ih)
@@ -753,9 +786,13 @@ static void cocoaTouchMenuRemoveMenuBarButton(Ihandle* menu_ih)
 	Ihandle* dialog_ih = menu_ih ? menu_ih->parent : NULL;
 	if (!dialog_ih || ![(id)dialog_ih->handle isKindOfClass:[IupViewController class]]) return;
 	IupViewController* vc = (IupViewController*)dialog_ih->handle;
-	UIBarButtonItem* right = vc.navigationItem.rightBarButtonItem;
-	if (right && objc_getAssociatedObject(right, IUPCOCOATOUCH_BARBUTTON_MENU_IH_KEY) == (id)menu_ih)
-		vc.navigationItem.rightBarButtonItem = nil;
+	NSMutableArray<UIBarButtonItem*>* right = [NSMutableArray array];
+	for (UIBarButtonItem* item in vc.navigationItem.rightBarButtonItems)
+	{
+		if (objc_getAssociatedObject(item, IUPCOCOATOUCH_BARBUTTON_MENU_IH_KEY) != (id)menu_ih)
+			[right addObject:item];
+	}
+	vc.navigationItem.rightBarButtonItems = right;
 	UIBarButtonItem* left = vc.navigationItem.leftBarButtonItem;
 	if (left && objc_getAssociatedObject(left, IUPCOCOATOUCH_BARBUTTON_MENU_IH_KEY) == (id)menu_ih)
 		vc.navigationItem.leftBarButtonItem = nil;
@@ -885,9 +922,14 @@ static void cocoaTouchMenuInvalidateAncestor(Ihandle* item_ih)
 
 	if (![(id)dialog_ih->handle isKindOfClass:[IupViewController class]]) return;
 	IupViewController* vc = (IupViewController*)dialog_ih->handle;
-	UIBarButtonItem* right = vc.navigationItem.rightBarButtonItem;
-	if (right && objc_getAssociatedObject(right, IUPCOCOATOUCH_BARBUTTON_MENU_IH_KEY) == (id)menu)
-		right.menu = cocoaTouchMenuBuildUIMenu(menu);
+	for (UIBarButtonItem* item in vc.navigationItem.rightBarButtonItems)
+	{
+		if (objc_getAssociatedObject(item, IUPCOCOATOUCH_BARBUTTON_MENU_IH_KEY) == (id)menu)
+		{
+			cocoaTouchMenuInstallMenuBarButton(menu);
+			return;
+		}
+	}
 }
 
 static int cocoaTouchMenuItemSetTitleAttrib(Ihandle* ih, const char* value)
