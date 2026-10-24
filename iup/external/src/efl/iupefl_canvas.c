@@ -644,6 +644,8 @@ static int eflCanvasMapMethod(Ihandle* ih)
     {
       evas_object_image_colorspace_set(vg, EVAS_COLORSPACE_ARGB8888);
       evas_object_image_alpha_set(vg, EINA_TRUE);
+      /* the buffer always matches the object size, so the smooth scaler is pure overhead */
+      evas_object_image_smooth_scale_set(vg, EINA_FALSE);
       efl_canvas_object_key_focus_set(vg, EINA_TRUE);
     }
   }
