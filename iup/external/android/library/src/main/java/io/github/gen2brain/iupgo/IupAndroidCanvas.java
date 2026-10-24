@@ -10,11 +10,13 @@ import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
+import android.view.VelocityTracker;
 import android.view.ViewConfiguration;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.OverScroller;
 
 import androidx.annotation.NonNull;
 
@@ -46,6 +48,28 @@ public class IupAndroidCanvas extends IupAndroidFixed
     private final IupCanvasHelper.DoubleTap doubleTap = new IupCanvasHelper.DoubleTap();
     private float touchStartX, touchStartY, touchLastX, touchLastY;
     private int touchSlop;
+    private int minFlingVelocity, maxFlingVelocity;
+    private VelocityTracker velocityTracker;
+    private OverScroller flinger;
+    private int flingLastX, flingLastY;
+    private final Runnable flingStep = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            if (ihandlePtr == 0 || !flinger.computeScrollOffset())
+                return;
+            int dx = flinger.getCurrX() - flingLastX, dy = flinger.getCurrY() - flingLastY;
+            flingLastX = flinger.getCurrX();
+            flingLastY = flinger.getCurrY();
+            if ((dx != 0 || dy != 0) && !IupCanvasHelper.dispatchScroll(ihandlePtr, dx, dy, getWidth(), getHeight()))
+            {
+                flinger.forceFinished(true);
+                return;
+            }
+            postOnAnimation(this);
+        }
+    };
     /* Tracks an outstanding clip save() for setClipRect's restore-then-replace contract. */
     boolean clipSaved;
     final ArrayList<int[]> layers = new ArrayList<>();
@@ -166,7 +190,11 @@ public class IupAndroidCanvas extends IupAndroidFixed
 
     private void initGestureDetectors(Context ctx)
     {
-        this.touchSlop = ViewConfiguration.get(ctx).getScaledTouchSlop();
+        ViewConfiguration vc = ViewConfiguration.get(ctx);
+        this.touchSlop = vc.getScaledTouchSlop();
+        this.minFlingVelocity = vc.getScaledMinimumFlingVelocity();
+        this.maxFlingVelocity = vc.getScaledMaximumFlingVelocity();
+        this.flinger = new OverScroller(ctx);
         this.gestureDetector = new GestureDetector(ctx,
             new GestureDetector.SimpleOnGestureListener()
             {
@@ -377,6 +405,7 @@ public class IupAndroidCanvas extends IupAndroidFixed
     {
         if (ihandlePtr == 0 || !isEnabled() || !IupCanvasHelper.isScrollable(ihandlePtr)) return false;
 
+        trackVelocity(ev);
         switch (ev.getActionMasked())
         {
             case MotionEvent.ACTION_DOWN:
@@ -404,6 +433,7 @@ public class IupAndroidCanvas extends IupAndroidFixed
         gestureDetector.onTouchEvent(ev);
         scaleDetector.onTouchEvent(ev);
         handleRotation(ev);
+        trackVelocity(ev);
 
         if (ev.getActionMasked() == MotionEvent.ACTION_DOWN && onCheckIsTextEditor())
             showSoftKeyboard();
@@ -479,6 +509,8 @@ public class IupAndroidCanvas extends IupAndroidFixed
                 return true;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
+                if (touchState == TOUCH_SCROLL && action == MotionEvent.ACTION_UP)
+                    startFling();
                 if (touchState == TOUCH_PENDING && action == MotionEvent.ACTION_UP)
                 {
                     IupCanvasHelper.dispatchButton(ihandlePtr, 1, 1, x, y, mods, doubleTap.press(this, ev));
@@ -500,6 +532,45 @@ public class IupAndroidCanvas extends IupAndroidFixed
                 return true;
         }
         return super.onTouchEvent(ev);
+    }
+
+    private void trackVelocity(MotionEvent ev)
+    {
+        if (ev.getActionMasked() == MotionEvent.ACTION_DOWN)
+        {
+            flinger.forceFinished(true);
+            if (velocityTracker == null)
+                velocityTracker = VelocityTracker.obtain();
+            else
+                velocityTracker.clear();
+        }
+        if (velocityTracker != null)
+            velocityTracker.addMovement(ev);
+    }
+
+    private void startFling()
+    {
+        if (velocityTracker == null)
+            return;
+        velocityTracker.computeCurrentVelocity(1000, maxFlingVelocity);
+        int vx = (int)velocityTracker.getXVelocity(), vy = (int)velocityTracker.getYVelocity();
+        if (Math.hypot(vx, vy) < minFlingVelocity)
+            return;
+        flingLastX = flingLastY = 0;
+        flinger.fling(0, 0, vx, vy, Integer.MIN_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        postOnAnimation(flingStep);
+    }
+
+    @Override
+    protected void onDetachedFromWindow()
+    {
+        flinger.forceFinished(true);
+        if (velocityTracker != null)
+        {
+            velocityTracker.recycle();
+            velocityTracker = null;
+        }
+        super.onDetachedFromWindow();
     }
 
     @Override

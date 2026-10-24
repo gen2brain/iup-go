@@ -160,11 +160,11 @@ IUP_SDK_API int iupAndroid_CanvasIsScrollable(Ihandle* ih)
   return 0;
 }
 
-IUP_SDK_API void iupAndroid_CanvasScrollBy(Ihandle* ih, float move_x, float move_y, int width, int height)
+IUP_SDK_API int iupAndroid_CanvasScrollBy(Ihandle* ih, float move_x, float move_y, int width, int height)
 {
   double posx, posy;
   IFniff scroll_cb;
-  if (!ih->data) return;
+  if (!ih->data) return 0;
 
   posx = ih->data->posx;
   posy = ih->data->posy;
@@ -175,7 +175,7 @@ IUP_SDK_API void iupAndroid_CanvasScrollBy(Ihandle* ih, float move_x, float move
     IupSetDouble(ih, "POSY", posy - move_y * iupAttribGetDouble(ih, "DY") / height);
 
   if (ih->data->posx == posx && ih->data->posy == posy)
-    return;
+    return 0;
 
   scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
   if (scroll_cb)
@@ -187,6 +187,7 @@ IUP_SDK_API void iupAndroid_CanvasScrollBy(Ihandle* ih, float move_x, float move
   }
   else if (IupGetCallback(ih, "ACTION"))
     iupdrvRedrawNow(ih);
+  return 1;
 }
 
 IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
