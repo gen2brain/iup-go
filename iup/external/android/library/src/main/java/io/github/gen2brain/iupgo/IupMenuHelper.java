@@ -26,7 +26,6 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import androidx.annotation.Keep;
-import androidx.recyclerview.widget.RecyclerView;
 
 
 /* IupMenu backend; action-bar submenus share the PopupWindow drill-down with IupPopup. */
@@ -600,7 +599,7 @@ public final class IupMenuHelper
         sNextSectionGroupId = ID_BASE + 0x10000;
         Menu m = sNavigationView.getMenu();
         m.clear();
-        if (sDrawerMenuIh == 0) { forceNavigationRefresh(); return; }
+        if (sDrawerMenuIh == 0) return;
 
         appendRecentItemsAsDrawer(m, sDrawerMenuIh);
         int group = Menu.NONE;
@@ -613,79 +612,6 @@ public final class IupMenuHelper
             if (type == TYPE_ITEM) addDrawerLeaf(m, childIh, group);
             else if (type == TYPE_SUBMENU) addDrawerSection(m, childIh, group);
             else if (type == TYPE_SEPARATOR) group = sNextSectionGroupId++;
-        }
-        forceNavigationRefresh();
-    }
-
-    /* NavigationMenuAdapter's own item list is rebuilt by reflective update(); setAdapter swap is the fallback. */
-    private static void forceNavigationRefresh()
-    {
-        if (sNavigationView == null) return;
-        final RecyclerView rv = findInnerRecyclerView();
-        if (rv == null || rv.getAdapter() == null) return;
-        sNavigationView.post(() -> {
-            RecyclerView.Adapter<?> adapter = rv.getAdapter();
-            if (adapter == null) return;
-            int before = readAdapterItemsSize(adapter);
-            clearUpdateSuspendedFlag(adapter);
-            boolean updated = invokeAdapterUpdate(adapter);
-            int after = readAdapterItemsSize(adapter);
-            if (!updated || before == after)
-            {
-                rv.setAdapter(null);
-                rv.setAdapter(adapter);
-            }
-        });
-    }
-
-    private static RecyclerView findInnerRecyclerView()
-    {
-        if (sNavigationView == null) return null;
-        for (int i = 0; i < sNavigationView.getChildCount(); i++)
-        {
-            View c = sNavigationView.getChildAt(i);
-            if (c instanceof RecyclerView) return (RecyclerView)c;
-        }
-        return null;
-    }
-
-    private static void clearUpdateSuspendedFlag(RecyclerView.Adapter<?> adapter)
-    {
-        for (java.lang.reflect.Field f : adapter.getClass().getDeclaredFields())
-        {
-            if (f.getType() == boolean.class && f.getName().toLowerCase().contains("suspend"))
-            {
-                try { f.setAccessible(true); f.setBoolean(adapter, false); } catch (Throwable ignore) {}
-            }
-        }
-    }
-
-    private static int readAdapterItemsSize(RecyclerView.Adapter<?> adapter)
-    {
-        for (java.lang.reflect.Field f : adapter.getClass().getDeclaredFields())
-        {
-            if (f.getName().equals("items") || f.getName().equals("mItems"))
-            {
-                try {
-                    f.setAccessible(true);
-                    Object v = f.get(adapter);
-                    if (v instanceof java.util.Collection<?>) return ((java.util.Collection<?>)v).size();
-                } catch (Throwable ignore) {}
-            }
-        }
-        return -1;
-    }
-
-    private static boolean invokeAdapterUpdate(RecyclerView.Adapter<?> adapter)
-    {
-        try {
-            java.lang.reflect.Method update = adapter.getClass().getDeclaredMethod("update");
-            update.setAccessible(true);
-            update.invoke(adapter);
-            return true;
-        } catch (Throwable t) {
-            adapter.notifyDataSetChanged();
-            return false;
         }
     }
 
@@ -836,7 +762,7 @@ public final class IupMenuHelper
         {
             Boolean cur = sExpandedState.get(e.ihandle);
             sExpandedState.put(e.ihandle, (cur == null) || !cur);
-            rebuildNavigationDrawer();
+            dl.post(IupMenuHelper::rebuildNavigationDrawer);
             return;
         }
         if (e.recentIndex >= 0)
