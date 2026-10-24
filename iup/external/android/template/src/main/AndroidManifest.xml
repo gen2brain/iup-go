@@ -10,6 +10,7 @@
 		android:theme="@style/AppTheme"
 		android:hardwareAccelerated="true"
 		android:largeHeap="true"
+		android:networkSecurityConfig="@xml/iup_network_security"
 		android:name="io.github.gen2brain.iupgo.IupApplication">
 
 		<activity

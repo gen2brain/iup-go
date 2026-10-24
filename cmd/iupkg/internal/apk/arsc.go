@@ -3,6 +3,7 @@ package apk
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"unicode/utf16"
 )
 
@@ -71,7 +72,7 @@ func RenamePackage(arsc []byte, name string) ([]byte, error) {
 	return out, nil
 }
 
-func LauncherIconPaths(arsc []byte, name string) ([]string, error) {
+func ResourcePaths(arsc []byte, resType, name string) ([]string, error) {
 	if len(arsc) < 12 || binary.LittleEndian.Uint16(arsc) != arscTable {
 		return nil, errors.New("not a resource table")
 	}
@@ -90,7 +91,7 @@ func LauncherIconPaths(arsc []byte, name string) ([]string, error) {
 			return nil, errors.New("bad chunk in resources.arsc")
 		}
 		if typ == arscPackage {
-			p, err := packageIconPaths(arsc[off:off+csize], global, name)
+			p, err := packageResourcePaths(arsc[off:off+csize], global, resType, name)
 			if err != nil {
 				return nil, err
 			}
@@ -99,12 +100,12 @@ func LauncherIconPaths(arsc []byte, name string) ([]string, error) {
 		off += csize
 	}
 	if len(paths) == 0 {
-		return nil, errors.New("launcher icon not found in resources.arsc")
+		return nil, fmt.Errorf("resource %s/%s not found in resources.arsc", resType, name)
 	}
 	return paths, nil
 }
 
-func packageIconPaths(pkg []byte, global []string, name string) ([]string, error) {
+func packageResourcePaths(pkg []byte, global []string, resType, name string) ([]string, error) {
 	hs := int(binary.LittleEndian.Uint16(pkg[2:]))
 	typeOff := int(binary.LittleEndian.Uint32(pkg[0x10c:]))
 	keyOff := int(binary.LittleEndian.Uint32(pkg[0x114:]))
@@ -132,7 +133,7 @@ func packageIconPaths(pkg []byte, global []string, name string) ([]string, error
 			flags := chunk[9]
 			count := int(binary.LittleEndian.Uint32(chunk[12:]))
 			start := int(binary.LittleEndian.Uint32(chunk[16:]))
-			if id >= 1 && id <= len(types) && types[id-1] == "mipmap" && flags&arscFlagSparse == 0 {
+			if id >= 1 && id <= len(types) && types[id-1] == resType && flags&arscFlagSparse == 0 {
 				for i := range count {
 					var eoff int
 					if flags&arscFlagOffset16 != 0 {

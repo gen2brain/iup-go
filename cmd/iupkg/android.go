@@ -97,6 +97,11 @@ func packageAndroid(c *config) error {
 	if err := replaceLauncherIcons(c, entries, arsc); err != nil {
 		return err
 	}
+	if slices.Contains(c.cleartext, "localhost") {
+		if err := allowLocalhostCleartext(entries, arsc); err != nil {
+			return err
+		}
+	}
 
 	tmp, err := os.MkdirTemp("", "iupkg-")
 	if err != nil {
@@ -176,12 +181,36 @@ func packageAndroid(c *config) error {
 	return nil
 }
 
+func allowLocalhostCleartext(entries []*apk.Entry, arsc *apk.Entry) error {
+	table, err := arsc.Content()
+	if err != nil {
+		return err
+	}
+	dst, err := apk.ResourcePaths(table, "xml", "iup_network_security")
+	if err != nil {
+		return err
+	}
+	src, err := apk.ResourcePaths(table, "xml", "iup_network_security_localhost")
+	if err != nil {
+		return err
+	}
+	from, to := apk.Find(entries, src[0]), apk.Find(entries, dst[0])
+	if from == nil || to == nil {
+		return errors.New("template network security config missing")
+	}
+	data, err := from.Content()
+	if err != nil {
+		return err
+	}
+	return to.SetContent(data)
+}
+
 func replaceLauncherIcons(c *config, entries []*apk.Entry, arsc *apk.Entry) error {
 	table, err := arsc.Content()
 	if err != nil {
 		return err
 	}
-	paths, err := apk.LauncherIconPaths(table, "ic_launcher")
+	paths, err := apk.ResourcePaths(table, "mipmap", "ic_launcher")
 	if err != nil {
 		return err
 	}
