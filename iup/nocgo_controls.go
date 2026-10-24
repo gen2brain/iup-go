@@ -129,3 +129,7 @@ func Popover(child Ihandle) Ihandle {
 func Timer() Ihandle {
 	return mkih(iupTimer())
 }
+
+func FdWatch() Ihandle {
+	return mkih(iupFdWatch())
+}

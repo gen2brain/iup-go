@@ -133,9 +133,8 @@ package iup
 
 #cgo android CFLAGS: -Iexternal/src/android -DIUP_USE_ANDROID
 #cgo android CXXFLAGS: -Iexternal/src/android -DIUP_USE_ANDROID
-#cgo android LDFLAGS: -llog -ljnigraphics -ldl -lm
-#cgo android,media LDFLAGS: -landroid
-#cgo android,gl LDFLAGS: -lEGL -lGLESv3 -landroid
+#cgo android LDFLAGS: -llog -landroid -ljnigraphics -ldl -lm
+#cgo android,gl LDFLAGS: -lEGL -lGLESv3
 #cgo android,plot LDFLAGS: -static-libstdc++
 
 #cgo haiku LDFLAGS: -lbe -ltracker

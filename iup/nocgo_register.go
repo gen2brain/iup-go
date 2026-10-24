@@ -83,13 +83,14 @@ var (
 	iupSetFunction func(name string, cb uintptr) uintptr
 	iupGetFunction func(name string) uintptr
 
-	iupButton func(title *byte) uintptr
-	iupLabel  func(title *byte) uintptr
-	iupFill   func() uintptr
-	iupVboxv  func(children []uintptr) uintptr
-	iupHboxv  func(children []uintptr) uintptr
-	iupDialog func(child uintptr) uintptr
-	iupTimer  func() uintptr
+	iupButton  func(title *byte) uintptr
+	iupLabel   func(title *byte) uintptr
+	iupFill    func() uintptr
+	iupVboxv   func(children []uintptr) uintptr
+	iupHboxv   func(children []uintptr) uintptr
+	iupDialog  func(child uintptr) uintptr
+	iupTimer   func() uintptr
+	iupFdWatch func() uintptr
 
 	iupShow      func(ih uintptr) int32
 	iupShowXY    func(ih uintptr, x, y int32) int32
@@ -438,6 +439,7 @@ func ensureBase() {
 		reg(&iupHboxv, "IupHboxv")
 		reg(&iupDialog, "IupDialog")
 		reg(&iupTimer, "IupTimer")
+		reg(&iupFdWatch, "IupFdWatch")
 
 		reg(&iupShow, "IupShow")
 		reg(&iupShowXY, "IupShowXY")

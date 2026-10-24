@@ -12,10 +12,10 @@ set(IUP_DRIVER_COMPILE_DEFINITIONS IUP_USE_ANDROID)
 
 set(IUP_DRIVER_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/android")
 
-set(IUP_DRIVER_LINK_LIBRARIES log jnigraphics dl m)
+set(IUP_DRIVER_LINK_LIBRARIES log android jnigraphics dl m)
 
 set(IUP_DRIVER_COMPILE_OPTIONS "")
 set(IUP_DRIVER_LINK_OPTIONS "")
 
 set(IUP_PC_REQUIRES "")
-set(IUP_PC_LIBS_PRIVATE "-llog -ljnigraphics -ldl -lm")
+set(IUP_PC_LIBS_PRIVATE "-llog -landroid -ljnigraphics -ldl -lm")
