@@ -242,6 +242,7 @@ API reference for IUP (Portable User Interface).
 | [IupLocation](elem/iup_location.md)   | Geolocation source                                     |
 | [IupSensor](elem/iup_sensor.md)       | Motion sensor source                                   |
 | [IupTimer](elem/iup_timer.md)         | Periodic timer firing on the main thread               |
+| [IupFdWatch](elem/iup_fdwatch.md)     | Main loop watch on a file descriptor or socket         |
 | [IupThread](elem/iup_thread.md)       | Background thread element                              |
 | [IupTray](elem/iup_tray.md)           | System tray / status icon                              |
 | [IupUser](elem/iup_user.md)           | Plain element holder for user data or external widgets |

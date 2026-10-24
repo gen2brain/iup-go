@@ -359,6 +359,15 @@ func Timer() Ihandle {
 	return h
 }
 
+// FdWatch creates a file descriptor watch which invokes a callback when the descriptor is ready.
+// Each watch should be destroyed using Destroy.
+//
+// https://gen2brain.github.io/iup-go/elem/iup_fdwatch.html
+func FdWatch() Ihandle {
+	h := mkih(C.IupFdWatch())
+	return h
+}
+
 // Thread creates a thread element in IUP, which is not associated to any interface element.
 // It is a very simple support to create and manage threads in a multithreading environment.
 //

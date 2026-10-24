@@ -108,6 +108,7 @@ void iupRegisterInternalClasses(void)
   iupRegisterClassInternal(iupParamNewClass());
 
   iupRegisterClassInternal(iupTimerNewClass());
+  iupRegisterClassInternal(iupFdWatchNewClass());
   iupRegisterClassInternal(iupTrayNewClass());
   iupRegisterClassInternal(iupNotifyNewClass());
   iupRegisterClassInternal(iupLocationNewClass());

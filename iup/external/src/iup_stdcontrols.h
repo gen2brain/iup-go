@@ -73,6 +73,7 @@ Iclass* iupTableNewClass(void);
 Iclass* iupPopoverNewClass(void);
 
 Iclass* iupTimerNewClass(void);
+Iclass* iupFdWatchNewClass(void);
 Iclass* iupTrayNewClass(void);
 Iclass* iupNotifyNewClass(void);
 Iclass* iupLocationNewClass(void);

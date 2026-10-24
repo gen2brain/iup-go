@@ -265,6 +265,7 @@ var (
 	ThemeChangedCB                = newCallback[ThemeChangedFunc]("THEMECHANGED_CB")
 	ThreadCB                      = newCallback[ThreadFunc]("THREAD_CB")
 	TimerActionCB                 = newCallback[TimerActionFunc]("ACTION_CB")
+	FdWatchActionCB               = newCallback[TimerActionFunc]("ACTION_CB")
 	TipsCB                        = newCallback[TipsFunc]("TIPS_CB")
 	ToggleActionCB                = newCallback[ToggleActionFunc]("ACTION")
 	ToggleValueCB                 = newCallback[ToggleValueFunc]("TOGGLEVALUE_CB")

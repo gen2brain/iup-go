@@ -44,6 +44,7 @@ set(IUP_DRIVER_SOURCES
   $<TARGET_OBJECTS:iup_winui_driver>
   "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_singleinstance.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_thread.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_fdwatch.c"
 )
 
 set(IUP_DRIVER_COMPILE_DEFINITIONS

@@ -334,6 +334,13 @@ func Timer() Ihandle {
 	return ccallHandle("IupTimer", nil, nil)
 }
 
+// FdWatch creates a file descriptor watch which invokes a callback when the descriptor is ready.
+//
+// https://gen2brain.github.io/iup-go/elem/iup_fdwatch.html
+func FdWatch() Ihandle {
+	return ccallHandle("IupFdWatch", nil, nil)
+}
+
 // Val creates a slider; _type is "HORIZONTAL" or "VERTICAL".
 //
 // https://gen2brain.github.io/iup-go/elem/iup_val.html

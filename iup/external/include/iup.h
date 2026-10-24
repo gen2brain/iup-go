@@ -44,6 +44,7 @@ IUP_API int       IupMainLoopLevel(void);
 IUP_API void      IupFlush(void);
 IUP_API void      IupExitLoop(void);
 IUP_API void      IupPostMessage(Ihandle* ih, const char* s, int i, double d, void* p);
+IUP_API Ihandle*  IupFdWatch(void);
 
 IUP_API int       IupRecordInput(const char* filename, int mode);
 IUP_API int       IupPlayInput(const char* filename);
