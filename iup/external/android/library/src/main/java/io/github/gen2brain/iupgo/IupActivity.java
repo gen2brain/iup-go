@@ -10,11 +10,13 @@ import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Keep;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
+import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.widget.NestedScrollView;
@@ -48,6 +50,8 @@ public class IupActivity extends AppCompatActivity
     private NavigationView navigationView;
     private ActionBarDrawerToggle drawerToggle;
     private long drawerIhandle = 0;
+    private boolean closeAsked;
+    private OnBackPressedCallback backCallback;
 
     /* Latest RESUMED IupActivity; weak to avoid static Context leak. */
     private static java.lang.ref.WeakReference<Activity> sCurrentActivityRef;
@@ -151,6 +155,23 @@ public class IupActivity extends AppCompatActivity
         return super.dispatchKeyEvent(ev);
     }
 
+
+    /** Back closes the drawer, then asks CLOSE_CB before the default back handling. */
+    private void onBack()
+    {
+        if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START))
+        {
+            drawerLayout.closeDrawer(GravityCompat.START);
+            return;
+        }
+        long ihandlePtr = getIntent().getLongExtra("Ihandle", 0);
+        if (ihandlePtr != 0 && !CloseRequested(ihandlePtr))
+            return;
+        closeAsked = ihandlePtr != 0;
+        backCallback.setEnabled(false);
+        getOnBackPressedDispatcher().onBackPressed();
+        backCallback.setEnabled(true);
+    }
 
     /** the absolute-positioning content view; IUP child widgets live here */
     public IupAndroidFixed getRootFixed()
@@ -306,6 +327,7 @@ public class IupActivity extends AppCompatActivity
     native protected void DialogActivityCreated(long ihandlePtr);
 
     native protected boolean FinalizeDialogDestroy(long ihandlePtr);
+    native protected boolean CloseRequested(long ihandlePtr);
 
     /** refreshes DLG/TXT palette on the C side and fires THEMECHANGED_CB. */
     native protected void NotifyThemeChanged(long ihandlePtr, int darkMode);
@@ -356,6 +378,16 @@ public class IupActivity extends AppCompatActivity
 
             /* ScrollView is still 0x0 here; wait for first layout before reporting size to IUP */
             observeLayout(scrollView, ihandlePtr, "onCreate");
+
+            backCallback = new OnBackPressedCallback(true)
+            {
+                @Override
+                public void handleOnBackPressed()
+                {
+                    onBack();
+                }
+            };
+            getOnBackPressedDispatcher().addCallback(this, backCallback);
         }
         else
         {
@@ -406,6 +438,7 @@ public class IupActivity extends AppCompatActivity
     protected void onResume()
     {
         super.onResume();
+        closeAsked = false;
         sCurrentActivityRef = new java.lang.ref.WeakReference<>(this);
         previousConfig = new Configuration(getResources().getConfiguration());
         endStartWait();
@@ -427,7 +460,8 @@ public class IupActivity extends AppCompatActivity
         long ihandlePtr = intent.getLongExtra("Ihandle", 0);
         if (ihandlePtr != 0)
         {
-            IupCommon.handleIupCallback(ihandlePtr, "CLOSE_CB");
+            if (!closeAsked)
+                IupCommon.handleIupCallback(ihandlePtr, "CLOSE_CB");
             IupCommon.releaseIhandle(ihandlePtr);
             FinalizeDialogDestroy(ihandlePtr);
         }

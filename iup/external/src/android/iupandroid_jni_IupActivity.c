@@ -114,6 +114,17 @@ JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupActivity_FinalizeDi
   return iupDialogDeferDestroyDone(ih) ? JNI_TRUE : JNI_FALSE;
 }
 
+JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupActivity_CloseRequested(JNIEnv* jni_env, jobject thiz, jlong ihandle_ptr)
+{
+  (void)jni_env;
+  (void)thiz;
+  Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
+  if (!ih || !iupObjectCheck(ih)) return JNI_TRUE;
+  Icallback cb = IupGetCallback(ih, "CLOSE_CB");
+  if (cb && cb(ih) == IUP_IGNORE) return JNI_FALSE;
+  return JNI_TRUE;
+}
+
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupActivity_NotifyThemeChanged(JNIEnv* jni_env, jobject thiz, jlong ihandle_ptr, jint dark_mode)
 {
   (void)jni_env;

@@ -1,6 +1,7 @@
 ## CLOSE_CB
 
 Called just before a dialog is closed when the user clicks the close button of the title bar or an equivalent action.
+In Android the Back button is the equivalent action; while the dialog's navigation drawer is open, Back closes the drawer instead.
 
 ### Callback
 
