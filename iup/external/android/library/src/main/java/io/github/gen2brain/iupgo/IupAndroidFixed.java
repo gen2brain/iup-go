@@ -79,6 +79,17 @@ public class IupAndroidFixed extends ViewGroup
     {
         ViewGroup.LayoutParams raw = child.getLayoutParams();
         LayoutParams lp;
+        if (raw instanceof LayoutParams cur && cur.width == width && cur.height == height &&
+            !child.isLayoutRequested() && child.getWidth() == width && child.getHeight() == height)
+        {
+            if (cur.x != x || cur.y != y)
+            {
+                cur.x = x;
+                cur.y = y;
+                child.layout(x, y, x + width, y + height);
+            }
+            return;
+        }
         if (raw instanceof LayoutParams)
         {
             lp = (LayoutParams)raw;
