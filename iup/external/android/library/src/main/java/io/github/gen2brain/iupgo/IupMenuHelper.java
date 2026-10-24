@@ -108,8 +108,7 @@ public final class IupMenuHelper
 
     private static Activity resolveActivity(Object handle)
     {
-        if (handle instanceof Activity) return (Activity) handle;
-        return IupApplication.getIupApplication().getCurrentActivity();
+        return handle instanceof Activity ? (Activity) handle : null;
     }
 
 
