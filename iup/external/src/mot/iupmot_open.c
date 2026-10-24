@@ -118,6 +118,24 @@ static void motPortalSettingsInput(XtPointer client_data, int* source, XtInputId
   }
 }
 
+static int motErrorHandler(Display* dpy, XErrorEvent* err)
+{
+  static int reported = 0;
+  char msg[128];
+
+  /* Xlib exits the process by default, which would take the application down with it */
+  if (reported < 10)
+  {
+    XGetErrorText(dpy, err->error_code, msg, sizeof(msg));
+    fprintf(stderr, "IUP Motif: X error %s, request %d.%d\n", msg, err->request_code, err->minor_code);
+    reported++;
+    if (reported == 10)
+      fprintf(stderr, "IUP Motif: further X errors will not be reported\n");
+  }
+
+  return 0;
+}
+
 IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
   IupSetGlobal("DRIVER", "Motif");
@@ -128,6 +146,8 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 
   if (argv && *argv && **argv && (**argv)[0])
     IupStoreGlobal("ARGV0", (*argv)[0]);
+
+  XSetErrorHandler(motErrorHandler);
 
   XtToolkitInitialize();
 
