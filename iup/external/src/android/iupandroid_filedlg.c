@@ -24,54 +24,76 @@
 
 IUPJNI_DECLARE_CLASS_STATIC(IupFileDlgHelper);
 
-static const char* androidFileDlgFilterToMime(const char* filter)
+static char* androidFileDlgGetPatterns(Ihandle* ih, int* index)
 {
-  if (!filter || !*filter) return "*/*";
+  const char* p = iupAttribGet(ih, "EXTFILTER");
+  int bars;
 
-  const char* dot = strrchr(filter, '.');
-  if (!dot) return "*/*";
-  dot++;
+  *index = 0;
+  if (!p)
+    return iupStrDup(iupAttribGet(ih, "FILTER"));
 
-  if (iupStrEqualNoCase(dot, "txt") || iupStrEqualNoCase(dot, "log") ||
-      iupStrEqualNoCase(dot, "md")  || iupStrEqualNoCase(dot, "csv"))
-    return "text/*";
-  if (iupStrEqualNoCase(dot, "html") || iupStrEqualNoCase(dot, "htm"))
-    return "text/html";
-  if (iupStrEqualNoCase(dot, "xml"))
-    return "text/xml";
-  if (iupStrEqualNoCase(dot, "json"))
-    return "application/json";
-  if (iupStrEqualNoCase(dot, "pdf"))
-    return "application/pdf";
-  if (iupStrEqualNoCase(dot, "zip"))
-    return "application/zip";
-  if (iupStrEqualNoCase(dot, "png") || iupStrEqualNoCase(dot, "jpg") ||
-      iupStrEqualNoCase(dot, "jpeg") || iupStrEqualNoCase(dot, "gif") ||
-      iupStrEqualNoCase(dot, "bmp") || iupStrEqualNoCase(dot, "webp"))
-    return "image/*";
-  if (iupStrEqualNoCase(dot, "mp3") || iupStrEqualNoCase(dot, "wav") ||
-      iupStrEqualNoCase(dot, "ogg") || iupStrEqualNoCase(dot, "flac"))
-    return "audio/*";
-  if (iupStrEqualNoCase(dot, "mp4") || iupStrEqualNoCase(dot, "webm") ||
-      iupStrEqualNoCase(dot, "mkv") || iupStrEqualNoCase(dot, "mov"))
-    return "video/*";
+  *index = iupAttribGetInt(ih, "FILTERUSED");
+  if (*index < 1)
+    *index = 1;
 
-  return "*/*";
+  for (bars = 2 * *index - 1; bars > 0; bars--)
+  {
+    p = strchr(p, '|');
+    if (!p)
+      return NULL;
+    p++;
+  }
+
+  return strchr(p, '|') ? iupStrDupUntil(&p, '|') : iupStrDup(p);
 }
 
-/* EXTFILTER = "Name|*.ext|Name2|*.ext"; pick first pattern (SAF can't show filter groups) */
-static const char* androidFileDlgExtFilterToMime(const char* extfilter)
+static void androidFileDlgStoreFiles(Ihandle* ih, char** paths, int count)
 {
-  if (!extfilter || !*extfilter) return NULL;
-  const char* first_bar = strchr(extfilter, '|');
-  if (!first_bar) return androidFileDlgFilterToMime(extfilter);
-  const char* second_bar = strchr(first_bar + 1, '|');
-  size_t len = second_bar ? (size_t)(second_bar - first_bar - 1) : strlen(first_bar + 1);
-  char buf[256];
-  if (len >= sizeof(buf)) len = sizeof(buf) - 1;
-  memcpy(buf, first_bar + 1, len);
-  buf[len] = '\0';
-  return androidFileDlgFilterToMime(buf);
+  char* dir = iupStrFileGetPath(paths[0]);
+  int dir_len = dir ? (int)strlen(dir) : 0;
+  int name_off = iupAttribGetBoolean(ih, "MULTIVALUEPATH") ? 0 : dir_len;
+  int i;
+
+  iupAttribSetStr(ih, "DIRECTORY", dir);
+
+  if (iupAttribGetBoolean(ih, "MULTIPLEFILES"))
+  {
+    iupAttribSetStrId(ih, "MULTIVALUE", 0, dir);
+    for (i = 0; i < count; i++)
+      iupAttribSetStrId(ih, "MULTIVALUE", i + 1, paths[i] + name_off);
+    iupAttribSetInt(ih, "MULTIVALUECOUNT", count + 1);
+  }
+
+  if (count == 1 || !dir)
+    iupAttribSetStr(ih, "VALUE", paths[0]);
+  else
+  {
+    int size = dir_len + 1;
+    char* value;
+    char* v;
+
+    for (i = 0; i < count; i++)
+      size += (int)strlen(paths[i] + name_off) + 1;
+
+    value = (char*)malloc(size);
+    memcpy(value, dir, dir_len - 1);
+    v = value + dir_len - 1;
+    *v++ = '|';
+    for (i = 0; i < count; i++)
+    {
+      int len = (int)strlen(paths[i] + name_off);
+      memcpy(v, paths[i] + name_off, len);
+      v += len;
+      *v++ = '|';
+    }
+    *v = 0;
+
+    iupAttribSetStr(ih, "VALUE", value);
+    free(value);
+  }
+
+  free(dir);
 }
 
 static int androidFileDlgPopup(Ihandle* ih, int x, int y)
@@ -90,38 +112,35 @@ static int androidFileDlgPopup(Ihandle* ih, int x, int y)
     return IUP_NOERROR;
   }
 
-  const char* mime = NULL;
-  const char* extfilter = iupAttribGet(ih, "EXTFILTER");
-  if (extfilter)
-    mime = androidFileDlgExtFilterToMime(extfilter);
-  else
-    mime = androidFileDlgFilterToMime(iupAttribGet(ih, "FILTER"));
-
+  int filter_used;
+  char* patterns = androidFileDlgGetPatterns(ih, &filter_used);
   int multi = iupAttribGetBoolean(ih, "MULTIPLEFILES");
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupFileDlgHelper, jni_env, "io/github/gen2brain/iupgo/IupFileDlgHelper");
 
-  jstring j_mime = mime ? iupAndroid_NewStringUTF(jni_env, mime) : NULL;
+  jstring j_patterns = patterns ? iupAndroid_NewStringUTF(jni_env, patterns) : NULL;
+  free(patterns);
   jstring j_string = NULL;
 
   if (is_save)
   {
-    const char* default_name = iupAttribGet(ih, "FILE");
+    char* default_name = iupStrFileGetTitle(iupAttribGet(ih, "FILE"));
     jstring j_name = default_name ? iupAndroid_NewStringUTF(jni_env, default_name) : NULL;
+    free(default_name);
     jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, java_class, "pickSave", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
-    j_string = (jstring)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, m, j_mime, j_name);
+    j_string = (jstring)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, m, j_patterns, j_name);
     iupAndroid_CheckException(jni_env, "IupFileDlgHelper.pickSave");
     if (j_name) (*jni_env)->DeleteLocalRef(jni_env, j_name);
   }
   else
   {
     jmethodID m = (*jni_env)->GetStaticMethodID(jni_env, java_class, "pickOpen", "(Ljava/lang/String;Z)Ljava/lang/String;");
-    j_string = (jstring)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, m, j_mime, (jboolean)(multi ? JNI_TRUE : JNI_FALSE));
+    j_string = (jstring)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, m, j_patterns, (jboolean)(multi ? JNI_TRUE : JNI_FALSE));
     iupAndroid_CheckException(jni_env, "IupFileDlgHelper.pickOpen");
   }
 
-  if (j_mime) (*jni_env)->DeleteLocalRef(jni_env, j_mime);
+  if (j_patterns) (*jni_env)->DeleteLocalRef(jni_env, j_patterns);
 
   const char* result = NULL;
   if (j_string)
@@ -129,7 +148,23 @@ static int androidFileDlgPopup(Ihandle* ih, int x, int y)
 
   if (result && *result)
   {
-    iupAttribSetStr(ih, "VALUE", result);
+    char* files = iupStrDup(result);
+    int count = iupStrReplace(files, '\n', 0) + 1;
+    char** paths = (char**)malloc(count * sizeof(char*));
+    char* f = files;
+    int i;
+
+    for (i = 0; i < count; i++)
+    {
+      paths[i] = f;
+      f += strlen(f) + 1;
+    }
+    androidFileDlgStoreFiles(ih, paths, count);
+    free(paths);
+    free(files);
+
+    if (filter_used)
+      iupAttribSetInt(ih, "FILTERUSED", filter_used);
     iupAttribSet(ih, "STATUS", is_save ? "1" : "0");
     iupAttribSet(ih, "FILEEXIST", is_save ? "NO" : "YES");
 
@@ -152,6 +187,7 @@ static int androidFileDlgPopup(Ihandle* ih, int x, int y)
   else
   {
     iupAttribSet(ih, "STATUS", "-1");
+    iupAttribSet(ih, "FILTERUSED", NULL);
     iupAttribSet(ih, "VALUE", NULL);
     iupAttribSet(ih, "VALUE_URI", NULL);
   }
