@@ -178,12 +178,55 @@ static int androidDialogWaitForStart(Ihandle* ih)
   return waited ? 1 : 0;
 }
 
+static int androidDialogHasActivity(Ihandle* ih)
+{
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass activity_class = (*jni_env)->FindClass(jni_env, "android/app/Activity");
+  int result = ih->handle && (*jni_env)->IsInstanceOf(jni_env, (jobject)ih->handle, activity_class);
+  (*jni_env)->DeleteLocalRef(jni_env, activity_class);
+  return result;
+}
+
+static void androidDialogHideActivity(Ihandle* ih)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupActivity_hideActivity);
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupActivity, jni_env, "io/github/gen2brain/iupgo/IupActivity");
+  jmethodID method_id = IUPJNI_GetStaticMethodID(IupActivity_hideActivity, jni_env, java_class, "hideActivity", "(Ljava/lang/Object;J)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jobject)ih->handle, (jlong)(intptr_t)ih);
+  iupAndroid_CheckException(jni_env, "IupActivity.hideActivity");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+}
+
+static void androidDialogShowActivity(Ihandle* ih)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupActivity_showActivity);
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupActivity, jni_env, "io/github/gen2brain/iupgo/IupActivity");
+  jmethodID method_id = IUPJNI_GetStaticMethodID(IupActivity_showActivity, jni_env, java_class, "showActivity", "(J)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, (jlong)(intptr_t)ih);
+  iupAndroid_CheckException(jni_env, "IupActivity.showActivity");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+}
+
 IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   iupAttribSet(ih, "_IUPANDROID_SHOWN", visible ? "1" : NULL);
-  if (visible && androidDialogWaitForStart(ih))
+  if (!visible)
+  {
+    if (androidDialogHasActivity(ih))
+      androidDialogHideActivity(ih);
     return;
-  androidDialogCallVoidNoArg(ih, visible ? "bringToFront" : "moveToBack");
+  }
+  if (ih->handle && !androidDialogHasActivity(ih) && !iupAttribGet(ih, "_IUP_DIALOG_DEFER_DESTROY"))
+  {
+    iupAttribSet(ih, "_IUP_DIALOG_DEFER_DESTROY", "1");
+    androidDialogShowActivity(ih);
+    return;
+  }
+  if (androidDialogWaitForStart(ih))
+    return;
+  androidDialogCallVoidNoArg(ih, "bringToFront");
 }
 
 IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
