@@ -1115,6 +1115,41 @@ IUP_DRV_API int iupgtk4Win32MoveWindow(void* hwnd, int x, int y)
   return 1;
 }
 
+/* GDK does not resize a mapped window from the default size on Windows */
+IUP_DRV_API int iupgtk4Win32ResizeWindow(GtkWidget* widget, int width, int height)
+{
+  GdkSurface* surface;
+  HWND hwnd;
+  RECT window_rect;
+  int alloc_width, alloc_height;
+
+  if (!widget || width <= 0 || height <= 0)
+    return 0;
+
+  surface = iupgtk4GetSurface(widget);
+  if (!surface || !GDK_IS_WIN32_SURFACE(surface))
+    return 0;
+
+  hwnd = gdk_win32_surface_get_handle(surface);
+  if (!hwnd || !GetWindowRect(hwnd, &window_rect))
+    return 0;
+
+  alloc_width = gtk_widget_get_width(widget);
+  alloc_height = gtk_widget_get_height(widget);
+  if (alloc_width <= 0 || alloc_height <= 0)
+    return 0;
+
+  if (alloc_width == width && alloc_height == height)
+    return 1;
+
+  /* the frame and the invisible border GTK draws around the content keep their size */
+  width += (window_rect.right - window_rect.left) - alloc_width;
+  height += (window_rect.bottom - window_rect.top) - alloc_height;
+
+  SetWindowPos(hwnd, NULL, 0, 0, width, height, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+  return 1;
+}
+
 IUP_DRV_API int iupgtk4Win32HideFromTaskbar(void* hwnd)
 {
   LONG_PTR exstyle;
