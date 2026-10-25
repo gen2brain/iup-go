@@ -7,6 +7,7 @@ import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
+import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -398,6 +399,19 @@ public class IupAndroidCanvas extends IupAndroidFixed
             IupCanvasHelper.dispatchAction(ihandlePtr, 0, 0, w - 1, h - 1);
             invalidate();
         }
+    }
+
+    @Override
+    public boolean onGenericMotionEvent(MotionEvent ev)
+    {
+        if (ihandlePtr != 0 && ev.isFromSource(InputDevice.SOURCE_CLASS_POINTER) && ev.getActionMasked() == MotionEvent.ACTION_SCROLL)
+        {
+            float vertical = ev.getAxisValue(MotionEvent.AXIS_VSCROLL), horizontal = ev.getAxisValue(MotionEvent.AXIS_HSCROLL);
+            if ((vertical != 0 || horizontal != 0) &&
+                IupCanvasHelper.dispatchWheel(ihandlePtr, vertical, horizontal, (int)ev.getX(), (int)ev.getY(), ev.getMetaState()))
+                return true;
+        }
+        return super.onGenericMotionEvent(ev);
     }
 
     @Override
