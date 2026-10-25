@@ -135,6 +135,7 @@ IUP_DRV_API void iupgtk4SetGlobalColors(void);
 
 #ifdef GDK_WINDOWING_WIN32
 IUP_DRV_API int iupgtk4Win32MoveWindow(void* hwnd, int x, int y);
+IUP_DRV_API int iupgtk4Win32ResizeWindow(GtkWidget* widget, int width, int height);
 IUP_DRV_API int iupgtk4Win32HideFromTaskbar(void* hwnd);
 #endif
 

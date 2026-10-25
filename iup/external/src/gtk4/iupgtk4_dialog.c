@@ -56,16 +56,37 @@ IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
   return iupdrvIsVisible(ih);
 }
 
+/* the window manager frame on X11, outside the GTK window */
+static void gtk4DialogGetFrameDecor(Ihandle* ih, int* border, int* caption)
+{
+  *border = 0;
+  *caption = 0;
+
+#ifdef GDK_WINDOWING_X11
+  if (ih->handle && iupgtk4X11IsBackend())
+  {
+    int left = 0, top = 0, right = 0, bottom = 0;
+    GdkSurface* surface = iupgtk4GetSurface(ih->handle);
+    if (surface && iupgtk4X11GetFrameExtents(surface, &left, &top, &right, &bottom) && (left || top))
+    {
+      *border = left;
+      *caption = top + bottom - 2 * left;
+    }
+  }
+#else
+  (void)ih;
+#endif
+}
+
 IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w, int* h)
 {
   int width, height;
-  int border = 0, caption = 0, menu;
+  int border = 0, caption = 0;
 
   if (!handle)
     handle = ih->handle;
 
-  if (gtk_widget_get_visible((GtkWidget*)handle) && gtk_widget_get_width((GtkWidget*)handle) > 0 &&
-      !gtk_widget_has_css_class((GtkWidget*)handle, "csd"))
+  if (gtk_widget_get_visible((GtkWidget*)handle) && gtk_widget_get_width((GtkWidget*)handle) > 0)
   {
     width = gtk_widget_get_width((GtkWidget*)handle);
     height = gtk_widget_get_height((GtkWidget*)handle);
@@ -73,8 +94,9 @@ IUP_SDK_API void iupdrvDialogGetSize(Ihandle* ih, InativeHandle* handle, int* w,
   else
     gtk_window_get_default_size((GtkWindow*)handle, &width, &height);
 
+  /* the window already carries its own title bar, only the frame is outside it */
   if (ih)
-    iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+    gtk4DialogGetFrameDecor(ih, &border, &caption);
 
   if (w) *w = width + 2 * border;
   if (h) *h = height + 2 * border + caption;
@@ -85,14 +107,14 @@ static void gtk4DialogApplySizeHints(Ihandle* ih, GdkSurface* surface, const cha
 {
   int min_w = 1, min_h = 1, max_w = 65535, max_h = 65535;
   int inc_w = 0, inc_h = 0;
-  int border, caption, menu;
+  int border, caption;
 
   iupStrToIntInt(minsize, &min_w, &min_h, 'x');
   iupStrToIntInt(maxsize, &max_w, &max_h, 'x');
   if (!iupStrToIntInt(resizeinc, &inc_w, &inc_h, 'x'))
     inc_w = inc_h = 0;
 
-  iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+  gtk4DialogGetFrameDecor(ih, &border, &caption);
   min_w -= 2 * border;
   min_h -= 2 * border + caption;
 
@@ -263,6 +285,11 @@ static void gtk4DialogSetDefaultSize(Ihandle* ih, int width, int height, int ser
   (void)server_frame;
 #endif
 
+#ifdef GDK_WINDOWING_WIN32
+  if (gtk_widget_get_mapped(ih->handle))
+    iupgtk4Win32ResizeWindow(ih->handle, width, height);
+#endif
+
   gtk_window_set_default_size((GtkWindow*)ih->handle, width, height);
   iupAttribSetInt(ih, "_IUPGTK4_REQ_W", width);
   iupAttribSetInt(ih, "_IUPGTK4_REQ_H", height);
@@ -333,28 +360,6 @@ static void gtk4DialogGetWindowDecor(Ihandle* ih, int* win_border, int* win_capt
   }
 }
 
-/* the window manager frame on X11, outside the GTK window */
-static void gtk4DialogGetFrameDecor(Ihandle* ih, int* border, int* caption)
-{
-  *border = 0;
-  *caption = 0;
-
-#ifdef GDK_WINDOWING_X11
-  if (ih->handle && iupgtk4X11IsBackend())
-  {
-    int left = 0, top = 0, right = 0, bottom = 0;
-    GdkSurface* surface = iupgtk4GetSurface(ih->handle);
-    if (surface && iupgtk4X11GetFrameExtents(surface, &left, &top, &right, &bottom) && (left || top))
-    {
-      *border = left;
-      *caption = top + bottom - 2 * left;
-    }
-  }
-#else
-  (void)ih;
-#endif
-}
-
 IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   static int native_caption = 0;
@@ -380,9 +385,17 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* captio
 
     if (has_csd && !has_solid_csd)
     {
-      /* with a CSD shadow currentheight is already the content area, so caption must be 0 */
+      /* the title bar is drawn inside the window, the child starts right below it */
+      GtkWidget* child = gtk_window_get_child(GTK_WINDOW(ih->handle));
+      graphene_point_t in, out;
+
       *border = 0;
       *caption = 0;
+
+      in.x = 0; in.y = 0;
+      if (child && gtk_widget_compute_point(child, GTK_WIDGET(ih->handle), &in, &out))
+        *caption = (int)out.y;
+
       return;
     }
   }
@@ -552,9 +565,9 @@ void gtk4DialogSizeAllocate(GtkWidget* widget, int width, int height, int baseli
 
   if (gtk_widget_has_css_class(GTK_WIDGET(ih->handle), "csd"))
   {
-    ih->currentwidth = width;
-    ih->currentheight = height + menu;
-    client_width = ih->currentwidth - 2 * border;
+    ih->currentwidth = width + 2 * border;
+    ih->currentheight = height + menu + caption;
+    client_width = width;
   }
   else
   {
@@ -572,9 +585,7 @@ void gtk4DialogSizeAllocate(GtkWidget* widget, int width, int height, int baseli
     ih->data->ignore_resize = 0;
   }
 
-  /* the CSD paths keep their own notion of the client area */
-  if (!gtk_widget_has_css_class(GTK_WIDGET(ih->handle), "csd"))
-    iupDialogUpdateClientSize(ih);
+  iupDialogUpdateClientSize(ih);
 }
 
 static void gtk4DialogThemeChanged(GtkSettings* settings, GParamSpec* pspec, Ihandle* ih)
@@ -897,20 +908,15 @@ static void gtk4DialogLayoutUpdateMethod(Ihandle* ih)
 
   gboolean has_csd = gtk_widget_has_css_class(GTK_WIDGET(ih->handle), "csd");
 
-  width = ih->currentwidth - 2 * border;
-
-  /* with CSD the titlebar is a child widget, so its height adds to the window height */
-  if (has_csd && caption > 0)
+  /* the default size is the window itself, the window manager frame is outside it */
+  if (has_csd)
   {
-    height = ih->currentheight + caption;
-  }
-  else if (has_csd && caption == 0)
-  {
-    int estimated_caption = 37;
-    height = ih->currentheight + estimated_caption;
+    width = ih->currentwidth;
+    height = ih->currentheight;
   }
   else
   {
+    width = ih->currentwidth - 2 * border;
     height = ih->currentheight - 2 * border - caption;
   }
 
