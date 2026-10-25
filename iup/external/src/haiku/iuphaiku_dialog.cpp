@@ -949,6 +949,7 @@ static int haikuDialogSetFullScreenAttrib(Ihandle* ih, const char* value)
     win->ResizeTo(saved.Width(), saved.Height());
     win->ClearFullScreen();
   }
+  iupdrvDialogGetSize(ih, nullptr, &ih->currentwidth, &ih->currentheight);
   return 1;
 }
 
