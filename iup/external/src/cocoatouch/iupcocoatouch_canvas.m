@@ -788,11 +788,16 @@ static void cocoaTouchCanvasFireMotion(Ihandle* ih, UITouch* touch, UIEvent* eve
 {
 	if (!_ihandle) return;
 	IFnfiis cb = (IFnfiis)IupGetCallback(_ihandle, "WHEEL_CB");
-	if (!cb) return;
 
 	CGPoint t = [gr translationInView:self];
 	CGPoint p = [gr locationInView:self];
 	[gr setTranslation:CGPointZero inView:self];
+	if (!cb)
+	{
+		if (cocoaTouchCanvasCanScroll(_ihandle))
+			cocoaTouchCanvasScrollBy(_ihandle, t.x, t.y, self.bounds.size);
+		return;
+	}
 
 	/* IUP delta is positive = forward/up; UIPan y grows down */
 	float delta = (float)(-t.y / 10.0);
