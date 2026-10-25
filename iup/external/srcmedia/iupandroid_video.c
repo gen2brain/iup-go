@@ -90,7 +90,7 @@ static int androidVideoOpen(IvideoSession* session, Ihandle* ih, const char* sou
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = IUPJNI_FindClass(IupVideoHelper, env, "io/github/gen2brain/iupgo/IupVideoHelper");
   IandroidVideo* context = (IandroidVideo*)calloc(1, sizeof(IandroidVideo));
-  jstring text;
+  jstring text, audio = NULL;
   jobject player;
   jmethodID method;
   if (!context || !cls)
@@ -102,15 +102,21 @@ static int androidVideoOpen(IvideoSession* session, Ihandle* ih, const char* sou
     return 0;
   }
   session->context = context;
-  method = IUPJNI_GetStaticMethodID(IupVideoHelper_create, env, cls, "create", "(Landroid/view/View;JLjava/lang/String;Z)Ljava/lang/Object;");
+  method = IUPJNI_GetStaticMethodID(IupVideoHelper_create, env, cls, "create", "(Landroid/view/View;JLjava/lang/String;ZLjava/lang/String;)Ljava/lang/Object;");
   text = iupAndroid_NewStringUTF(env, source);
-  if (!text)
+  if (session->audio)
+    audio = iupAndroid_NewStringUTF(env, session->audio);
+  if (!text || (session->audio && !audio))
   {
     iupAndroid_CheckException(env, "IupVideoHelper source");
+    if (text)
+      (*env)->DeleteLocalRef(env, text);
+    if (audio)
+      (*env)->DeleteLocalRef(env, audio);
     (*env)->DeleteLocalRef(env, cls);
     return 0;
   }
-  player = (*env)->CallStaticObjectMethod(env, cls, method, ih->handle, (jlong)(intptr_t)session, text, (jboolean)url);
+  player = (*env)->CallStaticObjectMethod(env, cls, method, ih->handle, (jlong)(intptr_t)session, text, (jboolean)url, audio);
   iupAndroid_CheckException(env, "IupVideoHelper.create");
   if (player)
   {
@@ -118,6 +124,8 @@ static int androidVideoOpen(IvideoSession* session, Ihandle* ih, const char* sou
     (*env)->DeleteLocalRef(env, player);
   }
   (*env)->DeleteLocalRef(env, text);
+  if (audio)
+    (*env)->DeleteLocalRef(env, audio);
   (*env)->DeleteLocalRef(env, cls);
   if (!context->player)
   {
@@ -376,7 +384,7 @@ char* iupdrvVideoReadSubtitle(const char* filename)
   return text;
 }
 
-static const IvideoBackend androidVideoBackend = {"NATIVE", androidVideoAvailable, androidVideoOpen, androidVideoClose, androidVideoPlay, androidVideoSeek, androidVideoVolume, androidVideoPoll, androidVideoLayout, androidVideoSubtitleCount, androidVideoSubtitleName, androidVideoSubtitleSelect, androidVideoSubtitleText, 0, androidVideoAudioDevices, androidVideoAudioDevice, NULL};
+static const IvideoBackend androidVideoBackend = {"NATIVE", androidVideoAvailable, androidVideoOpen, androidVideoClose, androidVideoPlay, androidVideoSeek, androidVideoVolume, androidVideoPoll, androidVideoLayout, androidVideoSubtitleCount, androidVideoSubtitleName, androidVideoSubtitleSelect, androidVideoSubtitleText, 1, androidVideoAudioDevices, androidVideoAudioDevice, NULL};
 
 const IvideoBackend* iupdrvVideoBackend(int index)
 {
