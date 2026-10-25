@@ -302,6 +302,10 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 @property(nonatomic, retain) UIStepper* stepper;
 @end
 
+#define IUPCOCOATOUCH_SPIN_GAP 4
+
+static CGFloat cocoaTouchSpinStepperWidth(UIStepper* stepper);
+
 @implementation IupCocoaTouchSpinView
 
 - (instancetype)initWithFrame:(CGRect)frame ihandle:(Ihandle*)ih
@@ -336,8 +340,8 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 	CGFloat w = self.bounds.size.width;
 	CGFloat h = self.bounds.size.height;
 	CGSize stepper_size = [_stepper intrinsicContentSize];
-	CGFloat stepper_w = stepper_size.width > 0 ? stepper_size.width : 94.0;
-	CGFloat gap = 4.0;
+	CGFloat stepper_w = cocoaTouchSpinStepperWidth(_stepper);
+	CGFloat gap = IUPCOCOATOUCH_SPIN_GAP;
 	CGFloat field_w = w - stepper_w - gap;
 	if (field_w < 0) field_w = 0;
 	_field.frame = CGRectMake(0, 0, field_w, h);
@@ -537,11 +541,24 @@ IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
 	if (h) *h += 12;
 }
 
+static CGFloat cocoaTouchSpinStepperWidth(UIStepper* stepper)
+{
+	CGFloat width = [stepper intrinsicContentSize].width;
+	return width > 0 ? width : 94.0;
+}
+
 IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 {
+	static int stepper_w = 0;
 	(void)h;
 	if (!ih || !iupAttribGetBoolean(ih, "SPIN")) return;
-	if (w) *w += 94;  /* UIStepper intrinsic width */
+	if (!stepper_w)
+	{
+		UIStepper* stepper = [[UIStepper alloc] initWithFrame:CGRectZero];
+		stepper_w = (int)ceil(cocoaTouchSpinStepperWidth(stepper)) + IUPCOCOATOUCH_SPIN_GAP;
+		[stepper release];
+	}
+	if (w) *w += stepper_w;
 }
 
 IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
