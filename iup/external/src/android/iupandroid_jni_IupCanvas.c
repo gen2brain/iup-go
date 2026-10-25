@@ -187,6 +187,16 @@ JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispat
   return iupAndroid_CanvasScrollBy(ih, move_x, move_y, width, height) ? JNI_TRUE : JNI_FALSE;
 }
 
+JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchWheel(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jfloat vertical, jfloat horizontal, jint x, jint y, jint meta_state)
+{
+  (void)jni_env; (void)cls;
+  Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
+  char status[IUPKEY_STATUS_SIZE];
+  if (!ih || !iupObjectCheck(ih)) return JNI_FALSE;
+  androidCanvasFillStatus(status, 0, 0, meta_state);
+  return iupAndroid_CanvasWheel(ih, vertical, horizontal, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y), status) ? JNI_TRUE : JNI_FALSE;
+}
+
 JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_isTouchEnabled(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
 {
   (void)jni_env; (void)cls;

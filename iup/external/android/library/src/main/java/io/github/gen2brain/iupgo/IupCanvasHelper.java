@@ -413,6 +413,7 @@ public final class IupCanvasHelper
     public static native boolean isDragInteractive(long ihandlePtr);
     public static native boolean isScrollable(long ihandlePtr);
     public static native boolean dispatchScroll(long ihandlePtr, float moveX, float moveY, int width, int height);
+    public static native boolean dispatchWheel(long ihandlePtr, float vertical, float horizontal, int x, int y, int metaState);
     public static native void dispatchTextInput(long ihandlePtr, String text);
     public static native boolean dispatchKey(long ihandlePtr, int keyCode, int unicode, int metaState);
     public static native boolean wantsTextInput(long ihandlePtr);

@@ -190,6 +190,40 @@ IUP_SDK_API int iupAndroid_CanvasScrollBy(Ihandle* ih, float move_x, float move_
   return 1;
 }
 
+IUP_SDK_API int iupAndroid_CanvasWheel(Ihandle* ih, float vertical, float horizontal, int x, int y, char* status)
+{
+  IFnfiis wheel_cb = (IFnfiis)IupGetCallback(ih, "WHEEL_CB");
+  IFniff scroll_cb;
+  if (!ih->data) return 0;
+
+  if (wheel_cb)
+  {
+    if (wheel_cb(ih, vertical != 0 ? vertical : -horizontal, x, y, status) == IUP_CLOSE)
+      IupExitLoop();
+    return 1;
+  }
+
+  if (!iupAndroid_CanvasIsScrollable(ih))
+    return 0;
+
+  scroll_cb = (IFniff)IupGetCallback(ih, "SCROLL_CB");
+  if (vertical != 0 && (ih->data->sb & IUP_SB_VERT))
+  {
+    IupSetDouble(ih, "POSY", ih->data->posy - vertical * iupAttribGetDouble(ih, "DY") / 10.0);
+    if (scroll_cb && scroll_cb(ih, vertical > 0 ? IUP_SBUP : IUP_SBDN, (float)ih->data->posx, (float)ih->data->posy) == IUP_CLOSE)
+      IupExitLoop();
+  }
+  if (horizontal != 0 && iupObjectCheck(ih) && (ih->data->sb & IUP_SB_HORIZ))
+  {
+    IupSetDouble(ih, "POSX", ih->data->posx + horizontal * iupAttribGetDouble(ih, "DX") / 10.0);
+    if (scroll_cb && scroll_cb(ih, horizontal > 0 ? IUP_SBRIGHT : IUP_SBLEFT, (float)ih->data->posx, (float)ih->data->posy) == IUP_CLOSE)
+      IupExitLoop();
+  }
+  if (!scroll_cb && iupObjectCheck(ih) && IupGetCallback(ih, "ACTION"))
+    iupdrvRedrawNow(ih);
+  return 1;
+}
+
 IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 {
   ic->Map = androidCanvasMapMethod;
