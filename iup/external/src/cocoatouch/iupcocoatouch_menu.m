@@ -183,7 +183,7 @@ static UIMenuElement* cocoaTouchMenuBuildChildElement(Ihandle* child)
 		                                  identifier:nil
 		                                     handler:^(UIAction* a) {
 			(void)a;
-			cocoaTouchMenuFireActionDirect(child_capture);
+			iupCocoaTouchRunLater(^{ cocoaTouchMenuFireActionDirect(child_capture); });
 		}];
 		if (iupAttribGet(child, "ACTIVE") && !iupAttribGetBoolean(child, "ACTIVE"))
 		{
@@ -225,11 +225,13 @@ static void cocoaTouchMenuAppendRecentUIActions(NSMutableArray<UIMenuElement*>* 
 		                                  identifier:nil
 		                                     handler:^(UIAction* a) {
 			(void)a;
-			if (!iupObjectCheck(menu_capture)) return;
-			char slot[32];
-			snprintf(slot, sizeof(slot), "_IUP_RECENT_FILE%d", index_capture);
-			iupAttribSetStr(menu_capture, "TITLE", iupAttribGet(menu_capture, slot));
-			if (cb_capture && cb_capture(menu_capture) == IUP_CLOSE) IupExitLoop();
+			iupCocoaTouchRunLater(^{
+				if (!iupObjectCheck(menu_capture)) return;
+				char slot[32];
+				snprintf(slot, sizeof(slot), "_IUP_RECENT_FILE%d", index_capture);
+				iupAttribSetStr(menu_capture, "TITLE", iupAttribGet(menu_capture, slot));
+				if (cb_capture && cb_capture(menu_capture) == IUP_CLOSE) IupExitLoop();
+			});
 		}];
 		[elements addObject:action];
 	}
