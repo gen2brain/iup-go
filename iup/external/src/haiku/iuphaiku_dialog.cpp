@@ -212,29 +212,18 @@ public:
     }
   }
 
-  static void QuitRequestedThunk(void* p)
-  {
-    static_cast<IupHaikuWindow*>(p)->QuitRequestedDirect();
-  }
-
-  void QuitRequestedDirect()
-  {
-    Icallback cb = IupGetCallback(fIhandle, "CLOSE_CB");
-    int ret = IUP_DEFAULT;
-    if (cb) ret = cb(fIhandle);
-
-    if (ret == IUP_IGNORE)     return;
-    if (ret == IUP_CLOSE)      IupExitLoop();
-    else                       IupHide(fIhandle);
-  }
-
   bool QuitRequested() override
   {
     if (!fIhandle || !iupObjectCheck(fIhandle) || !iupdrvIsActive(fIhandle))
       return false;
 
-    if (!iuphaikuRunOnLoopThread(QuitRequestedThunk, this))
-      QuitRequestedDirect();
+    Icallback cb = IupGetCallback(fIhandle, "CLOSE_CB");
+    int ret = IUP_DEFAULT;
+    if (cb) ret = cb(fIhandle);
+
+    if (ret == IUP_IGNORE)     return false;
+    if (ret == IUP_CLOSE)      IupExitLoop();
+    else                       IupHide(fIhandle);
     return false;
   }
 
@@ -371,6 +360,14 @@ public:
 
   void DispatchMessage(BMessage* msg, BHandler* target) override
   {
+    if (msg && (msg->what == _QUIT_ || msg->what == IUPHAIKU_WINDOW_QUIT))
+    {
+      BWindow::DispatchMessage(msg, target);
+      return;
+    }
+
+    CallbackLockGuard guard(this);
+
     if (iuphaikuIsModalStaleInput(msg))
       return;
 
@@ -551,6 +548,7 @@ static void haikuDialogUnMapMethod(Ihandle* ih)
   else if (win && win->Lock())
   {
     win->SetIhandle(nullptr);
+    CallbackReleaseGuard release(iuphaikuOwnLooper());
     win->Quit();
   }
   ih->handle = nullptr;

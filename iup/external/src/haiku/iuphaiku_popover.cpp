@@ -69,6 +69,14 @@ public:
 
   void DispatchMessage(BMessage* msg, BHandler* handler) override
   {
+    if (msg && msg->what == _QUIT_)
+    {
+      BWindow::DispatchMessage(msg, handler);
+      return;
+    }
+
+    CallbackLockGuard guard(this);
+
     if (msg && msg->what == B_KEY_DOWN && fIhandle && iupObjectCheck(fIhandle) &&
         iupAttribGetBoolean(fIhandle, "AUTOHIDE"))
     {
@@ -135,7 +143,16 @@ static void haikuPopoverUnMapMethod(Ihandle* ih)
   if (popover && popover->Lock())
   {
     popover->SetIhandle(nullptr);
-    popover->Quit();  /* deletes the window + its child views */
+    if (popover->Thread() == find_thread(nullptr))
+    {
+      iuphaikuCallbackRelease();
+      popover->Quit();  /* deletes the window + its child views */
+    }
+    else
+    {
+      CallbackReleaseGuard release(iuphaikuOwnLooper());
+      popover->Quit();
+    }
   }
   ih->handle = nullptr;
 }

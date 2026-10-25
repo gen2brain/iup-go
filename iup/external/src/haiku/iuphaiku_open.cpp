@@ -43,6 +43,13 @@ public:
 
   void DispatchMessage(BMessage* msg, BHandler* handler) override
   {
+    if (msg->what == _QUIT_)
+    {
+      BApplication::DispatchMessage(msg, handler);
+      return;
+    }
+
+    CallbackLockGuard guard(this);
     switch (msg->what) {
       case IUPHAIKU_APP_DRAIN_MSG:
         iuphaikuAppDrainPosts();
@@ -324,6 +331,8 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
     iuphaiku_owns_app = 0;
   }
 
+  iuphaikuCallbackLock(nullptr);
+
   setlocale(LC_NUMERIC, "C");
 
   IupSetGlobal("DRIVER", "Haiku");
@@ -362,6 +371,7 @@ extern "C" IUP_SDK_API int iupdrvSetGlobalAppNameAttrib(const char* value)
 extern "C" IUP_SDK_API void iupdrvClose(void)
 {
   iuphaikuLoopCleanup();
+  iuphaikuCallbackRelease();
 
   if (iuphaiku_app && iuphaiku_owns_app)
     delete iuphaiku_app;
