@@ -171,6 +171,10 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatchSpin
   int min = iupAttribGet(ih, "SPINMIN") ? iupAttribGetInt(ih, "SPINMIN") : 0;
   int max = iupAttribGet(ih, "SPINMAX") ? iupAttribGetInt(ih, "SPINMAX") : 100;
   int wrap = iupAttribGetBoolean(ih, "SPINWRAP");
+  int automatic = iupAttribGetBoolean(ih, "SPINAUTO");
+
+  if (!automatic)
+    current = iupAttribGet(ih, "_IUPANDROID_SPIN_VALUE") ? iupAttribGetInt(ih, "_IUPANDROID_SPIN_VALUE") : min;
 
   int next = current + direction * inc;
   if (next < min) next = wrap ? max : min;
@@ -184,10 +188,10 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatchSpin
     if (ret == IUP_CLOSE) { IupExitLoop(); return 0x80000000; }
   }
 
-  /* SPINAUTO=NO: SPIN_CB owns the text; suppress auto-write. */
-  if (!iupAttribGetBoolean(ih, "SPINAUTO")) return 0x80000000;
-
   iupAttribSetInt(ih, "_IUPANDROID_SPIN_VALUE", next);
+
+  /* SPINAUTO=NO: SPIN_CB owns the text; suppress auto-write. */
+  if (!automatic) return 0x80000000;
   return next;
 }
 

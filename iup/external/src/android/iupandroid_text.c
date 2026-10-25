@@ -501,6 +501,7 @@ static int androidTextSetSpinValueAttrib(Ihandle* ih, const char* value)
   if (v < min) v = min;
   if (v > max) v = max;
   iupAttribSetInt(ih, "_IUPANDROID_SPIN_VALUE", v);
+  if (!iupAttribGetBoolean(ih, "SPINAUTO")) return 0;
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
@@ -516,6 +517,8 @@ static char* androidTextGetSpinValueAttrib(Ihandle* ih)
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupTextHelper_getSpinValue);
   if (!ih->handle) return NULL;
   if (androidTextGetSubType(ih) != IUPANDROIDTEXTSUBTYPE_STEPPER) return NULL;
+  if (!iupAttribGetBoolean(ih, "SPINAUTO"))
+    return iupStrReturnInt(iupAttribGet(ih, "_IUPANDROID_SPIN_VALUE") ? iupAttribGetInt(ih, "_IUPANDROID_SPIN_VALUE") : iupAttribGetInt(ih, "SPINMIN"));
 
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupTextHelper, jni_env, "io/github/gen2brain/iupgo/IupTextHelper");
