@@ -29,6 +29,7 @@
 #include "iup_focus.h"
 #include "iup_image.h"
 #include "iup_drv.h"
+#include "iup_dialog.h"
 
 #include "iupandroid_drv.h"
 #include "iupandroid_jnimacros.h"
@@ -484,6 +485,9 @@ IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
 
 IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 {
+  if (ih && ih->iclass->nativetype == IUP_TYPEDIALOG)
+    return iupdrvDialogIsVisible(ih);
+
   jobject widget = iupAndroid_RealNativeHandle(ih);
   if (!widget) return 0;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();

@@ -174,6 +174,11 @@ public class IupActivity extends AppCompatActivity
         getWindow().getDecorView().post(() -> {
             if (isFinishing() || isDestroyed() || !CloseRequested(ihandlePtr))
                 return;
+            if (!isTaskRoot())
+            {
+                HideDialog(ihandlePtr);
+                return;
+            }
             closeAsked = true;
             defaultBack();
         });
@@ -340,6 +345,7 @@ public class IupActivity extends AppCompatActivity
     native protected void DialogActivityCreated(long ihandlePtr);
 
     native protected boolean FinalizeDialogDestroy(long ihandlePtr);
+    native protected void HideDialog(long ihandlePtr);
     native protected boolean CloseRequested(long ihandlePtr);
 
     /** refreshes DLG/TXT palette on the C side and fires THEMECHANGED_CB. */
@@ -492,8 +498,14 @@ public class IupActivity extends AppCompatActivity
         {
             if (!closeAsked)
                 IupCommon.handleIupCallback(ihandlePtr, "CLOSE_CB");
-            IupCommon.releaseIhandle(ihandlePtr);
-            FinalizeDialogDestroy(ihandlePtr);
+            if (intent.getLongExtra("Ihandle", 0) != 0)
+            {
+                if (keepsContent())
+                    returnContent(ihandlePtr);
+                else
+                    IupCommon.releaseIhandle(ihandlePtr);
+                FinalizeDialogDestroy(ihandlePtr);
+            }
         }
 
         IupCommon.modalPumpExitTopmost();
@@ -635,6 +647,48 @@ public class IupActivity extends AppCompatActivity
             intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
         parentActivity.startActivity(intent);
         return new IupAndroidFixed(parentActivity);
+    }
+
+    /** Called from C (IupHide path). */
+    @Keep
+    public static void hideActivity(Object handle, long ihandlePtr)
+    {
+        if (!(handle instanceof IupActivity activity) || activity.isDestroyed())
+            return;
+        if (!activity.keepsContent())
+        {
+            activity.moveTaskToBack(false);
+            return;
+        }
+        activity.returnContent(ihandlePtr);
+        activity.getIntent().removeExtra("Ihandle");
+        if (!activity.isFinishing())
+            activity.finish();
+    }
+
+    private boolean keepsContent()
+    {
+        return rootFixed != null && !isTaskRoot();
+    }
+
+    private void returnContent(long ihandlePtr)
+    {
+        if (scrollView != null)
+            scrollView.removeView(rootFixed);
+        IupCommon.releaseIhandle(ihandlePtr);
+        IupCommon.retainIhandle(rootFixed, ihandlePtr);
+    }
+
+    /** Called from C (IupShow path). */
+    @Keep
+    public static void showActivity(long ihandlePtr)
+    {
+        Activity parent = IupApplication.getIupApplication().getCurrentActivity();
+        if (parent == null)
+            return;
+        Intent intent = new Intent(parent, IupActivity.class);
+        intent.putExtra("Ihandle", ihandlePtr);
+        parent.startActivity(intent);
     }
 
     /** Called from C (IupDestroy path). */
