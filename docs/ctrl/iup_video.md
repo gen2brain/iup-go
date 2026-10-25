@@ -38,7 +38,7 @@ In macOS, libmpv and GStreamer are loaded from the library search path, Homebrew
 **BACKENDUSED** (read-only): Engine playing the current source, or NULL when none is open.
 
 **AUDIOURL** (non-inheritable): URI of a separate audio stream played with the source in place of its own audio, such as an "http", "https" or "file" URL. Used when FILE or URL loads the source, so set it before them. NULL plays the audio of the source.
-Supported by "VLC", "MPV" and "NATIVE" in macOS and iOS. "AUTO" skips the other engines; when no engine selected by BACKEND supports it, STATE becomes "ERROR".
+Supported by "VLC", "MPV" and "NATIVE" in macOS, iOS and Android. "AUTO" skips the other engines; when no engine selected by BACKEND supports it, STATE becomes "ERROR".
 
 **MPVCONFIG** (non-inheritable): Loads the user mpv configuration (mpv.conf) when "MPV" loads the source. Can be "YES" or "NO". Default: "NO".
 

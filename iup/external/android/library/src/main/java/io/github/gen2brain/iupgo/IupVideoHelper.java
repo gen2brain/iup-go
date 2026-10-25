@@ -30,30 +30,19 @@ import androidx.annotation.Keep;
 
 public final class IupVideoHelper
 {
-    private static final int LOADING = 1;
-    private static final int PLAYING = 3;
-    private static final int PAUSED = 4;
-    private static final int BUFFERING = 5;
-    private static final int ERROR = 7;
+    static final int LOADING = 1;
+    static final int PLAYING = 3;
+    static final int PAUSED = 4;
+    static final int BUFFERING = 5;
+    static final int ERROR = 7;
 
     private IupVideoHelper() {}
 
     @Keep
-    public static Object create(View host, long session, String source, boolean url)
+    public static Object create(View host, long session, String source, boolean url, String audio)
     {
-        Player player = new Player(host, session, source, url);
-        try
-        {
-            if (url)
-                player.media.setDataSource(host.getContext(), Uri.parse(source));
-            else
-                player.media.setDataSource(source);
-            player.media.prepareAsync();
-        }
-        catch (Exception error)
-        {
-            player.fail(error.toString());
-        }
+        Player player = audio != null ? new IupVideoDecoder(host, session, source, url, audio) : new NativePlayer(host, session, source, url);
+        player.open();
         player.layout();
         return player;
     }
@@ -127,6 +116,19 @@ public final class IupVideoHelper
         return product == null || product.length() == 0 ? type : product + " (" + type + ")";
     }
 
+    static AudioDeviceInfo findAudioDevice(Context context, int id)
+    {
+        if (Build.VERSION.SDK_INT < 28)
+            return null;
+        AudioManager manager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+        for (AudioDeviceInfo device : manager.getDevices(AudioManager.GET_DEVICES_OUTPUTS))
+        {
+            if (device.getId() == id)
+                return device;
+        }
+        return null;
+    }
+
     @Keep
     public static void audioDevice(Object object, int id)
     {
@@ -149,7 +151,7 @@ public final class IupVideoHelper
     private static native void error(long session, String message);
 
     @Keep
-    private static native void subtitleCue(long session, byte[] text);
+    static native void subtitleCue(long session, byte[] text);
 
     @Keep
     public static void subtitleText(Object object, String text, int size, int color)
@@ -165,91 +167,19 @@ public final class IupVideoHelper
     @Keep
     public static int subtitleCount(Object object)
     {
-        Player player = (Player)object;
-        if (!player.prepared || player.failed || player.closed)
-            return 0;
-        int count = 0;
-        for (MediaPlayer.TrackInfo track : player.media.getTrackInfo())
-        {
-            if (track.getTrackType() == MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT)
-                count++;
-        }
-        return count;
+        return ((Player)object).subtitleCount();
     }
 
     @Keep
     public static String subtitleName(Object object, int index, boolean language)
     {
-        Player player = (Player)object;
-        if (!player.prepared || player.failed || player.closed)
-            return null;
-        int count = 0;
-        for (MediaPlayer.TrackInfo track : player.media.getTrackInfo())
-        {
-            if (track.getTrackType() == MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT && ++count == index)
-                return language ? track.getLanguage() : "Track " + index;
-        }
-        return null;
-    }
-
-    private static boolean subtitleFlag(MediaFormat format, String key)
-    {
-        try
-        {
-            return format != null && format.containsKey(key) && format.getInteger(key) != 0;
-        }
-        catch (ClassCastException | NullPointerException error)
-        {
-            return false;
-        }
+        return ((Player)object).subtitleName(index, language);
     }
 
     @Keep
     public static boolean subtitleSelect(Object object, int index, double delay)
     {
-        Player player = (Player)object;
-        if (!player.prepared || player.failed || player.closed)
-            return index <= 0;
-        try
-        {
-            int previous = player.media.getSelectedTrack(MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT);
-            int selected = -1;
-            int count = 0;
-            MediaPlayer.TrackInfo[] tracks = player.media.getTrackInfo();
-            for (int i = 0; i < tracks.length && selected < 0; i++)
-            {
-                if (tracks[i].getTrackType() != MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT)
-                    continue;
-                count++;
-                if (index == -1)
-                {
-                    MediaFormat format = tracks[i].getFormat();
-                    if (subtitleFlag(format, MediaFormat.KEY_IS_DEFAULT) || subtitleFlag(format, MediaFormat.KEY_IS_FORCED_SUBTITLE))
-                        selected = i;
-                }
-                else if (count == index)
-                    selected = i;
-            }
-            if (index > 0 && selected < 0)
-                return false;
-            if (previous >= 0 && previous != selected)
-                player.media.deselectTrack(previous);
-            if (selected != previous)
-            {
-                player.cancelSubtitlePreview();
-                if (selected >= 0)
-                    player.media.selectTrack(selected);
-                if (player.session != 0)
-                    subtitleCue(player.session, null);
-                if (selected >= 0 && !player.media.isPlaying() && player.media.getDuration() > 0)
-                    player.previewSubtitle(selected);
-            }
-            return true;
-        }
-        catch (IllegalStateException | IllegalArgumentException error)
-        {
-            return false;
-        }
+        return ((Player)object).subtitleSelect(index, delay);
     }
 
     @Keep
@@ -278,12 +208,11 @@ public final class IupVideoHelper
         }
     }
 
-    private static final class Player implements TextureView.SurfaceTextureListener
+    abstract static class Player implements TextureView.SurfaceTextureListener
     {
         final View host;
         final TextureView view;
         final TextView caption;
-        final MediaPlayer media;
         final String source;
         final boolean sourceURL;
         final double[] snapshot = new double[10];
@@ -293,19 +222,12 @@ public final class IupVideoHelper
         ViewGroup parent;
         Surface surface;
         long session;
-        boolean prepared, failed, requested, buffering, ended, video, audio, seeking;
+        boolean prepared, failed, requested, buffering, ended, video, audio;
         volatile boolean closed;
-        volatile int subtitleGeneration;
-        Thread subtitleThread;
-        int previewTrack;
-        long previewTime;
-        boolean previewPending;
         boolean placed, placedVisible;
         int width, height, level = 100;
         int placedX, placedY, placedW, placedH, placedWidth, placedHeight;
         boolean mute;
-        double pendingSeek = -1;
-        boolean pendingFast;
 
         Player(View host, long session, String source, boolean url)
         {
@@ -323,74 +245,22 @@ public final class IupVideoHelper
             caption.setPadding(padding, padding, padding, padding);
             caption.setShadowLayer(2, 0, 1, Color.BLACK);
             caption.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            media = new MediaPlayer();
-            media.setOnTimedTextListener((player, text) -> {
-                if (!closed && session != 0)
-                    subtitleCue(session, text == null || text.getText() == null ? null : text.getText().getBytes(StandardCharsets.UTF_8));
-            });
-            media.setOnPreparedListener(player -> {
-                if (closed)
-                    return;
-                prepared = true;
-                width = player.getVideoWidth();
-                height = player.getVideoHeight();
-                MediaPlayer.TrackInfo[] tracks = player.getTrackInfo();
-                if (tracks != null)
-                {
-                    for (MediaPlayer.TrackInfo track : tracks)
-                    {
-                        if (track.getTrackType() == MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_VIDEO)
-                            video = true;
-                        if (track.getTrackType() == MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_AUDIO)
-                            audio = true;
-                    }
-                }
-                video |= width > 0 && height > 0;
-                volume(level, mute);
-                showFrame();
-                play(requested);
-                layout();
-            });
-            media.setOnVideoSizeChangedListener((player, w, h) -> {
-                width = w;
-                height = h;
-                video = w > 0 && h > 0;
-                layout();
-            });
-            media.setOnCompletionListener(player -> {
-                if (closed)
-                    return;
-                ended = true;
-                host.setKeepScreenOn(false);
-            });
-            media.setOnErrorListener((player, what, extra) -> {
-                fail("Android MediaPlayer error " + what + ":" + extra);
-                return true;
-            });
-            media.setOnInfoListener((player, what, extra) -> {
-                if (what == MediaPlayer.MEDIA_INFO_BUFFERING_START)
-                    buffering = true;
-                if (what == MediaPlayer.MEDIA_INFO_BUFFERING_END)
-                    buffering = false;
-                return false;
-            });
-            media.setOnSeekCompleteListener(player -> {
-                seeking = false;
-                if (!closed && pendingSeek >= 0)
-                {
-                    double position = pendingSeek;
-                    boolean fast = pendingFast;
-                    pendingSeek = -1;
-                    seek(position, fast);
-                }
-                else if (!closed && !requested)
-                {
-                    int selected = media.getSelectedTrack(MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT);
-                    if (selected >= 0)
-                        previewSubtitle(selected);
-                }
-            });
         }
+
+        abstract void open();
+        abstract void play(boolean play);
+        abstract void seek(double position, boolean fast);
+        abstract void volume(int volume, boolean mute);
+        abstract void audioDevice(int id);
+        abstract boolean playing();
+        abstract double position();
+        abstract double duration();
+        abstract int subtitleCount();
+        abstract String subtitleName(int index, boolean language);
+        abstract boolean subtitleSelect(int index, double delay);
+        abstract void surfaceAvailable();
+        abstract void surfaceDestroyed();
+        abstract void release();
 
         void fail(String message)
         {
@@ -398,200 +268,6 @@ public final class IupVideoHelper
             host.setKeepScreenOn(false);
             if (session != 0)
                 error(session, message);
-        }
-
-        void previewSubtitle(int selected)
-        {
-            int ordinal = 0;
-            MediaPlayer.TrackInfo[] tracks = media.getTrackInfo();
-            for (int i = 0; i <= selected; i++)
-            {
-                if (tracks[i].getTrackType() == MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT)
-                    ordinal++;
-            }
-            synchronized (this)
-            {
-                subtitleGeneration++;
-                previewTrack = ordinal;
-                previewTime = (long)media.getCurrentPosition() * 1000;
-                previewPending = true;
-                if (subtitleThread != null)
-                    return;
-                subtitleThread = new Thread(this::readSubtitlePreview, "IupSubtitle");
-                subtitleThread.start();
-            }
-        }
-
-        synchronized void cancelSubtitlePreview()
-        {
-            subtitleGeneration++;
-            previewPending = false;
-        }
-
-        void readSubtitlePreview()
-        {
-            ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024);
-            for (;;)
-            {
-                final int generation, ordinal;
-                final long time;
-                synchronized (this)
-                {
-                    if (closed || !previewPending)
-                    {
-                        subtitleThread = null;
-                        return;
-                    }
-                    generation = subtitleGeneration;
-                    ordinal = previewTrack;
-                    time = previewTime;
-                    previewPending = false;
-                }
-                byte[] text = null;
-                MediaExtractor extractor = new MediaExtractor();
-                try
-                {
-                    if (sourceURL)
-                        extractor.setDataSource(host.getContext(), Uri.parse(source), null);
-                    else
-                        extractor.setDataSource(source);
-                    int found = 0;
-                    for (int i = 0; i < extractor.getTrackCount(); i++)
-                    {
-                        MediaFormat format = extractor.getTrackFormat(i);
-                        String mime = format.getString(MediaFormat.KEY_MIME);
-                        if (!("application/x-3gpp-tt".equals(mime) || "text/3gpp".equals(mime) || "text/3gpp-tt".equals(mime)))
-                            continue;
-                        if (++found != ordinal)
-                            continue;
-                        extractor.selectTrack(i);
-                        extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-                        long start = extractor.getSampleTime();
-                        if (start >= 0 && start <= time)
-                        {
-                            buffer.clear();
-                            int bytes = extractor.readSampleData(buffer, 0);
-                            if (bytes >= 2)
-                            {
-                                int length = buffer.getShort(0) & 0xffff;
-                                if (length <= bytes - 2)
-                                {
-                                    byte[] encoded = new byte[length];
-                                    buffer.position(2);
-                                    buffer.get(encoded);
-                                    if (length >= 2 && ((encoded[0] & 255) == 254 || (encoded[0] & 255) == 255))
-                                        text = new String(encoded, StandardCharsets.UTF_16).getBytes(StandardCharsets.UTF_8);
-                                    else
-                                        text = encoded;
-                                }
-                            }
-                        }
-                        break;
-                    }
-                }
-                catch (Exception error)
-                {
-                    text = null;
-                }
-                finally
-                {
-                    extractor.release();
-                }
-                final byte[] result = text;
-                host.post(() -> {
-                    if (!closed && session != 0 && subtitleGeneration == generation)
-                        subtitleCue(session, result);
-                });
-            }
-        }
-
-        void showFrame()
-        {
-            if (closed || failed || !prepared || requested || seeking || surface == null)
-                return;
-            try
-            {
-                media.seekTo(media.getCurrentPosition());
-            }
-            catch (IllegalStateException error)
-            {
-                fail(error.toString());
-            }
-        }
-
-        void play(boolean play)
-        {
-            if (play && !requested)
-                cancelSubtitlePreview();
-            requested = play;
-            host.setKeepScreenOn(play && !failed);
-            if (closed || failed || !prepared || (video && surface == null))
-                return;
-            try
-            {
-                if (play)
-                    media.start();
-                else if (media.isPlaying())
-                    media.pause();
-            }
-            catch (IllegalStateException error)
-            {
-                fail(error.toString());
-            }
-        }
-
-        void seek(double position, boolean fast)
-        {
-            if (closed || failed || !prepared)
-                return;
-            if (seeking)
-            {
-                pendingSeek = position;
-                pendingFast = fast;
-                return;
-            }
-            if (position > Integer.MAX_VALUE / 1000.0)
-                return;
-            try
-            {
-                seeking = true;
-                cancelSubtitlePreview();
-                ended = false;
-                if (Build.VERSION.SDK_INT >= 26)
-                    media.seekTo((long)(position * 1000), fast ? MediaPlayer.SEEK_CLOSEST_SYNC : MediaPlayer.SEEK_CLOSEST);
-                else
-                    media.seekTo((int)(position * 1000));
-            }
-            catch (IllegalStateException error)
-            {
-                seeking = false;
-                fail(error.toString());
-            }
-        }
-
-        void audioDevice(int id)
-        {
-            if (closed || Build.VERSION.SDK_INT < 28)
-                return;
-            AudioDeviceInfo preferred = null;
-            AudioManager manager = (AudioManager)host.getContext().getSystemService(Context.AUDIO_SERVICE);
-            for (AudioDeviceInfo device : manager.getDevices(AudioManager.GET_DEVICES_OUTPUTS))
-            {
-                if (device.getId() == id)
-                    preferred = device;
-            }
-            media.setPreferredDevice(preferred);
-        }
-
-        void volume(int volume, boolean mute)
-        {
-            level = volume;
-            this.mute = mute;
-            if (!closed && !failed && prepared)
-            {
-                float value = mute ? 0 : volume / 100.0f;
-                media.setVolume(value, value);
-            }
         }
 
         void layout()
@@ -666,12 +342,12 @@ public final class IupVideoHelper
             else if (buffering || (video && surface == null))
                 state = BUFFERING;
             else
-                state = media.isPlaying() ? PLAYING : PAUSED;
+                state = playing() ? PLAYING : PAUSED;
             snapshot[0] = state;
             snapshot[1] = prepared ? 1 : 0;
             snapshot[2] = ended ? 1 : 0;
-            snapshot[3] = prepared && !failed ? media.getCurrentPosition() / 1000.0 : 0;
-            snapshot[4] = prepared && !failed ? Math.max(0, media.getDuration()) / 1000.0 : 0;
+            snapshot[3] = prepared && !failed ? position() : 0;
+            snapshot[4] = prepared && !failed ? duration() : 0;
             snapshot[5] = snapshot[4] > 0 ? 1 : 0;
             snapshot[6] = video ? 1 : 0;
             snapshot[7] = audio ? 1 : 0;
@@ -683,24 +359,11 @@ public final class IupVideoHelper
 
         void close()
         {
-            cancelSubtitlePreview();
             session = 0;
             closed = true;
             host.setKeepScreenOn(false);
             view.setSurfaceTextureListener(null);
-            media.setOnPreparedListener(null);
-            media.setOnVideoSizeChangedListener(null);
-            media.setOnCompletionListener(null);
-            media.setOnErrorListener(null);
-            media.setOnInfoListener(null);
-            media.setOnSeekCompleteListener(null);
-            media.setOnTimedTextListener(null);
-            media.release();
-            if (surface != null)
-            {
-                surface.release();
-                surface = null;
-            }
+            release();
             if (parent != null)
             {
                 parent.getOverlay().remove(view);
@@ -715,20 +378,14 @@ public final class IupVideoHelper
             if (closed || failed)
                 return;
             surface = new Surface(texture);
-            media.setSurface(surface);
-            showFrame();
-            play(requested);
+            surfaceAvailable();
         }
 
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture texture)
         {
             if (!closed)
-            {
-                if (prepared && !failed && media.isPlaying())
-                    media.pause();
-                media.setSurface(null);
-            }
+                surfaceDestroyed();
             if (surface != null)
             {
                 surface.release();
@@ -746,6 +403,448 @@ public final class IupVideoHelper
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture texture)
         {
+        }
+    }
+
+    static boolean isTimedText(String mime)
+    {
+        return "application/x-3gpp-tt".equals(mime) || "text/3gpp".equals(mime) || "text/3gpp-tt".equals(mime);
+    }
+
+    static boolean subtitleDefault(MediaFormat format)
+    {
+        return subtitleFlag(format, MediaFormat.KEY_IS_DEFAULT) || subtitleFlag(format, MediaFormat.KEY_IS_FORCED_SUBTITLE);
+    }
+
+    static byte[] timedText(ByteBuffer buffer, int bytes)
+    {
+        if (bytes < 2)
+            return null;
+        int length = buffer.getShort(0) & 0xffff;
+        if (length > bytes - 2)
+            return null;
+        byte[] encoded = new byte[length];
+        buffer.position(2);
+        buffer.get(encoded);
+        if (length >= 2 && ((encoded[0] & 255) == 254 || (encoded[0] & 255) == 255))
+            return new String(encoded, StandardCharsets.UTF_16).getBytes(StandardCharsets.UTF_8);
+        return encoded;
+    }
+
+    private static boolean subtitleFlag(MediaFormat format, String key)
+    {
+        try
+        {
+            return format != null && format.containsKey(key) && format.getInteger(key) != 0;
+        }
+        catch (ClassCastException | NullPointerException error)
+        {
+            return false;
+        }
+    }
+
+    private static final class NativePlayer extends Player
+    {
+        final MediaPlayer media;
+        boolean seeking;
+        volatile int subtitleGeneration;
+        Thread subtitleThread;
+        int previewTrack;
+        long previewTime;
+        boolean previewPending;
+        double pendingSeek = -1;
+        boolean pendingFast;
+
+        NativePlayer(View host, long session, String source, boolean url)
+        {
+            super(host, session, source, url);
+            media = new MediaPlayer();
+            media.setOnTimedTextListener((player, text) -> {
+                if (!closed && this.session != 0)
+                    subtitleCue(this.session, text == null || text.getText() == null ? null : text.getText().getBytes(StandardCharsets.UTF_8));
+            });
+            media.setOnPreparedListener(player -> {
+                if (closed)
+                    return;
+                prepared = true;
+                width = player.getVideoWidth();
+                height = player.getVideoHeight();
+                MediaPlayer.TrackInfo[] tracks = player.getTrackInfo();
+                if (tracks != null)
+                {
+                    for (MediaPlayer.TrackInfo track : tracks)
+                    {
+                        if (track.getTrackType() == MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_VIDEO)
+                            video = true;
+                        if (track.getTrackType() == MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_AUDIO)
+                            audio = true;
+                    }
+                }
+                video |= width > 0 && height > 0;
+                volume(level, mute);
+                showFrame();
+                play(requested);
+                layout();
+            });
+            media.setOnVideoSizeChangedListener((player, w, h) -> {
+                width = w;
+                height = h;
+                video = w > 0 && h > 0;
+                layout();
+            });
+            media.setOnCompletionListener(player -> {
+                if (closed)
+                    return;
+                ended = true;
+                host.setKeepScreenOn(false);
+            });
+            media.setOnErrorListener((player, what, extra) -> {
+                fail("Android MediaPlayer error " + what + ":" + extra);
+                return true;
+            });
+            media.setOnInfoListener((player, what, extra) -> {
+                if (what == MediaPlayer.MEDIA_INFO_BUFFERING_START)
+                    buffering = true;
+                if (what == MediaPlayer.MEDIA_INFO_BUFFERING_END)
+                    buffering = false;
+                return false;
+            });
+            media.setOnSeekCompleteListener(player -> {
+                seeking = false;
+                if (!closed && pendingSeek >= 0)
+                {
+                    double position = pendingSeek;
+                    boolean fast = pendingFast;
+                    pendingSeek = -1;
+                    seek(position, fast);
+                }
+                else if (!closed && !requested)
+                {
+                    int selected = media.getSelectedTrack(MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT);
+                    if (selected >= 0)
+                        previewSubtitle(selected);
+                }
+            });
+        }
+
+        @Override
+        void open()
+        {
+            try
+            {
+                if (sourceURL)
+                    media.setDataSource(host.getContext(), Uri.parse(source));
+                else
+                    media.setDataSource(source);
+                media.prepareAsync();
+            }
+            catch (Exception error)
+            {
+                fail(error.toString());
+            }
+        }
+
+        @Override
+        int subtitleCount()
+        {
+            if (!prepared || failed || closed)
+                return 0;
+            int count = 0;
+            for (MediaPlayer.TrackInfo track : media.getTrackInfo())
+            {
+                if (track.getTrackType() == MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT)
+                    count++;
+            }
+            return count;
+        }
+
+        @Override
+        String subtitleName(int index, boolean language)
+        {
+            if (!prepared || failed || closed)
+                return null;
+            int count = 0;
+            for (MediaPlayer.TrackInfo track : media.getTrackInfo())
+            {
+                if (track.getTrackType() == MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT && ++count == index)
+                    return language ? track.getLanguage() : "Track " + index;
+            }
+            return null;
+        }
+
+        @Override
+        boolean subtitleSelect(int index, double delay)
+        {
+            if (!prepared || failed || closed)
+                return index <= 0;
+            try
+            {
+                int previous = media.getSelectedTrack(MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT);
+                int selected = -1;
+                int count = 0;
+                MediaPlayer.TrackInfo[] tracks = media.getTrackInfo();
+                for (int i = 0; i < tracks.length && selected < 0; i++)
+                {
+                    if (tracks[i].getTrackType() != MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT)
+                        continue;
+                    count++;
+                    if (index == -1)
+                    {
+                        if (subtitleDefault(tracks[i].getFormat()))
+                            selected = i;
+                    }
+                    else if (count == index)
+                        selected = i;
+                }
+                if (index > 0 && selected < 0)
+                    return false;
+                if (previous >= 0 && previous != selected)
+                    media.deselectTrack(previous);
+                if (selected != previous)
+                {
+                    cancelSubtitlePreview();
+                    if (selected >= 0)
+                        media.selectTrack(selected);
+                    if (session != 0)
+                        subtitleCue(session, null);
+                    if (selected >= 0 && !media.isPlaying() && media.getDuration() > 0)
+                        previewSubtitle(selected);
+                }
+                return true;
+            }
+            catch (IllegalStateException | IllegalArgumentException error)
+            {
+                return false;
+            }
+        }
+
+        void previewSubtitle(int selected)
+        {
+            int ordinal = 0;
+            MediaPlayer.TrackInfo[] tracks = media.getTrackInfo();
+            for (int i = 0; i <= selected; i++)
+            {
+                if (tracks[i].getTrackType() == MediaPlayer.TrackInfo.MEDIA_TRACK_TYPE_TIMEDTEXT)
+                    ordinal++;
+            }
+            synchronized (this)
+            {
+                subtitleGeneration++;
+                previewTrack = ordinal;
+                previewTime = (long)media.getCurrentPosition() * 1000;
+                previewPending = true;
+                if (subtitleThread != null)
+                    return;
+                subtitleThread = new Thread(this::readSubtitlePreview, "IupSubtitle");
+                subtitleThread.start();
+            }
+        }
+
+        synchronized void cancelSubtitlePreview()
+        {
+            subtitleGeneration++;
+            previewPending = false;
+        }
+
+        void readSubtitlePreview()
+        {
+            ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024);
+            for (;;)
+            {
+                final int generation, ordinal;
+                final long time;
+                synchronized (this)
+                {
+                    if (closed || !previewPending)
+                    {
+                        subtitleThread = null;
+                        return;
+                    }
+                    generation = subtitleGeneration;
+                    ordinal = previewTrack;
+                    time = previewTime;
+                    previewPending = false;
+                }
+                byte[] text = null;
+                MediaExtractor extractor = new MediaExtractor();
+                try
+                {
+                    if (sourceURL)
+                        extractor.setDataSource(host.getContext(), Uri.parse(source), null);
+                    else
+                        extractor.setDataSource(source);
+                    int found = 0;
+                    for (int i = 0; i < extractor.getTrackCount(); i++)
+                    {
+                        MediaFormat format = extractor.getTrackFormat(i);
+                        if (!isTimedText(format.getString(MediaFormat.KEY_MIME)))
+                            continue;
+                        if (++found != ordinal)
+                            continue;
+                        extractor.selectTrack(i);
+                        extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                        long start = extractor.getSampleTime();
+                        if (start >= 0 && start <= time)
+                        {
+                            buffer.clear();
+                            text = timedText(buffer, extractor.readSampleData(buffer, 0));
+                        }
+                        break;
+                    }
+                }
+                catch (Exception error)
+                {
+                    text = null;
+                }
+                finally
+                {
+                    extractor.release();
+                }
+                final byte[] result = text;
+                host.post(() -> {
+                    if (!closed && session != 0 && subtitleGeneration == generation)
+                        subtitleCue(session, result);
+                });
+            }
+        }
+
+        void showFrame()
+        {
+            if (closed || failed || !prepared || requested || seeking || surface == null)
+                return;
+            try
+            {
+                media.seekTo(media.getCurrentPosition());
+            }
+            catch (IllegalStateException error)
+            {
+                fail(error.toString());
+            }
+        }
+
+        @Override
+        void play(boolean play)
+        {
+            if (play && !requested)
+                cancelSubtitlePreview();
+            requested = play;
+            host.setKeepScreenOn(play && !failed);
+            if (closed || failed || !prepared || (video && surface == null))
+                return;
+            try
+            {
+                if (play)
+                    media.start();
+                else if (media.isPlaying())
+                    media.pause();
+            }
+            catch (IllegalStateException error)
+            {
+                fail(error.toString());
+            }
+        }
+
+        @Override
+        void seek(double position, boolean fast)
+        {
+            if (closed || failed || !prepared)
+                return;
+            if (seeking)
+            {
+                pendingSeek = position;
+                pendingFast = fast;
+                return;
+            }
+            if (position > Integer.MAX_VALUE / 1000.0)
+                return;
+            try
+            {
+                seeking = true;
+                cancelSubtitlePreview();
+                ended = false;
+                if (Build.VERSION.SDK_INT >= 26)
+                    media.seekTo((long)(position * 1000), fast ? MediaPlayer.SEEK_CLOSEST_SYNC : MediaPlayer.SEEK_CLOSEST);
+                else
+                    media.seekTo((int)(position * 1000));
+            }
+            catch (IllegalStateException error)
+            {
+                seeking = false;
+                fail(error.toString());
+            }
+        }
+
+        @Override
+        void audioDevice(int id)
+        {
+            if (closed || Build.VERSION.SDK_INT < 28)
+                return;
+            media.setPreferredDevice(findAudioDevice(host.getContext(), id));
+        }
+
+        @Override
+        void volume(int volume, boolean mute)
+        {
+            level = volume;
+            this.mute = mute;
+            if (!closed && !failed && prepared)
+            {
+                float value = mute ? 0 : volume / 100.0f;
+                media.setVolume(value, value);
+            }
+        }
+
+        @Override
+        boolean playing()
+        {
+            return media.isPlaying();
+        }
+
+        @Override
+        double position()
+        {
+            return media.getCurrentPosition() / 1000.0;
+        }
+
+        @Override
+        double duration()
+        {
+            return Math.max(0, media.getDuration()) / 1000.0;
+        }
+
+        @Override
+        void release()
+        {
+            cancelSubtitlePreview();
+            media.setOnPreparedListener(null);
+            media.setOnVideoSizeChangedListener(null);
+            media.setOnCompletionListener(null);
+            media.setOnErrorListener(null);
+            media.setOnInfoListener(null);
+            media.setOnSeekCompleteListener(null);
+            media.setOnTimedTextListener(null);
+            media.release();
+            if (surface != null)
+            {
+                surface.release();
+                surface = null;
+            }
+        }
+
+        @Override
+        void surfaceAvailable()
+        {
+            media.setSurface(surface);
+            showFrame();
+            play(requested);
+        }
+
+        @Override
+        void surfaceDestroyed()
+        {
+            if (prepared && !failed && media.isPlaying())
+                media.pause();
+            media.setSurface(null);
         }
     }
 }
