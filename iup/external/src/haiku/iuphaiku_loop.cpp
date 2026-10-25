@@ -6,6 +6,7 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <atomic>
 #include <cstdlib>
 
 #include <Application.h>
@@ -217,67 +218,39 @@ IUP_DRV_API void iuphaikuAppIdleTick()
 static bool haiku_loop_exit_requested = false;
 
 static thread_id haiku_loop_thread = -1;
-static void* haiku_work_mutex = nullptr;
+static std::atomic<int32> haiku_callback_benaphore(0);
+static sem_id haiku_callback_sem = -1;
+static std::atomic<thread_id> haiku_callback_owner(-1);
+static int haiku_callback_count = 0;
 
-typedef struct _haikuWorkNode {
-  IhaikuLoopWork fn;
-  void* data;
-  BLooper* looper;
-  sem_id done;
-  struct _haikuWorkNode* next;
-} haikuWorkNode;
-
-static haikuWorkNode* haiku_work_head = nullptr;
-static haikuWorkNode* haiku_work_tail = nullptr;
-
-static bool haikuWorkUnqueue(haikuWorkNode* node)
+static void haikuCallbackAcquire()
 {
-  haikuWorkNode** link = &haiku_work_head;
-  bool removed = false;
-
-  iupdrvMutexLock(haiku_work_mutex);
-  while (*link)
-  {
-    if (*link == node)
-    {
-      *link = node->next;
-      if (haiku_work_tail == node) haiku_work_tail = nullptr;
-      removed = true;
-      break;
-    }
-    link = &(*link)->next;
-  }
-  if (!haiku_work_head) haiku_work_tail = nullptr;
-  iupdrvMutexUnlock(haiku_work_mutex);
-  return removed;
+  if (haiku_callback_benaphore.fetch_add(1) > 0)
+    while (acquire_sem(haiku_callback_sem) == B_INTERRUPTED) {}
 }
 
-IUP_DRV_API void iuphaikuDrainLoopWork(void)
+static bool haikuCallbackTryAcquire()
 {
-  if (!haiku_work_mutex) return;
+  int32 expected = 0;
+  return haiku_callback_benaphore.compare_exchange_strong(expected, 1);
+}
 
-  for (;;)
-  {
-    iupdrvMutexLock(haiku_work_mutex);
-    haikuWorkNode* node = haiku_work_head;
-    if (node)
-    {
-      haiku_work_head = node->next;
-      if (!haiku_work_head) haiku_work_tail = nullptr;
-    }
-    iupdrvMutexUnlock(haiku_work_mutex);
+static void haikuCallbackReleaseOwner()
+{
+  haiku_callback_owner.store(-1);
+  if (haiku_callback_benaphore.fetch_sub(1) > 1)
+    release_sem(haiku_callback_sem);
+}
 
-    if (!node) break;
+static bool haikuCallbackOwned()
+{
+  return haiku_callback_owner.load() == find_thread(nullptr);
+}
 
-    if (node->looper)
-    {
-      LooperLockGuard guard(node->looper);
-      node->fn(node->data);
-    }
-    else
-      node->fn(node->data);
-    release_sem(node->done);
-  }
+static void haikuCallbackTake()
+{
+  haiku_callback_owner.store(find_thread(nullptr));
+  haiku_callback_count = 1;
 }
 
 IUP_DRV_API bool iuphaikuCanLockAppLooper(void)
@@ -286,51 +259,68 @@ IUP_DRV_API bool iuphaikuCanLockAppLooper(void)
   return find_thread(nullptr) == haiku_loop_thread;
 }
 
-IUP_DRV_API bool iuphaikuRunOnLoopThread(IhaikuLoopWork fn, void* data)
+IUP_DRV_API BLooper* iuphaikuOwnLooper(void)
 {
-  if (haiku_main_loop_level > 0 || haiku_loop_thread < 0) return false;
+  BLooper* looper = BLooper::LooperForThread(find_thread(nullptr));
+  if (!looper && be_app && be_app->IsLocked()) looper = be_app;
+  return looper;
+}
 
-  thread_id self = find_thread(nullptr);
-  if (haiku_loop_thread == self) return false;
-
-  if (!haiku_work_mutex)
-    haiku_work_mutex = iupdrvMutexCreate();
-
-  BLooper* self_looper = BLooper::LooperForThread(self);
-
-  haikuWorkNode node;
-  node.fn = fn;
-  node.data = data;
-  node.looper = self_looper;
-  node.done = create_sem(0, "iup_loop_work");
-  node.next = nullptr;
-  if (node.done < B_OK) return false;
-
-  iupdrvMutexLock(haiku_work_mutex);
-  if (haiku_work_tail) haiku_work_tail->next = &node;
-  else haiku_work_head = &node;
-  haiku_work_tail = &node;
-  iupdrvMutexUnlock(haiku_work_mutex);
-
-  haikuWakeSem();
-  haikuWake();
+IUP_DRV_API void iuphaikuCallbackLock(BLooper* looper)
+{
+  if (haiku_callback_sem < 0) haiku_callback_sem = create_sem(0, "iup_callbacks");
+  if (haikuCallbackOwned())
+  {
+    haiku_callback_count++;
+    return;
+  }
+  if (haikuCallbackTryAcquire())
+  {
+    haikuCallbackTake();
+    return;
+  }
 
   int relock = 0;
-  if (self_looper) while (self_looper->IsLocked()) { self_looper->Unlock(); relock++; }
+  if (looper) while (looper->IsLocked()) { looper->Unlock(); relock++; }
+  haikuCallbackAcquire();
+  haikuCallbackTake();
+  while (relock--) looper->Lock();
+}
 
-  status_t wait = acquire_sem_etc(node.done, 1, B_RELATIVE_TIMEOUT, 2000000);
-  if (wait == B_TIMED_OUT && haikuWorkUnqueue(&node))
-  {
-    while (relock--) self_looper->Lock();
-    delete_sem(node.done);
-    return false;
-  }
-  if (wait != B_OK)
-    acquire_sem(node.done);
+IUP_DRV_API void iuphaikuCallbackUnlock(void)
+{
+  if (!haikuCallbackOwned() || --haiku_callback_count > 0) return;
+  haikuCallbackReleaseOwner();
+}
 
-  while (relock--) self_looper->Lock();
-  delete_sem(node.done);
-  return true;
+IUP_DRV_API int iuphaikuCallbackRelease(void)
+{
+  if (!haikuCallbackOwned()) return 0;
+  int count = haiku_callback_count;
+  haiku_callback_count = 0;
+  haikuCallbackReleaseOwner();
+  return count;
+}
+
+IUP_DRV_API void iuphaikuCallbackRestore(int count)
+{
+  if (count <= 0) return;
+  haikuCallbackAcquire();
+  haikuCallbackTake();
+  haiku_callback_count = count;
+}
+
+CallbackReleaseGuard::CallbackReleaseGuard(BLooper* looper)
+  : fLooper(looper), fRelock(0), fHeld(0)
+{
+  if (fLooper) while (fLooper->IsLocked()) { fLooper->Unlock(); fRelock++; }
+  fHeld = iuphaikuCallbackRelease();
+}
+
+CallbackReleaseGuard::~CallbackReleaseGuard()
+{
+  iuphaikuCallbackRestore(fHeld);
+  while (fRelock-- > 0) fLooper->Lock();
 }
 
 static int haikuLoopStepResult()
@@ -397,7 +387,10 @@ extern "C" IUP_API int IupMainLoop(void)
   {
     /* Top level: lock already held from BApplication ctor. */
     if (be_app && iupDlgListVisibleCount() > 0)
+    {
+      CallbackReleaseGuard release(nullptr);
       be_app->Run();
+    }
   }
   else
   {
@@ -420,11 +413,9 @@ extern "C" IUP_API int IupMainLoop(void)
       /* Blocked here, so the looper can't repaint itself; drain its pending updates. */
       if (self_window) self_window->UpdateIfNeeded();
 
-      int relock = 0;
-      if (self_looper) while (self_looper->IsLocked()) { self_looper->Unlock(); relock++; }
       bigtime_t timeout = haiku_idle_cb ? 0 : 100000;
+      CallbackReleaseGuard release(iuphaikuOwnLooper());
       acquire_sem_etc(sem, 1, B_RELATIVE_TIMEOUT, timeout);
-      while (relock--) self_looper->Lock();
     }
     iuphaikuModalEnd();
   }
@@ -442,7 +433,6 @@ extern "C" IUP_API int IupLoopStepWait(void)
 {
   sem_id sem = haikuWakeSem();
   haiku_loop_thread = find_thread(nullptr);
-  iuphaikuDrainLoopWork();
   haikuDrainPostQueue();
   iuphaikuTimerRunDue();
 
@@ -450,8 +440,10 @@ extern "C" IUP_API int IupLoopStepWait(void)
   bigtime_t next = iuphaikuTimerNextWait();
   if (next >= 0 && next < timeout) timeout = next;
 
-  acquire_sem_etc(sem, 1, B_RELATIVE_TIMEOUT, timeout);
-  iuphaikuDrainLoopWork();
+  {
+    CallbackReleaseGuard release(iuphaikuOwnLooper());
+    acquire_sem_etc(sem, 1, B_RELATIVE_TIMEOUT, timeout);
+  }
   haikuDrainPostQueue();
   iuphaikuTimerRunDue();
   return haikuLoopStepResult();
@@ -460,7 +452,7 @@ extern "C" IUP_API int IupLoopStepWait(void)
 extern "C" IUP_API int IupLoopStep(void)
 {
   haiku_loop_thread = find_thread(nullptr);
-  iuphaikuDrainLoopWork();
+  { CallbackReleaseGuard release(iuphaikuOwnLooper()); }
   haikuDrainPostQueue();
   iuphaikuTimerRunDue();
 
@@ -481,7 +473,7 @@ extern "C" IUP_API int IupLoopStep(void)
 extern "C" IUP_API void IupFlush(void)
 {
   haikuDrainPostQueue();
-  snooze(0);
+  { CallbackReleaseGuard release(iuphaikuOwnLooper()); }
 }
 
 IUP_DRV_API void iuphaikuLoopCleanup()

@@ -107,10 +107,13 @@ IUP_DRV_API void iuphaikuUnlockLooper(BLooper* looper);
 IUP_DRV_API void iuphaikuTimerRunDue(void);
 IUP_DRV_API bigtime_t iuphaikuTimerNextWait(void);
 
-typedef void (*IhaikuLoopWork)(void*);
-IUP_DRV_API bool iuphaikuRunOnLoopThread(IhaikuLoopWork fn, void* data);
-IUP_DRV_API void iuphaikuDrainLoopWork(void);
 IUP_DRV_API bool iuphaikuCanLockAppLooper(void);
+
+IUP_DRV_API BLooper* iuphaikuOwnLooper(void);
+IUP_DRV_API void iuphaikuCallbackLock(BLooper* looper);
+IUP_DRV_API void iuphaikuCallbackUnlock(void);
+IUP_DRV_API int iuphaikuCallbackRelease(void);
+IUP_DRV_API void iuphaikuCallbackRestore(int count);
 
 IUP_DRV_API void iuphaikuModalBegin();
 IUP_DRV_API void iuphaikuModalEnd();
@@ -144,6 +147,29 @@ public:
 private:
   BLooper* fLooper;
   bool fLocked;
+};
+
+class CallbackLockGuard
+{
+public:
+  explicit CallbackLockGuard(BLooper* looper) { iuphaikuCallbackLock(looper); }
+  ~CallbackLockGuard() { iuphaikuCallbackUnlock(); }
+  CallbackLockGuard(const CallbackLockGuard&) = delete;
+  CallbackLockGuard& operator=(const CallbackLockGuard&) = delete;
+};
+
+class CallbackReleaseGuard
+{
+public:
+  explicit CallbackReleaseGuard(BLooper* looper);
+  ~CallbackReleaseGuard();
+  CallbackReleaseGuard(const CallbackReleaseGuard&) = delete;
+  CallbackReleaseGuard& operator=(const CallbackReleaseGuard&) = delete;
+
+private:
+  BLooper* fLooper;
+  int fRelock;
+  int fHeld;
 };
 
 void iuphaikuDnDMouseDown(Ihandle* ih, BPoint where, unsigned int buttons);

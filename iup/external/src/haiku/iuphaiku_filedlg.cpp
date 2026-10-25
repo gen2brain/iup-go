@@ -94,7 +94,11 @@ public:
     iuphaikuModalBegin();
     for (;;)
     {
-      status_t status = acquire_sem_etc(fSem, 1, B_RELATIVE_TIMEOUT, 50000);
+      status_t status;
+      {
+        CallbackReleaseGuard release(iuphaikuOwnLooper());
+        status = acquire_sem_etc(fSem, 1, B_RELATIVE_TIMEOUT, 50000);
+      }
       if (status == B_TIMED_OUT || status == B_INTERRUPTED)
       {
         if (window) window->UpdateIfNeeded();
