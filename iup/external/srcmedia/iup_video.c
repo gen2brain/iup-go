@@ -1085,7 +1085,8 @@ static int iVideoTick(Ihandle* timer)
       if (ih->data->pending_seek)
       {
         if (info.seekable)
-          session->backend->seek(session, ih->data->seek_position, ih->data->seek_fast);
+          session->backend->seek(session, ih->data->seek_position,
+                                 ih->data->seek_fast ? (ih->data->seek_position < info.position ? -1 : 1) : 0);
         ih->data->pending_seek = 0;
         info.ended = 0;
       }

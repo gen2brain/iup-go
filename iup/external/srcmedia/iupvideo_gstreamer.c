@@ -294,7 +294,9 @@ static void iVideoGstPlay(IvideoSession* session, int play)
 static void iVideoGstSeek(IvideoSession* session, double position, int fast)
 {
   IvideoGst* context = (IvideoGst*)session->context;
-  GstSeekFlags flags = fast ? GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT | GST_SEEK_FLAG_SNAP_NEAREST : GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE;
+  GstSeekFlags flags = GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_ACCURATE;
+  if (fast)
+    flags = GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT | (fast > 0 ? GST_SEEK_FLAG_SNAP_AFTER : GST_SEEK_FLAG_SNAP_BEFORE);
   if (position > (double)INT64_MAX / GST_SECOND)
     return;
   if (context->seeking)

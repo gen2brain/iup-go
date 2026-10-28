@@ -60,7 +60,7 @@ public final class IupVideoHelper
     }
 
     @Keep
-    public static void seek(Object object, double position, boolean fast)
+    public static void seek(Object object, double position, int fast)
     {
         ((Player)object).seek(position, fast);
     }
@@ -249,7 +249,7 @@ public final class IupVideoHelper
 
         abstract void open();
         abstract void play(boolean play);
-        abstract void seek(double position, boolean fast);
+        abstract void seek(double position, int fast);
         abstract void volume(int volume, boolean mute);
         abstract void audioDevice(int id);
         abstract boolean playing();
@@ -453,7 +453,12 @@ public final class IupVideoHelper
         long previewTime;
         boolean previewPending;
         double pendingSeek = -1;
-        boolean pendingFast;
+        Thread keyframeThread;
+        MediaExtractor keyframeExtractor;
+        volatile int keyframeGeneration;
+        double keyframeTarget;
+        int keyframeDirection;
+        boolean keyframePending, keyframeTrack;
 
         NativePlayer(View host, long session, String source, boolean url)
         {
@@ -514,9 +519,8 @@ public final class IupVideoHelper
                 if (!closed && pendingSeek >= 0)
                 {
                     double position = pendingSeek;
-                    boolean fast = pendingFast;
                     pendingSeek = -1;
-                    seek(position, fast);
+                    seekTo(position);
                 }
                 else if (!closed && !requested)
                 {
@@ -745,14 +749,105 @@ public final class IupVideoHelper
         }
 
         @Override
-        void seek(double position, boolean fast)
+        void seek(double position, int fast)
+        {
+            if (closed || failed || !prepared)
+                return;
+            if (fast == 0)
+            {
+                synchronized (this)
+                {
+                    keyframeGeneration++;
+                    keyframePending = false;
+                }
+                seekTo(position);
+                return;
+            }
+            synchronized (this)
+            {
+                keyframeGeneration++;
+                keyframeTarget = position;
+                keyframeDirection = fast;
+                keyframePending = true;
+                if (keyframeThread != null)
+                    return;
+                keyframeThread = new Thread(this::findKeyframes, "IupKeyframe");
+                keyframeThread.start();
+            }
+        }
+
+        void findKeyframes()
+        {
+            for (;;)
+            {
+                final int generation, direction;
+                final double target;
+                synchronized (this)
+                {
+                    if (closed || !keyframePending)
+                    {
+                        keyframeThread = null;
+                        if (closed && keyframeExtractor != null)
+                        {
+                            keyframeExtractor.release();
+                            keyframeExtractor = null;
+                        }
+                        return;
+                    }
+                    generation = keyframeGeneration;
+                    target = keyframeTarget;
+                    direction = keyframeDirection;
+                    keyframePending = false;
+                }
+                double keyframe = target;
+                try
+                {
+                    if (keyframeExtractor == null)
+                    {
+                        keyframeExtractor = new MediaExtractor();
+                        if (sourceURL)
+                            keyframeExtractor.setDataSource(host.getContext(), Uri.parse(source), null);
+                        else
+                            keyframeExtractor.setDataSource(source);
+                        for (int i = 0; i < keyframeExtractor.getTrackCount(); i++)
+                        {
+                            String mime = keyframeExtractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME);
+                            if (mime != null && mime.startsWith("video/"))
+                            {
+                                keyframeExtractor.selectTrack(i);
+                                keyframeTrack = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (keyframeTrack)
+                    {
+                        keyframeExtractor.seekTo((long)(target * 1000000),
+                            direction > 0 ? MediaExtractor.SEEK_TO_NEXT_SYNC : MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                        long sample = keyframeExtractor.getSampleTime();
+                        if (sample >= 0)
+                            keyframe = sample / 1000000.0;
+                    }
+                }
+                catch (Exception error)
+                {
+                    keyframe = target;
+                }
+                final double position = keyframe;
+                host.post(() -> {
+                    if (!closed && keyframeGeneration == generation)
+                        seekTo(position);
+                });
+            }
+        }
+
+        void seekTo(double position)
         {
             if (closed || failed || !prepared)
                 return;
             if (seeking)
             {
                 pendingSeek = position;
-                pendingFast = fast;
                 return;
             }
             if (position > Integer.MAX_VALUE / 1000.0)
@@ -763,7 +858,7 @@ public final class IupVideoHelper
                 cancelSubtitlePreview();
                 ended = false;
                 if (Build.VERSION.SDK_INT >= 26)
-                    media.seekTo((long)(position * 1000), fast ? MediaPlayer.SEEK_CLOSEST_SYNC : MediaPlayer.SEEK_CLOSEST);
+                    media.seekTo((long)(position * 1000), MediaPlayer.SEEK_CLOSEST);
                 else
                     media.seekTo((int)(position * 1000));
             }
@@ -816,6 +911,15 @@ public final class IupVideoHelper
         void release()
         {
             cancelSubtitlePreview();
+            synchronized (this)
+            {
+                keyframePending = false;
+                if (keyframeThread == null && keyframeExtractor != null)
+                {
+                    keyframeExtractor.release();
+                    keyframeExtractor = null;
+                }
+            }
             media.setOnPreparedListener(null);
             media.setOnVideoSizeChangedListener(null);
             media.setOnCompletionListener(null);

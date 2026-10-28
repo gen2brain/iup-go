@@ -41,9 +41,9 @@ final class IupVideoDecoder extends IupVideoHelper.Player
     private volatile boolean running;
     private long durationUs;
     private int deviceId = -1;
-    private int sampleRate, frameSize, rotation;
+    private int sampleRate, frameSize, rotation, seekFast;
 
-    private boolean playingNow, audioClock, needFrame, videoEnd, audioEnd, surfaceLost, seekPending, seekFast;
+    private boolean playingNow, audioClock, needFrame, videoEnd, audioEnd, surfaceLost, seekPending;
     private long clockBaseUs, clockStartNs, audioBaseUs, dropUntilUs, seekUs, lastClockUs = -1, lastAdvanceNs, pausedFrames = -1;
 
     IupVideoDecoder(View host, long session, String source, boolean url, String audioSource)
@@ -219,7 +219,7 @@ final class IupVideoDecoder extends IupVideoHelper.Player
         {
             at = clockUs();
         }
-        seekExtractors(at, false);
+        seekExtractors(at, 0);
         startWorkers();
     }
 
@@ -290,14 +290,14 @@ final class IupVideoDecoder extends IupVideoHelper.Player
             Thread.currentThread().interrupt();
     }
 
-    private void seekExtractors(long us, boolean fast)
+    private void seekExtractors(long us, int fast)
     {
         long target = us;
         if (videoExtractor != null)
         {
-            videoExtractor.seekTo(us, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            videoExtractor.seekTo(us, fast > 0 ? MediaExtractor.SEEK_TO_NEXT_SYNC : MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             long sample = videoExtractor.getSampleTime();
-            if (fast && sample >= 0)
+            if (fast != 0 && sample >= 0)
                 target = sample;
         }
         if (audioExtractor != null)
@@ -641,7 +641,7 @@ final class IupVideoDecoder extends IupVideoHelper.Player
     }
 
     @Override
-    void seek(double position, boolean fast)
+    void seek(double position, int fast)
     {
         if (closed || failed || !prepared)
             return;
@@ -656,7 +656,7 @@ final class IupVideoDecoder extends IupVideoHelper.Player
         }
         control.execute(() -> {
             long target;
-            boolean snap;
+            int snap;
             synchronized (lock)
             {
                 if (!seekPending || closed)

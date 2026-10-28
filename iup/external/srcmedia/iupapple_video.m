@@ -360,8 +360,9 @@ static void iappleVideoSeek(IvideoSession* session, double position, int fast)
     return;
   context->ended = 0;
   context->restoring = 0;
-  CMTime tolerance = fast ? kCMTimePositiveInfinity : kCMTimeZero;
-  [context->player seekToTime:CMTimeMakeWithSeconds(position, 600) toleranceBefore:tolerance toleranceAfter:tolerance];
+  CMTime before = fast < 0 ? kCMTimePositiveInfinity : kCMTimeZero;
+  CMTime after = fast > 0 ? kCMTimePositiveInfinity : kCMTimeZero;
+  [context->player seekToTime:CMTimeMakeWithSeconds(position, 600) toleranceBefore:before toleranceAfter:after];
 }
 
 static void iappleVideoVolume(IvideoSession* session, int volume, int mute)
