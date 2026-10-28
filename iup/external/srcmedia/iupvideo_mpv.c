@@ -315,13 +315,23 @@ static void iVideoMpvSeek(IvideoSession* session, double position, int fast)
   IvideoMpv* context = (IvideoMpv*)session->context;
   mpv_node arguments[3], command;
   mpv_node_list list;
+  const char* mode = "absolute+exact";
+  double current;
+  if (fast < 0 && !context->audio)
+    mode = "absolute+keyframes";
+  else if (fast > 0 && !context->audio &&
+           mpv_get_property(context->player, "time-pos", MPV_FORMAT_DOUBLE, &current) >= 0 && position > current)
+  {
+    mode = "relative+keyframes";
+    position -= current;
+  }
   memset(arguments, 0, sizeof(arguments));
   arguments[0].format = MPV_FORMAT_STRING;
   arguments[0].u.string = (char*)"seek";
   arguments[1].format = MPV_FORMAT_DOUBLE;
   arguments[1].u.double_ = position;
   arguments[2].format = MPV_FORMAT_STRING;
-  arguments[2].u.string = (char*)(fast && !context->audio ? "absolute+keyframes" : "absolute+exact");
+  arguments[2].u.string = (char*)mode;
   list.num = 3;
   list.values = arguments;
   list.keys = NULL;

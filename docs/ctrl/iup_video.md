@@ -69,8 +69,10 @@ In Linux and FreeBSD this requires the org.freedesktop.ScreenSaver D-Bus service
 
 **POSITION** (non-inheritable): Playback position in seconds, as a floating point number. Setting it seeks asynchronously, as selected by SEEKMODE. Ignored when the source is not seekable.
 
-**SEEKMODE** (non-inheritable): How setting POSITION seeks. Can be "EXACT" (to the given position) or "FAST" (to a nearby keyframe). Default: "EXACT".
-With "VLC" 3, with AUDIOURL in "MPV" and "VLC", and in WebAssembly in browsers without HTMLMediaElement.fastSeek, "FAST" seeks like "EXACT".
+**SEEKMODE** (non-inheritable): How setting POSITION seeks. Can be "EXACT" (to the given position) or "FAST" (to a nearby keyframe on the same side of the current position as the given position). Default: "EXACT".
+With "VLC" 3, "NATIVE" in Windows, with AUDIOURL in "MPV" and "VLC", and in WebAssembly in browsers without HTMLMediaElement.fastSeek, "FAST" seeks like "EXACT".
+With "VLC" 4, a "FAST" seek forward seeks like "EXACT".
+In Android before 8.0, "EXACT" seeks to the keyframe at or before the given position.
 
 **DURATION** (read-only): Length of the source in seconds, as a floating point number, or "0" when unknown.
 

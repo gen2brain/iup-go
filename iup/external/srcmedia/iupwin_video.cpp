@@ -1086,10 +1086,8 @@ static void winVideoSeek(IvideoSession* session, double position, int fast)
     context->resume_position = position;
     return;
   }
-  if (fast)
-    context->player->SetCurrentTimeEx(position, MF_MEDIA_ENGINE_SEEK_MODE_APPROXIMATE);
-  else
-    context->player->SetCurrentTime(position);
+  (void)fast;
+  context->player->SetCurrentTime(position);
 }
 
 static void winVideoVolume(IvideoSession* session, int volume, int mute)
