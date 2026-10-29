@@ -4,7 +4,6 @@ package iup
 
 import (
 	"unsafe"
-
 )
 
 /*
