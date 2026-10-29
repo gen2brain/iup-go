@@ -187,6 +187,8 @@ public:
 
   explicit IupQtSpinBox(Ihandle* ihandle) : QSpinBox(), ih(ihandle), spinauto(true) {}
 
+  QLineEdit* edit() const { return lineEdit(); }
+
   void setDisplayText(const QString& text)
   {
     lineEdit()->setText(text);
@@ -249,6 +251,12 @@ protected:
     iupqtFocusInOutEvent(this, event, ih);
   }
 };
+
+static QLineEdit* qtTextGetLineEdit(Ihandle* ih)
+{
+  auto* spin = reinterpret_cast<IupQtSpinBox*>(iupAttribGet(ih, "_IUPQT_SPINBOX"));
+  return spin ? spin->edit() : reinterpret_cast<QLineEdit*>(ih->handle);
+}
 
 class IupQtTextEdit : public QTextEdit
 {
@@ -574,7 +582,7 @@ static void qtTextCursorPositionChanged(Ihandle* ih)
     }
     else
     {
-      auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+      auto* edit = qtTextGetLineEdit(ih);
       pos = edit->cursorPosition();
     }
 
@@ -593,7 +601,7 @@ static void qtTextGetEditRange(Ihandle* ih, int* start, int* end)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     *start = edit->hasSelectedText() ? edit->selectionStart() : edit->cursorPosition();
     *end = edit->hasSelectedText() ? *start + static_cast<int>(edit->selectedText().length()) : *start;
   }
@@ -611,7 +619,7 @@ static void qtTextArbitrateHistory(Ihandle* ih, int redo)
   if (ih->data->is_multiline)
     value = (reinterpret_cast<IupQtTextEdit*>(ih->handle))->toPlainText();
   else
-    value = (reinterpret_cast<IupQtLineEdit*>(ih->handle))->text();
+    value = (qtTextGetLineEdit(ih))->text();
 
   if (iupEditCheckNewValue(ih, cb, value.toUtf8().constData(), ih->data->mask, ih->data->nc))
     return;
@@ -625,7 +633,7 @@ static void qtTextArbitrateHistory(Ihandle* ih, int redo)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     if (redo) edit->undo(); else edit->redo();
   }
 
@@ -672,7 +680,7 @@ static void qtTextInsertKey(Ihandle* ih, const QString& text)
     (reinterpret_cast<IupQtTextEdit*>(ih->handle))->textCursor().insertText(text);
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     int pos = edit->cursorPosition();
     QString current = edit->text();
     current.insert(pos, text);
@@ -701,7 +709,7 @@ static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt)
   if ((evt->key() == Qt::Key_Backspace || evt->key() == Qt::Key_Delete) && !(evt->modifiers() & (Qt::ControlModifier | Qt::AltModifier)))
   {
     int remove_dir = evt->key() == Qt::Key_Delete ? 1 : -1;
-    int len = ih->data->is_multiline ? static_cast<int>((reinterpret_cast<IupQtTextEdit*>(ih->handle))->toPlainText().length()) : static_cast<int>((reinterpret_cast<IupQtLineEdit*>(ih->handle))->text().length());
+    int len = ih->data->is_multiline ? static_cast<int>((reinterpret_cast<IupQtTextEdit*>(ih->handle))->toPlainText().length()) : static_cast<int>((qtTextGetLineEdit(ih))->text().length());
     if (start == end && ((remove_dir == -1 && start == 0) || (remove_dir == 1 && start >= len)))
       return 0;
     ret = iupEditCallActionCb(ih, cb, nullptr, start, end, ih->data->mask, ih->data->nc, remove_dir, 1);
@@ -763,7 +771,7 @@ static int qtTextSetValueAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+      auto* edit = qtTextGetLineEdit(ih);
       edit->setText(QString::fromUtf8(value));
     }
   }
@@ -793,7 +801,7 @@ static char* qtTextGetValueAttrib(Ihandle* ih)
     }
     else
     {
-      auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+      auto* edit = qtTextGetLineEdit(ih);
       value = edit->text();
     }
   }
@@ -828,7 +836,7 @@ static int qtTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     edit->insert(QString::fromUtf8(value));
   }
 
@@ -850,7 +858,7 @@ static char* qtTextGetSelectedTextAttrib(Ihandle* ih)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     has_selection = edit->hasSelectedText();
     value = edit->selectedText();
   }
@@ -875,7 +883,7 @@ static int qtTextSetSelectionAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+      auto* edit = qtTextGetLineEdit(ih);
       edit->deselect();
     }
     return 0;
@@ -890,7 +898,7 @@ static int qtTextSetSelectionAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+      auto* edit = qtTextGetLineEdit(ih);
       edit->selectAll();
     }
     return 0;
@@ -917,7 +925,7 @@ static int qtTextSetSelectionAttrib(Ihandle* ih, const char* value)
     if (end < 1) end = 1;
     start--;
     end--;
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     edit->setSelection(start, end - start);
   }
 
@@ -942,7 +950,7 @@ static char* qtTextGetSelectionAttrib(Ihandle* ih)
     return iupStrReturnStrf("%d,%d:%d,%d", lin1, col1, lin2, col2);
   }
 
-  auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+  auto* edit = qtTextGetLineEdit(ih);
   start = edit->selectionStart();
   if (start < 0)
     return nullptr;
@@ -965,7 +973,7 @@ static int qtTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+      auto* edit = qtTextGetLineEdit(ih);
       edit->deselect();
     }
     return 0;
@@ -980,7 +988,7 @@ static int qtTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+      auto* edit = qtTextGetLineEdit(ih);
       edit->selectAll();
     }
     return 0;
@@ -1002,7 +1010,7 @@ static int qtTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     edit->setSelection(start, end - start);
   }
 
@@ -1022,7 +1030,7 @@ static char* qtTextGetSelectionPosAttrib(Ihandle* ih)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     start = edit->selectionStart();
     if (start < 0)
       return nullptr;
@@ -1053,7 +1061,7 @@ static int qtTextSetCaretAttrib(Ihandle* ih, const char* value)
     iupStrToInt(value, &pos);
     pos--;
     if (pos < 0) pos = 0;
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     edit->setCursorPosition(pos);
   }
 
@@ -1072,7 +1080,7 @@ static char* qtTextGetCaretAttrib(Ihandle* ih)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     return iupStrReturnInt(edit->cursorPosition() + 1);
   }
 }
@@ -1096,7 +1104,7 @@ static int qtTextSetCaretPosAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     edit->setCursorPosition(pos);
   }
 
@@ -1115,7 +1123,7 @@ static char* qtTextGetCaretPosAttrib(Ihandle* ih)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     pos = edit->cursorPosition();
   }
 
@@ -1145,7 +1153,7 @@ static int qtTextSetScrollToAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     edit->setCursorPosition(pos);
   }
 
@@ -1172,7 +1180,7 @@ static int qtTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     edit->setCursorPosition(pos);
   }
 
@@ -1195,7 +1203,7 @@ static int qtTextSetInsertAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     edit->insert(QString::fromUtf8(value));
   }
 
@@ -1240,7 +1248,7 @@ static int qtTextSetAppendAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     edit->setText(edit->text() + QString::fromUtf8(value));
   }
 
@@ -1257,7 +1265,7 @@ static int qtTextSetReadOnlyAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     edit->setReadOnly(iupStrBoolean(value));
   }
 
@@ -1275,7 +1283,7 @@ static char* qtTextGetReadOnlyAttrib(Ihandle* ih)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     readonly = edit->isReadOnly();
   }
 
@@ -1289,7 +1297,7 @@ static int qtTextSetNCAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle && !ih->data->is_multiline)
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     edit->setMaxLength(ih->data->nc > 0 ? ih->data->nc : 32767);
   }
 
@@ -1300,7 +1308,7 @@ static char* qtTextGetNCAttrib(Ihandle* ih)
 {
   if (!ih->data->is_multiline)
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     return iupStrReturnInt(edit->maxLength());
   }
 
@@ -1321,7 +1329,7 @@ static int qtTextSetClipboardAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+      auto* edit = qtTextGetLineEdit(ih);
       edit->copy();
     }
   }
@@ -1334,7 +1342,7 @@ static int qtTextSetClipboardAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+      auto* edit = qtTextGetLineEdit(ih);
       edit->cut();
     }
   }
@@ -1347,7 +1355,7 @@ static int qtTextSetClipboardAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+      auto* edit = qtTextGetLineEdit(ih);
       edit->paste();
     }
   }
@@ -1364,7 +1372,7 @@ static int qtTextSetClipboardAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+      auto* edit = qtTextGetLineEdit(ih);
       if (edit->hasSelectedText())
         edit->del();
       else
@@ -1376,7 +1384,7 @@ static int qtTextSetClipboardAttrib(Ihandle* ih, const char* value)
     if (ih->data->is_multiline)
       (reinterpret_cast<IupQtTextEdit*>(ih->handle))->undo();
     else
-      (reinterpret_cast<IupQtLineEdit*>(ih->handle))->undo();
+      (qtTextGetLineEdit(ih))->undo();
 
     qtTextArbitrateHistory(ih, 0);
   }
@@ -1385,7 +1393,7 @@ static int qtTextSetClipboardAttrib(Ihandle* ih, const char* value)
     if (ih->data->is_multiline)
       (reinterpret_cast<IupQtTextEdit*>(ih->handle))->redo();
     else
-      (reinterpret_cast<IupQtLineEdit*>(ih->handle))->redo();
+      (qtTextGetLineEdit(ih))->redo();
 
     qtTextArbitrateHistory(ih, 1);
   }
@@ -1426,7 +1434,7 @@ static int qtTextSetPasswordAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->data->is_multiline)
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     if (iupStrBoolean(value))
       edit->setEchoMode(QLineEdit::Password);
     else
@@ -1454,7 +1462,7 @@ static int qtTextSetAlignmentAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     edit->setAlignment(align);
   }
 
@@ -1472,7 +1480,7 @@ static char* qtTextGetCountAttrib(Ihandle* ih)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     count = edit->text().length();
   }
 
@@ -1494,7 +1502,7 @@ static int qtTextSetCueBannerAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->data->is_multiline)
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     if (value)
       edit->setPlaceholderText(QString::fromUtf8(value));
     else
@@ -1508,7 +1516,7 @@ static char* qtTextGetCueBannerAttrib(Ihandle* ih)
 {
   if (!ih->data->is_multiline)
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     QString text = edit->placeholderText();
     if (!text.isEmpty())
       return iupStrReturnStr(text.toUtf8().constData());
@@ -1533,7 +1541,7 @@ static void qtTextApplyFilter(Ihandle* ih)
   if (ih->data->is_multiline)
     text = (reinterpret_cast<IupQtTextEdit*>(ih->handle))->toPlainText();
   else
-    text = (reinterpret_cast<IupQtLineEdit*>(ih->handle))->text();
+    text = (qtTextGetLineEdit(ih))->text();
 
   QString filtered;
   filtered.reserve(text.size());
@@ -1562,7 +1570,7 @@ static void qtTextApplyFilter(Ihandle* ih)
   }
   else
   {
-    auto* le = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* le = qtTextGetLineEdit(ih);
     int pos = le->cursorPosition();
     QSignalBlocker blocker(le);
     le->setText(filtered);
@@ -1586,7 +1594,7 @@ static int qtTextSetOverwriteAttrib(Ihandle* ih, const char* value)
     auto* text = reinterpret_cast<IupQtTextEdit*>(ih->handle);
     text->setIupOverwriteMode(overwrite);
   }
-  else
+  else if (!iupAttribGet(ih, "_IUPQT_SPINBOX"))
   {
     auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
     edit->setIupOverwriteMode(overwrite);
@@ -1597,14 +1605,14 @@ static int qtTextSetOverwriteAttrib(Ihandle* ih, const char* value)
 
 static char* qtTextGetOverwriteAttrib(Ihandle* ih)
 {
-  bool overwrite;
+  bool overwrite = false;
 
   if (ih->data->is_multiline)
   {
     auto* text = reinterpret_cast<IupQtTextEdit*>(ih->handle);
     overwrite = text->isIupOverwriteMode();
   }
-  else
+  else if (!iupAttribGet(ih, "_IUPQT_SPINBOX"))
   {
     auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
     overwrite = edit->isIupOverwriteMode();
@@ -1643,7 +1651,7 @@ static int qtTextSetBorderAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     if (iupStrBoolean(value))
       edit->setFrame(true);
     else
@@ -1658,7 +1666,7 @@ static int qtTextSetVisibleColumnsAttrib(Ihandle* ih, const char* value)
   if (!ih->data->is_multiline)
   {
     /* Qt's widget minimum must not constrain the IUP layout */
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     QFontMetrics metrics(edit->font());
     int min_width = metrics.horizontalAdvance('X');
     edit->setMinimumWidth(min_width);
@@ -1718,7 +1726,7 @@ static char* qtTextGetPasswordAttrib(Ihandle* ih)
 {
   if (!ih->data->is_multiline)
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     return iupStrReturnBoolean(edit->echoMode() == QLineEdit::Password);
   }
 
@@ -1734,7 +1742,7 @@ static char* qtTextGetBorderAttrib(Ihandle* ih)
   }
   else
   {
-    auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+    auto* edit = qtTextGetLineEdit(ih);
     return iupStrReturnBoolean(edit->hasFrame());
   }
 }
