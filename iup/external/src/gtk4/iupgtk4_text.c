@@ -456,6 +456,41 @@ static gboolean gtk4TextButtonEvent(GtkGestureClick* gesture, int n_press, doubl
   return FALSE;
 }
 
+static void gtk4TextViewDeleteFromCursor(GtkTextView* text_view, GtkDeleteType type, int count, Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPGTK4_DELETEKEY", "1");
+  (void)text_view;
+  (void)type;
+  (void)count;
+}
+
+static void gtk4TextViewDeleteFromCursorAfter(GtkTextView* text_view, GtkDeleteType type, int count, Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPGTK4_DELETEKEY", NULL);
+  (void)text_view;
+  (void)type;
+  (void)count;
+}
+
+static void gtk4TextBufferEndUserAction(GtkTextBuffer* buffer, Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPGTK4_OVERWRITEPOS", NULL);
+  (void)buffer;
+}
+
+static int gtk4TextBufferIsOverwrite(Ihandle* ih, GtkTextBuffer* buffer, GtkTextIter* start_iter, GtkTextIter* end_iter)
+{
+  GtkTextIter insert;
+
+  if (iupAttribGet(ih, "_IUPGTK4_DELETEKEY") || !gtk_text_view_get_overwrite(GTK_TEXT_VIEW(ih->handle)) ||
+      gtk_text_buffer_get_has_selection(buffer))
+    return 0;
+
+  gtk_text_buffer_get_iter_at_mark(buffer, &insert, gtk_text_buffer_get_insert(buffer));
+  return gtk_text_iter_equal(start_iter, &insert) &&
+         gtk_text_iter_get_offset(end_iter) == gtk_text_iter_get_offset(start_iter) + 1;
+}
+
 static void gtk4TextBufferDeleteRange(GtkTextBuffer* buffer, GtkTextIter* start_iter, GtkTextIter* end_iter, Ihandle* ih)
 {
   IFnis cb = (IFnis)IupGetCallback(ih, "ACTION");
@@ -466,6 +501,14 @@ static void gtk4TextBufferDeleteRange(GtkTextBuffer* buffer, GtkTextIter* start_
 
   start = gtk_text_iter_get_offset(start_iter);
   end = gtk_text_iter_get_offset(end_iter);
+
+  iupAttribSet(ih, "_IUPGTK4_OVERWRITEPOS", NULL);
+  if ((cb || ih->data->mask || ih->data->nc) && gtk4TextBufferIsOverwrite(ih, buffer, start_iter, end_iter))
+  {
+    iupAttribSetInt(ih, "_IUPGTK4_OVERWRITEPOS", start);
+    g_signal_stop_emission_by_name(buffer, "delete_range");
+    return;
+  }
 
   ret = iupEditCallActionCb(ih, cb, NULL, start, end, ih->data->mask, ih->data->nc, 1, 1);
   if (ret == 0)
@@ -551,7 +594,7 @@ static void gtk4TextBufferInsertText(GtkTextBuffer* buffer, GtkTextIter* pos, gc
   IFnis cb;
   int ret;
   char* insert_value;
-  int start_pos;
+  int start_pos, overwrite;
 
   if (ih->data->disable_callbacks)
     return;
@@ -559,6 +602,8 @@ static void gtk4TextBufferInsertText(GtkTextBuffer* buffer, GtkTextIter* pos, gc
   cb = (IFnis)IupGetCallback(ih, "ACTION");
 
   start_pos = gtk_text_iter_get_offset(pos);
+  overwrite = iupAttribGet(ih, "_IUPGTK4_OVERWRITEPOS") && iupAttribGetInt(ih, "_IUPGTK4_OVERWRITEPOS") == start_pos;
+  iupAttribSet(ih, "_IUPGTK4_OVERWRITEPOS", NULL);
 
   if (len < 0)
     insert_value = iupStrDup(text);
@@ -569,21 +614,30 @@ static void gtk4TextBufferInsertText(GtkTextBuffer* buffer, GtkTextIter* pos, gc
     insert_value[len] = 0;
   }
 
-  ret = iupEditCallActionCb(ih, cb, insert_value, start_pos, start_pos, ih->data->mask, ih->data->nc, 0, 1);  /* GTK4 is always UTF-8 */
+  ret = iupEditCallActionCb(ih, cb, insert_value, start_pos, start_pos + overwrite, ih->data->mask, ih->data->nc, 0, 1);  /* GTK4 is always UTF-8 */
   if (ret == 0)
   {
     g_signal_stop_emission_by_name(buffer, "insert_text");
     free(insert_value);
     return;
   }
-  else if (ret != -1)
+  else if (ret != -1 || overwrite)
   {
     char new_insert[2];
     new_insert[0] = (char)ret;  /* replace key */
     new_insert[1] = 0;
 
     ih->data->disable_callbacks = 1;
-    gtk_text_buffer_insert(buffer, pos, new_insert, 1);
+    if (overwrite)
+    {
+      GtkTextIter end_iter = *pos;
+      gtk_text_iter_forward_char(&end_iter);
+      gtk_text_buffer_delete(buffer, pos, &end_iter);
+    }
+    if (ret != -1)
+      gtk_text_buffer_insert(buffer, pos, new_insert, 1);
+    else
+      gtk_text_buffer_insert(buffer, pos, insert_value, -1);
     ih->data->disable_callbacks = 0;
 
     g_signal_stop_emission_by_name(buffer, "insert_text");
@@ -1928,7 +1982,10 @@ static int gtk4TextMapMethod(Ihandle* ih)
     g_signal_connect(G_OBJECT(buffer), "delete-range", G_CALLBACK(gtk4TextBufferDeleteRange), ih);
     g_signal_connect(G_OBJECT(buffer), "insert-text", G_CALLBACK(gtk4TextFilterInsertBuffer), ih);
     g_signal_connect(G_OBJECT(buffer), "insert-text", G_CALLBACK(gtk4TextBufferInsertText), ih);
+    g_signal_connect(G_OBJECT(buffer), "end-user-action", G_CALLBACK(gtk4TextBufferEndUserAction), ih);
     g_signal_connect(G_OBJECT(buffer), "changed", G_CALLBACK(gtk4TextChanged), ih);
+    g_signal_connect(G_OBJECT(ih->handle), "delete-from-cursor", G_CALLBACK(gtk4TextViewDeleteFromCursor), ih);
+    g_signal_connect_after(G_OBJECT(ih->handle), "delete-from-cursor", G_CALLBACK(gtk4TextViewDeleteFromCursorAfter), ih);
 
     {
       GtkGesture* link_gesture = gtk_gesture_click_new();

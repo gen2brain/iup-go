@@ -2146,6 +2146,21 @@ static void winTextCallCaretCb(Ihandle* ih)
   }
 }
 
+static int winTextOverwriteChar(Ihandle* ih, int start, int end)
+{
+  TCHAR next[2] = {0, 0};
+  TEXTRANGE range;
+
+  if (!ih->data->has_formatting || start != end || !iupAttribGetBoolean(ih, "OVERWRITE"))
+    return 0;
+
+  range.chrg.cpMin = start;
+  range.chrg.cpMax = start + 1;
+  range.lpstrText = next;
+  SendMessage(ih->handle, EM_GETTEXTRANGE, 0, (LPARAM)&range);
+  return next[0] != 0 && next[0] != '\r' && next[0] != '\n';
+}
+
 static int winTextCallActionCb(Ihandle* ih, char* insert_value, int remove_dir)
 {
   int ret, start, end;
@@ -2156,6 +2171,8 @@ static int winTextCallActionCb(Ihandle* ih, char* insert_value, int remove_dir)
 
   cb = (IFnis)IupGetCallback(ih, "ACTION");
   winTextGetSelection(ih, &start, &end);
+  if (insert_value)
+    end += winTextOverwriteChar(ih, start, end);
   ret = iupEditCallActionCb(ih, cb, insert_value, start, end, (char*)ih->data->mask, ih->data->nc, remove_dir, iupwinStrGetUTF8Mode());
   if (ret == 0)
     return 0;

@@ -34,7 +34,7 @@ typedef struct _Fl_Input_ Fl_Input_;
  ****************************************************************************/
 
 IUP_DRV_API int iupfltkEnterLeaveEvent(Fl_Widget* widget, Ihandle* ih, int event);
-IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, const char* cb_name, void* mask, int nc);
+IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, const char* cb_name, void* mask, int nc, int overwrite);
 IUP_DRV_API int iupfltkMouseMoveEvent(Fl_Widget* widget, Ihandle* ih);
 IUP_DRV_API int iupfltkMouseButtonEvent(Fl_Widget* widget, Ihandle* ih, int event);
 

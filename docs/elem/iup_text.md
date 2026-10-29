@@ -149,10 +149,11 @@ A paste that would exceed the limit is refused. It is truncated instead in Win32
 Default: YES.
 
 **OVERWRITE** (non-inheritable): turns the overwrite mode ON or OFF.
+A typed character replaces the character after the caret, except a line break.
 Pressing the Insert key toggles the value.
 In Win32, requires FORMATTING=YES.
 In GTK, GTK 4, macOS and Haiku, requires MULTILINE=YES.
-In Qt, QML, WinUI, Motif, FLTK, EFL, Android and iOS, works in both single-line and multiline.
+In Qt, QML, WinUI, Motif, FLTK, EFL, Android, iOS and WebAssembly, works in both single-line and multiline.
 
 **PADDING**: internal margin. Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
 Default value: "0x0". In Windows, only the horizontal value is used.

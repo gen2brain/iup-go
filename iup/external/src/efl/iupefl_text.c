@@ -173,42 +173,39 @@ IUP_DRV_API void iupeflTextInsertAt(Eo* entry, int pos, const char* text)
   iupeflTextSetCursor(entry, pos + eina_unicode_utf8_get_len(text));
 }
 
+static int eflTextOverwriteChar(Ihandle* ih, Eo* entry, const Efl_Text_Change_Info* info)
+{
+  Efl_Text_Cursor_Object* cur;
+  Eina_Unicode next = 0;
+
+  if (info->type != EFL_TEXT_CHANGE_TYPE_INSERT || !info->content || info->length != 1 ||
+      info->content[0] == '\n' || !iupAttribGetBoolean(ih, "OVERWRITE"))
+    return 0;
+
+  cur = efl_ui_textbox_cursor_create(entry);
+  if (cur)
+  {
+    efl_text_cursor_object_position_set(cur, (int)(info->position + info->length));
+    next = efl_text_cursor_object_content_get(cur);
+    efl_del(cur);
+  }
+
+  return next != 0 && next != '\n' && next != 0x2028 && next != 0x2029;
+}
+
 static void eflTextChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   Efl_Text_Change_Info* info = (Efl_Text_Change_Info*)ev->info;
   IFnis action_cb;
   IFn value_cb;
-  int ret;
+  int ret, overwrite;
   const char* content = info->content;
 
   if (ih->data->disable_callbacks)
     return;
 
-  if (info->type == EFL_TEXT_CHANGE_TYPE_INSERT && info->content && info->length == 1 &&
-      info->content[0] != '\n' && iupAttribGetBoolean(ih, "OVERWRITE"))
-  {
-    Eo* entry = ev->object;
-    int total_len = 0;
-    const char* full = efl_text_get(entry);
-    if (full) total_len = (int)strlen(full);
-    if ((int)(info->position + info->length) < total_len)
-    {
-      Efl_Text_Cursor_Object* del_start = efl_ui_textbox_cursor_create(entry);
-      Efl_Text_Cursor_Object* del_end = efl_ui_textbox_cursor_create(entry);
-      if (del_start && del_end)
-      {
-        int del_pos = (int)(info->position + info->length);
-        efl_text_cursor_object_position_set(del_start, del_pos);
-        efl_text_cursor_object_position_set(del_end, del_pos + 1);
-        ih->data->disable_callbacks = 1;
-        efl_text_cursor_object_range_delete(del_start, del_end);
-        ih->data->disable_callbacks = 0;
-      }
-      if (del_start) efl_del(del_start);
-      if (del_end) efl_del(del_end);
-    }
-  }
+  overwrite = eflTextOverwriteChar(ih, ev->object, info);
 
   if (info->type == EFL_TEXT_CHANGE_TYPE_INSERT && info->content && info->length > 0)
   {
@@ -290,7 +287,7 @@ static void eflTextChangedCallback(void* data, const Efl_Event* ev)
     {
       insert_value = content;
       start = (int)info->position;
-      end = start;
+      end = start + overwrite;
     }
     else
     {
@@ -334,6 +331,14 @@ static void eflTextChangedCallback(void* data, const Efl_Event* ev)
       if (content != info->content) free((char*)content);
       return;
     }
+  }
+
+  if (overwrite)
+  {
+    int pos = (int)(info->position + info->length);
+    ih->data->disable_callbacks = 1;
+    iupeflTextDeleteRange(ev->object, pos, pos + 1);
+    ih->data->disable_callbacks = 0;
   }
 
   if (content != info->content) free((char*)content);

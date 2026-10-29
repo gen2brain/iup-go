@@ -977,9 +977,12 @@ public final class IupTextHelper
                 {
                     int del = overwriteDelPos;
                     overwriteDelPos = -1;
+                    InputFilter[] saved = tv.getFilters();
+                    tv.setFilters(new InputFilter[0]);
                     tv.suppressVC = true;
                     s.delete(del, del + 1);
                     tv.suppressVC = false;
+                    tv.setFilters(saved);
                 }
                 dispatchValueChanged(tv.ihandlePtr);
             }
@@ -1021,9 +1024,12 @@ public final class IupTextHelper
                     end = filtered.length();
                 }
             }
+            int overwriteEnd = dend;
+            if (tv.overwrite && dstart == dend && end - start == 1 && dstart < dest.length() && dest.charAt(dstart) != '\n')
+                overwriteEnd = dend + 1;
             if (tv.maxChars > 0)
             {
-                int currentLen = dest.length() - (dend - dstart);
+                int currentLen = dest.length() - (overwriteEnd - dstart);
                 int insertLen = end - start;
                 if (currentLen + insertLen > tv.maxChars)
                 {
@@ -1044,7 +1050,7 @@ public final class IupTextHelper
             int typed = composing ? 0 : key;
 
             String newValue = new StringBuilder(dest)
-                .replace(dstart, dend, insert)
+                .replace(dstart, overwriteEnd, insert)
                 .toString();
 
             int result = dispatchAction(tv.ihandlePtr, key, typed, newValue);

@@ -37,7 +37,7 @@ static int fltkFilterCheckText(Ihandle* ih, const char* text, char** out_buf)
 {
   *out_buf = nullptr;
   const char* filter = iupAttribGet(ih, "FILTER");
-  if (!filter || !text || !text[0] || static_cast<unsigned char>(text[0]) < 32)
+  if (!filter || !text || !text[0] || static_cast<unsigned char>(text[0]) < 32 || text[0] == 127)
     return 0;
 
   size_t n = strlen(text);
@@ -67,7 +67,7 @@ static int fltkFilterCheckText(Ihandle* ih, const char* text, char** out_buf)
   return 0;
 }
 
-static int fltkApplyFilter(Ihandle* ih, Fl_Input_* input, const char* text)
+static int fltkApplyFilter(Ihandle* ih, Fl_Input_* input, const char* text, int overwrite)
 {
   char* xform = nullptr;
   int r = fltkFilterCheckText(ih, text, &xform);
@@ -76,23 +76,25 @@ static int fltkApplyFilter(Ihandle* ih, Fl_Input_* input, const char* text)
   int sel_start = input->insert_position();
   int sel_end = input->mark();
   if (sel_start > sel_end) { int t = sel_start; sel_start = sel_end; sel_end = t; }
-  input->replace(sel_start, sel_end, xform);
+  input->replace(sel_start, sel_end + overwrite, xform);
   free(xform);
   return 1;
 }
 
-static int fltkApplyFilterEditor(Ihandle* ih, Fl_Text_Editor* editor, const char* text)
+static int fltkApplyFilterEditor(Ihandle* ih, Fl_Text_Editor* editor, const char* text, int overwrite)
 {
   char* xform = nullptr;
   int r = fltkFilterCheckText(ih, text, &xform);
   if (r < 0) return 1;
   if (r == 0) return 0;
+  if (overwrite)
+    editor->buffer()->remove(editor->insert_position(), editor->insert_position() + 1);
   editor->insert(xform);
   free(xform);
   return 1;
 }
 
-IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, const char* cb_name, void* mask, int nc)
+IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, const char* cb_name, void* mask, int nc, int overwrite)
 {
   if (event != FL_KEYBOARD)
     return 0;
@@ -117,7 +119,7 @@ IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, c
     return 0;
 
   int pos = input->insert_position();
-  int ret = iupEditCallActionCb(ih, cb, text, pos, pos, mask, nc, 0, 1);
+  int ret = iupEditCallActionCb(ih, cb, text, pos, pos + overwrite, mask, nc, 0, 1);
 
   if (ret == 0)
     return 1;
@@ -125,7 +127,7 @@ IUP_DRV_API int iupfltkEditCheckMask(Ihandle* ih, Fl_Input_* input, int event, c
   if (ret != -1)
   {
     char replacement[2] = { static_cast<char>(ret), '\0' };
-    input->replace(pos, pos, replacement);
+    input->replace(pos, pos + overwrite, replacement);
     return 1;
   }
 
@@ -214,50 +216,50 @@ static void fltkOverwriteToggleOnInsertKey(Ihandle* ih)
   }
 }
 
-static void fltkInputOverwriteHook(Ihandle* ih, Fl_Input_* input)
+static int fltkInputOverwriteKey(Ihandle* ih, Fl_Input_* input)
 {
   if (!iupAttribGetBoolean(ih, "OVERWRITE"))
-    return;
+    return 0;
   if (Fl::event() != FL_KEYBOARD)
-    return;
+    return 0;
   const char* text = Fl::event_text();
-  if (!text || !text[0] || static_cast<unsigned char>(text[0]) < 32 || text[0] == '\n')
-    return;
+  if (!text || !text[0] || static_cast<unsigned char>(text[0]) < 32 || text[0] == 127 || text[0] == '\n')
+    return 0;
   if (strlen(text) != 1)
-    return;
+    return 0;
   int pos = input->insert_position();
   int mark = input->mark();
   if (pos != mark)
-    return;
+    return 0;
   if (pos >= input->size())
-    return;
+    return 0;
   const char* current = input->value();
   if (current && current[pos] == '\n')
-    return;
-  input->replace(pos, pos + 1, nullptr);
+    return 0;
+  return 1;
 }
 
-static void fltkEditorOverwriteHook(Ihandle* ih, Fl_Text_Editor* editor)
+static int fltkEditorOverwriteKey(Ihandle* ih, Fl_Text_Editor* editor)
 {
   if (!iupAttribGetBoolean(ih, "OVERWRITE"))
-    return;
+    return 0;
   if (Fl::event() != FL_KEYBOARD)
-    return;
+    return 0;
   const char* text = Fl::event_text();
-  if (!text || !text[0] || static_cast<unsigned char>(text[0]) < 32 || text[0] == '\n')
-    return;
+  if (!text || !text[0] || static_cast<unsigned char>(text[0]) < 32 || text[0] == 127 || text[0] == '\n')
+    return 0;
   if (strlen(text) != 1)
-    return;
+    return 0;
   Fl_Text_Buffer* buf = editor->buffer();
-  if (!buf) return;
+  if (!buf) return 0;
   int pos = editor->insert_position();
   if (buf->primary_selection()->selected())
-    return;
+    return 0;
   if (pos >= buf->length())
-    return;
+    return 0;
   if (buf->byte_at(pos) == '\n')
-    return;
-  buf->remove(pos, pos + 1);
+    return 0;
+  return 1;
 }
 
 static int fltkTextSetOverwriteAttrib(Ihandle* ih, const char* value)
@@ -341,11 +343,15 @@ public:
         if (iupfltkKeyPressEvent(this, iup_handle))
           return 1;
         fltkOverwriteToggleOnInsertKey(iup_handle);
-        fltkInputOverwriteHook(iup_handle, this);
-        if (fltkApplyFilter(iup_handle, this, Fl::event_text()))
-          return 1;
-        if (iupfltkEditCheckMask(iup_handle, this, event, "ACTION", iup_handle->data->mask, iup_handle->data->nc))
-          return 1;
+        {
+          int overwrite = fltkInputOverwriteKey(iup_handle, this);
+          if (fltkApplyFilter(iup_handle, this, Fl::event_text(), overwrite))
+            return 1;
+          if (iupfltkEditCheckMask(iup_handle, this, event, "ACTION", iup_handle->data->mask, iup_handle->data->nc, overwrite))
+            return 1;
+          if (overwrite)
+            replace(insert_position(), insert_position() + 1, nullptr);
+        }
         {
           int history = fltkTextHistoryKey();
           if (history)
@@ -400,11 +406,15 @@ public:
         if (iupfltkKeyPressEvent(this, iup_handle))
           return 1;
         fltkOverwriteToggleOnInsertKey(iup_handle);
-        fltkInputOverwriteHook(iup_handle, this);
-        if (fltkApplyFilter(iup_handle, this, Fl::event_text()))
-          return 1;
-        if (iupfltkEditCheckMask(iup_handle, this, event, "ACTION", iup_handle->data->mask, iup_handle->data->nc))
-          return 1;
+        {
+          int overwrite = fltkInputOverwriteKey(iup_handle, this);
+          if (fltkApplyFilter(iup_handle, this, Fl::event_text(), overwrite))
+            return 1;
+          if (iupfltkEditCheckMask(iup_handle, this, event, "ACTION", iup_handle->data->mask, iup_handle->data->nc, overwrite))
+            return 1;
+          if (overwrite)
+            replace(insert_position(), insert_position() + 1, nullptr);
+        }
         break;
     }
     return Fl_Secret_Input::handle(event);
@@ -495,8 +505,8 @@ public:
         if (is_readonly)
           return Fl_Text_Display::handle(event);
         fltkOverwriteToggleOnInsertKey(iup_handle);
-        fltkEditorOverwriteHook(iup_handle, this);
-        if (fltkApplyFilterEditor(iup_handle, this, Fl::event_text()))
+        int overwrite = fltkEditorOverwriteKey(iup_handle, this);
+        if (fltkApplyFilterEditor(iup_handle, this, Fl::event_text(), overwrite))
           return 1;
         {
           int key = Fl::event_key();
@@ -516,13 +526,13 @@ public:
         }
         {
           const char* text = Fl::event_text();
-          if (text && text[0] && text[0] >= 32 && !iup_handle->data->disable_callbacks)
+          if (text && text[0] && text[0] >= 32 && text[0] != 127 && !iup_handle->data->disable_callbacks)
           {
             auto cb = reinterpret_cast<IFnis>(IupGetCallback(iup_handle, "ACTION"));
             if (cb || iup_handle->data->mask || iup_handle->data->nc > 0)
             {
               int pos = insert_position();
-              int ret = iupEditCallActionCb(iup_handle, cb, text, pos, pos,
+              int ret = iupEditCallActionCb(iup_handle, cb, text, pos, pos + overwrite,
                           iup_handle->data->mask, iup_handle->data->nc, 0, 1);
               if (ret == 0)
                 return 1;
@@ -530,7 +540,7 @@ public:
               {
                 iup_handle->data->disable_callbacks = 1;
                 char replacement[2] = { static_cast<char>(ret), '\0' };
-                text_buffer->insert(pos, replacement);
+                text_buffer->replace(pos, pos + overwrite, replacement);
                 insert_position(pos + 1);
                 iup_handle->data->disable_callbacks = 0;
                 return 1;
@@ -538,6 +548,8 @@ public:
             }
           }
         }
+        if (overwrite)
+          text_buffer->remove(insert_position(), insert_position() + 1);
         {
           int history = fltkTextHistoryKey();
           if (history)
