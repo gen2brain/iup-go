@@ -1160,31 +1160,29 @@ static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
 	NSString* applied = cocoaTouchTextValidateEdit(_ihandle, current, effective, replacement);
 	if (!applied) return NO;
 
-	if (effective.length != range.length || ![applied isEqualToString:replacement])
-	{
-		NSString* new_text = [current stringByReplacingCharactersInRange:effective withString:applied];
-		textField.text = new_text;
-		cocoaTouchTextFieldSetSelection(textField, effective.location + applied.length, effective.location + applied.length);
-		return NO;
-	}
-
+	BOOL replaced = NO;
 	IFnis cb = (IFnis)IupGetCallback(_ihandle, "ACTION");
 	if (cb)
 	{
 		const char* applied_utf8 = [applied UTF8String];
 		int ret = iupEditCallActionCb(_ihandle, cb, applied_utf8,
-			(int)range.location, (int)(range.location + range.length),
+			(int)effective.location, (int)(effective.location + effective.length),
 			_ihandle->data->mask, _ihandle->data->nc, 0, 1);
 		if (ret == 0) return NO;
 		if (ret != -1 && applied_utf8 && applied_utf8[0])
 		{
 			char rep[2] = { (char)ret, 0 };
-			NSString* repstr = iupCocoaTouchStrToNSString(rep);
-			NSString* new_text = [current stringByReplacingCharactersInRange:range withString:repstr];
-			textField.text = new_text;
-			cocoaTouchTextFieldSetSelection(textField, range.location + 1, range.location + 1);
-			return NO;
+			applied = iupCocoaTouchStrToNSString(rep);
+			replaced = YES;
 		}
+	}
+
+	if (replaced || effective.length != range.length || ![applied isEqualToString:replacement])
+	{
+		NSString* new_text = [current stringByReplacingCharactersInRange:effective withString:applied];
+		textField.text = new_text;
+		cocoaTouchTextFieldSetSelection(textField, effective.location + applied.length, effective.location + applied.length);
+		return NO;
 	}
 	return YES;
 }
@@ -1245,31 +1243,29 @@ static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
 	NSString* applied = cocoaTouchTextValidateEdit(_ihandle, current, effective, replacement);
 	if (!applied) return NO;
 
-	if (effective.length != range.length || ![applied isEqualToString:replacement])
-	{
-		NSString* new_text = [current stringByReplacingCharactersInRange:effective withString:applied];
-		textView.text = new_text;
-		[textView setSelectedRange:NSMakeRange(effective.location + applied.length, 0)];
-		return NO;
-	}
-
+	BOOL replaced = NO;
 	IFnis cb = (IFnis)IupGetCallback(_ihandle, "ACTION");
 	if (cb)
 	{
 		const char* applied_utf8 = [applied UTF8String];
 		int ret = iupEditCallActionCb(_ihandle, cb, applied_utf8,
-			(int)range.location, (int)(range.location + range.length),
+			(int)effective.location, (int)(effective.location + effective.length),
 			_ihandle->data->mask, _ihandle->data->nc, 0, 1);
 		if (ret == 0) return NO;
 		if (ret != -1 && applied_utf8 && applied_utf8[0])
 		{
 			char rep[2] = { (char)ret, 0 };
-			NSString* repstr = iupCocoaTouchStrToNSString(rep);
-			NSString* new_text = [current stringByReplacingCharactersInRange:range withString:repstr];
-			textView.text = new_text;
-			[textView setSelectedRange:NSMakeRange(range.location + 1, 0)];
-			return NO;
+			applied = iupCocoaTouchStrToNSString(rep);
+			replaced = YES;
 		}
+	}
+
+	if (replaced || effective.length != range.length || ![applied isEqualToString:replacement])
+	{
+		NSString* new_text = [current stringByReplacingCharactersInRange:effective withString:applied];
+		textView.text = new_text;
+		[textView setSelectedRange:NSMakeRange(effective.location + applied.length, 0)];
+		return NO;
 	}
 	return YES;
 }

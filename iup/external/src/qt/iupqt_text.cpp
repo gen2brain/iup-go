@@ -54,6 +54,7 @@ extern "C" {
 static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt);
 static void qtTextArbitrateHistory(Ihandle* ih, int redo);
 static int qtTextArbitrateClipboard(Ihandle* ih, int cut);
+static int qtTextOverwriteKey(Ihandle* ih, QKeyEvent* evt);
 
 static bool qtTextWheelEvent(Ihandle* ih, QWheelEvent* event)
 {
@@ -151,16 +152,13 @@ protected:
       return;
     }
 
-    if (overwrite_mode && !event->text().isEmpty() && !hasSelectedText())
+    if (qtTextOverwriteKey(ih, event))
     {
       int pos = cursorPosition();
-      if (pos < text().length())
-      {
-        QString current = text();
-        current.remove(pos, 1);
-        setText(current);
-        setCursorPosition(pos);
-      }
+      QString current = text();
+      current.remove(pos, 1);
+      setText(current);
+      setCursorPosition(pos);
     }
 
     QLineEdit::keyPressEvent(event);
@@ -315,14 +313,11 @@ protected:
       return;
     }
 
-    if (overwrite_mode && !event->text().isEmpty())
+    if (qtTextOverwriteKey(ih, event))
     {
       QTextCursor cursor = textCursor();
-      if (!cursor.hasSelection() && !cursor.atEnd())
-      {
-        cursor.deleteChar();
-        setTextCursor(cursor);
-      }
+      cursor.deleteChar();
+      setTextCursor(cursor);
     }
 
     QTextEdit::keyPressEvent(event);
@@ -672,20 +667,46 @@ static int qtTextArbitrateClipboard(Ihandle* ih, int cut)
   return ret != 0;
 }
 
-static void qtTextInsertKey(Ihandle* ih, const QString& text)
+static int qtTextOverwriteKey(Ihandle* ih, QKeyEvent* evt)
+{
+  QString text = evt->text();
+  if (text.isEmpty() || !text.at(0).isPrint())
+    return 0;
+
+  if (ih->data->is_multiline)
+  {
+    auto* edit = reinterpret_cast<IupQtTextEdit*>(ih->handle);
+    QTextCursor cursor = edit->textCursor();
+    return edit->isIupOverwriteMode() && !cursor.hasSelection() && !cursor.atBlockEnd();
+  }
+
+  if (iupAttribGet(ih, "_IUPQT_SPINBOX"))
+    return 0;
+
+  auto* edit = reinterpret_cast<IupQtLineEdit*>(ih->handle);
+  return edit->isIupOverwriteMode() && !edit->hasSelectedText() && edit->cursorPosition() < edit->text().length();
+}
+
+static void qtTextInsertKey(Ihandle* ih, const QString& text, int start, int end)
 {
   ih->data->disable_callbacks = 1;
 
   if (ih->data->is_multiline)
-    (reinterpret_cast<IupQtTextEdit*>(ih->handle))->textCursor().insertText(text);
+  {
+    auto* edit = reinterpret_cast<IupQtTextEdit*>(ih->handle);
+    QTextCursor cursor = edit->textCursor();
+    cursor.setPosition(start);
+    cursor.setPosition(end, QTextCursor::KeepAnchor);
+    cursor.insertText(text);
+    edit->setTextCursor(cursor);
+  }
   else
   {
     auto* edit = qtTextGetLineEdit(ih);
-    int pos = edit->cursorPosition();
     QString current = edit->text();
-    current.insert(pos, text);
+    current.replace(start, end - start, text);
     edit->setText(current);
-    edit->setCursorPosition(pos + text.length());
+    edit->setCursorPosition(start + text.length());
   }
 
   ih->data->disable_callbacks = 0;
@@ -720,6 +741,9 @@ static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt)
   if (text.isEmpty() || !text.at(0).isPrint() || text.at(0).unicode() < 32)
     return 0;
 
+  if (qtTextOverwriteKey(ih, evt))
+    end = start + 1;
+
   ret = iupEditCallActionCb(ih, cb, text.toUtf8().constData(), start, end,
                             ih->data->mask, ih->data->nc, 0, 1);
   if (ret == 0)
@@ -727,7 +751,7 @@ static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt)
 
   if (ret != -1)  /* the callback replaced the character */
   {
-    qtTextInsertKey(ih, QString(QChar(ret)));
+    qtTextInsertKey(ih, QString(QChar(ret)), start, end);
     return 1;
   }
 

@@ -724,6 +724,22 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
     return YES;
   }
 
+  BOOL is_overwrite = NO;
+  NSRange effective_range = change_range;
+  NSNumber* overwrite_mode = objc_getAssociatedObject(text_view, IUP_COCOA_TEXT_OVERWRITE_KEY);
+  if([overwrite_mode boolValue] && change_range.length == 0 && [replacement_string length] > 0 &&
+     [replacement_string rangeOfComposedCharacterSequenceAtIndex:0].length == [replacement_string length])
+  {
+    NSString* text = [[text_view textStorage] string];
+
+    if(change_range.location < [text length] &&
+       ![[NSCharacterSet newlineCharacterSet] characterIsMember:[text characterAtIndex:change_range.location]])
+    {
+      effective_range = [text rangeOfComposedCharacterSequenceAtIndex:change_range.location];
+      is_overwrite = YES;
+    }
+  }
+
   char* filter_case = iupAttribGet(ih, "_IUPCOCOA_FILTER_CASE");
   char* filter_number = iupAttribGet(ih, "_IUPCOCOA_FILTER_NUMBER");
 
@@ -760,32 +776,11 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
       if(![filtered_string isEqualToString:replacement_string])
       {
         ih->data->disable_callbacks = 1;
-        [text_view replaceCharactersInRange:change_range withString:filtered_string];
+        [text_view replaceCharactersInRange:effective_range withString:filtered_string];
         ih->data->disable_callbacks = 0;
         [text_view didChangeText];
         return NO;
       }
-    }
-  }
-
-  BOOL is_overwrite = NO;
-  NSRange effective_range = change_range;
-  NSNumber* overwrite_mode = objc_getAssociatedObject(text_view, IUP_COCOA_TEXT_OVERWRITE_KEY);
-  if([overwrite_mode boolValue] && [replacement_string length] > 0 && change_range.length == 0)
-  {
-    NSTextStorage* text_storage = [text_view textStorage];
-    NSUInteger text_length = [text_storage length];
-
-    if(change_range.location < text_length)
-    {
-      NSUInteger chars_to_replace = [replacement_string length];
-      NSUInteger available_chars = text_length - change_range.location;
-
-      if(chars_to_replace > available_chars)
-        chars_to_replace = available_chars;
-
-      effective_range.length = chars_to_replace;
-      is_overwrite = YES;
     }
   }
 

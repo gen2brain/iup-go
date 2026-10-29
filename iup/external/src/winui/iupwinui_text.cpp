@@ -246,6 +246,17 @@ static void winuiTextRichTextChanged(Ihandle* ih)
   winuiTextCallValueChanged(ih);
 }
 
+static bool winuiTextIsOverwriteKey(Windows::System::VirtualKey k)
+{
+  if ((GetKeyState(VK_CONTROL) & 0x8000) || (GetKeyState(VK_MENU) & 0x8000))
+    return false;
+
+  return k == Windows::System::VirtualKey::Space ||
+         (k >= Windows::System::VirtualKey::Number0 && k <= Windows::System::VirtualKey::Z) ||
+         (k >= Windows::System::VirtualKey::NumberPad0 && k <= Windows::System::VirtualKey::Divide) ||
+         (static_cast<int>(k) >= 0xBA && static_cast<int>(k) <= 0xE2);
+}
+
 static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, TextBoxBeforeTextChangingEventArgs const& args)
 {
   if (ih->data->disable_callbacks)
@@ -262,37 +273,6 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
       {
         args.Cancel(true);
         return;
-      }
-    }
-  }
-
-  if (iupAttribGetBoolean(ih, "OVERWRITE"))
-  {
-    auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
-    if (aux)
-    {
-      hstring newH = args.NewText();
-      std::wstring oldStr = aux->savedText;
-      std::wstring newStr(newH.c_str());
-      if (newStr.size() == oldStr.size() + 1)
-      {
-        size_t ipos = 0;
-        while (ipos < oldStr.size() && oldStr[ipos] == newStr[ipos]) ipos++;
-        if (ipos < oldStr.size() && oldStr[ipos] != L'\n' && newStr[ipos] != L'\n')
-        {
-          std::wstring desired = oldStr;
-          desired[ipos] = newStr[ipos];
-          TextBox tb = const_cast<TextBox&>(sender);
-          ih->data->disable_callbacks = 1;
-          iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
-          tb.Text(hstring(desired));
-          tb.SelectionStart(static_cast<int>(ipos + 1));
-          tb.SelectionLength(0);
-          aux->savedText = desired;
-          ih->data->disable_callbacks = 0;
-          args.Cancel(true);
-          return;
-        }
       }
     }
   }
@@ -339,8 +319,10 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
     while (insertPos < oldLen && insertPos < newLen && oldStr[insertPos] == newStr[insertPos])
       insertPos++;
 
+    int replaced = newLen == oldLen && insertPos < newLen && wcscmp(oldStr + insertPos + 1, newStr + insertPos + 1) == 0;
+
     int key = 0;
-    if (newLen == oldLen + 1 && insertPos < newLen)
+    if ((newLen == oldLen + 1 || replaced) && insertPos < newLen)
     {
       wchar_t wch = newStr[insertPos];
       if (wch == L'\r')
@@ -375,7 +357,7 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
         winrt::copy_from_abi(dq_obj, dq_ptr);
         DispatcherQueue dq = dq_obj.as<DispatcherQueue>();
 
-        dq.TryEnqueue([ih, replaceCh, insertPos]()
+        dq.TryEnqueue([ih, replaceCh, insertPos, replaced]()
         {
           if (!iupObjectCheck(ih))
             return;
@@ -389,7 +371,7 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
             return;
 
           std::wstring text(a->savedText);
-          text.insert(text.begin() + insertPos, static_cast<wchar_t>(replaceCh));
+          text.replace(insertPos, replaced, 1, static_cast<wchar_t>(replaceCh));
 
           iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
           ih->data->disable_callbacks = 1;
@@ -1253,16 +1235,8 @@ static int winuiTextMapMethod(Ihandle* ih)
             auto range = reb.Document().GetRange(pos, pos + 1);
             hstring rt;
             range.GetText(Microsoft::UI::Text::TextGetOptions::None, rt);
-            if (!rt.empty() && rt[0] != L'\n' && rt[0] != L'\r')
-            {
-              auto k = args.Key();
-              bool is_text_key =
-                (k >= Windows::System::VirtualKey::Number0 && k <= Windows::System::VirtualKey::Z) ||
-                (k >= Windows::System::VirtualKey::NumberPad0 && k <= Windows::System::VirtualKey::Divide) ||
-                (static_cast<int>(k) >= 0xBA && static_cast<int>(k) <= 0xE2);
-              if (is_text_key)
-                sel.SetRange(pos, pos + 1);
-            }
+            if (!rt.empty() && rt[0] != L'\n' && rt[0] != L'\r' && winuiTextIsOverwriteKey(args.Key()))
+              sel.SetRange(pos, pos + 1);
           }
         }
       }
@@ -1432,6 +1406,17 @@ static int winuiTextMapMethod(Ihandle* ih)
         iupAttribSet(ih, "OVERWRITE", cur ? "NO" : "YES");
         args.Handled(true);
         return;
+      }
+      if (iupAttribGetBoolean(ih, "OVERWRITE") && winuiTextIsOverwriteKey(args.Key()))
+      {
+        auto tbox = winuiGetHandle<TextBox>(ih);
+        if (tbox && tbox.SelectionLength() == 0)
+        {
+          int start = tbox.SelectionStart();
+          hstring text = tbox.Text();
+          if (start < static_cast<int>(text.size()) && text[start] != L'\r' && text[start] != L'\n')
+            tbox.Select(start, 1);
+        }
       }
       if (args.Key() == Windows::System::VirtualKey::Tab && ih->data->is_multiline &&
           !(GetKeyState(VK_CONTROL) & 0x8000) && !(GetKeyState(VK_MENU) & 0x8000))

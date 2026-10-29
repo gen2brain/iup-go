@@ -1728,17 +1728,18 @@
           el.addEventListener('beforeinput', function (e) {
             if (e.isComposing || el.__iupRender) return;
             var v = el.value, s = el.selectionStart || 0, en = el.selectionEnd || 0;
-            var t = e.inputType, ins = null, rd = 0, del = null;
+            var t = e.inputType, ins = null, rd = 0, del = null, ow = false;
             if (t === 'insertText' || t === 'insertFromPaste' || t === 'insertFromDrop' || t === 'insertReplacementText') {
               ins = (e.data != null) ? e.data : (e.dataTransfer ? e.dataTransfer.getData('text/plain') : '');
               if (ins == null || ins === '') return;
               // OVERWRITE: a collapsed caret not at end replaces the next char
-              if (el.__iupOverwrite && t === 'insertText' && s === en && s < v.length) { en = s + 1; el.setSelectionRange(s, en); }
+              ow = el.__iupOverwrite && t === 'insertText' && ins.length === 1;
+              if (ow && s === en && s < v.length && v[s] !== '\n') { en = s + 1; el.setSelectionRange(s, en); }
             } else if (t === 'insertLineBreak' || t === 'insertParagraph') {
               ins = '\n';
             } else if (t === 'deleteContentBackward' || t === 'deleteContentForward' ||
                        t === 'deleteByCut' || t === 'deleteByDrag') {
-              rd = (t === 'deleteContentBackward') ? 1 : 0;
+              rd = (t === 'deleteContentBackward') ? -1 : 1;
             } else if (t.indexOf('delete') === 0) {
               if (!iupDeleteRange(v, s, en, t)) return;
               del = t;
@@ -1758,7 +1759,7 @@
             // while one edit is arbitrated the next ones wait, so a rejection can never land on text typed after it
             if (el.__iupEditPending) {
               e.preventDefault();
-              (el.__iupEditQ = el.__iupEditQ || []).push({ ins: ins, rd: rd, del: del, seq: kseq });
+              (el.__iupEditQ = el.__iupEditQ || []).push({ ins: ins, rd: rd, del: del, ow: ow, seq: kseq });
               return;
             }
             if (del) {
@@ -1777,6 +1778,7 @@
             if (!q || !q.length) { el.__iupEditPending = 0; return; }
             var it = q.shift(), s2 = el.selectionStart || 0, e2 = el.selectionEnd || 0, v2 = el.value;
             if (it.ins !== null) {
+              if (it.ow && s2 === e2 && s2 < v2.length && v2[s2] !== '\n') e2 = s2 + 1;
               el.value = v2.slice(0, s2) + it.ins + v2.slice(e2);
               try { el.setSelectionRange(s2 + it.ins.length, s2 + it.ins.length); } catch (_) {}
             } else {
@@ -1787,7 +1789,7 @@
                 ds = qr.ds; de = qr.de;
                 s2 = ds; e2 = de;
               }
-              else if (ds === de) { if (it.rd) { if (ds === 0) { el.__iupEditNext(); return; } ds--; } else { if (ds >= v2.length) { el.__iupEditNext(); return; } de = ds + 1; } }
+              else if (ds === de) { if (it.rd < 0) { if (ds === 0) { el.__iupEditNext(); return; } ds--; } else { if (ds >= v2.length) { el.__iupEditNext(); return; } de = ds + 1; } }
               el.value = v2.slice(0, ds) + v2.slice(de);
               try { el.setSelectionRange(ds, ds); } catch (_) {}
             }

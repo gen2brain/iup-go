@@ -138,16 +138,31 @@ static void qmlTextRemove(Ihandle* ih, int start, int end)
     QMetaObject::invokeMethod(edit, "remove", Qt::DirectConnection, Q_ARG(int, start), Q_ARG(int, end));
 }
 
-static void qmlTextReplaceSelection(Ihandle* ih, const QString& text)
+static void qmlTextReplaceRange(Ihandle* ih, int start, int end, const QString& text)
 {
-  int start, end;
-  qmlTextGetSelectionRange(ih, &start, &end);
   ih->data->disable_callbacks = 1;
   if (end > start)
     qmlTextRemove(ih, start, end);
   qmlTextInsertAt(ih, start, text);
   qmlTextSetCursor(ih, start + text.length());
   ih->data->disable_callbacks = 0;
+}
+
+static void qmlTextReplaceSelection(Ihandle* ih, const QString& text)
+{
+  int start, end;
+  qmlTextGetSelectionRange(ih, &start, &end);
+  qmlTextReplaceRange(ih, start, end, text);
+}
+
+static int qmlTextOverwriteChar(Ihandle* ih, int start, int end)
+{
+  QQuickItem* edit = qmlTextGetEdit(ih);
+  if (start != end || !edit || !edit->property("overwriteMode").toBool())
+    return 0;
+
+  QString text = qmlTextGetText(ih);
+  return start < text.length() && text.at(start) != QLatin1Char('\n');
 }
 
 static QQuickItem* qmlTextGetFlickable(Ihandle* ih)
@@ -514,13 +529,15 @@ public:
     if (text.isEmpty() || !text.at(0).isPrint() || text.at(0).unicode() < 32)
       return false;
 
+    end += qmlTextOverwriteChar(ih, start, end);
+
     ret = iupEditCallActionCb(ih, cb, text.toUtf8().constData(), start, end, ih->data->mask, ih->data->nc, 0, 1);
     if (ret == 0)
       return true;
 
     if (ret != -1)
     {
-      qmlTextReplaceSelection(ih, QString(QChar(ret)));
+      qmlTextReplaceRange(ih, start, end, QString(QChar(ret)));
       return true;
     }
 

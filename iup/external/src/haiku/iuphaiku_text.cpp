@@ -639,15 +639,8 @@ protected:
       return;
     }
 
-    if (fOverwrite && length == 1 && text && text[0] != '\n')
-    {
-      int32 tlen = TextLength();
-      if (offset < tlen && ByteAt(offset) != '\n')
-      {
-        BTextView::DeleteText(offset, offset + 1);
-        CollapseTagRanges(offset, offset + 1);
-      }
-    }
+    bool overwrite = fOverwrite && length == 1 && text && text[0] != '\n' &&
+                     offset < TextLength() && ByteAt(offset) != '\n';
 
     const char* filter = iupAttribGet(fIhandle, "FILTER");
     char* filter_buf = nullptr;
@@ -678,6 +671,8 @@ protected:
       GetSelection(&sel_s, &sel_e);
       int start = (offset == sel_s) ? sel_s : offset;
       int end   = (offset == sel_s) ? sel_e : offset;
+      if (overwrite && start == end)
+        end++;
 
       char* tmp = static_cast<char*>(malloc(length + 1));
       memcpy(tmp, text, length);
@@ -689,6 +684,8 @@ protected:
       free(tmp);
 
       if (ret == 0) { free(filter_buf); return; }
+      if (overwrite)
+        OverwriteDelete(offset);
       if (ret != -1 && length == 1)
       {
         char rep = static_cast<char>(ret);
@@ -699,11 +696,19 @@ protected:
         return;
       }
     }
+    else if (overwrite)
+      OverwriteDelete(offset);
 
     BTextView::InsertText(text, length, offset, runs);
     ShiftTagRanges(offset, length);
     fireValueChanged();
     free(filter_buf);
+  }
+
+  void OverwriteDelete(int32 offset)
+  {
+    BTextView::DeleteText(offset, offset + 1);
+    CollapseTagRanges(offset, offset + 1);
   }
 
   void DeleteText(int32 fromOffset, int32 toOffset) override
