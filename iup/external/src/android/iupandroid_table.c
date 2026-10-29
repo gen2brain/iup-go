@@ -494,6 +494,15 @@ static int androidTableSetAlignmentIdAttrib(Ihandle* ih, int col, const char* va
   return 1;
 }
 
+static void androidTableApplyRowColors(Ihandle* ih)
+{
+  int r, g, b;
+  androidTableParseRgb(iupTableGetAlternateColor(ih, 2), &r, &g, &b);
+  androidTableCallRgb(ih, "setEvenRowColor", r, g, b);
+  androidTableParseRgb(iupTableGetAlternateColor(ih, 1), &r, &g, &b);
+  androidTableCallRgb(ih, "setOddRowColor", r, g, b);
+}
+
 static int androidTableSetAlternateColorAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle) return 1;
@@ -503,24 +512,22 @@ static int androidTableSetAlternateColorAttrib(Ihandle* ih, const char* value)
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jboolean)(iupStrBoolean(value) ? JNI_TRUE : JNI_FALSE));
   iupAndroid_CheckException(env, "IupTableHelper.setAlternateColor");
   (*env)->DeleteLocalRef(env, cls);
+  iupAttribSetStr(ih, "ALTERNATECOLOR", value);
+  androidTableApplyRowColors(ih);
   return 1;
 }
 
 static int androidTableSetEvenRowColorAttrib(Ihandle* ih, const char* value)
 {
-  int r, g, b;
-  if (!androidTableParseRgb(value, &r, &g, &b))
-    r = g = b = -1;
-  androidTableCallRgb(ih, "setEvenRowColor", r, g, b);
+  iupAttribSetStr(ih, "EVENROWCOLOR", value);
+  androidTableApplyRowColors(ih);
   return 1;
 }
 
 static int androidTableSetOddRowColorAttrib(Ihandle* ih, const char* value)
 {
-  int r, g, b;
-  if (!androidTableParseRgb(value, &r, &g, &b))
-    r = g = b = -1;
-  androidTableCallRgb(ih, "setOddRowColor", r, g, b);
+  iupAttribSetStr(ih, "ODDROWCOLOR", value);
+  androidTableApplyRowColors(ih);
   return 1;
 }
 
@@ -553,6 +560,7 @@ IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
 
     androidTableSetBgColorAttrib(ih, iupAttribGetStr(ih, "BGCOLOR"));
     androidTableSetFgColorAttrib(ih, iupAttribGetStr(ih, "FGCOLOR"));
+    androidTableApplyRowColors(ih);
 
     iupTableCellsGetRange(ih, &lin1, &col1, &lin2, &col2);
     if (iupStrToRGB(iupTableCellsBgColor(), &r, &g, &b))
@@ -861,10 +869,6 @@ static int androidTableMapMethod(Ihandle* ih)
   if (v) androidTableSetFgColorAttrib(ih, v);
   v = iupAttribGet(ih, "ALTERNATECOLOR");
   if (v) androidTableSetAlternateColorAttrib(ih, v);
-  v = iupAttribGet(ih, "EVENROWCOLOR");
-  if (v) androidTableSetEvenRowColorAttrib(ih, v);
-  v = iupAttribGet(ih, "ODDROWCOLOR");
-  if (v) androidTableSetOddRowColorAttrib(ih, v);
 
   androidTableReplayStoredCells(ih);
 

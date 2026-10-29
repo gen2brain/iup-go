@@ -221,14 +221,6 @@ func main() {
 	table.SetAttribute("RASTERWIDTH3", "50")
 	table.SetAttribute("ALTERNATECOLOR", "YES")
 
-	if iup.GetGlobalBool("DARKMODE") {
-		table.SetAttribute("EVENROWCOLOR", "#3A3A3A")
-		table.SetAttribute("ODDROWCOLOR", "#2D2D2D")
-	} else {
-		table.SetAttribute("EVENROWCOLOR", "#F0F0F0")
-		table.SetAttribute("ODDROWCOLOR", "#FFFFFF")
-	}
-
 	sampleData := [][]string{
 		{"1", "Alice", "25", "NYC"},
 		{"2", "Bob", "30", "LA"},
@@ -323,17 +315,6 @@ func main() {
 	if iup.GetGlobal("DRIVER") == "WinUI" {
 		//dlg.SetAttribute("BACKDROP", "MICA")
 	}
-
-	dlg.On(iup.ThemeChangedCB, func(ih iup.Ihandle, darkMode int) int {
-		if darkMode == 1 {
-			table.SetAttribute("EVENROWCOLOR", "#3A3A3A")
-			table.SetAttribute("ODDROWCOLOR", "#2D2D2D")
-		} else {
-			table.SetAttribute("EVENROWCOLOR", "#F0F0F0")
-			table.SetAttribute("ODDROWCOLOR", "#FFFFFF")
-		}
-		return iup.DEFAULT
-	})
 
 	iup.Show(dlg)
 

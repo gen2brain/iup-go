@@ -124,8 +124,8 @@ public:
       bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
     if (!bgcolor)
       bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
-    if (!bgcolor && iupStrBoolean(iupAttribGet(ih, "ALTERNATECOLOR")))
-      bgcolor = iupAttribGet(ih, (lin % 2 == 0) ? "EVENROWCOLOR" : "ODDROWCOLOR");
+    if (!bgcolor)
+      bgcolor = iupTableGetAlternateColor(ih, lin);
 
     if (bgcolor && *bgcolor)
     {
@@ -472,8 +472,8 @@ protected:
 
     int lin = row + 1;
     char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
-    if (!bgcolor && iupStrBoolean(iupAttribGet(ih, "ALTERNATECOLOR")))
-      bgcolor = (lin % 2 == 0) ? iupAttribGet(ih, "EVENROWCOLOR") : iupAttribGet(ih, "ODDROWCOLOR");
+    if (!bgcolor)
+      bgcolor = iupTableGetAlternateColor(ih, lin);
     if (!bgcolor)
       bgcolor = iupAttribGet(ih, "BGCOLOR");
 
@@ -1028,21 +1028,7 @@ static void qtTableApplyCellColors(Ihandle* ih, QTableWidgetItem* item, int lin,
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);  /* Per-row */
 
   if (!bgcolor)
-  {
-    char* alternate = iupAttribGet(ih, "ALTERNATECOLOR");
-
-    if (iupStrBoolean(alternate))
-    {
-      if (lin % 2 == 0)
-      {
-        bgcolor = iupAttribGet(ih, "EVENROWCOLOR");
-      }
-      else
-      {
-        bgcolor = iupAttribGet(ih, "ODDROWCOLOR");
-      }
-    }
-  }
+    bgcolor = iupTableGetAlternateColor(ih, lin);
 
   if (bgcolor && *bgcolor)
   {

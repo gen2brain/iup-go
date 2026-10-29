@@ -524,7 +524,6 @@ public:
     float scroll_y = outline->Bounds().top;
 
     bool showgrid = iupAttribGetBoolean(fIhandle, "SHOWGRID");
-    bool alt = iupAttribGetBoolean(fIhandle, "ALTERNATECOLOR");
     rgb_color divider = GridLineColor();
     rgb_color base = Color(B_COLOR_BACKGROUND);
 
@@ -561,9 +560,8 @@ public:
         const char* cs = nullptr;
         if (stretch_last)
           cs = haikuTableLookupId2(fIhandle, "BGCOLOR", i + 1, nc);
-        if (!cs && alt)
-          cs = ((i + 1) % 2 == 0) ? iupAttribGet(fIhandle, "EVENROWCOLOR")
-                                  : iupAttribGet(fIhandle, "ODDROWCOLOR");
+        if (!cs)
+          cs = iupTableGetAlternateColor(fIhandle, i + 1);
         if (cs && iupStrToRGB(cs, &r, &g, &b))
           { bg.red = r; bg.green = g; bg.blue = b; bg.alpha = 255; }
         SetLowColor(bg);
@@ -713,11 +711,10 @@ public:
     if (!row->IsSelected())
     {
       rgb_color bg = Color(B_COLOR_BACKGROUND);
-      if (fIhandle && iupAttribGetBoolean(fIhandle, "ALTERNATECOLOR"))
+      if (fIhandle)
       {
         int lin = static_cast<int>(IndexOf(row)) + 1;
-        const char* cs = (lin % 2 == 0) ? iupAttribGet(fIhandle, "EVENROWCOLOR")
-                                        : iupAttribGet(fIhandle, "ODDROWCOLOR");
+        const char* cs = iupTableGetAlternateColor(fIhandle, lin);
         unsigned char r, g, b;
         if (cs && iupStrToRGB(cs, &r, &g, &b)) { bg.red = r; bg.green = g; bg.blue = b; bg.alpha = 255; }
       }
@@ -844,7 +841,6 @@ public:
     if (pitch <= 0.0f) return;
 
     bool showgrid = iupAttribGetBoolean(ih, "SHOWGRID");
-    bool alt = iupAttribGetBoolean(ih, "ALTERNATECOLOR");
     rgb_color base = fTv->Color(B_COLOR_BACKGROUND);
     rgb_color div  = IupHaikuTableView::GridLineColor();
     rgb_color foc  = fTv->Color(B_COLOR_ROW_DIVIDER);
@@ -876,14 +872,10 @@ public:
       else
       {
         bg = base;
-        if (alt)
-        {
-          const char* cs = ((i + 1) % 2 == 0) ? iupAttribGet(ih, "EVENROWCOLOR")
-                                              : iupAttribGet(ih, "ODDROWCOLOR");
-          unsigned char r, g, b;
-          if (cs && iupStrToRGB(cs, &r, &g, &b))
-            { bg.red = r; bg.green = g; bg.blue = b; bg.alpha = 255; }
-        }
+        const char* cs = iupTableGetAlternateColor(ih, i + 1);
+        unsigned char r, g, b;
+        if (cs && iupStrToRGB(cs, &r, &g, &b))
+          { bg.red = r; bg.green = g; bg.blue = b; bg.alpha = 255; }
       }
       SetLowColor(bg);
       FillRect(BRect(updateRect.left, row_top, updateRect.right, row_bot), B_SOLID_LOW);
@@ -1392,10 +1384,9 @@ public:
         parent->FillRect(rect, B_SOLID_LOW);
         drew = true;
       }
-      else if (row && fIhandle && iupAttribGetBoolean(fIhandle, "ALTERNATECOLOR"))
+      else if (row && fIhandle)
       {
-        const char* cs = (lin % 2 == 0) ? iupAttribGet(fIhandle, "EVENROWCOLOR")
-                                        : iupAttribGet(fIhandle, "ODDROWCOLOR");
+        const char* cs = iupTableGetAlternateColor(fIhandle, lin);
         if (cs && iupStrToRGB(cs, &r, &g, &b))
         {
           rgb_color c = { r, g, b, 255 };

@@ -66,13 +66,6 @@ func main() {
 
 	// Enable alternating row colors by default
 	table.SetAttribute("ALTERNATECOLOR", "YES")
-	if iup.GetGlobalBool("DARKMODE") {
-		table.SetAttribute("EVENROWCOLOR", "#3A3A3A")
-		table.SetAttribute("ODDROWCOLOR", "#2D2D2D")
-	} else {
-		table.SetAttribute("EVENROWCOLOR", "#F0F0F0")
-		table.SetAttribute("ODDROWCOLOR", "#FFFFFF")
-	}
 
 	// Buttons for testing
 	btnAddRow := iup.Button("Add Row").SetAttribute("PADDING", "5x0")
@@ -205,17 +198,6 @@ func main() {
 	)
 
 	dlg.SetAttributes(`TITLE="IupTable Test - Editable cells and alternating colors"`)
-
-	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(ih iup.Ihandle, darkMode int) int {
-		if darkMode == 1 {
-			table.SetAttribute("EVENROWCOLOR", "#3A3A3A")
-			table.SetAttribute("ODDROWCOLOR", "#2D2D2D")
-		} else {
-			table.SetAttribute("EVENROWCOLOR", "#F0F0F0")
-			table.SetAttribute("ODDROWCOLOR", "#FFFFFF")
-		}
-		return iup.DEFAULT
-	}))
 
 	iup.Show(dlg)
 	iup.MainLoop()
