@@ -1,4 +1,4 @@
-//go:build darwin && !ios && web && (((qt || qml) && !webengine) || gtk3 || gtk4 || fltk)
+//go:build darwin && !ios && web && (((qt6 || qt5 || qml) && !webengine) || gtk3 || gtk4 || fltk)
 
 package iup
 

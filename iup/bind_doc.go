@@ -8,7 +8,7 @@
 // # Drivers
 //
 // The default driver is Win32 on Windows, GTK3 on Linux and BSD, and Cocoa on macOS. Build tags
-// select the others: winui, gtk4, gtk2, gtk (GTK3 on Windows or macOS), qt, qt with qt5, motif,
+// select the others: winui, gtk4, gtk2, gtk3 (GTK3 on Windows or macOS), qt6, qt5, qml, motif,
 // fltk, efl and gnustep. Haiku (GOOS=haiku), iOS (GOOS=ios), WebAssembly (GOOS=js) and Android
 // have their own drivers. The tags gl, web, ctrl, plot and media add the OpenGL canvas, the web
 // browser, the extra controls, the plot and the media elements.

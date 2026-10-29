@@ -27,7 +27,7 @@ type qtInfo struct {
 }
 
 func (c *config) qtBundle() bool {
-	return c.cgo && (slices.Contains(c.tags, "qt") || slices.Contains(c.tags, "qml"))
+	return c.cgo && (slices.Contains(c.tags, "qt6") || slices.Contains(c.tags, "qt5") || slices.Contains(c.tags, "qml"))
 }
 
 func (c *config) qtPaths() (*qtInfo, error) {

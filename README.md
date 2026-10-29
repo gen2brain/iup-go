@@ -33,7 +33,7 @@ For Win32, you need a C compiler, like [MinGW-w64](https://mingw-w64.org) or [TD
 You can also build a binary in the [MSYS2](https://msys2.github.io/) shell.
 
 * For MSYS2, install `pacman -S mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config`.
-* You can build for Qt, with the `qt/qml` build tags. Install deps with `pacman -S mingw-w64-x86_64-qt6-base / -qt6-declarative`.
+* You can build for Qt, with the `qt6/qml` build tags. Install deps with `pacman -S mingw-w64-x86_64-qt6-base / -qt6-declarative`.
 * You can build for GTK, with the `gtk3/gtk4` build tags. Install deps with `pacman -S mingw-w64-x86_64-gtk3 / -gtk4`.
 * You can build for FLTK, with the `fltk` build tag. Install deps with `pacman -S mingw-w64-x86_64-fltk`.
 * The `WebBrowser` control uses WebView2 with every backend.
@@ -61,7 +61,7 @@ On macOS, you need Command Line Tools for Xcode (if you have `brew`, you already
 
 To create an `.app` bundle, see [Packaging](#packaging).
 
-* You can build for Qt, with the `qt/qml` build tags. Install deps with `brew install qt`.
+* You can build for Qt, with the `qt6/qml` build tags. Install deps with `brew install qt`.
 * You can build for GTK, with the `gtk3/gtk4` build tags. Install deps with `brew install gtk+3 / gtk4`.
 * You can build for FLTK, with the `fltk` build tag. Install deps with `brew install fltk`.
 * The `WebBrowser` control uses WKWebView with every backend.
@@ -94,14 +94,14 @@ For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
 
 ##### Qt
 
-###### Qt6 (default)
+###### Qt6
 
 * Debian/Ubuntu: `apt-get install qt6-base-dev`
 * RedHat/Fedora: `dnf install qt6-qtbase-devel`
 
 ###### Qt5
 
-* Debian/Ubuntu: `apt-get install qt5base-dev`
+* Debian/Ubuntu: `apt-get install qtbase5-dev`
 * RedHat/Fedora: `dnf install qt5-qtbase-devel`
 
 For the `WebBrowser` control, install `qt6-webengine-dev` or `qt6-qtwebengine-devel`.
@@ -195,7 +195,7 @@ go build -tags gnustep
 Native `Interface Kit` driver. Requires Haiku beta6, `haiku_devel` ships with a stock Haiku install, so no extra packages are needed.
 
 * For `WebBrowser`, install `haikuwebkit_devel` via `pkgman install haikuwebkit_devel`.
-* You can also build for Qt, with the `qt` build tag. Install deps with `pkgman install qt6_base_devel`.
+* You can also build for Qt, with the `qt6` build tag. Install deps with `pkgman install qt6_base_devel`.
 
 [<img src="examples/sample/sample_haiku.png" width="700"/>](examples/sample/sample_haiku.png)
 
@@ -255,8 +255,8 @@ Drivers:
 | `gtk3`    | GTK3 on macOS or Windows (default on Linux/BSD) |
 | `gtk4`    | GTK4, default is GTK3                           |
 | `gtk2`    | GTK2 (Linux/BSD)                                |
-| `qt`      | Qt framework                                    |
-| `qt5`     | Qt5 version, default is Qt6 (used with `qt`)    |
+| `qt6`     | Qt6                                             |
+| `qt5`     | Qt5                                             |
 | `qml`     | Qt Quick (Qt 6.8+)                              |
 | `fltk`    | FLTK (Fast Light Toolkit)                       |
 | `efl`     | EFL (Enlightenment Foundation Libraries)        |
@@ -269,7 +269,7 @@ Options:
 |---------------|------------------------------------------------------------------------------------|
 | `xft`         | Xft support (X FreeType interface) (used with `motif`)                             |
 | `xembed`      | XEmbed tray protocol instead of SNI (GTK3/GTK2 and Motif)                          |
-| `webengine`   | QtWebEngine for `WebBrowser` on Windows and macOS (used with `qt`/`qml`)           |
+| `webengine`   | QtWebEngine for `WebBrowser` on Windows and macOS (used with `qt6`/`qt5`/`qml`)    |
 | `nomanifest`  | Do not include manifest in Windows build                                           |
 | `nopkgconfig` | Do not use pkg-config for compile and link flags                                   |
 | `extlib`      | Load the system IUP library instead of the bundled one (used with `CGO_ENABLED=0`) |

@@ -21,33 +21,35 @@ package iup
 #cgo !windows,!darwin,!android,!haiku CFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
 #cgo !windows,!darwin,!android,!haiku CXXFLAGS: -Iexternal/src/unix -DIUPDBUS_USE_DLOPEN -DIUPX11_USE_DLOPEN
 
-#cgo !windows,!darwin,!android,!haiku,!qt,!qml,!efl,!motif,!fltk,!gnustep CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
+#cgo !windows,!darwin,!android,!haiku,!qt6,!qt5,!qml,!efl,!motif,!fltk,!gnustep CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 #cgo windows,gtk3 windows,gtk4 darwin,gtk3 darwin,gtk4 CFLAGS: -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 
-#cgo !windows,!darwin,!android,!haiku,!motif,!qt,!qml,!gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
-#cgo !windows,!darwin,!android,!haiku,!motif,!qt,!qml,!gtk2,gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
-#cgo !windows,!darwin,!android,!haiku,!motif,!qt,!qml,gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK2
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt6,!qt5,!qml,!gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK3
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt6,!qt5,!qml,!gtk2,gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk4 -DIUP_USE_GTK4
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt6,!qt5,!qml,gtk2,!gtk4,!efl,!fltk,!gnustep CFLAGS: -Iexternal/src/gtk -DIUP_USE_GTK2
 
-#cgo qt CFLAGS: -Iexternal/src/qt -DIUP_USE_QT
-#cgo qt CXXFLAGS: -Iexternal/src/qt -DIUP_USE_QT -std=c++17
+#cgo qt6 CFLAGS: -Iexternal/src/qt -DIUP_USE_QT -DIUP_USE_QT6
+#cgo qt6 CXXFLAGS: -Iexternal/src/qt -DIUP_USE_QT -DIUP_USE_QT6 -std=c++17
+#cgo qt5 CFLAGS: -Iexternal/src/qt -DIUP_USE_QT -DIUP_USE_QT5
+#cgo qt5 CXXFLAGS: -Iexternal/src/qt -DIUP_USE_QT -DIUP_USE_QT5 -std=c++17
 
 #cgo qml CFLAGS: -Iexternal/src/qml -DIUP_USE_QML
 #cgo qml CXXFLAGS: -Iexternal/src/qml -DIUP_USE_QML -std=c++17
 
-#cgo !windows,!darwin,!android,!haiku,!motif,!qt,!qml,!gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 gdk-x11-3.0
-#cgo !windows,!darwin,!android,!haiku,!motif,!qt,!qml,!gtk2,gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk4 gtk4-wayland gtk4-x11
-#cgo !windows,!darwin,!android,!haiku,!motif,!qt,!qml,gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 x11
-#cgo !windows,!darwin,!android,!haiku,!motif,!qt,!qml,!efl,!fltk,!gnustep,web CFLAGS: -DIUPWEB_USE_DLOPEN
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt6,!qt5,!qml,!gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0 gdk-wayland-3.0 gdk-x11-3.0
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt6,!qt5,!qml,!gtk2,gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk4 gtk4-wayland gtk4-x11
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt6,!qt5,!qml,gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 x11
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt6,!qt5,!qml,!efl,!fltk,!gnustep,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
 #cgo !windows,!darwin,!android,!haiku,!motif,!gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: wayland-egl egl gl
-#cgo !windows,!darwin,!android,!haiku,!motif,!qt,!qml,gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: gl
+#cgo !windows,!darwin,!android,!haiku,!motif,!qt6,!qt5,!qml,gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: gl
 
-#cgo qt,!qt5,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Widgets
-#cgo qt,qt5,!nopkgconfig pkg-config: Qt5Core Qt5Gui Qt5Widgets
-#cgo qt,!qt5,web,!windows,!darwin,!nopkgconfig qt,!qt5,web,webengine,!nopkgconfig pkg-config: Qt6WebEngineCore Qt6WebEngineWidgets
-#cgo qt,qt5,web,!windows,!darwin,!nopkgconfig qt,qt5,web,webengine,!nopkgconfig pkg-config: Qt5WebEngineCore  Qt5WebEngineWidgets
-#cgo windows,qt,web,!webengine CXXFLAGS: -DIUPWEB_HOSTED
-#cgo darwin,!ios,qt,web,!webengine LDFLAGS: -framework WebKit
+#cgo qt6,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Widgets
+#cgo qt5,!nopkgconfig pkg-config: Qt5Core Qt5Gui Qt5Widgets
+#cgo qt6,web,!windows,!darwin,!nopkgconfig qt6,web,webengine,!nopkgconfig pkg-config: Qt6WebEngineCore Qt6WebEngineWidgets
+#cgo qt5,web,!windows,!darwin,!nopkgconfig qt5,web,webengine,!nopkgconfig pkg-config: Qt5WebEngineCore  Qt5WebEngineWidgets
+#cgo windows,qt6,web,!webengine windows,qt5,web,!webengine CXXFLAGS: -DIUPWEB_HOSTED
+#cgo darwin,!ios,qt6,web,!webengine darwin,!ios,qt5,web,!webengine LDFLAGS: -framework WebKit
 
 #cgo qml,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Qml Qt6Quick Qt6QuickControls2
 #cgo qml,web,!windows,!darwin,!nopkgconfig qml,web,webengine,!nopkgconfig pkg-config: Qt6WebEngineQuick Qt6WebEngineCore
@@ -63,13 +65,13 @@ package iup
 #cgo motif CFLAGS: -Iexternal/src/mot -DIUP_USE_MOTIF -DIUP_USE_ICONV
 
 #cgo windows,!winui CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl
-#cgo windows,!gtk3,!gtk4,!qt,!qml,!winui,!efl,!fltk CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
+#cgo windows,!gtk3,!gtk4,!qt6,!qt5,!qml,!winui,!efl,!fltk CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
 #cgo windows,!winui LDFLAGS: -lgdi32 -lcomdlg32 -lcomctl32 -luuid -loleaut32 -lole32
 #cgo windows,gl LDFLAGS: -lopengl32
 #cgo windows,media LDFLAGS: -lmfuuid -lole32
-#cgo windows,!gtk3,!gtk4,!qt,!qml,!winui,!efl,!fltk,web LDFLAGS: -static
-#cgo windows,!gtk3,!gtk4,!qt,!qml,!winui,!efl,!fltk,plot LDFLAGS: -static
-#cgo windows,!gtk3,!gtk4,!qt,!qml,!winui,!efl,!fltk,media LDFLAGS: -static
+#cgo windows,!gtk3,!gtk4,!qt6,!qt5,!qml,!winui,!efl,!fltk,web LDFLAGS: -static
+#cgo windows,!gtk3,!gtk4,!qt6,!qt5,!qml,!winui,!efl,!fltk,plot LDFLAGS: -static
+#cgo windows,!gtk3,!gtk4,!qt6,!qt5,!qml,!winui,!efl,!fltk,media LDFLAGS: -static
 
 #cgo windows,gtk3 CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3
 #cgo windows,gtk3,!nopkgconfig pkg-config: gtk+-3.0 gdk-3.0
@@ -90,7 +92,7 @@ package iup
 #cgo darwin,!ios CFLAGS: -Iexternal/src/cocoa -x objective-c
 #cgo darwin,!ios LDFLAGS: -framework SystemConfiguration -framework QuartzCore -framework AppKit -framework UserNotifications -framework CoreLocation
 #cgo darwin,!ios,gl LDFLAGS: -framework OpenGL
-#cgo darwin,!ios,!gtk3,!gtk4,!qt,!qml,!fltk,web LDFLAGS: -framework WebKit
+#cgo darwin,!ios,!gtk3,!gtk4,!qt6,!qt5,!qml,!fltk,web LDFLAGS: -framework WebKit
 #cgo darwin,!ios,media LDFLAGS: -framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework CoreImage
 
 #cgo darwin,!ios,gtk3 CFLAGS: -Iexternal/src/gtk -Iexternal/src/unix -DIUP_USE_GTK3 -x objective-c
@@ -138,12 +140,12 @@ package iup
 #cgo android,plot LDFLAGS: -static-libstdc++
 
 #cgo haiku LDFLAGS: -lbe -ltracker
-#cgo haiku,!qt,!qml CFLAGS: -Iexternal/src/haiku -DIUP_USE_HAIKU -I/boot/system/develop/headers/private/shared -I/boot/system/develop/headers/private/interface
-#cgo haiku,!qt,!qml CXXFLAGS: -Iexternal/src/haiku -DIUP_USE_HAIKU -std=c++17 -I/boot/system/develop/headers/private/shared -I/boot/system/develop/headers/private/interface
-#cgo haiku,!qt,!qml LDFLAGS: -ltranslation -lshared -lcolumnlistview
-#cgo haiku,!qt,!qml,gl LDFLAGS: -lGL
-#cgo haiku,!qt,!qml,web CXXFLAGS: -I/boot/system/develop/headers/private/netservices
-#cgo haiku,!qt,!qml,web LDFLAGS: -lWebKitLegacy -lJavaScriptCore
+#cgo haiku,!qt6,!qt5,!qml CFLAGS: -Iexternal/src/haiku -DIUP_USE_HAIKU -I/boot/system/develop/headers/private/shared -I/boot/system/develop/headers/private/interface
+#cgo haiku,!qt6,!qt5,!qml CXXFLAGS: -Iexternal/src/haiku -DIUP_USE_HAIKU -std=c++17 -I/boot/system/develop/headers/private/shared -I/boot/system/develop/headers/private/interface
+#cgo haiku,!qt6,!qt5,!qml LDFLAGS: -ltranslation -lshared -lcolumnlistview
+#cgo haiku,!qt6,!qt5,!qml,gl LDFLAGS: -lGL
+#cgo haiku,!qt6,!qt5,!qml,web CXXFLAGS: -I/boot/system/develop/headers/private/netservices
+#cgo haiku,!qt6,!qt5,!qml,web LDFLAGS: -lWebKitLegacy -lJavaScriptCore
 #cgo haiku,media LDFLAGS: -lmedia -lgame
 */
 import "C"
