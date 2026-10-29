@@ -642,6 +642,7 @@ static int iupqt_list_border_x = -1;
 static int iupqt_list_border_y = -1;
 static int iupqt_dropdown_border_x = -1;
 static int iupqt_dropdown_border_y = -1;
+static int iupqt_dropdown_edit_border_x = -1;
 static int iupqt_editbox_height = -1;
 
 static void iupqtListMeasureBorders(Ihandle* ih)
@@ -698,6 +699,29 @@ static void iupqtListMeasureBorders(Ihandle* ih)
     if (iupqt_dropdown_border_y < 0) iupqt_dropdown_border_y = 0;
   }
 
+  if (iupqt_dropdown_edit_border_x < 0)
+  {
+    QWidget temp_parent;
+    QComboBox temp_combo(&temp_parent);
+    temp_combo.setEditable(true);
+    temp_combo.addItem("X");
+
+    QSize combo_size = temp_combo.sizeHint();
+    QFontMetrics fm(temp_combo.font());
+
+    QStyleOptionComboBox opt;
+    opt.initFrom(&temp_combo);
+    opt.subControls = QStyle::SC_All;
+    opt.editable = true;
+    opt.rect = QRect(0, 0, combo_size.width(), combo_size.height());
+
+    QRect editRect = temp_combo.style()->subControlRect(QStyle::CC_ComboBox, &opt, QStyle::SC_ComboBoxEditField, &temp_combo);
+    QMargins margins = temp_combo.lineEdit()->textMargins();
+
+    iupqt_dropdown_edit_border_x = combo_size.width() - editRect.width() - iupdrvGetScrollbarSize() + fm.horizontalAdvance('X') + margins.left() + margins.right();
+    if (iupqt_dropdown_edit_border_x < 0) iupqt_dropdown_edit_border_x = 0;
+  }
+
   if (iupqt_editbox_height < 0)
   {
     QLineEdit temp_edit;
@@ -714,7 +738,7 @@ extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 
   if (ih->data->is_dropdown)
   {
-    (*w) += iupqt_dropdown_border_x;
+    (*w) += ih->data->has_editbox ? iupqt_dropdown_edit_border_x : iupqt_dropdown_border_x;
     (*h) += iupqt_dropdown_border_y;
   }
   else
