@@ -164,7 +164,7 @@ Inherits all callbacks of the [IupCanvas](../elem/iup_canvas.md), except ACTION,
 
 **Returns**: IUP_CLOSE will be processed.
 
-**PLAYEND_CB**: Called when playback reaches the end of the source. Not called after STOP, nor while LOOP is "YES" and the source is seekable.
+**PLAYEND_CB**: Called when playback reaches the end of the source, also when POSITION is set to DURATION or beyond while paused. Not called after STOP, nor while LOOP is "YES" and the source is seekable.
 
     int function(Ihandle *ih);
 
