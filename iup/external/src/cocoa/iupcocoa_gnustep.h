@@ -61,6 +61,8 @@
 
 #define NSUnderlineStylePatternDot                  NSUnderlinePatternDot
 
+#define NSFontDescriptorTraitMonoSpace              NSFontMonoSpaceTrait
+
 #define NSDatePickerElementFlagYearMonthDay         NSYearMonthDayDatePickerElementFlag
 #define NSDatePickerStyleClockAndCalendar           NSClockAndCalendarDatePickerStyle
 
