@@ -6,6 +6,7 @@
  */
 
 #include <clocale>
+#include <cstdio>
 
 #include <Application.h>
 #include <AppFileInfo.h>
@@ -14,6 +15,7 @@
 #include <MessageRunner.h>
 #include <Messenger.h>
 #include <InterfaceDefs.h>
+#include <image.h>
 #include <Mime.h>
 #include <Roster.h>
 #include <Window.h>
@@ -295,13 +297,41 @@ extern "C" IUP_SDK_API void iupdrvSetAppearance(int appearance)
   }
 }
 
+static bool haikuGetExeSignature(char* sig)
+{
+  image_info img;
+  int32 cookie = 0;
+
+  while (get_next_image_info(B_CURRENT_TEAM, &cookie, &img) == B_OK)
+  {
+    if (img.type != B_APP_IMAGE)
+      continue;
+
+    BFile file(img.name, B_READ_ONLY);
+    if (file.InitCheck() != B_OK)
+      return false;
+
+    BAppFileInfo finfo(&file);
+    return finfo.GetSignature(sig) == B_OK && BMimeType::IsValid(sig);
+  }
+
+  return false;
+}
+
 extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
   if (be_app == nullptr)
   {
-    const char* sig = "application/x-vnd.iup-Application";
+    char sig[B_MIME_TYPE_LENGTH] = "application/x-vnd.iup-Application";
     char* user_sig = IupGetGlobal("APPID");
-    if (user_sig && user_sig[0]) sig = user_sig;
+    if (user_sig && user_sig[0])
+      snprintf(sig, sizeof(sig), "%s", user_sig);
+    else
+    {
+      char exe_sig[B_MIME_TYPE_LENGTH];
+      if (haikuGetExeSignature(exe_sig))
+        snprintf(sig, sizeof(sig), "%s", exe_sig);
+    }
 
     iuphaiku_app = new IupHaikuApp(sig);
     iuphaiku_owns_app = 1;
