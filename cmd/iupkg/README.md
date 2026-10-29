@@ -164,7 +164,7 @@ iupkg serve myapp
 #### Haiku
 
 `<name>-<version>-<build>-x86_64.hpkg` holding `apps/<Name>/<exe>` with the application signature, type and bitmap icons as file attributes, a Deskbar menu entry and the `.PackageInfo`.
-Copy it into `/boot/home/config/packages` and it is active; remove it to uninstall. `--id` sets the signature (default `application/x-vnd.iup-Application`, the driver's default `APPID`);
+Copy it into `/boot/home/config/packages` and it is active; remove it to uninstall. `--id` sets the signature the application runs with (default `application/x-vnd.iup-Application`), prefixed with `application/x-vnd.` unless it starts with `application/`;
 `--version` must be `major[.minor[.micro]]` and `--build` is the package revision.
 
 The Go used is `GOHAIKU` if set, else `go`. Cross-building needs the Haiku Go port and the `haiku-x86_64-cc` wrapper on `PATH` (or `CC`/`CXX`).

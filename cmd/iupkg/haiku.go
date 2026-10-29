@@ -60,6 +60,9 @@ func packageHaiku(c *config) error {
 	sig := "application/x-vnd.iup-Application"
 	if c.idSet {
 		sig = c.id
+		if !strings.HasPrefix(strings.ToLower(sig), "application/") {
+			sig = "application/x-vnd." + sig
+		}
 	}
 	copyright := c.copyright
 	if copyright == "" {
