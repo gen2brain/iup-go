@@ -1057,16 +1057,7 @@ static void gtk4TableApplyCellStyle(Ihandle* ih, GtkWidget* box, GtkWidget* widg
       bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
 
     if (!bgcolor)
-    {
-      char* alternate_color = iupAttribGet(ih, "ALTERNATECOLOR");
-      if (iupStrBoolean(alternate_color))
-      {
-        if (lin % 2 == 0)
-          bgcolor = iupAttribGet(ih, "EVENROWCOLOR");
-        else
-          bgcolor = iupAttribGet(ih, "ODDROWCOLOR");
-      }
-    }
+      bgcolor = iupTableGetAlternateColor(ih, lin);
   }
 
   if (bgcolor && iupStrToRGB(bgcolor, &r, &g, &b))

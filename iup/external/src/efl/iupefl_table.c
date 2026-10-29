@@ -133,7 +133,6 @@ static int eflTableGetColumnAlignment(Ihandle* ih, int col)
 static void eflTableGetCellBgColor(Ihandle* ih, int lin, int col, unsigned char* r, unsigned char* g, unsigned char* b)
 {
   char* bgcolor = NULL;
-  char* alternate_color;
 
   if (lin > 0 && col > 0 && iupTableCellsIsSelected(ih, lin, col) && iupStrToRGB(iupTableCellsBgColor(), r, g, b))
     return;
@@ -148,16 +147,7 @@ static void eflTableGetCellBgColor(Ihandle* ih, int lin, int col, unsigned char*
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
 
   if (!bgcolor && lin > 0)
-  {
-    alternate_color = iupAttribGet(ih, "ALTERNATECOLOR");
-    if (iupStrBoolean(alternate_color))
-    {
-      if (lin % 2 == 0)
-        bgcolor = iupAttribGet(ih, "EVENROWCOLOR");
-      else
-        bgcolor = iupAttribGet(ih, "ODDROWCOLOR");
-    }
-  }
+    bgcolor = iupTableGetAlternateColor(ih, lin);
 
   if (!bgcolor)
     bgcolor = iupAttribGetStr(ih, "BGCOLOR");

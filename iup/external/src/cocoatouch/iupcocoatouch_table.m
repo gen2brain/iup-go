@@ -589,10 +589,9 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 			if (!bg_str) bg_str = iupAttribGetId2(_ihandle, "BGCOLOR", 0, (int)col + 1);  /* :C per-column */
 			if (!bg_str) bg_str = iupAttribGetId2(_ihandle, "BGCOLOR", (int)lin + 1, 0);  /* L:* per-row */
 			if (bg_str) bg = iupCocoaTouchToNativeColor(bg_str);
-			else if (iupAttribGetBoolean(_ihandle, "ALTERNATECOLOR"))
+			else
 			{
-				BOOL even = ((lin + 1) % 2) == 0;
-				const char* color_str = iupAttribGet(_ihandle, even ? "EVENROWCOLOR" : "ODDROWCOLOR");
+				const char* color_str = iupTableGetAlternateColor(_ihandle, (int)lin + 1);
 				if (color_str) bg = iupCocoaTouchToNativeColor(color_str);
 			}
 

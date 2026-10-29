@@ -62,16 +62,7 @@ static void fltkTableGetCellBgColor(Ihandle* ih, int lin, int col, unsigned char
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);  /* L:* per-row */
 
   if (!bgcolor)
-  {
-    char* alternate = iupAttribGet(ih, "ALTERNATECOLOR");
-    if (iupStrBoolean(alternate))
-    {
-      if (lin % 2 == 0)
-        bgcolor = iupAttribGet(ih, "EVENROWCOLOR");
-      else
-        bgcolor = iupAttribGet(ih, "ODDROWCOLOR");
-    }
-  }
+    bgcolor = iupTableGetAlternateColor(ih, lin);
 
   if (!bgcolor)
     bgcolor = iupAttribGet(ih, "BGCOLOR");

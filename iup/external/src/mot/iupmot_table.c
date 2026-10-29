@@ -767,6 +767,11 @@ static int motTableGetTextWidth(ImotTableFont* font, const char* text, int len)
   return len * 7;
 }
 
+static Pixel motTableGetBgPixel(Ihandle* ih)
+{
+  return iupmotColorGetPixelStr(iupAttribGetStr(ih, "BGCOLOR"));
+}
+
 static int motTableDrawCellImage(Ihandle* ih, Window window, int lin, int col, int x, int y, int w, int h, Pixel bg_pixel)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
@@ -885,16 +890,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
       bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
 
     if (!bgcolor)
-    {
-      char* alternate_color = iupAttribGet(ih, "ALTERNATECOLOR");
-      if (iupStrEqualNoCase(alternate_color, "YES"))
-      {
-        if (lin % 2 == 0)
-          bgcolor = iupAttribGetStr(ih, "EVENROWCOLOR");
-        else
-          bgcolor = iupAttribGetStr(ih, "ODDROWCOLOR");
-      }
-    }
+      bgcolor = iupTableGetAlternateColor(ih, lin);
   }
 
   int cells_selected = !is_header && iupTableCellsIsSelected(ih, lin, col);
@@ -908,7 +904,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
   else if (bgcolor && *bgcolor)
     cell_bg = iupmotColorGetPixelStr(bgcolor);
   else
-    cell_bg = mot_data->bg_pixel;
+    cell_bg = motTableGetBgPixel(ih);
 
   XSetForeground(display, mot_data->gc, cell_bg);
   XFillRectangle(display, window, mot_data->gc, x, y, w, h);
@@ -936,6 +932,8 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
         fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
       if (!fgcolor)
         fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+      if (!fgcolor && !is_focused_row)
+        fgcolor = iupAttribGetStr(ih, "FGCOLOR");
       if (cells_selected)
         fgcolor = iupTableCellsFgColor();
     }
@@ -951,7 +949,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     if (!XtIsSensitive(ih->handle))
     {
       unsigned char br, bgc, bb;
-      iupmotColorGetRGB(mot_data->bg_pixel, &br, &bgc, &bb);
+      iupmotColorGetRGB(cell_bg, &br, &bgc, &bb);
       tr = (tr + br) / 2; tg = (tg + bgc) / 2; tb = (tb + bb) / 2;
     }
 
@@ -1153,7 +1151,7 @@ static void motTableDrawTable(Ihandle* ih)
   XtVaGetValues(mot_data->drawing_area, XmNwidth, &width, XmNheight, &height, NULL);
 
   /* Clear background */
-  XSetForeground(display, mot_data->gc, mot_data->bg_pixel);
+  XSetForeground(display, mot_data->gc, motTableGetBgPixel(ih));
   XFillRectangle(display, window, mot_data->gc, 0, 0, width, height);
 
   for (col = 1; col <= ih->data->num_col; col++)
@@ -1199,15 +1197,15 @@ static void motTableDrawTable(Ihandle* ih)
         for (lin = first_visible_row; lin <= last_visible_row; lin++)
         {
           int ry = mot_data->header_height + (lin - 1) * mot_data->row_height - mot_data->scroll_y;
-          Pixel bg = mot_data->bg_pixel;
+          Pixel bg = motTableGetBgPixel(ih);
 
           if (motTableRowSelected(ih, lin))
             bg = mot_data->select_bg_pixel;
           else
           {
             char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
-            if (!bgcolor && iupStrEqualNoCase(iupAttribGet(ih, "ALTERNATECOLOR"), "YES"))
-              bgcolor = (lin % 2 == 0) ? iupAttribGetStr(ih, "EVENROWCOLOR") : iupAttribGetStr(ih, "ODDROWCOLOR");
+            if (!bgcolor)
+              bgcolor = iupTableGetAlternateColor(ih, lin);
             if (bgcolor && *bgcolor)
               bg = iupmotColorGetPixelStr(bgcolor);
           }

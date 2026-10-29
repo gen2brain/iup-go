@@ -1183,6 +1183,11 @@ static void iClassObjectUpdateGlobalDefaults(Ihandle* ih)
         !(native && iupStrEqualNoCase(afunc->default_value, afunc->system_default)) &&
         !iupAttribGet(ih, name))
       afunc->set(ih, iClassGetDefaultValue(afunc));
+    else if (afunc && afunc->set &&
+             (afunc->flags & IUPAF_HAS_ID2) &&
+             iupClassIsGlobalDefault(afunc->default_value, 1) &&
+             !iupAttribGet(ih, name))
+      ((IattribSetId2Func)afunc->set)(ih, IUP_INVALID_ID, IUP_INVALID_ID, NULL);
 
     name = iupTableNext(ic->attrib_func);
   }

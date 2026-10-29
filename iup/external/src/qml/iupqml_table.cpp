@@ -246,8 +246,8 @@ public:
           bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
         if (!bgcolor)
           bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
-        if (!bgcolor && iupStrBoolean(iupAttribGet(ih, "ALTERNATECOLOR")))
-          bgcolor = iupAttribGet(ih, (lin % 2 == 0) ? "EVENROWCOLOR" : "ODDROWCOLOR");
+        if (!bgcolor)
+          bgcolor = iupTableGetAlternateColor(ih, lin);
         if (!bgcolor)
           bgcolor = iupAttribGet(ih, "BGCOLOR");
 

@@ -575,21 +575,8 @@ static NSColor* cocoaTableGetRowBackgroundColor(Ihandle* ih, int row)
 
   char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
 
-  if (!bgcolor)
-  {
-    char* alternate = iupAttribGet(ih, "ALTERNATECOLOR");
-    if (iupStrBoolean(alternate))
-    {
-      char* even_color = iupAttribGet(ih, "EVENROWCOLOR");
-      char* odd_color = iupAttribGet(ih, "ODDROWCOLOR");
-
-      if (lin % 2 == 0)
-        bgcolor = even_color;
-      else
-        bgcolor = odd_color;
-
-    }
-  }
+  if (!bgcolor && (iupAttribGet(ih, "EVENROWCOLOR") || iupAttribGet(ih, "ODDROWCOLOR")))
+    bgcolor = iupTableGetAlternateColor(ih, lin);
 
   if (bgcolor && *bgcolor)
   {

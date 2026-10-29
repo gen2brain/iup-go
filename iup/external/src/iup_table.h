@@ -61,6 +61,7 @@ void iupTableCellsExtendBy(Ihandle* ih, int dlin, int dcol); /* shift+arrows */
 void iupTableCellsSelectAll(Ihandle* ih);
 char* iupTableCellsBgColor(void);
 char* iupTableCellsFgColor(void);
+char* iupTableGetAlternateColor(Ihandle* ih, int lin);
 void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin);
 void iupTableSortLinAttribs(Ihandle* ih, const int* order);
 void iupTableMoveColAttribs(Ihandle* ih, int from_col, int to_col);

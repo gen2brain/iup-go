@@ -2110,16 +2110,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
 
           if (!bgcolor)
-          {
-            char* alternate_color = iupAttribGet(ih, "ALTERNATECOLOR");
-            if (iupStrBoolean(alternate_color))
-            {
-              if (lin % 2 == 0)
-                bgcolor = iupAttribGet(ih, "EVENROWCOLOR");
-              else
-                bgcolor = iupAttribGet(ih, "ODDROWCOLOR");
-            }
-          }
+            bgcolor = iupTableGetAlternateColor(ih, lin);
 
           /* Foreground color: per-cell > per-column > per-row */
           char* fgcolor = NULL;

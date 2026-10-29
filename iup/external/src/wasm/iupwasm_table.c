@@ -148,13 +148,13 @@ EM_JS(void, iupwasmJsTableScrollTo, (int id, int lin, int col), {
   globalThis.__iupApply({ op: 'tablescrollto', id: id, lin: lin, col: col });
 })
 
-static void wasmTableStripeCss(const char* value, const char* def, char* css)
+static void wasmTableStripeCss(const char* value, char* css)
 {
   unsigned char r, g, b;
   if (value && iupStrToRGB(value, &r, &g, &b))
     snprintf(css, 20, "rgb(%d,%d,%d)", r, g, b);
   else
-    snprintf(css, 20, "%s", def);
+    css[0] = 0;
 }
 
 static void wasmTableApplyColors(Ihandle* ih)
@@ -162,8 +162,8 @@ static void wasmTableApplyColors(Ihandle* ih)
   int id = iupwasmIdOf(ih);
   int alt = iupAttribGetBoolean(ih, "ALTERNATECOLOR");
   char even[20], odd[20];
-  wasmTableStripeCss(iupAttribGetStr(ih, "EVENROWCOLOR"), "#f0f0f0", even);
-  wasmTableStripeCss(iupAttribGetStr(ih, "ODDROWCOLOR"), "#ffffff", odd);
+  wasmTableStripeCss(iupTableGetAlternateColor(ih, 2), even);
+  wasmTableStripeCss(iupTableGetAlternateColor(ih, 1), odd);
   if (id)
     iupwasmJsTableStripe(id, alt, even, odd);
 }

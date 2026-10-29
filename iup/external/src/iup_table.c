@@ -905,6 +905,37 @@ char* iupTableCellsBgColor(void)
   return color ? color : "0 120 215";
 }
 
+char* iupTableGetAlternateColor(Ihandle* ih, int lin)
+{
+  unsigned char r, g, b;
+  char* color;
+
+  if (!iupAttribGetBoolean(ih, "ALTERNATECOLOR"))
+    return NULL;
+
+  if (lin % 2 != 0)
+    return iupAttribGet(ih, "ODDROWCOLOR");
+
+  color = iupAttribGet(ih, "EVENROWCOLOR");
+  if (color || !iupStrToRGB(iupAttribGetStr(ih, "BGCOLOR"), &r, &g, &b))
+    return color;
+
+  if ((r * 299 + g * 587 + b * 114) / 1000 < 128)
+  {
+    r += ((255 - r) * 6) / 100;
+    g += ((255 - g) * 6) / 100;
+    b += ((255 - b) * 6) / 100;
+  }
+  else
+  {
+    r -= (r * 6) / 100;
+    g -= (g * 6) / 100;
+    b -= (b * 6) / 100;
+  }
+
+  return iupStrReturnRGB(r, g, b);
+}
+
 char* iupTableCellsFgColor(void)
 {
   unsigned char r, g, b;
