@@ -1790,6 +1790,8 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
   int prev_lin = table_data->selected_lin;
   int prev_col = table_data->selected_col;
 
+  int keep = efl_input_pointer_button_get(pointer) == 3 && iupTableRightClickKeepsSelection(ih, lin);
+
   table_data->selected_lin = lin;
   table_data->selected_col = col;
   if (efl_input_pointer_button_get(pointer) == 3)
@@ -1815,7 +1817,7 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
       eflTableSelectRow(ih, lin, !eflTableRowSelected(ih, lin), 0);
       table_data->anchor_row = lin;
     }
-    else
+    else if (!keep)
     {
       eflTableSelectRow(ih, lin, 1, 1);
       table_data->anchor_row = lin;
@@ -1864,6 +1866,9 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
       enteritem_cb(ih, lin, col);
   }
 
+  if (!keep)
+    iupTableCallMultiSelectionCb(ih);
+
   if (is_double_click && eflTableIsCellEditable(ih, col))
   {
     eflTableStartCellEdit(ih, lin, col);
@@ -1874,8 +1879,6 @@ static void eflTableCellClickCallback(void* data, const Efl_Event* ev)
     if (rcb)
       rcb(ih, lin, col);
   }
-
-  iupTableCallMultiSelectionCb(ih);
 }
 
 static Evas_Object* eflTableCreateCellWidget(Ihandle* ih, Evas_Object* parent, const char* text, int is_header, int lin, int col)

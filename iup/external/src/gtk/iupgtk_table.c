@@ -719,9 +719,9 @@ static gboolean gtkTableButtonEvent(GtkWidget* widget, GdkEventButton* evt, Ihan
     int col = g_list_index(columns, column) + 1;
     g_list_free(columns);
 
-    iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
+    iupTableRightClickBegin(ih, lin);
     gtkTableSetCursor(ih, GTK_TREE_VIEW(widget), path, column, FALSE);
-    iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
+    iupTableRightClickEnd(ih);
     gtk_tree_path_free(path);
     if (!gtk_widget_has_focus(widget))
       gtk_widget_grab_focus(widget);

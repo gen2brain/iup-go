@@ -3468,7 +3468,8 @@ static int winuiTableMapMethod(Ihandle* ih)
       }
       else
       {
-        if (a && (lin != a->current_row || col != a->current_col))
+        bool moved = a && (lin != a->current_row || col != a->current_col);
+        if (moved)
         {
           winuiTableClearFocusVisual(ih);
           a->current_row = lin;
@@ -3476,12 +3477,20 @@ static int winuiTableMapMethod(Ihandle* ih)
           winuiTableSetFocusVisual(ih, lin, col);
         }
 
-        if (a && !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+        if (a && !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE") && !iupTableRightClickKeepsSelection(ih, lin))
         {
           ListView lv = winuiTableGetListView(ih);
           a->suppress_callbacks = true;
           lv.SelectedIndex(lin - 1);
           a->suppress_callbacks = false;
+          iupTableCallMultiSelectionCb(ih);
+        }
+
+        if (moved)
+        {
+          auto enter_cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "ENTERITEM_CB"));
+          if (enter_cb)
+            enter_cb(ih, lin, col);
         }
       }
 

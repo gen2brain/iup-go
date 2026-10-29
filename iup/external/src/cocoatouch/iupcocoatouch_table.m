@@ -841,10 +841,12 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	iupAttribSet(_ihandle, "_IUPTABLE_CELLS_KEEP", NULL);
 
 	const char* selmode = iupAttribGetStr(_ihandle, "SELECTIONMODE");
+	BOOL added = NO;
 	if (!iupStrEqualNoCase(selmode, "NONE") && !iupTableCellsMode(_ihandle))
 	{
 		if (!iupStrEqualNoCase(selmode, "MULTIPLE"))
 			[_selectedLins removeAllIndexes];
+		added = ![_selectedLins containsIndex:(NSUInteger)_focusLin];
 		[_selectedLins addIndex:(NSUInteger)_focusLin];
 	}
 
@@ -869,9 +871,10 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	int focus_lin = (int)_focusLin, focus_col = (int)_focusCol;
 	iupCocoaTouchRunLater(^{
 		if (!iupObjectCheck(ih)) return;
+		if (added) iupTableCallMultiSelectionCb(ih);
+		if (!iupObjectCheck(ih)) return;
 		IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
 		if (cb && cb(ih, focus_lin, focus_col) == IUP_CLOSE) IupExitLoop();
-		if (iupObjectCheck(ih)) iupTableCallMultiSelectionCb(ih);
 	});
 }
 
@@ -1575,7 +1578,7 @@ static int cocoaTouchTableMapMethod(Ihandle* ih)
 
 	UILongPressGestureRecognizer* lp = [[UILongPressGestureRecognizer alloc] initWithTarget:ctrl action:@selector(onLongPress:)];
 	lp.minimumPressDuration = 0.5;
-	lp.cancelsTouchesInView = NO;
+	lp.cancelsTouchesInView = YES;
 	lp.delegate = ctrl;
 	[view addGestureRecognizer:lp];
 	[lp release];

@@ -56,6 +56,9 @@ int iupTableCellsMode(Ihandle* ih);
 int iupTableCellsIsSelected(Ihandle* ih, int lin, int col);
 void iupTableCellsGetRange(Ihandle* ih, int* lin1, int* col1, int* lin2, int* col2);
 void iupTableCellsCollapse(Ihandle* ih);                     /* the focus cell moved */
+int iupTableRightClickKeepsSelection(Ihandle* ih, int lin);
+void iupTableRightClickBegin(Ihandle* ih, int lin);
+void iupTableRightClickEnd(Ihandle* ih);
 void iupTableCellsExtendTo(Ihandle* ih, int lin, int col);   /* drag or shift+click */
 void iupTableCellsExtendBy(Ihandle* ih, int dlin, int dcol); /* shift+arrows */
 void iupTableCellsSelectAll(Ihandle* ih);

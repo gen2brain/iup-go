@@ -1392,9 +1392,8 @@ static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, 
   gtk4TableNotifyRow(gtk_data, gtk_data->current_row);
 
   if (button == GDK_BUTTON_SECONDARY)
-    iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
+    iupTableRightClickBegin(ih, clicked_row);
   iupTableCellsCollapse(ih);
-  iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
 
   IFnii enter_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
   if (enter_cb && (old_row != clicked_row || old_col != clicked_col))
@@ -1407,6 +1406,7 @@ static void on_click(GtkGestureClick* gesture, int n_press, double x, double y, 
     guint pos = gtk4TableViewPos(gtk_data, clicked_row);
     if (pos != GTK_INVALID_LIST_POSITION && !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
       gtk_selection_model_select_item(gtk_data->selection_model, pos, TRUE);
+    iupTableRightClickEnd(ih);
 
     IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
     if (cb)
