@@ -438,9 +438,14 @@ public final class IupTableHelper
         t.focusLin = lin;
         t.focusCol = col;
 
+        boolean added = false;
         if ("MULTIPLE".equalsIgnoreCase(t.selectionMode))
         {
-            if (!t.selectedLins.contains(lin)) t.selectedLins.add(lin);
+            if (!t.selectedLins.contains(lin))
+            {
+                t.selectedLins.add(lin);
+                added = true;
+            }
         }
         else if (!"NONE".equalsIgnoreCase(t.selectionMode) && !"CELLS".equalsIgnoreCase(t.selectionMode))
         {
@@ -460,9 +465,10 @@ public final class IupTableHelper
         final boolean dragging = IupDragDropHelper.tryStartGenericDrag(t, row, t.ihandlePtr, dragX, dragY);
 
         final boolean changedFinal = changed;
+        final boolean addedFinal = added;
         t.recyclerView.post(() -> {
+            if (addedFinal) dispatchSelection(t.ihandlePtr);
             if (!dragging) dispatchRightClick(t.ihandlePtr, lin, col, changedFinal ? 1 : 0);
-            dispatchSelection(t.ihandlePtr);
         });
     }
 

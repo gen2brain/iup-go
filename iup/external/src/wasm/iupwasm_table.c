@@ -1018,7 +1018,16 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableRightClick(int id, int lin, int col, int m
   iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
   wasmTableCellsPress(ih, lin, col, mods & ~1);
   iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
-  wasmTableCellClick(ih, lin, col, mods);
+
+  if (iupTableRightClickKeepsSelection(ih, lin))
+  {
+    IFnii enter_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+    wasmTableSetFocus(ih, lin, col);
+    if (enter_cb)
+      enter_cb(ih, lin, col);
+  }
+  else
+    wasmTableCellClick(ih, lin, col, mods);
 
   cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
   if (cb && cb(ih, lin, col) == IUP_CLOSE)

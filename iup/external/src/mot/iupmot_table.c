@@ -1524,9 +1524,8 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
       mot_data->current_row = lin;
       mot_data->current_col = col;
       if (button_event->button == Button3)
-        iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
+        iupTableRightClickBegin(ih, lin);
       iupTableCellsCollapse(ih);
-      iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
 
       char* selmode = iupAttribGetStr(ih, "SELECTIONMODE");
 
@@ -1555,18 +1554,20 @@ static void motTableInputCallback(Widget w, XtPointer client_data, XtPointer cal
         mot_data->drag_start_y = button_event->y;
       }
 
-      if (button_event->button == Button3)
-      {
-        IFnii rcb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
-        if (rcb)
-          rcb(ih, lin, col);
-      }
-
       IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
       if (enteritem_cb)
         enteritem_cb(ih, lin, col);
 
       iupTableCallMultiSelectionCb(ih);
+
+      if (button_event->button == Button3)
+      {
+        iupTableRightClickEnd(ih);
+
+        IFnii rcb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
+        if (rcb)
+          rcb(ih, lin, col);
+      }
 
       motTableRedraw(ih);
 

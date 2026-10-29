@@ -854,6 +854,42 @@ void iupTableCellsCollapse(Ihandle* ih)
   iTableCellsSetRange(ih, 0, 0, 0, 0);
 }
 
+int iupTableRightClickKeepsSelection(Ihandle* ih, int lin)
+{
+  return iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "MULTIPLE") && iupdrvTableIsLinSelected(ih, lin);
+}
+
+void iupTableRightClickBegin(Ihandle* ih, int lin)
+{
+  iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
+
+  if (iupTableRightClickKeepsSelection(ih, lin))
+  {
+    int count;
+    int* lins = iupdrvTableGetSelectedLins(ih, &count);
+    iupAttribSet(ih, "_IUPTABLE_KEEP_LINS", (char*)lins);
+    iupAttribSetInt(ih, "_IUPTABLE_KEEP_COUNT", count);
+  }
+}
+
+void iupTableRightClickEnd(Ihandle* ih)
+{
+  int* lins = (int*)iupAttribGet(ih, "_IUPTABLE_KEEP_LINS");
+
+  iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
+
+  if (lins)
+  {
+    int i, count = iupAttribGetInt(ih, "_IUPTABLE_KEEP_COUNT");
+    for (i = 0; i < count; i++)
+      iupdrvTableSelectLin(ih, lins[i], 1);
+
+    iupAttribSet(ih, "_IUPTABLE_KEEP_LINS", NULL);
+    iupAttribSet(ih, "_IUPTABLE_KEEP_COUNT", NULL);
+    free(lins);
+  }
+}
+
 void iupTableCellsExtendTo(Ihandle* ih, int lin, int col)
 {
   int focus_lin, focus_col;
@@ -1399,7 +1435,7 @@ void iupTableCallMultiSelectionCb(Ihandle* ih)
   int* lins;
   int count;
 
-  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB"))
+  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB") || iupAttribGet(ih, "_IUPTABLE_KEEP_LINS"))
     return;
 
   if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "MULTIPLE"))

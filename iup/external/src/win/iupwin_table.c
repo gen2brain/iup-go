@@ -47,6 +47,7 @@ static COLORREF winTableFocusRectColor(COLORREF bg_color)
  ****************************************************************************/
 
 #define WIN_TABLE_AUTOSIZE (WM_APP + 1)
+#define WIN_TABLE_MULTISEL (WM_APP + 2)
 
 typedef struct _IwinTableData {
   HWND list_view;
@@ -55,6 +56,7 @@ typedef struct _IwinTableData {
   BOOL* col_width_set;         /* TRUE if RASTERWIDTH was set or the user resized the column */
   char** col_titles;
   BOOL autosize_pending;
+  BOOL multisel_pending;
 
   /* Cell storage (normal mode) */
   char*** cell_values;         /* [num_lin][num_col] -> string */
@@ -1825,6 +1827,16 @@ static int winTableCallEnterItemCB(Ihandle* ih, int lin, int col)
   return IUP_DEFAULT;
 }
 
+static void winTableFlushMultiSelection(Ihandle* ih)
+{
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+  if (data && data->multisel_pending)
+  {
+    data->multisel_pending = FALSE;
+    iupTableCallMultiSelectionCb(ih);
+  }
+}
+
 static int winTableCallClickCB(Ihandle* ih, int lin, int col, char* status)
 {
   IFniis cb = (IFniis)IupGetCallback(ih, "CLICK_CB");
@@ -1979,8 +1991,12 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
         data->current_row = lin;
       }
 
-      if ((pnmv->uChanged & LVIF_STATE) && ((pnmv->uNewState ^ pnmv->uOldState) & LVIS_SELECTED) && !data->suppress_callbacks)
-        iupTableCallMultiSelectionCb(ih);
+      if ((pnmv->uChanged & LVIF_STATE) && ((pnmv->uNewState ^ pnmv->uOldState) & LVIS_SELECTED) && !data->suppress_callbacks &&
+          !iupAttribGet(ih, "_IUPTABLE_IGNORE_SELECTION_CB") && !data->multisel_pending)
+      {
+        data->multisel_pending = TRUE;
+        PostMessage(data->list_view, WIN_TABLE_MULTISEL, 0, 0);
+      }
 
       break;
     }
@@ -2006,6 +2022,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 
         iupTableCellsCollapse(ih);
 
+        winTableFlushMultiSelection(ih);
         if (!data->suppress_callbacks)
           winTableCallEnterItemCB(ih, lin, col);
       }
@@ -2034,6 +2051,10 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
         iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", "1");
         iupTableCellsCollapse(ih);
         iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", NULL);
+
+        winTableFlushMultiSelection(ih);
+        if (!data->suppress_callbacks)
+          winTableCallEnterItemCB(ih, lin, col);
 
         IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");
         if (cb)
@@ -2915,6 +2936,12 @@ static LRESULT CALLBACK winTableListViewWndProc(HWND hwnd, UINT msg, WPARAM wp, 
       }
       return 0;
     }
+  }
+
+  if (msg == WIN_TABLE_MULTISEL)
+  {
+    winTableFlushMultiSelection(ih);
+    return 0;
   }
 
   if (msg == WIN_TABLE_AUTOSIZE)

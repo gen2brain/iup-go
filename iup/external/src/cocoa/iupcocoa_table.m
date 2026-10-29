@@ -1001,9 +1001,25 @@ static void cocoaTableBeginEdit(NSTableView* tableView, NSInteger col, NSInteger
     }
     else
     {
+      IcocoaTableData* table_data = ICOCOA_TABLE_DATA(ih);
+      int old_row = table_data ? table_data->current_row : 0;
+      BOOL keep = iupTableRightClickKeepsSelection(ih, (int)clickedRow + 1);
+
       [self trackPressAtPoint:point];
-      if (!iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
+      if (!keep && !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE"))
         [self selectRowIndexes:[NSIndexSet indexSetWithIndex:clickedRow] byExtendingSelection:NO];
+
+      if (table_data && old_row != table_data->current_row)
+      {
+        NSMutableIndexSet* rows = [NSMutableIndexSet indexSetWithIndex:clickedRow];
+        if (old_row > 0 && old_row <= [self numberOfRows])
+          [rows addIndex:old_row - 1];
+        [self reloadDataForRowIndexes:rows columnIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, [self numberOfColumns])]];
+
+        IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+        if (keep && enteritem_cb)
+          enteritem_cb(ih, table_data->current_row, table_data->current_col);
+      }
     }
 
     IFnii cb = (IFnii)IupGetCallback(ih, "RIGHTCLICK_CB");

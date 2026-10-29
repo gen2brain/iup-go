@@ -727,16 +727,24 @@ protected:
           {
             if (Fl::event_button() == FL_RIGHT_MOUSE)
             {
-              if (!iupStrEqualNoCase(iupAttribGetStr(iup_handle, "SELECTIONMODE"), "NONE"))
+              if (!iupStrEqualNoCase(iupAttribGetStr(iup_handle, "SELECTIONMODE"), "NONE") && !iupTableRightClickKeepsSelection(iup_handle, R + 1))
               {
                 select_all_rows(0);
                 select_row(R, 1);
                 redraw();
               }
 
+              unsigned int stamp = selectionStamp();
+              if (stamp != selection_stamp)
+              {
+                selection_stamp = stamp;
+                iupTableCallMultiSelectionCb(iup_handle);
+              }
+
               auto cb = reinterpret_cast<IFnii>(IupGetCallback(iup_handle, "RIGHTCLICK_CB"));
               if (cb)
                 cb(iup_handle, R + 1, C + 1);
+              return 1;
             }
           }
         }

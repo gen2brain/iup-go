@@ -1254,6 +1254,9 @@ public:
       return B_SKIP_MESSAGE;
     }
 
+    int old_col = fTv->FocusCol();
+    BRow* old_row = fTv->FocusRow();
+    int old_lin = old_row ? static_cast<int>(fTv->IndexOf(old_row)) + 1 : 0;
     if (col) fTv->SetFocusCol(col->LogicalFieldNum() + 1);
 
     BView* outline = fTv->ScrollView();
@@ -1283,7 +1286,9 @@ public:
       {
         if (buttons & B_SECONDARY_MOUSE_BUTTON)
         {
-          bool select = !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE");
+          int hit_col = col->LogicalFieldNum() + 1;
+          bool keep = iupTableRightClickKeepsSelection(ih, hit_lin);
+          bool select = !keep && !iupStrEqualNoCase(iupAttribGetStr(ih, "SELECTIONMODE"), "NONE");
           iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
           if (select) fTv->DeselectAll();
           fTv->SetFocusRow(hit_lin - 1, select);
@@ -1292,15 +1297,23 @@ public:
           iupTableCellsCollapse(ih);
           iupAttribSet(ih, "_IUPTABLE_CELLS_KEEP", nullptr);
           outline->Invalidate();
-        }
 
-        if (buttons & B_SECONDARY_MOUSE_BUTTON)
-        {
+          if (select)
+            iupTableCallMultiSelectionCb(ih);
+
+          if (hit_lin != old_lin || hit_col != old_col)
+          {
+            auto ecb = reinterpret_cast<IFnii>(IupGetCallback(ih, "ENTERITEM_CB"));
+            if (ecb)
+              ecb(ih, hit_lin, hit_col);
+          }
+
+          fTv->MakeFocus(true);
+
           auto rcb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RIGHTCLICK_CB"));
           if (rcb)
-            rcb(ih, hit_lin, col->LogicalFieldNum() + 1);
-          if (iupTableCellsMode(ih))
-            return B_SKIP_MESSAGE;
+            rcb(ih, hit_lin, hit_col);
+          return B_SKIP_MESSAGE;
         }
       }
     }
