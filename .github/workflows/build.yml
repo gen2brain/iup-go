@@ -109,7 +109,7 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get update -y && sudo apt-get install -y qt6-base-dev
     - name: Build
-      run: go build -tags qt
+      run: go build -tags qt6
       working-directory: iup
 
   linux-qt5:
@@ -124,7 +124,7 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get update -y && sudo apt-get install -y qtbase5-dev
     - name: Build
-      run: go build -tags qt,qt5
+      run: go build -tags qt5
       working-directory: iup
 
   linux-qml:
@@ -320,7 +320,7 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get update -y && sudo apt-get install -y qt6-base-dev qt6-webengine-dev
     - name: Build
-      run: go build -tags qt,web
+      run: go build -tags qt6,web
       working-directory: iup
 
   linux-qml-web:
@@ -420,7 +420,7 @@ jobs:
     - name: Install dependencies
       run: brew install qt
     - name: Build
-      run: go build -tags qt
+      run: go build -tags qt6
       working-directory: iup
 
   windows-winui:
@@ -552,7 +552,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     - name: Build
-      run: go build -tags qt
+      run: go build -tags qt6
       working-directory: iup
 
   windows-cmake:

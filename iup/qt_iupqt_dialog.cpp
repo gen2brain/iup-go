@@ -1,3 +1,3 @@
-//go:build qt
+//go:build qt6 || qt5
 
 #include "external/src/qt/iupqt_dialog.cpp"
