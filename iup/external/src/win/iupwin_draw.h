@@ -27,6 +27,7 @@ IUP_DRV_API int  iupwinDrawToggleGlyph(HWND hWnd, HDC hDC, RECT* item, int is_ra
 
 IUP_DRV_API void iupwinDrawThemeInit(void);
 IUP_DRV_API void iupwinDrawThemeFrameBorder(HWND hWnd, HDC hDC, RECT* rect, UINT itemState);
+IUP_DRV_API int  iupwinDrawThemeTooltip(HWND hWnd, HDC hDC, RECT* rect, COLORREF* fgcolor);
 IUP_DRV_API int  iupwinDrawGetThemeTabsBgColor(HWND hWnd, COLORREF* color);
 IUP_DRV_API int  iupwinDrawGetThemeButtonBgColor(HWND hWnd, COLORREF* color);
 IUP_DRV_API void iupwinDrawRemoveTheme(HWND hWnd);

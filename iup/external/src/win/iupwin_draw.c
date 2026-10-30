@@ -203,6 +203,25 @@ IUP_DRV_API void iupwinDrawThemeFrameBorder(HWND hWnd, HDC hDC, RECT* rect, UINT
   winThemeCloseData(hTheme);
 }
 
+IUP_DRV_API int iupwinDrawThemeTooltip(HWND hWnd, HDC hDC, RECT* rect, COLORREF* fgcolor)
+{
+  HTHEME hTheme;
+
+  if (!winDrawThemeEnabled())
+    return 0;
+
+  hTheme = winThemeOpenData(hWnd, L"TOOLTIP");
+  if (!hTheme)
+    return 0;
+
+  winThemeDrawBackground(hTheme, hDC, TTP_STANDARD, TTSS_NORMAL, rect, NULL);
+  if (winThemeGetColor(hTheme, TTP_STANDARD, TTSS_NORMAL, TMT_TEXTCOLOR, fgcolor) != S_OK)
+    *fgcolor = GetSysColor(COLOR_INFOTEXT);
+
+  winThemeCloseData(hTheme);
+  return 1;
+}
+
 IUP_DRV_API int iupwinDrawGetThemeTabsBgColor(HWND hWnd, COLORREF* color)
 {
   HTHEME hTheme;
