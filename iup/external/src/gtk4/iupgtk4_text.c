@@ -263,7 +263,7 @@ static void gtkTextMoveIterToLinCol(GtkTextBuffer* buffer, GtkTextIter* iter, in
 
   gtk_text_buffer_get_iter_at_line(buffer, iter, lin);
 
-  if (col != 0)
+  if (col > 0)
   {
     int line_length = gtk_text_iter_get_chars_in_line(iter);
     if (line_length > 0)
