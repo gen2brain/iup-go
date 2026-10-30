@@ -667,6 +667,24 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 
 @implementation IupCocoaTreeTextField
 
+- (BOOL)becomeFirstResponder
+{
+  IupCocoaOutlineView* outline_view = objc_getAssociatedObject(self, IUP_COCOA_TREE_TEXTFIELD_OWNER_KEY);
+  Ihandle* ih = outline_view ? [outline_view ih] : NULL;
+  NSInteger row = ih ? [outline_view rowForView:self] : -1;
+  IFni cb = ih ? (IFni)IupGetCallback(ih, "SHOWRENAME_CB") : NULL;
+
+  if (cb && row >= 0 && cb(ih, iupTreeFindNodeId(ih, (InodeHandle*)[outline_view itemAtRow:row])) == IUP_IGNORE)
+  {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [[outline_view window] makeFirstResponder:outline_view];
+    });
+    return NO;
+  }
+
+  return [super becomeFirstResponder];
+}
+
 - (NSMenu*)textView:(NSTextView*)textView menu:(NSMenu*)menu forEvent:(NSEvent*)event atIndex:(NSUInteger)charIndex
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
@@ -767,27 +785,6 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 
   rename_done = YES;
   return NO;
-}
-
-- (BOOL)control:(NSControl*)control textShouldBeginEditing:(NSText*)fieldEditor
-{
-    IupCocoaOutlineView* outline_view = objc_getAssociatedObject(self, IUP_COCOA_TREE_TEXTFIELD_OWNER_KEY);
-    if (!outline_view) return YES;
-
-    Ihandle* ih = [outline_view ih];
-    if (!ih) return YES;
-
-    NSInteger row = [outline_view rowForView:self];
-    if (row < 0) return YES;
-
-    IupCocoaTreeItem* item = [outline_view itemAtRow:row];
-    int item_id = iupTreeFindNodeId(ih, (InodeHandle*)item);
-
-    IFni cbShowRename = (IFni)IupGetCallback(ih, "SHOWRENAME_CB");
-    if (cbShowRename && cbShowRename(ih, item_id) == IUP_IGNORE)
-        return NO;
-
-    return YES;
 }
 
 - (void)controlTextDidBeginEditing:(NSNotification*)notification
