@@ -907,8 +907,9 @@ static void winuiTreeApplyItemMetrics(Ihandle* ih, TreeViewNode const& node, Tre
   Grid presenter = winuiTreeFindTemplateGrid(tvi, L"ContentPresenterGrid");
   if (presenter)
   {
+    double border = tvi.BorderThickness().Left;
     presenter.Margin(Thickness{0, spacing, 0, spacing});
-    presenter.Padding(Thickness{0, 0, 0, 0});
+    presenter.Padding(Thickness{-border, -border, -border, -border});
   }
 
   int indent;
@@ -974,15 +975,17 @@ static void winuiTreeApplyFocusVisual(TreeView const& treeView, TreeViewNode con
   TreeViewItem tvi = container.try_as<TreeViewItem>();
   if (!tvi)
     return;
+  double border = on ? 2 : 0;
   if (on)
   {
     Windows::UI::Color color;
     color.A = 255; color.R = 0x00; color.G = 0x78; color.B = 0xD4;
     tvi.BorderBrush(Media::SolidColorBrush(color));
-    tvi.BorderThickness(Thickness{2, 2, 2, 2});
   }
-  else
-    tvi.BorderThickness(Thickness{0, 0, 0, 0});
+  tvi.BorderThickness(Thickness{border, border, border, border});
+  Grid presenter = winuiTreeFindTemplateGrid(tvi, L"ContentPresenterGrid");
+  if (presenter)
+    presenter.Padding(Thickness{-border, -border, -border, -border});
 }
 
 static void winuiTreeSetFocus(Ihandle* ih, int id)
