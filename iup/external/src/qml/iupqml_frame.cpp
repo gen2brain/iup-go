@@ -196,7 +196,9 @@ static int qmlFrameSetFgColorAttrib(Ihandle* ih, const char* value)
     return 0;
 
   iupqmlSetPaletteColor(box, "windowText", QColor(r, g, b));
-  iupqmlSetProperty(box, "label.color", QColor(r, g, b));
+  QQuickItem* label = iupqmlGetItemProperty(box, "label");
+  if (label && label->inherits("QQuickText"))
+    label->setProperty("color", QColor(r, g, b));
   return 1;
 }
 
