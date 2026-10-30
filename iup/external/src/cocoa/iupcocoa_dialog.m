@@ -26,6 +26,12 @@
 #include "iupcocoa_keycodes.h"
 #include "iupcocoa_dragdrop.h"
 
+#ifdef GNUSTEP
+#import <GNUstepGUI/GSDisplayServer.h>
+#include <stdint.h>
+#include "iupunix_x11.h"
+#endif
+
 
 static const void* DOCKPROGRESS_ASSOCIATED_OBJ_KEY = @"DOCKPROGRESS_ASSOCIATED_OBJ_KEY";
 static const char IUPCocoaZoomRestoreFrameKey = 0;
@@ -675,17 +681,51 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
  ******************* Driver Functions ***************************
  ****************************************************************/
 
+#ifdef GNUSTEP
+static void cocoaDialogSetAbove(NSWindow* the_window, int above)
+{
+  Display* display;
+  XEvent event;
+
+  if (![the_window isVisible] || [the_window windowNumber] == 0 || ![the_window windowRef] ||
+      !iupX11Open() || !XSendEvent || !XInternAtom || !XSync)
+    return;
+
+  display = (Display*)[GSServerForWindow(the_window) serverDevice];
+
+  memset(&event, 0, sizeof(event));
+  event.xclient.type = ClientMessage;
+  event.xclient.window = (Window)(uintptr_t)[the_window windowRef];
+  event.xclient.message_type = XInternAtom(display, "_NET_WM_STATE", 0);
+  event.xclient.format = 32;
+  event.xclient.data.l[0] = above ? 1 : 0;
+  event.xclient.data.l[1] = (long)XInternAtom(display, "_NET_WM_STATE_ABOVE", 0);
+  event.xclient.data.l[3] = 1;
+
+  XSendEvent(display, XRootWindow(display, XDefaultScreen(display)), 0, SubstructureRedirectMask | SubstructureNotifyMask, &event);
+  XSync(display, 0);
+}
+#endif
+
 static void cocoaDialogUpdateLevel(Ihandle* ih)
 {
   NSWindow* the_window = iupcocoaDialogGetWindow(ih);
   if (!the_window) return;
 
+#ifdef GNUSTEP
+  if (iupAttribGetBoolean(ih, "DIALOGHINT"))
+    [the_window setLevel:NSFloatingWindowLevel];
+  else
+    [the_window setLevel:NSNormalWindowLevel];
+  cocoaDialogSetAbove(the_window, iupAttribGetBoolean(ih, "TOPMOST"));
+#else
   if (iupAttribGetBoolean(ih, "TOPMOST"))
     [the_window setLevel:NSStatusWindowLevel];
   else if (iupAttribGetBoolean(ih, "DIALOGHINT"))
     [the_window setLevel:NSFloatingWindowLevel];
   else
     [the_window setLevel:NSNormalWindowLevel];
+#endif
 }
 
 static int cocoaDialogIsVisible(Ihandle* ih)
@@ -763,6 +803,11 @@ static void cocoaDialogSetVisible(Ihandle* ih, int visible)
     {
       [the_window makeKeyAndOrderFront:nil];
     }
+
+#ifdef GNUSTEP
+    if (iupAttribGetBoolean(ih, "TOPMOST"))
+      cocoaDialogSetAbove(the_window, 1);
+#endif
 
     /* no resize event fires on show, so run the settling relayout once here */
     if (!iupAttribGet(ih, "_IUPCOCOA_FIRSTLAYOUT"))
