@@ -523,10 +523,7 @@ public final class IupTreeHelper
     {
         android.content.ClipData data = android.content.ClipData.newPlainText("iuptreenode", String.valueOf(dragId));
         View.DragShadowBuilder shadow = new View.DragShadowBuilder(h.itemView);
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N)
-            h.itemView.startDragAndDrop(data, shadow, dragId, 0);
-        else
-            h.itemView.startDrag(data, shadow, dragId, 0);
+        h.itemView.startDragAndDrop(data, shadow, dragId, 0);
     }
 
     static void installDropListener(final IupTreeView tree)

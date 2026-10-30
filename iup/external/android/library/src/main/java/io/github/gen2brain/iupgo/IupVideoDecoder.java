@@ -9,7 +9,6 @@ import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.net.Uri;
-import android.os.Build;
 import android.view.Surface;
 import android.view.View;
 import java.nio.ByteBuffer;
@@ -123,7 +122,7 @@ final class IupVideoDecoder extends IupVideoHelper.Player
             {
                 videoExtractor.selectTrack(videoTrack);
                 videoFormat = videoExtractor.getTrackFormat(videoTrack);
-                if (Build.VERSION.SDK_INT >= 23 && videoFormat.containsKey("rotation-degrees"))
+                if (videoFormat.containsKey("rotation-degrees"))
                     rotation = videoFormat.getInteger("rotation-degrees");
                 for (int i = 0; i < videoExtractor.getTrackCount(); i++)
                 {
@@ -541,7 +540,7 @@ final class IupVideoDecoder extends IupVideoHelper.Player
     {
         int rate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
         int channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-        int encoding = Build.VERSION.SDK_INT >= 24 && format.containsKey(MediaFormat.KEY_PCM_ENCODING) ?
+        int encoding = format.containsKey(MediaFormat.KEY_PCM_ENCODING) ?
             format.getInteger(MediaFormat.KEY_PCM_ENCODING) : AudioFormat.ENCODING_PCM_16BIT;
         int mask;
         switch (channels)
@@ -561,7 +560,7 @@ final class IupVideoDecoder extends IupVideoHelper.Player
             Math.max(minimum, 1) * 4, AudioTrack.MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE);
         float value = mute ? 0 : level / 100.0f;
         created.setVolume(value);
-        if (Build.VERSION.SDK_INT >= 23 && deviceId >= 0)
+        if (deviceId >= 0)
             created.setPreferredDevice(IupVideoHelper.findAudioDevice(host.getContext(), deviceId));
         AudioTrack previous;
         synchronized (lock)
@@ -696,7 +695,7 @@ final class IupVideoDecoder extends IupVideoHelper.Player
         deviceId = id;
         synchronized (lock)
         {
-            if (track != null && Build.VERSION.SDK_INT >= 23)
+            if (track != null)
                 track.setPreferredDevice(IupVideoHelper.findAudioDevice(host.getContext(), id));
         }
     }
