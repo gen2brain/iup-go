@@ -24,9 +24,9 @@ static QQuickItem* qmlFrameTemplate(Ihandle* ih, int has_title)
 {
   QQuickItem* box;
   if (has_title)
-    box = iupqmlTemplateItem(IUPQML_IMPORTS "GroupBox { padding: 3; spacing: 2; title: \"X\"; contentItem: Item { } }");
+    box = iupqmlTemplateItem(IUPQML_IMPORTS "GroupBox { padding: 3; spacing: 2; title: \"X\" }");
   else
-    box = iupqmlTemplateItem(IUPQML_IMPORTS "GroupBox { padding: 3; spacing: 2; contentItem: Item { } }");
+    box = iupqmlTemplateItem(IUPQML_IMPORTS "GroupBox { padding: 3; spacing: 2 }");
 
   if (box && ih)
   {
@@ -251,7 +251,7 @@ static int qmlFrameMapMethod(Ihandle* ih)
   else if (iupAttribGet(ih, "BGCOLOR") || iupAttribGet(ih, "BACKCOLOR"))
     iupAttribSet(ih, "_IUPFRAME_HAS_BGCOLOR", "1");
 
-  QQuickItem* box = iupqmlCreateItem(IUPQML_IMPORTS "GroupBox { padding: 3; spacing: 2; contentItem: Item { objectName: \"content\" } }");
+  QQuickItem* box = iupqmlCreateItem(IUPQML_IMPORTS "GroupBox { padding: 3; spacing: 2 }");
   if (!box)
     return IUP_ERROR;
 
@@ -261,8 +261,6 @@ static int qmlFrameMapMethod(Ihandle* ih)
   ih->handle = reinterpret_cast<InativeHandle*>(box);
 
   QQuickItem* inner = iupqmlGetItemProperty(box, "contentItem");
-  if (!inner)
-    inner = box->findChild<QQuickItem*>("content");
   iupAttribSet(ih, "_IUPQML_FRAME_INNER", reinterpret_cast<char*>(inner));
 
   iupqmlAddToParent(ih);
