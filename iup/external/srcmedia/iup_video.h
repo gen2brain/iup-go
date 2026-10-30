@@ -68,6 +68,7 @@ struct _IvideoSession
   IvideoInfo info;
   unsigned char* pending;
   int pending_width, pending_height, pending_ready;
+  int target_width, target_height;
   char* subtitle_cue;
   char subtitle_error[512];
 };
@@ -77,6 +78,7 @@ const IvideoBackend* iupdrvVideoBackend(int index);
 void iupVideoInfo(IvideoSession* session, const IvideoInfo* info);
 void iupVideoError(IvideoSession* session, const char* message);
 void iupVideoFrame(IvideoSession* session, const unsigned char* pixels, int width, int height, size_t stride);
+void iupVideoTargetSize(IvideoSession* session, int width, int height, int* target_width, int* target_height);
 void iupVideoSubtitleCue(IvideoSession* session, const char* text);
 void iupVideoSubtitleError(IvideoSession* session, const char* message);
 int iupVideoAddAudioDevice(IvideoAudioDevice** devices, int count, const char* id, const char* name);

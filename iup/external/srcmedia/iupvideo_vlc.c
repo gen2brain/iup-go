@@ -285,6 +285,12 @@ static unsigned iVideoVlcFormat(void** opaque, char* chroma, unsigned* width, un
   iVideoVlcTracksRelease(&list);
   if (!*width || !*height || *width > (unsigned)(INT_MAX - 31) / 4 || *height > (unsigned)INT_MAX / 4 / *width)
     return 0;
+  {
+    int target_width, target_height;
+    iupVideoTargetSize(context->session, (int)*width, (int)*height, &target_width, &target_height);
+    *width = (unsigned)target_width;
+    *height = (unsigned)target_height;
+  }
   picture = (IvideoVlcPicture*)calloc(1, sizeof(IvideoVlcPicture));
   if (!picture)
     return 0;

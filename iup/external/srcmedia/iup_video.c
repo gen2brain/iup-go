@@ -22,6 +22,7 @@
 #include "iup_register.h"
 #include "iup_thread.h"
 #include "iup_drvfont.h"
+#include "iup_drvinfo.h"
 #include "iup_stdcontrols.h"
 #include "iup_video.h"
 
@@ -719,6 +720,29 @@ void iupVideoFrame(IvideoSession* session, const unsigned char* pixels, int widt
   iupdrvMutexUnlock(session->mutex);
 }
 
+void iupVideoTargetSize(IvideoSession* session, int width, int height, int* target_width, int* target_height)
+{
+  int tw, th;
+  double scale;
+  iupdrvMutexLock(session->mutex);
+  tw = session->target_width;
+  th = session->target_height;
+  iupdrvMutexUnlock(session->mutex);
+  *target_width = width;
+  *target_height = height;
+  if (width <= 0 || height <= 0 || tw <= 0 || th <= 0)
+    return;
+  scale = (double)tw / width < (double)th / height ? (double)tw / width : (double)th / height;
+  if (scale >= 1)
+    return;
+  *target_width = iupRound(width * scale);
+  *target_height = iupRound(height * scale);
+  if (*target_width < 1)
+    *target_width = 1;
+  if (*target_height < 1)
+    *target_height = 1;
+}
+
 static void iVideoReleaseImage(Ihandle* ih)
 {
   if (ih->data->image)
@@ -1248,6 +1272,14 @@ static int iVideoRedraw(Ihandle* ih)
   iupAttribSet(ih, "DRAWSTYLE", "FILL");
   IupDrawRectangle(ih, 0, 0, w - 1, h - 1);
   iVideoPictureRect(ih, w, h, &vx, &vy, &vw, &vh);
+  if (ih->data->session)
+  {
+    double scale = iupdrvGetScreenScale();
+    iupdrvMutexLock(ih->data->session->mutex);
+    ih->data->session->target_width = vw > 0 ? iupRound(vw * scale) : 0;
+    ih->data->session->target_height = vh > 0 ? iupRound(vh * scale) : 0;
+    iupdrvMutexUnlock(ih->data->session->mutex);
+  }
   if (ih->data->frame && vw > 0 && vh > 0)
   {
     if (!iupDrawBitmap(ih, ih->data->frame, ih->data->frame_width, ih->data->frame_height, ih->data->frame_width * 4, vx, vy, vw, vh))
