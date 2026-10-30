@@ -291,8 +291,11 @@ static void winuiTreeUpdateImages(Ihandle* ih, int mode)
 
 static void winuiTreeExpandingHandler(Ihandle* ih, TreeViewNode const& node)
 {
-  if (node.HasUnrealizedChildren())
-    node.HasUnrealizedChildren(false);
+  if (!node.HasChildren() && !node.HasUnrealizedChildren())
+  {
+    node.IsExpanded(false);
+    return;
+  }
 
   int id = winuiTreeFindNodeId(ih, node);
   if (id < 0)
@@ -322,6 +325,9 @@ static void winuiTreeExpandingHandler(Ihandle* ih, TreeViewNode const& node)
 
 static void winuiTreeCollapsedHandler(Ihandle* ih, TreeViewNode const& node)
 {
+  if (!node.HasChildren() && !node.HasUnrealizedChildren())
+    return;
+
   int id = winuiTreeFindNodeId(ih, node);
   if (id < 0)
     return;
