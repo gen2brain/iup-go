@@ -8,7 +8,7 @@ import com.google.android.material.slider.Slider;
 
 
 /* no native Material3 vertical slider; rotate a horizontal one 90 and remap touch */
-public class IupAndroidVerticalSlider extends ViewGroup
+public final class IupAndroidVerticalSlider extends ViewGroup
 {
     private final Slider slider;
 

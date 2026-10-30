@@ -73,7 +73,7 @@ public final class IupTabsHelper
 
     /* Programmatic-only; requires an Ihandle so the XML constructors are absent. */
     @android.annotation.SuppressLint("ViewConstructor")
-    public static class IupAndroidTabs extends LinearLayout
+    public static final class IupAndroidTabs extends LinearLayout
     {
         final long ihandlePtr;
         final TabLayout tabLayout;

@@ -1,5 +1,6 @@
 package io.github.gen2brain.iupgo;
 
+import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
@@ -29,6 +30,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Keep;
+import androidx.annotation.RequiresPermission;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -124,6 +126,7 @@ public final class IupNotifyHelper
 
     /* urgency 0/1/2 = low/normal/high; channelId overrides iup_* default; returns id, 0 on failure */
     @Keep
+    @RequiresPermission(value = Manifest.permission.POST_NOTIFICATIONS, conditional = true)
     public static int show(long ihandlePtr, int notifyId, String title, String body,
                            Bitmap iconBitmap, int timeoutMs, int urgency, boolean silent, boolean transient_,
                            String action1, String action2, String action3, String action4,

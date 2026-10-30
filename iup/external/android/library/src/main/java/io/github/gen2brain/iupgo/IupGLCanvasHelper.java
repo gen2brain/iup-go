@@ -35,7 +35,7 @@ public final class IupGLCanvasHelper
 
     /* SurfaceView is not a ViewGroup, and its surface sits behind the window */
     @android.annotation.SuppressLint("ViewConstructor")
-    public static class IupGLBackgroundBoxView extends IupAndroidFixed
+    public static final class IupGLBackgroundBoxView extends IupAndroidFixed
     {
         private final IupGLSurfaceView surface;
 
@@ -67,7 +67,7 @@ public final class IupGLCanvasHelper
 
     /* Programmatic-only; requires an Ihandle so the XML constructors are absent. */
     @android.annotation.SuppressLint("ViewConstructor")
-    public static class IupGLSurfaceView extends SurfaceView implements SurfaceHolder.Callback
+    public static final class IupGLSurfaceView extends SurfaceView implements SurfaceHolder.Callback
     {
         private final long ihandlePtr;
         private final GestureDetector rightClickDetector;

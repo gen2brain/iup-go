@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 
 public final class IupWebBrowserHelper
@@ -297,7 +298,7 @@ public final class IupWebBrowserHelper
         int dot = path.lastIndexOf('.');
         if (dot >= 0)
         {
-            String ext = path.substring(dot + 1).toLowerCase();
+            String ext = path.substring(dot + 1).toLowerCase(Locale.ROOT);
             mime = switch (ext) {
                 case "jpg", "jpeg" -> "image/jpeg";
                 case "gif" -> "image/gif";

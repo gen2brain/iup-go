@@ -20,6 +20,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Locale;
 
 
 /* Pango-style parser for MARKUP=YES: inline tags, span attributes and XML entities. */
@@ -44,7 +45,7 @@ final class IupMarkupHelper
                 if (tagBody.isEmpty()) continue;
                 if (tagBody.charAt(0) == '/')
                 {
-                    String name = tagBody.substring(1).trim().toLowerCase();
+                    String name = tagBody.substring(1).trim().toLowerCase(Locale.ROOT);
                     closeTag(out, stack, name);
                 }
                 else
@@ -53,8 +54,8 @@ final class IupMarkupHelper
                     if (selfClosing) tagBody = tagBody.substring(0, tagBody.length() - 1).trim();
                     String name; Map<String,String> attrs;
                     int sp = firstWhitespace(tagBody);
-                    if (sp < 0) { name = tagBody.toLowerCase(); attrs = null; }
-                    else        { name = tagBody.substring(0, sp).toLowerCase(); attrs = parseAttrs(tagBody.substring(sp + 1)); }
+                    if (sp < 0) { name = tagBody.toLowerCase(Locale.ROOT); attrs = null; }
+                    else        { name = tagBody.substring(0, sp).toLowerCase(Locale.ROOT); attrs = parseAttrs(tagBody.substring(sp + 1)); }
                     Frame f = new Frame();
                     f.name = name;
                     f.attrs = attrs;
@@ -158,20 +159,20 @@ final class IupMarkupHelper
 
         String st = pick(a, "font_style", "style");
         if (st != null) {
-            String s = st.toLowerCase();
+            String s = st.toLowerCase(Locale.ROOT);
             if (s.equals("italic") || s.equals("oblique"))
                 out.setSpan(new StyleSpan(Typeface.ITALIC), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
 
         String u = a.get("underline");
         if (u != null) {
-            String s = u.toLowerCase();
+            String s = u.toLowerCase(Locale.ROOT);
             if (!s.equals("none") && !s.equals("false") && !s.equals("0"))
                 out.setSpan(new UnderlineSpan(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         String stk = a.get("strikethrough");
         if (stk != null) {
-            String s = stk.toLowerCase();
+            String s = stk.toLowerCase(Locale.ROOT);
             if (s.equals("true") || s.equals("yes") || s.equals("1"))
                 out.setSpan(new StrikethroughSpan(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
@@ -185,7 +186,7 @@ final class IupMarkupHelper
     /* Pango "size" values: smaller, larger, x-small..xx-large -> RelativeSizeSpan. */
     private static Float relativeSize(String s)
     {
-        switch (s.toLowerCase()) {
+        switch (s.toLowerCase(Locale.ROOT)) {
             case "xx-small": return 0.58f;
             case "x-small":  return 0.69f;
             case "small":    return 0.83f;
@@ -202,7 +203,7 @@ final class IupMarkupHelper
     /* Pango font_size: 1/1024 pt or "Npt"; plain ints are read as pt */
     private static int absoluteSizePx(String s)
     {
-        s = s.trim().toLowerCase();
+        s = s.trim().toLowerCase(Locale.ROOT);
         if (s.endsWith("pt")) s = s.substring(0, s.length() - 2).trim();
         if (s.endsWith("px")) {
             try { return Math.max(1, Integer.parseInt(s.substring(0, s.length() - 2).trim())); }
@@ -218,7 +219,7 @@ final class IupMarkupHelper
     }
     private static boolean isBoldWeight(String w)
     {
-        String s = w.toLowerCase();
+        String s = w.toLowerCase(Locale.ROOT);
         if (s.equals("bold") || s.equals("bolder") || s.equals("heavy") || s.equals("ultrabold")) return true;
         try { return Integer.parseInt(s) >= 600; } catch (NumberFormatException e) { return false; }
     }
@@ -236,7 +237,7 @@ final class IupMarkupHelper
             int keyStart = i;
             while (i < n && s.charAt(i) != '=' && !Character.isWhitespace(s.charAt(i))) i++;
             if (i == keyStart) break;
-            String key = s.substring(keyStart, i).toLowerCase();
+            String key = s.substring(keyStart, i).toLowerCase(Locale.ROOT);
             while (i < n && Character.isWhitespace(s.charAt(i))) i++;
             String val = "";
             if (i < n && s.charAt(i) == '=') {

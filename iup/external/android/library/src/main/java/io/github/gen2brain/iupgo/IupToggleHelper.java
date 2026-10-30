@@ -61,27 +61,21 @@ public final class IupToggleHelper
     {
         if (cb instanceof MaterialCheckBox mcb)
         {
-            mcb.setButtonTintList(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
-                ctx, com.google.android.material.R.color.m3_checkbox_button_tint));
-            mcb.setButtonIconTintList(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
-                ctx, com.google.android.material.R.color.m3_checkbox_button_icon_tint));
+            int style = androidx.appcompat.R.attr.checkboxStyle;
+            mcb.setButtonTintList(IupCommon.styleColors(ctx, style, androidx.appcompat.R.attr.buttonTint));
+            mcb.setButtonIconTintList(IupCommon.styleColors(ctx, style, com.google.android.material.R.attr.buttonIconTint));
         }
         else if (cb instanceof MaterialSwitch ms)
         {
-            /* MaterialSwitch's style references mtrl_* (not m3_*) and pulls four tints. */
-            ms.setThumbTintList(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
-                ctx, com.google.android.material.R.color.mtrl_switch_thumb_tint));
-            ms.setThumbIconTintList(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
-                ctx, com.google.android.material.R.color.mtrl_switch_thumb_icon_tint));
-            ms.setTrackTintList(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
-                ctx, com.google.android.material.R.color.mtrl_switch_track_tint));
-            ms.setTrackDecorationTintList(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
-                ctx, com.google.android.material.R.color.mtrl_switch_track_decoration_tint));
+            int style = com.google.android.material.R.attr.materialSwitchStyle;
+            ms.setThumbTintList(IupCommon.styleColors(ctx, style, androidx.appcompat.R.attr.thumbTint));
+            ms.setThumbIconTintList(IupCommon.styleColors(ctx, style, com.google.android.material.R.attr.thumbIconTint));
+            ms.setTrackTintList(IupCommon.styleColors(ctx, style, androidx.appcompat.R.attr.trackTint));
+            ms.setTrackDecorationTintList(IupCommon.styleColors(ctx, style, com.google.android.material.R.attr.trackDecorationTint));
         }
         else if (cb instanceof MaterialRadioButton mrb)
         {
-            mrb.setButtonTintList(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
-                ctx, com.google.android.material.R.color.m3_radiobutton_button_tint));
+            mrb.setButtonTintList(IupCommon.styleColors(ctx, androidx.appcompat.R.attr.radioButtonStyle, androidx.appcompat.R.attr.buttonTint));
         }
     }
 

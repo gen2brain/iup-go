@@ -52,6 +52,7 @@ import com.google.android.material.textfield.TextInputLayout;
 
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import java.util.Locale;
 
 
 public final class IupTextHelper
@@ -1297,7 +1298,7 @@ public final class IupTextHelper
         StringBuilder s = new StringBuilder();
         for (int i = 0; i < vals.length; i++)
             while (n >= vals[i]) { s.append(syms[i]); n -= vals[i]; }
-        return upper ? s.toString() : s.toString().toLowerCase();
+        return upper ? s.toString() : s.toString().toLowerCase(Locale.ROOT);
     }
 
     private static String buildNumberingMarker(String numbering, String style, int ordinal)

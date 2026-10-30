@@ -15,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import androidx.annotation.WorkerThread;
 
 final class IupVideoDecoder extends IupVideoHelper.Player
 {
@@ -74,7 +75,7 @@ final class IupVideoDecoder extends IupVideoHelper.Player
     {
         MediaExtractor extractor = new MediaExtractor();
         if (url)
-            extractor.setDataSource(host.getContext(), Uri.parse(source), null);
+            extractor.setDataSource(context, Uri.parse(source), null);
         else
             extractor.setDataSource(source);
         return extractor;
@@ -456,6 +457,7 @@ final class IupVideoDecoder extends IupVideoHelper.Player
         });
     }
 
+    @WorkerThread
     private void audioLoop()
     {
         MediaCodec codec = audioCodec;
@@ -561,7 +563,7 @@ final class IupVideoDecoder extends IupVideoHelper.Player
         float value = mute ? 0 : level / 100.0f;
         created.setVolume(value);
         if (deviceId >= 0)
-            created.setPreferredDevice(IupVideoHelper.findAudioDevice(host.getContext(), deviceId));
+            created.setPreferredDevice(IupVideoHelper.findAudioDevice(context, deviceId));
         AudioTrack previous;
         synchronized (lock)
         {
@@ -696,7 +698,7 @@ final class IupVideoDecoder extends IupVideoHelper.Player
         synchronized (lock)
         {
             if (track != null)
-                track.setPreferredDevice(IupVideoHelper.findAudioDevice(host.getContext(), id));
+                track.setPreferredDevice(IupVideoHelper.findAudioDevice(context, id));
         }
     }
 
@@ -812,6 +814,7 @@ final class IupVideoDecoder extends IupVideoHelper.Player
         return !closed && selectedText == track && subtitleGeneration == generation;
     }
 
+    @WorkerThread
     private void subtitleLoop()
     {
         MediaExtractor extractor = null;

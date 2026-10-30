@@ -268,7 +268,7 @@ public final class IupCanvasHelper
                 fy = py - layoutH / 2f;
                 fw = layoutW;
             }
-            c.rotate(-(float)orientation, px, py);  /* IUP CCW, Canvas CW */
+            c.rotate(-orientation, px, py);  /* IUP CCW, Canvas CW */
         }
 
         float baselineY = fy - fm.top;
