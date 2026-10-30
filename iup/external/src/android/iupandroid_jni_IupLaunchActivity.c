@@ -61,21 +61,3 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupLaunchActivity_IupEntry
   else
     __android_log_print(ANDROID_LOG_ERROR, "Iup", "IupLaunchActivity: no entry point found");
 }
-
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupLaunchActivity_doPause(JNIEnv* env, jobject thiz)
-{
-  (void)env;
-  (void)thiz;
-}
-
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupLaunchActivity_doResume(JNIEnv* env, jobject thiz)
-{
-  (void)env;
-  (void)thiz;
-}
-
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupLaunchActivity_doDestroy(JNIEnv* env, jobject thiz)
-{
-  (void)env;
-  (void)thiz;
-}
