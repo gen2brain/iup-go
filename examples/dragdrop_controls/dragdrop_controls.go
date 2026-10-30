@@ -29,6 +29,8 @@ var (
 	rows    = []string{"Piston", "Valve"}
 	chips   []chip
 	carried string
+	from    string
+	kept    bool
 )
 
 func main() {
@@ -88,7 +90,7 @@ func partList() iup.Ihandle {
 		fillList(list)
 	})
 
-	target(list, "list", func(text string, _, _ int) {
+	target(list, "list", false, func(text string, _, _ int) {
 		parts = append(parts, text)
 		fillList(list)
 	})
@@ -120,7 +122,7 @@ func assemblyTree() iup.Ihandle {
 		fillTree(tree)
 	})
 
-	target(tree, "tree", func(text string, _, _ int) {
+	target(tree, "tree", false, func(text string, _, _ int) {
 		nodes = append(nodes, text)
 		fillTree(tree)
 	})
@@ -148,7 +150,7 @@ func inventory() iup.Ihandle {
 		fillTable(table)
 	})
 
-	target(table, "table", func(text string, _, _ int) {
+	target(table, "table", false, func(text string, _, _ int) {
 		rows = append(rows, text)
 		fillTable(table)
 	})
@@ -195,7 +197,7 @@ func board() iup.Ihandle {
 		iup.Update(canvas)
 	})
 
-	target(canvas, "canvas", func(text string, x, y int) {
+	target(canvas, "canvas", true, func(text string, x, y int) {
 		chips = append(chips, chip{text, x, y})
 		iup.Update(canvas)
 	})
@@ -220,6 +222,7 @@ func source(ih iup.Ihandle, name string, pick func(x, y int) string, take func(t
 		if carried == "" {
 			return iup.IGNORE
 		}
+		from, kept = name, false
 		setStatus(fmt.Sprintf("%s: dragging %q", name, carried))
 		return iup.DEFAULT
 	}))
@@ -237,6 +240,10 @@ func source(ih iup.Ihandle, name string, pick func(x, y int) string, take func(t
 	}))
 
 	ih.SetCallback("DRAGEND_CB", iup.DragEndFunc(func(_ iup.Ihandle, action int) int {
+		from = ""
+		if kept {
+			return iup.DEFAULT
+		}
 		if action == 1 {
 			take(carried)
 		}
@@ -245,12 +252,17 @@ func source(ih iup.Ihandle, name string, pick func(x, y int) string, take func(t
 	}))
 }
 
-func target(ih iup.Ihandle, name string, add func(text string, x, y int)) {
+func target(ih iup.Ihandle, name string, self bool, add func(text string, x, y int)) {
 	ih.SetAttributes("DROPTARGET=YES, DROPFILESTARGET=YES, DROPTYPES=" + dragType)
 
 	ih.SetCallback("DROPDATA_CB", iup.DropDataFunc(func(_ iup.Ihandle, _ string, data unsafe.Pointer, size, x, y int) int {
 		value := decode(data, size)
 		if value == "" {
+			return iup.DEFAULT
+		}
+		if from == name && !self {
+			kept = true
+			setStatus(fmt.Sprintf("%s: %q dropped back on itself, kept", name, value))
 			return iup.DEFAULT
 		}
 		add(value, x, y)
