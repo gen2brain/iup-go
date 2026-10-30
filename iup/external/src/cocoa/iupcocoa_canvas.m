@@ -504,7 +504,7 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
 {
   if([self isCurrentFirstResponder] && [[self window] isKeyWindow])
   {
-    iupCallGetFocusCb(_ih);
+    iupcocoaFocusIn(_ih);
   }
   else
   {
