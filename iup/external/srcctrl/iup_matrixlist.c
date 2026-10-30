@@ -451,7 +451,7 @@ static int iMatrixListSetNumLinAttrib(Ihandle* ih, const char* value)
 static int iMatrixListSetCountAttrib(Ihandle* ih, const char* value)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
-  if (mtxList->editable)
+  if (mtxList->editable && ih->handle)
   {
     int count;
     if (iupStrToInt(value, &count))
@@ -821,7 +821,7 @@ static int iMatrixListSetDelColAttrib(Ihandle* ih, const char* value)
 static char* iMatrixListGetCountAttrib(Ihandle* ih)
 {
   ImatrixListData* mtxList = (ImatrixListData*)iupAttribGet(ih, "_IUPMTXLIST_DATA");
-  if (mtxList->editable)
+  if (mtxList->editable && ih->handle)
     return iupStrReturnInt(ih->data->lines.num-2);
   else
     return iupStrReturnInt(ih->data->lines.num-1);  /* the attribute does not include the title */
