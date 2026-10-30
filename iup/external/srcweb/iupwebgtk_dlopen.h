@@ -5,7 +5,83 @@
 extern "C" {
 #endif
 
+#ifdef IUPWEB_HOSTED
+
+#include <stddef.h>
+#include <stdarg.h>
+
+#define GTK_CHECK_VERSION(major, minor, micro) ((major) < 3 || ((major) == 3 && (minor) <= 24))
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+
+typedef char gchar;
+typedef unsigned char guchar;
+typedef int gint;
+typedef unsigned int guint;
+typedef gint gboolean;
+typedef double gdouble;
+typedef void* gpointer;
+typedef const void* gconstpointer;
+typedef size_t gsize;
+typedef ptrdiff_t gssize;
+typedef unsigned long gulong;
+typedef gsize GType;
+typedef guint GQuark;
+
+typedef struct _GObject GObject;
+typedef struct _GTypeInstance GTypeInstance;
+typedef struct _GMainLoop GMainLoop;
+typedef struct _GMainContext GMainContext;
+typedef struct _GCancellable GCancellable;
+typedef struct _GAsyncResult GAsyncResult;
+typedef struct _GFile GFile;
+typedef struct _GClosure GClosure;
+
+typedef struct _GError { GQuark domain; gint code; gchar* message; } GError;
+typedef struct _GList { gpointer data; struct _GList* next; struct _GList* prev; } GList;
+typedef struct _GString { gchar* str; gsize len; gsize allocated_len; } GString;
+typedef struct _GPollFD { gint fd; unsigned short events; unsigned short revents; } GPollFD;
+
+typedef void (*GCallback)(void);
+typedef void (*GClosureNotify)(gpointer data, GClosure* closure);
+typedef void (*GAsyncReadyCallback)(GObject* source_object, GAsyncResult* res, gpointer user_data);
+
+typedef enum { G_LOG_LEVEL_MASK_UNUSED = 0 } GLogLevelFlags;
+typedef void (*GLogFunc)(const gchar* log_domain, GLogLevelFlags log_level, const gchar* message, gpointer user_data);
+
+typedef enum { G_IO_IN = 1, G_IO_OUT = 4, G_IO_PRI = 2, G_IO_ERR = 8, G_IO_HUP = 16, G_IO_NVAL = 32 } GIOCondition;
+
+#define G_OBJECT(object) ((GObject*)(object))
+#define G_CALLBACK(f) ((GCallback)(f))
+#define g_signal_connect(instance, signal, handler, data) g_signal_connect_data((instance), (signal), (handler), (data), NULL, 0)
+
+typedef struct _GtkWidget GtkWidget;
+typedef struct _GtkWindow GtkWindow;
+typedef struct _GtkContainer GtkContainer;
+typedef struct _GtkScrolledWindow GtkScrolledWindow;
+typedef struct _GtkAdjustment GtkAdjustment;
+typedef enum { GTK_POLICY_ALWAYS, GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER, GTK_POLICY_EXTERNAL } GtkPolicyType;
+typedef enum { GTK_DIR_TAB_FORWARD, GTK_DIR_TAB_BACKWARD, GTK_DIR_UP, GTK_DIR_DOWN, GTK_DIR_LEFT, GTK_DIR_RIGHT } GtkDirectionType;
+typedef enum { GTK_WIDGET_HELP_TOOLTIP, GTK_WIDGET_HELP_WHATS_THIS } GtkWidgetHelpType;
+
+typedef struct _GdkWindow GdkWindow;
+typedef struct _GdkDisplay GdkDisplay;
+typedef void GdkXEvent;
+typedef enum { GDK_ENTER_NOTIFY = 10, GDK_LEAVE_NOTIFY = 11 } GdkEventType;
+typedef union _GdkEvent { GdkEventType type; } GdkEvent;
+typedef struct _GdkEventCrossing { GdkEventType type; } GdkEventCrossing;
+typedef enum { GDK_FILTER_CONTINUE, GDK_FILTER_TRANSLATE, GDK_FILTER_REMOVE } GdkFilterReturn;
+typedef GdkFilterReturn (*GdkFilterFunc)(GdkXEvent* xevent, GdkEvent* event, gpointer data);
+typedef enum { GDK_KEY_PRESS_MASK = 1 << 10, GDK_KEY_RELEASE_MASK = 1 << 11, GDK_FOCUS_CHANGE_MASK = 1 << 14 } GdkEventMask;
+
+#else
 #include <gtk/gtk.h>
+#endif
 
 #ifdef IUPWEB_USE_DLOPEN
 #ifdef _WIN32
@@ -528,6 +604,129 @@ static int iupgtkWebBrowser_SetDLSymbolsWK6(void* webkit_library)
 
   return 1;
 }
+
+#ifdef IUPWEB_HOSTED
+
+static void (*g_free)(gpointer mem);
+static gchar* (*g_strndup)(const gchar* str, gsize n);
+static gchar* (*g_strdup_vprintf)(const gchar* format, va_list args);
+static guint (*g_list_length)(GList* list);
+static void (*g_error_free)(GError* error);
+static GLogFunc (*g_log_set_default_handler)(GLogFunc log_func, gpointer user_data);
+static gboolean (*g_get_charset)(const char** charset);
+static gboolean (*g_get_filename_charsets)(const gchar*** filename_charsets);
+static gboolean (*g_utf8_validate)(const gchar* str, gssize max_len, const gchar** end);
+static gchar* (*g_convert)(const gchar* str, gssize len, const gchar* to_codeset, const gchar* from_codeset, gsize* bytes_read, gsize* bytes_written, GError** error);
+static GMainLoop* (*g_main_loop_new)(GMainContext* context, gboolean is_running);
+static void (*g_main_loop_unref)(GMainLoop* loop);
+static void (*g_main_loop_quit)(GMainLoop* loop);
+static GMainContext* (*g_main_loop_get_context)(GMainLoop* loop);
+static GMainContext* (*g_main_context_default)(void);
+static gboolean (*g_main_context_iteration)(GMainContext* context, gboolean may_block);
+static gboolean (*g_main_context_acquire)(GMainContext* context);
+static gboolean (*g_main_context_prepare)(GMainContext* context, gint* priority);
+static gint (*g_main_context_query)(GMainContext* context, gint max_priority, gint* timeout, GPollFD* fds, gint n_fds);
+static gulong (*g_signal_connect_data)(gpointer instance, const gchar* detailed_signal, GCallback c_handler, gpointer data, GClosureNotify destroy_data, int connect_flags);
+static void (*g_object_unref)(gpointer object);
+static gboolean (*g_type_check_instance_is_a)(GTypeInstance* instance, GType iface_type);
+static GFile* (*g_file_new_for_path)(const char* path);
+
+static gboolean (*gtk_init_check)(int* argc, char*** argv);
+static GtkWidget* (*gtk_plug_new)(gulong socket_id);
+static void (*gtk_container_add)(GtkContainer* container, GtkWidget* widget);
+static void (*gtk_widget_show)(GtkWidget* widget);
+static void (*gtk_widget_destroy)(GtkWidget* widget);
+static void (*gtk_widget_realize)(GtkWidget* widget);
+static void (*gtk_widget_grab_focus)(GtkWidget* widget);
+static GdkWindow* (*gtk_widget_get_window)(GtkWidget* widget);
+static void (*gtk_widget_set_visible)(GtkWidget* widget, gboolean visible);
+static GtkWidget* (*gtk_scrolled_window_new)(GtkAdjustment* hadjustment, GtkAdjustment* vadjustment);
+static void (*gtk_scrolled_window_set_policy)(GtkScrolledWindow* scrolled_window, GtkPolicyType hscrollbar_policy, GtkPolicyType vscrollbar_policy);
+
+static void (*gdk_set_allowed_backends)(const gchar* backends);
+static GdkDisplay* (*gdk_display_get_default)(void);
+static void (*gdk_window_move_resize)(GdkWindow* window, gint x, gint y, gint width, gint height);
+static void (*gdk_window_show)(GdkWindow* window);
+static gint (*gdk_window_get_scale_factor)(GdkWindow* window);
+static GdkEventMask (*gdk_window_get_events)(GdkWindow* window);
+static void (*gdk_window_set_events)(GdkWindow* window, GdkEventMask event_mask);
+static void (*gdk_window_add_filter)(GdkWindow* window, GdkFilterFunc function, gpointer data);
+static void (*gdk_window_remove_filter)(GdkWindow* window, GdkFilterFunc function, gpointer data);
+static GType (*gdk_x11_display_get_type)(void);
+static void* (*gdk_x11_display_get_xdisplay)(GdkDisplay* display);
+static gulong (*gdk_x11_window_get_xid)(GdkWindow* window);
+static GdkWindow* (*gdk_x11_window_foreign_new_for_display)(GdkDisplay* display, gulong window);
+static void (*gdk_x11_display_error_trap_push)(GdkDisplay* display);
+static void (*gdk_x11_display_error_trap_pop_ignored)(GdkDisplay* display);
+static gint (*gdk_x11_display_error_trap_pop)(GdkDisplay* display);
+
+#define IUPWEB_DLSYM(library, name) (*(void**)(&name) = dlsym((library), #name))
+
+static int iupgtkWebBrowser_SetDLSymbolsGtk(void* library)
+{
+  IUPWEB_DLSYM(library, g_free);
+  IUPWEB_DLSYM(library, g_strndup);
+  IUPWEB_DLSYM(library, g_strdup_vprintf);
+  IUPWEB_DLSYM(library, g_list_length);
+  IUPWEB_DLSYM(library, g_error_free);
+  IUPWEB_DLSYM(library, g_log_set_default_handler);
+  IUPWEB_DLSYM(library, g_get_charset);
+  IUPWEB_DLSYM(library, g_get_filename_charsets);
+  IUPWEB_DLSYM(library, g_utf8_validate);
+  IUPWEB_DLSYM(library, g_convert);
+  IUPWEB_DLSYM(library, g_main_loop_new);
+  IUPWEB_DLSYM(library, g_main_loop_unref);
+  IUPWEB_DLSYM(library, g_main_loop_quit);
+  IUPWEB_DLSYM(library, g_main_loop_get_context);
+  IUPWEB_DLSYM(library, g_main_context_default);
+  IUPWEB_DLSYM(library, g_main_context_iteration);
+  IUPWEB_DLSYM(library, g_main_context_acquire);
+  IUPWEB_DLSYM(library, g_main_context_prepare);
+  IUPWEB_DLSYM(library, g_main_context_query);
+  IUPWEB_DLSYM(library, g_signal_connect_data);
+  IUPWEB_DLSYM(library, g_object_unref);
+  IUPWEB_DLSYM(library, g_type_check_instance_is_a);
+  IUPWEB_DLSYM(library, g_file_new_for_path);
+
+  IUPWEB_DLSYM(library, gtk_init_check);
+  IUPWEB_DLSYM(library, gtk_plug_new);
+  IUPWEB_DLSYM(library, gtk_container_add);
+  IUPWEB_DLSYM(library, gtk_widget_show);
+  IUPWEB_DLSYM(library, gtk_widget_destroy);
+  IUPWEB_DLSYM(library, gtk_widget_realize);
+  IUPWEB_DLSYM(library, gtk_widget_grab_focus);
+  IUPWEB_DLSYM(library, gtk_widget_get_window);
+  IUPWEB_DLSYM(library, gtk_widget_set_visible);
+  IUPWEB_DLSYM(library, gtk_scrolled_window_new);
+  IUPWEB_DLSYM(library, gtk_scrolled_window_set_policy);
+
+  IUPWEB_DLSYM(library, gdk_set_allowed_backends);
+  IUPWEB_DLSYM(library, gdk_display_get_default);
+  IUPWEB_DLSYM(library, gdk_window_move_resize);
+  IUPWEB_DLSYM(library, gdk_window_show);
+  IUPWEB_DLSYM(library, gdk_window_get_scale_factor);
+  IUPWEB_DLSYM(library, gdk_window_get_events);
+  IUPWEB_DLSYM(library, gdk_window_set_events);
+  IUPWEB_DLSYM(library, gdk_window_add_filter);
+  IUPWEB_DLSYM(library, gdk_window_remove_filter);
+  IUPWEB_DLSYM(library, gdk_x11_display_get_type);
+  IUPWEB_DLSYM(library, gdk_x11_display_get_xdisplay);
+  IUPWEB_DLSYM(library, gdk_x11_window_get_xid);
+  IUPWEB_DLSYM(library, gdk_x11_window_foreign_new_for_display);
+  IUPWEB_DLSYM(library, gdk_x11_display_error_trap_push);
+  IUPWEB_DLSYM(library, gdk_x11_display_error_trap_pop_ignored);
+  IUPWEB_DLSYM(library, gdk_x11_display_error_trap_pop);
+
+  if (!g_free || !g_main_context_query || !g_signal_connect_data || !g_type_check_instance_is_a ||
+      !gtk_init_check || !gtk_plug_new || !gdk_set_allowed_backends || !gdk_window_add_filter ||
+      !gdk_x11_display_get_type || !gdk_x11_window_get_xid || !gdk_x11_window_foreign_new_for_display ||
+      !gdk_x11_display_error_trap_pop_ignored || !gdk_x11_display_error_trap_pop)
+    return 0;
+
+  return 1;
+}
+
+#endif
 
 #endif /* IUPWEB_USE_DLOPEN */
 

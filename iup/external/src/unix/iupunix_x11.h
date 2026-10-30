@@ -132,9 +132,37 @@ typedef struct {
   } data;
 } XClientMessageEvent;
 
+typedef struct {
+  int type;
+  unsigned long serial;
+  Bool send_event;
+  Display* display;
+  Window window;
+  int mode;
+  int detail;
+} XFocusChangeEvent;
+
+typedef struct {
+  int type;
+  unsigned long serial;
+  Bool send_event;
+  Display* display;
+  Window window;
+  Window root;
+  Window subwindow;
+  unsigned long time;
+  int x, y;
+  int x_root, y_root;
+  unsigned int state;
+  unsigned int keycode;
+  Bool same_screen;
+} XKeyEvent;
+
 typedef union _XEvent {
   int type;
   XClientMessageEvent xclient;
+  XKeyEvent xkey;
+  XFocusChangeEvent xfocus;
   long pad[24];
 } XEvent;
 
@@ -151,6 +179,8 @@ typedef union _XEvent {
 #define AutoRepeatModeOn  1
 
 #define ClientMessage     33
+#define CurrentTime       0L
+#define NoEventMask       0L
 #define PropModeReplace   0
 #define SubstructureRedirectMask  (1L << 20)
 #define SubstructureNotifyMask    (1L << 19)
@@ -185,6 +215,14 @@ static int (*iupx11_XGetWindowAttributes)(Display*, Window, XWindowAttributes*) 
 static VisualID (*iupx11_XVisualIDFromVisual)(Visual*) = NULL;
 static int (*iupx11_XGetWindowProperty)(Display*, Window, Atom, long, long, Bool, Atom, Atom*, int*, unsigned long*, unsigned long*, unsigned char**) = NULL;
 static int (*iupx11_XFree)(void*) = NULL;
+static int (*iupx11_XQueryTree)(Display*, Window, Window*, Window*, Window**, unsigned int*) = NULL;
+static Window (*iupx11_XCreateSimpleWindow)(Display*, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long) = NULL;
+static int (*iupx11_XSetWindowBackgroundPixmap)(Display*, Window, Pixmap) = NULL;
+static int (*iupx11_XReparentWindow)(Display*, Window, Window, int, int) = NULL;
+static int (*iupx11_XMoveResizeWindow)(Display*, Window, int, int, unsigned int, unsigned int) = NULL;
+static int (*iupx11_XMapWindow)(Display*, Window) = NULL;
+static int (*iupx11_XUnmapWindow)(Display*, Window) = NULL;
+static int (*iupx11_XDestroyWindow)(Display*, Window) = NULL;
 
 #define XCreateGC iupx11_XCreateGC
 #define XFreeGC iupx11_XFreeGC
@@ -210,6 +248,14 @@ static int (*iupx11_XFree)(void*) = NULL;
 #define XVisualIDFromVisual iupx11_XVisualIDFromVisual
 #define XGetWindowProperty iupx11_XGetWindowProperty
 #define XFree iupx11_XFree
+#define XQueryTree iupx11_XQueryTree
+#define XCreateSimpleWindow iupx11_XCreateSimpleWindow
+#define XSetWindowBackgroundPixmap iupx11_XSetWindowBackgroundPixmap
+#define XReparentWindow iupx11_XReparentWindow
+#define XMoveResizeWindow iupx11_XMoveResizeWindow
+#define XMapWindow iupx11_XMapWindow
+#define XUnmapWindow iupx11_XUnmapWindow
+#define XDestroyWindow iupx11_XDestroyWindow
 
 static int iupX11Open(void)
 {
@@ -247,6 +293,14 @@ static int iupX11Open(void)
   iupx11_XVisualIDFromVisual = (VisualID (*)(Visual*))dlsym(iupx11_handle, "XVisualIDFromVisual");
   iupx11_XGetWindowProperty = (int (*)(Display*, Window, Atom, long, long, Bool, Atom, Atom*, int*, unsigned long*, unsigned long*, unsigned char**))dlsym(iupx11_handle, "XGetWindowProperty");
   iupx11_XFree = (int (*)(void*))dlsym(iupx11_handle, "XFree");
+  iupx11_XQueryTree = (int (*)(Display*, Window, Window*, Window*, Window**, unsigned int*))dlsym(iupx11_handle, "XQueryTree");
+  iupx11_XCreateSimpleWindow = (Window (*)(Display*, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long))dlsym(iupx11_handle, "XCreateSimpleWindow");
+  iupx11_XSetWindowBackgroundPixmap = (int (*)(Display*, Window, Pixmap))dlsym(iupx11_handle, "XSetWindowBackgroundPixmap");
+  iupx11_XReparentWindow = (int (*)(Display*, Window, Window, int, int))dlsym(iupx11_handle, "XReparentWindow");
+  iupx11_XMoveResizeWindow = (int (*)(Display*, Window, int, int, unsigned int, unsigned int))dlsym(iupx11_handle, "XMoveResizeWindow");
+  iupx11_XMapWindow = (int (*)(Display*, Window))dlsym(iupx11_handle, "XMapWindow");
+  iupx11_XUnmapWindow = (int (*)(Display*, Window))dlsym(iupx11_handle, "XUnmapWindow");
+  iupx11_XDestroyWindow = (int (*)(Display*, Window))dlsym(iupx11_handle, "XDestroyWindow");
 
   if (!iupx11_XDefaultScreen || !iupx11_XServerVendor || !iupx11_XVendorRelease)
   {

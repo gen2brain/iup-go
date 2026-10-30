@@ -21,14 +21,42 @@ extern "C" {
 #include "iupfltk_drv.h"
 #include "iupweb_host.h"
 
+#if defined(FLTK_USE_X11) && defined(IUPX11_USE_DLOPEN)
+#include "iupunix_x11.h"
+#endif
 
-#ifdef __APPLE__
+
+#ifndef _WIN32
+static void* fltkWebHostParent(Fl_Window* top, void* last)
+{
+#if defined(__APPLE__)
+  (void)last;
+  return reinterpret_cast<void*>(fl_mac_xid(top));
+#elif defined(FLTK_USE_X11)
+  void* parent = reinterpret_cast<void*>(fl_xid(top));
+  if (parent != last)
+  {
+#ifdef IUPX11_USE_DLOPEN
+    if (!iupX11Open() || !XSync)
+      return nullptr;
+#endif
+    XSync(fl_display, 0);
+  }
+  return parent;
+#else
+  (void)top;
+  (void)last;
+  return nullptr;
+#endif
+}
+
 class IupFltkWebHost : public Fl_Widget
 {
 public:
   Ihandle* ih;
   int rect[4] = {0, 0, 0, 0};
   int clip[4] = {0, 0, -1, 0};
+  void* parent = nullptr;
 
   explicit IupFltkWebHost(Ihandle* handle) : Fl_Widget(0, 0, 1, 1), ih(handle)
   {
@@ -36,6 +64,27 @@ public:
 
   int handle(int event) override
   {
+#ifndef __APPLE__
+    if (event == FL_FOCUS || event == FL_UNFOCUS)
+    {
+      if (ih)
+      {
+        iupwebHostSetFocus(ih, event == FL_FOCUS);
+        iupfltkFocusInOutEvent(this, ih, event);
+      }
+      return 1;
+    }
+
+#if defined(FLTK_USE_X11)
+    if ((event == FL_KEYBOARD || event == FL_KEYUP) && ih && fl_xevent &&
+        (fl_xevent->type == KeyPress || fl_xevent->type == KeyRelease))
+    {
+      iupwebHostKeyEvent(ih, fl_xevent->type == KeyPress, fl_xevent->xkey.keycode, fl_xevent->xkey.state, fl_xevent->xkey.time);
+      return 1;
+    }
+#endif
+#endif
+
     int ret = Fl_Widget::handle(event);
     if (event == FL_SHOW || event == FL_HIDE)
       place();
@@ -65,11 +114,13 @@ public:
     top = top_window_offset(ox, oy);
     if (!top || !top->shown())
     {
+      parent = nullptr;
       iupwebHostSetParent(ih, nullptr);
       return;
     }
 
-    iupwebHostSetParent(ih, fl_mac_xid(top));
+    parent = fltkWebHostParent(top, parent);
+    iupwebHostSetParent(ih, parent);
 
     if (visible_r())
     {
@@ -199,23 +250,29 @@ public:
 
 extern "C" void* iupwebHostMap(Ihandle* ih)
 {
+#if !defined(_WIN32) && !defined(__APPLE__)
+  if (!iupfltkIsX11())
+    return nullptr;
+#endif
+
   Fl_Group::current(nullptr);
   auto* host = new IupFltkWebHost(ih);
   ih->handle = reinterpret_cast<InativeHandle*>(host);
 
   iupfltkAddToParent(ih);
 
-#ifdef __APPLE__
-  Fl_Window* top = host->top_window();
-  if (!top || !top->shown())
-    return nullptr;
-
-  return reinterpret_cast<void*>(fl_mac_xid(top));
-#else
+#ifdef _WIN32
   if (!host->shown())
     return nullptr;
 
   return reinterpret_cast<void*>(fl_xid(host));
+#else
+  Fl_Window* top = host->top_window();
+  if (!top || !top->shown())
+    return nullptr;
+
+  host->parent = fltkWebHostParent(top, nullptr);
+  return host->parent;
 #endif
 }
 

@@ -1,3 +1,3 @@
-//go:build (windows || (darwin && !ios)) && fltk && web
+//go:build fltk && web
 
 #include "external/srcweb/iupfltk_webhost.cpp"

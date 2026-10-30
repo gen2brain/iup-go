@@ -15,7 +15,9 @@ The WebView2 runtime is detected and loaded automatically.
 In macOS, the implementation uses WKWebView from the WebKit framework.
 
 In GTK 3, GTK 4 and FLTK, the implementation uses WebView2 in Windows and WKWebView in macOS.
-Not available in Motif, EFL and GNUstep, and in FLTK outside Windows and macOS.
+
+In Motif, FLTK, EFL and GNUstep in Linux, the implementation uses WebKitGTK for GTK 3 in an X11 window.
+Not available in FLTK and EFL running on Wayland, in Motif in macOS, and in EFL in Windows and macOS.
 
 In Qt, the implementation uses WebView2 in Windows and WKWebView in macOS, inside a native child window, and QWebEngineView from QtWebEngine (Chromium-based) elsewhere.
 

@@ -119,6 +119,10 @@ static BOOL cocoaDialogIsMaximized(NSWindow* the_window)
       {
         focused_ih = ih;
       }
+      else if (iupAttribGet(focused_ih, "_IUPCOCOA_RAWKEYS"))
+      {
+        return [super performKeyEquivalent:event];
+      }
 
       int mac_key_code = [event keyCode];
       if (iupcocoaKeyEvent(focused_ih, event, mac_key_code, true))
