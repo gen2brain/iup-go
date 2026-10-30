@@ -103,6 +103,16 @@ IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
   }
 }
 
+static int cocoaFocusKillPrevious(Ihandle* ih)
+{
+  Ihandle* previous = IupGetFocus();
+  if (!previous || previous == ih || !iupObjectCheck(previous))
+    return 1;
+
+  iupCallKillFocusCb(previous);
+  return iupObjectCheck(ih) && IupGetFocus() == NULL;
+}
+
 IUP_DRV_API void iupcocoaFocusIn(Ihandle* ih)
 {
   if (IupGetFocus() == ih)
@@ -132,6 +142,8 @@ IUP_DRV_API void iupcocoaFocusIn(Ihandle* ih)
       if (IupGetFocus() == last_focus)
         return;
 
+      if (!cocoaFocusKillPrevious(ih))
+        return;
       iupCallGetFocusCb(ih);
 
       if (!iupAttribGetBoolean(ih, "IGNORELASTFOCUS"))
@@ -143,6 +155,8 @@ IUP_DRV_API void iupcocoaFocusIn(Ihandle* ih)
     }
   }
 
+  if (!cocoaFocusKillPrevious(ih))
+    return;
   iupCallGetFocusCb(ih);
 }
 
