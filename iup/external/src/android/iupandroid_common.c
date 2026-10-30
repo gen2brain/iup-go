@@ -66,8 +66,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* java_vm, void* reserved)
     __android_log_print(ANDROID_LOG_ERROR, "Iup", "Error initializing pthread key");
   }
 
-  iupAndroid_OpenInit();
-
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
 
   jclass tmp;
@@ -79,6 +77,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* java_vm, void* reserved)
   (*jni_env)->DeleteLocalRef(jni_env, tmp);
   tmp = IUPJNI_FindClass(IupFontHelper, jni_env, "io/github/gen2brain/iupgo/IupFontHelper");
   (*jni_env)->DeleteLocalRef(jni_env, tmp);
+
+  iupAndroid_OpenInit();
 
   return JNI_VERSION_1_6;
 }

@@ -16,7 +16,6 @@
 #include "iup_drv.h"
 #include "iup_drvinfo.h"
 #include "iup_globalattrib.h"
-#include "iup_thread.h"
 
 #include "iupandroid_drv.h"
 #include "iupandroid_jnimacros.h"
@@ -28,18 +27,26 @@ IUP_SDK_API void* iupdrvGetDisplay(void)
   return NULL;
 }
 
-static void* iupAndroid_open_mutex = NULL;
+static pthread_mutex_t iupAndroid_open_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t iupAndroid_loaded_cond = PTHREAD_COND_INITIALIZER;
+static int iupAndroid_loaded = 0;
 
 void iupAndroid_OpenInit(void)
 {
-  iupAndroid_open_mutex = iupdrvMutexCreate();
+  pthread_mutex_lock(&iupAndroid_open_mutex);
+  iupAndroid_loaded = 1;
+  pthread_cond_broadcast(&iupAndroid_loaded_cond);
+  pthread_mutex_unlock(&iupAndroid_open_mutex);
 }
 
 int iupAndroid_OpenOnce(void)
 {
-  iupdrvMutexLock(iupAndroid_open_mutex);
-  int ret = IupIsOpened() ? IUP_OPENED : IupOpen(0, NULL);
-  iupdrvMutexUnlock(iupAndroid_open_mutex);
+  int ret;
+  pthread_mutex_lock(&iupAndroid_open_mutex);
+  while (!iupAndroid_loaded)
+    pthread_cond_wait(&iupAndroid_loaded_cond, &iupAndroid_open_mutex);
+  ret = IupIsOpened() ? IUP_OPENED : IupOpen(0, NULL);
+  pthread_mutex_unlock(&iupAndroid_open_mutex);
   return ret;
 }
 
