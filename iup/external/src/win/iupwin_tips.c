@@ -24,6 +24,7 @@
 #include "iupwin_drv.h"
 #include "iupwin_handle.h"
 #include "iupwin_str.h"
+#include "iupwin_draw.h"
 #include "iupwin_darkmode.h"
 
 
@@ -139,7 +140,6 @@ IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 IUP_DRV_API void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd)
 {
   COLORREF color, tip_color;
-  unsigned char r, g, b;
   char* value;
 
   if (!IsWindow(ih->handle))
@@ -169,23 +169,37 @@ IUP_DRV_API void iupwinTipsUpdateInfo(Ihandle* ih, HWND tips_hwnd)
     }
   }
 
-  if (iupwinGetColorRef(ih, "TIPBGCOLOR", &color))
+  if (iupAttribGetInherit(ih, "TIPBGCOLOR") || iupAttribGetInherit(ih, "TIPFGCOLOR"))
   {
-    tip_color = (COLORREF)SendMessage(tips_hwnd, TTM_GETTIPBKCOLOR, 0, 0);
-    if (color != tip_color)
-      SendMessage(tips_hwnd, TTM_SETTIPBKCOLOR, (WPARAM)color, 0);
-  }
-  else if (iupwinDarkModeEnabled() && iupStrToRGB(IupGetGlobal("TXTBGCOLOR"), &r, &g, &b))
-    SendMessage(tips_hwnd, TTM_SETTIPBKCOLOR, (WPARAM)RGB(r, g, b), 0);
+    if (!iupAttribGet(ih, "_IUPWIN_TIPSNOTHEME"))
+    {
+      iupwinDrawRemoveTheme(tips_hwnd);
+      iupAttribSet(ih, "_IUPWIN_TIPSNOTHEME", "1");
+    }
 
-  if (iupwinGetColorRef(ih, "TIPFGCOLOR", &color))
-  {
-    tip_color = (COLORREF)SendMessage(tips_hwnd, TTM_GETTIPTEXTCOLOR, 0, 0);
-    if (color != tip_color)
-      SendMessage(tips_hwnd, TTM_SETTIPTEXTCOLOR, (WPARAM)color, 0);
+    if (iupwinGetColorRef(ih, "TIPBGCOLOR", &color))
+    {
+      tip_color = (COLORREF)SendMessage(tips_hwnd, TTM_GETTIPBKCOLOR, 0, 0);
+      if (color != tip_color)
+        SendMessage(tips_hwnd, TTM_SETTIPBKCOLOR, (WPARAM)color, 0);
+    }
+
+    if (iupwinGetColorRef(ih, "TIPFGCOLOR", &color))
+    {
+      tip_color = (COLORREF)SendMessage(tips_hwnd, TTM_GETTIPTEXTCOLOR, 0, 0);
+      if (color != tip_color)
+        SendMessage(tips_hwnd, TTM_SETTIPTEXTCOLOR, (WPARAM)color, 0);
+    }
   }
-  else if (iupwinDarkModeEnabled() && iupStrToRGB(IupGetGlobal("TXTFGCOLOR"), &r, &g, &b))
-    SendMessage(tips_hwnd, TTM_SETTIPTEXTCOLOR, (WPARAM)RGB(r, g, b), 0);
+  else
+  {
+    int dark = iupwinDarkModeEnabled();
+    if (dark != iupAttribGetInt(ih, "_IUPWIN_TIPSDARK"))
+    {
+      iupwinDarkModeApplyToWindow(tips_hwnd);
+      iupAttribSetInt(ih, "_IUPWIN_TIPSDARK", dark);
+    }
+  }
 
   {
     int balloon = IupGetInt(ih, "TIPBALLOON");  /* must use IupGetInt to use inheritance */
@@ -317,7 +331,7 @@ static HFONT winTipsMarkupFont(HDC hdc, const LOGFONT* base, ImarkupRun* run)
   return CreateFontIndirect(&lf);
 }
 
-static SIZE winTipsMarkupPaint(Ihandle* ih, HDC hdc, HFONT base_font, const RECT* rect, int draw)
+static SIZE winTipsMarkupPaint(Ihandle* ih, HDC hdc, HFONT base_font, const RECT* rect, COLORREF fgcolor, int draw)
 {
   SIZE total = {0, 0};
   LOGFONT base;
@@ -408,7 +422,7 @@ static SIZE winTipsMarkupPaint(Ihandle* ih, HDC hdc, HFONT base_font, const RECT
             if (run->fg_color && iupStrToRGB(run->fg_color, &r, &g, &b))
               SetTextColor(hdc, RGB(r, g, b));
             else
-              SetTextColor(hdc, (COLORREF)SendMessage((HWND)iupAttribGet(ih, "_IUPWIN_TIPSWIN"), TTM_GETTIPTEXTCOLOR, 0, 0));
+              SetTextColor(hdc, fgcolor);
 
             TextOutW(hdc, x, baseline + shift, wtext, wlen);
           }
@@ -460,7 +474,25 @@ IUP_DRV_API int iupwinTipsNotify(Ihandle* ih, NMHDR* msg_info, LRESULT* result)
     NMTTCUSTOMDRAW* cd = (NMTTCUSTOMDRAW*)msg_info;
     if (cd->nmcd.dwDrawStage == CDDS_PREPAINT)
     {
-      winTipsMarkupPaint(ih, cd->nmcd.hdc, (HFONT)SendMessage(tips_hwnd, WM_GETFONT, 0, 0), &cd->nmcd.rc, 1);
+      HDC hdc = cd->nmcd.hdc;
+      RECT client, window, text_rect;
+      POINT origin = {0, 0};
+      COLORREF fgcolor;
+      GetClientRect(tips_hwnd, &client);
+      if (!iupwinDrawThemeTooltip(tips_hwnd, hdc, &client, &fgcolor))
+      {
+        fgcolor = (COLORREF)SendMessage(tips_hwnd, TTM_GETTIPTEXTCOLOR, 0, 0);
+        SetDCBrushColor(hdc, (COLORREF)SendMessage(tips_hwnd, TTM_GETTIPBKCOLOR, 0, 0));
+        FillRect(hdc, &client, (HBRUSH)GetStockObject(DC_BRUSH));
+        SetDCBrushColor(hdc, fgcolor);
+        FrameRect(hdc, &client, (HBRUSH)GetStockObject(DC_BRUSH));
+      }
+      GetWindowRect(tips_hwnd, &window);
+      ClientToScreen(tips_hwnd, &origin);
+      text_rect = window;
+      SendMessage(tips_hwnd, TTM_ADJUSTRECT, FALSE, (LPARAM)&text_rect);
+      OffsetRect(&text_rect, -origin.x, -origin.y);
+      winTipsMarkupPaint(ih, hdc, (HFONT)SendMessage(tips_hwnd, WM_GETFONT, 0, 0), &text_rect, fgcolor, 1);
       *result = CDRF_SKIPDEFAULT;
       return 1;
     }
@@ -469,7 +501,7 @@ IUP_DRV_API int iupwinTipsNotify(Ihandle* ih, NMHDR* msg_info, LRESULT* result)
   {
     HDC hdc = GetDC(tips_hwnd);
     RECT rect, text_rect = {0, 0, 0, 0};
-    SIZE size = winTipsMarkupPaint(ih, hdc, (HFONT)SendMessage(tips_hwnd, WM_GETFONT, 0, 0), &text_rect, 0);
+    SIZE size = winTipsMarkupPaint(ih, hdc, (HFONT)SendMessage(tips_hwnd, WM_GETFONT, 0, 0), &text_rect, 0, 0);
     ReleaseDC(tips_hwnd, hdc);
 
     GetWindowRect(tips_hwnd, &rect);

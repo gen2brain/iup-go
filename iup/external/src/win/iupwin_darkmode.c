@@ -550,6 +550,8 @@ IUP_DRV_API void iupwinDarkModeApplyToWindow(HWND hwnd)
   }
   else if (lstrcmpiW(cls, L"SysHeader32") == 0)
     winDarkModeTheme(hwnd, L"ItemsView", dark);
+  else if (lstrcmpiW(cls, TOOLTIPS_CLASSW) == 0)
+    winDarkModeTheme(hwnd, L"DarkMode_Explorer", dark);
 }
 
 static BOOL CALLBACK winDarkModeEnumChild(HWND hwnd, LPARAM lp)
