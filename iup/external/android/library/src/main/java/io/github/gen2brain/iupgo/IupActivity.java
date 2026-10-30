@@ -286,7 +286,7 @@ public class IupActivity extends AppCompatActivity
             DrawerLayout.LayoutParams nvParams = new DrawerLayout.LayoutParams(
                 (int)(280 * getResources().getDisplayMetrics().density),
                 ViewGroup.LayoutParams.MATCH_PARENT);
-            nvParams.gravity = android.view.Gravity.START;
+            nvParams.gravity = GravityCompat.START;
             navigationView.setLayoutParams(nvParams);
             /* Material tints menu-item icons with colorControlNormal by default; null preserves IupImage colors. */
             navigationView.setItemIconTintList(null);

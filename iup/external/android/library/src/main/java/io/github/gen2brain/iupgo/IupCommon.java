@@ -942,19 +942,24 @@ public final class IupCommon
         return config;
     }
 
+    public static android.content.res.ColorStateList styleColors(android.content.Context ctx, int defStyleAttr, int attr)
+    {
+        android.content.Context themed = com.google.android.material.theme.overlay.MaterialThemeOverlay.wrap(ctx, null, defStyleAttr, 0);
+        android.content.res.TypedArray a = themed.obtainStyledAttributes(null, new int[] { attr }, defStyleAttr, 0);
+        android.content.res.ColorStateList colors = a.getColorStateList(0);
+        a.recycle();
+        return colors;
+    }
+
     /* outlined MaterialButton colors resolve at construction; re-resolve them against the current theme */
     public static void applyOutlinedButtonColors(com.google.android.material.button.MaterialButton b)
     {
-        android.content.Context ctx = new android.view.ContextThemeWrapper(getThemeContext(),
-            com.google.android.material.R.style.ThemeOverlay_Material3_Button_TextButton);
-        b.setTextColor(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
-            ctx, com.google.android.material.R.color.m3_text_button_foreground_color_selector));
-        b.setBackgroundTintList(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
-            ctx, com.google.android.material.R.color.m3_text_button_background_color_selector));
-        b.setRippleColor(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
-            ctx, com.google.android.material.R.color.m3_text_button_ripple_color_selector));
-        b.setStrokeColor(androidx.appcompat.content.res.AppCompatResources.getColorStateList(
-            ctx, com.google.android.material.R.color.m3_button_outline_color_selector));
+        android.content.Context ctx = getThemeContext();
+        int style = com.google.android.material.R.attr.materialButtonOutlinedStyle;
+        b.setTextColor(styleColors(ctx, style, android.R.attr.textColor));
+        b.setBackgroundTintList(styleColors(ctx, style, com.google.android.material.R.attr.backgroundTint));
+        b.setRippleColor(styleColors(ctx, style, com.google.android.material.R.attr.rippleColor));
+        b.setStrokeColor(styleColors(ctx, style, com.google.android.material.R.attr.strokeColor));
     }
 
     /* AppTheme-bearing wrapper used when no Activity exists yet (early widget creation) */

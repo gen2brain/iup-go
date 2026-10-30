@@ -44,6 +44,11 @@ public final class IupScrollbarHelper
         private float dragAnchor;
         private final int touchSlop;
 
+        public IupScrollbarView(Context ctx)
+        {
+            this(ctx, 0, false, false);
+        }
+
         public IupScrollbarView(Context ctx, long ih, boolean h, boolean inv)
         {
             super(ctx);
@@ -181,11 +186,20 @@ public final class IupScrollbarHelper
                     return true;
                 }
                 case MotionEvent.ACTION_UP:
+                    dragging = false;
+                    performClick();
+                    return true;
                 case MotionEvent.ACTION_CANCEL:
                     dragging = false;
                     return true;
             }
             return super.onTouchEvent(ev);
+        }
+
+        @Override
+        public boolean performClick()
+        {
+            return super.performClick();
         }
     }
 

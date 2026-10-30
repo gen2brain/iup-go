@@ -90,6 +90,8 @@ public final class IupLabelHelper
                 @Override public void onLongPress(@NonNull MotionEvent e) { view.performLongClick(); }
             });
         view.setOnTouchListener((v, ev) -> {
+            if (v instanceof TextView text && text.isTextSelectable())
+                return false;
             longPress.onTouchEvent(ev);
             int a = ev.getActionMasked();
             final int x = (int)ev.getX();
@@ -140,8 +142,6 @@ public final class IupLabelHelper
     @Keep
     public static void setSelectable(TextView textView, boolean enable)
     {
-        if (enable)
-            textView.setOnTouchListener(null);
         textView.setTextIsSelectable(enable);
     }
 

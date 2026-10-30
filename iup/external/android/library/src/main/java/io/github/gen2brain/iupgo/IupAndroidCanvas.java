@@ -25,7 +25,7 @@ import java.util.ArrayList;
 
 
 /* Canvas back-buffer blit in onDraw; ViewGroup base so TYPECANVAS containers (FlatTabs/FlatFrame) can parent children. */
-public class IupAndroidCanvas extends IupAndroidFixed
+public final class IupAndroidCanvas extends IupAndroidFixed
 {
     /* mirror the IUP_GESTURE_* enums in iup.h */
     private static final int GESTURE_PINCH = 0, GESTURE_ROTATE = 1, GESTURE_PAN = 2, GESTURE_SWIPE = 3, GESTURE_TAP = 4, GESTURE_LONGPRESS = 5;
@@ -37,6 +37,8 @@ public class IupAndroidCanvas extends IupAndroidFixed
     private Canvas backCanvas;
     private final Matrix baseMatrix = new Matrix();
     private final Matrix userMatrix = new Matrix();
+    private final Rect drawClip = new Rect();
+    private final android.graphics.Paint borderPaint = new android.graphics.Paint();
     private GestureDetector gestureDetector;
     private ScaleGestureDetector scaleDetector;
     private float pinchScale = 1f;
@@ -368,20 +370,19 @@ public class IupAndroidCanvas extends IupAndroidFixed
     {
         if (ihandlePtr != 0)
         {
-            Rect clip = canvas.getClipBounds();
+            canvas.getClipBounds(drawClip);
             inDraw = true;
-            IupCanvasHelper.dispatchAction(ihandlePtr, clip.left, clip.top, clip.right - 1, clip.bottom - 1);
+            IupCanvasHelper.dispatchAction(ihandlePtr, drawClip.left, drawClip.top, drawClip.right - 1, drawClip.bottom - 1);
             inDraw = false;
         }
         if (back != null) canvas.drawBitmap(back, 0, 0, null);
         if (drawBorder)
         {
             float stroke = Math.max(1f, IupCommon.getDisplayDensity());
-            android.graphics.Paint p = new android.graphics.Paint();
-            p.setStyle(android.graphics.Paint.Style.STROKE);
-            p.setStrokeWidth(stroke);
-            p.setColor(IupCommon.resolveThemeColorByName("colorOutline", IupCommon.blendColor(IupCommon.paletteDlgBg, IupCommon.paletteDlgFg, 0.4f)));
-            canvas.drawRect(stroke / 2, stroke / 2, getWidth() - stroke / 2, getHeight() - stroke / 2, p);
+            borderPaint.setStyle(android.graphics.Paint.Style.STROKE);
+            borderPaint.setStrokeWidth(stroke);
+            borderPaint.setColor(IupCommon.resolveThemeColorByName("colorOutline", IupCommon.blendColor(IupCommon.paletteDlgBg, IupCommon.paletteDlgFg, 0.4f)));
+            canvas.drawRect(stroke / 2, stroke / 2, getWidth() - stroke / 2, getHeight() - stroke / 2, borderPaint);
         }
     }
 

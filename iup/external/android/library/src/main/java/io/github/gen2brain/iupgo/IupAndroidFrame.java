@@ -13,7 +13,7 @@ import androidx.annotation.NonNull;
 
 
 /* IupFrame: optional title above a stroked border; children in inner Fixed. */
-public class IupAndroidFrame extends ViewGroup
+public final class IupAndroidFrame extends ViewGroup
 {
     private String title;
     private int strokeColor;

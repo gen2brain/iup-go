@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 import androidx.annotation.Keep;
+import androidx.annotation.WorkerThread;
 
 public final class IupVideoHelper
 {
@@ -210,6 +211,7 @@ public final class IupVideoHelper
     abstract static class Player implements SurfaceHolder.Callback
     {
         final View host;
+        final Context context;
         final SurfaceView view;
         final TextView caption;
         final String source;
@@ -230,12 +232,13 @@ public final class IupVideoHelper
         Player(View host, long session, String source, boolean url)
         {
             this.host = host;
+            context = host.getContext();
             this.session = session;
             this.source = source;
             sourceURL = url;
-            view = new SurfaceView(host.getContext());
+            view = new SurfaceView(context);
             view.getHolder().addCallback(this);
-            caption = new TextView(host.getContext());
+            caption = new TextView(context);
             caption.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM);
             caption.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
             int padding = Math.round(8 * host.getResources().getDisplayMetrics().density);
@@ -538,7 +541,7 @@ public final class IupVideoHelper
             try
             {
                 if (sourceURL)
-                    media.setDataSource(host.getContext(), Uri.parse(source));
+                    media.setDataSource(context, Uri.parse(source));
                 else
                     media.setDataSource(source);
                 media.prepareAsync();
@@ -651,6 +654,7 @@ public final class IupVideoHelper
             previewPending = false;
         }
 
+        @WorkerThread
         void readSubtitlePreview()
         {
             ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024);
@@ -675,7 +679,7 @@ public final class IupVideoHelper
                 try
                 {
                     if (sourceURL)
-                        extractor.setDataSource(host.getContext(), Uri.parse(source), null);
+                        extractor.setDataSource(context, Uri.parse(source), null);
                     else
                         extractor.setDataSource(source);
                     int found = 0;
@@ -782,6 +786,7 @@ public final class IupVideoHelper
             }
         }
 
+        @WorkerThread
         void findKeyframes()
         {
             for (;;)
@@ -812,7 +817,7 @@ public final class IupVideoHelper
                     {
                         keyframeExtractor = new MediaExtractor();
                         if (sourceURL)
-                            keyframeExtractor.setDataSource(host.getContext(), Uri.parse(source), null);
+                            keyframeExtractor.setDataSource(context, Uri.parse(source), null);
                         else
                             keyframeExtractor.setDataSource(source);
                         for (int i = 0; i < keyframeExtractor.getTrackCount(); i++)
@@ -880,7 +885,7 @@ public final class IupVideoHelper
         {
             if (closed || Build.VERSION.SDK_INT < 28)
                 return;
-            media.setPreferredDevice(findAudioDevice(host.getContext(), id));
+            media.setPreferredDevice(findAudioDevice(context, id));
         }
 
         @Override

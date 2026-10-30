@@ -10,6 +10,7 @@ import android.location.LocationManager;
 import android.os.Looper;
 
 import androidx.annotation.Keep;
+import androidx.annotation.RequiresPermission;
 
 import java.util.HashMap;
 import java.util.List;
@@ -85,6 +86,7 @@ public final class IupLocationHelper
                     loc.getTime());
     }
 
+    @RequiresPermission(anyOf = {Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, conditional = true)
     private static boolean subscribe(final long ih, boolean fine, long intervalMs, float distanceM)
     {
         LocationManager lm = manager();

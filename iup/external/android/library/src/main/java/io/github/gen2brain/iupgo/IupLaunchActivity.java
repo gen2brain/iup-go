@@ -1,5 +1,6 @@
 package io.github.gen2brain.iupgo;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -12,6 +13,7 @@ import android.util.Log;
 
 
 /* loads native libs and calls the C entry point; subclass to override library/entry name */
+@SuppressLint("CustomSplashScreen")
 public class IupLaunchActivity extends Activity
 {
     private static final String TAG = "Iup";
