@@ -22,8 +22,6 @@
 #include "iup_notify.h"
 #include "iup_image.h"
 
-#include "iupcocoa_drv.h"
-
 #define IUPCOCOA_NOTIFY_MAX_ICON_SIZE 256
 
 @interface IupCocoaNotifyDelegate : NSObject <UNUserNotificationCenterDelegate>
@@ -135,7 +133,7 @@ static NSString* cocoaNotifySaveImageToTemp(int width, int height, unsigned char
     }
   }
 
-  colorSpace = iupcocoaGetRGBColorSpace();
+  colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
   if (!colorSpace)
   {
     free(rgbaPixels);
@@ -145,6 +143,7 @@ static NSString* cocoaNotifySaveImageToTemp(int width, int height, unsigned char
   provider = CGDataProviderCreateWithData(NULL, rgbaPixels, width * height * 4, NULL);
   if (!provider)
   {
+    CGColorSpaceRelease(colorSpace);
     free(rgbaPixels);
     return nil;
   }
@@ -154,6 +153,7 @@ static NSString* cocoaNotifySaveImageToTemp(int width, int height, unsigned char
       provider, NULL, false, kCGRenderingIntentDefault);
 
   CGDataProviderRelease(provider);
+  CGColorSpaceRelease(colorSpace);
 
   if (!image)
   {
