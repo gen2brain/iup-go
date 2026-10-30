@@ -801,6 +801,16 @@ iupgtk4TreeStartRenameEditing(GtkListItem* list_item)
 }
 
 static void
+iupgtk4TreeTakeFocus(Ihandle* ih)
+{
+  GtkRoot* root = gtk_widget_get_root(ih->handle);
+  GtkWidget* focus = root ? gtk_root_get_focus(root) : NULL;
+
+  if ((!focus || (focus != ih->handle && !gtk_widget_is_ancestor(focus, ih->handle))) && iupdrvIsActive(ih))
+    gtk_widget_grab_focus(ih->handle);
+}
+
+static void
 iupgtk4TreeLabelClickPressed(GtkGestureClick* gesture, int n_press, double x, double y, gpointer user_data)
 {
   GtkListItem* list_item = GTK_LIST_ITEM(user_data);
@@ -817,6 +827,8 @@ iupgtk4TreeLabelClickPressed(GtkGestureClick* gesture, int n_press, double x, do
   IupGtk4TreeNode* node = IUP_GTK4_TREE_NODE(item);
   Ihandle* ih = node->ih;
   int id = iupgtk4TreeFindNodeId(ih, node);
+
+  iupgtk4TreeTakeFocus(ih);
 
   if (button == GDK_BUTTON_SECONDARY)
   {
@@ -1397,6 +1409,8 @@ static void
 iupgtk4TreeButtonPressed(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih)
 {
   int button = gtk_gesture_single_get_current_button(GTK_GESTURE_SINGLE(gesture));
+
+  iupgtk4TreeTakeFocus(ih);
 
   iupgtk4ButtonPressed(gesture, n_press, x, y, ih);
 
