@@ -610,7 +610,7 @@ func findNextCb(ih iup.Ihandle) int {
 	multitext.SetAttribute("SELECTIONPOS", fmt.Sprintf("%d:%d", pos, end))
 	multitext.SetAttribute("CARETPOS", end)
 	lin, _ := iup.TextConvertPosToLinCol(multitext, pos)
-	linePos := iup.TextConvertLinColToPos(multitext, lin, 0)
+	linePos := iup.TextConvertLinColToPos(multitext, lin, 1)
 	multitext.SetAttribute("SCROLLTOPOS", linePos)
 	return iup.DEFAULT
 }
@@ -709,7 +709,7 @@ func gotoActionCb(ih iup.Ihandle) int {
 
 	if gotoDlg.GetInt("STATUS") == 1 {
 		line := txt.GetInt("VALUE")
-		pos := iup.TextConvertLinColToPos(multitext, line, 0)
+		pos := iup.TextConvertLinColToPos(multitext, line, 1)
 		multitext.SetAttribute("CARETPOS", pos)
 		multitext.SetAttribute("SCROLLTOPOS", pos)
 		iup.SetFocus(multitext)
