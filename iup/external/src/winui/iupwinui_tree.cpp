@@ -988,6 +988,48 @@ static void winuiTreeApplyFocusVisual(TreeView const& treeView, TreeViewNode con
     presenter.Padding(Thickness{-border, -border, -border, -border});
 }
 
+static bool winuiTreeFocusIsInside(TreeView const& treeView)
+{
+  XamlRoot xamlRoot = treeView.XamlRoot();
+  if (!xamlRoot)
+    return false;
+
+  auto current = FocusManager::GetFocusedElement(xamlRoot).try_as<DependencyObject>();
+  auto treeViewDO = treeView.as<DependencyObject>();
+  while (current)
+  {
+    if (current == treeViewDO)
+      return true;
+    current = VisualTreeHelper::GetParent(current);
+  }
+  return false;
+}
+
+static bool winuiTreeFocusRingVisible(TreeView const& treeView, TreeViewNode const& node)
+{
+  if (!node || !winuiTreeFocusIsInside(treeView))
+    return false;
+
+  uint32_t index;
+  auto selected = treeView.SelectedNodes();
+  if (selected.Size() <= 1 && selected.IndexOf(node, index))
+    return false;
+
+  DependencyObject container = treeView.ContainerFromNode(node);
+  TreeViewItem tvi = container ? container.try_as<TreeViewItem>() : nullptr;
+  return !tvi || tvi.FocusState() != FocusState::Keyboard;
+}
+
+static void winuiTreeUpdateFocusRing(Ihandle* ih)
+{
+  TreeView treeView = winuiTreeGetTreeView(ih);
+  if (!treeView)
+    return;
+
+  TreeViewNode node = winuiTreeGetNode(ih, iupAttribGetInt(ih, "_IUPWINUI_FOCUS_ID"));
+  winuiTreeApplyFocusVisual(treeView, node, winuiTreeFocusRingVisible(treeView, node));
+}
+
 static void winuiTreeSetFocus(Ihandle* ih, int id)
 {
   TreeView treeView = winuiTreeGetTreeView(ih);
@@ -1012,7 +1054,7 @@ static void winuiTreeSetFocus(Ihandle* ih, int id)
         if (elem)
           elem.StartBringIntoView();
       }
-      winuiTreeApplyFocusVisual(treeView, node, true);
+      winuiTreeApplyFocusVisual(treeView, node, winuiTreeFocusRingVisible(treeView, node));
     }
   }
 }
@@ -2269,6 +2311,7 @@ static int winuiTreeMapMethod(Ihandle* ih)
   });
 
   aux->selectionChangedToken = treeView.SelectionChanged([ih](TreeView const&, TreeViewSelectionChangedEventArgs const&) {
+    winuiTreeUpdateFocusRing(ih);
     auto* sel_aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
     if (!sel_aux || sel_aux->ignoreChange)
       return;
@@ -2382,8 +2425,16 @@ static int winuiTreeMapMethod(Ihandle* ih)
   if (parentCanvas)
     parentCanvas.Children().Append(treeView);
 
-  aux->gotFocusToken = treeView.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 1); });
-  aux->lostFocusToken = treeView.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 0); });
+  aux->gotFocusToken = treeView.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+    iupwinuiFocusInOutEvent(ih, 1);
+    if (iupObjectCheck(ih))
+      winuiTreeUpdateFocusRing(ih);
+  });
+  aux->lostFocusToken = treeView.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
+    iupwinuiFocusInOutEvent(ih, 0);
+    if (iupObjectCheck(ih))
+      winuiTreeUpdateFocusRing(ih);
+  });
 
   winuiSetAux(ih, IUPWINUI_TREE_AUX, aux);
 
