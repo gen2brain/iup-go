@@ -484,9 +484,22 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   [super rightMouseDown:event];
 }
 
+#ifdef GNUSTEP
+- (void) beginRename
+{
+  if (self.ih)
+    cocoaTreeSetRenameAttrib(self.ih, NULL);
+}
+#endif
+
 - (void) mouseDown:(NSEvent*)event
 {
 #ifdef GNUSTEP
+  NSInteger click_row = [self rowAtPoint:[self convertPoint:[event locationInWindow] fromView:nil]];
+  BOOL rename_click = self.ih && self.ih->data->show_rename && [event clickCount] == 1 && click_row >= 0 &&
+                      click_row == [self selectedRow] && [[self window] firstResponder] == self;
+
+  [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(beginRename) object:nil];
   [[self window] makeFirstResponder:self];
 #endif
   if ([event clickCount] == 2)
@@ -522,6 +535,11 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   }
 
   [super mouseDown:event];
+
+#ifdef GNUSTEP
+  if (rename_click && [self selectedRow] == click_row)
+    [self performSelector:@selector(beginRename) withObject:nil afterDelay:[NSEvent doubleClickInterval]];
+#endif
 }
 
 - (void) flagsChanged:(NSEvent*)the_event
@@ -671,7 +689,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 {
   IupCocoaOutlineView* outline_view = objc_getAssociatedObject(self, IUP_COCOA_TREE_TEXTFIELD_OWNER_KEY);
   Ihandle* ih = outline_view ? [outline_view ih] : NULL;
-  NSInteger row = ih ? [outline_view rowForView:self] : -1;
+  NSInteger row = ih ? [outline_view rowForView:[self superview]] : -1;
   IFni cb = ih ? (IFni)IupGetCallback(ih, "SHOWRENAME_CB") : NULL;
 
   if (cb && row >= 0 && cb(ih, iupTreeFindNodeId(ih, (InodeHandle*)[outline_view itemAtRow:row])) == IUP_IGNORE)
@@ -722,7 +740,14 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   if (!outlineView)
     return;
 
-  NSInteger row = [outlineView rowForView:self];
+#ifdef GNUSTEP
+  [self setEditable:NO];
+  [self setSelectable:NO];
+  [self setDelegate:nil];
+  [[outlineView window] performSelector:@selector(makeFirstResponder:) withObject:outlineView afterDelay:0];
+#endif
+
+  NSInteger row = [outlineView rowForView:[self superview]];
   if (row < 0)
     return;
 
@@ -765,11 +790,30 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   (void)control;
 
   rename_done = NO;
+#ifdef GNUSTEP
+  if (sel_isEqual(commandSelector, @selector(complete:)))
+    commandSelector = @selector(cancelOperation:);
+#endif
+  if (sel_isEqual(commandSelector, @selector(cancelOperation:)) && outlineView)
+  {
+    NSInteger cancel_row = [outlineView rowForView:[self superview]];
+    [self abortEditing];
+    if (cancel_row >= 0)
+      [self setStringValue:[(IupCocoaTreeItem*)[outlineView itemAtRow:cancel_row] title]];
+#ifdef GNUSTEP
+    [self setEditable:NO];
+    [self setSelectable:NO];
+    [self setDelegate:nil];
+#endif
+    [[outlineView window] makeFirstResponder:outlineView];
+    return YES;
+  }
+
   if (commandSelector != @selector(insertNewline:) || !outlineView)
     return NO;
 
   Ihandle* ih = [outlineView ih];
-  NSInteger row = [outlineView rowForView:self];
+  NSInteger row = [outlineView rowForView:[self superview]];
   IFnis cb = ih ? (IFnis)IupGetCallback(ih, "RENAME_CB") : NULL;
   if (!cb || row < 0)
     return NO;
@@ -4480,7 +4524,20 @@ static int cocoaTreeSetRenameAttrib(Ihandle* ih, const char* value)
     {
       /* The view needs to be the first responder to begin editing */
       [[outline_view window] makeFirstResponder:outline_view];
+#ifdef GNUSTEP
+      {
+        NSTextField* text_field = [(NSTableCellView*)[outline_view viewAtColumn:0 row:selected_row makeIfNecessary:NO] textField];
+        [text_field setEditable:YES];
+        [text_field setDelegate:(id)text_field];
+        if (![[outline_view window] makeFirstResponder:text_field])
+        {
+          [text_field setEditable:NO];
+          [text_field setDelegate:nil];
+        }
+      }
+#else
       [outline_view editColumn:0 row:selected_row withEvent:nil select:YES];
+#endif
     }
   }
   (void)value;
