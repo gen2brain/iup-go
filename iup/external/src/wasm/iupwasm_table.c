@@ -57,6 +57,10 @@ EM_JS(void, iupwasmJsTableEditOpen, (int id, int lin, int col, const char* text)
   globalThis.__iupApply({ op: 'tableeditopen', id: id, lin: lin, col: col, text: UTF8ToString(text) });
 })
 
+EM_JS(void, iupwasmJsTableEditDone, (int id, int lin, int col, int ok), {
+  globalThis.__iupApply({ op: 'tableeditdone', id: id, lin: lin, col: col, ok: ok });
+})
+
 EM_JS(void, iupwasmJsTableColTitle, (int id, int col, const char* title), {
   globalThis.__iupApply({ op: 'tablecoltitle', id: id, col: col, title: UTF8ToString(title) });
 })
@@ -1064,6 +1068,22 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableCellDblClick(int id, int lin, int col)
     iupwasmTableEditBegin(id, lin, col);
 }
 
+EMSCRIPTEN_KEEPALIVE void iupwasmTableEditChange(int id, int lin, int col, const char* text)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  IFniis cb;
+  int ok = 1;
+
+  if (ih)
+  {
+    cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+    if (cb && cb(ih, lin, col, (char*)text) == IUP_IGNORE)
+      ok = 0;
+  }
+
+  iupwasmJsTableEditDone(id, lin, col, ok);
+}
+
 EMSCRIPTEN_KEEPALIVE void iupwasmTableEditEnd(int id, int lin, int col, const char* text, int apply)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
@@ -1081,13 +1101,6 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableEditEnd(int id, int lin, int col, const ch
   }
 
   if (!apply)
-  {
-    iupwasmJsTableRender(id, lin, col);
-    return;
-  }
-
-  edit_cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
-  if (edit_cb && edit_cb(ih, lin, col, (char*)text) == IUP_IGNORE)
   {
     iupwasmJsTableRender(id, lin, col);
     return;

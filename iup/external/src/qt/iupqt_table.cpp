@@ -199,6 +199,31 @@ public:
     fixedLineEdit->setProperty("iup_col", col);
     fixedLineEdit->setProperty("iup_fixed_lineedit_ptr", QVariant::fromValue(reinterpret_cast<void*>(fixedLineEdit)));
 
+    Ihandle* table = ih;
+    QObject::connect(fixedLineEdit, &QLineEdit::textEdited, fixedLineEdit, [table, lin, col, fixedLineEdit](const QString& text) {
+      auto cb = reinterpret_cast<IFniis>(IupGetCallback(table, "EDITION_CB"));
+      QVariant last = fixedLineEdit->property("iup_edit_text");
+      if (!last.isValid())
+      {
+        const char* value = iupdrvTableGetCellValue(table, lin, col);
+        last = QString::fromUtf8(value ? value : "");
+      }
+
+      if (cb && cb(table, lin, col, const_cast<char*>(text.toUtf8().constData())) == IUP_IGNORE)
+      {
+        QString old = last.toString();
+        int pos = fixedLineEdit->cursorPosition();
+        int added = static_cast<int>(text.length() - old.length());
+        if (added > 0)
+          pos -= added;
+        fixedLineEdit->setText(old);
+        fixedLineEdit->setCursorPosition(pos > 0 ? pos : 0);
+        return;
+      }
+
+      fixedLineEdit->setProperty("iup_edit_text", text);
+    });
+
     return fixedLineEdit;
   }
 

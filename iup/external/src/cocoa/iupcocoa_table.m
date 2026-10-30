@@ -36,6 +36,7 @@ static char kEditingRowKey;
 static char kEditingColKey;
 static char kEditEndedKey;
 static char kEditBeginCalledKey;
+static char kEditTextKey;
 
 /* ========================================================================= */
 /* Data Structures                                                           */
@@ -2256,10 +2257,46 @@ static NSInteger cocoaTableRowOfField(Ihandle* ih, NSTableView* tableView, NSVie
   objc_setAssociatedObject(tableView, &kEditBeginCalledKey, @(YES), OBJC_ASSOCIATION_RETAIN);
 }
 
+- (void)controlTextDidChange:(NSNotification*)notification
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  NSTextField* textField = [notification object];
+  NSNumber* editingRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
+  NSNumber* editingCol = objc_getAssociatedObject(tableView, &kEditingColKey);
+  NSText* editor = [[notification userInfo] objectForKey:@"NSFieldEditor"];
+  if (!editingRow || !editingCol || !editor)
+    return;
+
+  int lin = (int)[editingRow integerValue] + 1;
+  int col = (int)[editingCol integerValue] + 1;
+  NSString* text = [[[editor string] copy] autorelease];
+  NSString* last = objc_getAssociatedObject(textField, &kEditTextKey);
+  if (!last)
+  {
+    char* value = iupdrvTableGetCellValue(ih, lin, col);
+    last = value ? [NSString stringWithUTF8String:value] : @"";
+  }
+
+  IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+  if (cb && cb(ih, lin, col, (char*)[text UTF8String]) == IUP_IGNORE)
+  {
+    NSInteger pos = (NSInteger)[editor selectedRange].location;
+    NSInteger added = (NSInteger)[text length] - (NSInteger)[last length];
+    if (added > 0)
+      pos -= added;
+    [editor setString:last];
+    [editor setSelectedRange:NSMakeRange(pos > 0 ? (NSUInteger)pos : 0, 0)];
+    return;
+  }
+
+  objc_setAssociatedObject(textField, &kEditTextKey, text, OBJC_ASSOCIATION_RETAIN);
+}
+
 - (void)controlTextDidEndEditing:(NSNotification*)notification
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
   NSTextField* textField = [notification object];
+  objc_setAssociatedObject(textField, &kEditTextKey, nil, OBJC_ASSOCIATION_RETAIN);
 #ifdef GNUSTEP
   [textField setEditable:NO];
   [textField setSelectable:NO];

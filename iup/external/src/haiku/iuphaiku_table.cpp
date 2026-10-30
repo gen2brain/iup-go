@@ -130,10 +130,13 @@ public:
   IupHaikuTableView* fTv;
   int fLin, fCol;
   bool fEnded;
+  bool fReady;
+  bool fReplacing;
 
 protected:
   void InsertText(const char* text, int32 length, int32 offset, const text_run_array* runs) override;
   void DeleteText(int32 fromOffset, int32 toOffset) override;
+  bool CheckEdit(const BString& text);
 };
 
 
@@ -925,11 +928,21 @@ void IupHaikuTableView::RepositionTrail()
 IupHaikuTableEditor::IupHaikuTableEditor(BRect r, IupHaikuTableView* tv, int lin, int col, const char* val)
   : BTextView(r, "iup_cell_edit", BRect(2.0f, 2.0f, r.Width() - 2.0f, r.Height() - 2.0f),
               B_FOLLOW_NONE, B_WILL_DRAW | B_NAVIGABLE),
-    fTv(tv), fLin(lin), fCol(col), fEnded(false)
+    fTv(tv), fLin(lin), fCol(col), fEnded(false), fReady(false), fReplacing(false)
 {
   SetText(val ? val : "");
   SetWordWrap(false);
   SelectAll();
+  fReady = true;
+}
+
+bool IupHaikuTableEditor::CheckEdit(const BString& text)
+{
+  if (!fReady || fEnded || fReplacing || !fTv || !fTv->GetIhandle())
+    return true;
+
+  auto cb = reinterpret_cast<IFniis>(IupGetCallback(fTv->GetIhandle(), "EDITION_CB"));
+  return !cb || cb(fTv->GetIhandle(), fLin, fCol, const_cast<char*>(text.String())) != IUP_IGNORE;
 }
 
 void IupHaikuTableEditor::KeyDown(const char* bytes, int32 numBytes)
@@ -939,6 +952,23 @@ void IupHaikuTableEditor::KeyDown(const char* bytes, int32 numBytes)
     if (bytes[0] == B_ESCAPE) { if (fTv) fTv->EndEdit(false); return; }
     if (bytes[0] == B_RETURN) { if (fTv) fTv->EndEdit(true);  return; }
   }
+
+  int32 sel_start = 0, sel_end = 0;
+  GetSelection(&sel_start, &sel_end);
+  if (!fEnded && numBytes >= 1 && static_cast<unsigned char>(bytes[0]) >= 32 && bytes[0] != B_DELETE && sel_start != sel_end)
+  {
+    BString text(Text());
+    text.Remove(sel_start, sel_end - sel_start);
+    text.Insert(bytes, numBytes, sel_start);
+    if (!CheckEdit(text))
+      return;
+
+    fReplacing = true;
+    BTextView::KeyDown(bytes, numBytes);
+    fReplacing = false;
+    return;
+  }
+
   BTextView::KeyDown(bytes, numBytes);
 }
 
@@ -950,22 +980,22 @@ void IupHaikuTableEditor::MakeFocus(bool focused)
 
 void IupHaikuTableEditor::InsertText(const char* text, int32 length, int32 offset, const text_run_array* runs)
 {
+  BString new_text(Text());
+  new_text.Insert(text, length, offset);
+  if (!CheckEdit(new_text))
+    return;
+
   BTextView::InsertText(text, length, offset, runs);
-  if (!fEnded && fTv && fTv->GetIhandle())
-  {
-    auto cb = reinterpret_cast<IFniis>(IupGetCallback(fTv->GetIhandle(), "EDITION_CB"));
-    if (cb) cb(fTv->GetIhandle(), fLin, fCol, const_cast<char*>(Text()));
-  }
 }
 
 void IupHaikuTableEditor::DeleteText(int32 fromOffset, int32 toOffset)
 {
+  BString new_text(Text());
+  new_text.Remove(fromOffset, toOffset - fromOffset);
+  if (!CheckEdit(new_text))
+    return;
+
   BTextView::DeleteText(fromOffset, toOffset);
-  if (!fEnded && fTv && fTv->GetIhandle())
-  {
-    auto cb = reinterpret_cast<IFniis>(IupGetCallback(fTv->GetIhandle(), "EDITION_CB"));
-    if (cb) cb(fTv->GetIhandle(), fLin, fCol, const_cast<char*>(Text()));
-  }
 }
 
 void IupHaikuTableView::StartEdit(int lin, int col)

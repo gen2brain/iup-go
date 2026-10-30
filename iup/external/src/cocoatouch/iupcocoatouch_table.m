@@ -189,7 +189,10 @@ static const void* IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY = "IUP_COCOATOUCH_TABLE_CTR
 @end
 
 
-@interface IupCocoaTouchTableController : NSObject <UICollectionViewDataSource, UICollectionViewDelegate, UIGestureRecognizerDelegate>
+static char kIupTableEditLinKey;
+static char kIupTableEditColKey;
+
+@interface IupCocoaTouchTableController : NSObject <UICollectionViewDataSource, UICollectionViewDelegate, UIGestureRecognizerDelegate, UITextFieldDelegate>
 @property(nonatomic, assign) Ihandle* ihandle;
 @property(nonatomic, retain) NSMutableArray<NSMutableArray<NSString*>*>* cells;
 @property(nonatomic, retain) NSMutableArray<NSMutableArray<NSString*>*>* images;
@@ -622,6 +625,17 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	return global ? iupStrBoolean(global) : NO;
 }
 
+- (BOOL)textField:(UITextField*)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString*)string
+{
+	NSNumber* lin = objc_getAssociatedObject(textField, &kIupTableEditLinKey);
+	NSNumber* col = objc_getAssociatedObject(textField, &kIupTableEditColKey);
+	IFniis cb = _ihandle ? (IFniis)IupGetCallback(_ihandle, "EDITION_CB") : NULL;
+	if (!lin || !col || !cb) return YES;
+
+	NSString* text = [(textField.text ?: @"") stringByReplacingCharactersInRange:range withString:string];
+	return cb(_ihandle, [lin intValue], [col intValue], (char*)[text UTF8String]) != IUP_IGNORE;
+}
+
 - (void)beginEditAtLin:(NSInteger)lin col:(NSInteger)col fromView:(UIView*)source
 {
 	IFnii begin_cb = (IFnii)IupGetCallback(_ihandle, "EDITBEGIN_CB");
@@ -641,6 +655,10 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 		tf.clearButtonMode = UITextFieldViewModeWhileEditing;
 	}];
 	IupCocoaTouchTableController* ctrl_ref = self;
+	UITextField* edit_field = alert.textFields.firstObject;
+	edit_field.delegate = self;
+	objc_setAssociatedObject(edit_field, &kIupTableEditLinKey, @(lin), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+	objc_setAssociatedObject(edit_field, &kIupTableEditColKey, @(col), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 	[alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction* a) {
 		(void)a;
 		IFniisi end_cb = (IFniisi)IupGetCallback(ctrl_ref.ihandle, "EDITEND_CB");
@@ -650,8 +668,6 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 		(void)a;
 		NSString* new_text = alert.textFields.firstObject.text ?: @"";
 		const char* new_c = [new_text UTF8String];
-		IFniis edit_cb = (IFniis)IupGetCallback(ctrl_ref.ihandle, "EDITION_CB");
-		if (edit_cb) edit_cb(ctrl_ref.ihandle, (int)lin, (int)col, (char*)new_c);
 		IFniisi end_cb = (IFniisi)IupGetCallback(ctrl_ref.ihandle, "EDITEND_CB");
 		int rc = IUP_DEFAULT;
 		if (end_cb) rc = end_cb(ctrl_ref.ihandle, (int)lin, (int)col, (char*)new_c, 1);

@@ -117,20 +117,21 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchEdi
   return (ret == IUP_IGNORE) ? 1 : 0;
 }
 
-JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchEdition(
+JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchEdition(
     JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint lin, jint col, jstring j_text)
 {
   (void)cls;
   Ihandle* ih = (Ihandle*)ihandle_ptr;
-  if (!ih) return;
+  if (!ih) return 0;
 
   IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
-  if (!cb) return;
+  if (!cb) return 0;
 
   const char* text = j_text ? (*jni_env)->GetStringUTFChars(jni_env, j_text, NULL) : "";
   int ret = cb(ih, (int)lin, (int)col, (char*)text);
   if (j_text) (*jni_env)->ReleaseStringUTFChars(jni_env, j_text, text);
   if (ret == IUP_CLOSE) IupExitLoop();
+  return (ret == IUP_IGNORE) ? 1 : 0;
 }
 
 JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchEditEnd(
