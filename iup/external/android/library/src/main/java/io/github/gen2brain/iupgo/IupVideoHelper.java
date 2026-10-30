@@ -255,6 +255,12 @@ public final class IupVideoHelper
         abstract boolean playing();
         abstract double position();
         abstract double duration();
+
+        boolean seekable()
+        {
+            return duration() > 0;
+        }
+
         abstract int subtitleCount();
         abstract String subtitleName(int index, boolean language);
         abstract boolean subtitleSelect(int index, double delay);
@@ -348,7 +354,7 @@ public final class IupVideoHelper
             snapshot[2] = ended ? 1 : 0;
             snapshot[3] = prepared && !failed ? position() : 0;
             snapshot[4] = prepared && !failed ? duration() : 0;
-            snapshot[5] = snapshot[4] > 0 ? 1 : 0;
+            snapshot[5] = prepared && !failed && seekable() ? 1 : 0;
             snapshot[6] = video ? 1 : 0;
             snapshot[7] = audio ? 1 : 0;
             snapshot[8] = width;
@@ -446,7 +452,7 @@ public final class IupVideoHelper
     private static final class NativePlayer extends Player
     {
         final MediaPlayer media;
-        boolean seeking;
+        boolean seeking, notSeekable;
         volatile int subtitleGeneration;
         Thread subtitleThread;
         int previewTrack;
@@ -508,6 +514,8 @@ public final class IupVideoHelper
                 return true;
             });
             media.setOnInfoListener((player, what, extra) -> {
+                if (what == MediaPlayer.MEDIA_INFO_NOT_SEEKABLE)
+                    notSeekable = true;
                 if (what == MediaPlayer.MEDIA_INFO_BUFFERING_START)
                     buffering = true;
                 if (what == MediaPlayer.MEDIA_INFO_BUFFERING_END)
@@ -905,6 +913,12 @@ public final class IupVideoHelper
         double duration()
         {
             return Math.max(0, media.getDuration()) / 1000.0;
+        }
+
+        @Override
+        boolean seekable()
+        {
+            return !notSeekable && duration() > 0;
         }
 
         @Override

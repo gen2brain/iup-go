@@ -77,6 +77,7 @@ In Android before 8.0, "EXACT" seeks to the keyframe at or before the given posi
 **DURATION** (read-only): Length of the source in seconds, as a floating point number, or "0" when unknown.
 
 **SEEKABLE** (read-only): Returns "YES" if the source supports seeking, "NO" otherwise.
+In Android, returns "YES" whenever the duration is known, unless MediaPlayer reports the source as not seekable.
 
 **LOOP** (non-inheritable): Restarts seekable sources from the beginning when the end is reached. Can be "YES" or "NO". Default: "NO".
 While "YES" and the source is seekable, PLAYEND_CB is not called.
