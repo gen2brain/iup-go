@@ -34,6 +34,9 @@
   AVPlayerLayer* layer;
   AVPlayerItemVideoOutput* output;
   int outputWidth, outputHeight;
+  int rotate, rotateA, rotateB, rotateC, rotateD;
+  unsigned char* rotated;
+  size_t rotatedSize;
   AVPlayerItemLegibleOutput* legible;
   AVMediaSelectionGroup* subtitles;
   CATextLayer* caption;
@@ -80,6 +83,7 @@
   [item release];
   [player release];
   [adjust release];
+  free(rotated);
   [super dealloc];
 }
 @end
@@ -171,7 +175,7 @@ static int iappleVideoAttach(IupAppleVideo* context, AVPlayerItem* item)
   if (context->output)
     [context->legible setDelegate:context queue:dispatch_get_main_queue()];
   [context->item addOutput:context->legible];
-  [context->item.asset loadValuesAsynchronouslyForKeys:@[@"availableMediaCharacteristicsWithMediaSelectionOptions"] completionHandler:^{
+  [context->item.asset loadValuesAsynchronouslyForKeys:@[@"availableMediaCharacteristicsWithMediaSelectionOptions", @"tracks"] completionHandler:^{
     dispatch_async(dispatch_get_main_queue(), ^{
       AVMediaSelectionGroup* group;
       if (!context->session)
@@ -179,6 +183,20 @@ static int iappleVideoAttach(IupAppleVideo* context, AVPlayerItem* item)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
       group = [context->item.asset mediaSelectionGroupForMediaCharacteristic:AVMediaCharacteristicLegible];
+      if (context->output)
+      {
+        AVAssetTrack* track = [context->item.asset tracksWithMediaType:AVMediaTypeVideo].firstObject;
+        CGAffineTransform transform = track ? track.preferredTransform : CGAffineTransformIdentity;
+        if (!CGAffineTransformIsIdentity(transform))
+        {
+          context->rotateA = (int)lround(transform.a);
+          context->rotateB = (int)lround(transform.b);
+          context->rotateC = (int)lround(transform.c);
+          context->rotateD = (int)lround(transform.d);
+          context->rotate = 1;
+          context->outputWidth = context->outputHeight = -1;
+        }
+      }
 #pragma clang diagnostic pop
       [context->subtitles release];
       context->subtitles = [group retain];
@@ -381,6 +399,12 @@ static void iappleVideoResizeOutput(IupAppleVideo* context, int video_width, int
   iupVideoTargetSize(context->session, video_width, video_height, &width, &height);
   if (width == video_width && height == video_height)
     width = height = 0;
+  else if (context->rotate && context->rotateA == 0)
+  {
+    int swap = width;
+    width = height;
+    height = swap;
+  }
   if (width == context->outputWidth && height == context->outputHeight)
     return;
   attributes = [NSMutableDictionary dictionaryWithObject:@(kCVPixelFormatType_32BGRA) forKey:(id)kCVPixelBufferPixelFormatTypeKey];
@@ -400,6 +424,45 @@ static void iappleVideoResizeOutput(IupAppleVideo* context, int video_width, int
   context->outputHeight = height;
 }
 
+static void iappleVideoRotateFrame(IupAppleVideo* context, const unsigned char* pixels, int width, int height, size_t stride)
+{
+  int a = context->rotateA, b = context->rotateB, c = context->rotateC, d = context->rotateD;
+  int out_width = a ? width : height, out_height = a ? height : width;
+  int corners[4][2] = {{0, 0}, {width - 1, 0}, {0, height - 1}, {width - 1, height - 1}};
+  int min_x = 0, min_y = 0, i, x, y;
+  size_t size = (size_t)out_width * out_height * 4;
+  uint32_t* target;
+  for (i = 0; i < 4; i++)
+  {
+    int cx = a * corners[i][0] + c * corners[i][1];
+    int cy = b * corners[i][0] + d * corners[i][1];
+    if (cx < min_x)
+      min_x = cx;
+    if (cy < min_y)
+      min_y = cy;
+  }
+  if (size > context->rotatedSize)
+  {
+    unsigned char* buffer = (unsigned char*)realloc(context->rotated, size);
+    if (!buffer)
+      return;
+    context->rotated = buffer;
+    context->rotatedSize = size;
+  }
+  target = (uint32_t*)context->rotated;
+  for (y = 0; y < out_height; y++)
+  {
+    int dy = y + min_y;
+    for (x = 0; x < out_width; x++)
+    {
+      int dx = x + min_x;
+      int sx = a * dx + b * dy, sy = c * dx + d * dy;
+      *target++ = *(const uint32_t*)(pixels + (size_t)sy * stride + (size_t)sx * 4);
+    }
+  }
+  iupVideoFrame(context->session, context->rotated, out_width, out_height, (size_t)out_width * 4);
+}
+
 static void iappleVideoFrame(IupAppleVideo* context)
 {
   CMTime time = [context->output itemTimeForHostTime:CACurrentMediaTime()];
@@ -416,7 +479,12 @@ static void iappleVideoFrame(IupAppleVideo* context)
     size_t stride = CVPixelBufferGetBytesPerRow(buffer);
     const unsigned char* pixels = (const unsigned char*)CVPixelBufferGetBaseAddress(buffer);
     if (pixels && width && height && width <= INT_MAX / 4 && height <= INT_MAX / 4 / width && stride >= width * 4)
-      iupVideoFrame(context->session, pixels, (int)width, (int)height, stride);
+    {
+      if (context->rotate)
+        iappleVideoRotateFrame(context, pixels, (int)width, (int)height, stride);
+      else
+        iupVideoFrame(context->session, pixels, (int)width, (int)height, stride);
+    }
     CVPixelBufferUnlockBaseAddress(buffer, kCVPixelBufferLock_ReadOnly);
   }
   CVPixelBufferRelease(buffer);
