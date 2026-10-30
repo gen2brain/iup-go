@@ -172,6 +172,8 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
   return outline_view;
 }
 
+static int cocoaTreeSetRenameAttrib(Ihandle* ih, const char* value);
+
 @interface IupCocoaTreeRowView : NSTableRowView
 @property(nonatomic, assign) Ihandle* ih;
 @property(nonatomic, assign) BOOL iupFocused;
@@ -553,6 +555,12 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   bool should_not_propagate = iupcocoaKeyEvent(ih, the_event, mac_key_code, true);
   if(!should_not_propagate)
   {
+    NSEventModifierFlags mods = [the_event modifierFlags] & (NSEventModifierFlagCommand | NSEventModifierFlagControl | NSEventModifierFlagOption | NSEventModifierFlagShift);
+    if (ih && ih->data->show_rename && [chars length] > 0 && [chars characterAtIndex:0] == NSF2FunctionKey && mods == 0)
+    {
+      cocoaTreeSetRenameAttrib(ih, NULL);
+      return;
+    }
     [super keyDown:the_event];
   }
 }
