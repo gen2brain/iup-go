@@ -3385,6 +3385,10 @@ static int winuiTableMapMethod(Ihandle* ih)
     {
       winuiTableClearFocusVisual(ih);
       a->current_row = row;
+      if (iupAttribGetInt(ih, "_IUPWINUI_PRESS_LIN") == row && iupAttribGetInt(ih, "_IUPWINUI_PRESS_COL") > 0)
+        a->current_col = iupAttribGetInt(ih, "_IUPWINUI_PRESS_COL");
+      iupAttribSet(ih, "_IUPWINUI_PRESS_LIN", nullptr);
+      iupAttribSet(ih, "_IUPWINUI_PRESS_COL", nullptr);
       if (a->current_col <= 0)
         a->current_col = 1;
 
@@ -3443,6 +3447,9 @@ static int winuiTableMapMethod(Ihandle* ih)
         a->current_row = lin;
         a->current_col = col;
         winuiTableSetFocusVisual(ih, lin, col);
+
+        auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "ENTERITEM_CB"));
+        if (cb) cb(ih, lin, col);
       }
     }
   });
@@ -3502,13 +3509,19 @@ static int winuiTableMapMethod(Ihandle* ih)
 
   listView.AddHandler(UIElement::PointerPressedEvent(), winrt::box_value(PointerEventHandler([ih](IInspectable const&, PointerRoutedEventArgs const& args) {
     IupWinUITableAux* pa = winuiTableGetAux(ih);
-    if ((pa && pa->click_ignored) || !iupTableCellsMode(ih) || !args.GetCurrentPoint(nullptr).Properties().IsLeftButtonPressed())
+    if ((pa && pa->click_ignored) || !args.GetCurrentPoint(nullptr).Properties().IsLeftButtonPressed())
       return;
 
     auto source = args.OriginalSource().try_as<DependencyObject>();
     int lin = 0, col = 0;
     if (source)
       winuiTableGetCellFromPoint(ih, source, &lin, &col);
+    if (!iupTableCellsMode(ih))
+    {
+      iupAttribSetInt(ih, "_IUPWINUI_PRESS_LIN", lin);
+      iupAttribSetInt(ih, "_IUPWINUI_PRESS_COL", col);
+      return;
+    }
     if (lin > 0 && col > 0)
     {
       if (!(GetKeyState(VK_SHIFT) & 0x8000))
