@@ -92,13 +92,9 @@ func main() {
 	}}
 	app.build()
 	app.applyTheme()
-	iup.Show(app.dialog)
-	for _, name := range []string{"1 cup cooked quinoa", "2 lemons", "1 handful fresh herbs"} {
-		app.shopping.SetAttribute("APPENDITEM", name)
-	}
-	app.shopping.SetAttribute("IMAGEVALUE2", "YES")
-	app.shopping.SetAttribute("REDRAW", "L2")
+	app.shopping.SetAttributes(`COUNT=3, 1="1 cup cooked quinoa", 2="2 lemons", 3="1 handful fresh herbs", IMAGEVALUE2=YES`)
 	app.updateStatus()
+	iup.Show(app.dialog)
 	iup.MainLoop()
 }
 
