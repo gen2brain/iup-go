@@ -9,6 +9,7 @@
 #include <FL/Fl_Window.H>
 #include <FL/fl_draw.H>
 #include <FL/Fl_Image.H>
+#include <FL/Fl_Image_Surface.H>
 #include <FL/platform.H>
 
 #define _USE_MATH_DEFINES
@@ -448,6 +449,29 @@ static long fltkDrawSourceColor(const IupDrawSource* src, double x, double y)
   return fltkInterpolateStops(src->colors, src->offsets, src->count, t);
 }
 
+static Fl_RGB_Image* fltkDrawReadOffscreen(const IdrawCanvas* dc, Fl_Offscreen offscreen)
+{
+  Fl_Image_Surface surface(dc->w, dc->h, 1);
+  Fl_Surface_Device::push_current(&surface);
+  fl_copy_offscreen(0, 0, dc->w, dc->h, offscreen, 0, 0);
+  Fl_Surface_Device::pop_current();
+  return surface.image();
+}
+
+static const uchar* fltkDrawImagePixel(const Fl_RGB_Image* image, int x, int y)
+{
+  int ld = image->ld() ? image->ld() : image->data_w() * image->d();
+  return reinterpret_cast<const uchar*>(image->data()[0]) + static_cast<size_t>(y) * ld + static_cast<size_t>(x) * image->d();
+}
+
+static void fltkDrawDeviceImage(const IdrawCanvas* dc, uchar* rgba, int w, int h)
+{
+  Fl_RGB_Image image(rgba, w, h, 4);
+  image.alloc_array = 1;
+  image.scale(dc->w, dc->h, 0, 1);
+  image.draw(0, 0);
+}
+
 static void fltkDrawPaintSpans(IdrawCanvas* dc, const std::vector<FltkSpan>& spans, const IupDrawSource* src)
 {
   if (src->type == IUP_SOURCE_SOLID)
@@ -528,27 +552,36 @@ static void fltkDrawShapeStroke(IdrawCanvas* dc, const FltkShape& shape, const I
   fl_color(FL_BLACK);
   fltkDrawShapeLines(dc, shape, style, line_width);
   fl_pop_clip();
-  uchar* pixels = fl_read_image(nullptr, 0, 0, dc->w, dc->h);
+  Fl_RGB_Image* mask = fltkDrawReadOffscreen(dc, mask_offscreen);
   fl_end_offscreen();
   fl_delete_offscreen(mask_offscreen);
   fl_begin_offscreen(target);
   dc->in_offscreen = 1;
 
-  if (pixels)
+  if (mask)
   {
-    std::vector<FltkSpan> spans;
-    for (int y = 0; y < dc->h; y++)
-      for (int x = 0; x < dc->w; x++)
+    int w = mask->data_w(), h = mask->data_h();
+    auto* rgba = new uchar[static_cast<size_t>(w) * h * 4];
+    for (int y = 0; y < h; y++)
+      for (int x = 0; x < w; x++)
       {
-        if (pixels[(static_cast<size_t>(y) * dc->w + x) * 3] >= 128)
-          continue;
-        if (!spans.empty() && spans.back().y == y && spans.back().x2 == x)
-          spans.back().x2 = x + 1;
-        else
-          spans.push_back({y, x, x + 1});
+        uchar* p = rgba + (static_cast<size_t>(y) * w + x) * 4;
+        unsigned coverage = 255u - fltkDrawImagePixel(mask, x, y)[0];
+        long color = 0;
+        if (coverage)
+        {
+          double ux = (x + 0.5) * dc->w / w, uy = (y + 0.5) * dc->h / h;
+          if (!fltkDrawIdentity(dc))
+            fltkDrawInversePoint(&dc->matrix, ux, uy, &ux, &uy);
+          color = fltkDrawSourceColor(src, ux, uy);
+        }
+        p[0] = iupDrawRed(color);
+        p[1] = iupDrawGreen(color);
+        p[2] = iupDrawBlue(color);
+        p[3] = static_cast<uchar>((iupDrawAlpha(color) * coverage + 127) / 255);
       }
-    delete[] pixels;
-    fltkDrawPaintSpans(dc, spans, src);
+    delete mask;
+    fltkDrawDeviceImage(dc, rgba, w, h);
   }
 }
 
@@ -1897,17 +1930,17 @@ extern "C" IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
   }
 
   FltkDrawLayer& layer = dc->layers.back();
-  uchar* group_pixels = nullptr;
-  uchar* parent_pixels = nullptr;
+  Fl_RGB_Image* group_image = nullptr;
+  Fl_RGB_Image* parent_image = nullptr;
 
   if (layer.grouped)
   {
-    group_pixels = fl_read_image(nullptr, 0, 0, dc->w, dc->h);
+    group_image = fltkDrawReadOffscreen(dc, dc->target);
     fl_end_offscreen();
     fl_delete_offscreen(dc->target);
     dc->target = layer.parent;
     fl_begin_offscreen(dc->target);
-    parent_pixels = fl_read_image(nullptr, 0, 0, dc->w, dc->h);
+    parent_image = fltkDrawReadOffscreen(dc, dc->target);
   }
 
   int clip_pushed = layer.clip_pushed;
@@ -1927,24 +1960,26 @@ extern "C" IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
   else if (!dc->clip_mask.empty())
     fltkDrawBeginClipMask(dc);
 
-  if (group_pixels && parent_pixels && alpha > 0)
+  if (group_image && parent_image && alpha > 0 &&
+      group_image->data_w() == parent_image->data_w() && group_image->data_h() == parent_image->data_h())
   {
-    size_t count = static_cast<size_t>(dc->w) * dc->h;
-    auto* data = new uchar[count * 4];
-    for (size_t i = 0; i < count; i++)
-    {
-      data[i * 4 + 0] = group_pixels[i * 3 + 0];
-      data[i * 4 + 1] = group_pixels[i * 3 + 1];
-      data[i * 4 + 2] = group_pixels[i * 3 + 2];
-      data[i * 4 + 3] = memcmp(group_pixels + i * 3, parent_pixels + i * 3, 3) ? static_cast<uchar>(alpha) : 0;
-    }
-    Fl_RGB_Image image(data, dc->w, dc->h, 4);
-    image.alloc_array = 1;
-    image.draw(0, 0);
+    int w = group_image->data_w(), h = group_image->data_h();
+    auto* data = new uchar[static_cast<size_t>(w) * h * 4];
+    for (int y = 0; y < h; y++)
+      for (int x = 0; x < w; x++)
+      {
+        const uchar* g = fltkDrawImagePixel(group_image, x, y);
+        uchar* d = data + (static_cast<size_t>(y) * w + x) * 4;
+        d[0] = g[0];
+        d[1] = g[1];
+        d[2] = g[2];
+        d[3] = memcmp(g, fltkDrawImagePixel(parent_image, x, y), 3) ? static_cast<uchar>(alpha) : 0;
+      }
+    fltkDrawDeviceImage(dc, data, w, h);
   }
 
-  delete[] group_pixels;
-  delete[] parent_pixels;
+  delete group_image;
+  delete parent_image;
 }
 
 extern "C" IUP_SDK_API void iupdrvDrawGetClipRect(IdrawCanvas* dc, int* x1, int* y1, int* x2, int* y2)
