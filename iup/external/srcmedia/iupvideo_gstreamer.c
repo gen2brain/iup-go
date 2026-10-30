@@ -5,6 +5,7 @@
  */
 
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -21,6 +22,9 @@ typedef struct
   GstElement* sink;
   GstElement* balance;
   GstElement* gamma;
+  GstElement* scaler;
+  GstElement* size;
+  int size_width, size_height, size_format;
   GstBus* bus;
   int play, buffering, live;
   int seeking, next_fast;
@@ -56,15 +60,18 @@ static GstFlowReturn iVideoGstFrame(IvideoGst* context, GstSample* sample)
       par_d = 1;
     }
     iupdrvMutexLock(context->session->mutex);
-    if (par_n > par_d)
+    if (!context->scaler)
     {
-      context->width = (int)((long long)width * par_n / par_d);
-      context->height = height;
-    }
-    else
-    {
-      context->width = width;
-      context->height = (int)((long long)height * par_d / par_n);
+      if (par_n > par_d)
+      {
+        context->width = (int)((long long)width * par_n / par_d);
+        context->height = height;
+      }
+      else
+      {
+        context->width = width;
+        context->height = (int)((long long)height * par_d / par_n);
+      }
     }
     context->aspect = (double)width * par_n / ((double)height * par_d);
     iupdrvMutexUnlock(context->session->mutex);
@@ -81,6 +88,32 @@ static GstFlowReturn iVideoGstSample(GstAppSink* sink, void* opaque)
 static GstFlowReturn iVideoGstPreroll(GstAppSink* sink, void* opaque)
 {
   return iVideoGstFrame((IvideoGst*)opaque, gst_app_sink_pull_preroll(sink));
+}
+
+static int iVideoGstHasElement(const char* name)
+{
+  GstElementFactory* factory = gst_element_factory_find(name);
+  if (!factory)
+    return 0;
+  g_object_unref(factory);
+  return 1;
+}
+
+static GstElement* iVideoGstParseBin(const char* description)
+{
+  GError* error = NULL;
+  GstElement* bin = gst_parse_bin_from_description(description, 1, &error);
+  if (error)
+  {
+    g_error_free(error);
+    if (bin)
+    {
+      g_object_ref_sink(bin);
+      g_object_unref(bin);
+    }
+    return NULL;
+  }
+  return bin;
 }
 
 static int iVideoGstAvailable(void)
@@ -185,6 +218,10 @@ static void iVideoGstClose(IvideoSession* session)
     g_object_unref(context->balance);
   if (context->gamma)
     g_object_unref(context->gamma);
+  if (context->scaler)
+    g_object_unref(context->scaler);
+  if (context->size)
+    g_object_unref(context->size);
   if (context->player)
     g_object_unref(context->player);
   free(context);
@@ -255,11 +292,30 @@ static int iVideoGstOpen(IvideoSession* session, Ihandle* ih, const char* source
       g_object_unref(audio);
     }
   }
-  flip = gst_parse_bin_from_description("videoconvert ! videoflip video-direction=auto ! videobalance name=balance ! gamma name=gamma ! videoconvert", 1, NULL);
+  flip = NULL;
+  if (iVideoGstHasElement("vapostproc"))
+  {
+    flip = iVideoGstParseBin("vapostproc video-direction=auto ! vapostproc name=scaler ! capsfilter name=size caps=video/x-raw,format=BGRx ! videoconvert ! videobalance name=balance ! gamma name=gamma ! videoconvert");
+    context->size_format = flip != NULL;
+  }
+  if (!flip)
+    flip = iVideoGstParseBin("videoconvert ! videoflip video-direction=auto ! videoscale name=scaler ! capsfilter name=size caps=video/x-raw ! videoconvert ! videobalance name=balance ! gamma name=gamma ! videoconvert");
+  if (!flip)
+    flip = iVideoGstParseBin("videoconvert ! videoflip video-direction=auto ! videobalance name=balance ! gamma name=gamma ! videoconvert");
   if (flip)
   {
     context->balance = gst_bin_get_by_name((GstBin*)flip, "balance");
     context->gamma = gst_bin_get_by_name((GstBin*)flip, "gamma");
+    context->scaler = gst_bin_get_by_name((GstBin*)flip, "scaler");
+    context->size = gst_bin_get_by_name((GstBin*)flip, "size");
+    if (!context->scaler || !context->size)
+    {
+      if (context->scaler)
+        g_object_unref(context->scaler);
+      if (context->size)
+        g_object_unref(context->size);
+      context->scaler = context->size = NULL;
+    }
   }
   else
   {
@@ -358,6 +414,62 @@ static void iVideoGstMessages(IvideoSession* session, IvideoGst* context)
   }
 }
 
+static void iVideoGstUpdateSize(IvideoSession* session, IvideoGst* context)
+{
+  GstPad* pad = gst_element_get_static_pad(context->scaler, "sink");
+  GstCaps* caps = pad ? gst_pad_get_current_caps(pad) : NULL;
+  GstStructure* structure = caps ? gst_caps_get_structure(caps, 0) : NULL;
+  int width = 0, height = 0, par_n = 1, par_d = 1, target_width, target_height;
+  if (structure && gst_structure_get_int(structure, "width", &width) && gst_structure_get_int(structure, "height", &height) && width > 0 && height > 0)
+  {
+    if (!gst_structure_get_fraction(structure, "pixel-aspect-ratio", &par_n, &par_d) || par_n <= 0 || par_d <= 0)
+    {
+      par_n = 1;
+      par_d = 1;
+    }
+    if (par_n > par_d)
+      width = (int)((long long)width * par_n / par_d);
+    else
+      height = (int)((long long)height * par_d / par_n);
+  }
+  else
+    width = height = 0;
+  if (caps)
+    gst_mini_object_unref((GstMiniObject*)caps);
+  if (pad)
+    g_object_unref(pad);
+  iupdrvMutexLock(session->mutex);
+  if (width > 0 && height > 0)
+  {
+    context->width = width;
+    context->height = height;
+  }
+  width = context->width;
+  height = context->height;
+  iupdrvMutexUnlock(session->mutex);
+  iupVideoTargetSize(session, width, height, &target_width, &target_height);
+  if (target_width >= width || target_height >= height)
+    target_width = target_height = 0;
+  if (target_width != context->size_width || target_height != context->size_height)
+  {
+    char description[96];
+    GstCaps* size_caps;
+    const char* format = context->size_format ? ",format=BGRx" : "";
+    if (target_width)
+      snprintf(description, sizeof(description), "video/x-raw%s,width=%d,height=%d,pixel-aspect-ratio=1/1", format, target_width, target_height);
+    else
+      snprintf(description, sizeof(description), "video/x-raw%s", format);
+    size_caps = gst_caps_from_string(description);
+    if (size_caps)
+    {
+      g_object_set(context->size, "caps", size_caps, NULL);
+      gst_mini_object_unref((GstMiniObject*)size_caps);
+    }
+    context->size_width = target_width;
+    context->size_height = target_height;
+  }
+}
+
 static void iVideoGstPoll(IvideoSession* session)
 {
   IvideoGst* context = (IvideoGst*)session->context;
@@ -400,6 +512,8 @@ static void iVideoGstPoll(IvideoSession* session)
   g_object_get(context->player, "n-video", &video, "n-audio", &audio, NULL);
   context->info.video = video > 0;
   context->info.audio = audio > 0;
+  if (context->scaler)
+    iVideoGstUpdateSize(session, context);
   iupdrvMutexLock(session->mutex);
   context->info.width = context->width;
   context->info.height = context->height;

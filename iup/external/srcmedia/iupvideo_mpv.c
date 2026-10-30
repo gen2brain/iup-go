@@ -523,12 +523,14 @@ static void iVideoMpvPoll(IvideoSession* session)
   }
   if (context->info.width > 0 && context->info.height > 0)
   {
+    int width, height;
     context->info.aspect = (double)context->info.width / context->info.height;
+    iupVideoTargetSize(session, context->info.width, context->info.height, &width, &height);
     ivideoMutexLock(&context->lock);
-    if (context->width != context->info.width || context->height != context->info.height)
+    if (context->width != width || context->height != height)
     {
-      context->width = context->info.width;
-      context->height = context->info.height;
+      context->width = width;
+      context->height = height;
       context->dirty = 1;
       ivideoCondSignal(&context->condition);
     }

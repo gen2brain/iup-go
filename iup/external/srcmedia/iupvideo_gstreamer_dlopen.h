@@ -197,6 +197,8 @@ static GstEvent* (*iupgst_pad_get_sticky_event)(GstPad*, GstEventType, unsigned)
 static void (*iupgst_event_parse_stream_flags)(GstEvent*, GstStreamFlags*);
 static GstElement* (*iupgst_parse_bin_from_description)(const char*, int, GError**);
 static GstElement* (*iupgst_bin_get_by_name)(GstBin*, const char*);
+static GstPad* (*iupgst_element_get_static_pad)(GstElement*, const char*);
+static GstCaps* (*iupgst_pad_get_current_caps)(GstPad*);
 static GstDeviceMonitor* (*iupgst_device_monitor_new)(void);
 static unsigned (*iupgst_device_monitor_add_filter)(GstDeviceMonitor*, const char*, GstCaps*);
 static GList* (*iupgst_device_monitor_get_devices)(GstDeviceMonitor*);
@@ -252,6 +254,8 @@ static unsigned (*iupgst_plugin_feature_get_rank)(GstPluginFeature*);
 #define gst_event_parse_stream_flags iupgst_event_parse_stream_flags
 #define gst_parse_bin_from_description iupgst_parse_bin_from_description
 #define gst_bin_get_by_name iupgst_bin_get_by_name
+#define gst_element_get_static_pad iupgst_element_get_static_pad
+#define gst_pad_get_current_caps iupgst_pad_get_current_caps
 #define gst_device_monitor_new iupgst_device_monitor_new
 #define gst_device_monitor_add_filter iupgst_device_monitor_add_filter
 #define gst_device_monitor_get_devices iupgst_device_monitor_get_devices
@@ -390,6 +394,8 @@ static int iupGstOpen(void)
     *(void**)&iupgst_pad_get_sticky_event = iupGstSymbol(handles[0], "gst_pad_get_sticky_event", &missing);
     *(void**)&iupgst_parse_bin_from_description = iupGstSymbol(handles[0], "gst_parse_bin_from_description", &missing);
     *(void**)&iupgst_bin_get_by_name = iupGstSymbol(handles[0], "gst_bin_get_by_name", &missing);
+    *(void**)&iupgst_element_get_static_pad = iupGstSymbol(handles[0], "gst_element_get_static_pad", &missing);
+    *(void**)&iupgst_pad_get_current_caps = iupGstSymbol(handles[0], "gst_pad_get_current_caps", &missing);
     *(void**)&iupgst_device_monitor_new = iupGstSymbol(handles[0], "gst_device_monitor_new", &missing);
     *(void**)&iupgst_device_monitor_add_filter = iupGstSymbol(handles[0], "gst_device_monitor_add_filter", &missing);
     *(void**)&iupgst_device_monitor_get_devices = iupGstSymbol(handles[0], "gst_device_monitor_get_devices", &missing);
