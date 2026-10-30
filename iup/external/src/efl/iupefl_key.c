@@ -16,6 +16,7 @@
 #include "iup_str.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
+#include "iup_childtree.h"
 #include "iup_menu.h"
 
 #include <Ecore_IMF.h>
@@ -405,6 +406,9 @@ static int eflKeyDialogInactive(Ihandle* ih)
   return dlg && iupAttribGet(dlg, "_IUPEFL_INACTIVE");
 }
 
+static double efl_key_last_time = -1;
+static int efl_key_last_code = 0;
+
 IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -420,6 +424,14 @@ IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev)
     efl_input_processed_set(key_event, EINA_TRUE);
     return;
   }
+
+  if (IupGetFocus() && !iupChildTreeIsParent(ih, IupGetFocus()))
+    return;
+
+  if (efl_input_timestamp_get(key_event) == efl_key_last_time && efl_input_key_code_get(key_event) == efl_key_last_code)
+    return;
+  efl_key_last_time = efl_input_timestamp_get(key_event);
+  efl_key_last_code = efl_input_key_code_get(key_event);
 
   if (eflKeyImfTextInput(ih, ev->object, key_event, keyname, keystr))
     return;
@@ -507,6 +519,9 @@ IUP_DRV_API void iupeflKeyUpEvent(void* data, const Efl_Event* ev)
     efl_input_processed_set(key_event, EINA_TRUE);
     return;
   }
+
+  if (IupGetFocus() && !iupChildTreeIsParent(ih, IupGetFocus()))
+    return;
 
   if (ih->iclass->nativetype == IUP_TYPECANVAS)
   {
