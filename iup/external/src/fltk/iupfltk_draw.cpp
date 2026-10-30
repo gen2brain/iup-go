@@ -123,33 +123,17 @@ static void fltkDrawTransformBounds(const IupDrawMatrix* matrix, double x1, doub
   *ty2 = static_cast<int>(ceil(max_y)) + 2;
 }
 
-static int fltkDrawVisiblePixel(const IdrawCanvas* dc, int x, int y)
-{
-  if (x < 0 || y < 0 || x >= dc->w || y >= dc->h)
-    return 0;
-  const FltkClipMask& mask = dc->clip_mask;
-  if (mask.coverage.empty())
-    return 1;
-  int mx = std::min(mask.w - 1, static_cast<int>((x + 0.5) * mask.w / dc->w));
-  int my = std::min(mask.h - 1, static_cast<int>((y + 0.5) * mask.h / dc->h));
-  return mask.coverage[static_cast<size_t>(my) * mask.w + mx] >= 128;
-}
-
 static void fltkDrawSetColor(long color)
 {
-  auto r = iupDrawRed(color);
-  auto g = iupDrawGreen(color);
-  auto b = iupDrawBlue(color);
-  auto a = iupDrawAlpha(color);
+  fl_color(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color));
+}
 
-  if (a < 255)
-  {
-    Fl::set_color(FL_FREE_COLOR, r, g, b, a);
-    fl_color(FL_FREE_COLOR);
-    return;
-  }
-
-  fl_color(r, g, b);
+static int fltkDrawStopsOpaque(const long* colors, int count)
+{
+  for (int i = 0; i < count; i++)
+    if (iupDrawAlpha(colors[i]) < 255)
+      return 0;
+  return 1;
 }
 
 static void fltkDrawSetLineStyle(IdrawCanvas* dc, int style, int line_width)
@@ -438,6 +422,32 @@ static int fltkDrawDeviceFloor(int v, float s)
   return s == 1 ? v : static_cast<int>(static_cast<float>(v) * s + 0.001f);
 }
 
+template <typename F>
+static void fltkDrawDevicePixels(int x1, int y1, int x2, int y2, F pixel)
+{
+  if (x1 < 0) x1 = 0;
+  if (y1 < 0) y1 = 0;
+  if (x2 <= x1 || y2 <= y1)
+    return;
+  int lx, ly, lw, lh;
+  fl_clip_box(x1, y1, x2 - x1, y2 - y1, lx, ly, lw, lh);
+  if (lw <= 0 || lh <= 0)
+    return;
+
+  float s = fl_graphics_driver->scale();
+  int dx1 = fltkDrawDeviceFloor(lx, s), dy1 = fltkDrawDeviceFloor(ly, s);
+  int dw = fltkDrawDeviceFloor(lx + lw, s) - dx1, dh = fltkDrawDeviceFloor(ly + lh, s) - dy1;
+  if (dw <= 0 || dh <= 0)
+    return;
+
+  auto* rgba = new uchar[static_cast<size_t>(dw) * dh * 4];
+  uchar* p = rgba;
+  for (int y = 0; y < dh; y++)
+    for (int x = 0; x < dw; x++, p += 4)
+      pixel((dx1 + x + 0.5) / s, (dy1 + y + 0.5) / s, p);
+  fltkDrawDeviceImage(rgba, dw, dh, lx, ly, lw, lh);
+}
+
 static int fltkShapeDevice(const IdrawCanvas* dc, const FltkShape& shape, float s, FltkDeviceShape& ds)
 {
   double min_x = 1e30, min_y = 1e30, max_x = -1e30, max_y = -1e30;
@@ -601,12 +611,35 @@ static void fltkDrawShapeLines(IdrawCanvas* dc, const FltkShape& shape, int styl
 
 static void fltkDrawShapeStroke(IdrawCanvas* dc, const FltkShape& shape, const IupDrawSource* src, int style, int line_width)
 {
-  if (src->type == IUP_SOURCE_SOLID)
+  if (src->type == IUP_SOURCE_SOLID && iupDrawAlpha(src->color) == 255)
   {
     fltkDrawSetColor(src->color);
     fltkDrawShapeLines(dc, shape, style, line_width);
     return;
   }
+
+  double min_x = 1e30, min_y = 1e30, max_x = -1e30, max_y = -1e30;
+  for (const auto& sp : shape)
+    for (const auto& pt : sp.points)
+    {
+      double tx, ty;
+      fltkDrawTransformPoint(&dc->matrix, pt.x, pt.y, &tx, &ty);
+      if (tx < min_x) min_x = tx;
+      if (tx > max_x) max_x = tx;
+      if (ty < min_y) min_y = ty;
+      if (ty > max_y) max_y = ty;
+    }
+  if (min_x > max_x)
+    return;
+  double pad = fltkDrawMatrixScale(&dc->matrix) * (line_width > 0 ? line_width : 1) + 2;
+  int bx1 = std::max(0, static_cast<int>(floor(min_x - pad))), by1 = std::max(0, static_cast<int>(floor(min_y - pad)));
+  int bx2 = std::min(dc->w, static_cast<int>(ceil(max_x + pad))), by2 = std::min(dc->h, static_cast<int>(ceil(max_y + pad)));
+  if (bx2 <= bx1 || by2 <= by1)
+    return;
+  int lx, ly, lw, lh;
+  fl_clip_box(bx1, by1, bx2 - bx1, by2 - by1, lx, ly, lw, lh);
+  if (lw <= 0 || lh <= 0)
+    return;
 
   Fl_Offscreen target = fltkDrawCurrentOffscreen(dc);
   fl_end_offscreen();
@@ -621,11 +654,11 @@ static void fltkDrawShapeStroke(IdrawCanvas* dc, const FltkShape& shape, const I
   fl_begin_offscreen(mask_offscreen);
   fl_push_no_clip();
   fl_color(FL_WHITE);
-  fl_rectf(0, 0, dc->w, dc->h);
+  fl_rectf(lx, ly, lw, lh);
   fl_color(FL_BLACK);
   fltkDrawShapeLines(dc, shape, style, line_width);
   fl_pop_clip();
-  Fl_RGB_Image* mask = fltkDrawReadOffscreen(mask_offscreen, 0, 0, dc->w, dc->h);
+  Fl_RGB_Image* mask = fltkDrawReadOffscreen(mask_offscreen, lx, ly, lw, lh);
   fl_end_offscreen();
   fl_delete_offscreen(mask_offscreen);
   fl_begin_offscreen(target);
@@ -638,9 +671,9 @@ static void fltkDrawShapeStroke(IdrawCanvas* dc, const FltkShape& shape, const I
     for (int y = 0; y < h; y++)
       for (int x = 0; x < w; x++)
         fltkDrawCoveragePixel(dc, src, rgba + (static_cast<size_t>(y) * w + x) * 4,
-                              (x + 0.5) * dc->w / w, (y + 0.5) * dc->h / h, 255u - fltkDrawImagePixel(mask, x, y)[0]);
+                              lx + (x + 0.5) * lw / w, ly + (y + 0.5) * lh / h, 255u - fltkDrawImagePixel(mask, x, y)[0]);
     delete mask;
-    fltkDrawDeviceImage(rgba, w, h, 0, 0, dc->w, dc->h);
+    fltkDrawDeviceImage(rgba, w, h, lx, ly, lw, lh);
   }
 }
 
@@ -911,7 +944,7 @@ extern "C" IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int 
 {
   if (!dc) return;
 
-  if (!fltkDrawIdentity(dc))
+  if (!fltkDrawIdentity(dc) || iupDrawAlpha(color) < 255)
   {
     FltkShape shape;
     IupDrawSource src = fltkDrawSolidSource(color);
@@ -931,7 +964,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRectangle(IdrawCanvas* dc, int x1, int y1,
   if (!dc) return;
 
   iupDrawOrderMinMax(&x1, &y1, &x2, &y2);
-  if (!fltkDrawIdentity(dc))
+  if (!fltkDrawIdentity(dc) || iupDrawAlpha(color) < 255)
   {
     FltkShape shape;
     IupDrawSource src = fltkDrawSolidSource(color);
@@ -966,7 +999,7 @@ extern "C" IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x
   if (!dc) return;
 
   iupDrawOrderMinMax(&x1, &y1, &x2, &y2);
-  if (!fltkDrawIdentity(dc))
+  if (!fltkDrawIdentity(dc) || iupDrawAlpha(color) < 255)
   {
     FltkShape shape;
     IupDrawSource src = fltkDrawSolidSource(color);
@@ -1010,7 +1043,7 @@ extern "C" IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int 
 {
   if (!dc || count < 2) return;
 
-  if (!fltkDrawIdentity(dc))
+  if (!fltkDrawIdentity(dc) || iupDrawAlpha(color) < 255)
   {
     FltkShape shape;
     IupDrawSource src = fltkDrawSolidSource(color);
@@ -1051,7 +1084,7 @@ extern "C" IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int 
 extern "C" IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
 {
   if (!dc) return;
-  if (!fltkDrawIdentity(dc))
+  if (!fltkDrawIdentity(dc) || iupDrawAlpha(color) < 255)
   {
     FltkShape shape;
     IupDrawSource src = fltkDrawSolidSource(color);
@@ -1068,7 +1101,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, 
   if (!dc) return;
 
   iupDrawOrderMinMax(&x1, &y1, &x2, &y2);
-  if (!fltkDrawIdentity(dc))
+  if (!fltkDrawIdentity(dc) || iupDrawAlpha(color) < 255)
   {
     FltkShape shape;
     IupDrawSource src = fltkDrawSolidSource(color);
@@ -1102,7 +1135,7 @@ extern "C" IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, in
 {
   if (!dc) return;
 
-  if (!fltkDrawIdentity(dc))
+  if (!fltkDrawIdentity(dc) || iupDrawAlpha(color) < 255)
   {
     FltkShape shape;
     IupDrawSource src = fltkDrawSolidSource(color);
@@ -1136,7 +1169,7 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
   if (!dc) return;
 
   iupDrawOrderMinMax(&x1, &y1, &x2, &y2);
-  if (!fltkDrawIdentity(dc))
+  if (!fltkDrawIdentity(dc) || !fltkDrawStopsOpaque(colors, count))
   {
     IupDrawSource src = {};
     src.type = IUP_SOURCE_LINEAR_GRADIENT;
@@ -1174,7 +1207,7 @@ extern "C" IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, in
 {
   if (!dc || radius <= 0) return;
 
-  if (!fltkDrawIdentity(dc))
+  if (!fltkDrawIdentity(dc) || !fltkDrawStopsOpaque(colors, count))
   {
     IupDrawSource src = {};
     src.type = IUP_SOURCE_RADIAL_GRADIENT;
@@ -1481,23 +1514,12 @@ static void fltkDrawPaintMask(IdrawCanvas* dc, const FltkDrawMask* mask, const I
   if (mask->pixels.empty()) return;
   int x1, y1, x2, y2;
   fltkDrawTransformBounds(&dc->matrix, mask->x, mask->y, mask->x + mask->w / mask->scale, mask->y + mask->h / mask->scale, &x1, &y1, &x2, &y2);
-  if (x1 < 0) x1 = 0;
-  if (y1 < 0) y1 = 0;
-  if (x2 >= dc->w) x2 = dc->w - 1;
-  if (y2 >= dc->h) y2 = dc->h - 1;
-  for (int y = y1; y <= y2; y++)
-    for (int x = x1; x <= x2; x++)
-    {
-      if (!fltkDrawVisiblePixel(dc, x, y)) continue;
-      double ux, uy;
-      fltkDrawInversePoint(&dc->matrix, x + 0.5, y + 0.5, &ux, &uy);
-      unsigned char coverage = fltkDrawMaskSample(mask, ux, uy);
-      if (!coverage) continue;
-      long color = fltkDrawSourceColor(src, ux, uy);
-      auto alpha = static_cast<unsigned char>((iupDrawAlpha(color) * coverage + 127) / 255);
-      fltkDrawSetColor(iupDrawColor(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color), alpha));
-      fl_point(x, y);
-    }
+  fltkDrawDevicePixels(x1, y1, std::min(x2 + 1, dc->w), std::min(y2 + 1, dc->h), [&](double cx, double cy, uchar* p)
+  {
+    double ux, uy;
+    fltkDrawInversePoint(&dc->matrix, cx, cy, &ux, &uy);
+    fltkDrawCoveragePixel(dc, src, p, cx, cy, fltkDrawMaskSample(mask, ux, uy));
+  });
 }
 
 static void fltkDrawTransformedText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, int flags, double angle, int font_id, int font_size, int underline, int strikeout)
@@ -1668,9 +1690,9 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
     len = static_cast<int>(elided.size());
   }
 
-  if (!fltkDrawIdentity(dc))
+  if (!fltkDrawIdentity(dc) || iupDrawAlpha(color) < 255)
   {
-    if (!fltkDrawTextSimilarity(dc, text, len, x, y, w, h, flags, text_orientation, fl_font_id, fl_size, underline, strikeout))
+    if (iupDrawAlpha(color) < 255 || !fltkDrawTextSimilarity(dc, text, len, x, y, w, h, flags, text_orientation, fl_font_id, fl_size, underline, strikeout))
       fltkDrawTransformedText(dc, text, len, x, y, w, h, color, flags, text_orientation, fl_font_id, fl_size, underline, strikeout);
     if (text_buf != stack_buf)
       free(text_buf);
@@ -1778,45 +1800,39 @@ extern "C" IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, i
     if (pixels.empty()) return;
     int dx1, dy1, dx2, dy2;
     fltkDrawTransformBounds(&dc->matrix, x, y, x + w, y + h, &dx1, &dy1, &dx2, &dy2);
-    if (dx1 < 0) dx1 = 0;
-    if (dy1 < 0) dy1 = 0;
-    if (dx2 >= dc->w) dx2 = dc->w - 1;
-    if (dy2 >= dc->h) dy2 = dc->h - 1;
-    for (int dy = dy1; dy <= dy2; dy++)
-      for (int dx = dx1; dx <= dx2; dx++)
+    fltkDrawDevicePixels(dx1, dy1, std::min(dx2 + 1, dc->w), std::min(dy2 + 1, dc->h), [&](double cx, double cy, uchar* p)
+    {
+      p[3] = 0;
+      double ux, uy;
+      fltkDrawInversePoint(&dc->matrix, cx, cy, &ux, &uy);
+      double px = ux - x - 0.5, py = uy - y - 0.5;
+      if (px < -0.5 || py < -0.5 || px >= w - 0.5 || py >= h - 0.5) return;
+      int ix = static_cast<int>(floor(px)), iy = static_cast<int>(floor(py));
+      double fx = px - ix, fy = py - iy;
+      if (quality == IUP_DRAW_IMAGE_NEAREST)
       {
-        if (!fltkDrawVisiblePixel(dc, dx, dy)) continue;
-        double ux, uy;
-        fltkDrawInversePoint(&dc->matrix, dx + 0.5, dy + 0.5, &ux, &uy);
-        double px = ux - x - 0.5, py = uy - y - 0.5;
-        if (px < -0.5 || py < -0.5 || px >= w - 0.5 || py >= h - 0.5) continue;
-        int ix = static_cast<int>(floor(px)), iy = static_cast<int>(floor(py));
-        double fx = px - ix, fy = py - iy;
-        if (quality == IUP_DRAW_IMAGE_NEAREST)
-        {
-          ix = static_cast<int>(floor(px + 0.5)); iy = static_cast<int>(floor(py + 0.5)); fx = fy = 0;
-        }
-        if (ix < 0) { ix = 0; fx = 0; }
-        if (iy < 0) { iy = 0; fy = 0; }
-        int ix1 = ix + 1 < w ? ix + 1 : ix;
-        int iy1 = iy + 1 < h ? iy + 1 : iy;
-        double weights[4] = {(1 - fx) * (1 - fy), fx * (1 - fy), (1 - fx) * fy, fx * fy};
-        size_t indices[4] = {static_cast<size_t>(iy) * w + ix, static_cast<size_t>(iy) * w + ix1, static_cast<size_t>(iy1) * w + ix, static_cast<size_t>(iy1) * w + ix1};
-        double alpha = 0, premul[3] = {0, 0, 0};
-        for (int i = 0; i < 4; i++)
-        {
-          double a = pixels[indices[i] * 4 + 3] * weights[i];
-          alpha += a;
-          for (int c = 0; c < 3; c++) premul[c] += pixels[indices[i] * 4 + c] * a;
-        }
-        alpha *= opacity / 255.0;
-        if (alpha <= 0) continue;
-        auto r = static_cast<unsigned char>(lround(premul[0] / (alpha * 255.0 / opacity)));
-        auto g = static_cast<unsigned char>(lround(premul[1] / (alpha * 255.0 / opacity)));
-        auto b = static_cast<unsigned char>(lround(premul[2] / (alpha * 255.0 / opacity)));
-        fltkDrawSetColor(iupDrawColor(r, g, b, static_cast<unsigned char>(lround(alpha))));
-        fl_point(dx, dy);
+        ix = static_cast<int>(floor(px + 0.5)); iy = static_cast<int>(floor(py + 0.5)); fx = fy = 0;
       }
+      if (ix < 0) { ix = 0; fx = 0; }
+      if (iy < 0) { iy = 0; fy = 0; }
+      int ix1 = ix + 1 < w ? ix + 1 : ix;
+      int iy1 = iy + 1 < h ? iy + 1 : iy;
+      double weights[4] = {(1 - fx) * (1 - fy), fx * (1 - fy), (1 - fx) * fy, fx * fy};
+      size_t indices[4] = {static_cast<size_t>(iy) * w + ix, static_cast<size_t>(iy) * w + ix1, static_cast<size_t>(iy1) * w + ix, static_cast<size_t>(iy1) * w + ix1};
+      double alpha = 0, premul[3] = {0, 0, 0};
+      for (int i = 0; i < 4; i++)
+      {
+        double a = pixels[indices[i] * 4 + 3] * weights[i];
+        alpha += a;
+        for (int c = 0; c < 3; c++) premul[c] += pixels[indices[i] * 4 + c] * a;
+      }
+      alpha *= opacity / 255.0;
+      if (alpha <= 0) return;
+      p[0] = static_cast<uchar>(lround(premul[0] / (alpha * 255.0 / opacity)));
+      p[1] = static_cast<uchar>(lround(premul[1] / (alpha * 255.0 / opacity)));
+      p[2] = static_cast<uchar>(lround(premul[2] / (alpha * 255.0 / opacity)));
+      p[3] = static_cast<uchar>(lround(alpha));
+    });
     return;
   }
 
