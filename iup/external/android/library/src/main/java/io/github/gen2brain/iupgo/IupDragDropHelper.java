@@ -10,7 +10,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.net.Uri;
-import android.os.Build;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.DragAndDropPermissions;
@@ -176,10 +175,7 @@ public final class IupDragDropHelper
     {
         ClipData cd = buildPlaceholderClip(p);
         View.DragShadowBuilder shadow = buildShadow(source, shadowSource, sourceIh);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-            source.startDragAndDrop(cd, shadow, p, 0);
-        else
-            source.startDrag(cd, shadow, p, 0);
+        source.startDragAndDrop(cd, shadow, p, 0);
     }
 
     private static ClipData buildPlaceholderClip(Payload p)

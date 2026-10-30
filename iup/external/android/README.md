@@ -32,7 +32,7 @@ For the Go flow, put the NDK's clang wrappers on `PATH`:
 export PATH=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
 ```
 
-The wrappers are named `<triple><api>-clang`, e.g. `aarch64-linux-android22-clang`.
+The wrappers are named `<triple><api>-clang`, e.g. `aarch64-linux-android24-clang`.
 
 ## Go flow
 
@@ -69,8 +69,8 @@ Build a c-shared `.so` per ABI you care about:
 
 ```sh
 CGO_ENABLED=1 \
-CC=aarch64-linux-android22-clang \
-CXX=aarch64-linux-android22-clang++ \
+CC=aarch64-linux-android24-clang \
+CXX=aarch64-linux-android24-clang++ \
 GOOS=android GOARCH=arm64 \
   go build -buildmode=c-shared \
     -ldflags='-s -w -extldflags=-Wl,-soname,libmyapp.so' \

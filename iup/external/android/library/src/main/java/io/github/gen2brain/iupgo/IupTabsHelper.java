@@ -173,10 +173,7 @@ public final class IupTabsHelper
                 if (!reorderable) return false;
                 ClipData data = ClipData.newPlainText("iuptab", String.valueOf(tab.getPosition()));
                 DragShadowBuilder shadow = new DragShadowBuilder(v);
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N)
-                    v.startDragAndDrop(data, shadow, tab.getPosition(), 0);
-                else
-                    v.startDrag(data, shadow, tab.getPosition(), 0);
+                v.startDragAndDrop(data, shadow, tab.getPosition(), 0);
                 return true;
             });
         }

@@ -36,7 +36,7 @@ var androidPermissions = map[string][]string{
 	"internet":      {"android.permission.INTERNET"},
 }
 
-const androidAPI = "22"
+const androidAPI = "24"
 
 func packageAndroid(c *config) error {
 	var archs []string

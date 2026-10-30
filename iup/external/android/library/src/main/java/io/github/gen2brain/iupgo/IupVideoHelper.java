@@ -1,8 +1,6 @@
 package io.github.gen2brain.iupgo;
 
-import android.graphics.Matrix;
 import android.graphics.Rect;
-import android.graphics.SurfaceTexture;
 import android.content.Context;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
@@ -14,7 +12,6 @@ import android.os.Build;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Gravity;
@@ -210,18 +207,16 @@ public final class IupVideoHelper
         }
     }
 
-    abstract static class Player implements SurfaceHolder.Callback, TextureView.SurfaceTextureListener
+    abstract static class Player implements SurfaceHolder.Callback
     {
         final View host;
-        final View view;
-        final TextureView texture;
+        final SurfaceView view;
         final TextView caption;
         final String source;
         final boolean sourceURL;
         final double[] snapshot = new double[10];
         final Rect clip = new Rect();
         final Rect placedClip = new Rect();
-        final Matrix matrix = new Matrix();
         ViewGroup parent;
         Surface surface;
         long session;
@@ -238,20 +233,8 @@ public final class IupVideoHelper
             this.session = session;
             this.source = source;
             sourceURL = url;
-            if (Build.VERSION.SDK_INT >= 26)
-            {
-                SurfaceView surfaceView = new SurfaceView(host.getContext());
-                surfaceView.getHolder().addCallback(this);
-                view = surfaceView;
-                texture = null;
-            }
-            else
-            {
-                texture = new TextureView(host.getContext());
-                texture.setOpaque(false);
-                texture.setSurfaceTextureListener(this);
-                view = texture;
-            }
+            view = new SurfaceView(host.getContext());
+            view.getHolder().addCallback(this);
             caption = new TextView(host.getContext());
             caption.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM);
             caption.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
@@ -299,10 +282,7 @@ public final class IupVideoHelper
                 if (parent != null)
                     detach();
                 parent = group;
-                if (texture != null)
-                    parent.getOverlay().add(view);
-                else
-                    parent.addView(view, parent.indexOfChild(host) + 1, new IupAndroidFixed.LayoutParams(0, 0, 0, 0));
+                parent.addView(view, parent.indexOfChild(host) + 1, new IupAndroidFixed.LayoutParams(0, 0, 0, 0));
                 parent.getOverlay().add(caption);
                 placed = false;
             }
@@ -312,22 +292,11 @@ public final class IupVideoHelper
             if (placed && x == placedX && y == placedY && w == placedW && h == placedH && width == placedWidth &&
                 height == placedHeight && visible == placedVisible && clip.equals(placedClip))
                 return;
-            if (texture != null)
-            {
-                view.layout(x, y, x + w, y + h);
-                view.setClipBounds(clip);
-                view.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
-            }
             int vx = 0, vy = 0, vw = w, vh = h;
             if (w > 0 && h > 0 && width > 0 && height > 0)
             {
                 float aspect = (float)width / height;
                 float current = (float)w / h;
-                if (texture != null)
-                {
-                    matrix.setScale(aspect < current ? aspect / current : 1, aspect > current ? current / aspect : 1, w / 2.0f, h / 2.0f);
-                    texture.setTransform(matrix);
-                }
                 if (aspect > current)
                 {
                     vh = Math.round(w / aspect);
@@ -339,18 +308,15 @@ public final class IupVideoHelper
                     vx = (w - vw) / 2;
                 }
             }
-            if (texture == null)
+            if (parent instanceof IupAndroidFixed fixed)
+                fixed.setChildBounds(view, x + vx, y + vy, vw, vh);
+            Rect viewClip = new Rect();
+            if (visible)
             {
-                if (parent instanceof IupAndroidFixed fixed)
-                    fixed.setChildBounds(view, x + vx, y + vy, vw, vh);
-                Rect viewClip = new Rect();
-                if (visible)
-                {
-                    viewClip.set(clip);
-                    viewClip.offset(-vx, -vy);
-                }
-                view.setClipBounds(viewClip);
+                viewClip.set(clip);
+                viewClip.offset(-vx, -vy);
             }
+            view.setClipBounds(viewClip);
             caption.measure(View.MeasureSpec.makeMeasureSpec(Math.max(0, vw), View.MeasureSpec.EXACTLY),
                             View.MeasureSpec.makeMeasureSpec(Math.max(0, vh), View.MeasureSpec.EXACTLY));
             caption.layout(x + vx, y + vy, x + vx + vw, y + vy + vh);
@@ -400,10 +366,7 @@ public final class IupVideoHelper
             session = 0;
             closed = true;
             host.setKeepScreenOn(false);
-            if (texture != null)
-                texture.setSurfaceTextureListener(null);
-            else
-                ((SurfaceView)view).getHolder().removeCallback(this);
+            view.getHolder().removeCallback(this);
             release();
             if (parent != null)
             {
@@ -414,10 +377,7 @@ public final class IupVideoHelper
 
         void detach()
         {
-            if (texture != null)
-                parent.getOverlay().remove(view);
-            else
-                parent.removeView(view);
+            parent.removeView(view);
             parent.getOverlay().remove(caption);
         }
 
@@ -442,39 +402,6 @@ public final class IupVideoHelper
                 surfaceDestroyed();
             surface = null;
             surfaceLost = true;
-        }
-
-        @Override
-        public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height)
-        {
-            if (closed || failed)
-                return;
-            surface = new Surface(surfaceTexture);
-            surfaceAvailable();
-        }
-
-        @Override
-        public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture)
-        {
-            if (!closed)
-                surfaceDestroyed();
-            if (surface != null)
-            {
-                surface.release();
-                surface = null;
-            }
-            return true;
-        }
-
-        @Override
-        public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height)
-        {
-            layout();
-        }
-
-        @Override
-        public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture)
-        {
         }
     }
 

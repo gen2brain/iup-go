@@ -13,7 +13,7 @@
 # Options:
 #   -a ABIS   comma-separated ABI list (default: arm64-v8a)
 #             valid: arm64-v8a, armeabi-v7a, x86, x86_64
-#   -A API    Android API level for the NDK toolchain (default: 22)
+#   -A API    Android API level for the NDK toolchain (default: 24)
 #   -b PKG    applicationId of the built app (default: com.example.iupapp)
 #   -n NAME   user-visible app label (string resource app_name, default: IupApp)
 #   -x EXEC   library name without lib prefix / .so suffix (default: iupapp)
@@ -45,7 +45,7 @@
 #   ANDROID_KEYSTORE / ANDROID_KEYSTORE_PASS / ANDROID_KEY_ALIAS / ANDROID_KEY_PASS
 #
 # Examples:
-#   # Default: arm64-v8a, API 22, debug APK, label "IupApp", lib libiupapp.so
+#   # Default: arm64-v8a, API 24, debug APK, label "IupApp", lib libiupapp.so
 #   build-android.sh ../../../examples/mobile_hello
 #
 #   # Multiple ABIs
@@ -67,7 +67,7 @@ GRADLE_DIR="${SCRIPT_DIR}"
 JNILIBS_DIR="${GRADLE_DIR}/iupapp/src/main/jniLibs"
 
 ABIS="arm64-v8a"
-API=22
+API=24
 APP_NAME="IupApp"
 EXEC_NAME="iupapp"
 GRADLE_TASK=":iupapp:assembleDebug"
