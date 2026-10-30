@@ -1498,21 +1498,80 @@ static void eflTableEditKeyDownCallback(void* data, const Efl_Event* ev)
     eflTableEndCellEdit(ih, 0);
 }
 
+static void eflTableEditReport(Ihandle* ih, Eo* entry)
+{
+  IeflTableData* table_data = IEFL_TABLE_DATA(ih);
+  IFniis edition_cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+  const char* text;
+
+  if (!edition_cb || !table_data || table_data->editing_lin == 0)
+    return;
+
+  text = efl_text_get(entry);
+  if (!text)
+    text = "";
+
+  if (edition_cb(ih, table_data->editing_lin, table_data->editing_col, (char*)text) == IUP_IGNORE)
+  {
+    const char* last = iupAttribGet(ih, "_IUPEFL_EDIT_TEXT");
+    Efl_Text_Cursor_Object* cursor = efl_text_interactive_main_cursor_get(entry);
+    int pos = cursor ? efl_text_cursor_object_position_get(cursor) : 0;
+    int added = (int)eina_unicode_utf8_get_len(text) - (last ? (int)eina_unicode_utf8_get_len(last) : 0);
+    if (added > 0)
+      pos -= added;
+    iupAttribSet(ih, "_IUPEFL_EDIT_REVERT", "1");
+    efl_text_set(entry, last ? last : "");
+    iupeflTextSetCursor(entry, pos > 0 ? pos : 0);
+    iupAttribSet(ih, "_IUPEFL_EDIT_REVERT", NULL);
+    return;
+  }
+
+  iupAttribSetStr(ih, "_IUPEFL_EDIT_TEXT", text);
+}
+
+static void eflTableEditDeleteJob(void* data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Eo* entry;
+
+  if (!iupObjectCheck(ih))
+    return;
+
+  entry = (Eo*)iupAttribGet(ih, "_IUPEFL_EDIT_PENDING");
+  iupAttribSet(ih, "_IUPEFL_EDIT_JOB", NULL);
+  iupAttribSet(ih, "_IUPEFL_EDIT_PENDING", NULL);
+  if (entry)
+    eflTableEditReport(ih, entry);
+}
+
 static void eflTableEditChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   IeflTableData* table_data = IEFL_TABLE_DATA(ih);
-  IFniis edition_cb;
+  Efl_Text_Change_Info* info = (Efl_Text_Change_Info*)ev->info;
+  Ecore_Job* job;
 
-  if (!iupObjectCheck(ih) || !table_data || table_data->editing_lin == 0)
+  if (!iupObjectCheck(ih) || !table_data || table_data->editing_lin == 0 || iupAttribGet(ih, "_IUPEFL_EDIT_REVERT"))
     return;
 
-  edition_cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
-  if (edition_cb)
+  job = (Ecore_Job*)iupAttribGet(ih, "_IUPEFL_EDIT_JOB");
+
+  if (info && info->type == EFL_TEXT_CHANGE_TYPE_REMOVE)
   {
-    const char* text = efl_text_get(ev->object);
-    edition_cb(ih, table_data->editing_lin, table_data->editing_col, (char*)(text ? text : ""));
+    if (!job)
+      iupAttribSet(ih, "_IUPEFL_EDIT_JOB", (char*)ecore_job_add(eflTableEditDeleteJob, ih));
+    iupAttribSet(ih, "_IUPEFL_EDIT_PENDING", (char*)ev->object);
+    return;
   }
+
+  if (job)
+  {
+    ecore_job_del(job);
+    iupAttribSet(ih, "_IUPEFL_EDIT_JOB", NULL);
+    iupAttribSet(ih, "_IUPEFL_EDIT_PENDING", NULL);
+  }
+
+  eflTableEditReport(ih, ev->object);
 }
 
 static void eflTableStartCellEdit(Ihandle* ih, int lin, int col)
@@ -1558,6 +1617,7 @@ static void eflTableStartCellEdit(Ihandle* ih, int lin, int col)
   data->editing_col = col;
 
   efl_text_set(entry, current_value ? current_value : "");
+  iupAttribSetStr(ih, "_IUPEFL_EDIT_TEXT", current_value ? current_value : "");
 
   efl_text_interactive_selection_allowed_set(entry, EINA_TRUE);
   efl_text_interactive_editable_set(entry, EINA_TRUE);
@@ -1565,7 +1625,7 @@ static void eflTableStartCellEdit(Ihandle* ih, int lin, int col)
   efl_text_interactive_all_select(entry);
 
   efl_event_callback_add(entry, EFL_EVENT_KEY_DOWN, eflTableEditKeyDownCallback, ih);
-  efl_event_callback_add(entry, EFL_UI_TEXTBOX_EVENT_CHANGED, eflTableEditChangedCallback, ih);
+  efl_event_callback_add(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflTableEditChangedCallback, ih);
 }
 
 static void eflTableEndCellEdit(Ihandle* ih, int apply)
@@ -1581,6 +1641,12 @@ static void eflTableEndCellEdit(Ihandle* ih, int apply)
 
   if (!data || data->editing_lin == 0)
     return;
+
+  if (iupAttribGet(ih, "_IUPEFL_EDIT_JOB"))
+  {
+    ecore_job_del((Ecore_Job*)iupAttribGet(ih, "_IUPEFL_EDIT_JOB"));
+    eflTableEditDeleteJob(ih);
+  }
 
   lin = data->editing_lin;
   col = data->editing_col;
@@ -1617,7 +1683,7 @@ static void eflTableEndCellEdit(Ihandle* ih, int apply)
   }
 
   efl_event_callback_del(entry, EFL_EVENT_KEY_DOWN, eflTableEditKeyDownCallback, ih);
-  efl_event_callback_del(entry, EFL_UI_TEXTBOX_EVENT_CHANGED, eflTableEditChangedCallback, ih);
+  efl_event_callback_del(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflTableEditChangedCallback, ih);
 
   if (apply)
   {

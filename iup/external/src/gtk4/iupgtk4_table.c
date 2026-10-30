@@ -497,6 +497,32 @@ static gboolean on_text_key_pressed(GtkEventControllerKey* controller, guint key
 }
 
 
+static void gtk4TableEditorChanged(GtkEditable* editable, Ihandle* ih)
+{
+  IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+  const char* text = gtk_editable_get_text(editable);
+  const char* last = (const char*)g_object_get_data(G_OBJECT(editable), "_iup_edit_text");
+
+  if (!g_object_get_data(G_OBJECT(editable), "_iup_edit_active"))
+    return;
+
+  if (cb && cb(ih, GPOINTER_TO_INT(g_object_get_data(G_OBJECT(editable), "_iup_edit_lin")),
+               GPOINTER_TO_INT(g_object_get_data(G_OBJECT(editable), "_iup_edit_col")), (char*)text) == IUP_IGNORE)
+  {
+    int pos = gtk_editable_get_position(editable);
+    int added = (int)g_utf8_strlen(text, -1) - (last ? (int)g_utf8_strlen(last, -1) : 0);
+    if (added > 0)
+      pos -= added;
+    g_signal_handlers_block_by_func(editable, G_CALLBACK(gtk4TableEditorChanged), ih);
+    gtk_editable_set_text(editable, last ? last : "");
+    g_signal_handlers_unblock_by_func(editable, G_CALLBACK(gtk4TableEditorChanged), ih);
+    gtk_editable_set_position(editable, pos > 0 ? pos : 0);
+    return;
+  }
+
+  g_object_set_data_full(G_OBJECT(editable), "_iup_edit_text", g_strdup(text), g_free);
+}
+
 static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_data)
 {
   IupCellFactoryData* data = (IupCellFactoryData*)user_data;
@@ -557,9 +583,27 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
         return;
       }
     }
+
+    if (delegate && GTK_IS_TEXT(delegate))
+    {
+      GObject* text = G_OBJECT(delegate);
+      g_object_set_data(text, "_iup_edit_lin", GINT_TO_POINTER(lin));
+      g_object_set_data(text, "_iup_edit_col", GINT_TO_POINTER(col + 1));
+      g_object_set_data_full(text, "_iup_edit_text", g_strdup(gtk_editable_get_text(GTK_EDITABLE(delegate))), g_free);
+      g_object_set_data(text, "_iup_edit_active", GINT_TO_POINTER(1));
+      if (!g_object_get_data(text, "_iup_edit_connected"))
+      {
+        g_signal_connect(text, "changed", G_CALLBACK(gtk4TableEditorChanged), ih);
+        g_object_set_data(text, "_iup_edit_connected", GINT_TO_POINTER(1));
+      }
+    }
   }
   else
   {
+    GtkWidget* delegate = GTK_WIDGET(gtk_editable_get_delegate(GTK_EDITABLE(object)));
+    if (delegate)
+      g_object_set_data(G_OBJECT(delegate), "_iup_edit_active", NULL);
+
     GtkListItem* list_item = g_object_get_data(object, "list_item");
     if (!list_item)
       return;
@@ -621,7 +665,6 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
 static void on_edit_done(GtkEditable* editable, gpointer user_data)
 {
   IupCellFactoryData* data = (IupCellFactoryData*)user_data;
-  Ihandle* ih = data->ih;
   gint col = data->col_index;
 
   GtkListItem* list_item = g_object_get_data(G_OBJECT(editable), "list_item");
@@ -632,16 +675,7 @@ static void on_edit_done(GtkEditable* editable, gpointer user_data)
   if (!row)
     return;
 
-  gint lin = row->row_index;
   const char* new_text = gtk_editable_get_text(editable);
-
-  IFniis edition_cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
-  if (edition_cb)
-  {
-    int ret = edition_cb(ih, lin, col + 1, (char*)new_text);
-    if (ret == IUP_IGNORE)
-      return;
-  }
 
   iup_table_row_set_value(row, col, new_text);
 }

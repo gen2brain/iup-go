@@ -2494,23 +2494,6 @@ static void winTableEndEdit(Ihandle* ih, BOOL save)
     char* old_text_ptr = iupdrvTableGetCellValue(ih, lin, col);
     char* old_text = old_text_ptr ? iupStrDup(old_text_ptr) : NULL;
 
-    IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
-    if (cb)
-    {
-      int ret = cb(ih, lin, col, buffer);
-      if (ret == IUP_IGNORE)
-      {
-        if (old_text)
-          free(old_text);
-        DestroyWindow(data->edit_control);
-        data->edit_control = NULL;
-        data->edit_row = 0;
-        data->edit_col = 0;
-        data->edit_ending = FALSE;
-        return;
-      }
-    }
-
     iupdrvTableSetCellValue(ih, lin, col, buffer);
 
     int text_changed = 0;
@@ -2572,6 +2555,31 @@ static LRESULT CALLBACK winTableEditWndProc(HWND hwnd, UINT msg, WPARAM wp, LPAR
     case WM_NCDESTROY:
       RemoveWindowSubclass(hwnd, winTableEditWndProc, uIdSubclass);
       break;
+  }
+
+  if (msg == WM_CHAR || msg == WM_PASTE || msg == WM_CUT || msg == WM_CLEAR || msg == WM_UNDO ||
+      (msg == WM_KEYDOWN && wp == VK_DELETE))
+  {
+    char before[4096], after[4096];
+    DWORD sel_start = 0, sel_end = 0;
+    int lin = data->edit_row, col = data->edit_col;
+    LRESULT ret;
+
+    GetWindowTextA(hwnd, before, sizeof(before));
+    SendMessage(hwnd, EM_GETSEL, (WPARAM)&sel_start, (LPARAM)&sel_end);
+    ret = DefSubclassProc(hwnd, msg, wp, lp);
+    GetWindowTextA(hwnd, after, sizeof(after));
+
+    if (strcmp(before, after) != 0)
+    {
+      IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+      if (cb && cb(ih, lin, col, after) == IUP_IGNORE)
+      {
+        SetWindowTextA(hwnd, before);
+        SendMessage(hwnd, EM_SETSEL, sel_start, sel_end);
+      }
+    }
+    return ret;
   }
 
   return DefSubclassProc(hwnd, msg, wp, lp);

@@ -11,8 +11,6 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
@@ -558,15 +556,10 @@ public final class IupTableHelper
         input.setSingleLine(true);
         input.setImeOptions(EditorInfo.IME_ACTION_DONE);
 
-        input.addTextChangedListener(new TextWatcher()
-        {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void afterTextChanged(Editable s) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count)
-            {
-                dispatchEdition(t.ihandlePtr, lin, col, s.toString());
-            }
-        });
+        input.setFilters(new android.text.InputFilter[] { (source, start, end, dest, dstart, dend) -> {
+            String newValue = new StringBuilder(dest).replace(dstart, dend, source.subSequence(start, end).toString()).toString();
+            return dispatchEdition(t.ihandlePtr, lin, col, newValue) != 0 ? dest.subSequence(dstart, dend) : null;
+        } });
 
         String title = (col - 1 < t.colTitles.length && t.colTitles[col - 1] != null)
             ? t.colTitles[col - 1] : "";
@@ -2057,7 +2050,7 @@ public final class IupTableHelper
     public static native void dispatchCellsExtend(long ihandlePtr, int lin, int col);
     public static native void dispatchSelection(long ihandlePtr);
     public static native int dispatchEditBegin(long ihandlePtr, int lin, int col);
-    public static native void dispatchEdition(long ihandlePtr, int lin, int col, String text);
+    public static native int dispatchEdition(long ihandlePtr, int lin, int col, String text);
     public static native int dispatchEditEnd(long ihandlePtr, int lin, int col, String text, int apply);
     public static native void dispatchValueChanged(long ihandlePtr, int lin, int col);
     public static native boolean dispatchSort(long ihandlePtr, int col, int asc);

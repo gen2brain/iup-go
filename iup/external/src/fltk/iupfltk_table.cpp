@@ -177,7 +177,28 @@ public:
         return 1;
       }
     }
-    return Fl_Input::handle(event);
+
+    if (!active || (event != FL_KEYBOARD && event != FL_PASTE))
+      return Fl_Input::handle(event);
+
+    char* before = iupStrDup(value());
+    int pos = insert_position();
+    int mrk = mark();
+    int ret = Fl_Input::handle(event);
+
+    if (strcmp(before, value()) != 0)
+    {
+      auto cb = reinterpret_cast<IFniis>(IupGetCallback(iup_handle, "EDITION_CB"));
+      if (cb && cb(iup_handle, iupAttribGetInt(iup_handle, "_IUPFLTK_TABLE_EDIT_LIN"),
+                   iupAttribGetInt(iup_handle, "_IUPFLTK_TABLE_EDIT_COL"), const_cast<char*>(value())) == IUP_IGNORE)
+      {
+        value(before);
+        insert_position(pos, mrk);
+      }
+    }
+
+    free(before);
+    return ret;
   }
 };
 

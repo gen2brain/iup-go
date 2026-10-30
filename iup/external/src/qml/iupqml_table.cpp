@@ -542,6 +542,7 @@ struct IupQmlTableData
   int edit_lin = 0;
   int edit_col = 0;
   QString edit_initial;
+  QString edit_text;
   QPointer<QObject> editor;
   int drag_lin = 0;
   bool click_ignored = false;
@@ -912,6 +913,29 @@ static void qmlTableEditStarted(Ihandle* ih, QObject* editor)
     editor->setProperty("cursorPosition", data->edit_initial.length());
     data->edit_initial = QString();
   }
+  data->edit_text = editor->property("text").toString();
+}
+
+static void qmlTableEditChanged(Ihandle* ih, QObject* editor)
+{
+  IupQmlTableData* data = qmlTableGetData(ih);
+  if (!data || !editor || data->edit_lin <= 0)
+    return;
+
+  QString text = editor->property("text").toString();
+  auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "EDITION_CB"));
+  if (cb && cb(ih, data->edit_lin, data->edit_col, const_cast<char*>(text.toUtf8().constData())) == IUP_IGNORE)
+  {
+    int pos = editor->property("cursorPosition").toInt();
+    int added = static_cast<int>(text.length() - data->edit_text.length());
+    if (added > 0)
+      pos -= added;
+    editor->setProperty("text", data->edit_text);
+    editor->setProperty("cursorPosition", pos > 0 ? pos : 0);
+    return;
+  }
+
+  data->edit_text = text;
 }
 
 static void qmlTableEditCommit(Ihandle* ih, int row, int column, const QString& text)
@@ -1243,6 +1267,7 @@ static const char* qmlTableQml =
   "  signal iupDoubleClicked(int row, int column)\n"
   "  signal iupCellsDrag(point pos)\n"
   "  signal iupEditStarted(var editor)\n"
+  "  signal iupEditChanged(var editor)\n"
   "  signal iupEditCommit(int row, int column, string text)\n"
   "  signal iupEditClosed(int row, int column, string text)\n"
   "  signal iupHeaderClicked(int column)\n"
@@ -1395,6 +1420,7 @@ static const char* qmlTableQml =
   "        font: cell.model.hasfont ? cell.model.font : root.iupFont\n"
   "        horizontalAlignment: cell.model.alignment\n"
   "        Component.onCompleted: { selectAll(); root.iupEditStarted(editor) }\n"
+  "        onTextEdited: root.iupEditChanged(editor)\n"
   "        Component.onDestruction: root.iupEditClosed(cell.row, cell.column, editor.text)\n"
   "        TableView.onCommit: root.iupEditCommit(cell.row, cell.column, editor.text)\n"
   "      }\n"
@@ -1476,6 +1502,9 @@ static int qmlTableMapMethod(Ihandle* ih)
   });
   iupqmlConnect(root, "iupEditStarted(QVariant)", [ih](void** args) {
     qmlTableEditStarted(ih, qvariant_cast<QObject*>(*static_cast<QVariant*>(args[1])));
+  });
+  iupqmlConnect(root, "iupEditChanged(QVariant)", [ih](void** args) {
+    qmlTableEditChanged(ih, qvariant_cast<QObject*>(*static_cast<QVariant*>(args[1])));
   });
   iupqmlConnect(root, "iupEditCommit(int,int,QString)", [ih](void** args) {
     qmlTableEditCommit(ih, *static_cast<int*>(args[1]), *static_cast<int*>(args[2]), *static_cast<QString*>(args[3]));

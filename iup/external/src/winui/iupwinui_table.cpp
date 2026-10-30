@@ -1675,19 +1675,6 @@ static void winuiTableEndEdit(Ihandle* ih, bool save)
     char* old_value = iupdrvTableGetCellValue(ih, lin, col);
     char* old_copy = old_value ? iupStrDup(old_value) : nullptr;
 
-    auto edition_cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "EDITION_CB"));
-    if (edition_cb)
-    {
-      int ret = edition_cb(ih, lin, col, new_value ? new_value : const_cast<char*>(""));
-      if (ret == IUP_IGNORE)
-      {
-        tb.Text(iupwinuiStringToHString(old_copy ? old_copy : ""));
-        cellBorder.Child(tb);
-        if (old_copy) free(old_copy);
-        return;
-      }
-    }
-
     iupdrvTableSetCellValue(ih, lin, col, new_value ? new_value : "");
 
     int text_changed = 0;
@@ -1775,6 +1762,15 @@ static void winuiTableStartEdit(Ihandle* ih, int lin, int col)
   editBox.MinHeight(0);
   editBox.MinWidth(0);
   editBox.SelectAll();
+
+  editBox.BeforeTextChanging([ih, lin, col](TextBox const&, TextBoxBeforeTextChangingEventArgs const& args) {
+    auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "EDITION_CB"));
+    if (!cb)
+      return;
+    char* text = iupwinuiHStringToString(args.NewText());
+    if (cb(ih, lin, col, text ? text : const_cast<char*>("")) == IUP_IGNORE)
+      args.Cancel(true);
+  });
 
   editBox.KeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
     IupWinUITableAux* a = winuiTableGetAux(ih);

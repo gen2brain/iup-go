@@ -1261,6 +1261,36 @@ static void motTableRedraw(Ihandle* ih)
 /* Cell Editing                                                              */
 /* ========================================================================= */
 
+static void motTableEditModifyVerifyCallback(Widget w, XtPointer client_data, XtPointer call_data)
+{
+  Ihandle* ih = (Ihandle*)client_data;
+  XmTextVerifyCallbackStruct* cbs = (XmTextVerifyCallbackStruct*)call_data;
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+  char *value, *insert, *new_value;
+  int len;
+
+  if (!cb || mot_data->edit_lin == 0)
+    return;
+
+  len = (cbs->text && cbs->text->ptr) ? cbs->text->length : 0;
+  insert = (char*)malloc(len + 1);
+  if (len)
+    memcpy(insert, cbs->text->ptr, len);
+  insert[len] = 0;
+
+  value = XmTextGetString(w);
+  new_value = iupStrInsert(value, insert, (int)cbs->startPos, (int)cbs->endPos, iupmotStrGetUTF8Mode());
+
+  if (new_value && cb(ih, mot_data->edit_lin, mot_data->edit_col, iupmotStrConvertFromSystem(new_value)) == IUP_IGNORE)
+    cbs->doit = False;
+
+  if (new_value && new_value != value)
+    free(new_value);
+  XtFree(value);
+  free(insert);
+}
+
 static void motTableStartCellEdit(Ihandle* ih, int lin, int col)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
@@ -1302,6 +1332,7 @@ static void motTableStartCellEdit(Ihandle* ih, int lin, int col)
     mot_data->edit_text = XmCreateText(mot_data->container, "edit_text", args, num_args);
 
     XtAddEventHandler(mot_data->edit_text, KeyPressMask, False, (XtEventHandler)motTableEditKeyPressCallback, (XtPointer)ih);
+    XtAddCallback(mot_data->edit_text, XmNmodifyVerifyCallback, motTableEditModifyVerifyCallback, (XtPointer)ih);
   }
 
   motTableCellToPixel(ih, lin, col, &x, &y, &w, &h);

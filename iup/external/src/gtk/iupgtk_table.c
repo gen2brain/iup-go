@@ -434,6 +434,57 @@ static void gtkTableSortStore(Ihandle* ih, int col_index, int ascending)
 /* GTK Signal Callbacks                                                      */
 /* ========================================================================= */
 
+static void gtkTableEditorDeleteText(GtkEditable* editable, gint start, gint end, Ihandle* ih)
+{
+  gint sel_start, sel_end;
+  GdkEvent* event;
+
+  if (!gtk_editable_get_selection_bounds(editable, &sel_start, &sel_end) || sel_start != start || sel_end != end)
+    return;
+
+  event = gtk_get_current_event();
+  if (event)
+  {
+    if (event->type == GDK_KEY_PRESS)
+    {
+      guint32 ch = gdk_keyval_to_unicode(event->key.keyval);
+      if (ch >= 32 && ch != 127)
+        g_object_set_data(G_OBJECT(editable), "_iup_edit_skip", GINT_TO_POINTER(1));
+    }
+    gdk_event_free(event);
+  }
+  (void)ih;
+}
+
+static void gtkTableEditorChanged(GtkEditable* editable, Ihandle* ih)
+{
+  IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+  const char* text = gtk_entry_get_text(GTK_ENTRY(editable));
+  const char* last = (const char*)g_object_get_data(G_OBJECT(editable), "_iup_edit_text");
+
+  if (g_object_get_data(G_OBJECT(editable), "_iup_edit_skip"))
+  {
+    g_object_set_data(G_OBJECT(editable), "_iup_edit_skip", NULL);
+    return;
+  }
+
+  if (cb && cb(ih, GPOINTER_TO_INT(g_object_get_data(G_OBJECT(editable), "_iup_edit_lin")),
+               GPOINTER_TO_INT(g_object_get_data(G_OBJECT(editable), "_iup_edit_col")), (char*)text) == IUP_IGNORE)
+  {
+    int pos = gtk_editable_get_position(editable);
+    int added = (int)g_utf8_strlen(text, -1) - (last ? (int)g_utf8_strlen(last, -1) : 0);
+    if (added > 0)
+      pos -= added;
+    g_signal_handlers_block_by_func(editable, G_CALLBACK(gtkTableEditorChanged), ih);
+    gtk_entry_set_text(GTK_ENTRY(editable), last ? last : "");
+    g_signal_handlers_unblock_by_func(editable, G_CALLBACK(gtkTableEditorChanged), ih);
+    gtk_editable_set_position(editable, pos > 0 ? pos : 0);
+    return;
+  }
+
+  g_object_set_data_full(G_OBJECT(editable), "_iup_edit_text", g_strdup(text), g_free);
+}
+
 static void gtkTableCellEditingStarted(GtkCellRenderer* renderer, GtkCellEditable* editable, gchar* path_string, gpointer user_data)
 {
   Ihandle* ih = (Ihandle*)user_data;
@@ -472,10 +523,18 @@ static void gtkTableCellEditingStarted(GtkCellRenderer* renderer, GtkCellEditabl
     if (ret == IUP_IGNORE)
     {
       gtk_cell_renderer_stop_editing(renderer, TRUE);
+      return;
     }
   }
 
-  (void)editable;
+  if (GTK_IS_ENTRY(editable))
+  {
+    g_object_set_data(G_OBJECT(editable), "_iup_edit_lin", GINT_TO_POINTER(lin));
+    g_object_set_data(G_OBJECT(editable), "_iup_edit_col", GINT_TO_POINTER(col));
+    g_object_set_data_full(G_OBJECT(editable), "_iup_edit_text", g_strdup(gtk_entry_get_text(GTK_ENTRY(editable))), g_free);
+    g_signal_connect(G_OBJECT(editable), "delete-text", G_CALLBACK(gtkTableEditorDeleteText), ih);
+    g_signal_connect(G_OBJECT(editable), "changed", G_CALLBACK(gtkTableEditorChanged), ih);
+  }
 }
 
 static void gtkTableCellEditingCanceled(GtkCellRenderer* renderer, gpointer user_data)
@@ -550,17 +609,6 @@ static void gtkTableCellEdited(GtkCellRendererText* renderer, gchar* path_string
   if (editend_cb)
   {
     int ret = editend_cb(ih, lin, col, new_text, 1);  /* 1 = accepted */
-    if (ret == IUP_IGNORE)
-    {
-      free(old_text);
-      return;
-    }
-  }
-
-  IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
-  if (cb)
-  {
-    int ret = cb(ih, lin, col, new_text);
     if (ret == IUP_IGNORE)
     {
       free(old_text);
