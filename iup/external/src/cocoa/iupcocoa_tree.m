@@ -486,6 +486,9 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 
 - (void) mouseDown:(NSEvent*)event
 {
+#ifdef GNUSTEP
+  [[self window] makeFirstResponder:self];
+#endif
   if ([event clickCount] == 2)
   {
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
@@ -623,7 +626,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   BOOL result = [super becomeFirstResponder];
   if (result)
   {
-    Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+    Ihandle* ih = [self ih];
     if (ih)
       iupcocoaFocusIn(ih);
   }
@@ -635,7 +638,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   BOOL result = [super resignFirstResponder];
   if (result)
   {
-    Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+    Ihandle* ih = [self ih];
     if (ih)
       iupcocoaFocusOut(ih);
   }
@@ -644,7 +647,7 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 
 - (BOOL)acceptsFirstResponder
 {
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  Ihandle* ih = [self ih];
   if (ih)
   {
     if (iupAttribGet(ih, "_IUPCOCOA_CANFOCUS"))
