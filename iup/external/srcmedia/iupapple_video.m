@@ -33,6 +33,7 @@
   AVPlayerItem* item;
   AVPlayerLayer* layer;
   AVPlayerItemVideoOutput* output;
+  int outputWidth, outputHeight;
   AVPlayerItemLegibleOutput* legible;
   AVMediaSelectionGroup* subtitles;
   CATextLayer* caption;
@@ -372,6 +373,33 @@ static void iappleVideoVolume(IvideoSession* session, int volume, int mute)
   context->player.muted = mute != 0;
 }
 
+static void iappleVideoResizeOutput(IupAppleVideo* context, int video_width, int video_height)
+{
+  NSMutableDictionary* attributes;
+  AVPlayerItemVideoOutput* output;
+  int width, height;
+  iupVideoTargetSize(context->session, video_width, video_height, &width, &height);
+  if (width == video_width && height == video_height)
+    width = height = 0;
+  if (width == context->outputWidth && height == context->outputHeight)
+    return;
+  attributes = [NSMutableDictionary dictionaryWithObject:@(kCVPixelFormatType_32BGRA) forKey:(id)kCVPixelBufferPixelFormatTypeKey];
+  if (width)
+  {
+    attributes[(id)kCVPixelBufferWidthKey] = @(width);
+    attributes[(id)kCVPixelBufferHeightKey] = @(height);
+  }
+  output = [[AVPlayerItemVideoOutput alloc] initWithPixelBufferAttributes:attributes];
+  if (!output)
+    return;
+  [context->item addOutput:output];
+  [context->item removeOutput:context->output];
+  [context->output release];
+  context->output = output;
+  context->outputWidth = width;
+  context->outputHeight = height;
+}
+
 static void iappleVideoFrame(IupAppleVideo* context)
 {
   CMTime time = [context->output itemTimeForHostTime:CACurrentMediaTime()];
@@ -569,7 +597,11 @@ static void iappleVideoPoll(IvideoSession* session)
     }
     iappleVideoApplyAdjust(context);
     if (context->output)
+    {
+      if (info.width > 0 && info.height > 0)
+        iappleVideoResizeOutput(context, info.width, info.height);
       iappleVideoFrame(context);
+    }
   }
   if (context->caption && context->layer && !CGRectEqualToRect(context->layer.videoRect, context->captionRect))
     iappleVideoLayout(session, context->ih);
