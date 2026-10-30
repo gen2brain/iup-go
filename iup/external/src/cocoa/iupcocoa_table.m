@@ -2099,8 +2099,10 @@ static NSInteger cocoaTableRowOfField(Ihandle* ih, NSTableView* tableView, NSVie
   {
     if (cocoaTableIsCellEditable(ih, col))
     {
+      NSNumber* editingRow = objc_getAssociatedObject(tableView, &kEditingRowKey);
+      NSNumber* editingCol = objc_getAssociatedObject(tableView, &kEditingColKey);
       IFnii editbegin_cb = (IFnii)IupGetCallback(ih, "EDITBEGIN_CB");
-      if (editbegin_cb)
+      if (editbegin_cb && !(editingRow && editingCol && [editingRow integerValue] == clickedRow && [editingCol integerValue] == clickedCol))
       {
         int ret = editbegin_cb(ih, lin, col);
         if (ret == IUP_IGNORE)
