@@ -63,6 +63,7 @@ package iup
 #cgo motif,xft CFLAGS: -DIUP_USE_XFT
 #cgo motif,xft,!nopkgconfig pkg-config: xft freetype2 fontconfig
 #cgo motif CFLAGS: -Iexternal/src/mot -DIUP_USE_MOTIF -DIUP_USE_ICONV
+#cgo !darwin,motif,web CFLAGS: -DIUPWEB_USE_DLOPEN -DIUPWEB_HOSTED
 
 #cgo windows,!winui CFLAGS: -Iexternal/src/win -Iexternal/src/win/wdl
 #cgo windows,!gtk3,!gtk4,!qt6,!qt5,!qml,!winui,!efl,!fltk CFLAGS: -D_WIN32_WINNT=0x0601 -DWINVER=0x0601 -DCOBJMACROS -DNOTREEVIEW -DUNICODE -D_UNICODE
@@ -111,6 +112,7 @@ package iup
 
 #cgo efl CFLAGS: -Iexternal/src/efl -DIUP_USE_EFL -DEFL_BETA_API_SUPPORT=1 -DEFL_EO_API_SUPPORT=1
 #cgo efl,!windows,!darwin,!android CFLAGS: -DHAVE_ECORE_X -DHAVE_ECORE_WL2
+#cgo efl,web,!windows,!darwin,!android CFLAGS: -DIUPWEB_USE_DLOPEN -DIUPWEB_HOSTED
 #cgo efl,windows CFLAGS: -Iexternal/src/unix -DHAVE_ECORE_WIN32
 #cgo efl,darwin CFLAGS: -Iexternal/src/unix -DHAVE_ECORE_COCOA
 #cgo efl,!nopkgconfig pkg-config: elementary
@@ -127,9 +129,11 @@ package iup
 #cgo darwin,!ios,arm64,fltk LDFLAGS: -L/opt/homebrew/lib
 #cgo windows,fltk,web CXXFLAGS: -DIUPWEB_HOSTED
 #cgo darwin,!ios,fltk,web LDFLAGS: -framework WebKit
+#cgo !windows,!darwin,!android,fltk,web CFLAGS: -DIUPWEB_USE_DLOPEN -DIUPWEB_HOSTED
 #cgo fltk,gl,!windows,!darwin,!android,!nopkgconfig pkg-config: wayland-egl egl gl
 
 #cgo gnustep CFLAGS: -Iexternal/src/cocoa -Iexternal/src/unix -x objective-c -DIUP_USE_COCOA -DGNUSTEP
+#cgo gnustep,web CFLAGS: -DIUPWEB_USE_DLOPEN -DIUPWEB_HOSTED
 #cgo gnustep CFLAGS: -fno-strict-aliasing -fPIC -fblocks -Wno-import -Wno-incompatible-pointer-types -Wno-protocol
 #cgo gnustep LDFLAGS: -lgnustep-gui -lgnustep-base -l:libobjc.so -lBlocksRuntime -ldispatch -lopal -lgnustep-corebase
 
