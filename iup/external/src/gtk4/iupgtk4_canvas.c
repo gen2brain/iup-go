@@ -77,8 +77,8 @@ static void gtk4CanvasUpdateContentSize(Ihandle* ih)
 
   /* the border is drawn by the container snapshot, not part of the content size */
   /* a GtkDrawingArea has no size without content_width/height */
-  gtk_drawing_area_set_content_width(GTK_DRAWING_AREA(ih->handle), ih->currentwidth - sb_vert_width);
-  gtk_drawing_area_set_content_height(GTK_DRAWING_AREA(ih->handle), ih->currentheight - sb_horiz_height);
+  gtk_drawing_area_set_content_width(GTK_DRAWING_AREA(ih->handle), iupMAX(ih->currentwidth - sb_vert_width, 0));
+  gtk_drawing_area_set_content_height(GTK_DRAWING_AREA(ih->handle), iupMAX(ih->currentheight - sb_horiz_height, 0));
 }
 
 static gboolean gtk4CanvasDeferredScrollbarLayout(gpointer data)
