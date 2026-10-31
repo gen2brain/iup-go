@@ -9,6 +9,7 @@
 #endif
 
 #include <stdlib.h>
+#include <string.h>
 #include <limits.h>
 
 #include "iup.h"
@@ -224,6 +225,16 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   if (visible)
     gtk4DialogSetTaskBarButton(ih, iupAttribGet(ih, "TASKBARBUTTON"));
 
+#ifdef GDK_WINDOWING_WIN32
+  if (visible && iupAttribGet(ih, "_IUPGTK4_WIN32_POS"))
+  {
+    int x = 0, y = 0;
+    iupStrToIntInt(iupAttribGet(ih, "_IUPGTK4_WIN32_POS"), &x, &y, 'x');
+    iupAttribSet(ih, "_IUPGTK4_WIN32_POS", NULL);
+    iupgtk4Win32SetWindowPosition(ih->handle, x, y);
+  }
+#endif
+
   /* the surface, and with it the window manager hints, exists only once shown */
   if (visible && (iupAttribGet(ih, "RESIZEINC") || iupAttribGet(ih, "MAXSIZE")))
     gtk4DialogUpdateSizeHints(ih, iupAttribGet(ih, "MINSIZE"), iupAttribGet(ih, "MAXSIZE"), iupAttribGet(ih, "RESIZEINC"));
@@ -251,6 +262,18 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
         }
         if (x) *x = gx;
         if (y) *y = gy;
+        return;
+      }
+    }
+#endif
+
+#ifdef GDK_WINDOWING_WIN32
+    {
+      int wx, wy;
+      if (iupgtk4Win32GetWindowPosition(handle, &wx, &wy))
+      {
+        if (x) *x = wx;
+        if (y) *y = wy;
         return;
       }
     }
@@ -312,6 +335,16 @@ IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
   }
 #endif
 
+#ifdef GDK_WINDOWING_WIN32
+  if (!gtk_widget_get_mapped(ih->handle))
+  {
+    iupAttribSetStrf(ih, "_IUPGTK4_WIN32_POS", "%dx%d", x, y);
+    return;
+  }
+  if (iupgtk4Win32SetWindowPosition(ih->handle, x, y))
+    return;
+#endif
+
   /* On Wayland and other backends, window positioning is not supported */
   (void)ih;
   (void)x;
@@ -360,6 +393,26 @@ static void gtk4DialogGetWindowDecor(Ihandle* ih, int* win_border, int* win_capt
   }
 }
 
+static int gtk4DialogMeasureTitleBar(GtkWidget* window, GtkWidget* child)
+{
+  GtkWidget* widget;
+  int height = 0;
+
+  for (widget = gtk_widget_get_first_child(window); widget != NULL; widget = gtk_widget_get_next_sibling(widget))
+  {
+    int natural = 0;
+
+    if (widget == child || !gtk_widget_get_visible(widget))
+      continue;
+
+    gtk_widget_measure(widget, GTK_ORIENTATION_VERTICAL, -1, NULL, &natural, NULL, NULL);
+    if (natural > height)
+      height = natural;
+  }
+
+  return height;
+}
+
 IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* caption, int* menu)
 {
   static int native_caption = 0;
@@ -377,7 +430,7 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* captio
 
   *menu = gtk4DialogGetMenuBarSize(ih);
 
-  if (ih->handle && ih->currentheight > 0)
+  if (ih->handle)
   {
     GtkWidget* root = GTK_WIDGET(ih->handle);
     gboolean has_csd = gtk_widget_has_css_class(root, "csd");
@@ -393,8 +446,13 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* captio
       *caption = 0;
 
       in.x = 0; in.y = 0;
-      if (child && gtk_widget_compute_point(child, GTK_WIDGET(ih->handle), &in, &out))
-        *caption = (int)out.y;
+      if (child && gtk_widget_get_height(child) > 0)
+      {
+        if (gtk_widget_compute_point(child, root, &in, &out))
+          *caption = (int)out.y;
+      }
+      else
+        *caption = gtk4DialogMeasureTitleBar(root, child);
 
       return;
     }
@@ -471,6 +529,12 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 
     gtk_window_unmaximize((GtkWindow*)ih->handle);
     gtk_window_unminimize((GtkWindow*)ih->handle);
+
+#ifdef GDK_WINDOWING_X11
+    if (surface && iupgtk4X11IsSurface(surface) && GDK_IS_TOPLEVEL(surface) &&
+        (gdk_toplevel_get_state(GDK_TOPLEVEL(surface)) & GDK_TOPLEVEL_STATE_MINIMIZED))
+      gdk_toplevel_focus(GDK_TOPLEVEL(surface), iupgtk4X11GetServerTime(surface));
+#endif
 
     if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupDialogCustomFrameRestore(ih))
     {
@@ -583,6 +647,15 @@ void gtk4DialogSizeAllocate(GtkWidget* widget, int width, int height, int baseli
     ih->data->ignore_resize = 1;
     IupRefresh(ih);
     ih->data->ignore_resize = 0;
+
+    if ((ih->userwidth > 0 || ih->userheight > 0) && !gtk4DialogIsStateFixedSize(ih) &&
+        !gtk_widget_has_css_class(GTK_WIDGET(ih->handle), "csd") &&
+        (border != iupAttribGetInt(ih, "_IUPGTK4_SIZED_BORDER") || caption != iupAttribGetInt(ih, "_IUPGTK4_SIZED_CAPTION")))
+    {
+      ih->currentwidth = 0;
+      ih->currentheight = 0;
+      IupRefresh(ih);
+    }
   }
 
   iupDialogUpdateClientSize(ih);
@@ -725,6 +798,56 @@ static void gtk4DialogRealize(GtkWidget* widget, Ihandle* ih)
 #endif
 }
 
+static void gtk4DialogSetTitleBarButtons(Ihandle* ih)
+{
+  GtkWidget* bar;
+  gchar* layout = NULL;
+  GString* filtered;
+  const char* p;
+  int first = 1;
+
+  for (bar = gtk_widget_get_first_child(GTK_WIDGET(ih->handle)); bar != NULL; bar = gtk_widget_get_next_sibling(bar))
+  {
+    if (GTK_IS_HEADER_BAR(bar))
+      break;
+  }
+  if (!bar)
+    return;
+
+  g_object_get(gtk_widget_get_settings(GTK_WIDGET(ih->handle)), "gtk-decoration-layout", &layout, NULL);
+
+  filtered = g_string_new(NULL);
+  for (p = layout ? layout : "menu:close"; *p; )
+  {
+    size_t len = strcspn(p, ",:");
+
+    if (len > 0 &&
+        !(len == 8 && strncmp(p, "minimize", len) == 0 && !iupAttribGetBoolean(ih, "MINBOX")) &&
+        !(len == 8 && strncmp(p, "maximize", len) == 0 && !iupAttribGetBoolean(ih, "MAXBOX")) &&
+        !(len == 5 && strncmp(p, "close", len) == 0 && !iupAttribGetBoolean(ih, "MENUBOX")))
+    {
+      if (!first)
+        g_string_append_c(filtered, ',');
+      g_string_append_len(filtered, p, (gssize)len);
+      first = 0;
+    }
+
+    p += len;
+    if (*p == ':')
+    {
+      g_string_append_c(filtered, ':');
+      first = 1;
+    }
+    if (*p)
+      p++;
+  }
+
+  gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(bar), filtered->str);
+
+  g_string_free(filtered, TRUE);
+  g_free(layout);
+}
+
 static int gtk4DialogMapMethod(Ihandle* ih)
 {
   InativeHandle* parent;
@@ -816,6 +939,10 @@ static int gtk4DialogMapMethod(Ihandle* ih)
     gtk_window_set_title((GtkWindow*)ih->handle, "");
   else if (!iupAttribGetBoolean(ih, "BORDER") && !iupAttribGetBoolean(ih, "HIDETITLEBAR"))
     gtk_window_set_decorated((GtkWindow*)ih->handle, FALSE);
+
+  if (gtk_widget_has_css_class(GTK_WIDGET(ih->handle), "csd") &&
+      (!iupAttribGetBoolean(ih, "MENUBOX") || !iupAttribGetBoolean(ih, "MAXBOX") || !iupAttribGetBoolean(ih, "MINBOX")))
+    gtk4DialogSetTitleBarButtons(ih);
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
@@ -922,6 +1049,9 @@ static void gtk4DialogLayoutUpdateMethod(Ihandle* ih)
 
   if (width <= 0) width = 1;
   if (height <= 0) height = 1;
+
+  iupAttribSetInt(ih, "_IUPGTK4_SIZED_BORDER", border);
+  iupAttribSetInt(ih, "_IUPGTK4_SIZED_CAPTION", caption);
 
   {
     int def_w, def_h;

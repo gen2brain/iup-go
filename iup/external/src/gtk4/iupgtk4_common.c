@@ -1115,6 +1115,47 @@ IUP_DRV_API int iupgtk4Win32MoveWindow(void* hwnd, int x, int y)
   return 1;
 }
 
+static HWND gtk4Win32GetFrameOffset(GtkWidget* widget, int* dx, int* dy)
+{
+  GdkSurface* surface = iupgtk4GetSurface(widget);
+  double sx = 0, sy = 0;
+  int scale;
+
+  if (!surface || !GDK_IS_WIN32_SURFACE(surface))
+    return NULL;
+
+  gtk_native_get_surface_transform(GTK_NATIVE(widget), &sx, &sy);
+  scale = gdk_surface_get_scale_factor(surface);
+  *dx = (int)(sx * scale);
+  *dy = (int)(sy * scale);
+
+  return gdk_win32_surface_get_handle(surface);
+}
+
+IUP_DRV_API int iupgtk4Win32SetWindowPosition(GtkWidget* widget, int x, int y)
+{
+  int dx, dy;
+  HWND hwnd = gtk4Win32GetFrameOffset(widget, &dx, &dy);
+  if (!hwnd)
+    return 0;
+
+  SetWindowPos(hwnd, NULL, x - dx, y - dy, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+  return 1;
+}
+
+IUP_DRV_API int iupgtk4Win32GetWindowPosition(GtkWidget* widget, int* x, int* y)
+{
+  RECT rect;
+  int dx, dy;
+  HWND hwnd = gtk4Win32GetFrameOffset(widget, &dx, &dy);
+  if (!hwnd || !GetWindowRect(hwnd, &rect))
+    return 0;
+
+  *x = rect.left + dx;
+  *y = rect.top + dy;
+  return 1;
+}
+
 /* GDK does not resize a mapped window from the default size on Windows */
 IUP_DRV_API int iupgtk4Win32ResizeWindow(GtkWidget* widget, int width, int height)
 {
