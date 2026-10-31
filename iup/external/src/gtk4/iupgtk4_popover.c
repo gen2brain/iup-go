@@ -34,11 +34,10 @@ static void gtk4PopoverAnchorDestroyCb(GtkWidget* anchor, Ihandle* ih)
 {
   (void)anchor;
 
-  if (ih->handle && GTK_IS_WIDGET(ih->handle))
-  {
+  iupAttribSet(ih, "_IUPGTK4_POPOVER_ANCHOR", NULL);
+
+  if (ih->handle && gtk_widget_get_parent((GtkWidget*)ih->handle))
     gtk_widget_unparent((GtkWidget*)ih->handle);
-    ih->handle = NULL;
-  }
 }
 
 static int gtk4PopoverSetVisibleAttrib(Ihandle* ih, const char* value)
@@ -229,6 +228,7 @@ static int gtk4PopoverMapMethod(Ihandle* ih)
   if (!popover)
     return IUP_ERROR;
 
+  g_object_ref_sink(popover);
   ih->handle = popover;
 
   {
@@ -242,6 +242,8 @@ static int gtk4PopoverMapMethod(Ihandle* ih)
   if (!inner_parent)
   {
     gtk_widget_unparent(popover);
+    g_object_unref(popover);
+    ih->handle = NULL;
     return IUP_ERROR;
   }
 
@@ -253,6 +255,7 @@ static int gtk4PopoverMapMethod(Ihandle* ih)
 
   /* Connect to anchor's destroy signal to unparent popover before anchor is finalized */
   g_signal_connect(G_OBJECT(anchor->handle), "destroy", G_CALLBACK(gtk4PopoverAnchorDestroyCb), ih);
+  iupAttribSet(ih, "_IUPGTK4_POPOVER_ANCHOR", (char*)anchor->handle);
 
   return IUP_NOERROR;
 }
@@ -260,13 +263,20 @@ static int gtk4PopoverMapMethod(Ihandle* ih)
 static void gtk4PopoverUnMapMethod(Ihandle* ih)
 {
   GtkWidget* popover = (GtkWidget*)ih->handle;
-  Ihandle* anchor = (Ihandle*)iupAttribGet(ih, "_IUP_POPOVER_ANCHOR");
+  GtkWidget* anchor = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_POPOVER_ANCHOR");
 
-  if (anchor && anchor->handle && GTK_IS_WIDGET(anchor->handle))
-    g_signal_handlers_disconnect_by_func(anchor->handle, gtk4PopoverAnchorDestroyCb, ih);
+  if (anchor)
+  {
+    g_signal_handlers_disconnect_by_func(anchor, gtk4PopoverAnchorDestroyCb, ih);
+    iupAttribSet(ih, "_IUPGTK4_POPOVER_ANCHOR", NULL);
+  }
 
-  if (popover && GTK_IS_WIDGET(popover))
-    gtk_widget_unparent(popover);
+  if (popover)
+  {
+    if (gtk_widget_get_parent(popover))
+      gtk_widget_unparent(popover);
+    g_object_unref(popover);
+  }
 
   ih->handle = NULL;
 }
