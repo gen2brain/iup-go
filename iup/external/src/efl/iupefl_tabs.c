@@ -1161,6 +1161,13 @@ static int eflTabsMapMethod(Ihandle* ih)
 static void eflTabsUnMapMethod(Ihandle* ih)
 {
   Eo* pager = iupeflGetWidget(ih);
+  Ecore_Job* job = (Ecore_Job*)iupAttribGet(ih, "_IUP_EFL_LAYOUT_JOB");
+
+  if (job)
+  {
+    ecore_job_del(job);
+    iupAttribSet(ih, "_IUP_EFL_LAYOUT_JOB", NULL);
+  }
 
   if (pager)
   {
