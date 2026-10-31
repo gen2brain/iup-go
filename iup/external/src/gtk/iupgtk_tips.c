@@ -47,6 +47,7 @@ static gboolean gtkQueryTooltip(GtkWidget* widget, gint _x, gint _y, gboolean ke
   {
     int x, y;
     iupdrvGetCursorPos(&x, &y);
+    iupdrvAddScreenOffset(&x, &y, 1);
     iupdrvScreenToClient(ih, &x, &y);
     cb(ih, x, y);
   }
@@ -199,6 +200,7 @@ static int gtkTipPointerInside(Ihandle* ih)
   int x, y;
 
   iupdrvGetCursorPos(&x, &y);
+  iupdrvAddScreenOffset(&x, &y, 1);
   iupdrvScreenToClient(ih, &x, &y);
 
   return x >= 0 && y >= 0 && x < ih->currentwidth && y < ih->currentheight;

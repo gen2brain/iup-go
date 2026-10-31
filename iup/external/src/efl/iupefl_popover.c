@@ -39,6 +39,7 @@ static Eina_Bool eflPopoverIsCursorOverAnchor(Ihandle* ih)
     return EINA_FALSE;
 
   iupdrvGetCursorPos(&cursor_x, &cursor_y);
+  iupdrvAddScreenOffset(&cursor_x, &cursor_y, 1);
 
   anchor_geom = efl_gfx_entity_geometry_get(anchor_widget);
 

@@ -31,6 +31,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_image.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_dialog.h"
 #include "iup_dlglist.h"
 }
@@ -245,6 +246,7 @@ extern "C" IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 
 extern "C" IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
+  iupdrvAddScreenOffset(&x, &y, 1);
 #if defined(FLTK_USE_X11)
   if (iupfltkIsX11()
 #ifdef IUPX11_USE_DLOPEN

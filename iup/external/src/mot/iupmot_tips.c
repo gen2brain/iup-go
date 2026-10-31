@@ -47,6 +47,7 @@ static void motTipsShow(void)
   IFnii cb;
 
   iupdrvGetCursorPos(&x, &y);
+  iupdrvAddScreenOffset(&x, &y, 1);
 
   cb = (IFnii)IupGetCallback(mot_tips.ih, "TIPS_CB");
   if (cb)

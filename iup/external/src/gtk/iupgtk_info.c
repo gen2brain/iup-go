@@ -19,12 +19,12 @@
 
 IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
-#if (defined(__APPLE__) || defined(G_OS_WIN32)) && GTK_CHECK_VERSION(3, 22, 0)
-  /* the main screen origin is the work area, below the macOS menu bar or beside a top/left Windows taskbar */
-  GdkDisplay* display = gdk_display_get_default();
-  GdkMonitor* monitor = display ? gdk_display_get_primary_monitor(display) : NULL;
+#if GTK_CHECK_VERSION(3, 4, 0)
   GdkRectangle geometry, workarea;
   int dx, dy;
+#if GTK_CHECK_VERSION(3, 22, 0)
+  GdkDisplay* display = gdk_display_get_default();
+  GdkMonitor* monitor = display ? gdk_display_get_primary_monitor(display) : NULL;
 
   if (!monitor && display)
     monitor = gdk_display_get_monitor(display, 0);
@@ -33,6 +33,16 @@ IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 
   gdk_monitor_get_geometry(monitor, &geometry);
   gdk_monitor_get_workarea(monitor, &workarea);
+#else
+  GdkScreen* screen = gdk_screen_get_default();
+  gint monitor = gdk_screen_get_primary_monitor(screen);
+
+  if (add == 0)
+    return;
+
+  gdk_screen_get_monitor_geometry(screen, monitor, &geometry);
+  gdk_screen_get_monitor_workarea(screen, monitor, &workarea);
+#endif
   dx = workarea.x - geometry.x;
   dy = workarea.y - geometry.y;
   if (add < 0)

@@ -198,6 +198,7 @@ static void eflDialogMoveCallback(void* data, const Efl_Event* ev)
   eflDialogGetFrameOffset((Eo*)ih->handle, &left, &top);
   x = pos->x - left;
   y = pos->y - top;
+  iupdrvAddScreenOffset(&x, &y, -1);
 
   if (!ih->data->ignore_resize && iupAttribGet(ih, "_IUPEFL_SIZED_BORDER"))
   {
@@ -734,6 +735,7 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
 
   if (x) *x = gx;
   if (y) *y = gy;
+  iupdrvAddScreenOffset(x, y, -1);
 }
 
 IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)

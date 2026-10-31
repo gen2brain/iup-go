@@ -22,7 +22,7 @@
 #include "iup_drvinfo.h"
 
 
-static int xGetWorkAreaSize(Display* display, int screen, int* width, int* height)
+static int xGetWorkArea(Display* display, int screen, int* x, int* y, int* width, int* height)
 {
   /* _NET_WORKAREA, x, y, width, height CARDINAL[][4]/32 */
   static Atom workarea = 0;
@@ -43,8 +43,10 @@ static int xGetWorkAreaSize(Display* display, int screen, int* width, int* heigh
     return 0;
   }
 
-  *width = data[2];    /* get only for the first desktop */
-  *height = data[3];
+  if (x) *x = data[0];    /* get only for the first desktop */
+  if (y) *y = data[1];
+  if (width) *width = data[2];
+  if (height) *height = data[3];
 
   XFree(data);
   return 1;
@@ -52,16 +54,27 @@ static int xGetWorkAreaSize(Display* display, int screen, int* width, int* heigh
 
 IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
-  (void)x;
-  (void)y;
-  (void)add;
+  Display* display = (Display*)iupdrvGetDisplay();
+  int dx, dy;
+
+  if (add == 0 || !xGetWorkArea(display, XDefaultScreen(display), &dx, &dy, NULL, NULL))
+    return;
+
+  if (add < 0)
+  {
+    dx = -dx;
+    dy = -dy;
+  }
+
+  if (x) *x += dx;
+  if (y) *y += dy;
 }
 
 IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
   Display* display = (Display*)iupdrvGetDisplay();
   int screen = XDefaultScreen(display);
-  if (!xGetWorkAreaSize(display, screen, width, height))
+  if (!xGetWorkArea(display, screen, NULL, NULL, width, height))
   {
     *width = DisplayWidth(display, screen);
     *height = DisplayHeight(display, screen);
@@ -164,6 +177,7 @@ IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 
   XQueryPointer(display, RootWindow(display, screen),
                 &root, &child, x, y, &cx, &cy, &keys);
+  iupdrvAddScreenOffset(x, y, -1);
 }
 
 static int xCheckModifier(KeyCode* modifiermap, int max_keypermod, int index, const char* keys)

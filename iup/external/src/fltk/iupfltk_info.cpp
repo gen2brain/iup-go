@@ -27,8 +27,6 @@ extern "C" {
 
 extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
-#if defined(__APPLE__) || defined(_WIN32)
-  /* the main screen origin is the work area, below the macOS menu bar or beside a top/left Windows taskbar */
   int wx, wy, ww, wh, sx, sy, sw, sh;
   if (add == 0)
     return;
@@ -45,11 +43,6 @@ extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 
   if (x) *x += wx - sx;
   if (y) *y += wy - sy;
-#else
-  (void)x;
-  (void)y;
-  (void)add;
-#endif
 }
 
 extern "C" IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)

@@ -262,6 +262,7 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
         }
         if (x) *x = gx;
         if (y) *y = gy;
+        iupdrvAddScreenOffset(x, y, -1);
         return;
       }
     }
@@ -274,6 +275,7 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
       {
         if (x) *x = wx;
         if (y) *y = wy;
+        iupdrvAddScreenOffset(x, y, -1);
         return;
       }
     }
@@ -758,10 +760,12 @@ static void gtk4DialogX11Configure(unsigned long xid)
         unsigned int start = (unsigned int)iupAttribGetInt(ih, "_IUPGTK4_TARGET_TIME");
         int target_x = iupAttribGetInt(ih, "_IUPGTK4_TARGET_X");
         int target_y = iupAttribGetInt(ih, "_IUPGTK4_TARGET_Y");
+        int screen_x = x, screen_y = y;
+        iupdrvAddScreenOffset(&screen_x, &screen_y, 1);
 
         if (iupdrvGetTickCount() - start > 500)
           iupAttribSet(ih, "_IUPGTK4_TARGET_TIME", NULL);
-        else if (x != target_x || y != target_y)
+        else if (screen_x != target_x || screen_y != target_y)
           iupgtk4X11MoveWindow(iupgtk4GetSurface(ih->handle), target_x, target_y);
       }
 

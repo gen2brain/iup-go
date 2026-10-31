@@ -28,6 +28,7 @@
 #include "iup_class.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_image.h"
 
 #include "iupmot_color.h"
@@ -622,10 +623,16 @@ IUP_SDK_API void iupdrvSendKey(int key, int press)
   }
 }
 
-IUP_SDK_API void iupdrvWarpPointer(int x, int y)
+static void motWarpPointer(int x, int y)
 {
   /* VirtualBox does not reproduce the mouse move visually, but it is working. */
   XWarpPointer(iupmot_display,None,RootWindow(iupmot_display, iupmot_screen),0,0,0,0,x,y);
+}
+
+IUP_SDK_API void iupdrvWarpPointer(int x, int y)
+{
+  iupdrvAddScreenOffset(&x, &y, 1);
+  motWarpPointer(x, y);
 }
 
 static Window mot_send_mouse_window = 0;
@@ -700,7 +707,7 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
   unsigned int button = (bt >= IUP_BUTTON1 && bt <= IUP_BUTTON5) ? (unsigned int)(bt - IUP_BUTTON1 + Button1) : 0;
   unsigned int mask = button ? (unsigned int)(Button1Mask << (button - Button1)) : 0;
 
-  iupdrvWarpPointer(x, y);
+  motWarpPointer(x, y);
 
   if (status == -1)
   {

@@ -172,6 +172,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
 
           int x, y;
           iupdrvGetCursorPos(&x, &y);
+          iupdrvAddScreenOffset(&x, &y, 1);
           iupdrvScreenToClient(ih, &x, &y);
 
           const char* rect = iupAttribGet(ih, "TIPRECT");
@@ -267,6 +268,7 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char
 
     int sx, sy;
     iupdrvGetCursorPos(&sx, &sy);
+    iupdrvAddScreenOffset(&sx, &sy, 1);
 
     Ihandle* dialog = IupGetDialog(ih);
     POINT pt;

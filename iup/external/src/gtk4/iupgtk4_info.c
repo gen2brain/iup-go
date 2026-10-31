@@ -18,28 +18,81 @@
 #include "iupgtk4_x11.h"
 #include "iupgtk4_drv.h"
 
+#ifdef GDK_WINDOWING_WIN32
+#include <gdk/win32/gdkwin32.h>
+#endif
+#ifdef GDK_WINDOWING_MACOS
+#include <gdk/macos/gdkmacos.h>
+#endif
+
+
+static GdkMonitor* gtk4GetMainMonitor(void)
+{
+  GListModel* monitors = gdk_display_get_monitors(gdk_display_get_default());
+
+  if (g_list_model_get_n_items(monitors) > 0)
+    return g_list_model_get_item(monitors, 0);
+  return NULL;
+}
+
+static void gtk4GetMonitorWorkarea(GdkMonitor* monitor, GdkRectangle* workarea)
+{
+  gdk_monitor_get_geometry(monitor, workarea);
+
+#ifdef GDK_WINDOWING_X11
+  if (iupgtk4X11GetMonitorWorkarea(monitor, workarea))
+    return;
+#endif
+#ifdef GDK_WINDOWING_WIN32
+  if (GDK_IS_WIN32_MONITOR(monitor))
+  {
+    gdk_win32_monitor_get_workarea(monitor, workarea);
+    return;
+  }
+#endif
+#ifdef GDK_WINDOWING_MACOS
+  if (GDK_IS_MACOS_MONITOR(monitor))
+    gdk_macos_monitor_get_workarea(monitor, workarea);
+#endif
+}
 
 IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
-  (void)x;
-  (void)y;
-  (void)add;
+  GdkMonitor* monitor;
+  GdkRectangle geometry, workarea;
+  int dx, dy;
+
+  if (add == 0)
+    return;
+
+  monitor = gtk4GetMainMonitor();
+  if (!monitor)
+    return;
+
+  gdk_monitor_get_geometry(monitor, &geometry);
+  gtk4GetMonitorWorkarea(monitor, &workarea);
+  g_object_unref(monitor);
+
+  dx = workarea.x - geometry.x;
+  dy = workarea.y - geometry.y;
+  if (add < 0)
+  {
+    dx = -dx;
+    dy = -dy;
+  }
+
+  if (x) *x += dx;
+  if (y) *y += dy;
 }
 
 IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
-  GdkDisplay* display = gdk_display_get_default();
-  GListModel* monitors = gdk_display_get_monitors(display);
-  GdkMonitor* monitor = NULL;
-
-  /* gdk_monitor_is_primary removed, just use first monitor */
-  if (g_list_model_get_n_items(monitors) > 0)
-    monitor = g_list_model_get_item(monitors, 0);
+  GdkMonitor* monitor = gtk4GetMainMonitor();
 
   if (monitor)
   {
     GdkRectangle rect;
-    gdk_monitor_get_geometry(monitor, &rect);
+    gtk4GetMonitorWorkarea(monitor, &rect);
     *width = rect.width;
     *height = rect.height;
     g_object_unref(monitor);
@@ -117,7 +170,10 @@ IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
 {
 #ifdef GDK_WINDOWING_X11
   if (iupgtk4X11IsBackend() && iupgtk4X11QueryPointer(x, y))
+  {
+    iupdrvAddScreenOffset(x, y, -1);
     return;
+  }
 #endif
 
   {

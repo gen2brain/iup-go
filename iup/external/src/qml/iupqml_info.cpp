@@ -50,8 +50,6 @@
 
 extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
-#if defined(Q_OS_MACOS) || defined(Q_OS_WIN)
-  /* the main screen origin is the work area, below the macOS menu bar or beside a top/left Windows taskbar */
   QScreen* screen = QGuiApplication::primaryScreen();
   if (!screen || add == 0)
     return;
@@ -62,11 +60,6 @@ extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 
   if (x) *x += offset.x();
   if (y) *y += offset.y();
-#else
-  (void)x;
-  (void)y;
-  (void)add;
-#endif
 }
 
 extern "C" IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)

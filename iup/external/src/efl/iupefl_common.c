@@ -18,6 +18,7 @@
 #include "iupcbs.h"
 #include "iup_str.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_object.h"
 #include "iup_attrib.h"
 #include "iup_class.h"
@@ -1519,6 +1520,7 @@ IUP_SDK_API void iupdrvScreenToClient(Ihandle* ih, int* x, int* y)
 
 IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
+  iupdrvAddScreenOffset(&x, &y, 1);
 #ifdef HAVE_ECORE_X
   if (iupeflIsX11())
   {

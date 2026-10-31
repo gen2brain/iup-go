@@ -3066,6 +3066,7 @@ static int winTreeWmNotify(Ihandle* ih, NMHDR* msg_info, int* result)
     {
       int x, y;
       iupdrvGetCursorPos(&x, &y);
+      iupdrvAddScreenOffset(&x, &y, 1);
       iupdrvScreenToClient(ih, &x, &y);
       cb(ih, x, y);
     }
