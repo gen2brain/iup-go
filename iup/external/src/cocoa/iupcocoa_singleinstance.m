@@ -46,10 +46,19 @@ static CFDataRef iupCocoaSIPortCallback(CFMessagePortRef local, SInt32 msgid, CF
   if (cfdata)
   {
     const char* data = (const char*)CFDataGetBytePtr(cfdata);
-    int len = (int)CFDataGetLength(cfdata);
+    CFIndex len = CFDataGetLength(cfdata);
 
     if (data && len > 0)
-      iupCocoaSIDeliverData(data, len);
+    {
+      char* str = (char*)malloc((size_t)len + 1);
+      if (str)
+      {
+        memcpy(str, data, (size_t)len);
+        str[len] = 0;
+        iupCocoaSIDeliverData(str, (int)strlen(str) + 1);
+        free(str);
+      }
+    }
   }
 
   [NSApp activateIgnoringOtherApps:YES];
