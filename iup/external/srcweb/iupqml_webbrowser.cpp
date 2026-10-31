@@ -194,13 +194,12 @@ static void qmlWebBrowserRunJavaScript(Ihandle* ih, const char* format, ...)
   if (!data)
     return;
 
-  char js[4096];
   va_list arglist;
   va_start(arglist, format);
-  vsnprintf(js, sizeof(js), format, arglist);
+  QString js = QString::vasprintf(format, arglist);
   va_end(arglist);
 
-  iupqmlCallMethod(data->view, "iupRun", -1, QString::fromUtf8(js));
+  iupqmlCallMethod(data->view, "iupRun", -1, js);
 }
 
 static char* qmlWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
@@ -236,13 +235,12 @@ static char* qmlWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
 
 static char* qmlWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...)
 {
-  char js[4096];
   va_list arglist;
   va_start(arglist, format);
-  vsnprintf(js, sizeof(js), format, arglist);
+  QString js = QString::vasprintf(format, arglist);
   va_end(arglist);
 
-  return qmlWebBrowserExecJavaScriptSync(ih, js);
+  return qmlWebBrowserExecJavaScriptSync(ih, js.toUtf8().constData());
 }
 
 /****************************************************************************
@@ -709,10 +707,9 @@ static int qmlWebBrowserExecCommandWithParamAttrib(Ihandle* ih, const char* cmd,
 static char* qmlWebBrowserQueryCommandValue(Ihandle* ih, const char* cmd)
 {
   char* escaped_cmd = qmlWebBrowserEscapeJavaScript(cmd);
-  char js[256];
-  snprintf(js, sizeof(js), "document.queryCommandValue(%s);", escaped_cmd);
+  char* result = qmlWebBrowserRunJavaScriptSync(ih, "document.queryCommandValue(%s);", escaped_cmd);
   free(escaped_cmd);
-  return qmlWebBrowserRunJavaScriptSync(ih, "%s", js);
+  return result;
 }
 
 /****************************************************************************
@@ -997,19 +994,17 @@ static char* qmlWebBrowserGetBackColorAttrib(Ihandle* ih)
 static char* qmlWebBrowserQueryCommandState(Ihandle* ih, const char* cmd)
 {
   char* escaped_cmd = qmlWebBrowserEscapeJavaScript(cmd);
-  char js[256];
-  snprintf(js, sizeof(js), "document.queryCommandState(%s);", escaped_cmd);
+  char* result = qmlWebBrowserRunJavaScriptSync(ih, "document.queryCommandState(%s);", escaped_cmd);
   free(escaped_cmd);
-  return qmlWebBrowserRunJavaScriptSync(ih, "%s", js);
+  return result;
 }
 
 static char* qmlWebBrowserQueryCommandEnabled(Ihandle* ih, const char* cmd)
 {
   char* escaped_cmd = qmlWebBrowserEscapeJavaScript(cmd);
-  char js[256];
-  snprintf(js, sizeof(js), "document.queryCommandEnabled(%s);", escaped_cmd);
+  char* result = qmlWebBrowserRunJavaScriptSync(ih, "document.queryCommandEnabled(%s);", escaped_cmd);
   free(escaped_cmd);
-  return qmlWebBrowserRunJavaScriptSync(ih, "%s", js);
+  return result;
 }
 
 static const char* qmlWebBrowserMapCommandName(const char* cmd)
@@ -1082,8 +1077,7 @@ static char* qmlWebBrowserGetAttributeAttrib(Ihandle* ih)
   char* escaped_id = qmlWebBrowserEscapeJavaScript(element_id);
   char* escaped_name = qmlWebBrowserEscapeJavaScript(attrib_name);
 
-  char js[512];
-  snprintf(js, sizeof(js),
+  char* result = qmlWebBrowserRunJavaScriptSync(ih,
     "(function() {"
     "  var elem = document.getElementById(%s);"
     "  if (elem) return elem.getAttribute(%s) || '';"
@@ -1094,7 +1088,7 @@ static char* qmlWebBrowserGetAttributeAttrib(Ihandle* ih)
   free(escaped_id);
   free(escaped_name);
 
-  return qmlWebBrowserRunJavaScriptSync(ih, "%s", js);
+  return result;
 }
 
 static int qmlWebBrowserSetAttributeAttrib(Ihandle* ih, const char* value)
@@ -1109,15 +1103,12 @@ static int qmlWebBrowserSetAttributeAttrib(Ihandle* ih, const char* value)
   char* escaped_name = qmlWebBrowserEscapeJavaScript(attrib_name);
   char* escaped_value = qmlWebBrowserEscapeJavaScript(value ? value : "");
 
-  char js[1024];
-  snprintf(js, sizeof(js),
+  qmlWebBrowserRunJavaScript(ih,
     "(function() {"
     "  var elem = document.getElementById(%s);"
     "  if (elem) elem.setAttribute(%s, %s);"
     "})();",
     escaped_id, escaped_name, escaped_value);
-
-  qmlWebBrowserRunJavaScript(ih, "%s", js);
 
   free(escaped_id);
   free(escaped_name);
