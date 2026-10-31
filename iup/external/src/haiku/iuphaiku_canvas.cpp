@@ -678,9 +678,9 @@ static void haikuCanvasUnMapMethod(Ihandle* ih)
   {
     v->SetIhandle(nullptr);
   }
-  iupAttribSet(ih, "_IUP_EXTRAPARENT", nullptr);
   iupAttribSet(ih, "_IUPHAIKU_CANVAS_VSB", nullptr);
   iupdrvBaseUnMapMethod(ih);
+  iupAttribSet(ih, "_IUP_EXTRAPARENT", nullptr);
 }
 
 static char* haikuCanvasGetDrawSizeAttrib(Ihandle* ih)

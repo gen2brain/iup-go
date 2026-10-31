@@ -605,7 +605,8 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
   if (!ih || !ih->handle)
     return;
 
-  auto* view = reinterpret_cast<BView*>(ih->handle);
+  auto* view = reinterpret_cast<BView*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
+  if (!view) view = reinterpret_cast<BView*>(ih->handle);
   BWindow* window = view->Window();
 
   if (window)
