@@ -1064,7 +1064,7 @@ static int haikuDialogSetIconAttrib(Ihandle* ih, const char* value)
   }
 
   /* Deskbar caches the team icon at launch; QUIT+LAUNCHED forces a re-query. */
-  if (!iupAttribGetBoolean(ih, "HIDETASKBAR"))
+  if (!iupAttribGet(ih, "_IUPHAIKU_HIDETASKBAR"))
   {
     haikuDialogSetDeskbarTeamVisible(false);
     haikuDialogSetDeskbarTeamVisible(true);
@@ -1075,6 +1075,7 @@ static int haikuDialogSetIconAttrib(Ihandle* ih, const char* value)
 static int haikuDialogSetHideTaskbarAttrib(Ihandle* ih, const char* value)
 {
   int hide = iupStrBoolean(value);
+  iupAttribSet(ih, "_IUPHAIKU_HIDETASKBAR", hide ? "1" : nullptr);
   haikuDialogSetDeskbarTeamVisible(!hide);
   iupdrvDialogSetVisible(ih, !hide);
   return 0;
