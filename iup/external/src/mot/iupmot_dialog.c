@@ -168,6 +168,7 @@ IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int
 
   if (x) *x = cur_x;
   if (y) *y = cur_y;
+  iupdrvAddScreenOffset(x, y, -1);
 }
 
 IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)

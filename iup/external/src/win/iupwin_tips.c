@@ -287,6 +287,7 @@ IUP_DRV_API void iupwinTipsGetDispInfo(LPARAM lp)
   {
     int x, y;
     iupdrvGetCursorPos(&x, &y);
+    iupdrvAddScreenOffset(&x, &y, 1);
     iupdrvScreenToClient(ih, &x, &y);
     cb(ih, x, y);
   }

@@ -205,7 +205,7 @@ On Android single instance is enforced by the Activity launchMode in the manifes
 ### CURSORPOS
 
 Controls and returns the cursor position in absolute coordinates relative to the origin of the main screen.
-The origin of the main screen is at the top-left corner, in Windows it is affected by the position of the Start Menu when it is at the top or left side of the screen, and in macOS it is below the menu bar.
+The origin of the main screen is the top-left corner of its work area, the area not covered by task bars, docks, panels and the macOS menu bar.
 Accept values in the format "X**x**Y" (in C "%dx%d), example "200x200".
 In GTK and Motif also generates mouse motion messages.
 On Wayland it returns the position relative to the top-left corner of the contents of the dialog under the cursor, below the title bar.
@@ -583,7 +583,8 @@ String in the "*width*x*height*" format.
 ### SCREENSIZE (read-only)
 
 Returns the screen size in pixels available for dialogs, i.e., not including menu bars, task bars, etc.
-In Motif, uses the `_NET_WORKAREA` property if available from the window manager, otherwise has the same value as the FULLSIZE attribute.
+In X11 it is the `_NET_WORKAREA` of the window manager, or the same as FULLSIZE when the window manager does not set it.
+On Wayland it is the same as FULLSIZE.
 The main screen size does not include additional monitors.
 
 String in the "*width*x*height*" format.

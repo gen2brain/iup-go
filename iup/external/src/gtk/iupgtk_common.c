@@ -26,6 +26,7 @@
 #include "iup_attrib.h"
 #include "iup_image.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_markup.h"
 
 #include "iupgtk_drv.h"
@@ -1044,7 +1045,7 @@ IUP_SDK_API void iupdrvSendKey(int key, int press)
   g_free(keys);
 }
 
-IUP_SDK_API void iupdrvWarpPointer(int x, int y)
+static void gtkWarpPointer(int x, int y)
 {
   /* VirtualBox does not reproduce the mouse move visually, but it is working. */
 #if GTK_CHECK_VERSION(3, 20, 0)
@@ -1058,6 +1059,12 @@ IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 #elif GTK_CHECK_VERSION(2, 8, 0)
   gdk_display_warp_pointer(gdk_display_get_default(), gdk_screen_get_default(), x, y);
 #endif
+}
+
+IUP_SDK_API void iupdrvWarpPointer(int x, int y)
+{
+  iupdrvAddScreenOffset(&x, &y, 1);
+  gtkWarpPointer(x, y);
 }
 
 #if GTK_CHECK_VERSION(3, 20, 0)
@@ -1115,7 +1122,7 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
     if (button && gtk_send_mouse_window)
       gtkSendMouseEvent(GDK_MOTION_NOTIFY, gtk_send_mouse_window, x, y, mask, 0);
     else
-      iupdrvWarpPointer(x, y);
+      gtkWarpPointer(x, y);
     return;
   }
 
@@ -1130,14 +1137,14 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
       g_object_unref(gtk_send_mouse_window);
       gtk_send_mouse_window = NULL;
     }
-    iupdrvWarpPointer(x, y);
+    gtkWarpPointer(x, y);
   }
   else
   {
     GtkWidget* grab_widget;
     GdkWindow* window;
 
-    iupdrvWarpPointer(x, y);
+    gtkWarpPointer(x, y);
     gdk_display_sync(gdk_display_get_default());
     while (gtk_events_pending())
       gtk_main_iteration_do(FALSE);
@@ -1165,7 +1172,7 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
   /* always update cursor */
   /* must be before sending the message because the cursor position will be used */
   /* this will also send an extra motion event */
-  iupdrvWarpPointer(x, y);
+  gtkWarpPointer(x, y);
 
   if (status != -1)
   {

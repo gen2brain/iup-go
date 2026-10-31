@@ -3800,6 +3800,7 @@ static int winuiTableSetDragSourceAttrib(Ihandle* ih, const char* value)
     {
       int x, y;
       iupdrvGetCursorPos(&x, &y);
+      iupdrvAddScreenOffset(&x, &y, 1);
       iupdrvScreenToClient(ih, &x, &y);
       if (dragbegin_cb(ih, x, y) == IUP_IGNORE)
       {

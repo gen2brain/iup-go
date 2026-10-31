@@ -18,6 +18,7 @@ IUP_DRV_API void* iupgtk4X11GetDisplay(void);
 IUP_DRV_API unsigned long iupgtk4X11GetSurfaceXid(GdkSurface* surface);
 IUP_DRV_API int iupgtk4X11IsSurface(GdkSurface* surface);
 IUP_DRV_API unsigned int iupgtk4X11GetServerTime(GdkSurface* surface);
+IUP_DRV_API int iupgtk4X11GetMonitorWorkarea(GdkMonitor* monitor, GdkRectangle* workarea);
 
 IUP_DRV_API int iupgtk4X11MoveWindow(GdkSurface* surface, int x, int y);
 IUP_DRV_API int iupgtk4X11ResizeWindow(GdkSurface* surface, int width, int height);

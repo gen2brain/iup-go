@@ -5,23 +5,69 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "iup_export.h"
 #include "iup_drvinfo.h"
 
 #include "iupefl_drv.h"
 
+#ifdef HAVE_ECORE_X
+#include <Ecore_X.h>
+#endif
+
+
+static int eflGetWorkArea(int* x, int* y, int* width, int* height)
+{
+#ifdef HAVE_ECORE_X
+  if (!iupeflIsWayland())
+  {
+    unsigned int desks = 0;
+    unsigned int* areas = ecore_x_netwm_desk_workareas_get(ecore_x_window_root_first_get(), &desks);
+    if (areas && desks > 0)
+    {
+      if (x) *x = (int)areas[0];
+      if (y) *y = (int)areas[1];
+      if (width) *width = (int)areas[2];
+      if (height) *height = (int)areas[3];
+      free(areas);
+      return 1;
+    }
+    free(areas);
+  }
+#endif
+  (void)x;
+  (void)y;
+  (void)width;
+  (void)height;
+  return 0;
+}
 
 IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
-  (void)x;
-  (void)y;
-  (void)add;
+  int dx, dy;
+
+  if (add == 0 || !eflGetWorkArea(&dx, &dy, NULL, NULL))
+    return;
+
+  if (add < 0)
+  {
+    dx = -dx;
+    dy = -dy;
+  }
+
+  if (x) *x += dx;
+  if (y) *y += dy;
 }
 
 IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 {
-  Ecore_Evas* ee = ecore_evas_new(NULL, 0, 0, 1, 1, NULL);
+  Ecore_Evas* ee;
+
+  if (eflGetWorkArea(NULL, NULL, width, height))
+    return;
+
+  ee = ecore_evas_new(NULL, 0, 0, 1, 1, NULL);
   if (ee)
   {
     ecore_evas_screen_geometry_get(ee, NULL, NULL, width, height);
@@ -109,6 +155,8 @@ IUP_SDK_API void iupdrvGetCursorPos(int* x, int* y)
       }
     }
   }
+
+  iupdrvAddScreenOffset(x, y, -1);
 }
 
 IUP_SDK_API void iupdrvGetKeyState(char* key)

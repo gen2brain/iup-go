@@ -31,6 +31,7 @@ extern "C" {
 #include "iup_class.h"
 #include "iup_attrib.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_dialog.h"
 #include "iup_dlglist.h"
 #include "iup_image.h"
@@ -818,6 +819,7 @@ extern "C" IUP_SDK_API int iupdrvGetScrollbarSize(void)
 
 extern "C" IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
+  iupdrvAddScreenOffset(&x, &y, 1);
   QCursor::setPos(x, y);
 }
 

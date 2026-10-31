@@ -20,6 +20,7 @@
 #include "iup_attrib.h"
 #include "iup_image.h"
 #include "iup_drv.h"
+#include "iup_drvinfo.h"
 #include "iup_dialog.h"
 #include "iup_dlglist.h"
 #include "iup_markup.h"
@@ -813,6 +814,7 @@ IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 
 IUP_SDK_API void iupdrvWarpPointer(int x, int y)
 {
+  iupdrvAddScreenOffset(&x, &y, 1);
 #ifdef GDK_WINDOWING_X11
   if (iupgtk4X11IsBackend() && iupgtk4X11WarpPointer(x, y))
     return;

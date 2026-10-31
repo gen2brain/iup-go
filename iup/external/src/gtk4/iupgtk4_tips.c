@@ -36,6 +36,7 @@ static gboolean gtk4QueryTooltip(GtkWidget* widget, gint _x, gint _y, gboolean k
   {
     int x, y;
     iupdrvGetCursorPos(&x, &y);
+    iupdrvAddScreenOffset(&x, &y, 1);
     iupdrvScreenToClient(ih, &x, &y);
     cb(ih, x, y);
   }

@@ -100,6 +100,7 @@ static Evas_Object* eflTipContentCb(void* data, Evas_Object* obj, Evas_Object* t
   {
     int x, y;
     iupdrvGetCursorPos(&x, &y);
+    iupdrvAddScreenOffset(&x, &y, 1);
     iupdrvScreenToClient(ih, &x, &y);
     tips_cb(ih, x, y);
   }
