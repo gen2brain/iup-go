@@ -793,17 +793,22 @@ IUP_SDK_API void iupdrvBaseLayoutUpdateMethod(Ihandle* ih)
 }
 @end
 
+static const void* CURSOR_DELEGATE_ASSOCIATED_OBJ_KEY = @"CURSOR_DELEGATE_ASSOCIATED_OBJ_KEY";
+
 static void cocoaCursorRemove(Ihandle* ih, NSView* main_view)
 {
-  IUPCursorTrackingDelegate* old_delegate = (IUPCursorTrackingDelegate*)iupAttribGet(ih, "_IUPCOCOA_CURSOR_DELEGATE");
-  if (!old_delegate)
+  if (!iupAttribGet(ih, "_IUPCOCOA_CURSOR_DELEGATE"))
     return;
 
-  NSTrackingArea* old_area = (NSTrackingArea*)iupAttribGet(ih, "_IUPCOCOA_TRACKINGAREA");
-  if (old_area)
-    [main_view removeTrackingArea:old_area];
+  if (main_view)
+  {
+    NSTrackingArea* old_area = (NSTrackingArea*)iupAttribGet(ih, "_IUPCOCOA_TRACKINGAREA");
+    if (old_area)
+      [main_view removeTrackingArea:old_area];
 
-  [old_delegate release];
+    objc_setAssociatedObject(main_view, CURSOR_DELEGATE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
+  }
+
   iupAttribSet(ih, "_IUPCOCOA_CURSOR_DELEGATE", NULL);
   iupAttribSet(ih, "_IUPCOCOA_TRACKINGAREA", NULL);
 }
@@ -1281,6 +1286,8 @@ IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
   {
     IUPCursorTrackingDelegate* delegate = [[IUPCursorTrackingDelegate alloc] init];
     delegate.cursor = cursor;
+    objc_setAssociatedObject(main_view, CURSOR_DELEGATE_ASSOCIATED_OBJ_KEY, delegate, OBJC_ASSOCIATION_RETAIN);
+    [delegate release];
     iupAttribSet(ih, "_IUPCOCOA_CURSOR_DELEGATE", (char*)delegate);
 
     NSTrackingArea* area = [[NSTrackingArea alloc] initWithRect:[main_view bounds]
