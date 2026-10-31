@@ -461,7 +461,7 @@ IUP_SDK_API int iupStrCountChar(const char* str, char c)
 
 IUP_SDK_API void iupStrCopyN(char* dst_str, int dst_max_size, const char* src_str)
 {
-  if (src_str)
+  if (src_str && dst_max_size > 0)
   {
     int size = (int)strlen(src_str) + 1;
     if (size > dst_max_size) size = dst_max_size;
@@ -632,8 +632,10 @@ IUP_SDK_API char* iupStrGetMemory(int size)
     /* first allocation */
     if (!(buffers[buffers_index]))
     {
+      buffers[buffers_index] = (char*)malloc(size+1);
+      if (!buffers[buffers_index])
+        return NULL;
       buffers_sizes[buffers_index] = size+1;
-      buffers[buffers_index] = (char*)malloc(buffers_sizes[buffers_index]);
     }
     else if (buffers_sizes[buffers_index] < size+1)  /* reallocate if necessary */
     {
@@ -661,6 +663,8 @@ IUP_SDK_API char* iupStrReturnStrf(const char* format, ...)
 {
   char* str = iupStrGetMemory(10240);
   va_list arglist;
+  if (!str)
+    return NULL;
   va_start(arglist, format);
   vsnprintf(str, 10240, format, arglist);
   va_end(arglist);
@@ -673,6 +677,8 @@ IUP_SDK_API char* iupStrReturnStr(const char* str)
   {
     int size = (int)strlen(str)+1;
     char* ret_str = iupStrGetMemory(size);
+    if (!ret_str)
+      return NULL;
     memcpy(ret_str, str, size);
     return ret_str;
   }
@@ -749,6 +755,8 @@ IUP_SDK_API char* iupStrReturnStrStr(const char* str1, const char* str2, char se
     if (str1) size1 = (int)strlen(str1);
     if (str2) size2 = (int)strlen(str2);
     ret_str = iupStrGetMemory(size1+size2+2);
+    if (!ret_str)
+      return NULL;
     if (str1 && size1) memcpy(ret_str, str1, size1);
     ret_str[size1] = sep;
     if (str2 && size2) memcpy(ret_str+size1+1, str2, size2);
@@ -1227,7 +1235,7 @@ IUP_SDK_API char* iupStrFileMakeFileName(const char* path, const char* title)
     char* filename = malloc(size_path + size_title + 2);
     memcpy(filename, path, size_path);
 
-    if (path[size_path - 1] != '/' && path[size_path - 1] != '\\')
+    if (size_path > 0 && path[size_path - 1] != '/' && path[size_path - 1] != '\\')
     {
       filename[size_path] = '/';
       size_path++;
@@ -1253,7 +1261,7 @@ IUP_SDK_API void iupStrFileNameSplit(const char* filename, char* path, int path_
   {
     if (filename[i] == '\\' || filename[i] == '/')
     {
-      if (path)
+      if (path && path_size > 0)
       {
         int len = i + 1;
         if (len >= path_size) len = path_size - 1;
@@ -1887,9 +1895,20 @@ IUP_SDK_API void iupStrChangeCase(char* dstr, const char* sstr, int case_flag, i
   for (; *sstr; sstr++, dstr++)
   {
     char src, dst;
+    const char* start = sstr;
 
     if (utf8)
+    {
       src = iStrUTF8toLatin1(&sstr);  /* may increment an utf8 character */
+      if (src == 0)
+      {
+        int n = (int)(sstr - start) + 1;
+        memmove(dstr, start, n);
+        dstr += n - 1;
+        first = 0;
+        continue;
+      }
+    }
     else
       src = *sstr;
 
@@ -1914,10 +1933,19 @@ IUP_SDK_API void iupStrChangeCase(char* dstr, const char* sstr, int case_flag, i
       }
     case IUP_CASE_TITLE:
       {
-        int first_of_small_word = !first && (iStrIsSeparator(dstr[-1]) && /* first letter of a word */
-                                             ((dstr[+1] != 0 && iStrIsSeparator(dstr[+1])) ||   /* word of 1 */
-                                              (dstr[+2] != 0 && iStrIsSeparator(dstr[+2])) ||   /* word of 2 */
-                                              (dstr[+3] != 0 && iStrIsSeparator(dstr[+3]))));   /* word of 3 */
+        int first_of_small_word = 0;
+        if (!first && iStrIsSeparator(dstr[-1]))
+        {
+          int k;
+          for (k = 1; k <= 3 && dstr[k] != 0; k++)
+          {
+            if (iStrIsSeparator(dstr[k]))
+            {
+              first_of_small_word = 1;
+              break;
+            }
+          }
+        }
         if (first_of_small_word) /* don't change the first of small words with less than 3 characters */
           break;
 
@@ -2062,8 +2090,10 @@ IUP_SDK_API void iupStrRemove(char* value, int start, int end, int dir, int utf8
 
   /* from "start" remove up to "end", but not including "end" */
   len = (int)strlen(value);
+  if (start < 0) start = 0;
   if (start >= len) { start = len - 1; end = len; }
   if (end > len) end = len;
+  if (end < start) end = start;
 
   memmove(value + start, value + end, len - end + 1);
 }
@@ -2082,9 +2112,16 @@ IUP_SDK_API char* iupStrInsert(const char* value, const char* insert_value, int 
   if (utf8)
     iStrFixPosUTF8(value, &start, &end);
 
+  if (start < 0) start = 0;
+  if (start > len) start = len;
+  if (end < start) end = start;
+  if (end > len) end = len;
+
   if (end == start || insert_len > end - start)
   {
     new_str = malloc(len - (end - start) + insert_len + 1);
+    if (!new_str)
+      return NULL;
     memcpy(new_str, value, start);
     memcpy(new_str + start, insert_value, insert_len);
     memcpy(new_str + start + insert_len, value + end, len - end + 1);
