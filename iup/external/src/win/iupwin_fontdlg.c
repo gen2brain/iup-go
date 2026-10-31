@@ -100,12 +100,12 @@ static int winFontDlgPopup(Ihandle* ih, int x, int y)
   font = iupAttribGet(ih, "VALUE");
   if (!font)
   {
-    if (!iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), typeface, &height, &is_bold, &is_italic, &is_underline, &is_strikeout))
+    if (!iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), typeface, sizeof(typeface), &height, &is_bold, &is_italic, &is_underline, &is_strikeout))
       return IUP_ERROR;
   }
   else
   {
-    if (!iupGetFontInfo(font, typeface, &height, &is_bold, &is_italic, &is_underline, &is_strikeout))
+    if (!iupGetFontInfo(font, typeface, sizeof(typeface), &height, &is_bold, &is_italic, &is_underline, &is_strikeout))
     {
       char def_typeface[50] = "";
       int def_height = 8;
@@ -114,7 +114,7 @@ static int winFontDlgPopup(Ihandle* ih, int x, int y)
         def_is_underline = 0,
         def_is_strikeout = 0;
 
-      if (!iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), def_typeface, &def_height, &def_is_bold, &def_is_italic, &def_is_underline, &def_is_strikeout))
+      if (!iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), def_typeface, sizeof(def_typeface), &def_height, &def_is_bold, &def_is_italic, &def_is_underline, &def_is_strikeout))
         return IUP_ERROR;
 
       if (typeface[0] == 0)

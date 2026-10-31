@@ -59,6 +59,7 @@ To clear the internal buffer set it to NULL.
 LASTERROR can also be set to "INVALIDFILENAME" (failed to open).
 Data will be in plain text format, but the file format will be defined by the **FILEFORMAT** attribute, can be "TXT" (default), "HTML" or "LaTeX".
 The **COPYCAPTION** attribute can be used to define a caption that will be added to the file before the data, depending on the file format.
+In HTML and LaTeX formats the cell values and the caption are escaped for that format.
 
 When using TXT format, the **TEXTSEPARATOR** attribute can be used to define a column separator (default is tab '\t') and line separator will be line feeds ('\n').\
 When using LaTeX format, the **LATEXLABEL** attribute can be used to define a label for the table.\

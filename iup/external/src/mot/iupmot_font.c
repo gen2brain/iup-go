@@ -318,7 +318,7 @@ static ImotFont* motFindFont(const char* foundry, const char* font)
     char typeface[1024];
     const char* mapped_name;
 
-    if (!iupFontParsePango(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+    if (!iupFontParsePango(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
       return NULL;
 
     /* Map standard names to native names */

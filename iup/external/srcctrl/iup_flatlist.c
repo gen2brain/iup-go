@@ -1588,7 +1588,7 @@ static int iFlatListSetItemFontStyleAttrib(Ihandle* ih, int pos, const char* val
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return 0;
 
   IupSetfAttributeId(ih, "ITEMFONT", pos, "%s, %s %d", typeface, value, size);
@@ -1616,7 +1616,7 @@ static char* iFlatListGetItemFontStyleAttrib(Ihandle* ih, int pos)
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return NULL;
 
   return iupStrReturnStrf("%s%s%s%s", is_bold ? "Bold " : "", is_italic ? "Italic " : "", is_underline ? "Underline " : "", is_strikeout ? "Strikeout " : "");
@@ -1645,7 +1645,7 @@ static int iFlatListSetItemFontSizeAttrib(Ihandle* ih, int pos, const char* valu
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return 0;
 
   IupSetfAttributeId(ih, "ITEMFONT", pos, "%s, %s%s%s%s%s", typeface, is_bold ? "Bold " : "", is_italic ? "Italic " : "", is_underline ? "Underline " : "", is_strikeout ? "Strikeout " : "", value);
@@ -1673,7 +1673,7 @@ static char* iFlatListGetItemFontSizeAttrib(Ihandle* ih, int pos)
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return NULL;
 
   return iupStrReturnInt(size);

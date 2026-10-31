@@ -59,7 +59,7 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
         is_underline = 0,
         is_strikeout = 0;
 
-    if (iupGetFontInfo(font_str, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+    if (iupGetFontInfo(font_str, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     {
       /* Map standard names to native names */
       const char* mapped_name = iupFontGetPangoName(typeface);

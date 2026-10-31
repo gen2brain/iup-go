@@ -936,7 +936,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
 
   if (font)
   {
-    iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
+    iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
 
     const char* mapped_name = iupFontGetWinName(typeface);
     if (mapped_name)

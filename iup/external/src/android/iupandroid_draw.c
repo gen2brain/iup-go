@@ -411,7 +411,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   int size = 0, is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
   if (font && font[0])
   {
-    iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
+    iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
     if (size < 0) size = -iupAndroid_DpToPx(-size);
     family = iupFontGetAndroidName(typeface);
     if (!family) family = typeface;

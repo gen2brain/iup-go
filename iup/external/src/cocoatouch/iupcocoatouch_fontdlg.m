@@ -150,7 +150,7 @@ static int cocoaTouchFontDlgPopup(Ihandle* ih, int x, int y)
 	int  initial_bold = 0, initial_italic = 0, initial_underline = 0, initial_strikeout = 0;
 	int  initial_size = 12;
 	if (value)
-		iupGetFontInfo(value, initial_face, &initial_size, &initial_bold, &initial_italic, &initial_underline, &initial_strikeout);
+		iupGetFontInfo(value, initial_face, sizeof(initial_face), &initial_size, &initial_bold, &initial_italic, &initial_underline, &initial_strikeout);
 	if (initial_size < 0)
 		initial_size = -initial_size;
 

@@ -461,7 +461,7 @@ static int iPlotSetFontAttrib(Ihandle* ih, const char* value)
     is_strikeout = 0;
   char typeface[1024];
 
-  if (!iupGetFontInfo(value, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(value, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return 0;
 
   int style = IUP_PLOT_FONT_PLAIN;

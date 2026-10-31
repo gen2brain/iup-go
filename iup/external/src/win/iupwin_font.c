@@ -80,7 +80,7 @@ static IwinFont* winFindFont(const char* font, int res)
       return &fonts[i];
   }
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return NULL;
 
   /* Map standard names to native names */
@@ -93,7 +93,7 @@ static IwinFont* winFindFont(const char* font, int res)
     /* a face without a size, keep the default size instead of failing to create the font */
     char def_typeface[50] = "";
     int def_bold, def_italic, def_underline, def_strikeout;
-    iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), def_typeface, &size,
+    iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), def_typeface, sizeof(def_typeface), &size,
                    &def_bold, &def_italic, &def_underline, &def_strikeout);
   }
 

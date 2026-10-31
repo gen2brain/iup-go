@@ -646,7 +646,7 @@ static int iTreeSetTitleFontStyleAttrib(Ihandle* ih, int id, const char* value)
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return 0;
 
   IupSetfAttributeId(ih, "TITLEFONT", id, "%s, %s %d", typeface, value, size);
@@ -667,7 +667,7 @@ static char* iTreeGetTitleFontStyleAttrib(Ihandle* ih, int id)
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return NULL;
 
   return iupStrReturnStrf("%s%s%s%s", is_bold ? "Bold " : "", is_italic ? "Italic " : "", is_underline ? "Underline " : "", is_strikeout ? "Strikeout " : "");
@@ -690,7 +690,7 @@ static int iTreeSetTitleFontSizeAttrib(Ihandle* ih, int id, const char* value)
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return 0;
 
   IupSetfAttributeId(ih, "TITLEFONT", id, "%s, %s%s%s%s %s", typeface, is_bold ? "Bold " : "", is_italic ? "Italic " : "", is_underline ? "Underline " : "", is_strikeout ? "Strikeout " : "", value);
@@ -711,7 +711,7 @@ static char* iTreeGetTitleFontSizeAttrib(Ihandle* ih, int id)
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return NULL;
 
   return iupStrReturnInt(size);

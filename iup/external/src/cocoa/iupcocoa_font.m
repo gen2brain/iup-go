@@ -154,7 +154,7 @@ IUP_DRV_API IupCocoaFont* iupcocoaFindFont(const char* iup_font_name)
     return the_font;
   }
 
-  if (!iupGetFontInfo(iup_font_name, type_face, &font_size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(iup_font_name, type_face, sizeof(type_face), &font_size, &is_bold, &is_italic, &is_underline, &is_strikeout))
   {
     return NULL;
   }
@@ -164,7 +164,7 @@ IUP_DRV_API IupCocoaFont* iupcocoaFindFont(const char* iup_font_name)
     /* a face without a size, keep the default size instead of failing to create the font */
     char def_type_face[128] = "";
     int def_bold, def_italic, def_underline, def_strikeout;
-    iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), def_type_face, &font_size,
+    iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), def_type_face, sizeof(def_type_face), &font_size,
                    &def_bold, &def_italic, &def_underline, &def_strikeout);
   }
 

@@ -41,7 +41,7 @@ static double winuiMenuGetIupFontSize(Ihandle* ih)
 
   char typeface[50];
   int size, is_bold, is_italic, is_underline, is_strikeout;
-  if (!iupGetFontInfo(fontvalue, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(fontvalue, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return 14.0;
 
   if (size < 0)

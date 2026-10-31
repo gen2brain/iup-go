@@ -745,7 +745,7 @@ static int androidTreeSetTitleFontIdAttrib(Ihandle* ih, int id, const char* valu
   int size = 0, is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
   int parsed = 0;
   if (value && value[0])
-    parsed = iupGetFontInfo(value, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
+    parsed = iupGetFontInfo(value, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
 
   if (parsed)
   {

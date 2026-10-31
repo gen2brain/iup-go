@@ -3174,7 +3174,7 @@ IUP_SDK_API void iupFlatDrawBadge(Ihandle* ih, IdrawCanvas* dc, int xmax, int ym
   if (!text || text[0] == 0)
     return;
 
-  if (!iupGetFontInfo(IupGetAttribute(ih, "FONT"), typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(IupGetAttribute(ih, "FONT"), typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return;
 
   size = (size * 4) / 5;

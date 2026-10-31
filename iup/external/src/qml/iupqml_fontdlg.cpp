@@ -46,7 +46,7 @@ static int qmlFontDlgPopup(Ihandle* ih, int x, int y)
     int size = 8;
     int is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
 
-    if (iupGetFontInfo(font_str, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+    if (iupGetFontInfo(font_str, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     {
       const char* mapped_name = iupFontGetPangoName(typeface);
       if (mapped_name)

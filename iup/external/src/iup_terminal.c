@@ -1257,7 +1257,7 @@ static void itermUpdateFontInfo(Ihandle* ih, const char* font_value)
   int advance = 0, height = 0;
   const char* font = font_value ? font_value : IupGetAttribute(ih, "FONT");
 
-  if (font && iupGetFontInfo(font, typeface, &size, &b, &i, &u, &s))
+  if (font && iupGetFontInfo(font, typeface, sizeof(typeface), &size, &b, &i, &u, &s))
   {
     strcpy(ih->data->font_face, typeface);
     ih->data->font_size = size;

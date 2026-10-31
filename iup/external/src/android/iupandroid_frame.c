@@ -181,7 +181,7 @@ static int androidFrameSetFontAttrib(Ihandle* ih, const char* value)
   char typeface[1024] = "";
   int size = 0, is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
   if (!value || !value[0]) return 1;
-  if (!iupGetFontInfo(value, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(value, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return 1;
 
   int style = IUPANDROID_FRAME_TYPEFACE_NORMAL;
