@@ -53,7 +53,7 @@ static int match_blanks (const char* text, long j)
 static int match_non_blanks (const char* text, long j)
 {
   return (!((text[j] == '\t') || (text[j] == '\xff') ||
-      (text[j] == ' ') || (text[j] == '\n')))
+      (text[j] == ' ') || (text[j] == '\n')) && (text[j] != '\0'))
     ? IMASK_NORMAL_MATCH : IMASK_NO_MATCH;
 }
 

@@ -723,6 +723,23 @@ void iupSvgDrawPathStroke(iSvgCanvas* dc, const IupPathSeg* segs, int count, con
 
 /* ---- Text ---- */
 
+static void iSvgBufAppendEscaped(iSvgBuffer* buf, const char* str, int len)
+{
+  int i;
+  for (i = 0; i < len; i++)
+  {
+    switch (str[i])
+    {
+    case '&':  iSvgBufAppend(buf, "&amp;");  break;
+    case '<':  iSvgBufAppend(buf, "&lt;");   break;
+    case '>':  iSvgBufAppend(buf, "&gt;");   break;
+    case '"':  iSvgBufAppend(buf, "&quot;");  break;
+    case '\'': iSvgBufAppend(buf, "&apos;");  break;
+    default:   { char c[2] = { str[i], '\0' }; iSvgBufAppend(buf, c); } break;
+    }
+  }
+}
+
 static void iSvgParseFontAttrs(iSvgBuffer* buf, const char* font)
 {
   char family[128] = "";
@@ -757,7 +774,8 @@ static void iSvgParseFontAttrs(iSvgBuffer* buf, const char* font)
         size = 0;
         while (*p >= '0' && *p <= '9')
         {
-          size = size * 10 + (*p - '0');
+          if (size < 100000)
+            size = size * 10 + (*p - '0');
           p++;
         }
       }
@@ -801,7 +819,11 @@ static void iSvgParseFontAttrs(iSvgBuffer* buf, const char* font)
   }
 
   if (family[0])
-    iSvgBufPrintf(buf, " font-family=\"%s\"", family);
+  {
+    iSvgBufAppend(buf, " font-family=\"");
+    iSvgBufAppendEscaped(buf, family, (int)strlen(family));
+    iSvgBufAppend(buf, "\"");
+  }
   if (size > 0)
     iSvgBufPrintf(buf, " font-size=\"%dpt\"", size);
   if (weight[0])
@@ -815,7 +837,7 @@ void iupSvgDrawText(iSvgCanvas* dc, const char* text, int len, int x, int y, int
   int r, g, b, a;
   const char* anchor = "start";
   int tx = x;
-  int i, tlen;
+  int tlen;
 
   iSvgParseColor(color, &r, &g, &b, &a);
 
@@ -844,18 +866,7 @@ void iupSvgDrawText(iSvgCanvas* dc, const char* text, int len, int x, int y, int
   iSvgBufAppend(&dc->buf, ">");
 
   tlen = (len > 0 && len < (int)strlen(text)) ? len : (int)strlen(text);
-  for (i = 0; i < tlen; i++)
-  {
-    switch (text[i])
-    {
-    case '&':  iSvgBufAppend(&dc->buf, "&amp;");  break;
-    case '<':  iSvgBufAppend(&dc->buf, "&lt;");   break;
-    case '>':  iSvgBufAppend(&dc->buf, "&gt;");   break;
-    case '"':  iSvgBufAppend(&dc->buf, "&quot;");  break;
-    case '\'': iSvgBufAppend(&dc->buf, "&apos;");  break;
-    default:   { char c[2] = { text[i], '\0' }; iSvgBufAppend(&dc->buf, c); } break;
-    }
-  }
+  iSvgBufAppendEscaped(&dc->buf, text, tlen);
 
   iSvgBufAppend(&dc->buf, "</text>\n");
   iSvgClipEnd(dc, &dc->buf);
