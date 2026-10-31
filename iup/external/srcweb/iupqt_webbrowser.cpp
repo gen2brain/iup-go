@@ -140,13 +140,12 @@ static void qtWebBrowserRunJavaScript(Ihandle* ih, const char* format, ...)
   if (!webview)
     return;
 
-  char js[4096];
   va_list arglist;
   va_start(arglist, format);
-  vsnprintf(js, sizeof(js), format, arglist);
+  QString js = QString::vasprintf(format, arglist);
   va_end(arglist);
 
-  webview->page()->runJavaScript(QString::fromUtf8(js));
+  webview->page()->runJavaScript(js);
 }
 
 static char* qtWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
@@ -183,13 +182,12 @@ static char* qtWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
 
 static char* qtWebBrowserRunJavaScriptSync(Ihandle* ih, const char* format, ...)
 {
-  char js[4096];
   va_list arglist;
   va_start(arglist, format);
-  vsnprintf(js, sizeof(js), format, arglist);
+  QString js = QString::vasprintf(format, arglist);
   va_end(arglist);
 
-  return qtWebBrowserExecJavaScriptSync(ih, js);
+  return qtWebBrowserExecJavaScriptSync(ih, js.toUtf8().constData());
 }
 
 /****************************************************************************
@@ -829,10 +827,9 @@ static int qtWebBrowserExecCommandWithParamAttrib(Ihandle* ih, const char* cmd, 
 static char* qtWebBrowserQueryCommandValue(Ihandle* ih, const char* cmd)
 {
   char* escaped_cmd = qtWebBrowserEscapeJavaScript(cmd);
-  char js[256];
-  snprintf(js, sizeof(js), "document.queryCommandValue(%s);", escaped_cmd);
+  char* result = qtWebBrowserRunJavaScriptSync(ih, "document.queryCommandValue(%s);", escaped_cmd);
   free(escaped_cmd);
-  return qtWebBrowserRunJavaScriptSync(ih, "%s", js);
+  return result;
 }
 
 /****************************************************************************
@@ -1080,13 +1077,11 @@ static int qtWebBrowserSetInsertTextAttrib(Ihandle* ih, const char* value)
     return 0;
 
   char* escaped = qtWebBrowserEscapeJavaScript(value);
-  char js[1024];
-  snprintf(js, sizeof(js),
+  webview->setFocus();
+  qtWebBrowserRunJavaScript(ih,
     "if (window.iupRestoreSelection) window.iupRestoreSelection(); "
     "document.execCommand('insertText', false, %s);",
     escaped);
-  webview->setFocus();
-  qtWebBrowserRunJavaScript(ih, "%s", js);
   free(escaped);
 
   return 0;
@@ -1140,19 +1135,17 @@ static char* qtWebBrowserGetBackColorAttrib(Ihandle* ih)
 static char* qtWebBrowserQueryCommandState(Ihandle* ih, const char* cmd)
 {
   char* escaped_cmd = qtWebBrowserEscapeJavaScript(cmd);
-  char js[256];
-  snprintf(js, sizeof(js), "document.queryCommandState(%s);", escaped_cmd);
+  char* result = qtWebBrowserRunJavaScriptSync(ih, "document.queryCommandState(%s);", escaped_cmd);
   free(escaped_cmd);
-  return qtWebBrowserRunJavaScriptSync(ih, "%s", js);
+  return result;
 }
 
 static char* qtWebBrowserQueryCommandEnabled(Ihandle* ih, const char* cmd)
 {
   char* escaped_cmd = qtWebBrowserEscapeJavaScript(cmd);
-  char js[256];
-  snprintf(js, sizeof(js), "document.queryCommandEnabled(%s);", escaped_cmd);
+  char* result = qtWebBrowserRunJavaScriptSync(ih, "document.queryCommandEnabled(%s);", escaped_cmd);
   free(escaped_cmd);
-  return qtWebBrowserRunJavaScriptSync(ih, "%s", js);
+  return result;
 }
 
 static const char* qtWebBrowserMapCommandName(const char* cmd)
@@ -1228,8 +1221,7 @@ static char* qtWebBrowserGetAttributeAttrib(Ihandle* ih)
   char* escaped_id = qtWebBrowserEscapeJavaScript(element_id);
   char* escaped_name = qtWebBrowserEscapeJavaScript(attrib_name);
 
-  char js[512];
-  snprintf(js, sizeof(js),
+  char* result = qtWebBrowserRunJavaScriptSync(ih,
     "(function() {"
     "  var elem = document.getElementById(%s);"
     "  if (elem) return elem.getAttribute(%s) || '';"
@@ -1240,7 +1232,7 @@ static char* qtWebBrowserGetAttributeAttrib(Ihandle* ih)
   free(escaped_id);
   free(escaped_name);
 
-  return qtWebBrowserRunJavaScriptSync(ih, "%s", js);
+  return result;
 }
 
 static int qtWebBrowserSetAttributeAttrib(Ihandle* ih, const char* value)
@@ -1255,15 +1247,12 @@ static int qtWebBrowserSetAttributeAttrib(Ihandle* ih, const char* value)
   char* escaped_name = qtWebBrowserEscapeJavaScript(attrib_name);
   char* escaped_value = qtWebBrowserEscapeJavaScript(value);
 
-  char js[1024];
-  snprintf(js, sizeof(js),
+  qtWebBrowserRunJavaScript(ih,
     "(function() {"
     "  var elem = document.getElementById(%s);"
     "  if (elem) elem.setAttribute(%s, %s);"
     "})();",
     escaped_id, escaped_name, escaped_value ? escaped_value : "''");
-
-  qtWebBrowserRunJavaScript(ih, "%s", js);
 
   free(escaped_id);
   free(escaped_name);
