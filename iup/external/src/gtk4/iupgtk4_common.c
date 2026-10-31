@@ -707,7 +707,7 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static GdkCursor* gtk4GetCursor(Ihandle* ih, const char* name)
+static GdkCursor* gtk4GetCursor(const char* name)
 {
   static struct {
     const char* iupname;
@@ -740,42 +740,34 @@ static GdkCursor* gtk4GetCursor(Ihandle* ih, const char* name)
   };
 
   GdkCursor* cur;
-  char str[200];
   int i, count = sizeof(table) / sizeof(table[0]);
-
-  snprintf(str, sizeof(str), "_IUPGTK4_CURSOR_%s", name);
-  cur = (GdkCursor*)iupAttribGet(ih, str);
-  if (cur)
-    return cur;
 
   for (i = 0; i < count; i++)
   {
     if (iupStrEqualNoCase(name, table[i].iupname))
     {
       if (table[i].sysname)
-        cur = gdk_cursor_new_from_name(table[i].sysname, NULL);
-      else
-        cur = NULL;  /* GTK4 has no blank cursor, use NULL */
+        return gdk_cursor_new_from_name(table[i].sysname, NULL);
 
-      break;
+      return NULL;  /* GTK4 has no blank cursor, use NULL */
     }
   }
 
-  if (i == count)
-  {
-    cur = iupImageGetCursor(name);
-  }
-
-  iupAttribSet(ih, str, (char*)cur);
+  cur = iupImageGetCursor(name);
+  if (cur && iupImageGetImageFromName(name))
+    g_object_ref(cur);
 
   return cur;
 }
 
 IUP_SDK_API int iupdrvBaseSetCursorAttrib(Ihandle* ih, const char* value)
 {
-  GdkCursor* cur = gtk4GetCursor(ih, value);
+  GdkCursor* cur = gtk4GetCursor(value);
 
   gtk_widget_set_cursor(ih->handle, cur);
+
+  if (cur)
+    g_object_unref(cur);
 
   return 1;
 }
