@@ -46,6 +46,7 @@
 #define _IUPDLG_PRIVATE
 #include "iup_dialog.h"
 #include "iup_image.h"
+#include "iup_dlglist.h"
 
 #include "iupefl_drv.h"
 
@@ -1081,6 +1082,23 @@ static void eflDialogUnMapMethod(Ihandle* ih)
       iupAttribSet(ih, "_IUP_EFL_BGRECT", NULL);
       iupAttribSet(ih, "_IUP_EFL_BACKGROUND_IMAGE", NULL);
       iupAttribSet(ih, "_IUP_EFL_OPACITY_IMAGE", NULL);
+    }
+
+    if (iupeflGetMainWindow() == win)
+    {
+      Ihandle* dlg;
+      Eo* main_win = NULL;
+
+      for (dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
+      {
+        if (dlg != ih && dlg->handle)
+        {
+          main_win = (Eo*)dlg->handle;
+          break;
+        }
+      }
+
+      iupeflSetMainWindow(main_win);
     }
 
     efl_del(win);
