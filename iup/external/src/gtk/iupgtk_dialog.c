@@ -173,7 +173,17 @@ static int gtkDialogGetCSDShadowMargin(Ihandle* ih)
   if (gtk_style_context_has_class(context, "csd") && gtk_window_get_decorated((GtkWindow*)ih->handle))
   {
     /* GTK3 CSD shadow margin is typically 26 pixels (Adwaita theme) */
-    return 26;
+    static int measured = -1;
+    GtkWidget* child = gtk_bin_get_child(GTK_BIN(ih->handle));
+
+    if (child && gtk_widget_get_allocated_width(child) > 1 && !gtkDialogIsStateFixedSize(ih))
+    {
+      int shadow = (gtk_widget_get_allocated_width(ih->handle) - gtk_widget_get_allocated_width(child)) / 2;
+      if (shadow >= 0)
+        measured = shadow;
+    }
+
+    return measured >= 0 ? measured : 26;
   }
 #endif
   return 0;
@@ -351,6 +361,11 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
 
     gtk_window_unmaximize((GtkWindow*)ih->handle);
     gtk_window_deiconify((GtkWindow*)ih->handle);
+
+#if GTK_CHECK_VERSION(3, 0, 0) && defined(GDK_WINDOWING_X11)
+    if (window && GDK_IS_X11_WINDOW(window) && (gdk_window_get_state(window) & GDK_WINDOW_STATE_ICONIFIED))
+      gtk_window_present_with_time((GtkWindow*)ih->handle, gdk_x11_get_server_time(window));
+#endif
 
     if (iupAttribGetBoolean(ih, "CUSTOMFRAMESIMULATE") && iupDialogCustomFrameRestore(ih))
     {
@@ -709,6 +724,60 @@ static void* gtkDialogGetInnerNativeContainerHandleMethod(Ihandle* ih, Ihandle* 
   return iupAttribGet(ih, "_IUP_GTK_INNER_PARENT");
 }
 
+#if GTK_CHECK_VERSION(3, 10, 0)
+static void gtkDialogFindHeaderBar(GtkWidget* widget, gpointer data)
+{
+  if (GTK_IS_HEADER_BAR(widget))
+    *(GtkWidget**)data = widget;
+}
+
+static void gtkDialogSetTitleBarButtons(Ihandle* ih)
+{
+  GtkWidget* bar = NULL;
+  gchar* layout = NULL;
+  GString* filtered;
+  const char* p;
+  int first = 1;
+
+  gtk_container_forall(GTK_CONTAINER(ih->handle), gtkDialogFindHeaderBar, &bar);
+  if (!bar)
+    return;
+
+  g_object_get(gtk_widget_get_settings(ih->handle), "gtk-decoration-layout", &layout, NULL);
+
+  filtered = g_string_new(NULL);
+  for (p = layout ? layout : "menu:close"; *p; )
+  {
+    size_t len = strcspn(p, ",:");
+
+    if (len > 0 &&
+        !(len == 8 && strncmp(p, "minimize", len) == 0 && !iupAttribGetBoolean(ih, "MINBOX")) &&
+        !(len == 8 && strncmp(p, "maximize", len) == 0 && !iupAttribGetBoolean(ih, "MAXBOX")) &&
+        !(len == 5 && strncmp(p, "close", len) == 0 && !iupAttribGetBoolean(ih, "MENUBOX")))
+    {
+      if (!first)
+        g_string_append_c(filtered, ',');
+      g_string_append_len(filtered, p, (gssize)len);
+      first = 0;
+    }
+
+    p += len;
+    if (*p == ':')
+    {
+      g_string_append_c(filtered, ':');
+      first = 1;
+    }
+    if (*p)
+      p++;
+  }
+
+  gtk_header_bar_set_decoration_layout(GTK_HEADER_BAR(bar), filtered->str);
+
+  g_string_free(filtered, TRUE);
+  g_free(layout);
+}
+#endif
+
 static int gtkDialogMapMethod(Ihandle* ih)
 {
   int decorations = 0;
@@ -875,6 +944,12 @@ static int gtkDialogMapMethod(Ihandle* ih)
     }
   }
 
+#if GTK_CHECK_VERSION(3, 10, 0)
+  if (gtk_style_context_has_class(gtk_widget_get_style_context(ih->handle), "csd") &&
+      (!iupAttribGetBoolean(ih, "MENUBOX") || !iupAttribGetBoolean(ih, "MAXBOX") || !iupAttribGetBoolean(ih, "MINBOX")))
+    gtkDialogSetTitleBarButtons(ih);
+#endif
+
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
 
@@ -950,6 +1025,7 @@ static void gtkDialogLayoutUpdateMethod(Ihandle* ih)
   int border, caption, menu;
   int width, height;
   int decorheight;
+  int has_csd = 0;
 
   if (ih->data->ignore_resize || iupAttribGet(ih, "_IUPGTK_FS_STYLE") || gtkDialogIsStateFixedSize(ih))
     return;
@@ -968,6 +1044,7 @@ static void gtkDialogLayoutUpdateMethod(Ihandle* ih)
       /* gtk_window_resize expects the client area, current includes the titlebar for CSD */
       iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
       decorheight = caption;
+      has_csd = 1;
     }
   }
 #endif
@@ -991,11 +1068,19 @@ static void gtkDialogLayoutUpdateMethod(Ihandle* ih)
   if (!iupAttribGetBoolean(ih, "RESIZE"))
   {
     GdkGeometry geometry;
+    int hint_width = width, hint_height = height;
 
-    geometry.min_width = width;
-    geometry.min_height = height;
-    geometry.max_width = width;
-    geometry.max_height = height;
+    if (has_csd)
+    {
+      int shadow = gtkDialogGetCSDShadowMargin(ih);
+      hint_width = width + 2*shadow;
+      hint_height = height + caption + 2*shadow;
+    }
+
+    geometry.min_width = hint_width;
+    geometry.min_height = hint_height;
+    geometry.max_width = hint_width;
+    geometry.max_height = hint_height;
 
     gtk_window_set_geometry_hints((GtkWindow*)ih->handle, ih->handle, &geometry, (GdkWindowHints)(GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE));
   }
@@ -1028,8 +1113,9 @@ static void gtkDialogSetMinMax(Ihandle* ih, int min_w, int min_h, int max_w, int
 
   if (has_csd)
   {
-    decorwidth = 2*border;
-    decorheight = caption;
+    int shadow = gtkDialogGetCSDShadowMargin(ih);
+    decorwidth = -2*shadow;
+    decorheight = -2*shadow;
   }
   else
   {
