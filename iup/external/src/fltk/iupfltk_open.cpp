@@ -280,7 +280,10 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
   Fl::visual(FL_DOUBLE | FL_RGB);
 
   if (argc && argv)
-    Fl::args(*argc, *argv);
+  {
+    int i;
+    Fl::args(*argc, *argv, i);
+  }
 
   fl_open_display();
 
