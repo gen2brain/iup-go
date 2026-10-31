@@ -207,8 +207,9 @@ static void winuiScrollbarForceVisible(ScrollBar sb)
       auto group = groups.GetAt(i);
       if (group.Name() == L"ScrollingIndicatorStates")
       {
-        group.CurrentStateChanged([ctrl](IInspectable const&, VisualStateChangedEventArgs const&) {
-          VisualStateManager::GoToState(ctrl, L"MouseIndicatorFull", false);
+        group.CurrentStateChanged([weak = winrt::make_weak(ctrl)](IInspectable const&, VisualStateChangedEventArgs const&) {
+          if (auto bar = weak.get())
+            VisualStateManager::GoToState(bar, L"MouseIndicatorFull", false);
         });
         break;
       }

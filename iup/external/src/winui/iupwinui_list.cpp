@@ -1046,9 +1046,11 @@ static void winuiListSetupDragTracking(Ihandle* ih, ListBox const& listBox)
   iupAttribSet(ih, "_IUPWINUI_LIST_DRAGTRACKING", "1");
 
   listBox.AddHandler(UIElement::PointerPressedEvent(), winrt::box_value(
-    PointerEventHandler([ih, listBox](IInspectable const&, PointerRoutedEventArgs const& e) {
+    PointerEventHandler([ih](IInspectable const& sender, PointerRoutedEventArgs const& e) {
       if (!iupAttribGetBoolean(ih, "DRAGSOURCE") && !ih->data->show_dragdrop)
         return;
+
+      ListBox listBox = sender.as<ListBox>();
 
       auto hostPt = e.GetCurrentPoint(nullptr);
       Point pt{hostPt.Position().X, hostPt.Position().Y};
@@ -1114,9 +1116,11 @@ static void winuiListEnableDragDrop(Ihandle* ih)
       e.AcceptedOperation(DataPackageOperation::Move);
   });
 
-  listBox.Drop([ih, listBox](IInspectable const&, DragEventArgs const& e) {
+  listBox.Drop([ih](IInspectable const& sender, DragEventArgs const& e) {
     if (!iupAttribGet(ih, "_IUPLIST_DRAGITEM"))
       return;
+
+    ListBox listBox = sender.as<ListBox>();
 
     int idDrag = iupAttribGetInt(ih, "_IUPLIST_DRAGITEM");
     int idDrop = winuiListHitTestItem(listBox, e.GetPosition(nullptr));
