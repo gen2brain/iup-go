@@ -110,7 +110,7 @@ IUP_DRV_API bigtime_t iuphaikuTimerNextWait(void);
 IUP_DRV_API bool iuphaikuCanLockAppLooper(void);
 
 IUP_DRV_API BLooper* iuphaikuOwnLooper(void);
-IUP_DRV_API void iuphaikuCallbackLock(BLooper* looper);
+IUP_DRV_API int iuphaikuCallbackLock(BLooper* looper);
 IUP_DRV_API void iuphaikuCallbackUnlock(void);
 IUP_DRV_API int iuphaikuCallbackRelease(void);
 IUP_DRV_API void iuphaikuCallbackRestore(int count);
@@ -152,10 +152,14 @@ private:
 class CallbackLockGuard
 {
 public:
-  explicit CallbackLockGuard(BLooper* looper) { iuphaikuCallbackLock(looper); }
+  explicit CallbackLockGuard(BLooper* looper) : fUnlocked(iuphaikuCallbackLock(looper)) {}
   ~CallbackLockGuard() { iuphaikuCallbackUnlock(); }
+  bool LooperWasUnlocked() const { return fUnlocked != 0; }
   CallbackLockGuard(const CallbackLockGuard&) = delete;
   CallbackLockGuard& operator=(const CallbackLockGuard&) = delete;
+
+private:
+  int fUnlocked;
 };
 
 class CallbackReleaseGuard

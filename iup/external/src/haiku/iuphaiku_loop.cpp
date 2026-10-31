@@ -266,25 +266,27 @@ IUP_DRV_API BLooper* iuphaikuOwnLooper(void)
   return looper;
 }
 
-IUP_DRV_API void iuphaikuCallbackLock(BLooper* looper)
+IUP_DRV_API int iuphaikuCallbackLock(BLooper* looper)
 {
   if (haiku_callback_sem < 0) haiku_callback_sem = create_sem(0, "iup_callbacks");
   if (haikuCallbackOwned())
   {
     haiku_callback_count++;
-    return;
+    return 0;
   }
   if (haikuCallbackTryAcquire())
   {
     haikuCallbackTake();
-    return;
+    return 0;
   }
 
   int relock = 0;
   if (looper) while (looper->IsLocked()) { looper->Unlock(); relock++; }
   haikuCallbackAcquire();
   haikuCallbackTake();
+  int unlocked = relock;
   while (relock--) looper->Lock();
+  return unlocked;
 }
 
 IUP_DRV_API void iuphaikuCallbackUnlock(void)
