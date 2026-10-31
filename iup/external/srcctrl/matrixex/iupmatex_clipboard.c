@@ -442,7 +442,7 @@ static int iMatrixExStrGetDataSize(const char* data, int* num_lin, int* num_col,
   }
 
   /* If there is no column separator for the last column, so add it */
-  if (!((data[len-1] == '\n' && data[len-2] == *sep) ||
+  if (!((len >= 2 && data[len-1] == '\n' && data[len-2] == *sep) ||
         (data[len-1] == *sep)))
     *num_col += *num_lin;
 
@@ -460,8 +460,15 @@ static char* iMatrixExStrCopyData(char* value, int* value_max_size, const char* 
 {
   if (*value_max_size <= value_len)
   {
-    *value_max_size = value_len+10;
-    value = realloc(value, *value_max_size);
+    char* new_value = realloc(value, value_len + 10);
+    if (!new_value)
+    {
+      free(value);
+      *value_max_size = 0;
+      return NULL;
+    }
+    value = new_value;
+    *value_max_size = value_len + 10;
   }
   memcpy(value, data, value_len);
   value[value_len] = 0;
@@ -495,7 +502,7 @@ static void iMatrixExPasteSetData(Ihandle* ih, const char* data, int data_num_li
 
           if (value_len)
           {
-            if (data[0] == '\"' && data[value_len - 1] == '\"')
+            if (value_len >= 2 && data[0] == '\"' && data[value_len - 1] == '\"')
             {
               data++;
               value_len -= 2;
@@ -505,7 +512,8 @@ static void iMatrixExPasteSetData(Ihandle* ih, const char* data, int data_num_li
             if (value_len)
             {
               value = iMatrixExStrCopyData(value, &value_max_size, data, value_len);
-              iupMatrixExSetCellValue(matex_data->ih, lin, col, value);
+              if (value)
+                iupMatrixExSetCellValue(matex_data->ih, lin, col, value);
             }
           }
           else

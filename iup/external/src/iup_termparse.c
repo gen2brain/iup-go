@@ -381,6 +381,7 @@ static int itermBase64Decode(const char* in, char* out, int out_max)
       if (len >= out_max - 1)
         return -1;
       out[len++] = (char)((acc >> bits) & 0xFF);
+      acc &= (1 << bits) - 1;
     }
   }
 
