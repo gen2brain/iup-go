@@ -123,6 +123,7 @@ IUP_DRV_API void iuphaikuFireGlobalInputCB(BMessage* msg);
 
 /* `*owned` set true when the BCursor was new'd and the caller must delete. */
 IUP_DRV_API BCursor* iuphaikuGetCursor(Ihandle* ih, const char* name, bool* owned);
+IUP_DRV_API void iuphaikuReleaseCursor(Ihandle* ih);
 
 IUP_DRV_API void iuphaikuSetGLBackgroundChild(Ihandle* ih, BView* view);
 IUP_DRV_API bool iuphaikuPaintGLBackgroundSlice(BView* view, Ihandle* ih);

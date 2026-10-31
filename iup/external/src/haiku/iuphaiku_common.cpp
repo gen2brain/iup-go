@@ -13,6 +13,7 @@
 #include <Messenger.h>
 #include <OS.h>
 #include <Rect.h>
+#include <ToolTip.h>
 #include <View.h>
 #include <Window.h>
 
@@ -620,6 +621,7 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 
   delete view;
   ih->handle = nullptr;
+  iuphaikuReleaseCursor(ih);
 }
 
 IUP_DRV_API void iuphaikuSetGLBackgroundChild(Ihandle* ih, BView* view)
@@ -749,6 +751,19 @@ IUP_DRV_API BCursor* iuphaikuGetCursor(Ihandle* ih, const char* name, bool* owne
   return static_cast<BCursor*>(iupImageGetCursor(name));
 }
 
+IUP_DRV_API void iuphaikuReleaseCursor(Ihandle* ih)
+{
+  if (iupAttribGet(ih, "_IUPHAIKU_CURSOR_OWNED"))
+    delete reinterpret_cast<BCursor*>(iupAttribGet(ih, "_IUPHAIKU_CURSOR"));
+  if (iupAttribGet(ih, "_IUPHAIKU_DD_CURSOR_OWNED"))
+    delete reinterpret_cast<BCursor*>(iupAttribGet(ih, "_IUPHAIKU_DD_CURSOR"));
+  iupAttribSet(ih, "_IUPHAIKU_CURSOR", nullptr);
+  iupAttribSet(ih, "_IUPHAIKU_CURSOR_OWNED", nullptr);
+  iupAttribSet(ih, "_IUPHAIKU_DD_CURSOR", nullptr);
+  iupAttribSet(ih, "_IUPHAIKU_DD_CURSOR_OWNED", nullptr);
+  iupAttribSet(ih, "_IUPHAIKU_DD_CURSOR_NAME", nullptr);
+}
+
 static void haikuApplyCursorRecursive(BView* view, BCursor* cursor)
 {
   if (!view) return;
@@ -789,7 +804,16 @@ extern "C" IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value
   BView* view = (ih->iclass && ih->iclass->nativetype == IUP_TYPEDIALOG) ? iuphaikuDialogRootView(reinterpret_cast<BWindow*>(ih->handle)) : reinterpret_cast<BView*>(ih->handle);
   if (!view) return 1;
   LooperLockGuard guard(view->Looper());
-  view->SetToolTip(value);
+  if (!value || !value[0])
+    view->SetToolTip(static_cast<BToolTip*>(nullptr));
+  else if (auto* tip = dynamic_cast<BTextToolTip*>(view->ToolTip()))
+    tip->SetText(value);
+  else
+  {
+    auto* text_tip = new BTextToolTip(value);
+    view->SetToolTip(text_tip);
+    text_tip->ReleaseReference();
+  }
   return 1;
 }
 

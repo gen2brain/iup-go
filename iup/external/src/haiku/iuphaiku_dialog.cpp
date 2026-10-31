@@ -176,11 +176,11 @@ public:
     : BWindow(frame, title ? title : "", look, feel,
               flags | B_ASYNCHRONOUS_CONTROLS),
       fIhandle(ih), fRootView(nullptr), fSavedLook(look), fIsFullScreen(false),
-      fMoveRunner(nullptr)
+      fMoveRunner(nullptr), fKeyFilter(new IupHaikuCommandKeyFilter())
   {
     fRootView = new IupHaikuRootView(Bounds(), ih);
     AddChild(fRootView);
-    AddCommonFilter(new IupHaikuCommandKeyFilter());
+    AddCommonFilter(fKeyFilter);
   }
 
   /* BMenuField::~BMenuField deletes its own filter without unlinking it; ~BLooper would double-free */
@@ -190,6 +190,7 @@ public:
     if (BList* list = CommonFilterList())
       for (int32 i = list->CountItems() - 1; i >= 0; --i)
         BLooper::RemoveCommonFilter(static_cast<BMessageFilter*>(list->ItemAt(i)));
+    delete fKeyFilter;
   }
 
   void Minimize(bool minimize) override
@@ -455,6 +456,7 @@ private:
   BRect fSavedFrame;
   bool fIsFullScreen;
   BMessageRunner* fMoveRunner;
+  IupHaikuCommandKeyFilter* fKeyFilter;
   BPoint fLastMovePos;
 };
 
@@ -555,6 +557,7 @@ static void haikuDialogUnMapMethod(Ihandle* ih)
     win->Quit();
   }
   ih->handle = nullptr;
+  iuphaikuReleaseCursor(ih);
   iuphaikuPostAppWake();
 }
 

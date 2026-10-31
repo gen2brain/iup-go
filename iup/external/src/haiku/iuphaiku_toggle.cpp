@@ -619,6 +619,7 @@ static void haikuToggleApplyImage(Ihandle* ih, const char* name, int make_inacti
   auto* bm = static_cast<BBitmap*>(iupImageGetImage(name, ih, make_inactive, bgcolor));
   if (!bm) return;
   LooperLockGuard guard(btn->Looper());
+  btn->SetIcon(nullptr, 0);
   btn->SetIcon(bm, 0);
 }
 
