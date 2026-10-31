@@ -3716,6 +3716,13 @@ static int eflTableMapMethod(Ihandle* ih)
 static void eflTableUnMapMethod(Ihandle* ih)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
+  Ecore_Job* job = (Ecore_Job*)iupAttribGet(ih, "_IUP_EFL_FOCUSRECT_JOB");
+
+  if (job)
+  {
+    ecore_job_del(job);
+    iupAttribSet(ih, "_IUP_EFL_FOCUSRECT_JOB", NULL);
+  }
 
   if (data)
   {
