@@ -311,6 +311,10 @@ func main() {
 
 	dlg := iup.Dialog(vbox1).SetAttributes(`TITLE="Sample", MENU=menu, ICON=img1`)
 	dlg.SetHandle("dlg")
+	dlg.SetCallback("COPYDATA_CB", iup.CopyDataFunc(func(ih iup.Ihandle, cmdLine string, size int) int {
+		iup.Show(ih)
+		return iup.DEFAULT
+	}))
 
 	if iup.GetGlobal("DRIVER") == "WinUI" {
 		//dlg.SetAttribute("BACKDROP", "MICA")

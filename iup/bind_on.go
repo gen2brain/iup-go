@@ -90,6 +90,7 @@ var (
 	ColResizeCB                   = newCallback[ColResizeFunc]("COLRESIZE_CB")
 	ColorUpdateCB                 = newCallback[ColorUpdateFunc]("COLORUPDATE_CB")
 	CompletedCB                   = newCallback[CompletedFunc]("COMPLETED_CB")
+	CopyDataCB                    = newCallback[CopyDataFunc]("COPYDATA_CB")
 	DblclickCB                    = newCallback[DblclickFunc]("DBLCLICK_CB")
 	DestroyCB                     = newCallback[DestroyFunc]("DESTROY_CB")
 	DetachedCB                    = newCallback[DetachedFunc]("DETACHED_CB")

@@ -331,6 +331,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setTabChangePosFunc(ih, fn.(TabChangePosFunc))
 	case "DROPFILES_CB":
 		setDropFilesFunc(ih, fn.(DropFilesFunc))
+	case "COPYDATA_CB":
+		setCopyDataFunc(ih, fn.(CopyDataFunc))
 	case "INPUT_CB":
 		setTerminalInputFunc(ih, fn.(TerminalInputFunc))
 	case "TITLE_CB":
@@ -1158,6 +1160,20 @@ var dropFilesCB = purego.NewCallback(func(ih, filename uintptr, num, x, y int32)
 func setDropFilesFunc(ih Ihandle, f DropFilesFunc) {
 	storeCallback(ih, "_IUPGO_DROPFILES_CB", f)
 	iupSetCallback(uintptr(ih), "DROPFILES_CB", dropFilesCB)
+}
+
+type CopyDataFunc func(ih Ihandle, cmdLine string, size int) int
+
+var copyDataCB = purego.NewCallback(func(ih, cmdLine uintptr, size int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_COPYDATA_CB").(CopyDataFunc); ok {
+		return f(Ihandle(ih), goString(cmdLine), int(size))
+	}
+	return 0
+})
+
+func setCopyDataFunc(ih Ihandle, f CopyDataFunc) {
+	storeCallback(ih, "_IUPGO_COPYDATA_CB", f)
+	iupSetCallback(uintptr(ih), "COPYDATA_CB", copyDataCB)
 }
 
 type TerminalInputFunc func(ih Ihandle, bytes []byte) int

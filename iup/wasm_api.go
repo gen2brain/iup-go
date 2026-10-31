@@ -141,6 +141,9 @@ type WheelFunc func(ih Ihandle, delta float64, x, y int, status string) int
 // CloseFunc is the type for the dialog CLOSE_CB callback.
 type CloseFunc func(Ihandle) int
 
+// CopyDataFunc is the type for the dialog COPYDATA_CB callback.
+type CopyDataFunc func(ih Ihandle, cmdLine string, size int) int
+
 // NotifyFunc is the type for the IupNotify NOTIFY_CB callback.
 type NotifyFunc func(ih Ihandle, actionId int) int
 

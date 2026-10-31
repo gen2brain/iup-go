@@ -771,6 +771,29 @@ func setDropFilesFunc(ih Ihandle, f DropFilesFunc) {
 
 //--------------------
 
+// CopyDataFunc for COPYDATA_CB callback.
+// Called at the first instance when a second instance is running, with the command line of the second instance.
+// Requires the global attribute SINGLEINSTANCE.
+//
+// https://gen2brain.github.io/iup-go/dlg/iup_dialog.html
+type CopyDataFunc func(ih Ihandle, cmdLine string, size int) int
+
+//export goIupCopyDataCB
+func goIupCopyDataCB(ih, cmdLine unsafe.Pointer, size C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_COPYDATA_CB").Value().(CopyDataFunc)
+
+	return C.int(f((Ihandle)(ih), C.GoString((*C.char)(cmdLine)), int(size)))
+}
+
+// setCopyDataFunc for COPYDATA_CB.
+func setCopyDataFunc(ih Ihandle, f CopyDataFunc) {
+	storeCallback(ih, "_IUPGO_COPYDATA_CB", f)
+
+	C.goIupSetCopyDataFunc(ih.ptr())
+}
+
+//--------------------
+
 // ListActionFunc for List ACTION callback.
 // Action generated when the state of an item in the list is changed.
 type ListActionFunc func(ih Ihandle, text string, item, state int) int

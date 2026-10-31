@@ -170,6 +170,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setGestureFunc(ih, fn.(GestureFunc))
 	case "DROPFILES_CB":
 		setDropFilesFunc(ih, fn.(DropFilesFunc))
+	case "COPYDATA_CB":
+		setCopyDataFunc(ih, fn.(CopyDataFunc))
 	case "INPUT_CB":
 		setTerminalInputFunc(ih, fn.(TerminalInputFunc))
 	case "TITLE_CB":

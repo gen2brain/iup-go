@@ -181,6 +181,11 @@ static void goIupSetDropFilesFunc(Ihandle *ih) {
 	IupSetCallback(ih, "DROPFILES_CB", (Icallback) goIupDropFilesCB);
 }
 
+CGO_EXPORT extern int goIupCopyDataCB(void *, void *cmdLine, int size);
+static void goIupSetCopyDataFunc(Ihandle *ih) {
+	IupSetCallback(ih, "COPYDATA_CB", (Icallback) goIupCopyDataCB);
+}
+
 CGO_EXPORT extern int goIupListActionCB(void *, void *text, int item, int state);
 static void goIupSetListActionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "ACTION", (Icallback) goIupListActionCB);
