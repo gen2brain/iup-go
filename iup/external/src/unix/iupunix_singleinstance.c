@@ -129,20 +129,33 @@ static int iupUnixSITimerCallback(Ihandle* timer)
 static char* iupUnixSIGetCommandLine(void)
 {
   FILE* f;
-  char buf[4096];
-  int total = 0;
+  char* buf;
+  size_t size = 4096, total = 0;
   int c;
 
   f = fopen("/proc/self/cmdline", "r");
   if (!f)
     return NULL;
 
-  while ((c = fgetc(f)) != EOF && total < (int)sizeof(buf) - 1)
+  buf = (char*)malloc(size);
+  if (!buf)
   {
-    if (c == '\0')
-      buf[total++] = ' ';
-    else
-      buf[total++] = (char)c;
+    fclose(f);
+    return NULL;
+  }
+
+  while ((c = fgetc(f)) != EOF)
+  {
+    if (total + 1 >= size)
+    {
+      char* new_buf = (char*)realloc(buf, size * 2);
+      if (!new_buf)
+        break;
+      buf = new_buf;
+      size *= 2;
+    }
+
+    buf[total++] = (c == '\0') ? ' ' : (char)c;
   }
   fclose(f);
 
@@ -151,9 +164,12 @@ static char* iupUnixSIGetCommandLine(void)
   buf[total] = '\0';
 
   if (total == 0)
+  {
+    free(buf);
     return NULL;
+  }
 
-  return iupStrDup(buf);
+  return buf;
 }
 
 static void iupUnixSISendToFirst(const char* bus_name)

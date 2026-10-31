@@ -12,6 +12,7 @@
 #include <Application.h>
 #include <Message.h>
 #include <Messenger.h>
+#include <String.h>
 #include <OS.h>
 
 extern "C" {
@@ -24,6 +25,9 @@ extern "C" {
 }
 
 #define IUPHAIKU_SI_MSG 'IuSI'
+
+extern const int __libc_argc;
+extern const char* const *__libc_argv;
 
 static port_id si_port = -1;
 static thread_id si_thread = -1;
@@ -83,7 +87,14 @@ IUP_DRV_API void iuphaikuSingleInstanceDispatch(BMessage* msg)
   const void* data = nullptr;
   ssize_t len = 0;
   if (msg->FindData("data", B_RAW_TYPE, &data, &len) == B_OK && data && len > 0)
-    haikuSiDeliverData(static_cast<const char*>(data), static_cast<int>(len));
+  {
+    char* str = static_cast<char*>(malloc(static_cast<size_t>(len) + 1));
+    if (!str) return;
+    memcpy(str, data, static_cast<size_t>(len));
+    str[len] = '\0';
+    haikuSiDeliverData(str, static_cast<int>(strlen(str)) + 1);
+    free(str);
+  }
 }
 
 extern "C" IUP_SDK_API int iupdrvSingleInstanceSet(const char* name)
@@ -96,9 +107,14 @@ extern "C" IUP_SDK_API int iupdrvSingleInstanceSet(const char* name)
   port_id existing = find_port(port_name);
   if (existing >= B_OK)
   {
-    char* argv0 = IupGetGlobal("ARGV0");
-    const char* data = argv0 ? argv0 : "";
-    write_port_etc(existing, 0, data, static_cast<ssize_t>(strlen(data)) + 1, B_RELATIVE_TIMEOUT, 1000000);
+    BString cmdline;
+    for (int i = 0; i < __libc_argc; i++)
+    {
+      if (!__libc_argv[i]) continue;
+      if (cmdline.Length()) cmdline << ' ';
+      cmdline << __libc_argv[i];
+    }
+    write_port_etc(existing, 0, cmdline.String(), cmdline.Length() + 1, B_RELATIVE_TIMEOUT, 1000000);
     return 1;
   }
 

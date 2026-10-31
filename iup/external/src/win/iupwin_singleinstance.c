@@ -28,6 +28,8 @@
 #define LOCALE_INVARIANT 0x007f
 #endif
 
+#define IUPWIN_SI_COPYDATA_ID 0x49555044
+
 static HANDLE si_mutex = NULL;
 static HWND si_hwnd = NULL;
 static WCHAR* si_nameW = NULL;
@@ -49,23 +51,28 @@ static WCHAR* iupWinSIStrToWide(const char* str)
   return wstr;
 }
 
-static char* iupWinSIStrFromWide(const WCHAR* wstr)
+static char* iupWinSIStrFromWide(const WCHAR* wstr, int max_count)
 {
-  int len;
+  int count = 0, len = 0;
   char* str;
 
-  if (!wstr)
-    return NULL;
+  while (count < max_count && wstr[count])
+    count++;
 
-  len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
-  if (len == 0)
-    return NULL;
+  if (count > 0)
+  {
+    len = WideCharToMultiByte(CP_UTF8, 0, wstr, count, NULL, 0, NULL, NULL);
+    if (len == 0)
+      return NULL;
+  }
 
-  str = (char*)malloc(len);
+  str = (char*)malloc(len + 1);
   if (!str)
     return NULL;
 
-  WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, len, NULL, NULL);
+  if (len > 0)
+    WideCharToMultiByte(CP_UTF8, 0, wstr, count, str, len, NULL, NULL);
+  str[len] = 0;
   return str;
 }
 
@@ -89,11 +96,10 @@ static LRESULT CALLBACK iupWinSIWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM l
   if (msg == WM_COPYDATA)
   {
     COPYDATASTRUCT* cds = (COPYDATASTRUCT*)lp;
-    char* iup_id = (char*)cds->dwData;
 
-    if (iup_id && iup_id[0] == 'I' && iup_id[1] == 'U' && iup_id[2] == 'P')
+    if (cds && cds->dwData == IUPWIN_SI_COPYDATA_ID && cds->lpData && cds->cbData >= sizeof(WCHAR))
     {
-      char* data = iupWinSIStrFromWide((WCHAR*)cds->lpData);
+      char* data = iupWinSIStrFromWide((const WCHAR*)cds->lpData, (int)(cds->cbData / sizeof(WCHAR)));
       if (data)
       {
         iupWinSIDeliverData(data, (int)strlen(data) + 1);
@@ -125,7 +131,7 @@ static void iupWinSISendToFirst(const WCHAR* nameW)
     if (len != 0)
     {
       COPYDATASTRUCT cds;
-      cds.dwData = (ULONG_PTR)"IUP_DATA";
+      cds.dwData = IUPWIN_SI_COPYDATA_ID;
       cds.cbData = (len + 1) * sizeof(WCHAR);
       cds.lpData = cmdLine;
       SendMessage(hWnd, WM_COPYDATA, 0, (LPARAM)&cds);

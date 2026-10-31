@@ -928,25 +928,6 @@ static int winDialogBaseProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESUL
       *result = 0;
       return 1;
     }
-  case WM_COPYDATA:
-    {
-      IFnsi cb = (IFnsi)IupGetCallback(ih, "COPYDATA_CB");
-      if (cb)
-      {
-        COPYDATASTRUCT* cds = (COPYDATASTRUCT*)lp;
-        char* iup_id = (char*)cds->dwData;
-
-        /* from SetGlobal("SINGLEINSTANCE") */
-        if (iup_id && iup_id[0] == 'I' &&
-                      iup_id[1] == 'U' &&
-                      iup_id[2] == 'P')
-        {
-          char* data = iupwinStrFromSystem((TCHAR*)cds->lpData);
-          cb(ih, data, (int)strlen(data)+1);
-        }
-      }
-      break;
-    }
     case WM_LBUTTONDBLCLK:
     case WM_LBUTTONDOWN:
     {
