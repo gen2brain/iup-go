@@ -267,7 +267,7 @@ static IhaikuFont* haikuFindFont(const char* font)
   if (!bfont)
     return nullptr;
 
-  auto* slot = static_cast<IhaikuFont*>(iupArrayInc(haiku_fonts));
+  auto* slot = static_cast<IhaikuFont*>(iupArrayInc(haiku_fonts)) + count;
   iupStrCopyN(slot->font_str, sizeof(slot->font_str), font);
   slot->bfont = bfont;
   slot->is_underline = is_underline;
@@ -281,9 +281,8 @@ static IhaikuFont* haikuFontGet(Ihandle* ih)
   IhaikuFont* hf = nullptr;
   if (ih)
   {
-    hf = reinterpret_cast<IhaikuFont*>(iupAttribGet(ih, "_IUPHAIKU_SETFONT"));
-    if (!hf)
-      hf = haikuFindFont(iupGetFontValue(ih));
+    const char* setfont = iupAttribGet(ih, "_IUPHAIKU_SETFONT");
+    hf = haikuFindFont(setfont ? setfont : iupGetFontValue(ih));
   }
   if (!hf)
     hf = haikuFindFont(IupGetGlobal("DEFAULTFONT"));
@@ -331,7 +330,7 @@ extern "C" IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   if (!hf)
     return 0;
 
-  iupAttribSet(ih, "_IUPHAIKU_SETFONT", reinterpret_cast<char*>(hf));
+  iupAttribSetStr(ih, "_IUPHAIKU_SETFONT", value);
   iupBaseUpdateAttribFromFont(ih);
 
   /* TYPEVOID handle is (void*)-1, TYPEDIALOG is BWindow*; neither takes SetFont */
