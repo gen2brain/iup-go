@@ -463,6 +463,7 @@ IUP_DRV_API Eo* iupeflImageGetImage(const char* name, Ihandle* ih_parent, int ma
 {
   Ihandle* img_ih;
   const char* bgcolor = NULL;
+  Eo* win = NULL;
 
   if (!name || !name[0])
     return NULL;
@@ -472,9 +473,17 @@ IUP_DRV_API Eo* iupeflImageGetImage(const char* name, Ihandle* ih_parent, int ma
     return NULL;
 
   if (ih_parent)
+  {
+    Eo* obj = ih_parent->handle ? (Eo*)ih_parent->handle : iupeflGetParentWidget(ih_parent);
     bgcolor = IupGetAttribute(ih_parent, "BGCOLOR");
+    if (obj)
+      win = efl_provider_find(obj, EFL_UI_WIN_CLASS);
+  }
 
-  return eflImageCreateFromIhandle(img_ih, iupeflGetMainWindow(), make_inactive, bgcolor);
+  if (!win)
+    win = iupeflGetMainWindow();
+
+  return eflImageCreateFromIhandle(img_ih, win, make_inactive, bgcolor);
 }
 
 IUP_DRV_API Eo* iupeflImageGetImageForParent(const char* name, Ihandle* ih_parent, int make_inactive, Eo* parent)
