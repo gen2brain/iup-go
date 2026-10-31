@@ -600,7 +600,8 @@ extern "C" IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
   if (widget)
   {
     /* until the frame is known, move() of an existing native window places the client area */
-    if (!widget->isVisible() && widget->frameGeometry().topLeft() == widget->geometry().topLeft())
+    if (!widget->isVisible() && widget->testAttribute(Qt::WA_WState_Created) &&
+        widget->frameGeometry().topLeft() == widget->geometry().topLeft())
     {
       int border, caption, menu;
       iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
@@ -620,6 +621,69 @@ static int qtDialogGetMenuSize(Ihandle* ih)
     return iupdrvMenuGetMenuBarSize(ih->data->menu);
   else
     return 0;
+}
+
+static int qtDialogGetFrameExtents(QWindow* window, QMargins* margins)
+{
+#ifdef IUP_QT_HAS_X11_APP
+  static int supported = -1;
+  Atom extents, type;
+  int format, found = -1;
+  unsigned long count = 0, after = 0;
+  unsigned char* data = nullptr;
+
+  if (QGuiApplication::platformName() != QLatin1String("xcb"))
+    return 0;
+
+  auto* x11_app = qApp->nativeInterface<QNativeInterface::QX11Application>();
+  Display* xdisplay = x11_app ? x11_app->display() : nullptr;
+  if (!xdisplay)
+    return 0;
+
+#ifdef IUPX11_USE_DLOPEN
+  if (!iupX11Open() || !XGetWindowProperty || !XFree)
+    return 0;
+#endif
+
+  extents = XInternAtom(xdisplay, "_NET_FRAME_EXTENTS", 0);
+
+  if (supported < 0)
+  {
+    supported = 0;
+    if (XGetWindowProperty(xdisplay, XRootWindow(xdisplay, XDefaultScreen(xdisplay)), XInternAtom(xdisplay, "_NET_SUPPORTED", 0), 0, 4096, 0, AnyPropertyType,
+                           &type, &format, &count, &after, &data) == Success && data)
+    {
+      Atom* atoms = reinterpret_cast<Atom*>(data);
+      for (unsigned long i = 0; i < count; i++)
+      {
+        if (atoms[i] == extents)
+          supported = 1;
+      }
+      XFree(data);
+      data = nullptr;
+    }
+  }
+  if (!supported)
+    return 0;
+
+  if (XGetWindowProperty(xdisplay, static_cast<Window>(window->winId()), extents, 0, 4, 0, AnyPropertyType,
+                         &type, &format, &count, &after, &data) == Success && data)
+  {
+    if (format == 32 && count == 4)
+    {
+      long* value = reinterpret_cast<long*>(data);
+      qreal ratio = window->devicePixelRatio();
+      *margins = QMargins(qRound(value[0] / ratio), qRound(value[2] / ratio), qRound(value[1] / ratio), qRound(value[3] / ratio));
+      found = 1;
+    }
+    XFree(data);
+  }
+  return found;
+#else
+  (void)window;
+  (void)margins;
+  return 0;
+#endif
 }
 
 static int qt_last_border = 0, qt_last_caption = 0;
@@ -677,9 +741,19 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
     {
       QRect frame_geom = window->frameGeometry();
       QRect window_geom = window->geometry();
+      QMargins extents;
+      int extents_found = qtDialogGetFrameExtents(window, &extents);
+      if (extents_found > 0)
+        frame_geom = window_geom.marginsAdded(extents);
+      else if (extents_found < 0)
+        frame_geom = window_geom;
+
+      int left = window_geom.left() - frame_geom.left(), right = frame_geom.right() - window_geom.right();
+      int top = window_geom.top() - frame_geom.top(), bottom = frame_geom.bottom() - window_geom.bottom();
 
       /* Qt reports identical frame and window geometry until the decorations exist */
-      if (frame_geom.width() != window_geom.width() || frame_geom.height() != window_geom.height())
+      if ((frame_geom.width() != window_geom.width() || frame_geom.height() != window_geom.height()) &&
+          left == right && top >= bottom)
       {
         int win_border = (frame_geom.width() - window_geom.width()) / 2;
         int win_caption = frame_geom.height() - window_geom.height() - 2 * win_border;
