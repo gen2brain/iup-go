@@ -59,7 +59,7 @@ Useful for indexing the VALUE string. See the Notes below if using UTF-8 strings
 
 **CHANGECASE** (non-inheritable): Change case according to given conversion. Can be UPPER, LOWER, TOGGLE, or TITLE.
 TITLE case change first letter of words separated by spaces to upper case others to lower case, but the first letter is changed only if word has more than 3 characters, for instance: "Best of the World".
-Supports Latin-1 encoding only, even when using UTF-8.
+Supports Latin-1 encoding only, even when using UTF-8; other characters are kept unchanged.
 Does not depend on current locale.
 
 **CLIPBOARD** (write-only): clear, cut, copy or paste the selection to or from the clipboard.
