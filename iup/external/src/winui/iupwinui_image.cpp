@@ -435,11 +435,11 @@ static int winuiImageReadDib(void* handle, int* w, int* h, unsigned char* imgdat
 {
   auto* bmih = static_cast<BITMAPINFOHEADER*>(GlobalLock(static_cast<HGLOBAL>(handle)));
   if (!bmih)
-    return 0;
+    return -1;
   if (reinterpret_cast<void*>(bmih) == handle)
   {
     GlobalUnlock(static_cast<HGLOBAL>(handle));
-    return 0;
+    return -1;
   }
 
   IWICImagingFactory* factory = iWinUIGetWicFactory();
@@ -510,7 +510,7 @@ extern "C" IUP_SDK_API void iupdrvImageGetData(void* handle, unsigned char* imgd
   if (!handle || !imgdata)
     return;
 
-  if (winuiImageReadDib(handle, nullptr, nullptr, imgdata))
+  if (winuiImageReadDib(handle, nullptr, nullptr, imgdata) >= 0)
     return;
 
   WriteableBitmap bitmap = winuiGetBitmapFromHandle(handle);
@@ -559,10 +559,18 @@ extern "C" IUP_SDK_API int iupdrvImageGetRawInfo(void* handle, int* w, int* h, i
 {
   (void)colors;
   if (colors_count) *colors_count = 0;
-  if (winuiImageReadDib(handle, w, h, nullptr))
+  int ret = winuiImageReadDib(handle, w, h, nullptr);
+  if (ret > 0)
   {
     if (bpp) *bpp = 32;
     return 1;
+  }
+  if (ret == 0)
+  {
+    if (w) *w = 0;
+    if (h) *h = 0;
+    if (bpp) *bpp = 0;
+    return 0;
   }
   return iupdrvImageGetInfo(handle, w, h, bpp);
 }
