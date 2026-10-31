@@ -82,6 +82,33 @@ func label(s string) iup.Ihandle {
 	return iup.Vbox(iup.Label(s)).SetAttributes(`NMARGIN=12x12`)
 }
 
+func checkNaturalSize(name string, d iup.Ihandle) {
+	cw, ch := pair(d, "CLIENTSIZE")
+	nw, nh := pair(iup.GetChild(d, 0), "NATURALSIZE")
+	if mobile() {
+		skip(name, "the dialog fills the screen")
+		return
+	}
+	check(name, cw >= nw && ch >= nh, fmt.Sprintf("CLIENTSIZE=%dx%d, content NATURALSIZE=%dx%d", cw, ch, nw, nh))
+}
+
+func naturalFrame() []func() {
+	var c iup.Ihandle
+	return []func(){
+		func() {
+			c = newDialog("Fixed frame", "DIALOGFRAME=YES, MINBOX=NO, MAXBOX=NO", iup.Vbox(
+				iup.Label("Dialog with a fixed frame"),
+				iup.Button("Button"),
+			).SetAttributes(`NMARGIN=10x10, NGAP=6`))
+			iup.ShowXY(c, iup.CENTER, iup.CENTER)
+		},
+		func() {
+			checkNaturalSize("natural size with DIALOGFRAME=YES: CLIENTSIZE holds the content", c)
+			c.Destroy()
+		},
+	}
+}
+
 func childAt(name string, x, y int, verify func(c iup.Ihandle)) []func() {
 	var c iup.Ihandle
 	return []func(){
@@ -113,6 +140,8 @@ func buildSteps() {
 		).SetAttributes(`NMARGIN=10x10, NGAP=6`)).SetAttribute("TITLE", "Dialog under test")
 		iup.ShowXY(subject, iup.CENTER, iup.CENTER)
 	})
+	add(func() { checkNaturalSize("natural size: CLIENTSIZE holds the content", subject) })
+	add(naturalFrame()...)
 	add(func() {
 		logf("      %s", state(subject))
 		subject.SetAttribute("RASTERSIZE", "420x300")
