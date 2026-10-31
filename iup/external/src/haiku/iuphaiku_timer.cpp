@@ -191,13 +191,25 @@ static std::vector<IupHaikuTimer*> haikuTimerSnapshot()
   return timers;
 }
 
+static std::vector<int> haikuTimerSerialSnapshot()
+{
+  std::vector<int> serials;
+
+  BAutolock guard(haikuTimerRegistryLock());
+  for (auto& entry : haikuTimerRegistry())
+    serials.push_back(entry.first);
+  return serials;
+}
+
 IUP_DRV_API void iuphaikuTimerRunDue(void)
 {
   bigtime_t now = system_time();
 
-  for (IupHaikuTimer* t : haikuTimerSnapshot())
+  for (int serial : haikuTimerSerialSnapshot())
   {
-    if (t->ClaimDue(now))
+    Ihandle* ih = iuphaikuTimerFromSerial(serial);
+    IupHaikuTimer* t = ih ? haikuTimerOf(ih) : nullptr;
+    if (t && t->ClaimDue(now))
       t->Fire(false);
   }
 }
