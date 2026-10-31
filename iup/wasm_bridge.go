@@ -434,6 +434,8 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih, float64(i1), i2, i3, sarg)
 	case CloseFunc:
 		ret = f(ih)
+	case CopyDataFunc:
+		ret = f(ih, sarg, i1)
 	case NotifyFunc:
 		ret = f(ih, i1)
 	case PermissionFunc:
