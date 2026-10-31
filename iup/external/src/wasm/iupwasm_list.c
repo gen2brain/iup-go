@@ -304,7 +304,7 @@ static int wasmListKeyVetoed(Ihandle* ih, int id, int seq)
   if (!iupwasmKeyIgnored(seq))
     return 0;
 
-  if (iupAttribGetBoolean(ih, "MULTIPLE"))
+  if (ih->data->is_multiple)
     iupwasmJsListSetMulti(id, iupAttribGet(ih, "_IUPWASM_LISTSEL"));
   else
     iupwasmJsListSetSelIndex(id, iupAttribGetInt(ih, "_IUPWASM_LISTSEL") - 1);
