@@ -81,9 +81,9 @@ static int cocoaFontDlgPopup(Ihandle* ih, int x, int y)
   char typeface[100] = "";
   int size = 12;
   int is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
-  if (!iupGetFontInfo(value, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(value, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
   {
-    iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
+    iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout);
   }
 
   NSFont* font = nil;

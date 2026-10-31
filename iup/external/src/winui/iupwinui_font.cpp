@@ -93,7 +93,7 @@ static IwinuiFont* winuiFindFont(const char* font, float dpi)
       return &winui_font;
   }
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return nullptr;
 
   const char* mapped_name = iupFontGetWinName(typeface);
@@ -470,7 +470,7 @@ static bool winuiGetFontProps(Ihandle* ih, WinUIFontProps* props)
 
   char typeface[50] = "";
   int size, is_bold, is_italic, is_underline, is_strikeout;
-  if (!iupGetFontInfo(fontvalue, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(fontvalue, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return false;
 
   const char* mapped_name = iupFontGetWinName(typeface);
@@ -518,7 +518,7 @@ IUP_DRV_API void iupwinuiUpdateTextBlockFontStr(winrt::Microsoft::UI::Xaml::Cont
 
   char typeface[50] = "";
   int size, is_bold, is_italic, is_underline, is_strikeout;
-  if (!iupGetFontInfo(value, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(value, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return;
 
   const char* mapped_name = iupFontGetWinName(typeface);

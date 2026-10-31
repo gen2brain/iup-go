@@ -256,7 +256,7 @@ static IhaikuFont* haikuFindFont(const char* font)
   char typeface[1024] = {0};
   int size = 0;
   int is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return nullptr;
 
   const char* mapped = iupFontGetPangoName(typeface);

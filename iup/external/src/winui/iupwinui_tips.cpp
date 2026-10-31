@@ -55,7 +55,7 @@ static ToolTip winuiTipCreateStyled(Ihandle* ih, const char* text)
   {
     char typeface[50];
     int size, is_bold, is_italic, is_underline, is_strikeout;
-    if (iupGetFontInfo(value, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+    if (iupGetFontInfo(value, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     {
       wchar_t wtypeface[50];
       MultiByteToWideChar(CP_UTF8, 0, typeface, -1, wtypeface, 50);

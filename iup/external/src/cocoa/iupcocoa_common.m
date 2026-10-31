@@ -435,7 +435,7 @@ static void cocoaApplyControlSize(Ihandle* ih)
   if (cocoaHasFont(ih))
     return;
 
-  if (!iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), typeface, &font_size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(IupGetGlobal("DEFAULTFONT"), typeface, sizeof(typeface), &font_size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return;
 
   point_size = (int)lroundf([NSFont systemFontSizeForControlSize:size]);

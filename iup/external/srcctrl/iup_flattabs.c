@@ -2186,7 +2186,7 @@ static int iFlatTabsSetTabFontStyleAttrib(Ihandle* ih, int id, const char* value
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return 0;
 
   IupSetfAttributeId(ih, "TABFONT", id, "%s, %s %d", typeface, value, size);
@@ -2209,7 +2209,7 @@ static char* iFlatTabsGetTabFontStyleAttrib(Ihandle* ih, int id)
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return NULL;
 
   return iupStrReturnStrf("%s%s%s%s", is_bold ? "Bold " : "", is_italic ? "Italic " : "", is_underline ? "Underline " : "", is_strikeout ? "Strikeout " : "");
@@ -2234,7 +2234,7 @@ static int iFlatTabsSetTabFontSizeAttrib(Ihandle* ih, int id, const char* value)
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return 0;
 
   IupSetfAttributeId(ih, "TABFONT", id, "%s, %s%s%s%s%s", typeface, is_bold ? "Bold " : "", is_italic ? "Italic " : "", is_underline ? "Underline " : "", is_strikeout ? "Strikeout " : "", value);
@@ -2257,7 +2257,7 @@ static char* iFlatTabsGetTabFontSizeAttrib(Ihandle* ih, int id)
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return NULL;
 
   return iupStrReturnInt(size);
@@ -2276,7 +2276,7 @@ static char* iFlatTabsGetTabsFontSizeAttrib(Ihandle* ih)
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return NULL;
 
   return iupStrReturnInt(size);
@@ -2299,7 +2299,7 @@ static int iFlatTabsSetTabsFontSizeAttrib(Ihandle* ih, const char* value)
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return 0;
 
   IupSetfAttribute(ih, "TABSFONT", "%s, %s%s%s%s %s", typeface, is_bold ? "Bold " : "", is_italic ? "Italic " : "", is_underline ? "Underline " : "", is_strikeout ? "Strikeout " : "", value);
@@ -2319,7 +2319,7 @@ static char* iFlatTabsGetTabsFontStyleAttrib(Ihandle* ih)
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return NULL;
 
   return iupStrReturnStrf("%s%s%s%s", is_bold ? "Bold " : "", is_italic ? "Italic " : "", is_underline ? "Underline " : "", is_strikeout ? "Strikeout " : "");
@@ -2342,7 +2342,7 @@ static int iFlatTabsSetTabsFontStyleAttrib(Ihandle* ih, const char* value)
   if (!font)
     font = IupGetAttribute(ih, "FONT");
 
-  if (!iupGetFontInfo(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return 0;
 
   IupSetfAttribute(ih, "TABSFONT", "%s, %s %d", typeface, value, size);

@@ -83,11 +83,11 @@ static Igtk4Font* gtk4FindFont(const char* font)
     const char* mapped_name;
 
     /* same as iupGetFontInfo, but mark if pango  */
-    if (!iupFontParseWin(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+    if (!iupFontParseWin(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     {
       if (!iupFontParseX(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
       {
-        if (!iupFontParsePango(font, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+        if (!iupFontParsePango(font, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
           return NULL;
         else
           is_pango = 1;

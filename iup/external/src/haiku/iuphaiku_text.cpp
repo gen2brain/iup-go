@@ -1575,7 +1575,7 @@ static void haikuTextApplyFormatTagFont(BFont& bfont, Ihandle* tag, uint32* mode
   {
     char typeface[1024] = {0};
     int size = 0, bold = 0, italic = 0, underline = 0, strikeout = 0;
-    if (iupGetFontInfo(font_value, typeface, &size, &bold, &italic, &underline, &strikeout))
+    if (iupGetFontInfo(font_value, typeface, sizeof(typeface), &size, &bold, &italic, &underline, &strikeout))
     {
       if (typeface[0])
       {

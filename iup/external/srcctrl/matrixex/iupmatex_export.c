@@ -15,44 +15,37 @@
 #include "iup_matrixex.h"
 
 
-static void iMatrixExStrCopyNoSepHTML(char* buffer, const char* str)
+static void iMatrixExWriteHTML(FILE* file, const char* str)
 {
-  while (*str)
+  for (; *str; str++)
   {
-    if (*str=='\n')
+    switch (*str)
     {
-      *buffer = '<'; buffer++;
-      *buffer = 'B'; buffer++;
-      *buffer = 'R'; buffer++;
-      *buffer = '>';
+    case '\n': fputs("<BR>", file); break;
+    case '&':  fputs("&amp;", file); break;
+    case '<':  fputs("&lt;", file); break;
+    case '>':  fputs("&gt;", file); break;
+    case '"':  fputs("&quot;", file); break;
+    default:   fputc(*str, file); break;
     }
-    else
-      *buffer = *str;
-
-    buffer++;
-    str++;
   }
-  *buffer = 0;
 }
 
-static void iMatrixExStrCopyNoSepLaTeX(char* buffer, const char* str)
+static void iMatrixExWriteLaTeX(FILE* file, const char* str)
 {
-  while (*str)
+  for (; *str; str++)
   {
-    if (*str=='\n' || *str=='_')
-      *buffer = ' ';
-    else if (*str=='%')
+    switch (*str)
     {
-      *buffer = '\\'; buffer++;
-      *buffer = '%';
+    case '\n': fputc(' ', file); break;
+    case '#': case '$': case '%': case '&': case '_': case '{': case '}':
+      fputc('\\', file); fputc(*str, file); break;
+    case '\\': fputs("\\textbackslash{}", file); break;
+    case '~':  fputs("\\textasciitilde{}", file); break;
+    case '^':  fputs("\\textasciicircum{}", file); break;
+    default:   fputc(*str, file); break;
     }
-    else
-      *buffer = *str;
-
-    buffer++;
-    str++;
   }
-  *buffer = 0;
 }
 
 static void iMatrixExCopyTXT(Ihandle* ih, FILE* file, int num_lin, int num_col, int skip_lin, int skip_col)
@@ -132,7 +125,7 @@ static char* iMatrixExGetCellAttrib(Ihandle* ih, const char* attrib, int lin, in
 
 static char* iMatrixExGetCellFormat(Ihandle* ih, int lin, int col, char* format)
 {
-  char* value, *init = "style=\"";
+  char* value, *font, *init = " style=\"";
 
 #define _STRCATFORMAT {if (value) { if (init) {iupStrCopyN(format, 512, init); init=NULL;} { int _p=(int)strlen(format); snprintf(format+_p, 512-_p, "%s", value); } }}
 
@@ -177,18 +170,18 @@ static char* iMatrixExGetCellFormat(Ihandle* ih, int lin, int col, char* format)
     _STRCATFORMAT;
   }
 
-  value = iMatrixExGetCellAttrib(ih, "FONT", lin, col);
-  if (value)
+  font = iMatrixExGetCellAttrib(ih, "FONT", lin, col);
+  if (font)
   {
-    if (strstr(value, "Bold")||strstr(value, "BOLD"))
+    if (strstr(font, "Bold")||strstr(font, "BOLD"))
     {
       value = "font-weight: bold; ";
       _STRCATFORMAT;
     }
 
-    if (strstr(value, "Italic")||strstr(value, "ITALIC"))
+    if (strstr(font, "Italic")||strstr(font, "ITALIC"))
     {
-      value = "font-weight: bold; ";
+      value = "font-style: italic; ";
       _STRCATFORMAT;
     }
 
@@ -206,7 +199,7 @@ static char* iMatrixExGetCellFormat(Ihandle* ih, int lin, int col, char* format)
   return format;
 }
 
-static void iMatrixExCopyHTML(Ihandle* ih, FILE* file, int num_lin, int num_col, char* buffer, int skip_lin, int skip_col)
+static void iMatrixExCopyHTML(Ihandle* ih, FILE* file, int num_lin, int num_col, int skip_lin, int skip_col)
 {
   ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
   int lin, col;
@@ -230,7 +223,11 @@ static void iMatrixExCopyHTML(Ihandle* ih, FILE* file, int num_lin, int num_col,
 
   str = iupAttribGetStr(ih, "COPYCAPTION");
   if (str)
-    fprintf(file,"<CAPTION%s>%s</CAPTION>\n", caption, str);
+  {
+    fprintf(file,"<CAPTION%s>", caption);
+    iMatrixExWriteHTML(file, str);
+    fprintf(file,"</CAPTION>\n");
+  }
 
   /* Here includes the title cells */
   for (lin = 0; lin <= num_lin; ++lin)
@@ -251,8 +248,7 @@ static void iMatrixExCopyHTML(Ihandle* ih, FILE* file, int num_lin, int num_col,
           str = iupMatrixExGetCellValue(matex_data->ih, lin, col, 1);  /* get displayed value */
           if (str)
           {
-            iMatrixExStrCopyNoSepHTML(buffer, str);
-            fprintf(file, "%s", buffer);
+            iMatrixExWriteHTML(file, str);
           }
           else
             fprintf(file, "%s", " ");
@@ -292,7 +288,7 @@ static int iMatrixExIsBoldLine(Ihandle* ih, int lin)
   return 0;
 }
 
-static void iMatrixExCopyLaTeX(Ihandle* ih, FILE* file, int num_lin, int num_col, char* buffer, int skip_lin, int skip_col)
+static void iMatrixExCopyLaTeX(Ihandle* ih, FILE* file, int num_lin, int num_col, int skip_lin, int skip_col)
 {
   ImatExData* matex_data = (ImatExData*)iupAttribGet(ih, "_IUP_MATEX_DATA");
   int lin, col;
@@ -336,8 +332,7 @@ static void iMatrixExCopyLaTeX(Ihandle* ih, FILE* file, int num_lin, int num_col
           str = iupMatrixExGetCellValue(matex_data->ih, lin, col, 1);  /* get displayed value */
           if (str)
           {
-            iMatrixExStrCopyNoSepLaTeX(buffer, str);
-            fprintf(file, "%s", buffer);
+            iMatrixExWriteLaTeX(file, str);
           }
           else
             fprintf(file, "%s", " ");
@@ -360,7 +355,12 @@ static void iMatrixExCopyLaTeX(Ihandle* ih, FILE* file, int num_lin, int num_col
   fprintf(file,"\\end{tabular}\n");
 
   str = iupAttribGetStr(ih, "COPYCAPTION");
-  if (str) fprintf(file,"\\caption{%s.}\n", str);
+  if (str)
+  {
+    fprintf(file,"\\caption{");
+    iMatrixExWriteLaTeX(file, str);
+    fprintf(file,".}\n");
+  }
 
   str = iupAttribGetStr(ih, "LATEXLABEL");
   if (str) fprintf(file,"\\label{tab:%s}\n", str);
@@ -372,7 +372,6 @@ static void iMatrixExCopyLaTeX(Ihandle* ih, FILE* file, int num_lin, int num_col
 static int iMatrixExSetCopyFileAttrib(Ihandle* ih, const char* value)
 {
   int num_lin, num_col, skip_lin, skip_col;
-  char buffer[1024];
   char* format;
 
   FILE* file = fopen(value, "wb");
@@ -393,9 +392,9 @@ static int iMatrixExSetCopyFileAttrib(Ihandle* ih, const char* value)
 
   format = iupAttribGetStr(ih, "FILEFORMAT");
   if (iupStrEqualNoCase(format, "HTML"))
-    iMatrixExCopyHTML(ih, file, num_lin, num_col, buffer, skip_lin, skip_col);
+    iMatrixExCopyHTML(ih, file, num_lin, num_col, skip_lin, skip_col);
   else if (iupStrEqualNoCase(format, "LaTeX"))
-    iMatrixExCopyLaTeX(ih, file, num_lin, num_col, buffer, skip_lin, skip_col);
+    iMatrixExCopyLaTeX(ih, file, num_lin, num_col, skip_lin, skip_col);
   else
     iMatrixExCopyTXT(ih, file, num_lin, num_col, skip_lin, skip_col);
 

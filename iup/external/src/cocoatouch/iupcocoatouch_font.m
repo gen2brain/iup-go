@@ -200,7 +200,7 @@ IUP_DRV_API IupCocoaTouchFont* iupCocoaTouchFindFont(const char* iup_font_name)
 	char type_face[50] = "";
 	int font_size = 0;
 	int is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
-	if (!iupGetFontInfo(iup_font_name, type_face, &font_size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+	if (!iupGetFontInfo(iup_font_name, type_face, sizeof(type_face), &font_size, &is_bold, &is_italic, &is_underline, &is_strikeout))
 	{
 		return nil;
 	}

@@ -479,7 +479,7 @@ static void winTextUpdateFontFormat(CHARFORMAT2* charformat, const char* value)
   char typeface[1024];
   const char* mapped_name;
 
-  if (!iupGetFontInfo(value, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(value, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return;
 
   /* Map standard names to native names */

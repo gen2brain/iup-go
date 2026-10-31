@@ -89,7 +89,7 @@ static void androidFontParse(const char* font, char family[1024], int* style, in
 {
   int size = 0, is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
   family[0] = 0;
-  if (!font || !*font || !iupGetFontInfo(font, family, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!font || !*font || !iupGetFontInfo(font, family, 1024, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
   {
     *style = ANDROID_TYPEFACE_NORMAL;
     *size_unit = 0;
@@ -331,7 +331,7 @@ IUP_SDK_API int iupdrvSetFontAttrib(Ihandle* ih, const char* value)
   char typeface[1024] = "";
   int size = 0, is_bold = 0, is_italic = 0, is_underline = 0, is_strikeout = 0;
 
-  if (!iupGetFontInfo(value, typeface, &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
+  if (!iupGetFontInfo(value, typeface, sizeof(typeface), &size, &is_bold, &is_italic, &is_underline, &is_strikeout))
     return 0;
 
   /* Typeface.create only knows monospace/serif/sans-serif; map cross-platform aliases. */
