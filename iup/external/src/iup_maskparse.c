@@ -217,6 +217,8 @@ static int iMaskParseFactor (ImaskParseVars * vars)
                  IMASK_CAP_OPEN_CMD, vars->state + 1, vars->state + 1);
     t2 = vars->state;
     iMaskParseNewState (vars);
+    if (vars->size + 1 >= (short)(sizeof(vars->capture) / sizeof(vars->capture[0])))
+      iMaskParseError (vars);
     vars->capture[++vars->size] = vars->nextcap++;
     vars->j++;
 
@@ -307,6 +309,8 @@ static int iMaskParseFactor (ImaskParseVars * vars)
         char temp;
 
         vars->j++;
+        if (vars->string[vars->j] == '\0')
+          iMaskParseError (vars);
         switch (vars->string[vars->j])
         {
         case 'n':
@@ -333,10 +337,14 @@ static int iMaskParseFactor (ImaskParseVars * vars)
         char temp = 0;
 
         vars->j++;
+        if (vars->string[vars->j] == '\0')
+          iMaskParseError (vars);
 
         if (vars->string[vars->j] == SPC_CH)
         {
           vars->j++;
+          if (vars->string[vars->j] == '\0')
+            iMaskParseError (vars);
           switch (vars->string[vars->j])
           {
           case 'n':
@@ -365,21 +373,6 @@ static int iMaskParseFactor (ImaskParseVars * vars)
                      IMASK_CLASS_CMD_RANGE, temp, 0);
         vars->j++;
       }
-      else if (vars->string[vars->j] == BEGIN_CH)
-      {
-        iMaskParseSetState (vars, vars->state, 1, IMASK_BEGIN_CMD, vars->state + 1, vars->state + 1);
-        t2 = vars->state;
-        vars->j++;
-        iMaskParseNewState (vars);
-      }
-      else if (vars->string[vars->j] == END_CH)
-      {
-        iMaskParseSetState (vars, vars->state, 1, IMASK_END_CMD, vars->state + 1, vars->state + 1);
-        t2 = vars->state;
-        vars->j++;
-        iMaskParseNewState (vars);
-      }
-
       else
       {
         iMaskParseSetState (vars, vars->state, vars->string[vars->j], IMASK_CLASS_CMD_CHAR, 0, 0);
@@ -403,6 +396,8 @@ static int iMaskParseFactor (ImaskParseVars * vars)
     ImaskMatchFunc* match_functions = iupMaskMatchGetFuncs();
 
     vars->j++;
+    if (vars->string[vars->j] == '\0')
+      iMaskParseError (vars);
 
     while (match_functions[loop1].ch != '\0' &&
            match_functions[loop1].ch != vars->string[vars->j])
@@ -470,8 +465,10 @@ static int iMaskParseFactor (ImaskParseVars * vars)
           }
         }
         else
-          temp = vars->string[vars->j];
+          temp = (unsigned char)vars->string[vars->j];
       }
+      if (temp <= 0 || temp > 255)
+        iMaskParseError (vars);
       iMaskParseSetState (vars, vars->state, (char)temp, IMASK_CHAR_CMD, vars->state + 1, vars->state + 1);
     }
 
@@ -554,7 +551,7 @@ static void iMaskParseNewState (ImaskParseVars * vars)
   {
     ImaskParsed* new_fsm = (ImaskParsed*) realloc (vars->fsm, (vars->num_states + STATE_BLOCK) * sizeof (ImaskParsed));
     if (!new_fsm)
-      return;
+      iMaskParseError (vars);
     memset(new_fsm + vars->num_states, 0, STATE_BLOCK*sizeof(ImaskParsed));
     vars->fsm = new_fsm;
     vars->num_states += STATE_BLOCK;
