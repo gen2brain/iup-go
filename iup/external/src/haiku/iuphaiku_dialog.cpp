@@ -368,6 +368,9 @@ public:
 
     CallbackLockGuard guard(this);
 
+    if (guard.LooperWasUnlocked() && target && target != this && IndexOf(target) < 0)
+      return;
+
     if (iuphaikuIsModalStaleInput(msg))
       return;
 

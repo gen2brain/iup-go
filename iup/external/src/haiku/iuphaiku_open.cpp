@@ -52,6 +52,10 @@ public:
     }
 
     CallbackLockGuard guard(this);
+
+    if (guard.LooperWasUnlocked() && handler && handler != this && IndexOf(handler) < 0)
+      return;
+
     switch (msg->what) {
       case IUPHAIKU_APP_DRAIN_MSG:
         iuphaikuAppDrainPosts();

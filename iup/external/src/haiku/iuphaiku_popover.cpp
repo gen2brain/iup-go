@@ -77,6 +77,9 @@ public:
 
     CallbackLockGuard guard(this);
 
+    if (guard.LooperWasUnlocked() && handler && handler != this && IndexOf(handler) < 0)
+      return;
+
     if (msg && msg->what == B_KEY_DOWN && fIhandle && iupObjectCheck(fIhandle) &&
         iupAttribGetBoolean(fIhandle, "AUTOHIDE"))
     {
