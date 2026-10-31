@@ -184,6 +184,17 @@ static int iMdCountLeadingChar(const char* str, int len, char c)
   return count;
 }
 
+static int iMdIsAtxHeading(const char* line, int len)
+{
+  int level = iMdCountLeadingChar(line, len, '#');
+  return level >= 1 && level <= 6 && level < len && line[level] == ' ';
+}
+
+static int iMdIsBlockquoteStart(const char* line, int len)
+{
+  return len > 0 && line[0] == '>' && (len == 1 || line[1] == ' ');
+}
+
 static int iMdIsHorizontalRule(const char* line, int len)
 {
   int i, count = 0;
@@ -1498,11 +1509,11 @@ static const char* iMdCollectParagraph(const char* input, iMdBuf* para)
     if (iMdIsBlankLine(input, line_len))
       break;
 
-    if (line_len > 0 && input[0] == '#')
+    if (iMdIsAtxHeading(input, line_len))
       break;
     if (line_len >= 3 && input[0] == '`' && input[1] == '`' && input[2] == '`')
       break;
-    if (line_len > 0 && input[0] == '>')
+    if (iMdIsBlockquoteStart(input, line_len))
       break;
     if (!first && iMdIsSetextUnderline(input, line_len))
       break;
@@ -1569,15 +1580,11 @@ static void iMdParseDocument(iMdState* s, const char* input)
       continue;
     }
 
-    if (input[0] == '#')
+    if (iMdIsAtxHeading(input, line_len))
     {
-      int level = iMdCountLeadingChar(input, line_len, '#');
-      if (level <= 6 && level < line_len && input[level] == ' ')
-      {
-        iMdParseHeading(s, input, line_len);
-        input = next;
-        continue;
-      }
+      iMdParseHeading(s, input, line_len);
+      input = next;
+      continue;
     }
 
     if (iMdIsHorizontalRule(input, line_len))
@@ -1587,7 +1594,7 @@ static void iMdParseDocument(iMdState* s, const char* input)
       continue;
     }
 
-    if (input[0] == '>' && (line_len == 1 || input[1] == ' '))
+    if (iMdIsBlockquoteStart(input, line_len))
     {
       iMdParseBlockquote(s, input, line_len);
       input = next;

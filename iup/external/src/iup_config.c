@@ -21,7 +21,6 @@
 
 
 #define GROUPKEYSIZE 100
-#define MAX_LINES 500
 #define MAX_RECENT 100
 
 static char* strGetGroupKeyName(const char* group, const char* key)
@@ -165,7 +164,7 @@ IUP_API int IupConfigLoad(Ihandle* ih)
 
 IUP_API int IupConfigSave(Ihandle* ih)
 {
-  char* names[MAX_LINES];
+  char** names;
   FILE* file;
   int i, count;
   char last_group[GROUPKEYSIZE] = "", group[GROUPKEYSIZE], *key;
@@ -178,7 +177,14 @@ IUP_API int IupConfigSave(Ihandle* ih)
   if (!file)
     return -1;
 
-  count = IupGetAllAttributes(ih, names, MAX_LINES);
+  count = IupGetAllAttributes(ih, NULL, -1);
+  names = (char**)malloc((count > 0 ? count : 1) * sizeof(char*));
+  if (!names)
+  {
+    fclose(file);
+    return -2;
+  }
+  count = IupGetAllAttributes(ih, names, count);
 
   qsort(names, count, sizeof(char*), sort_names_cb);
 
@@ -202,11 +208,13 @@ IUP_API int IupConfigSave(Ihandle* ih)
 
     if (ferror(file))
     {
+      free(names);
       fclose(file);
       return -2;
     }
   }
 
+  free(names);
   fclose(file);
   return 0;
 }
