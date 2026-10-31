@@ -284,6 +284,55 @@ static int gtk4HasColorScheme(void)
   return g_object_class_find_property(G_OBJECT_GET_CLASS(gtk_settings_get_default()), "gtk-interface-color-scheme") != NULL;
 }
 
+static int gtk4ThemeDirHasDarkVariant(const char* dir, const char* subdir, const char* name)
+{
+  int minor;
+
+  for (minor = (int)gtk_get_minor_version() & ~1; minor >= 0; minor -= 2)
+  {
+    char version[16];
+    char* path;
+    int exists;
+
+    g_snprintf(version, sizeof(version), "gtk-4.%d", minor);
+    path = g_build_filename(dir, subdir, name, version, "gtk-dark.css", NULL);
+    exists = g_file_test(path, G_FILE_TEST_EXISTS);
+    g_free(path);
+
+    if (exists)
+      return 1;
+  }
+
+  return 0;
+}
+
+static int gtk4ThemeHasDarkVariant(void)
+{
+  const char* const* dirs;
+  char* name = NULL;
+  int found, i;
+
+  if (g_getenv("GTK_THEME"))
+    return 0;
+
+  g_object_get(gtk_settings_get_default(), "gtk-theme-name", &name, NULL);
+  if (!name || !*name)
+  {
+    g_free(name);
+    return 0;
+  }
+
+  found = gtk4ThemeDirHasDarkVariant(g_get_user_data_dir(), "themes", name) ||
+          gtk4ThemeDirHasDarkVariant(g_get_home_dir(), ".themes", name);
+
+  dirs = g_get_system_data_dirs();
+  for (i = 0; !found && dirs[i]; i++)
+    found = gtk4ThemeDirHasDarkVariant(dirs[i], "themes", name);
+
+  g_free(name);
+  return found;
+}
+
 static void gtk4ApplyColorScheme(void)
 {
   int scheme;
@@ -296,7 +345,11 @@ static void gtk4ApplyColorScheme(void)
     scheme = gtk4_system_color_scheme;
 
   gtk4_setting_color_scheme = 1;
-  g_object_set(gtk_settings_get_default(), "gtk-interface-color-scheme", scheme, NULL);
+  if (gtk4ThemeHasDarkVariant())
+    g_object_set(gtk_settings_get_default(), "gtk-application-prefer-dark-theme",
+                 (scheme == IUPGTK4_COLOR_SCHEME_DARK || (gtk4_appearance == IUP_APPEARANCE_SYSTEM && gtk4_system_prefer_dark))? TRUE: FALSE, NULL);
+  else
+    g_object_set(gtk_settings_get_default(), "gtk-interface-color-scheme", scheme, NULL);
   gtk4_setting_color_scheme = 0;
 }
 

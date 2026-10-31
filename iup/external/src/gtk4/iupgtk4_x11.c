@@ -51,6 +51,13 @@ IUP_DRV_API int iupgtk4X11IsSurface(GdkSurface* surface)
   return (surface && GDK_IS_X11_SURFACE(surface));
 }
 
+IUP_DRV_API unsigned int iupgtk4X11GetServerTime(GdkSurface* surface)
+{
+  if (surface && GDK_IS_X11_SURFACE(surface))
+    return (unsigned int)gdk_x11_get_server_time(surface);
+  return 0;
+}
+
 IUP_DRV_API unsigned long iupgtk4X11GetSurfaceXid(GdkSurface* surface)
 {
   if (surface && GDK_IS_X11_SURFACE(surface))
