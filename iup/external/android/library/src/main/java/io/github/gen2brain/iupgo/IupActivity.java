@@ -632,6 +632,12 @@ public class IupActivity extends AppCompatActivity
             return;
         }
 
+        if (IupShareHelper.isShareRequest(requestCode))
+        {
+            IupShareHelper.deliverResult();
+            return;
+        }
+
         /* forward so app code can observe results of externally-launched activities */
         long ihandlePtr = getIntent().getLongExtra("Ihandle", 0);
         OnActivityResult(ihandlePtr, requestCode, resultCode, intentData);

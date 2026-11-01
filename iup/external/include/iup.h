@@ -376,6 +376,7 @@ IUP_API Ihandle*  IupMessageDlg(void);
 IUP_API Ihandle*  IupColorDlg(void);
 IUP_API Ihandle*  IupFontDlg(void);
 IUP_API Ihandle*  IupPrintDlg(void);
+IUP_API Ihandle*  IupShareDlg(void);
 IUP_API Ihandle*  IupProgressDlg(void);
 
 IUP_API int       IupGetFile(char* arq);

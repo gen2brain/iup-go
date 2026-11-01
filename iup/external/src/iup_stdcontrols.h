@@ -19,6 +19,7 @@ Iclass* iupColorDlgNewClass(void);
 Iclass* iupFontDlgNewClass(void);
 Iclass* iupFileDlgNewClass(void);
 Iclass* iupPrintDlgNewClass(void);
+Iclass* iupShareDlgNewClass(void);
 Iclass* iupProgressDlgNewClass(void);
 
 Iclass* iupLabelNewClass(void);
@@ -94,6 +95,7 @@ IUP_SDK_API void iupdrvMessageDlgInitClass(Iclass* ic);
 IUP_SDK_API void iupdrvFontDlgInitClass(Iclass* ic);
 IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic);
 IUP_SDK_API void iupdrvPrintDlgInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvShareDlgInitClass(Iclass* ic);
 /** @} */
 
 IUP_SDK_API const char* iupPrintDlgGetJobName(Ihandle* ih);

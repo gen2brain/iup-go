@@ -625,6 +625,13 @@ func PrintDlg() Ihandle {
 	return ccallHandle("IupPrintDlg", nil, nil)
 }
 
+// ShareDlg creates the share dialog.
+//
+// https://gen2brain.github.io/iup-go/dlg/iup_sharedlg.html
+func ShareDlg() Ihandle {
+	return ccallHandle("IupShareDlg", nil, nil)
+}
+
 // Popover creates a floating container anchored to another element.
 //
 // https://gen2brain.github.io/iup-go/elem/iup_popover.html

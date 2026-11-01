@@ -113,6 +113,15 @@ func PrintDlg() Ihandle {
 	return h
 }
 
+// ShareDlg creates the Share Dialog element. It is a predefined dialog that shares text, a URL or a file through the system share sheet.
+// The dialog can be shown with the Popup function only.
+//
+// https://gen2brain.github.io/iup-go/dlg/iup_sharedlg.html
+func ShareDlg() Ihandle {
+	h := mkih(C.IupShareDlg())
+	return h
+}
+
 // ProgressDlg creates a progress dialog element. It is a predefined dialog for displaying the progress of an operation.
 // The dialog is meant to be shown with the show functions Show or ShowXY.
 //
