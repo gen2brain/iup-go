@@ -78,6 +78,10 @@ func FontDlg() Ihandle {
 	return mkih(iupFontDlg())
 }
 
+func PrintDlg() Ihandle {
+	return mkih(iupPrintDlg())
+}
+
 func ProgressDlg() Ihandle {
 	return mkih(iupProgressDlg())
 }

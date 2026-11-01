@@ -64,6 +64,7 @@ struct _IdrawCanvas
   std::vector<FltkDrawLayer> layers;
   int in_offscreen = 0;
   int clip_pushed = 0;
+  int printing = 0;
 
   FltkClipMask clip_mask;
 
@@ -80,6 +81,25 @@ static int fltkDrawIdentity(const IdrawCanvas* dc)
 static Fl_Offscreen fltkDrawCurrentOffscreen(const IdrawCanvas* dc)
 {
   return dc->clip_offscreen ? dc->clip_offscreen : dc->target;
+}
+
+static void fltkDrawSuspendTarget(IdrawCanvas* dc)
+{
+  if (dc->in_offscreen)
+  {
+    fl_end_offscreen();
+    dc->in_offscreen = 0;
+  }
+}
+
+static void fltkDrawResumeTarget(IdrawCanvas* dc)
+{
+  Fl_Offscreen target = fltkDrawCurrentOffscreen(dc);
+  if (target)
+  {
+    fl_begin_offscreen(target);
+    dc->in_offscreen = 1;
+  }
 }
 
 static void fltkDrawTransformPoint(const IupDrawMatrix* matrix, double x, double y, double* tx, double* ty)
@@ -641,14 +661,11 @@ static void fltkDrawShapeStroke(IdrawCanvas* dc, const FltkShape& shape, const I
   if (lw <= 0 || lh <= 0)
     return;
 
-  Fl_Offscreen target = fltkDrawCurrentOffscreen(dc);
-  fl_end_offscreen();
-  dc->in_offscreen = 0;
+  fltkDrawSuspendTarget(dc);
   Fl_Offscreen mask_offscreen = fl_create_offscreen(dc->w, dc->h);
   if (!mask_offscreen)
   {
-    fl_begin_offscreen(target);
-    dc->in_offscreen = 1;
+    fltkDrawResumeTarget(dc);
     return;
   }
   fl_begin_offscreen(mask_offscreen);
@@ -661,8 +678,7 @@ static void fltkDrawShapeStroke(IdrawCanvas* dc, const FltkShape& shape, const I
   Fl_RGB_Image* mask = fltkDrawReadOffscreen(mask_offscreen, lx, ly, lw, lh);
   fl_end_offscreen();
   fl_delete_offscreen(mask_offscreen);
-  fl_begin_offscreen(target);
-  dc->in_offscreen = 1;
+  fltkDrawResumeTarget(dc);
 
   if (mask)
   {
@@ -740,6 +756,29 @@ static void fltkDrawBeginClipMask(IdrawCanvas* dc)
 
 static void fltkDrawSetClipShape(IdrawCanvas* dc, const FltkShape& shape, int rule)
 {
+  if (dc->printing)
+  {
+    double min_x = 1e30, min_y = 1e30, max_x = -1e30, max_y = -1e30;
+    for (const auto& sp : shape)
+      for (const auto& pt : sp.points)
+      {
+        double tx, ty;
+        fltkDrawTransformPoint(&dc->matrix, pt.x, pt.y, &tx, &ty);
+        min_x = std::min(min_x, tx);
+        min_y = std::min(min_y, ty);
+        max_x = std::max(max_x, tx);
+        max_y = std::max(max_y, ty);
+      }
+    if (min_x <= max_x)
+    {
+      fl_push_clip(static_cast<int>(floor(min_x)), static_cast<int>(floor(min_y)),
+                   static_cast<int>(ceil(max_x - floor(min_x))), static_cast<int>(ceil(max_y - floor(min_y))));
+      dc->clip_pushed = 1;
+    }
+    (void)rule;
+    return;
+  }
+
   FltkClipMask& mask = dc->clip_mask;
   mask.scale = fl_graphics_driver->scale();
   mask.w = fltkDrawDeviceFloor(dc->w, mask.scale);
@@ -813,6 +852,18 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   auto* dc = new IdrawCanvas();
 
   dc->ih = ih;
+
+  if (iupAttribGet(ih, "_IUP_PRINT_CONTEXT"))
+  {
+    dc->printing = 1;
+    dc->w = iupAttribGetInt(ih, "_IUP_PRINT_WIDTH");
+    dc->h = iupAttribGetInt(ih, "_IUP_PRINT_HEIGHT");
+    dc->matrix.a = 1;
+    dc->matrix.d = 1;
+    iupAttribSet(ih, "DRAWDRIVER", "FLTK");
+    return dc;
+  }
+
   dc->widget = reinterpret_cast<Fl_Widget*>(ih->handle);
 
   dc->w = dc->widget->w();
@@ -1385,8 +1436,7 @@ static std::vector<unsigned char> fltkDrawImagePixels(IdrawCanvas* dc, Fl_Image*
   uchar* samples[2] = {nullptr, nullptr};
   Fl_RGB_Scaling old_scaling = Fl_Image::RGB_scaling();
   Fl_Image::RGB_scaling(quality == IUP_DRAW_IMAGE_NEAREST ? FL_RGB_SCALING_NEAREST : FL_RGB_SCALING_BILINEAR);
-  fl_end_offscreen();
-  dc->in_offscreen = 0;
+  fltkDrawSuspendTarget(dc);
   for (int pass = 0; pass < 2; pass++)
   {
     Fl_Offscreen offscreen = fl_create_offscreen(w, h);
@@ -1401,8 +1451,7 @@ static std::vector<unsigned char> fltkDrawImagePixels(IdrawCanvas* dc, Fl_Image*
     fl_end_offscreen();
     fl_delete_offscreen(offscreen);
   }
-  fl_begin_offscreen(fltkDrawCurrentOffscreen(dc));
-  dc->in_offscreen = 1;
+  fltkDrawResumeTarget(dc);
   Fl_Image::RGB_scaling(old_scaling);
   if (samples[0] && samples[1])
   {
@@ -1463,8 +1512,7 @@ static Fl_Offscreen fltkDrawMaskBegin(IdrawCanvas* dc, FltkDrawMask* mask, int x
   Fl_Offscreen offscreen = fl_create_offscreen(mask->w, mask->h);
   if (!offscreen)
     return 0;
-  fl_end_offscreen();
-  dc->in_offscreen = 0;
+  fltkDrawSuspendTarget(dc);
   fl_begin_offscreen(offscreen);
   fl_push_no_clip();
   fl_color(FL_WHITE);
@@ -1490,8 +1538,7 @@ static void fltkDrawMaskEnd(IdrawCanvas* dc, FltkDrawMask* mask, Fl_Offscreen of
   }
   fl_end_offscreen();
   fl_delete_offscreen(offscreen);
-  fl_begin_offscreen(fltkDrawCurrentOffscreen(dc));
-  dc->in_offscreen = 1;
+  fltkDrawResumeTarget(dc);
 }
 
 static unsigned char fltkDrawMaskSample(const FltkDrawMask* mask, double x, double y)
@@ -1957,7 +2004,7 @@ extern "C" IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
 extern "C" IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
 {
   (void)alpha;
-  if (!dc) return 0;
+  if (!dc || dc->printing) return 0;
 
   fltkDrawCommitClipMask(dc);
 

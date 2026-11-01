@@ -162,6 +162,37 @@ err_CreateDCRenderTarget:
     }
 }
 
+WD_HPRINTCONTROL
+wdCreatePrintControl(IUnknown* pDocumentTarget, float fRasterDpi)
+{
+    if(!d2d_enabled())
+        return NULL;
+    return (WD_HPRINTCONTROL) d2d_print_control_create(pDocumentTarget, fRasterDpi);
+}
+
+WD_HCANVAS
+wdCreateCanvasWithPrintControl(WD_HPRINTCONTROL hPrintControl, float fWidth, float fHeight)
+{
+    if(!d2d_enabled())
+        return NULL;
+    return (WD_HCANVAS) d2d_print_page_canvas_alloc((dummy_ID2D1PrintControl*) hPrintControl, fWidth, fHeight);
+}
+
+BOOL
+wdClosePrintControl(WD_HPRINTCONTROL hPrintControl)
+{
+    dummy_ID2D1PrintControl* print_control = (dummy_ID2D1PrintControl*) hPrintControl;
+    HRESULT hr;
+
+    hr = dummy_ID2D1PrintControl_Close(print_control);
+    dummy_ID2D1PrintControl_Release(print_control);
+    if(FAILED(hr)) {
+        WD_TRACE_HR("wdClosePrintControl: ID2D1PrintControl::Close() failed.");
+        return FALSE;
+    }
+    return TRUE;
+}
+
 void
 wdDestroyCanvas(WD_HCANVAS hCanvas)
 {
@@ -180,6 +211,8 @@ wdDestroyCanvas(WD_HCANVAS hCanvas)
 
         if(c->type == D2D_CANVASTYPE_SWAPCHAIN)
             d2d_swap_chain_release(c);
+        if(c->command_list != NULL)
+            dummy_ID2D1CommandList_Release(c->command_list);
         dummy_ID2D1RenderTarget_Release(c->target);
         free(c);
     } else {
@@ -235,6 +268,13 @@ wdEndPaint(WD_HCANVAS hCanvas)
             hr = d2d_swap_chain_present(c);
             if(FAILED(hr)) {
                 WD_TRACE_HR("wdEndPaint: IDXGISwapChain::Present() failed.");
+                return FALSE;
+            }
+        }
+        if(c->type == D2D_CANVASTYPE_PRINTPAGE) {
+            hr = d2d_print_page_add(c);
+            if(FAILED(hr)) {
+                WD_TRACE_HR("wdEndPaint: ID2D1PrintControl::AddPage() failed.");
                 return FALSE;
             }
         }

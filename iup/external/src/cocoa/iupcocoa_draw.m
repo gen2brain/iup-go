@@ -159,9 +159,23 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
   dc->ih = ih;
-  dc->canvasView = iupcocoaGetMainView(ih);
   dc->release_context = 0;
   dc->draw_focus = 0;
+
+  dc->cgContext = (CGContextRef)iupAttribGet(ih, "_IUP_PRINT_CONTEXT");
+  if (dc->cgContext)
+  {
+    dc->w = iupAttribGetInt(ih, "_IUP_PRINT_WIDTH");
+    dc->h = iupAttribGetInt(ih, "_IUP_PRINT_HEIGHT");
+    CGContextSetLineCap(dc->cgContext, kCGLineCapButt);
+    CGContextSetLineJoin(dc->cgContext, kCGLineJoinMiter);
+    dc->user_transform = CGAffineTransformIdentity;
+    dc->clip_transform = CGAffineTransformIdentity;
+    iupAttribSet(ih, "DRAWDRIVER", "COCOA");
+    return dc;
+  }
+
+  dc->canvasView = iupcocoaGetMainView(ih);
 
   CGRect bounds_rect = [dc->canvasView bounds];
   dc->w = bounds_rect.size.width;
@@ -378,7 +392,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   CGBitmapContextGetData(dc->cgContext);
 #endif
 
-  if (!iupAttribGet(dc->ih, "CGCONTEXT"))
+  if (dc->canvasView && !iupAttribGet(dc->ih, "CGCONTEXT"))
   {
     iupAttribSet(dc->ih, "_IUPCOCOA_BUFFER_PENDING", "1");
     [dc->canvasView setNeedsDisplay:YES];
@@ -1194,7 +1208,17 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
         draw_point = NSMakePoint(x + (w - layout_w) / 2.0, y + (h - layout_h) / 2.0);
       else
         draw_point = NSMakePoint(x, y);
-      [ns_string drawAtPoint:draw_point withAttributes:attributes];
+
+      if (!(text_orientation && layout_center) && (flags & (IUP_DRAW_RIGHT | IUP_DRAW_CENTER)))
+      {
+        NSSize text_size = [ns_string sizeWithAttributes:attributes];
+        CGFloat text_w = ceil(text_size.width);
+        if (w > 0)
+          draw_point.x += (flags & IUP_DRAW_RIGHT) ? w - text_w : (w - text_w) / 2.0;
+        [ns_string drawInRect:NSMakeRect(draw_point.x, draw_point.y, text_w, ceil(text_size.height)) withAttributes:attributes];
+      }
+      else
+        [ns_string drawAtPoint:draw_point withAttributes:attributes];
     }
 #endif
 

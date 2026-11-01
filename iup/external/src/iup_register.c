@@ -102,6 +102,7 @@ void iupRegisterInternalClasses(void)
   iupRegisterClassInternal(iupMessageDlgNewClass());
   iupRegisterClassInternal(iupColorDlgNewClass());
   iupRegisterClassInternal(iupFontDlgNewClass());
+  iupRegisterClassInternal(iupPrintDlgNewClass());
   iupRegisterClassInternal(iupFileDlgNewClass());
   iupRegisterClassInternal(iupProgressDlgNewClass());
   iupRegisterClassInternal(iupParamBoxNewClass());

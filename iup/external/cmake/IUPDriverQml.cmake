@@ -1,7 +1,7 @@
 # Qt Quick (QML) driver
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2)
-set(_QT_LIBS Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 PrintSupport)
+set(_QT_LIBS Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::PrintSupport)
 
 file(GLOB _QT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/qml/iupqml_*.cpp")
 
@@ -56,7 +56,7 @@ endif()
 set(IUP_DRIVER_SOURCES ${_QT_SOURCES})
 set(IUP_DRIVER_COMPILE_OPTIONS "")
 
-set(IUP_PC_REQUIRES "Qt6Core Qt6Gui Qt6Qml Qt6Quick Qt6QuickControls2")
+set(IUP_PC_REQUIRES "Qt6Core Qt6Gui Qt6Qml Qt6Quick Qt6QuickControls2 Qt6PrintSupport")
 set(IUP_PC_LIBS_PRIVATE "-lstdc++")
 if(UNIX AND NOT APPLE AND NOT HAIKU)
   set(IUP_PC_LIBS_PRIVATE "-lstdc++ -ldl -lm")

@@ -186,6 +186,16 @@ static void goIupSetCopyDataFunc(Ihandle *ih) {
 	IupSetCallback(ih, "COPYDATA_CB", (Icallback) goIupCopyDataCB);
 }
 
+CGO_EXPORT extern int goIupPaginateCB(void *, int width, int height);
+static void goIupSetPaginateFunc(Ihandle *ih) {
+	IupSetCallback(ih, "PAGINATE_CB", (Icallback) goIupPaginateCB);
+}
+
+CGO_EXPORT extern int goIupPrintPageCB(void *, int page, int width, int height);
+static void goIupSetPrintPageFunc(Ihandle *ih) {
+	IupSetCallback(ih, "PRINTPAGE_CB", (Icallback) goIupPrintPageCB);
+}
+
 CGO_EXPORT extern int goIupListActionCB(void *, void *text, int item, int state);
 static void goIupSetListActionFunc(Ihandle *ih) {
 	IupSetCallback(ih, "ACTION", (Icallback) goIupListActionCB);

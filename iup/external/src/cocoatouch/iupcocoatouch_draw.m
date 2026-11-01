@@ -139,6 +139,24 @@ static void cocoaTouchDrawApplyTransform(IdrawCanvas* dc, CGAffineTransform from
 
 IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
+	CGContextRef print_context = ih ? (CGContextRef)iupAttribGet(ih, "_IUP_PRINT_CONTEXT") : NULL;
+	if (print_context)
+	{
+		IdrawCanvas* print_dc = (IdrawCanvas*)calloc(1, sizeof(IdrawCanvas));
+		if (!print_dc) return NULL;
+		print_dc->ih = ih;
+		print_dc->cgContext = (CGContextRef)CGContextRetain(print_context);
+		print_dc->scale = 1.0;
+		print_dc->user_transform = CGAffineTransformIdentity;
+		print_dc->clip_transform = CGAffineTransformIdentity;
+		print_dc->w = iupAttribGetInt(ih, "_IUP_PRINT_WIDTH");
+		print_dc->h = iupAttribGetInt(ih, "_IUP_PRINT_HEIGHT");
+		CGContextSetLineCap(print_context, kCGLineCapButt);
+		CGContextSetLineJoin(print_context, kCGLineJoinMiter);
+		iupAttribSet(ih, "DRAWDRIVER", "COCOATOUCH");
+		return print_dc;
+	}
+
 	if (!ih || !ih->handle) return NULL;
 	UIView* view = (UIView*)ih->handle;
 

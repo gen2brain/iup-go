@@ -152,6 +152,7 @@ var (
 	iupMessageDlg   func() uintptr
 	iupColorDlg     func() uintptr
 	iupFontDlg      func() uintptr
+	iupPrintDlg     func() uintptr
 	iupProgressDlg  func() uintptr
 	iupAlarm        func(title, msg, b1, b2, b3 *byte) int32
 	iupGetColor     func(x, y int32, r, g, b *uint8) int32
@@ -501,6 +502,7 @@ func ensureBase() {
 		reg(&iupMessageDlg, "IupMessageDlg")
 		reg(&iupColorDlg, "IupColorDlg")
 		reg(&iupFontDlg, "IupFontDlg")
+		reg(&iupPrintDlg, "IupPrintDlg")
 		reg(&iupProgressDlg, "IupProgressDlg")
 		reg(&iupAlarm, "IupAlarm")
 		reg(&iupGetColor, "IupGetColor")

@@ -346,6 +346,23 @@ public final class IupAndroidCanvas extends IupAndroidFixed
         applyDrawTransform();
     }
 
+    @SuppressWarnings("deprecation")
+    void beginPrintPage(Canvas canvas)
+    {
+        back = null;
+        backCanvas = canvas;
+        layers.clear();
+        canvas.getMatrix(baseMatrix);
+        userMatrix.reset();
+        applyDrawTransform();
+    }
+
+    void endPrintPage()
+    {
+        backCanvas = null;
+        layers.clear();
+    }
+
     void setDrawTransform(float a, float b, float c, float d, float e, float f)
     {
         userMatrix.setValues(new float[]{a, c, e, b, d, f, 0, 0, 1});

@@ -66,6 +66,21 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
   dc->ih = ih;
 
+  dc->cr = (cairo_t*)iupAttribGet(ih, "_IUP_PRINT_CONTEXT");
+  if (dc->cr)
+  {
+    dc->image_cr = dc->cr;
+    dc->shared_cr = 1;
+    cairo_save(dc->image_cr);
+    dc->w = iupAttribGetInt(ih, "_IUP_PRINT_WIDTH");
+    dc->h = iupAttribGetInt(ih, "_IUP_PRINT_HEIGHT");
+    cairo_get_matrix(dc->image_cr, &dc->base_matrix);
+    dc->matrix.a = 1;
+    dc->matrix.d = 1;
+    iupAttribSet(ih, "DRAWDRIVER", "CAIRO");
+    return dc;
+  }
+
   /* Use ih->handle directly instead of WID attribute to avoid dangling pointers */
   dc->widget = (GtkWidget*)ih->handle;
 

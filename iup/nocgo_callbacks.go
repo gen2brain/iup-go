@@ -333,6 +333,10 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setDropFilesFunc(ih, fn.(DropFilesFunc))
 	case "COPYDATA_CB":
 		setCopyDataFunc(ih, fn.(CopyDataFunc))
+	case "PAGINATE_CB":
+		setPaginateFunc(ih, fn.(PaginateFunc))
+	case "PRINTPAGE_CB":
+		setPrintPageFunc(ih, fn.(PrintPageFunc))
 	case "INPUT_CB":
 		setTerminalInputFunc(ih, fn.(TerminalInputFunc))
 	case "TITLE_CB":
@@ -1174,6 +1178,34 @@ var copyDataCB = purego.NewCallback(func(ih, cmdLine uintptr, size int32) int {
 func setCopyDataFunc(ih Ihandle, f CopyDataFunc) {
 	storeCallback(ih, "_IUPGO_COPYDATA_CB", f)
 	iupSetCallback(uintptr(ih), "COPYDATA_CB", copyDataCB)
+}
+
+type PaginateFunc func(ih Ihandle, width, height int) int
+
+var paginateCB = purego.NewCallback(func(ih uintptr, width, height int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PAGINATE_CB").(PaginateFunc); ok {
+		return f(Ihandle(ih), int(width), int(height))
+	}
+	return 0
+})
+
+func setPaginateFunc(ih Ihandle, f PaginateFunc) {
+	storeCallback(ih, "_IUPGO_PAGINATE_CB", f)
+	iupSetCallback(uintptr(ih), "PAGINATE_CB", paginateCB)
+}
+
+type PrintPageFunc func(ih Ihandle, page, width, height int) int
+
+var printPageCB = purego.NewCallback(func(ih uintptr, page, width, height int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PRINTPAGE_CB").(PrintPageFunc); ok {
+		return f(Ihandle(ih), int(page), int(width), int(height))
+	}
+	return 0
+})
+
+func setPrintPageFunc(ih Ihandle, f PrintPageFunc) {
+	storeCallback(ih, "_IUPGO_PRINTPAGE_CB", f)
+	iupSetCallback(uintptr(ih), "PRINTPAGE_CB", printPageCB)
 }
 
 type TerminalInputFunc func(ih Ihandle, bytes []byte) int

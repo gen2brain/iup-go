@@ -22,6 +22,7 @@ package iup
 #include "external/src/android/iupandroid_jni_IupLocation.c"
 #include "external/src/android/iupandroid_jni_IupSensor.c"
 #include "external/src/android/iupandroid_jni_IupPostMessage.c"
+#include "external/src/android/iupandroid_jni_IupPrintHelper.c"
 #include "external/src/android/iupandroid_jni_IupScrollbar.c"
 #include "external/src/android/iupandroid_jni_IupTable.c"
 #include "external/src/android/iupandroid_jni_IupTabs.c"

@@ -41,6 +41,7 @@ typedef struct _IdrawLayer {
 struct _IdrawCanvas
 {
   Ihandle* ih;
+  jobject view;
   int w, h;
   int clip_x1, clip_y1, clip_x2, clip_y2;
   int clipped;
@@ -76,9 +77,20 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   IdrawCanvas* dc = calloc(1, sizeof(IdrawCanvas));
   dc->ih = ih;
+  dc->clipped = 0;
+
+  dc->view = (jobject)iupAttribGet(ih, "_IUP_PRINT_CONTEXT");
+  if (dc->view)
+  {
+    dc->w = iupAttribGetInt(ih, "_IUP_PRINT_WIDTH");
+    dc->h = iupAttribGetInt(ih, "_IUP_PRINT_HEIGHT");
+    iupAttribSet(ih, "DRAWDRIVER", "ANDROID");
+    return dc;
+  }
+
+  dc->view = (jobject)ih->handle;
   dc->w = ih->currentwidth;
   dc->h = ih->currentheight;
-  dc->clipped = 0;
 
   if (ih->handle)
   {
@@ -115,7 +127,7 @@ IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
   dc->clip_y2 = 0;
   dc->clipped = 0;
 
-  if (dc->ih->handle)
+  if (dc->view)
   {
     JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
     jclass java_class = androidDrawFindHelper(jni_env);
@@ -126,7 +138,7 @@ IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
       (*jni_env)->DeleteLocalRef(jni_env, java_class);
       return 1;
     }
-    (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)alpha);
+    (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, (jint)alpha);
     iupAndroid_CheckException(jni_env, "IupCanvasHelper.beginLayer");
     (*jni_env)->DeleteLocalRef(jni_env, java_class);
   }
@@ -140,13 +152,13 @@ IUP_SDK_API void iupdrvDrawEndLayer(IdrawCanvas* dc, int alpha)
   if (!dc || !dc->layers) return;
   layer = dc->layers;
 
-  if (dc->ih->handle)
+  if (dc->view)
   {
     JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
     jclass java_class = androidDrawFindHelper(jni_env);
     jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "endLayer", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;)V");
     if (method_id)
-      (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle);
+      (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view);
     iupAndroid_CheckException(jni_env, "IupCanvasHelper.endLayer");
     (*jni_env)->DeleteLocalRef(jni_env, java_class);
   }
@@ -173,11 +185,11 @@ IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* ma
   JNIEnv* jni_env;
   jclass java_class;
   jmethodID method_id;
-  if (!dc || !dc->ih->handle) return;
+  if (!dc || !dc->view) return;
   jni_env = iupAndroid_GetEnvThreadSafe();
   java_class = androidDrawFindHelper(jni_env);
   method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setTransform", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;FFFFFF)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle,
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view,
                                    (jfloat)matrix->a, (jfloat)matrix->b, (jfloat)matrix->c,
                                    (jfloat)matrix->d, (jfloat)matrix->e, (jfloat)matrix->f);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.setTransform");
@@ -186,11 +198,11 @@ IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* ma
 
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
-  if (!dc || !dc->ih || !dc->ih->handle) return;
+  if (!dc || !dc->ih || !dc->view) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "flush", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.flush");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
@@ -209,7 +221,7 @@ static void androidDrawSetStroke(IdrawCanvas* dc, int style)
   jmethodID method_id;
   jfloatArray arr = NULL;
 
-  if (!dc || !dc->ih->handle) return;
+  if (!dc || !dc->view) return;
 
   iupDrawGetStroke(dc->ih, style, &stroke);
 
@@ -242,12 +254,12 @@ static void androidDrawSetStroke(IdrawCanvas* dc, int style)
 
 static void androidDrawRect(IdrawCanvas* dc, const char* method_name, int x1, int y1, int x2, int y2, long color, int style, int width)
 {
-  if (!dc || !dc->ih->handle) return;
+  if (!dc || !dc->view) return;
   androidDrawSetStroke(dc, style);
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, method_name, "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;IIIIIII)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jint)androidPackColor(color), (jint)style, (jint)width);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jint)androidPackColor(color), (jint)style, (jint)width);
   iupAndroid_CheckException(jni_env, method_name);
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
@@ -269,7 +281,7 @@ IUP_SDK_API void iupdrvDrawEllipse(IdrawCanvas* dc, int x1, int y1, int x2, int 
 
 IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double a1, double a2, long color, int style, int line_width)
 {
-  if (!dc || !dc->ih->handle) return;
+  if (!dc || !dc->view) return;
   androidDrawSetStroke(dc, style);
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
@@ -282,14 +294,14 @@ IUP_SDK_API void iupdrvDrawArc(IdrawCanvas* dc, int x1, int y1, int x2, int y2, 
   start = (float)a1;
   sweep = (float)(a2 - a1);
 
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jfloat)start, (jfloat)sweep, (jint)androidPackColor(color), (jint)style, (jint)line_width);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jfloat)start, (jfloat)sweep, (jint)androidPackColor(color), (jint)style, (jint)line_width);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawArc");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
 IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long color, int style, int line_width)
 {
-  if (!dc || !dc->ih->handle || count <= 0) return;
+  if (!dc || !dc->view || count <= 0) return;
   androidDrawSetStroke(dc, style);
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
@@ -297,7 +309,7 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
 
   jintArray arr = (*jni_env)->NewIntArray(jni_env, count * 2);
   (*jni_env)->SetIntArrayRegion(jni_env, arr, 0, count * 2, (const jint*)points);
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, arr, (jint)androidPackColor(color), (jint)style, (jint)line_width);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, arr, (jint)androidPackColor(color), (jint)style, (jint)line_width);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawPolygon");
   (*jni_env)->DeleteLocalRef(jni_env, arr);
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
@@ -305,54 +317,54 @@ IUP_SDK_API void iupdrvDrawPolygon(IdrawCanvas* dc, int* points, int count, long
 
 IUP_SDK_API void iupdrvDrawPixel(IdrawCanvas* dc, int x, int y, long color)
 {
-  if (!dc || !dc->ih->handle) return;
+  if (!dc || !dc->view) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "drawPixel", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;III)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)x, (jint)y, (jint)androidPackColor(color));
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, (jint)x, (jint)y, (jint)androidPackColor(color));
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawPixel");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
 IUP_SDK_API void iupdrvDrawRoundedRectangle(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius, long color, int style, int line_width)
 {
-  if (!dc || !dc->ih->handle) return;
+  if (!dc || !dc->view) return;
   androidDrawSetStroke(dc, style);
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "drawRoundedRectangle", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;IIIIIIII)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jint)corner_radius, (jint)androidPackColor(color), (jint)style, (jint)line_width);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jint)corner_radius, (jint)androidPackColor(color), (jint)style, (jint)line_width);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawRoundedRectangle");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
 IUP_SDK_API void iupdrvDrawBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, long color, int style, int line_width)
 {
-  if (!dc || !dc->ih->handle) return;
+  if (!dc || !dc->view) return;
   androidDrawSetStroke(dc, style);
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "drawBezier", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;IIIIIIIIIII)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jint)x3, (jint)y3, (jint)x4, (jint)y4, (jint)androidPackColor(color), (jint)style, (jint)line_width);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jint)x3, (jint)y3, (jint)x4, (jint)y4, (jint)androidPackColor(color), (jint)style, (jint)line_width);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawBezier");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
 IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int x3, int y3, long color, int style, int line_width)
 {
-  if (!dc || !dc->ih->handle) return;
+  if (!dc || !dc->view) return;
   androidDrawSetStroke(dc, style);
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "drawQuadraticBezier", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;IIIIIIIII)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jint)x3, (jint)y3, (jint)androidPackColor(color), (jint)style, (jint)line_width);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jint)x3, (jint)y3, (jint)androidPackColor(color), (jint)style, (jint)line_width);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawQuadraticBezier");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
 IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
 {
-  if (!dc || !dc->ih->handle) return;
+  if (!dc || !dc->view) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jintArray jcolors = androidDrawGradientColors(jni_env, colors, count);
@@ -368,7 +380,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   int ey = (int)(y1 + h / 2.0 + (h * sin(rad)) / 2.0);
 
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "drawLinearGradient", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;IIIIIIII[I[F)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jint)sx, (jint)sy, (jint)ex, (jint)ey, jcolors, joffsets);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jint)sx, (jint)sy, (jint)ex, (jint)ey, jcolors, joffsets);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawLinearGradient");
   (*jni_env)->DeleteLocalRef(jni_env, jcolors);
   (*jni_env)->DeleteLocalRef(jni_env, joffsets);
@@ -377,14 +389,14 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
 
 IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int radius, const long* colors, const float* offsets, int count)
 {
-  if (!dc || !dc->ih->handle) return;
+  if (!dc || !dc->view) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jintArray jcolors = androidDrawGradientColors(jni_env, colors, count);
   jfloatArray joffsets = (*jni_env)->NewFloatArray(jni_env, count);
   (*jni_env)->SetFloatArrayRegion(jni_env, joffsets, 0, count, offsets);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "drawRadialGradient", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;III[I[F)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)cx, (jint)cy, (jint)radius, jcolors, joffsets);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, (jint)cx, (jint)cy, (jint)radius, jcolors, joffsets);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawRadialGradient");
   (*jni_env)->DeleteLocalRef(jni_env, jcolors);
   (*jni_env)->DeleteLocalRef(jni_env, joffsets);
@@ -395,7 +407,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
 {
   char* text_buffer = NULL;
 
-  if (!dc || !dc->ih->handle || !text) return;
+  if (!dc || !dc->view || !text) return;
 
   if (len >= 0)
   {
@@ -430,7 +442,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   jstring j_text = iupAndroid_NewStringUTF(jni_env, text);
   jstring j_family = (family && family[0]) ? iupAndroid_NewStringUTF(jni_env, family) : NULL;
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id,
-    dc->ih->handle, j_text,
+    dc->view, j_text,
     (jint)x, (jint)y, (jint)w, (jint)h,
     (jint)androidPackColor(color), (jint)flags, (jfloat)text_orientation,
     j_family, (jint)style, (jint)size,
@@ -460,7 +472,7 @@ IUP_SDK_API int iupdrvDrawBitmap(IdrawCanvas* dc, const unsigned char* data, int
 
 IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_inactive, const char* bgcolor, long tint, int opacity, int x, int y, int w, int h, int sx, int sy, int sw, int sh, int quality)
 {
-  if (!dc || !dc->ih->handle) return;
+  if (!dc || !dc->view) return;
 
   jobject java_bitmap = (jobject)iupImageGetImageTint(name, dc->ih, make_inactive, bgcolor, tint);
   if (!java_bitmap) return;
@@ -481,7 +493,7 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "drawBitmap", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;Landroid/graphics/Bitmap;IIIIIIIIZI)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, java_bitmap, (jint)x, (jint)y, (jint)w, (jint)h,
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, java_bitmap, (jint)x, (jint)y, (jint)w, (jint)h,
                                    (jint)sx, (jint)sy, (jint)sw, (jint)sh, (jboolean)(quality != IUP_DRAW_IMAGE_NEAREST), (jint)opacity);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawBitmap");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
@@ -489,11 +501,11 @@ IUP_SDK_API void iupdrvDrawImage(IdrawCanvas* dc, const char* name, int make_ina
 
 IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2)
 {
-  if (!dc || !dc->ih->handle) return;
+  if (!dc || !dc->view) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setClipRect", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;IIII)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)x1, (jint)y1, (jint)x2, (jint)y2);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, (jint)x1, (jint)y1, (jint)x2, (jint)y2);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.setClipRect");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
@@ -506,11 +518,11 @@ IUP_SDK_API void iupdrvDrawSetClipRect(IdrawCanvas* dc, int x1, int y1, int x2, 
 
 IUP_SDK_API void iupdrvDrawSetClipRoundedRect(IdrawCanvas* dc, int x1, int y1, int x2, int y2, int corner_radius)
 {
-  if (!dc || !dc->ih->handle) return;
+  if (!dc || !dc->view) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setClipRoundedRect", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;IIIII)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jint)corner_radius);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, (jint)x1, (jint)y1, (jint)x2, (jint)y2, (jint)corner_radius);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.setClipRoundedRect");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
@@ -528,11 +540,11 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_y1 = 0;
   dc->clip_x2 = 0;
   dc->clip_y2 = 0;
-  if (!dc->ih->handle || !dc->clipped) return;
+  if (!dc->view || !dc->clipped) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "resetClip", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.resetClip");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
@@ -592,8 +604,8 @@ static int androidDrawReadBackBuffer(jobject canvas_view, unsigned char* data, i
 
 IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 {
-  if (!dc || !dc->ih || !dc->ih->handle) return 0;
-  return androidDrawReadBackBuffer((jobject)dc->ih->handle, data, dc->w, dc->h);
+  if (!dc || !dc->ih || !dc->view) return 0;
+  return androidDrawReadBackBuffer((jobject)dc->view, data, dc->w, dc->h);
 }
 
 IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w, int h)
@@ -638,7 +650,7 @@ static jfloatArray androidDrawPathSegmentsToArray(JNIEnv* jni_env, const IupPath
 
 IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int rule)
 {
-  if (!dc || !dc->ih->handle || !segs || count <= 0) return;
+  if (!dc || !dc->view || !segs || count <= 0) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
 
@@ -653,7 +665,7 @@ IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int
       return;
     }
     jfloatArray arr = androidDrawPathSegmentsToArray(jni_env, segs, count);
-    (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, arr, (jint)androidPackColor(src->color), (jint)count, (jint)rule);
+    (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, arr, (jint)androidPackColor(src->color), (jint)count, (jint)rule);
     iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawPathFill");
     (*jni_env)->DeleteLocalRef(jni_env, arr);
   }
@@ -682,7 +694,7 @@ IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int
         return;
       }
       jfloatArray arr = androidDrawPathSegmentsToArray(jni_env, segs, count);
-      (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, arr, (jint)count, (jint)rule,
+      (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, arr, (jint)count, (jint)rule,
         (jint)sx, (jint)sy, (jint)ex, (jint)ey, (jint)src->cx, (jint)src->cy, (jint)src->radius,
         (jint)src->type, jcolors, joffsets);
       iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawPathFillGradient");
@@ -699,7 +711,7 @@ IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int
         return;
       }
       jfloatArray arr = androidDrawPathSegmentsToArray(jni_env, segs, count);
-      (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, arr, (jint)count, (jint)rule,
+      (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, arr, (jint)count, (jint)rule,
         (jint)0, (jint)0, (jint)0, (jint)0, (jint)src->cx, (jint)src->cy, (jint)src->radius,
         (jint)src->type, jcolors, joffsets);
       iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawPathFillGradient");
@@ -713,7 +725,7 @@ IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int
 
 IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, int count, const IupDrawSource* src, int style, int line_width)
 {
-  if (!dc || !dc->ih->handle || !segs || count <= 0) return;
+  if (!dc || !dc->view || !segs || count <= 0) return;
   androidDrawSetStroke(dc, style);
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
@@ -729,7 +741,7 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
       return;
     }
     jfloatArray arr = androidDrawPathSegmentsToArray(jni_env, segs, count);
-    (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, arr, (jint)androidPackColor(src->color), (jint)count, (jint)style, (jint)line_width);
+    (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, arr, (jint)androidPackColor(src->color), (jint)count, (jint)style, (jint)line_width);
     iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawPathStroke");
     (*jni_env)->DeleteLocalRef(jni_env, arr);
   }
@@ -758,7 +770,7 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
         return;
       }
       jfloatArray arr = androidDrawPathSegmentsToArray(jni_env, segs, count);
-      (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, arr, (jint)androidPackColor(src->color), (jint)count, (jint)style, (jint)line_width,
+      (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, arr, (jint)androidPackColor(src->color), (jint)count, (jint)style, (jint)line_width,
         (jint)sx, (jint)sy, (jint)ex, (jint)ey, (jint)src->cx, (jint)src->cy, (jint)src->radius,
         (jint)src->type, jcolors, joffsets);
       iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawPathStrokeGradient");
@@ -775,7 +787,7 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
         return;
       }
       jfloatArray arr = androidDrawPathSegmentsToArray(jni_env, segs, count);
-      (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, arr, (jint)androidPackColor(src->color), (jint)count, (jint)style, (jint)line_width,
+      (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, arr, (jint)androidPackColor(src->color), (jint)count, (jint)style, (jint)line_width,
         (jint)0, (jint)0, (jint)0, (jint)0, (jint)src->cx, (jint)src->cy, (jint)src->radius,
         (jint)src->type, jcolors, joffsets);
       iupAndroid_CheckException(jni_env, "IupCanvasHelper.drawPathStrokeGradient");
@@ -789,7 +801,7 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
 
 IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, int count, int rule)
 {
-  if (!dc || !dc->ih->handle || !segs || count <= 0) return;
+  if (!dc || !dc->view || !segs || count <= 0) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = androidDrawFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setClipPath", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;[FII)V");
@@ -800,7 +812,7 @@ IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPathSeg* segs, 
     return;
   }
   jfloatArray arr = androidDrawPathSegmentsToArray(jni_env, segs, count);
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->ih->handle, arr, (jint)count, (jint)rule);
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, dc->view, arr, (jint)count, (jint)rule);
   iupAndroid_CheckException(jni_env, "IupCanvasHelper.setClipPath");
   (*jni_env)->DeleteLocalRef(jni_env, arr);
   (*jni_env)->DeleteLocalRef(jni_env, java_class);

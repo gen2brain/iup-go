@@ -52,6 +52,19 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 
   dc->ih = ih;
 
+  dc->cr = (cairo_t*)iupAttribGet(ih, "_IUP_PRINT_CONTEXT");
+  if (dc->cr)
+  {
+    dc->image_cr = dc->cr;
+    dc->w = iupAttribGetInt(ih, "_IUP_PRINT_WIDTH");
+    dc->h = iupAttribGetInt(ih, "_IUP_PRINT_HEIGHT");
+    cairo_get_matrix(dc->image_cr, &dc->base_matrix);
+    dc->matrix.a = 1;
+    dc->matrix.d = 1;
+    iupAttribSet(ih, "DRAWDRIVER", "CAIRO");
+    return dc;
+  }
+
   dc->widget = (GtkWidget*)IupGetAttribute(ih, "WID");
 
 #if !GTK_CHECK_VERSION(3, 0, 0)
@@ -172,7 +185,7 @@ IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
   }
 
 #if !GTK_CHECK_VERSION(3, 0, 0)
-  if (dc->draw_focus)
+  if (dc->draw_focus && dc->widget)
   {
     gdkDrawFocusRect(dc->ih, dc->focus_x1, dc->focus_y1, dc->focus_x2 - dc->focus_x1 + 1, dc->focus_y2 - dc->focus_y1 + 1);
     dc->draw_focus = 0;

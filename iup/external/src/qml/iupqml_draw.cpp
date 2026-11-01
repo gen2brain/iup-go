@@ -18,6 +18,8 @@
 #include <QVector>
 #include <QTextLayout>
 #include <QTextOption>
+#include <QGuiApplication>
+#include <QScreen>
 #include <cmath>
 
 extern "C" {
@@ -73,6 +75,7 @@ struct _IdrawCanvas
   int winding_rule = 0;  /* Qt::FillRule */
 
   int clip_x1 = 0, clip_y1 = 0, clip_x2 = 0, clip_y2 = 0;
+  int print_w = 0, print_h = 0;
 
   IqmlDrawLayer* layers = nullptr;
 };
@@ -152,6 +155,25 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   auto* dc = new IdrawCanvas();
 
   dc->ih = ih;
+
+  dc->painter = reinterpret_cast<QPainter*>(iupAttribGet(ih, "_IUP_PRINT_CONTEXT"));
+  if (dc->painter)
+  {
+    dc->print_w = iupAttribGetInt(ih, "_IUP_PRINT_WIDTH");
+    dc->print_h = iupAttribGetInt(ih, "_IUP_PRINT_HEIGHT");
+    dc->fg_color = QColor(0, 0, 0);
+    dc->bg_color = QColor(255, 255, 255);
+    dc->line_width = 1;
+    dc->line_style = IUP_DRAW_STROKE;
+    dc->text_antialias = 1;
+    dc->shape_antialias = 1;
+    dc->winding_rule = Qt::WindingFill;
+    dc->painter->setRenderHint(QPainter::Antialiasing, true);
+    dc->painter->setRenderHint(QPainter::TextAntialiasing, true);
+    dc->base_transform = dc->painter->worldTransform();
+    iupAttribSet(ih, "DRAWDRIVER", "QML");
+    return dc;
+  }
 
   dc->item = iupqmlCanvasGetItem(ih);
 
@@ -276,6 +298,11 @@ extern "C" IUP_SDK_API void iupdrvDrawGetSize(IdrawCanvas* dc, int* w, int* h)
   {
     width = static_cast<int>(dc->item->width());
     height = static_cast<int>(dc->item->height());
+  }
+  else if (dc && dc->print_w)
+  {
+    width = dc->print_w;
+    height = dc->print_h;
   }
 
   if (w) *w = width;
@@ -847,7 +874,13 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
 
   int ascent = 0, charheight = 0;
   QFont* qfont = iupqmlGetQFontLine(font, &ascent, &charheight);
-  if (qfont)
+  if (qfont && dc->print_w && qfont->pixelSize() <= 0)
+  {
+    QFont print_font(*qfont);
+    print_font.setPixelSize(qRound(qfont->pointSizeF() * QGuiApplication::primaryScreen()->logicalDotsPerInch() / 72.0));
+    dc->painter->setFont(print_font);
+  }
+  else if (qfont)
     dc->painter->setFont(*qfont);
 
   dc->painter->setPen(qcolor);

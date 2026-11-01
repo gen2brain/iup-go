@@ -18,6 +18,7 @@ Iclass* iupMessageDlgNewClass(void);
 Iclass* iupColorDlgNewClass(void);
 Iclass* iupFontDlgNewClass(void);
 Iclass* iupFileDlgNewClass(void);
+Iclass* iupPrintDlgNewClass(void);
 Iclass* iupProgressDlgNewClass(void);
 
 Iclass* iupLabelNewClass(void);
@@ -92,7 +93,21 @@ Iclass* iupClipboardNewClass(void);
 IUP_SDK_API void iupdrvMessageDlgInitClass(Iclass* ic);
 IUP_SDK_API void iupdrvFontDlgInitClass(Iclass* ic);
 IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic);
+IUP_SDK_API void iupdrvPrintDlgInitClass(Iclass* ic);
 /** @} */
+
+IUP_SDK_API const char* iupPrintDlgGetJobName(Ihandle* ih);
+IUP_SDK_API int iupPrintDlgPaginate(Ihandle* ih, int width, int height);
+IUP_SDK_API int iupPrintDlgDrawPage(Ihandle* ih, void* context, int page, int width, int height);
+IUP_SDK_API int iupPrintDlgPageSelected(Ihandle* ih, int page);
+
+typedef struct _IprintDlgDriver {
+  void (*FillPrinters)(Ihandle* list);
+  void (*FillPapers)(Ihandle* list, const char* printer);
+  int (*Print)(Ihandle* ih, const char* printer, const char* filename, const char* paper, int landscape, int copies);
+} IprintDlgDriver;
+
+IUP_SDK_API void iupPrintDlgCustomInitClass(Iclass* ic, const IprintDlgDriver* driver);
 
 /************************************************/
 
