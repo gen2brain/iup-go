@@ -9,6 +9,7 @@
 
 #include "iup.h"
 #include "iupcbs.h"
+#include "iupdraw.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
@@ -18,6 +19,7 @@
 #include "iup_predialogs.h"
 #include "iup_childtree.h"
 #include "iup_drvinfo.h"
+#include "iup_drvfont.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
 
@@ -37,15 +39,255 @@ IUP_SDK_API const char* iupPrintDlgGetJobName(Ihandle* ih)
   return name;
 }
 
+#define IPRINTDLG_HPAD 6
+#define IPRINTDLG_VPAD 3
+
+typedef struct _IprintDlgTable {
+  Ihandle* element;
+  int is_matrix, numlin, first_col, last_col;
+  int* widths;
+  char* capped;
+  int total_width, line_height, row_height, rows_per_page;
+  double scale;
+} IprintDlgTable;
+
+static Ihandle* iPrintDlgGetElement(Ihandle* ih)
+{
+  Ihandle* element = IupGetAttributeHandle(ih, "ELEMENT");
+  if (element && iupObjectCheck(element))
+    return element;
+  return NULL;
+}
+
+static int iPrintDlgIsTable(Ihandle* element)
+{
+  return iupClassMatch(element->iclass, "table") || iupClassMatch(element->iclass, "matrix");
+}
+
+static void iPrintDlgTableFree(Ihandle* ih)
+{
+  IprintDlgTable* table = (IprintDlgTable*)iupAttribGet(ih, "_IUP_PRINT_TABLE");
+  if (table)
+  {
+    free(table->widths);
+    free(table->capped);
+    free(table);
+    iupAttribSet(ih, "_IUP_PRINT_TABLE", NULL);
+  }
+}
+
+static const char* iPrintDlgTableCell(IprintDlgTable* table, int lin, int col)
+{
+  if (table->is_matrix)
+    return IupGetAttributeId2(table->element, "CELL", lin, col);
+  if (lin == 0)
+    return IupGetAttributeId(table->element, "TITLE", col);
+  return IupGetAttributeId2(table->element, "IDVALUE", lin, col);
+}
+
+static const char* iPrintDlgTableAlignment(IprintDlgTable* table, int col)
+{
+  const char* value = IupGetAttributeId(table->element, "ALIGNMENT", col);
+  if (value && iupStrEqualNoCasePartial(value, "ARIGHT"))
+    return "ARIGHT";
+  if (value && iupStrEqualNoCasePartial(value, "ACENTER"))
+    return "ACENTER";
+  return "ALEFT";
+}
+
+static int iPrintDlgTableHidden(IprintDlgTable* table, int col)
+{
+  if (!table->is_matrix)
+    return 0;
+  return iupStrEqual(IupGetAttributeId(table->element, "WIDTH", col), "0") ||
+         iupStrEqual(IupGetAttributeId(table->element, "RASTERWIDTH", col), "0");
+}
+
+static IprintDlgTable* iPrintDlgTableLayout(Ihandle* ih, Ihandle* element, int width, int height)
+{
+  IprintDlgTable* table = (IprintDlgTable*)calloc(1, sizeof(IprintDlgTable));
+  const char* font = IupGetAttribute(element, "FONT");
+  int lin, col, numcol;
+
+  table->element = element;
+  table->is_matrix = iupClassMatch(element->iclass, "matrix");
+  table->numlin = IupGetInt(element, "NUMLIN");
+  numcol = IupGetInt(element, "NUMCOL");
+  table->first_col = 1;
+  if (table->is_matrix)
+  {
+    const char* title = iPrintDlgTableCell(table, 1, 0);
+    if (title && *title)
+      table->first_col = 0;
+  }
+  table->last_col = numcol;
+  table->widths = (int*)calloc(numcol + 1, sizeof(int));
+  table->capped = (char*)calloc(numcol + 1, sizeof(char));
+
+  iupdrvFontGetFontDim(font, NULL, &table->line_height, NULL, NULL);
+  table->row_height = table->line_height + 2 * IPRINTDLG_VPAD;
+
+  for (col = table->first_col; col <= table->last_col; col++)
+  {
+    int col_width = 0;
+
+    if (iPrintDlgTableHidden(table, col))
+      continue;
+
+    for (lin = 0; lin <= table->numlin; lin++)
+    {
+      const char* text = iPrintDlgTableCell(table, lin, col);
+      if (text && *text)
+      {
+        int w = 0, h = 0;
+        iupdrvFontGetTextSize(font, text, (int)strlen(text), &w, &h);
+        if (w > col_width)
+          col_width = w;
+      }
+    }
+
+    col_width += 2 * IPRINTDLG_HPAD;
+    if (col_width > width)
+    {
+      col_width = width;
+      table->capped[col] = 1;
+    }
+    table->widths[col] = col_width;
+    table->total_width += col_width;
+  }
+
+  table->scale = 1;
+  if (table->total_width > width)
+    table->scale = (double)width / (double)table->total_width;
+
+  table->rows_per_page = (int)((height / table->scale - table->row_height) / table->row_height);
+  if (table->rows_per_page < 1)
+    table->rows_per_page = 1;
+
+  iPrintDlgTableFree(ih);
+  iupAttribSet(ih, "_IUP_PRINT_TABLE", (char*)table);
+  return table;
+}
+
+static void iPrintDlgTableDrawLine(Ihandle* ih, IprintDlgTable* table, int lin, int y)
+{
+  int col, x = 0;
+
+  for (col = table->first_col; col <= table->last_col; col++)
+  {
+    int w = table->widths[col];
+    const char* text;
+
+    if (!w)
+      continue;
+
+    text = iPrintDlgTableCell(table, lin, col);
+    if (text && *text)
+    {
+      IupSetAttribute(ih, "DRAWTEXTALIGNMENT", iPrintDlgTableAlignment(table, col));
+      IupSetAttribute(ih, "DRAWTEXTELLIPSIS", table->capped[col] ? "YES" : "NO");
+      IupDrawText(ih, text, -1, x + IPRINTDLG_HPAD, y + IPRINTDLG_VPAD, w - 2 * IPRINTDLG_HPAD, table->line_height);
+    }
+    x += w;
+  }
+}
+
+static void iPrintDlgTableDrawPage(Ihandle* ih, IprintDlgTable* table, int page)
+{
+  int first = (page - 1) * table->rows_per_page + 1;
+  int last = first + table->rows_per_page - 1;
+  int lin, y;
+
+  if (last > table->numlin)
+    last = table->numlin;
+
+  IupDrawBegin(ih);
+  IupDrawSave(ih);
+
+  if (table->scale < 1)
+    IupDrawScale(ih, table->scale, table->scale);
+
+  IupSetStrAttribute(ih, "DRAWFONT", IupGetAttribute(table->element, "FONT"));
+  IupSetAttribute(ih, "DRAWLINEWIDTH", "1");
+
+  IupSetAttribute(ih, "DRAWSTYLE", "FILL");
+  IupSetAttribute(ih, "DRAWCOLOR", "230 230 230");
+  IupDrawRectangle(ih, 0, 0, table->total_width - 1, table->row_height - 1);
+
+  IupSetAttribute(ih, "DRAWCOLOR", "0 0 0");
+  iPrintDlgTableDrawLine(ih, table, 0, 0);
+
+  IupSetAttribute(ih, "DRAWSTYLE", "STROKE");
+  IupSetAttribute(ih, "DRAWCOLOR", "128 128 128");
+  IupDrawLine(ih, 0, table->row_height - 1, table->total_width - 1, table->row_height - 1);
+
+  y = table->row_height;
+  for (lin = first; lin <= last; lin++)
+  {
+    IupSetAttribute(ih, "DRAWCOLOR", "0 0 0");
+    iPrintDlgTableDrawLine(ih, table, lin, y);
+    y += table->row_height;
+
+    IupSetAttribute(ih, "DRAWCOLOR", "210 210 210");
+    IupDrawLine(ih, 0, y - 1, table->total_width - 1, y - 1);
+  }
+
+  IupDrawRestore(ih);
+  IupDrawEnd(ih);
+}
+
+static void iPrintDlgDrawCanvas(Ihandle* element, void* context, int width, int height)
+{
+  IFnff cb = (IFnff)IupGetCallback(element, "ACTION");
+  double scale = 1;
+  int w = 0, h = 0;
+
+  if (!cb || iupAttribGet(element, "_IUP_DRAW_DC"))
+    return;
+
+  IupGetIntInt(element, "DRAWSIZE", &w, &h);
+  if (w <= 0 || h <= 0)
+    return;
+
+  if (w > width)
+    scale = (double)width / (double)w;
+  if (h * scale > height)
+    scale = (double)height / (double)h;
+
+  iupAttribSet(element, "_IUP_PRINT_CONTEXT", (char*)context);
+  iupAttribSetInt(element, "_IUP_PRINT_WIDTH", w);
+  iupAttribSetInt(element, "_IUP_PRINT_HEIGHT", h);
+  if (scale < 1)
+    iupAttribSetDouble(element, "_IUP_PRINT_SCALE", scale);
+
+  cb(element, IupGetFloat(element, "POSX"), IupGetFloat(element, "POSY"));
+
+  iupAttribSet(element, "_IUP_PRINT_CONTEXT", NULL);
+  iupAttribSet(element, "_IUP_PRINT_WIDTH", NULL);
+  iupAttribSet(element, "_IUP_PRINT_HEIGHT", NULL);
+  iupAttribSet(element, "_IUP_PRINT_SCALE", NULL);
+}
+
 IUP_SDK_API int iupPrintDlgPaginate(Ihandle* ih, int width, int height)
 {
   IFnii cb = (IFnii)IupGetCallback(ih, "PAGINATE_CB");
+  Ihandle* element = iPrintDlgGetElement(ih);
   int count;
 
   iupAttribSetStrf(ih, "PAGESIZE", "%dx%d", width, height);
 
   if (cb)
     count = cb(ih, width, height);
+  else if (element && !IupGetCallback(ih, "PRINTPAGE_CB"))
+  {
+    if (iPrintDlgIsTable(element))
+    {
+      IprintDlgTable* table = iPrintDlgTableLayout(ih, element, width, height);
+      count = (table->numlin + table->rows_per_page - 1) / table->rows_per_page;
+    }
+    else
+      count = 1;
+  }
   else
     count = iupAttribGetInt(ih, "PAGECOUNT");
 
@@ -57,16 +299,31 @@ IUP_SDK_API int iupPrintDlgPaginate(Ihandle* ih, int width, int height)
 IUP_SDK_API int iupPrintDlgDrawPage(Ihandle* ih, void* context, int page, int width, int height)
 {
   IFniii cb = (IFniii)IupGetCallback(ih, "PRINTPAGE_CB");
+  Ihandle* element = iPrintDlgGetElement(ih);
   int ret = IUP_DEFAULT;
 
-  if (!cb)
+  if (!cb && !element)
     return IUP_DEFAULT;
+
+  if (!cb && !iPrintDlgIsTable(element))
+  {
+    iPrintDlgDrawCanvas(element, context, width, height);
+    return IUP_DEFAULT;
+  }
 
   iupAttribSet(ih, "_IUP_PRINT_CONTEXT", (char*)context);
   iupAttribSetInt(ih, "_IUP_PRINT_WIDTH", width);
   iupAttribSetInt(ih, "_IUP_PRINT_HEIGHT", height);
 
-  ret = cb(ih, page, width, height);
+  if (cb)
+    ret = cb(ih, page, width, height);
+  else
+  {
+    IprintDlgTable* table = (IprintDlgTable*)iupAttribGet(ih, "_IUP_PRINT_TABLE");
+    if (!table || table->element != element)
+      table = iPrintDlgTableLayout(ih, element, width, height);
+    iPrintDlgTableDrawPage(ih, table, page);
+  }
 
   iupAttribSet(ih, "_IUP_PRINT_CONTEXT", NULL);
   iupAttribSet(ih, "_IUP_PRINT_WIDTH", NULL);
@@ -419,6 +676,7 @@ Iclass* iupPrintDlgNewClass(void)
   ic->is_interactive = 1;
 
   ic->New = iupPrintDlgNewClass;
+  ic->Destroy = iPrintDlgTableFree;
 
   iupdrvPrintDlgInitClass(ic);
 
@@ -436,6 +694,7 @@ Iclass* iupPrintDlgNewClass(void)
   iupClassRegisterCallback(ic, "PAGINATE_CB", "ii");
   iupClassRegisterCallback(ic, "PRINTPAGE_CB", "iii");
 
+  iupClassRegisterAttribute(ic, "ELEMENT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "JOBNAME", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORIENTATION", NULL, NULL, IUPAF_SAMEASSYSTEM, "PORTRAIT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PAGECOUNT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
