@@ -214,6 +214,12 @@ The application must declare `ACCESS_NETWORK_STATE` and `CHANGE_NETWORK_STATE` i
 Identifier of the network selected with NETWORK while it is available, NULL otherwise.
 In Android it is the net_handle_t for android_setsocknetwork. In iOS it is the interface index for the IP_BOUND_IF and IPV6_BOUND_IF socket options.
 
+### KEEPAWAKE
+
+When "YES" the screen saver and display sleep are inhibited. Possible values: "YES" or "NO". Default: "NO".
+An IupVideo playing a video also inhibits them, independently of KEEPAWAKE.
+In Linux and FreeBSD this requires the org.freedesktop.ScreenSaver D-Bus service or an X11 session.
+
 ## System Mouse and Keyboard
 
 ### CURSORPOS

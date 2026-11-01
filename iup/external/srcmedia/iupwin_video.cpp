@@ -1320,11 +1320,6 @@ static int winVideoSubtitleText(IvideoSession* session, const char* text, int si
   return 1;
 }
 
-extern "C" void iupdrvVideoInhibitScreenSaver(int inhibit)
-{
-  SetThreadExecutionState(inhibit ? ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED : ES_CONTINUOUS);
-}
-
 extern "C" char* iupdrvVideoReadSubtitle(const char* filename)
 {
   int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, filename, -1, nullptr, 0);

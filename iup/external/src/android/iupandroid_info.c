@@ -251,6 +251,15 @@ IUP_SDK_API char* iupdrvLocaleInfo(void)
   return "UTF-8";
 }
 
+IUP_SDK_API void iupdrvSetKeepAwake(int keep)
+{
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupCommon, jni_env, "io/github/gen2brain/iupgo/IupCommon");
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setKeepAwake", "(Z)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, keep ? JNI_TRUE : JNI_FALSE);
+  iupAndroid_CheckException(jni_env, "IupCommon.setKeepAwake");
+}
+
 IUP_SDK_API char* iupdrvExeFileName(void)
 {
   return androidCallStringStatic("getPackageCodePath");

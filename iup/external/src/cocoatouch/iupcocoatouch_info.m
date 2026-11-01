@@ -357,6 +357,11 @@ IUP_SDK_API char* iupdrvLocaleInfo(void)
 	}
 }
 
+IUP_SDK_API void iupdrvSetKeepAwake(int keep)
+{
+	[UIApplication sharedApplication].idleTimerDisabled = keep ? YES : NO;
+}
+
 IUP_SDK_API char* iupdrvExeFileName(void)
 {
 	NSString* path = [[NSBundle mainBundle] executablePath];

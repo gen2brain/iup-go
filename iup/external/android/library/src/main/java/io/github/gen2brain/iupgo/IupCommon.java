@@ -607,6 +607,29 @@ public final class IupCommon
     }
 
     /** APPEARANCE global: 0 = system, 1 = light, 2 = dark. */
+    private static volatile boolean sKeepAwake = false;
+
+    static void applyKeepAwake(Activity a)
+    {
+        if (sKeepAwake)
+            a.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        else
+            a.getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    @Keep
+    public static void setKeepAwake(boolean keep)
+    {
+        sKeepAwake = keep;
+        IupApplication app = IupApplication.getIupApplication();
+        final Activity a = (app != null) ? app.getCurrentActivity() : null;
+        if (a != null)
+            a.runOnUiThread(new Runnable() {
+                @Override
+                public void run() { applyKeepAwake(a); }
+            });
+    }
+
     @Keep
     public static void setNightMode(int appearance)
     {

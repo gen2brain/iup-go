@@ -469,6 +469,7 @@ public class IupActivity extends AppCompatActivity
     protected void onResume()
     {
         super.onResume();
+        IupCommon.applyKeepAwake(this);
         closeAsked = false;
         sCurrentActivityRef = new java.lang.ref.WeakReference<>(this);
         previousConfig = new Configuration(getResources().getConfiguration());

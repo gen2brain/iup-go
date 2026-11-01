@@ -34,10 +34,11 @@ set(IUP_DRIVER_LINK_LIBRARIES
   translation
   shared
   columnlistview
+  game
 )
 
 set(IUP_DRIVER_COMPILE_OPTIONS -Wno-odr)
 set(IUP_DRIVER_LINK_OPTIONS "")
 
 set(IUP_PC_REQUIRES "")
-set(IUP_PC_LIBS_PRIVATE "-lbe -ltracker -ltranslation -lshared -lcolumnlistview -lstdc++")
+set(IUP_PC_LIBS_PRIVATE "-lbe -ltracker -ltranslation -lshared -lcolumnlistview -lgame -lstdc++")

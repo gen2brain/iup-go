@@ -774,26 +774,6 @@ static int iappleVideoSubtitleText(IvideoSession* session, const char* text, int
   return 1;
 }
 
-#if !TARGET_OS_IPHONE
-static id iapple_video_activity = nil;
-#endif
-
-void iupdrvVideoInhibitScreenSaver(int inhibit)
-{
-#if TARGET_OS_IPHONE
-  [UIApplication sharedApplication].idleTimerDisabled = inhibit ? YES : NO;
-#else
-  if (inhibit && !iapple_video_activity)
-    iapple_video_activity = [[[NSProcessInfo processInfo] beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled | NSActivityIdleSystemSleepDisabled reason:@"Playing video"] retain];
-  else if (!inhibit && iapple_video_activity)
-  {
-    [[NSProcessInfo processInfo] endActivity:iapple_video_activity];
-    [iapple_video_activity release];
-    iapple_video_activity = nil;
-  }
-#endif
-}
-
 char* iupdrvVideoReadSubtitle(const char* filename)
 {
   NSData* bytes = [NSData dataWithContentsOfFile:[NSString stringWithUTF8String:filename]];

@@ -43,6 +43,7 @@ target_precompile_headers(iup_winui_driver PRIVATE
 set(IUP_DRIVER_SOURCES
   $<TARGET_OBJECTS:iup_winui_driver>
   "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_singleinstance.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_keepawake.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_thread.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_fdwatch.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_printdlg.c"

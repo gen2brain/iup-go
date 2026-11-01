@@ -1,0 +1,8 @@
+//go:build (aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || illumos) && !motif && !qt6 && !qt5 && !qml && !gtk4 && !efl && !fltk && !gnustep && !android
+
+package iup
+
+/*
+#include "external/src/unix/iupunix_keepawake.c"
+*/
+import "C"

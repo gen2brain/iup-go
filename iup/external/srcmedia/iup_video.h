@@ -86,7 +86,6 @@ void iupVideoFreeAudioDevices(IvideoAudioDevice* devices, int count);
 void iupVideoSplitOptions(const char* options, void (*func)(char* option, void* user), void* user);
 char* iupVideoReadSubtitleStream(FILE* file);
 char* iupdrvVideoReadSubtitle(const char* filename);
-void iupdrvVideoInhibitScreenSaver(int inhibit);
 
 #ifdef __cplusplus
 }

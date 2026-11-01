@@ -96,10 +96,6 @@ EM_JS(void, iupwasmJsVideoFilter, (int vid, int brightness, int contrast, int sa
   globalThis.__iupApply({ op: 'vidfilter', vid: vid, b: brightness, c: contrast, s: saturation, g: gamma });
 })
 
-EM_JS(void, iupwasmJsVideoWake, (int on), {
-  globalThis.__iupApply({ op: 'vidwake', on: on });
-})
-
 EM_JS(void, iupwasmJsVideoBackground, (int vid, const char* background), {
   globalThis.__iupApply({ op: 'vidbg', vid: vid, bg: UTF8ToString(background) });
 })
@@ -318,11 +314,6 @@ static int wasmVideoSubtitleText(IvideoSession* session, const char* text, int s
 char* iupdrvVideoReadSubtitle(const char* filename)
 {
   return iupVideoReadSubtitleStream(fopen(filename, "rb"));
-}
-
-void iupdrvVideoInhibitScreenSaver(int inhibit)
-{
-  iupwasmJsVideoWake(inhibit);
 }
 
 static const IvideoBackend wasmVideoBackend = {"NATIVE", wasmVideoAvailable, wasmVideoOpen, wasmVideoClose, wasmVideoPlay, wasmVideoSeek, wasmVideoVolume, wasmVideoPoll, wasmVideoLayout, wasmVideoSubtitleCount, wasmVideoSubtitleName, wasmVideoSubtitleSelect, wasmVideoSubtitleText, 0, wasmVideoAudioDevices, wasmVideoAudioDevice, wasmVideoAdjust};

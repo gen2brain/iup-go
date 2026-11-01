@@ -23,6 +23,7 @@
 #include "iup_thread.h"
 #include "iup_drvfont.h"
 #include "iup_drvinfo.h"
+#include "iup_globalattrib.h"
 #include "iup_stdcontrols.h"
 #include "iup_video.h"
 
@@ -756,20 +757,12 @@ static void iVideoReleaseImage(Ihandle* ih)
   ih->data->frame_width = ih->data->frame_height = 0;
 }
 
-static int iVideoInhibitCount = 0;
-
 static void iVideoInhibit(Ihandle* ih, int inhibit)
 {
   if (ih->data->inhibit == inhibit)
     return;
   ih->data->inhibit = inhibit;
-  if (inhibit)
-  {
-    if (iVideoInhibitCount++ == 0)
-      iupdrvVideoInhibitScreenSaver(1);
-  }
-  else if (--iVideoInhibitCount == 0)
-    iupdrvVideoInhibitScreenSaver(0);
+  iupGlobalKeepAwake(inhibit);
 }
 
 static void iVideoClose(Ihandle* ih)

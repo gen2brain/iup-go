@@ -29,6 +29,8 @@
 
 static Itable* iglobal_table = NULL;
 static int iglobal_appearance = IUP_APPEARANCE_SYSTEM;
+static int iglobal_keepawake = 0;
+static int iglobal_keepawake_count = 0;
 static int iglobal_appearance_applying = 0;
 static int iglobal_palette_forced = 0;
 static int iglobal_appearance_native = 0;
@@ -39,8 +41,22 @@ void iupGlobalAttribInit(void)
   iglobal_table = iupTableCreate(IUPTABLE_STRINGINDEXED);
 }
 
+IUP_SDK_API void iupGlobalKeepAwake(int acquire)
+{
+  if (acquire)
+  {
+    if (iglobal_keepawake_count++ == 0)
+      iupdrvSetKeepAwake(1);
+  }
+  else if (iglobal_keepawake_count > 0 && --iglobal_keepawake_count == 0)
+    iupdrvSetKeepAwake(0);
+}
+
 void iupGlobalAttribFinish(void)
 {
+  iglobal_keepawake_count = 0;
+  iglobal_keepawake = 0;
+
   iupTableDestroy(iglobal_table);
   iglobal_table = NULL;
   iglobal_appearance = IUP_APPEARANCE_SYSTEM;
@@ -306,6 +322,17 @@ static void iGlobalSet(const char* name, const char* value, int store)
         iupGlobalNotifyThemeChanged();
       }
     }
+    return;
+  }
+  if (iupStrEqual(name, "KEEPAWAKE"))
+  {
+    int keep = iupStrBoolean(value);
+    if (keep != iglobal_keepawake)
+    {
+      iglobal_keepawake = keep;
+      iupGlobalKeepAwake(keep);
+    }
+    iGlobalTableSet(name, keep ? "YES" : "NO", 0);
     return;
   }
   if (iupStrEqual(name, "APPID"))

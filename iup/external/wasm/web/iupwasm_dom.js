@@ -2909,8 +2909,8 @@
         var VC = globalThis.__iupVid && globalThis.__iupVid[c.vid];
         if (VC) { VC.close(); delete globalThis.__iupVid[c.vid]; }
       } break;
-      case 'vidwake': {
-        var W = globalThis.__iupVidWake || (globalThis.__iupVidWake = { on: false, lock: null, listening: false });
+      case 'keepawake': {
+        var W = globalThis.__iupKeepAwake || (globalThis.__iupKeepAwake = { on: false, lock: null, listening: false });
         W.on = !!c.on;
         var acquire = function () {
           if (!W.on || W.lock || document.visibilityState !== 'visible' || !navigator.wakeLock) return;
