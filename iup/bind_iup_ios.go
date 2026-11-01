@@ -15,10 +15,15 @@ static void iupGoSystemTimeZone(char* name, int size, int* offset)
 			name[0] = 0;
 	}
 }
+unsigned int iupCocoaTouchGetNetworkIndex(void);
 */
 import "C"
 
-import "time"
+import (
+	"strings"
+	"syscall"
+	"time"
+)
 
 var pendingEntry func()
 
@@ -26,6 +31,26 @@ var pendingEntry func()
 func init() {
 	Open()
 	setTimeLocal()
+	netControl = iosNetControl
+}
+
+// iosNetControl binds a socket to the interface of the network selected with NETWORK.
+func iosNetControl(network, address string, c syscall.RawConn) error {
+	index := int(C.iupCocoaTouchGetNetworkIndex())
+	if index == 0 {
+		return nil
+	}
+	var bindErr error
+	if err := c.Control(func(fd uintptr) {
+		if strings.HasSuffix(network, "6") {
+			bindErr = syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IPV6, syscall.IPV6_BOUND_IF, index)
+		} else {
+			bindErr = syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_BOUND_IF, index)
+		}
+	}); err != nil {
+		return err
+	}
+	return bindErr
 }
 
 // setTimeLocal loads the system time zone, an iOS app has neither TZ nor a readable /etc/localtime.

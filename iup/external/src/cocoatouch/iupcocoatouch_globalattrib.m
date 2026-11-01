@@ -6,8 +6,10 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdatomic.h>
 
 #import <UIKit/UIKit.h>
+#import <Network/Network.h>
 
 #include "iup.h"
 
@@ -20,6 +22,50 @@
 
 
 static int s_cocoatouch_utf8_autoconvert = 1;
+static nw_path_monitor_t s_cocoatouch_network_monitor = NULL;
+static _Atomic unsigned int s_cocoatouch_network_index = 0;
+
+IUP_SDK_API unsigned int iupCocoaTouchGetNetworkIndex(void)
+{
+	return atomic_load(&s_cocoatouch_network_index);
+}
+
+static void cocoaTouchSetNetwork(const char* value)
+{
+	nw_interface_type_t type;
+
+	if (s_cocoatouch_network_monitor)
+	{
+		nw_path_monitor_cancel(s_cocoatouch_network_monitor);
+		nw_release(s_cocoatouch_network_monitor);
+		s_cocoatouch_network_monitor = NULL;
+	}
+	atomic_store(&s_cocoatouch_network_index, 0);
+
+	if (iupStrEqualNoCase(value, "CELLULAR"))
+		type = nw_interface_type_cellular;
+	else if (iupStrEqualNoCase(value, "WIFI"))
+		type = nw_interface_type_wifi;
+	else
+		return;
+
+	nw_path_monitor_t monitor = nw_path_monitor_create_with_type(type);
+	nw_path_monitor_set_queue(monitor, dispatch_get_main_queue());
+	nw_path_monitor_set_update_handler(monitor, ^(nw_path_t path) {
+		__block unsigned int index = 0;
+		if (monitor == s_cocoatouch_network_monitor && nw_path_get_status(path) == nw_path_status_satisfied)
+		{
+			nw_path_enumerate_interfaces(path, ^bool(nw_interface_t iface) {
+				index = nw_interface_get_index(iface);
+				return false;
+			});
+		}
+		if (monitor == s_cocoatouch_network_monitor)
+			atomic_store(&s_cocoatouch_network_index, index);
+	});
+	s_cocoatouch_network_monitor = monitor;
+	nw_path_monitor_start(monitor);
+}
 
 static char* cocoaTouchInfoPlistString(NSString* key)
 {
@@ -40,6 +86,11 @@ static int cocoaTouchSetGlobal(const char* name, const char* value)
 		s_cocoatouch_utf8_autoconvert = (!value || iupStrBoolean(value)) ? 1 : 0;
 		return 0;
 	}
+	if (iupStrEqual(name, "NETWORK"))
+	{
+		cocoaTouchSetNetwork(value);
+		return 1;
+	}
 	return 1;
 }
 
@@ -53,6 +104,11 @@ IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 
 static char* cocoaTouchGetGlobal(const char* name)
 {
+	if (iupStrEqual(name, "NETWORKHANDLE"))
+	{
+		unsigned int index = iupCocoaTouchGetNetworkIndex();
+		return index ? iupStrReturnInt((int)index) : NULL;
+	}
 	if (iupStrEqual(name, "CURSORPOS"))
 	{
 		char* str = iupStrGetMemory(50);

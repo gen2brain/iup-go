@@ -95,6 +95,37 @@ static void androidSetInputCallbacks(int enabled)
   (*env)->DeleteLocalRef(env, cls);
 }
 
+static int androidSetNetwork(const char* value)
+{
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = (*env)->FindClass(env, "io/github/gen2brain/iupgo/IupNetworkHelper");
+  jmethodID mid;
+  jboolean ret = JNI_FALSE;
+  int transport = -1;
+
+  if (!cls) return 0;
+
+  if (iupStrEqualNoCase(value, "CELLULAR"))
+    transport = 0;
+  else if (iupStrEqualNoCase(value, "WIFI"))
+    transport = 1;
+
+  mid = (*env)->GetStaticMethodID(env, cls, "setNetwork", "(I)Z");
+  if (mid)
+    ret = (*env)->CallStaticBooleanMethod(env, cls, mid, (jint)transport);
+  iupAndroid_CheckException(env, "IupNetworkHelper.setNetwork");
+  (*env)->DeleteLocalRef(env, cls);
+  return ret == JNI_TRUE;
+}
+
+static char* androidGetNetworkHandle(void)
+{
+  long long handle = iupAndroid_GetNetworkHandle();
+  if (!handle)
+    return NULL;
+  return iupStrReturnStrf("%lld", handle);
+}
+
 IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 {
   if (iupStrEqual(name, "LANGUAGE"))
@@ -114,6 +145,8 @@ IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
     androidSetInputCallbacks(iupStrBoolean(value));
     return 1;
   }
+  if (iupStrEqual(name, "NETWORK"))
+    return androidSetNetwork(value);
   return 1;
 }
 
@@ -127,5 +160,6 @@ IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   if (iupStrEqual(name, "TRUECOLORCANVAS")) return iupStrReturnBoolean(iupdrvGetScreenDepth() > 8);
   if (iupStrEqual(name, "UTF8MODE"))       return iupStrReturnBoolean(1);
   if (iupStrEqual(name, "TOUCHREADY"))     return iupStrReturnBoolean(1);
+  if (iupStrEqual(name, "NETWORKHANDLE"))  return androidGetNetworkHandle();
   return NULL;
 }

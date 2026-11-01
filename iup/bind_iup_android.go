@@ -5,6 +5,7 @@ package iup
 /*
 #include <stdlib.h>
 #include <sys/system_properties.h>
+#include <android/multinetwork.h>
 #include "iup.h"
 #include "iupandroid_drv.h"
 */
@@ -12,6 +13,7 @@ import "C"
 
 import (
 	"os"
+	"syscall"
 	"time"
 	"unsafe"
 )
@@ -21,6 +23,24 @@ import (
 func init() {
 	Open()
 	setTimeLocal()
+	netControl = androidNetControl
+}
+
+// androidNetControl binds a socket to the network selected with NETWORK.
+func androidNetControl(network, address string, c syscall.RawConn) error {
+	handle := C.iupAndroid_GetNetworkHandle()
+	if handle == 0 {
+		return nil
+	}
+	var bindErr error
+	if err := c.Control(func(fd uintptr) {
+		if ret, err := C.android_setsocknetwork(C.net_handle_t(handle), C.int(fd)); ret != 0 {
+			bindErr = err
+		}
+	}); err != nil {
+		return err
+	}
+	return bindErr
 }
 
 // setTimeLocal loads the system time zone, an Android app has neither TZ nor /etc/localtime.

@@ -200,6 +200,20 @@ So usually in the application initialization after **IupOpen**, set SINGLEINSTAN
 In Windows (Win32 and WinUI) uses a named mutex for detection and WM_COPYDATA for communication. In Linux/Unix (GTK, GTK4, Qt, QML, Motif, FLTK, EFL) uses D-Bus session bus name ownership. In macOS uses CFMessagePort. In Haiku uses a named-port rendezvous.
 On Android single instance is enforced by the Activity launchMode in the manifest, so the SINGLEINSTANCE attribute and COPYDATA_CB are not implemented. Not supported in iOS and WebAssembly.
 
+### NETWORK [Android and iOS Only]
+
+Network used by the application connections. Can be "DEFAULT", "CELLULAR" or "WIFI". Default: "DEFAULT".
+In Android sockets created through the C library use that network while it is available.
+With "CELLULAR" mobile data stays connected while Wi-Fi is the default network.
+In iOS it only selects the network returned by NETWORKHANDLE.
+Sockets created with direct system calls, and all sockets in iOS, must be bound to NETWORKHANDLE.
+The application must declare `ACCESS_NETWORK_STATE` and `CHANGE_NETWORK_STATE` in the Android manifest.
+
+### NETWORKHANDLE [Android and iOS Only] (read-only)
+
+Identifier of the network selected with NETWORK while it is available, NULL otherwise.
+In Android it is the net_handle_t for android_setsocknetwork. In iOS it is the interface index for the IP_BOUND_IF and IPV6_BOUND_IF socket options.
+
 ## System Mouse and Keyboard
 
 ### CURSORPOS
