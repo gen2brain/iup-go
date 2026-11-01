@@ -245,7 +245,7 @@ func TestSignAPK(t *testing.T) {
 	}
 	path := filepath.Join(t.TempDir(), "t.apk")
 	os.WriteFile(path, apk, 0o644)
-	out, err := exec.Command(tools[len(tools)-1], "verify", "-v", path).CombinedOutput()
+	out, err := exec.Command(tools[len(tools)-1], "verify", "-v", "--min-sdk-version", "23", path).CombinedOutput()
 	if err != nil {
 		t.Fatalf("apksigner: %v\n%s", err, out)
 	}
