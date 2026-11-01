@@ -4750,18 +4750,9 @@ static int cocoaTextSetAppendAttrib(Ihandle* ih, const char* value)
     NSRange change_range = NSMakeRange([text_storage length], 0);
 
     NSMutableDictionary* attribute_dict = [[iup_font attributeDictionary] mutableCopy];
+    NSColor* default_color = [(IupCocoaTextView*)text_view defaultColor];
     [attribute_dict autorelease];
-    NSDictionary<NSAttributedStringKey, id>* text_storage_attributes = nil;
-    if(change_range.location == 0)
-    {
-      text_storage_attributes = [iup_font attributeDictionary];
-    }
-    else
-    {
-      text_storage_attributes = [text_storage attributesAtIndex:change_range.location-1 effectiveRange:NULL];
-    }
-
-    [attribute_dict addEntriesFromDictionary:text_storage_attributes];
+    [attribute_dict setObject:(default_color ? default_color : [NSColor textColor]) forKey:NSForegroundColorAttributeName];
 
     NSAttributedString* attributed_append_string = [[NSAttributedString alloc] initWithString:ns_append_string attributes:attribute_dict];
     [attributed_append_string autorelease];

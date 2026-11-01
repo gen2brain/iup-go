@@ -17,6 +17,7 @@ Not supported in Motif and FLTK.
 **APPEND** (write-only): Inserts a text at the end of the current text.
 In the Multiline, if APPENDNEWLINE=YES, a "\n" character is automatically inserted before the appended text if the current text is not empty(APPENDNEWLINE default is YES).
 If APPENDSCROLL=YES, after the insert the view scrolls so the appended text is visible (APPENDSCROLL default is YES).
+With FORMATTING=YES the appended text has the default formatting.
 Ignored if set before map.
 
 **AUTOCORRECT** (non-inheritable): enables the platform typing assistance: spelling correction and spell check, word suggestions, sentence capitalization, and smart quotes and dashes, as far as each platform has them. Can be YES or NO. Default: NO.

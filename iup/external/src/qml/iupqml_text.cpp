@@ -799,6 +799,20 @@ static int qmlTextSetInsertAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void qmlTextAppendPlain(QTextDocument* doc, const QString& str)
+{
+  QTextCursor cursor(doc);
+  QStringList lines = str.split('\n');
+  cursor.movePosition(QTextCursor::End);
+  for (int i = 0; i < lines.size(); i++)
+  {
+    if (i > 0)
+      cursor.insertBlock(QTextBlockFormat(), QTextCharFormat());
+    if (!lines[i].isEmpty())
+      cursor.insertText(lines[i], QTextCharFormat());
+  }
+}
+
 static int qmlTextSetAppendAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle)
@@ -813,7 +827,11 @@ static int qmlTextSetAppendAttrib(Ihandle* ih, const char* value)
     to_insert.prepend('\n');
 
   int cursor = qmlTextGetCursor(ih);
-  qmlTextInsertAt(ih, len, to_insert);
+  QTextDocument* doc = ih->data->is_multiline ? qmlTextGetDocument(ih) : nullptr;
+  if (doc)
+    qmlTextAppendPlain(doc, to_insert);
+  else
+    qmlTextInsertAt(ih, len, to_insert);
 
   if (ih->data->is_multiline && ih->data->append_scroll)
   {
