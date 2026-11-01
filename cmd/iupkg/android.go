@@ -34,6 +34,7 @@ var androidPermissions = map[string][]string{
 	"location":      {"android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION"},
 	"notifications": {"android.permission.POST_NOTIFICATIONS"},
 	"internet":      {"android.permission.INTERNET"},
+	"network":       {"android.permission.ACCESS_NETWORK_STATE", "android.permission.CHANGE_NETWORK_STATE"},
 }
 
 const androidAPI = "24"

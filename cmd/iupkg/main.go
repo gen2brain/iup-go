@@ -195,7 +195,7 @@ func newFlagSet(c *config) *flag.FlagSet {
 	fs.StringVar(&c.publisher, "publisher", "", "windows msix: publisher `name` of the package identity (default: the subject of the --sign certificate; the Store assigns one)")
 	fs.StringVar(&c.copyright, "copyright", "", "copyright `line` for Windows and Haiku (haiku default: the application name)")
 	fs.StringVar(&c.license, "license", "Unknown", "license `name` for rpm and haiku")
-	fs.Func("permissions", "comma-separated `list`: camera, microphone, location, notifications, internet", func(s string) error {
+	fs.Func("permissions", "comma-separated `list`: camera, microphone, location, notifications, internet, network", func(s string) error {
 		c.permissions = splitList(s)
 		return nil
 	})
@@ -286,7 +286,7 @@ func runPackage(args []string) error {
 	}
 
 	for _, p := range c.permissions {
-		if !slices.Contains([]string{"camera", "microphone", "location", "notifications", "internet"}, p) {
+		if !slices.Contains([]string{"camera", "microphone", "location", "notifications", "internet", "network"}, p) {
 			return fmt.Errorf("unknown permission %q", p)
 		}
 	}
