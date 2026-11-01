@@ -14,6 +14,8 @@ The dialog can be shown with the **IupPopup** function only.
 **ELEMENT**: name of an element printed when PRINTPAGE_CB is not defined.
 An IupCanvas, or a control drawn with the [IupDraw](../func/iup_draw.md) functions, is printed on one page by calling its ACTION callback, scaled down to fit the page.
 An IupTable, IupMatrix or IupMatrixEx is printed with its cell values on as many pages as needed, with the column titles on each page, scaled down to fit the page width.
+An IupText, IupList, IupFlatList, IupTree, IupFlatTree or IupLabel is printed as text on as many pages as needed, with long lines wrapped at the page width.
+The text is the VALUE of IupText, the items of IupList and IupFlatList, the node titles of IupTree and IupFlatTree indented by their depth, and the TITLE of IupLabel.
 
 **JOBNAME**: name of the print job shown in the system print queue. Default: the [TITLE](../attrib/iup_title.md), or "IUP" if TITLE is not defined.
 
