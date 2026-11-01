@@ -105,7 +105,7 @@ package iup
 #cgo darwin,!ios,gtk4,web LDFLAGS: -framework WebKit
 
 #cgo ios CFLAGS: -Iexternal/src/cocoatouch -x objective-c -DIUP_USE_COCOATOUCH
-#cgo ios LDFLAGS: -framework Foundation -framework UIKit -framework CoreGraphics -framework CoreText -framework QuartzCore -framework ImageIO -framework UserNotifications -framework UniformTypeIdentifiers -framework CoreLocation -framework CoreMotion
+#cgo ios LDFLAGS: -framework Foundation -framework UIKit -framework CoreGraphics -framework CoreText -framework QuartzCore -framework ImageIO -framework UserNotifications -framework UniformTypeIdentifiers -framework CoreLocation -framework CoreMotion -framework Network
 #cgo ios,web LDFLAGS: -framework WebKit
 #cgo ios,media LDFLAGS: -framework CoreFoundation -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework CoreImage
 #cgo ios,gl LDFLAGS: -framework OpenGLES

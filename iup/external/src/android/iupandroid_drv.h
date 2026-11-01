@@ -38,6 +38,8 @@ IUP_SDK_API void iupAndroid_RemoveFromParent(JNIEnv* jni_env, Ihandle* ih);
 
 /* iupStrReturnStr(jstring) helper; handles NULL and releases JNI refs */
 IUP_SDK_API char* iupAndroid_JStringToReturnStr(JNIEnv* jni_env, jstring j_string);
+
+IUP_SDK_API long long iupAndroid_GetNetworkHandle(void);
 IUP_SDK_API jstring iupAndroid_NewStringUTF(JNIEnv* jni_env, const char* str);
 
 /* re-seeds DLG/TXT/MENU color defaults from the current UI_MODE_NIGHT flag */
