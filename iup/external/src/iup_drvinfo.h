@@ -99,6 +99,10 @@ IUP_SDK_API char* iupdrvLanguageInfo(void);
  * \ingroup drvinfo */
 IUP_SDK_API char* iupdrvExeFileName(void);
 
+/** Keeps the display and the system awake while \p keep is 1.
+ * \ingroup drvinfo */
+IUP_SDK_API void iupdrvSetKeepAwake(int keep);
+
 /** Returns the full path to a configuration file for the given app name.
  * Creates necessary directories if they don't exist.
  * \ingroup drvinfo */

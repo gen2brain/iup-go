@@ -143,13 +143,13 @@ package iup
 #cgo android,gl LDFLAGS: -lEGL -lGLESv3
 #cgo android,plot LDFLAGS: -static-libstdc++
 
-#cgo haiku LDFLAGS: -lbe -ltracker
+#cgo haiku LDFLAGS: -lbe -ltracker -lgame
 #cgo haiku,!qt6,!qt5,!qml CFLAGS: -Iexternal/src/haiku -DIUP_USE_HAIKU -I/boot/system/develop/headers/private/shared -I/boot/system/develop/headers/private/interface
 #cgo haiku,!qt6,!qt5,!qml CXXFLAGS: -Iexternal/src/haiku -DIUP_USE_HAIKU -std=c++17 -I/boot/system/develop/headers/private/shared -I/boot/system/develop/headers/private/interface
 #cgo haiku,!qt6,!qt5,!qml LDFLAGS: -ltranslation -lshared -lcolumnlistview
 #cgo haiku,!qt6,!qt5,!qml,gl LDFLAGS: -lGL
 #cgo haiku,!qt6,!qt5,!qml,web CXXFLAGS: -I/boot/system/develop/headers/private/netservices
 #cgo haiku,!qt6,!qt5,!qml,web LDFLAGS: -lWebKitLegacy -lJavaScriptCore
-#cgo haiku,media LDFLAGS: -lmedia -lgame
+#cgo haiku,media LDFLAGS: -lmedia
 */
 import "C"

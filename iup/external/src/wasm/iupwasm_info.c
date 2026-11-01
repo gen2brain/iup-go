@@ -19,6 +19,15 @@
 #include "iup_str.h"
 #include "iup_drvinfo.h"
 
+EM_JS(void, iupwasmJsKeepAwake, (int on), {
+  globalThis.__iupApply({ op: 'keepawake', on: on });
+})
+
+IUP_SDK_API void iupdrvSetKeepAwake(int keep)
+{
+  iupwasmJsKeepAwake(keep);
+}
+
 
 /* the browser viewport is the placement area: dialogs, menus and popovers live inside it, not the physical monitor */
 EM_JS(int, iupwasmScreenAvailWidth, (void), {

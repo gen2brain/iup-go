@@ -44,6 +44,8 @@ IUP_SDK_API void iupGlobalUpdateThemeColors(void);
 /* Calls THEMECHANGED_CB on every dialog, unless the palette and the dark mode are unchanged. */
 IUP_SDK_API void iupGlobalNotifyThemeChanged(void);
 
+IUP_SDK_API void iupGlobalKeepAwake(int acquire);
+
 /* Records the current palette and dark mode as the baseline. */
 IUP_SDK_API void iupGlobalSeedThemeState(void);
 

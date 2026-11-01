@@ -108,6 +108,7 @@ IUP_API void IupClose(void)
   iup_opened = 0;
 
   iupdrvSetIdleFunction(NULL);  /* stop any idle */
+  IupSetGlobal("KEEPAWAKE", "NO");
 
   iupDlgListDestroyAll();    /* destroy all dialogs and their children */
   iupNamesDestroyHandles();  /* destroy everything that do not belong to a dialog */

@@ -90,7 +90,6 @@ elseif(IUP_BACKEND STREQUAL "haiku")
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iuphaiku_audio.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iuphaiku_camera.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iuphaiku_microphone.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iuphaiku_video.cpp"
   )
   set(_MEDIA_LIBS media be game)
 
