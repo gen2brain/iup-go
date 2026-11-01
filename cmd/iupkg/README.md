@@ -56,7 +56,7 @@ iupkg staple <app>
  | `--publisher`                                        | certificate subject | windows msix: publisher of the package identity                                                                             |
  | `--copyright`                                        |                     | Windows and Haiku copyright line                                                                                            |
  | `--license`                                          | `Unknown`           | rpm and haiku license name                                                                                                  |
- | `--permissions`                                      |                     | comma list of `camera`, `microphone`, `location`, `notifications`, `internet`                                               |
+ | `--permissions`                                      |                     | comma list of `camera`, `microphone`, `location`, `notifications`, `internet`, `network`                                    |
  | `--cleartext`                                        |                     | android: comma list of hosts that may use plain HTTP; `localhost` allows `localhost` and `127.0.0.1`                        |
  | `--sign`                                             |                     | signing identity, see Signing                                                                                               |
  | `--signer`                                           | `iupkg`             | `iupkg`; darwin, ios: `codesign` (the default on a Mac); linux: `gpg`                                                       |
