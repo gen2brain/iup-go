@@ -626,8 +626,8 @@ jobs:
         PKG_CONFIG: "true"
       run: |
         NDK_BIN="${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin"
-        CC="$NDK_BIN/aarch64-linux-android22-clang" \
-        CXX="$NDK_BIN/aarch64-linux-android22-clang++" \
+        CC="$NDK_BIN/aarch64-linux-android24-clang" \
+        CXX="$NDK_BIN/aarch64-linux-android24-clang++" \
           go build
       working-directory: iup
 
