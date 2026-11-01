@@ -220,6 +220,12 @@ When "YES" the screen saver and display sleep are inhibited. Possible values: "Y
 An IupVideo playing a video also inhibits them, independently of KEEPAWAKE.
 In Linux and FreeBSD this requires the org.freedesktop.ScreenSaver D-Bus service or an X11 session.
 
+### HAPTIC [Android and iOS Only] (write-only)
+
+Plays a haptic feedback. Can be "LIGHT", "MEDIUM", "HEAVY" or "SELECTION".
+In Android nothing is played when the system touch feedback is off.
+The application must declare `VIBRATE` in the Android manifest.
+
 ## System Mouse and Keyboard
 
 ### CURSORPOS

@@ -74,6 +74,34 @@ static char* cocoaTouchInfoPlistString(NSString* key)
 	return iupStrReturnStr([s UTF8String]);
 }
 
+static void cocoaTouchHaptic(const char* value)
+{
+	if (iupStrEqualNoCase(value, "SELECTION"))
+	{
+		UISelectionFeedbackGenerator* generator = [[UISelectionFeedbackGenerator alloc] init];
+		[generator selectionChanged];
+		[generator release];
+	}
+	else
+	{
+		UIImpactFeedbackStyle style;
+		UIImpactFeedbackGenerator* generator;
+
+		if (iupStrEqualNoCase(value, "LIGHT"))
+			style = UIImpactFeedbackStyleLight;
+		else if (iupStrEqualNoCase(value, "MEDIUM"))
+			style = UIImpactFeedbackStyleMedium;
+		else if (iupStrEqualNoCase(value, "HEAVY"))
+			style = UIImpactFeedbackStyleHeavy;
+		else
+			return;
+
+		generator = [[UIImpactFeedbackGenerator alloc] initWithStyle:style];
+		[generator impactOccurred];
+		[generator release];
+	}
+}
+
 static int cocoaTouchSetGlobal(const char* name, const char* value)
 {
 	if (iupStrEqual(name, "LANGUAGE"))
@@ -90,6 +118,11 @@ static int cocoaTouchSetGlobal(const char* name, const char* value)
 	{
 		cocoaTouchSetNetwork(value);
 		return 1;
+	}
+	if (iupStrEqual(name, "HAPTIC"))
+	{
+		cocoaTouchHaptic(value);
+		return 0;
 	}
 	return 1;
 }

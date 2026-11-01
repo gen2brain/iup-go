@@ -6,11 +6,18 @@ import android.content.ContextWrapper;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
+import android.media.AudioAttributes;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.MessageQueue;
 import android.os.SystemClock;
+import android.os.VibrationAttributes;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -628,6 +635,53 @@ public final class IupCommon
                 @Override
                 public void run() { applyKeepAwake(a); }
             });
+    }
+
+    @Keep
+    @SuppressWarnings("deprecation")
+    public static void performHaptic(int kind)
+    {
+        Context ctx = IupApplication.getIupApplication();
+        if (ctx == null || kind < 0 || kind > 3) return;
+        if (Settings.System.getInt(ctx.getContentResolver(), Settings.System.HAPTIC_FEEDBACK_ENABLED, 1) == 0) return;
+
+        Vibrator vibrator;
+        if (Build.VERSION.SDK_INT >= 31)
+        {
+            VibratorManager manager = (VibratorManager) ctx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
+            vibrator = (manager != null) ? manager.getDefaultVibrator() : null;
+        }
+        else
+            vibrator = (Vibrator) ctx.getSystemService(Context.VIBRATOR_SERVICE);
+        if (vibrator == null || !vibrator.hasVibrator()) return;
+
+        final int[] effects = { VibrationEffect.EFFECT_TICK, VibrationEffect.EFFECT_CLICK, VibrationEffect.EFFECT_HEAVY_CLICK, VibrationEffect.EFFECT_TICK };
+        final long[] durations = { 15, 25, 45, 10 };
+        final int[] amplitudes = { 80, 160, 255, 60 };
+
+        try
+        {
+            if (Build.VERSION.SDK_INT < 26)
+            {
+                vibrator.vibrate(durations[kind]);
+                return;
+            }
+
+            VibrationEffect effect;
+            if (Build.VERSION.SDK_INT >= 30 && vibrator.areAllEffectsSupported(effects[kind]) == Vibrator.VIBRATION_EFFECT_SUPPORT_YES)
+                effect = VibrationEffect.createPredefined(effects[kind]);
+            else
+                effect = VibrationEffect.createOneShot(durations[kind], vibrator.hasAmplitudeControl() ? amplitudes[kind] : VibrationEffect.DEFAULT_AMPLITUDE);
+
+            if (Build.VERSION.SDK_INT >= 33)
+                vibrator.vibrate(effect, VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH));
+            else
+                vibrator.vibrate(effect, new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION).build());
+        }
+        catch (SecurityException e)
+        {
+            Log.e(TAG, "performHaptic: " + e);
+        }
     }
 
     @Keep
