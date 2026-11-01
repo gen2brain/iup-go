@@ -177,13 +177,31 @@ static void iDrawStateFree(Ihandle* ih)
   }
 }
 
+static void iDrawDriverSetTransform(Ihandle* ih, IdrawCanvas* dc, const IupDrawMatrix* matrix)
+{
+  double scale = iupAttribGetDouble(ih, "_IUP_PRINT_SCALE");
+  if (scale > 0)
+  {
+    IupDrawMatrix scaled = *matrix;
+    scaled.a *= scale;
+    scaled.b *= scale;
+    scaled.c *= scale;
+    scaled.d *= scale;
+    scaled.e *= scale;
+    scaled.f *= scale;
+    iupdrvDrawSetTransform(dc, &scaled);
+  }
+  else
+    iupdrvDrawSetTransform(dc, matrix);
+}
+
 static void iDrawSetDriverTransform(Ihandle* ih, const IupDrawMatrix* matrix)
 {
   iSvgCanvas* svg = IUP_SVG_GET(ih);
   if (svg)
     iupSvgDrawSetTransform(svg, matrix);
   else
-    iupdrvDrawSetTransform((IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), matrix);
+    iDrawDriverSetTransform(ih, (IdrawCanvas*)iupAttribGet(ih, "_IUP_DRAW_DC"), matrix);
 }
 
 static IupDrawState* iDrawStateCreate(Ihandle* ih)
@@ -222,7 +240,7 @@ static void iDrawReplayClip(Ihandle* ih, const IupDrawClipData* clip, const IupD
     iupdrvDrawResetClip(dc);
     if (clip->type != IUP_DRAW_CLIP_NONE)
     {
-      iupdrvDrawSetTransform(dc, &clip->matrix);
+      iDrawDriverSetTransform(ih, dc, &clip->matrix);
       if (clip->type == IUP_DRAW_CLIP_RECT)
         iupdrvDrawSetClipRect(dc, clip->x1, clip->y1, clip->x2, clip->y2);
       else if (clip->type == IUP_DRAW_CLIP_ROUNDED)
@@ -230,7 +248,7 @@ static void iDrawReplayClip(Ihandle* ih, const IupDrawClipData* clip, const IupD
       else
         iupdrvDrawSetClipPath(dc, clip->segs, clip->count, clip->rule);
     }
-    iupdrvDrawSetTransform(dc, matrix);
+    iDrawDriverSetTransform(ih, dc, matrix);
   }
 }
 
@@ -734,9 +752,9 @@ IUP_API void IupDrawParentBackground(Ihandle* ih)
     return;
 
   iDrawMatrixIdentity(&identity);
-  iupdrvDrawSetTransform(dc, &identity);
+  iDrawDriverSetTransform(ih, dc, &identity);
   iupDrawParentBackground(dc, ih);
-  iupdrvDrawSetTransform(dc, &state->matrix);
+  iDrawDriverSetTransform(ih, dc, &state->matrix);
 }
 
 static int iDrawGetStyle(Ihandle* ih)

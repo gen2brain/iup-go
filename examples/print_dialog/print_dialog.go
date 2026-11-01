@@ -52,40 +52,99 @@ func main() {
 		}
 	}
 
+	chart := iup.Canvas().SetAttributes("RASTERSIZE=x160, EXPAND=HORIZONTAL, BORDER=NO")
+	chart.SetHandle("chart")
+	chart.SetCallback("ACTION", iup.ActionFunc(drawChart))
+	table.SetHandle("inventory")
+
 	status := iup.Label("").SetAttributes("EXPAND=HORIZONTAL")
 
 	btnPrint := iup.Button("Print...").SetAttributes("PADDING=10x4")
 	btnPrint.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
-		dlg := iup.PrintDlg()
-		defer dlg.Destroy()
+		runPrint(ih, status, func(dlg iup.Ihandle) {
+			dlg.SetCallback("PAGINATE_CB", iup.PaginateFunc(paginate))
+			dlg.SetCallback("PRINTPAGE_CB", iup.PrintPageFunc(printPage))
+		})
+		return iup.DEFAULT
+	}))
 
-		dlg.SetAttribute("TITLE", "Print Inventory")
-		iup.SetAttributeHandle(dlg, "PARENTDIALOG", iup.GetDialog(ih))
-		dlg.SetCallback("PAGINATE_CB", iup.PaginateFunc(paginate))
-		dlg.SetCallback("PRINTPAGE_CB", iup.PrintPageFunc(printPage))
+	btnTable := iup.Button("Print Table").SetAttributes("PADDING=10x4")
+	btnTable.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		runPrint(ih, status, func(dlg iup.Ihandle) {
+			dlg.SetAttribute("ELEMENT", "inventory")
+		})
+		return iup.DEFAULT
+	}))
 
-		iup.Popup(dlg, iup.CURRENT, iup.CURRENT)
-
-		switch dlg.GetAttribute("STATUS") {
-		case "1":
-			status.SetAttribute("TITLE", fmt.Sprintf("Printed %d pages (%s, %s)", pageCount, dlg.GetAttribute("PAGESIZE"), dlg.GetAttribute("ORIENTATION")))
-		case "-1":
-			status.SetAttribute("TITLE", "Printing failed or is not supported")
-		default:
-			status.SetAttribute("TITLE", "Canceled")
-		}
+	btnChart := iup.Button("Print Chart").SetAttributes("PADDING=10x4")
+	btnChart.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
+		runPrint(ih, status, func(dlg iup.Ihandle) {
+			dlg.SetAttribute("ELEMENT", "chart")
+		})
 		return iup.DEFAULT
 	}))
 
 	dlg := iup.Dialog(
 		iup.Vbox(
 			table,
-			iup.Hbox(btnPrint, status).SetAttributes("ALIGNMENT=ACENTER, GAP=10"),
+			chart,
+			iup.Hbox(btnPrint, btnTable, btnChart, status).SetAttributes("ALIGNMENT=ACENTER, GAP=10"),
 		).SetAttributes("MARGIN=10x10, GAP=8"),
 	).SetAttribute("TITLE", "Print Dialog")
 
 	iup.Show(dlg)
 	iup.MainLoop()
+}
+
+func runPrint(ih, status iup.Ihandle, setup func(dlg iup.Ihandle)) {
+	dlg := iup.PrintDlg()
+	defer dlg.Destroy()
+
+	dlg.SetAttribute("TITLE", "Print Inventory")
+	iup.SetAttributeHandle(dlg, "PARENTDIALOG", iup.GetDialog(ih))
+	setup(dlg)
+
+	iup.Popup(dlg, iup.CURRENT, iup.CURRENT)
+
+	switch dlg.GetAttribute("STATUS") {
+	case "1":
+		status.SetAttribute("TITLE", fmt.Sprintf("Printed (%s, %s)", dlg.GetAttribute("PAGESIZE"), dlg.GetAttribute("ORIENTATION")))
+	case "-1":
+		status.SetAttribute("TITLE", "Printing failed or is not supported")
+	default:
+		status.SetAttribute("TITLE", "Canceled")
+	}
+}
+
+func drawChart(ih iup.Ihandle) int {
+	iup.DrawBegin(ih)
+	defer iup.DrawEnd(ih)
+
+	w, h := iup.DrawGetSize(ih)
+	ih.SetAttribute("DRAWCOLOR", "255 255 255")
+	ih.SetAttribute("DRAWSTYLE", "FILL")
+	iup.DrawRectangle(ih, 0, 0, w-1, h-1)
+
+	ih.SetAttribute("DRAWCOLOR", "0 0 0")
+	ih.SetAttribute("DRAWFONT", "Sans, Bold 10")
+	iup.DrawText(ih, "Quantity of the first 30 items", 8, 4, w-16, 20)
+
+	bars := 30
+	top, bottom := 28, h-8
+	barW := (w - 16) / bars
+	for i := 0; i < bars; i++ {
+		var quantity int
+		fmt.Sscanf(cell(i, 2), "%d", &quantity)
+		x := 8 + i*barW
+		y := bottom - (bottom-top)*quantity/50
+		ih.SetAttribute("DRAWCOLOR", "70 120 200")
+		iup.DrawRectangle(ih, x+2, y, x+barW-2, bottom)
+	}
+
+	ih.SetAttribute("DRAWCOLOR", "90 90 90")
+	ih.SetAttribute("DRAWSTYLE", "STROKE")
+	iup.DrawLine(ih, 8, bottom, w-8, bottom)
+	return iup.DEFAULT
 }
 
 func paginate(ih iup.Ihandle, width, height int) int {
