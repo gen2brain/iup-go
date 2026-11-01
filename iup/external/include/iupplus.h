@@ -966,6 +966,11 @@ namespace Iup
   public:
     FontDlg() : Dialog(IupFontDlg()) {}
   };
+  class PrintDlg : public Dialog
+  {
+  public:
+    PrintDlg() : Dialog(IupPrintDlg()) {}
+  };
   class ProgressDlg : public Dialog
   {
   public:
