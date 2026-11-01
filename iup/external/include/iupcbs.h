@@ -20,8 +20,8 @@ typedef void (*IFvs)(void*, char*);  /* handleadd_cb, handleremove_cb, imagecrea
 
 typedef int (*IFn)(Ihandle*);  /* default definition, same as Icallback */
 typedef int (*IFni)(Ihandle*, int);   /* k_any, show_cb, toggle_action, spin_cb, branchopen_cb, branchclose_cb, executeleaf_cb, showrename_cb, rightclick_cb, extended_cb, height_cb, width_cb */
-typedef int (*IFnii)(Ihandle*, int, int);  /* resize_cb, caret_cb, matrix_mousemove_cb, enteritem_cb, leaveitem_cb, scrolltop_cb, dropcheck_cb, selection_cb, select_cb, switch_cb, scrolling_cb, vspan_cb, hspan_cb */
-typedef int (*IFniii)(Ihandle*, int, int, int); /* trayclick_cb, edition_cb */
+typedef int (*IFnii)(Ihandle*, int, int);  /* resize_cb, caret_cb, matrix_mousemove_cb, enteritem_cb, leaveitem_cb, scrolltop_cb, dropcheck_cb, selection_cb, select_cb, switch_cb, scrolling_cb, vspan_cb, hspan_cb, paginate_cb */
+typedef int (*IFniii)(Ihandle*, int, int, int); /* trayclick_cb, edition_cb, printpage_cb */
 typedef int (*IFniiii)(Ihandle*, int, int, int, int); /* dragdrop_cb */
 typedef int (*IFniiiiii)(Ihandle*, int, int, int, int, int, int);  /* draw_cb */
 typedef int (*IFnsidv)(Ihandle*, char*, int, double, void*); /* postmessage_cb */
