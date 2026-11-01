@@ -35,6 +35,7 @@ elseif(APPLE)
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_notify.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_singleinstance.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_keepawake.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_sharedlg.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_location.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_sensor.m"
   )
@@ -45,6 +46,7 @@ elseif(APPLE)
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_notify.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_singleinstance.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_keepawake.m"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_sharedlg.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_location.m"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/cocoa/iupcocoa_sensor.m"
     PROPERTIES LANGUAGE OBJC
@@ -56,6 +58,7 @@ elseif(WIN32)
     "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_notify.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_singleinstance.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_keepawake.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_sharedlg.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_location.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwin_sensor.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/win/iupwindows_info.c"

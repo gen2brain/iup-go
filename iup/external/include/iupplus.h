@@ -971,6 +971,11 @@ namespace Iup
   public:
     PrintDlg() : Dialog(IupPrintDlg()) {}
   };
+  class ShareDlg : public Dialog
+  {
+  public:
+    ShareDlg() : Dialog(IupShareDlg()) {}
+  };
   class ProgressDlg : public Dialog
   {
   public:

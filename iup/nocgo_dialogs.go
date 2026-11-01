@@ -82,6 +82,10 @@ func PrintDlg() Ihandle {
 	return mkih(iupPrintDlg())
 }
 
+func ShareDlg() Ihandle {
+	return mkih(iupShareDlg())
+}
+
 func ProgressDlg() Ihandle {
 	return mkih(iupProgressDlg())
 }

@@ -76,6 +76,7 @@ API reference for IUP (Portable User Interface).
 | [IupColorDlg](dlg/iup_colordlg.md)         | Color picker                                    |
 | [IupFontDlg](dlg/iup_fontdlg.md)           | Font picker                                     |
 | [IupPrintDlg](dlg/iup_printdlg.md)         | Printer selection and page printing             |
+| [IupShareDlg](dlg/iup_sharedlg.md)         | System share sheet for text, a URL or a file    |
 | [IupProgressDlg](dlg/iup_progressdlg.md)   | Progress dialog for long-running operations     |
 | [IupAlarm](dlg/iup_alarm.md)               | Modal message with up to three buttons          |
 | [IupGetFile](dlg/iup_getfile.md)           | Convenience wrapper around IupFileDlg           |
