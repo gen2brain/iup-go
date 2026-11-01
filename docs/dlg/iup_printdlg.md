@@ -32,6 +32,7 @@ Valid in the callbacks and after the dialog is closed with STATUS="1".
 This dialog will always be in front of the parent dialog.
 
 **STATUS** (read-only): "1" if the pages were sent to the printer, "0" if the user pressed the Cancel button or PRINTPAGE_CB returned IUP_CLOSE, "-1" if the job failed or printing is not supported.
+In WebAssembly it is "1" when the browser print dialog closes, also when the user canceled it.
 
 [TITLE](../attrib/iup_title.md): Dialog title.
 Supported in QML.
@@ -72,9 +73,11 @@ To show the dialog, use function **IupPopup**. It returns after the job is finis
 
 The dialog is mapped only inside **IupPopup**, **IupMap** does nothing.
 
-In Win32 and WinUI uses PrintDlgEx, in GTK 3 and GTK 4 uses GtkPrintOperation, in macOS uses NSPrintOperation, in Qt uses QPrintDialog, in FLTK uses Fl_Printer, in Haiku uses BPrintJob, in Android uses PrintManager, in iOS uses UIPrintInteractionController, and in QML uses a custom dialog implemented using IUP controls that prints with QPrinter.
+In Win32 and WinUI uses PrintDlgEx, in GTK 3 and GTK 4 uses GtkPrintOperation, in macOS uses NSPrintOperation, in Qt uses QPrintDialog, in FLTK uses Fl_Printer, in Haiku uses BPrintJob, in Android uses PrintManager, in iOS uses UIPrintInteractionController, in QML uses a custom dialog implemented using IUP controls that prints with QPrinter, and in WebAssembly uses the browser print dialog.
 
-Not supported in Motif, EFL, GNUstep and WebAssembly.
+Not supported in Motif, EFL and GNUstep.
+
+In WebAssembly the pages are drawn before the browser print dialog opens, on A4 or Letter paper as given by the browser language, with ORIENTATION and 0.5 inch margins.
 
 ### Examples
 

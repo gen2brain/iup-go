@@ -3403,6 +3403,29 @@
 
 globalThis.__iupApply = apply;
 
+globalThis.__iupPrintPages = function (req) {
+  var paper = (req.letter ? 'letter' : 'A4') + (req.landscape ? ' landscape' : ' portrait');
+  var frame = document.createElement('iframe');
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.appendChild(frame);
+  var doc = frame.contentDocument;
+  doc.open();
+  doc.write('<!doctype html><html><head><meta charset="utf-8"><title></title><style>' +
+    '@page{size:' + paper + ';margin:0.5in}html,body{margin:0;padding:0}' +
+    '.iup-page{overflow:hidden;break-after:page}.iup-page:last-child{break-after:auto}' +
+    '.iup-page svg{display:block;max-width:100%;max-height:100%;width:auto;height:auto}' +
+    '</style></head><body>' + req.html + '</body></html>');
+  doc.close();
+  doc.title = req.title;
+  var win = frame.contentWindow;
+  var done = function () { if (frame.parentNode) frame.parentNode.removeChild(frame); };
+  win.addEventListener('afterprint', function () { setTimeout(done, 0); });
+  setTimeout(done, 600000);
+  win.focus();
+  win.print();
+  return 0;
+};
+
 globalThis.__iupAudioOpen = function () {
   var A = globalThis.__iupAudio = globalThis.__iupAudio || {};
   if (A.ctx) return A.ctx.sampleRate | 0;
@@ -3771,6 +3794,9 @@ globalThis.__iupMediaPick = function (kind, index) {
       } break;
       case 'prompt': {
         return window.prompt(req.msg, req.def || '');
+      } break;
+      case 'print': {
+        return globalThis.__iupPrintPages(req);
       } break;
       case 'fileopensize': {
         return (globalThis.__iupOpenFile && globalThis.__iupOpenFile.bytes) ? globalThis.__iupOpenFile.bytes.length : 0;

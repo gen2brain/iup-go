@@ -183,6 +183,8 @@ static int wasmCbHighlight(Ihandle* ih) { return iupwasmGoDispatch(ih, "HIGHLIGH
 static int wasmCbMenuOpen(Ihandle* ih) { return iupwasmGoDispatch(ih, "MENUOPEN_CB", 0, 0, 0, 0, 0); }
 static int wasmCbMenuClose(Ihandle* ih) { return iupwasmGoDispatch(ih, "MENUCLOSE_CB", 0, 0, 0, 0, 0); }
 static int wasmCbResize(Ihandle* ih, int w, int h) { return iupwasmGoDispatch(ih, "RESIZE_CB", w, h, 0, 0, 0); }
+static int wasmCbPaginate(Ihandle* ih, int w, int h) { return iupwasmGoDispatch(ih, "PAGINATE_CB", w, h, 0, 0, 0); }
+static int wasmCbPrintPage(Ihandle* ih, int page, int w, int h) { return iupwasmGoDispatch(ih, "PRINTPAGE_CB", page, w, h, 0, 0); }
 static int wasmCbTerminalTitle(Ihandle* ih, char* title) { return iupwasmGoDispatch(ih, "TITLE_CB", 0, 0, 0, 0, title); }
 static int wasmCbTerminalBell(Ihandle* ih) { return iupwasmGoDispatch(ih, "BELL_CB", 0, 0, 0, 0, 0); }
 static int wasmCbTerminalSize(Ihandle* ih, int cols, int lines) { return iupwasmGoDispatch(ih, "TERMSIZE_CB", cols, lines, 0, 0, 0); }
@@ -522,6 +524,10 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbMenuClose);
   else if (strcmp(name, "RESIZE_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbResize);
+  else if (strcmp(name, "PAGINATE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPaginate);
+  else if (strcmp(name, "PRINTPAGE_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbPrintPage);
   else if (strcmp(name, "INPUT_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbTerminalInput);
   else if (strcmp(name, "TITLE_CB") == 0)

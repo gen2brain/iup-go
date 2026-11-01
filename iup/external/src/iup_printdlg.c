@@ -22,6 +22,7 @@
 #include "iup_drvfont.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
+#include "iup_draw_svg.h"
 
 
 IUP_API Ihandle* IupPrintDlg(void)
@@ -593,6 +594,50 @@ IUP_SDK_API int iupPrintDlgDrawPage(Ihandle* ih, void* context, int page, int wi
   iupAttribSet(ih, "_IUP_PRINT_HEIGHT", NULL);
 
   return ret;
+}
+
+IUP_SDK_API char* iupPrintDlgGetPageSvg(Ihandle* ih, int page, int width, int height)
+{
+  Ihandle* element = iPrintDlgGetElement(ih);
+  Ihandle* target = ih;
+  iSvgCanvas* svg;
+  const char* str;
+  char* result = NULL;
+  int w = width, h = height;
+
+  if (element && !IupGetCallback(ih, "PRINTPAGE_CB") && iPrintDlgElementKind(element) == IPRINTDLG_CANVAS)
+  {
+    if (!IupGetCallback(element, "ACTION"))
+      return NULL;
+    target = element;
+    IupGetIntInt(element, "DRAWSIZE", &w, &h);
+  }
+
+  if (w <= 0 || h <= 0 || iupAttribGet(target, "_IUP_DRAW_DC"))
+    return NULL;
+
+  svg = iupSvgDrawCreateCanvas(target, w, h);
+  if (!svg)
+    return NULL;
+
+  iupAttribSet(target, "_IUP_SVG_CANVAS", (char*)svg);
+
+  if (target == element)
+  {
+    IFnff cb = (IFnff)IupGetCallback(element, "ACTION");
+    cb(element, IupGetFloat(element, "POSX"), IupGetFloat(element, "POSY"));
+  }
+  else
+    iupPrintDlgDrawPage(ih, NULL, page, width, height);
+
+  str = iupSvgDrawGetString(svg);
+  if (str)
+    result = iupStrDup(str);
+
+  iupAttribSet(target, "_IUP_SVG_CANVAS", NULL);
+  iupSvgDrawKillCanvas(svg);
+
+  return result;
 }
 
 IUP_SDK_API int iupPrintDlgPageSelected(Ihandle* ih, int page)
