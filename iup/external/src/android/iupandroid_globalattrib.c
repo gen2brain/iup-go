@@ -118,6 +118,36 @@ static int androidSetNetwork(const char* value)
   return ret == JNI_TRUE;
 }
 
+static void androidHaptic(const char* value)
+{
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = (*env)->FindClass(env, "io/github/gen2brain/iupgo/IupCommon");
+  jmethodID mid;
+  int kind;
+
+  if (!cls) return;
+
+  if (iupStrEqualNoCase(value, "LIGHT"))
+    kind = 0;
+  else if (iupStrEqualNoCase(value, "MEDIUM"))
+    kind = 1;
+  else if (iupStrEqualNoCase(value, "HEAVY"))
+    kind = 2;
+  else if (iupStrEqualNoCase(value, "SELECTION"))
+    kind = 3;
+  else
+  {
+    (*env)->DeleteLocalRef(env, cls);
+    return;
+  }
+
+  mid = (*env)->GetStaticMethodID(env, cls, "performHaptic", "(I)V");
+  if (mid)
+    (*env)->CallStaticVoidMethod(env, cls, mid, (jint)kind);
+  iupAndroid_CheckException(env, "IupCommon.performHaptic");
+  (*env)->DeleteLocalRef(env, cls);
+}
+
 static char* androidGetNetworkHandle(void)
 {
   long long handle = iupAndroid_GetNetworkHandle();
@@ -147,6 +177,11 @@ IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
   }
   if (iupStrEqual(name, "NETWORK"))
     return androidSetNetwork(value);
+  if (iupStrEqual(name, "HAPTIC"))
+  {
+    androidHaptic(value);
+    return 0;
+  }
   return 1;
 }
 
