@@ -35,6 +35,7 @@ var androidPermissions = map[string][]string{
 	"notifications": {"android.permission.POST_NOTIFICATIONS"},
 	"internet":      {"android.permission.INTERNET"},
 	"network":       {"android.permission.ACCESS_NETWORK_STATE", "android.permission.CHANGE_NETWORK_STATE"},
+	"vibrate":       {"android.permission.VIBRATE"},
 }
 
 const androidAPI = "24"
