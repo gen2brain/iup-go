@@ -100,6 +100,7 @@ IUP_SDK_API const char* iupPrintDlgGetJobName(Ihandle* ih);
 IUP_SDK_API int iupPrintDlgPaginate(Ihandle* ih, int width, int height);
 IUP_SDK_API int iupPrintDlgDrawPage(Ihandle* ih, void* context, int page, int width, int height);
 IUP_SDK_API int iupPrintDlgPageSelected(Ihandle* ih, int page);
+IUP_SDK_API char* iupPrintDlgGetPageSvg(Ihandle* ih, int page, int width, int height);
 
 typedef struct _IprintDlgDriver {
   void (*FillPrinters)(Ihandle* list);
