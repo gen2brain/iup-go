@@ -1,6 +1,7 @@
 ## IupDraw
 
 Functions to draw in an [IupCanvas](../elem/iup_canvas.md) or an [IupBackgroundBox](../elem/iup_backgroundbox.md), from inside their ACTION callback.
+They also draw the pages of an [IupPrintDlg](../dlg/iup_printdlg.md), from inside its PRINTPAGE_CB callback.
 To redraw at any other time, call [IupUpdate](../func/iup_update.md) or [IupRedraw](../func/iup_redraw.md).
 
 In C/C++ the functions are declared in "iupdraw.h".
@@ -454,4 +455,4 @@ The returned string must be freed with `free`.
 
 ### See Also
 
-[IupCanvas](../elem/iup_canvas.md), [IupBackgroundBox](../elem/iup_backgroundbox.md), [IupUpdate](../func/iup_update.md), [IupRedraw](iup_draw.md)
+[IupCanvas](../elem/iup_canvas.md), [IupBackgroundBox](../elem/iup_backgroundbox.md), [IupPrintDlg](../dlg/iup_printdlg.md), [IupUpdate](../func/iup_update.md), [IupRedraw](iup_draw.md)

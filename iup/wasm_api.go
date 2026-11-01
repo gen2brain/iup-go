@@ -144,6 +144,12 @@ type CloseFunc func(Ihandle) int
 // CopyDataFunc is the type for the dialog COPYDATA_CB callback.
 type CopyDataFunc func(ih Ihandle, cmdLine string, size int) int
 
+// PaginateFunc is the type for the PrintDlg PAGINATE_CB callback.
+type PaginateFunc func(ih Ihandle, width, height int) int
+
+// PrintPageFunc is the type for the PrintDlg PRINTPAGE_CB callback.
+type PrintPageFunc func(ih Ihandle, page, width, height int) int
+
 // NotifyFunc is the type for the IupNotify NOTIFY_CB callback.
 type NotifyFunc func(ih Ihandle, actionId int) int
 
@@ -610,6 +616,13 @@ func Canvas() Ihandle {
 // https://gen2brain.github.io/iup-go/dlg/iup_fontdlg.html
 func FontDlg() Ihandle {
 	return ccallHandle("IupFontDlg", nil, nil)
+}
+
+// PrintDlg creates the print dialog.
+//
+// https://gen2brain.github.io/iup-go/dlg/iup_printdlg.html
+func PrintDlg() Ihandle {
+	return ccallHandle("IupPrintDlg", nil, nil)
 }
 
 // Popover creates a floating container anchored to another element.

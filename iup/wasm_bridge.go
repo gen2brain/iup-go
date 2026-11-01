@@ -436,6 +436,10 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih)
 	case CopyDataFunc:
 		ret = f(ih, sarg, i1)
+	case PaginateFunc:
+		ret = f(ih, i1, i2)
+	case PrintPageFunc:
+		ret = f(ih, i1, i2, i3)
 	case NotifyFunc:
 		ret = f(ih, i1)
 	case PermissionFunc:

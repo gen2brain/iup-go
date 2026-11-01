@@ -104,6 +104,15 @@ func FontDlg() Ihandle {
 	return h
 }
 
+// PrintDlg creates the Print Dialog element. It is a predefined dialog that selects a printer and prints pages drawn by the application.
+// The dialog can be shown with the Popup function only.
+//
+// https://gen2brain.github.io/iup-go/dlg/iup_printdlg.html
+func PrintDlg() Ihandle {
+	h := mkih(C.IupPrintDlg())
+	return h
+}
+
 // ProgressDlg creates a progress dialog element. It is a predefined dialog for displaying the progress of an operation.
 // The dialog is meant to be shown with the show functions Show or ShowXY.
 //

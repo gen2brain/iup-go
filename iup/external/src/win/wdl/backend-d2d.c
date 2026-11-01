@@ -22,6 +22,7 @@
  */
 
 #include "backend-d2d.h"
+#include "backend-wic.h"
 #include "lock.h"
 
 #include <d3d11.h>
@@ -312,6 +313,88 @@ d2d_swap_chain_canvas_alloc(HWND hwnd, UINT width, UINT height, BOOL rtl)
     }
 
     return c;
+}
+
+dummy_ID2D1PrintControl*
+d2d_print_control_create(IUnknown* document_target, float raster_dpi)
+{
+    dummy_D2D1_PRINT_CONTROL_PROPERTIES props;
+    dummy_ID2D1PrintControl* print_control = NULL;
+    HRESULT hr;
+
+    if(wic_factory == NULL)
+        return NULL;
+
+    props.fontSubset = dummy_D2D1_PRINT_FONT_SUBSET_MODE_DEFAULT;
+    props.rasterDPI = raster_dpi;
+    props.colorSpace = dummy_D2D1_COLOR_SPACE_SRGB;
+
+    wd_lock();
+    if(!d2d_device_create()) {
+        wd_unlock();
+        return NULL;
+    }
+    hr = dummy_ID2D1Device_CreatePrintControl(d2d_device, (IUnknown*) wic_factory,
+                document_target, &props, &print_control);
+    wd_unlock();
+    if(FAILED(hr)) {
+        WD_TRACE_HR("d2d_print_control_create: ID2D1Device::CreatePrintControl() failed.");
+        return NULL;
+    }
+    return print_control;
+}
+
+d2d_canvas_t*
+d2d_print_page_canvas_alloc(dummy_ID2D1PrintControl* print_control, float width, float height)
+{
+    dummy_ID2D1DeviceContext* device_context;
+    dummy_ID2D1CommandList* command_list;
+    d2d_canvas_t* c;
+    HRESULT hr;
+
+    wd_lock();
+    if(!d2d_device_create()) {
+        wd_unlock();
+        return NULL;
+    }
+    hr = dummy_ID2D1Device_CreateDeviceContext(d2d_device, 0, &device_context);
+    wd_unlock();
+    if(FAILED(hr)) {
+        WD_TRACE_HR("d2d_print_page_canvas_alloc: ID2D1Device::CreateDeviceContext() failed.");
+        return NULL;
+    }
+
+    hr = dummy_ID2D1DeviceContext_CreateCommandList(device_context, &command_list);
+    if(FAILED(hr)) {
+        WD_TRACE_HR("d2d_print_page_canvas_alloc: ID2D1DeviceContext::CreateCommandList() failed.");
+        dummy_ID2D1DeviceContext_Release(device_context);
+        return NULL;
+    }
+    dummy_ID2D1DeviceContext_SetTarget(device_context, (dummy_ID2D1Image*) command_list);
+
+    c = d2d_canvas_alloc((dummy_ID2D1RenderTarget*) device_context, D2D_CANVASTYPE_PRINTPAGE, (UINT) width, FALSE);
+    if(c == NULL) {
+        dummy_ID2D1CommandList_Release(command_list);
+        dummy_ID2D1DeviceContext_Release(device_context);
+        return NULL;
+    }
+    c->command_list = command_list;
+    c->print_control = print_control;
+    c->page_size.width = width;
+    c->page_size.height = height;
+    return c;
+}
+
+HRESULT
+d2d_print_page_add(d2d_canvas_t* c)
+{
+    HRESULT hr;
+
+    dummy_ID2D1DeviceContext_SetTarget(c->device_context, NULL);
+    hr = dummy_ID2D1CommandList_Close(c->command_list);
+    if(FAILED(hr))
+        return hr;
+    return dummy_ID2D1PrintControl_AddPage(c->print_control, c->command_list, c->page_size, NULL, NULL, NULL);
 }
 
 BOOL

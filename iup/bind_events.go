@@ -172,6 +172,10 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setDropFilesFunc(ih, fn.(DropFilesFunc))
 	case "COPYDATA_CB":
 		setCopyDataFunc(ih, fn.(CopyDataFunc))
+	case "PAGINATE_CB":
+		setPaginateFunc(ih, fn.(PaginateFunc))
+	case "PRINTPAGE_CB":
+		setPrintPageFunc(ih, fn.(PrintPageFunc))
 	case "INPUT_CB":
 		setTerminalInputFunc(ih, fn.(TerminalInputFunc))
 	case "TITLE_CB":

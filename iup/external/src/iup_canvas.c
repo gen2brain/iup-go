@@ -16,6 +16,8 @@
 #include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_stdcontrols.h"
+#include "iup_drvdraw.h"
+#include "iup_draw.h"
 #include "iup_canvas.h"
 
 
@@ -206,27 +208,7 @@ Iclass* iupCanvasNewClass(void)
 
   iupClassRegisterAttribute(ic, "BORDER", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "DRAWFONT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWSTYLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWTEXTALIGNMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWTEXTWRAP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWTEXTELLIPSIS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWTEXTCLIP", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWTEXTORIENTATION", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWTEXTLAYOUTCENTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWLINEWIDTH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWLINECAP", NULL, NULL, IUPAF_SAMEASSYSTEM, "BUTT", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWLINEJOIN", NULL, NULL, IUPAF_SAMEASSYSTEM, "MITER", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWDASH", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWDASHOFFSET", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWBGCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* used only for images */
-  iupClassRegisterAttribute(ic, "DRAWMAKEINACTIVE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);  /* used only for images */
-  iupClassRegisterAttribute(ic, "DRAWIMAGETINT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWIMAGEOPACITY", NULL, NULL, IUPAF_SAMEASSYSTEM, "255", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWIMAGESRCRECT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWIMAGEQUALITY", NULL, NULL, IUPAF_SAMEASSYSTEM, "LINEAR", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "DRAWDRIVER", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupDrawRegisterAttributes(ic);
   iupClassRegisterAttribute(ic, "DRAWIMAGE", iCanvasGetDrawImageAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT | IUPAF_IHANDLENAME);
 
   iupdrvCanvasInitClass(ic);

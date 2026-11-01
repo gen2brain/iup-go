@@ -19,10 +19,12 @@
 #include "iup_str.h"
 #include "iup_drvdraw.h"
 #include "iup_draw.h"
+#include "iup_stdcontrols.h"
 
 #include "iupwin_drv.h"
 #include "iupwin_draw.h"
 #include "iupwin_str.h"
+#include "iupwin_printdlg.h"
 
 #include "wdl.h"
 #include "backend-gdix.h"
@@ -30,6 +32,11 @@
 /* From iupwin_image_wdl.c */
 IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor);
 IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImageTint(const char* name, Ihandle* ih_parent, int make_inactive, const char* bgcolor, long tint);
+
+typedef struct _IdrawPrintPage {
+  WD_HCANVAS canvas;
+  float offset_x, offset_y;
+} IdrawPrintPage;
 
 typedef struct _IdrawLayer {
   int clip_x1, clip_y1, clip_x2, clip_y2;
@@ -50,6 +57,7 @@ struct _IdrawCanvas{
   int cached;
   IupDrawMatrix matrix;
   IdrawLayer* layers;
+  IdrawPrintPage* print_page;
 };
 
 /* must be the same in wdInitialize and wdTerminate */
@@ -109,6 +117,17 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   dc->matrix.a = 1;
   dc->matrix.d = 1;
   dc->backend_type = wdBackend();
+
+  dc->print_page = (IdrawPrintPage*)iupAttribGet(ih, "_IUP_PRINT_CONTEXT");
+  if (dc->print_page)
+  {
+    dc->hCanvas = dc->print_page->canvas;
+    dc->cached = 1;
+    dc->w = iupAttribGetInt(ih, "_IUP_PRINT_WIDTH");
+    dc->h = iupAttribGetInt(ih, "_IUP_PRINT_HEIGHT");
+    iupAttribSet(ih, "DRAWDRIVER", "D2D");
+    return dc;
+  }
 
   dc->hWnd = (HWND)IupGetAttribute(ih, "HWND");  /* Use the attribute, so it can work with FileDlg preview area */
 
@@ -230,11 +249,18 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   return dc;
 }
 
+static void iWdlSetWorld(IdrawCanvas* dc, const IupDrawMatrix* matrix)
+{
+  float offset_x = dc->print_page ? dc->print_page->offset_x : 0;
+  float offset_y = dc->print_page ? dc->print_page->offset_y : 0;
+  wdSetWorld(dc->hCanvas, (float)matrix->a, (float)matrix->b, (float)matrix->c,
+             (float)matrix->d, (float)matrix->e + offset_x, (float)matrix->f + offset_y);
+}
+
 IUP_SDK_API void iupdrvDrawSetTransform(IdrawCanvas* dc, const IupDrawMatrix* matrix)
 {
   dc->matrix = *matrix;
-  wdSetWorld(dc->hCanvas, (float)matrix->a, (float)matrix->b, (float)matrix->c,
-             (float)matrix->d, (float)matrix->e, (float)matrix->f);
+  iWdlSetWorld(dc, matrix);
 }
 
 IUP_SDK_API int iupdrvDrawBeginLayer(IdrawCanvas* dc, int alpha)
@@ -305,6 +331,9 @@ IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
 IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 {
   iDrawEndAllLayers(dc);
+
+  if (dc->print_page)
+    return;
 
   if (!wdEndPaint(dc->hCanvas) && dc->cached)
   {
@@ -1012,7 +1041,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
       float ox = iupInt2Float(w - layout_w) / 2, oy = iupInt2Float(h - layout_h) / 2;
       offset.e = dc->matrix.a * ox + dc->matrix.c * oy + dc->matrix.e;
       offset.f = dc->matrix.b * ox + dc->matrix.d * oy + dc->matrix.f;
-      wdSetWorld(dc->hCanvas, (float)offset.a, (float)offset.b, (float)offset.c, (float)offset.d, (float)offset.e, (float)offset.f);
+      iWdlSetWorld(dc, &offset);
       wdRotateWorld(dc->hCanvas, iupInt2Float(x + layout_w / 2), iupInt2Float(y + layout_h / 2), (float)-text_orientation);  /* counterclockwise */
     }
     else
@@ -1439,4 +1468,34 @@ IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* data, int w
   DeleteDC(hMemDC);
   ReleaseDC(hwnd, hDC);
   return 1;
+}
+
+void* iupwinPrintDlgBeginDoc(void* document_target)
+{
+  return wdCreatePrintControl((IUnknown*)document_target, 300.0f);
+}
+
+int iupwinPrintDlgDrawPage(Ihandle* ih, void* print_control, int page, const IwinPrintPage* page_info)
+{
+  IdrawPrintPage print_page;
+  int ret;
+
+  print_page.canvas = wdCreateCanvasWithPrintControl((WD_HPRINTCONTROL)print_control, page_info->paper_width, page_info->paper_height);
+  if (!print_page.canvas)
+    return IUP_ERROR;
+  print_page.offset_x = page_info->offset_x;
+  print_page.offset_y = page_info->offset_y;
+
+  wdBeginPaint(print_page.canvas);
+  ret = iupPrintDlgDrawPage(ih, &print_page, page, page_info->width, page_info->height);
+  if (!wdEndPaint(print_page.canvas))
+    ret = IUP_ERROR;
+  wdDestroyCanvas(print_page.canvas);
+
+  return ret;
+}
+
+int iupwinPrintDlgEndDoc(void* print_control)
+{
+  return wdClosePrintControl((WD_HPRINTCONTROL)print_control);
 }

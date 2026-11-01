@@ -18,14 +18,18 @@ extern "C" {
 #include "iup_drvfont.h"
 #include "iup_str.h"
 #include "iup_class.h"
+#include "iup_stdcontrols.h"
 }
 
 #include "iupwinui_drv.h"
+#include "../win/iupwin_printdlg.h"
 
 #include <d2d1_1.h>
 #include <d2d1helper.h>
 #include <d3d11.h>
 #include <dwrite.h>
+#include <wincodec.h>
+#include <documenttarget.h>
 
 #include "winrt/microsoft.ui.xaml.media.dxinterop.h"
 #include <winrt/Windows.Storage.Streams.h>
@@ -135,6 +139,7 @@ struct _IdrawCanvas
   int px1{0}, py1{0}, px2{0}, py2{0};
 
   com_ptr<ID2D1SolidColorBrush> solidBrush;
+  bool printPage{false};
 
   WinUIClipType clipType{};
   int clip_x1{0}, clip_y1{0}, clip_x2{0}, clip_y2{0};
@@ -256,6 +261,11 @@ static bool winuiDrawBeginSession(IdrawCanvas* dc)
   return true;
 }
 
+struct IdrawPrintPage {
+  ID2D1DeviceContext* context;
+  float offset_x, offset_y;
+};
+
 extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
 {
   if (!winuiDrawEnsureDevices())
@@ -264,6 +274,22 @@ extern "C" IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   auto* dc = new IdrawCanvas();
 
   dc->ih = ih;
+
+  auto* print_page = reinterpret_cast<IdrawPrintPage*>(iupAttribGet(ih, "_IUP_PRINT_CONTEXT"));
+  if (print_page)
+  {
+    dc->printPage = true;
+    dc->w = iupAttribGetInt(ih, "_IUP_PRINT_WIDTH");
+    dc->h = iupAttribGetInt(ih, "_IUP_PRINT_HEIGHT");
+    dc->d2dContext = print_page->context;
+    dc->d2dContext->AddRef();
+    dc->baseTransform = D2D1::Matrix3x2F::Translation(print_page->offset_x, print_page->offset_y);
+    dc->d2dContext->SetTransform(dc->userTransform * dc->baseTransform);
+    dc->d2dContext->CreateSolidColorBrush(D2D1::ColorF(0, 0, 0), dc->solidBrush.put());
+    iupAttribSet(ih, "DRAWDRIVER", "D2D");
+    return dc;
+  }
+
   winuiDrawGetWidgetSize(ih, &dc->w, &dc->h);
   if (dc->w <= 0) dc->w = 1;
   if (dc->h <= 0) dc->h = 1;
@@ -433,7 +459,8 @@ extern "C" IUP_SDK_API void iupdrvDrawKillCanvas(IdrawCanvas* dc)
     dc->d2dContext->Release();
     dc->d2dContext = nullptr;
 
-    dc->sisNative->EndDraw();
+    if (dc->sisNative)
+      dc->sisNative->EndDraw();
   }
 
   dc->sisNative = nullptr;
@@ -530,10 +557,11 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
 
   winuiDrawEndAllLayers(dc);
 
-  if (dc->d2dContext)
-  {
+  if (dc->d2dContext && !dc->printPage)
     winuiDrawCopyToBuffer(dc);
 
+  if (dc->d2dContext)
+  {
     if (dc->clipType == WINUI_CLIP_RECT)
       dc->d2dContext->PopAxisAlignedClip();
     else if (dc->clipType == WINUI_CLIP_LAYER)
@@ -547,6 +575,9 @@ extern "C" IUP_SDK_API void iupdrvDrawFlush(IdrawCanvas* dc)
     dc->d2dContext->Release();
     dc->d2dContext = nullptr;
   }
+
+  if (dc->printPage)
+    return;
 
   dc->sisNative->EndDraw();
 
@@ -1691,4 +1722,58 @@ extern "C" IUP_SDK_API int iupdrvCanvasGetImageData(Ihandle* ih, unsigned char* 
 
   buffer->Unmap();
   return 1;
+}
+
+extern "C" void* iupwinPrintDlgBeginDoc(void* document_target)
+{
+  com_ptr<IWICImagingFactory> wic;
+  ID2D1PrintControl* print_control = nullptr;
+  D2D1_PRINT_CONTROL_PROPERTIES props = { D2D1_PRINT_FONT_SUBSET_MODE_DEFAULT, 300.0f, D2D1_COLOR_SPACE_SRGB };
+
+  if (!winuiDrawEnsureDevices())
+    return nullptr;
+  if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(wic.put()))))
+    return nullptr;
+  if (FAILED(g_d2dDevice->CreatePrintControl(wic.get(), static_cast<IPrintDocumentPackageTarget*>(document_target), &props, &print_control)))
+    return nullptr;
+  return print_control;
+}
+
+extern "C" int iupwinPrintDlgDrawPage(Ihandle* ih, void* print_control, int page, const IwinPrintPage* page_info)
+{
+  com_ptr<ID2D1DeviceContext> context;
+  com_ptr<ID2D1CommandList> commands;
+  IdrawPrintPage print_page;
+  int ret;
+
+  if (!winuiDrawEnsureDevices() ||
+      FAILED(g_d2dDevice->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, context.put())) ||
+      FAILED(context->CreateCommandList(commands.put())))
+    return IUP_ERROR;
+
+  context->SetTarget(commands.get());
+  context->BeginDraw();
+
+  print_page.context = context.get();
+  print_page.offset_x = page_info->offset_x;
+  print_page.offset_y = page_info->offset_y;
+  ret = iupPrintDlgDrawPage(ih, &print_page, page, page_info->width, page_info->height);
+
+  if (FAILED(context->EndDraw()))
+    return IUP_ERROR;
+  context->SetTarget(nullptr);
+
+  if (FAILED(commands->Close()) ||
+      FAILED(static_cast<ID2D1PrintControl*>(print_control)->AddPage(commands.get(), D2D1::SizeF(page_info->paper_width, page_info->paper_height), nullptr)))
+    return IUP_ERROR;
+
+  return ret;
+}
+
+extern "C" int iupwinPrintDlgEndDoc(void* print_control)
+{
+  auto* control = static_cast<ID2D1PrintControl*>(print_control);
+  HRESULT hr = control->Close();
+  control->Release();
+  return SUCCEEDED(hr);
 }

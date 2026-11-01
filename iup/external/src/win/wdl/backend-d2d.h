@@ -34,6 +34,7 @@
 #define D2D_CANVASTYPE_DC           1
 #define D2D_CANVASTYPE_HWND         2
 #define D2D_CANVASTYPE_SWAPCHAIN    3
+#define D2D_CANVASTYPE_PRINTPAGE    4
 
 #define D2D_CANVASFLAG_RECTCLIP     0x1
 #define D2D_CANVASFLAG_RTL          0x2
@@ -62,6 +63,9 @@ struct d2d_canvas_tag {
     };
     IDXGISwapChain1* swap_chain;
     dummy_ID2D1Bitmap1* swap_target;
+    dummy_ID2D1CommandList* command_list;
+    dummy_ID2D1PrintControl* print_control;
+    dummy_D2D1_SIZE_F page_size;
     UINT device_generation;
     dummy_ID2D1GdiInteropRenderTarget* gdi_interop;
     dummy_ID2D1Layer* clip_layer;
@@ -98,6 +102,10 @@ BOOL d2d_swap_chain_resize(d2d_canvas_t* c, UINT width, UINT height);
 HRESULT d2d_swap_chain_present(d2d_canvas_t* c);
 void d2d_swap_chain_release(d2d_canvas_t* c);
 void d2d_device_lost(UINT generation);
+
+dummy_ID2D1PrintControl* d2d_print_control_create(IUnknown* document_target, float raster_dpi);
+d2d_canvas_t* d2d_print_page_canvas_alloc(dummy_ID2D1PrintControl* print_control, float width, float height);
+HRESULT d2d_print_page_add(d2d_canvas_t* c);
 
 void d2d_reset_clip(d2d_canvas_t* c);
 void d2d_pop_layer(d2d_canvas_t* c);

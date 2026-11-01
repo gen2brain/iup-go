@@ -201,6 +201,12 @@ WD_HCANVAS wdCreateCanvasWithPaintStruct(HWND hWnd, PAINTSTRUCT* pPS, DWORD dwFl
 WD_HCANVAS wdCreateCanvasWithHDC(HDC hDC, const RECT* pRect, DWORD dwFlags);
 void wdDestroyCanvas(WD_HCANVAS hCanvas);
 
+typedef struct WD_PRINTCONTROL_tag *WD_HPRINTCONTROL;
+
+WD_HPRINTCONTROL wdCreatePrintControl(IUnknown* pDocumentTarget, float fRasterDpi);
+WD_HCANVAS wdCreateCanvasWithPrintControl(WD_HPRINTCONTROL hPrintControl, float fWidth, float fHeight);
+BOOL wdClosePrintControl(WD_HPRINTCONTROL hPrintControl);
+
 /* All drawing, filling and bit-blitting operations to it should be only
  * performed between wdBeginPaint() and wdEndPaint() calls.
  *

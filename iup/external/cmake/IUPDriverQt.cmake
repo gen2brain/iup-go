@@ -1,11 +1,11 @@
 # Qt6 / Qt5 driver
 
 if(IUP_BACKEND STREQUAL "qt6")
-  find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
-  set(_QT_LIBS Qt6::Core Qt6::Gui Qt6::Widgets)
+  find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets PrintSupport)
+  set(_QT_LIBS Qt6::Core Qt6::Gui Qt6::Widgets Qt6::PrintSupport)
 else()
-  find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets)
-  set(_QT_LIBS Qt5::Core Qt5::Gui Qt5::Widgets)
+  find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets PrintSupport)
+  set(_QT_LIBS Qt5::Core Qt5::Gui Qt5::Widgets Qt5::PrintSupport)
 endif()
 
 file(GLOB _QT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/qt/iupqt_*.cpp")
@@ -62,9 +62,9 @@ set(IUP_DRIVER_SOURCES ${_QT_SOURCES})
 set(IUP_DRIVER_COMPILE_OPTIONS "")
 
 if(IUP_BACKEND STREQUAL "qt6")
-  set(IUP_PC_REQUIRES "Qt6Core Qt6Gui Qt6Widgets")
+  set(IUP_PC_REQUIRES "Qt6Core Qt6Gui Qt6Widgets Qt6PrintSupport")
 else()
-  set(IUP_PC_REQUIRES "Qt5Core Qt5Gui Qt5Widgets")
+  set(IUP_PC_REQUIRES "Qt5Core Qt5Gui Qt5Widgets Qt5PrintSupport")
 endif()
 set(IUP_PC_LIBS_PRIVATE "-lstdc++")
 if(UNIX AND NOT APPLE AND NOT HAIKU)

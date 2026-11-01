@@ -44,14 +44,14 @@ package iup
 #cgo !windows,!darwin,!android,!haiku,!motif,!gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: wayland-egl egl gl
 #cgo !windows,!darwin,!android,!haiku,!motif,!qt6,!qt5,!qml,gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: gl
 
-#cgo qt6,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Widgets
-#cgo qt5,!nopkgconfig pkg-config: Qt5Core Qt5Gui Qt5Widgets
+#cgo qt6,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Widgets Qt6PrintSupport
+#cgo qt5,!nopkgconfig pkg-config: Qt5Core Qt5Gui Qt5Widgets Qt5PrintSupport
 #cgo qt6,web,!windows,!darwin,!nopkgconfig qt6,web,webengine,!nopkgconfig pkg-config: Qt6WebEngineCore Qt6WebEngineWidgets
 #cgo qt5,web,!windows,!darwin,!nopkgconfig qt5,web,webengine,!nopkgconfig pkg-config: Qt5WebEngineCore  Qt5WebEngineWidgets
 #cgo windows,qt6,web,!webengine windows,qt5,web,!webengine CXXFLAGS: -DIUPWEB_HOSTED
 #cgo darwin,!ios,qt6,web,!webengine darwin,!ios,qt5,web,!webengine LDFLAGS: -framework WebKit
 
-#cgo qml,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Qml Qt6Quick Qt6QuickControls2
+#cgo qml,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Qml Qt6Quick Qt6QuickControls2 Qt6PrintSupport
 #cgo qml,web,!windows,!darwin,!nopkgconfig qml,web,webengine,!nopkgconfig pkg-config: Qt6WebEngineQuick Qt6WebEngineCore
 #cgo windows,qml,web,!webengine CXXFLAGS: -DIUPWEB_HOSTED
 #cgo darwin,!ios,qml,web,!webengine LDFLAGS: -framework WebKit

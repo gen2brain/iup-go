@@ -76,6 +76,8 @@ typedef struct dummy_ID2D1DeviceContext_tag             dummy_ID2D1DeviceContext
 typedef struct dummy_ID2D1Factory1_tag                  dummy_ID2D1Factory1;
 typedef struct dummy_ID2D1Device_tag                    dummy_ID2D1Device;
 typedef struct dummy_ID2D1Image_tag                     dummy_ID2D1Image;
+typedef struct dummy_ID2D1CommandList_tag               dummy_ID2D1CommandList;
+typedef struct dummy_ID2D1PrintControl_tag              dummy_ID2D1PrintControl;
 
 
 /*****************************
@@ -87,6 +89,16 @@ typedef struct dummy_ID2D1Image_tag                     dummy_ID2D1Image;
 #define dummy_D2D1_PRESENT_OPTIONS_RETAINCONTENTS       0x00000001
 #define dummy_D2D1_LAYER_OPTIONS_NONE                   0x00000000
 #define dummy_D2D1_RENDER_TARGET_USAGE_GDI_COMPATIBLE   0x00000002
+
+typedef enum dummy_D2D1_PRINT_FONT_SUBSET_MODE_tag dummy_D2D1_PRINT_FONT_SUBSET_MODE;
+enum dummy_D2D1_PRINT_FONT_SUBSET_MODE_tag {
+  dummy_D2D1_PRINT_FONT_SUBSET_MODE_DEFAULT = 0
+};
+
+typedef enum dummy_D2D1_COLOR_SPACE_tag dummy_D2D1_COLOR_SPACE;
+enum dummy_D2D1_COLOR_SPACE_tag {
+  dummy_D2D1_COLOR_SPACE_SRGB = 1
+};
 
 typedef enum dummy_D2D1_TEXT_ANTIALIAS_MODE_tag dummy_D2D1_TEXT_ANTIALIAS_MODE;
 enum  dummy_D2D1_TEXT_ANTIALIAS_MODE_tag {
@@ -237,6 +249,13 @@ struct dummy_D2D1_ARC_SEGMENT_tag {
     FLOAT rotationAngle;
     dummy_D2D1_SWEEP_DIRECTION sweepDirection;
     dummy_D2D1_ARC_SIZE arcSize;
+};
+
+typedef struct dummy_D2D1_PRINT_CONTROL_PROPERTIES_tag dummy_D2D1_PRINT_CONTROL_PROPERTIES;
+struct dummy_D2D1_PRINT_CONTROL_PROPERTIES_tag {
+    dummy_D2D1_PRINT_FONT_SUBSET_MODE fontSubset;
+    FLOAT rasterDPI;
+    dummy_D2D1_COLOR_SPACE colorSpace;
 };
 
 typedef struct dummy_D2D1_BEZIER_SEGMENT_tag dummy_D2D1_BEZIER_SEGMENT;
@@ -1394,7 +1413,7 @@ struct dummy_ID2D1DeviceContextVtbl_tag {
     STDMETHOD(dummy_DC_CreateGradientStopCollection)(void);
     STDMETHOD(dummy_DC_CreateImageBrush)(void);
     STDMETHOD(dummy_DC_CreateBitmapBrush)(void);
-    STDMETHOD(dummy_DC_CreateCommandList)(void);
+    STDMETHOD(CreateCommandList)(dummy_ID2D1DeviceContext*, dummy_ID2D1CommandList**);
     STDMETHOD(dummy_DC_IsDxgiFormatSupported)(void);
     STDMETHOD(dummy_DC_IsBufferPrecisionSupported)(void);
     STDMETHOD(dummy_DC_GetImageLocalBounds)(void);
@@ -1429,6 +1448,7 @@ struct dummy_ID2D1DeviceContext_tag {
 #define dummy_ID2D1DeviceContext_CreateBitmap(self,a,b,c,d,e)    (self)->vtbl->CreateBitmap(self,a,b,c,d,e)
 #define dummy_ID2D1DeviceContext_CreateBitmapFromDxgiSurface(self,a,b,c) (self)->vtbl->CreateBitmapFromDxgiSurface(self,a,b,c)
 #define dummy_ID2D1DeviceContext_SetTarget(self,a)               (self)->vtbl->SetTarget(self,a)
+#define dummy_ID2D1DeviceContext_CreateCommandList(self,a)       (self)->vtbl->CreateCommandList(self,a)
 
 
 /*******************************
@@ -1447,6 +1467,7 @@ struct dummy_ID2D1DeviceVtbl_tag {
 
     /* ID2D1Device methods */
     STDMETHOD(CreateDeviceContext)(dummy_ID2D1Device*, UINT32, dummy_ID2D1DeviceContext**);
+    STDMETHOD(CreatePrintControl)(dummy_ID2D1Device*, IUnknown*, IUnknown*, const dummy_D2D1_PRINT_CONTROL_PROPERTIES*, dummy_ID2D1PrintControl**);
 };
 
 struct dummy_ID2D1Device_tag {
@@ -1455,6 +1476,59 @@ struct dummy_ID2D1Device_tag {
 
 #define dummy_ID2D1Device_Release(self)                     (self)->vtbl->Release(self)
 #define dummy_ID2D1Device_CreateDeviceContext(self,a,b)     (self)->vtbl->CreateDeviceContext(self,a,b)
+#define dummy_ID2D1Device_CreatePrintControl(self,a,b,c,d)  (self)->vtbl->CreatePrintControl(self,a,b,c,d)
+
+
+/************************************
+ ***  Interface ID2D1CommandList  ***
+ ************************************/
+
+typedef struct dummy_ID2D1CommandListVtbl_tag dummy_ID2D1CommandListVtbl;
+struct dummy_ID2D1CommandListVtbl_tag {
+    /* IUnknown methods */
+    STDMETHOD(QueryInterface)(dummy_ID2D1CommandList*, REFIID, void**);
+    STDMETHOD_(ULONG, AddRef)(dummy_ID2D1CommandList*);
+    STDMETHOD_(ULONG, Release)(dummy_ID2D1CommandList*);
+
+    /* ID2D1Resource methods */
+    STDMETHOD(dummy_GetFactory)(void);
+
+    /* ID2D1CommandList methods */
+    STDMETHOD(dummy_Stream)(void);
+    STDMETHOD(Close)(dummy_ID2D1CommandList*);
+};
+
+struct dummy_ID2D1CommandList_tag {
+    dummy_ID2D1CommandListVtbl* vtbl;
+};
+
+#define dummy_ID2D1CommandList_Release(self)                (self)->vtbl->Release(self)
+#define dummy_ID2D1CommandList_Close(self)                  (self)->vtbl->Close(self)
+
+
+/*************************************
+ ***  Interface ID2D1PrintControl  ***
+ *************************************/
+
+typedef struct dummy_ID2D1PrintControlVtbl_tag dummy_ID2D1PrintControlVtbl;
+struct dummy_ID2D1PrintControlVtbl_tag {
+    /* IUnknown methods */
+    STDMETHOD(QueryInterface)(dummy_ID2D1PrintControl*, REFIID, void**);
+    STDMETHOD_(ULONG, AddRef)(dummy_ID2D1PrintControl*);
+    STDMETHOD_(ULONG, Release)(dummy_ID2D1PrintControl*);
+
+    /* ID2D1PrintControl methods */
+    STDMETHOD(AddPage)(dummy_ID2D1PrintControl*, dummy_ID2D1CommandList*, dummy_D2D1_SIZE_F, IStream*, UINT64*, UINT64*);
+    STDMETHOD(Close)(dummy_ID2D1PrintControl*);
+};
+
+struct dummy_ID2D1PrintControl_tag {
+    dummy_ID2D1PrintControlVtbl* vtbl;
+};
+
+#define dummy_ID2D1PrintControl_Release(self)               (self)->vtbl->Release(self)
+#define dummy_ID2D1PrintControl_AddPage(self,a,b,c,d,e)     (self)->vtbl->AddPage(self,a,b,c,d,e)
+#define dummy_ID2D1PrintControl_Close(self)                 (self)->vtbl->Close(self)
 
 
 /*********************************

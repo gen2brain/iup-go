@@ -794,6 +794,50 @@ func setCopyDataFunc(ih Ihandle, f CopyDataFunc) {
 
 //--------------------
 
+// PaginateFunc for PAGINATE_CB callback.
+// Called by the PrintDlg when the size of the printable area is known, before the pages are drawn; returns the number of pages.
+//
+// https://gen2brain.github.io/iup-go/dlg/iup_printdlg.html
+type PaginateFunc func(ih Ihandle, width, height int) int
+
+//export goIupPaginateCB
+func goIupPaginateCB(ih unsafe.Pointer, width, height C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_PAGINATE_CB").Value().(PaginateFunc)
+
+	return C.int(f((Ihandle)(ih), int(width), int(height)))
+}
+
+// setPaginateFunc for PAGINATE_CB.
+func setPaginateFunc(ih Ihandle, f PaginateFunc) {
+	storeCallback(ih, "_IUPGO_PAGINATE_CB", f)
+
+	C.goIupSetPaginateFunc(ih.ptr())
+}
+
+//--------------------
+
+// PrintPageFunc for PRINTPAGE_CB callback.
+// Called by the PrintDlg for each page to print; draw the page with the Draw functions between DrawBegin and DrawEnd.
+//
+// https://gen2brain.github.io/iup-go/dlg/iup_printdlg.html
+type PrintPageFunc func(ih Ihandle, page, width, height int) int
+
+//export goIupPrintPageCB
+func goIupPrintPageCB(ih unsafe.Pointer, page, width, height C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_PRINTPAGE_CB").Value().(PrintPageFunc)
+
+	return C.int(f((Ihandle)(ih), int(page), int(width), int(height)))
+}
+
+// setPrintPageFunc for PRINTPAGE_CB.
+func setPrintPageFunc(ih Ihandle, f PrintPageFunc) {
+	storeCallback(ih, "_IUPGO_PRINTPAGE_CB", f)
+
+	C.goIupSetPrintPageFunc(ih.ptr())
+}
+
+//--------------------
+
 // ListActionFunc for List ACTION callback.
 // Action generated when the state of an item in the list is changed.
 type ListActionFunc func(ih Ihandle, text string, item, state int) int

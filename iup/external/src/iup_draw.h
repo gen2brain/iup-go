@@ -30,6 +30,8 @@ extern "C"
 #define iupDrawCheckSwapCoord(_c1, _c2) do { if ((_c1) > (_c2)) { int t = (_c2); (_c2) = (_c1); (_c1) = t; } } while (0)
 
 IUP_SDK_API long iupDrawStrToColor(const char* str, long c_def);
+struct Iclass_;
+IUP_SDK_API void iupDrawRegisterAttributes(struct Iclass_* ic);
 IUP_SDK_API long iupDrawColor(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha);
 IUP_SDK_API void iupDrawCalcShadows(long bgcolor, long* light_shadow, long* mid_shadow, long* dark_shadow);
 IUP_SDK_API long iupDrawCalcSeparatorColor(long bgcolor);
