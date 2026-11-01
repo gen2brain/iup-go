@@ -1235,6 +1235,20 @@ static int qtTextSetInsertAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void qtTextAppendPlain(QTextDocument* doc, const QString& str)
+{
+  QTextCursor cursor(doc);
+  QStringList lines = str.split('\n');
+  cursor.movePosition(QTextCursor::End);
+  for (int i = 0; i < lines.size(); i++)
+  {
+    if (i > 0)
+      cursor.insertBlock(QTextBlockFormat(), QTextCharFormat());
+    if (!lines[i].isEmpty())
+      cursor.insertText(lines[i], QTextCharFormat());
+  }
+}
+
 static int qtTextSetAppendAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle)
@@ -1252,8 +1266,8 @@ static int qtTextSetAppendAttrib(Ihandle* ih, const char* value)
     if (ih->data->append_scroll)
     {
       QTextCursor end_cursor(text->document());
+      qtTextAppendPlain(text->document(), to_insert);
       end_cursor.movePosition(QTextCursor::End);
-      end_cursor.insertText(to_insert);
       text->setTextCursor(end_cursor);
       text->ensureCursorVisible();
     }
@@ -1262,9 +1276,7 @@ static int qtTextSetAppendAttrib(Ihandle* ih, const char* value)
       QTextCursor saved_cursor = text->textCursor();
       int saved_v = text->verticalScrollBar()->value();
       int saved_h = text->horizontalScrollBar()->value();
-      QTextCursor end_cursor(text->document());
-      end_cursor.movePosition(QTextCursor::End);
-      end_cursor.insertText(to_insert);
+      qtTextAppendPlain(text->document(), to_insert);
       text->setTextCursor(saved_cursor);
       text->verticalScrollBar()->setValue(saved_v);
       text->horizontalScrollBar()->setValue(saved_h);

@@ -1798,8 +1798,12 @@ static int cocoaTouchTextSetAppendAttrib(Ihandle* ih, const char* value)
 		NSString* sep = @"";
 		if (tv.text.length > 0 && ih->data->is_multiline && ih->data->append_newline)
 			sep = @"\n";
+		NSDictionary* attrs = @{
+			NSFontAttributeName: tv.font ? tv.font : [UIFont systemFontOfSize:[UIFont systemFontSize]],
+			NSForegroundColorAttributeName: ((IupCocoaTouchTextView*)tv).defaultColor
+		};
 		NSAttributedString* tail = [[NSAttributedString alloc] initWithString:[sep stringByAppendingString:append]
-			attributes:tv.typingAttributes];
+			attributes:attrs];
 		[tv.textStorage appendAttributedString:tail];
 		[tail release];
 		if (ih->data->append_scroll)

@@ -668,8 +668,13 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
     auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
     {
+      bool wasReadOnly = reb.IsReadOnly();
+      if (wasReadOnly)
+        reb.IsReadOnly(false);
+
+      auto doc = reb.Document();
       hstring currentText;
-      reb.Document().GetText(TextGetOptions::None, currentText);
+      doc.GetText(TextGetOptions::None, currentText);
 
       uint32_t currentLen = currentText.size();
       if (currentLen > 0 && currentText.c_str()[currentLen - 1] == L'\r')
@@ -681,8 +686,16 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
       appendStr += winuiTextToControl(ih, value);
 
       auto endPos = static_cast<int32_t>(currentText.size());
-      auto range = reb.Document().GetRange(endPos, endPos);
+      auto range = doc.GetRange(endPos, endPos);
       range.SetText(TextSetOptions::None, hstring(appendStr));
+      range.CharacterFormat().SetClone(doc.GetDefaultCharacterFormat());
+      auto newline = appendStr.find(L'\r');
+      if (newline != std::wstring::npos)
+        doc.GetRange(endPos + static_cast<int32_t>(newline) + 1, range.EndPosition()).ParagraphFormat().SetClone(doc.GetDefaultParagraphFormat());
+      winuiTextForgetFaces(aux, range.StartPosition(), range.EndPosition());
+
+      if (wasReadOnly)
+        reb.IsReadOnly(true);
 
       if (ih->data->append_scroll)
       {
@@ -3149,7 +3162,14 @@ static int winuiTextSetInsertAttrib(Ihandle* ih, const char* value)
   {
     auto reb = winuiGetHandle<RichEditBox>(ih);
     if (reb)
+    {
+      bool wasReadOnly = reb.IsReadOnly();
+      if (wasReadOnly)
+        reb.IsReadOnly(false);
       reb.Document().Selection().SetText(TextSetOptions::None, hstring(winuiTextToControl(ih, value)));
+      if (wasReadOnly)
+        reb.IsReadOnly(true);
+    }
   }
   else
   {
