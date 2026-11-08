@@ -44,10 +44,7 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
   time_ms = iupAttribGetInt(ih, "TIME");
   if (time_ms > 0)
   {
-    if (iupAttribGetBoolean(ih, "PRIORITY_HIGH"))
-      ih->serial = g_timeout_add_full(G_PRIORITY_HIGH, time_ms, gtk4TimerProc, (gpointer)ih, NULL);
-    else
-      ih->serial = g_timeout_add(time_ms, gtk4TimerProc, (gpointer)ih);
+    ih->serial = g_timeout_add(time_ms, gtk4TimerProc, (gpointer)ih);
   }
 }
 
