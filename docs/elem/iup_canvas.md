@@ -227,6 +227,13 @@ A single touch interaction can trigger several gestures at once (for example PIN
 
 [WHEEL_CB](../call/iup_wheel_cb.md): Action generated when the mouse wheel is rotated.
 
+**WOM_CB** [Win32 Only]: Action generated when a waveform audio output device opened with the canvas window as its callback window sends an event.
+
+    int function(Ihandle *ih, int state);
+
+**ih**: identifier of the element that activated the event.\
+**state**: 1 when the device is opened, 0 when a buffer finished playing, -1 when the device is closed.
+
 > 
 >
 > ------------------------------------------------------------------------
