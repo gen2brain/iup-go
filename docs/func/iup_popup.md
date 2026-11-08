@@ -65,6 +65,12 @@ To destroy the dialog, **IupDestroy** must be called.
 
 The MODAL attribute of the dialog will be changed internally to return YES.
 
+The global callbacks GLOBALENTERMODAL_CB and GLOBALLEAVEMODAL_CB, set with [IupSetFunction](iup_setfunction.md), are called when a dialog becomes modal and when it stops being modal.
+
+    int function(int popup_level);
+
+**popup_level**: the popup level before the change, 1 when no dialog is modal.
+
 In GTK and Motif the inactive dialogs will still be moveable, resizable and changeable their Z-order.
 Although their contents will be inactive, the keyboard will be disabled, and they cannot be closed from the close box.
 
