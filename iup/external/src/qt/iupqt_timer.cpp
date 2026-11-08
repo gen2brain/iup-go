@@ -63,10 +63,7 @@ extern "C" IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 
     timer_data->qtimer->setInterval(time_ms);
 
-    if (iupAttribGetBoolean(ih, "PRIORITY_HIGH"))
-      timer_data->qtimer->setTimerType(Qt::PreciseTimer);
-    else
-      timer_data->qtimer->setTimerType(Qt::CoarseTimer);
+    timer_data->qtimer->setTimerType(Qt::CoarseTimer);
 
     QObject::connect(timer_data->qtimer, &QTimer::timeout, [timer_data]() {
       qtTimerProc(timer_data);
