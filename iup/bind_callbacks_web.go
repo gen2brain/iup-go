@@ -11,10 +11,6 @@ import (
 */
 import "C"
 
-// CompletedFunc for COMPLETED_CB callback.
-// Action generated when a page is successfully completed.
-type CompletedFunc func(ih Ihandle, url string) int
-
 //export goIupCompletedCB
 func goIupCompletedCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_COMPLETED_CB").Value().(CompletedFunc)
@@ -31,10 +27,6 @@ func setCompletedFunc(ih Ihandle, f CompletedFunc) {
 }
 
 //--------------------
-
-// ErrorFunc for ERROR_CB callback.
-// Called when a page load or media playback fails.
-type ErrorFunc func(ih Ihandle, url string) int
 
 //export goIupErrorCB
 func goIupErrorCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
@@ -53,10 +45,6 @@ func setErrorFunc(ih Ihandle, f ErrorFunc) {
 
 //--------------------
 
-// NavigateFunc for NAVIGATE_CB callback.
-// Action generated when the browser requests a navigation to another page.
-type NavigateFunc func(ih Ihandle, url string) int
-
 //export goIupNavigateCB
 func goIupNavigateCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_NAVIGATE_CB").Value().(NavigateFunc)
@@ -73,10 +61,6 @@ func setNavigateFunc(ih Ihandle, f NavigateFunc) {
 }
 
 //--------------------
-
-// NewWindowFunc for NEWWINDOW_CB callback.
-// Action generated when the browser requests a new window.
-type NewWindowFunc func(ih Ihandle, url string) int
 
 //export goIupNewWindowCB
 func goIupNewWindowCB(ih unsafe.Pointer, url unsafe.Pointer) C.int {

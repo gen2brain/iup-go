@@ -4,8 +4,6 @@ package iup
 
 import "github.com/ebitengine/purego"
 
-type CompletedFunc func(ih Ihandle, url string) int
-
 var completedFuncCB = purego.NewCallback(func(ih uintptr, url uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_COMPLETED_CB").(CompletedFunc); ok {
 		return f(Ihandle(ih), goString(url))
@@ -17,10 +15,6 @@ func setCompletedFunc(ih Ihandle, f CompletedFunc) {
 	storeCallback(ih, "_IUPGO_COMPLETED_CB", f)
 	iupSetCallback(uintptr(ih), "COMPLETED_CB", completedFuncCB)
 }
-
-// ErrorFunc for ERROR_CB callback.
-// Called when a page load or media playback fails.
-type ErrorFunc func(ih Ihandle, url string) int
 
 var errorFuncCB = purego.NewCallback(func(ih uintptr, url uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_ERROR_CB").(ErrorFunc); ok {
@@ -34,8 +28,6 @@ func setErrorFunc(ih Ihandle, f ErrorFunc) {
 	iupSetCallback(uintptr(ih), "ERROR_CB", errorFuncCB)
 }
 
-type NavigateFunc func(ih Ihandle, url string) int
-
 var navigateFuncCB = purego.NewCallback(func(ih uintptr, url uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_NAVIGATE_CB").(NavigateFunc); ok {
 		return f(Ihandle(ih), goString(url))
@@ -47,8 +39,6 @@ func setNavigateFunc(ih Ihandle, f NavigateFunc) {
 	storeCallback(ih, "_IUPGO_NAVIGATE_CB", f)
 	iupSetCallback(uintptr(ih), "NAVIGATE_CB", navigateFuncCB)
 }
-
-type NewWindowFunc func(ih Ihandle, url string) int
 
 var newWindowFuncCB = purego.NewCallback(func(ih uintptr, url uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_NEWWINDOW_CB").(NewWindowFunc); ok {

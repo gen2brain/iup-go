@@ -11,9 +11,6 @@ import (
 */
 import "C"
 
-// PlotDrawFunc for PREDRAW_CB and POSTDRAW_CB callbacks in IupPlot.
-type PlotDrawFunc func(ih Ihandle) int
-
 //export goIupPlotPreDrawCB
 func goIupPlotPreDrawCB(ih unsafe.Pointer) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_PREDRAW_CB")
@@ -46,9 +43,6 @@ func setPlotPostDrawFunc(ih Ihandle, f PlotDrawFunc) {
 
 //--------------------
 
-// PlotClickSampleFunc for CLICKSAMPLE_CB callback in IupPlot.
-type PlotClickSampleFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64, button int) int
-
 //export goIupPlotClickSampleCB
 func goIupPlotClickSampleCB(ih unsafe.Pointer, dsIndex, sampleIndex C.int, x, y C.double, button C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_CLICKSAMPLE_CB")
@@ -65,9 +59,6 @@ func setPlotClickSampleFunc(ih Ihandle, f PlotClickSampleFunc) {
 }
 
 //--------------------
-
-// PlotClickSegmentFunc for CLICKSEGMENT_CB callback in IupPlot.
-type PlotClickSegmentFunc func(ih Ihandle, dsIndex, sampleIndex1 int, x1, y1 float64, sampleIndex2 int, x2, y2 float64, button int) int
 
 //export goIupPlotClickSegmentCB
 func goIupPlotClickSegmentCB(ih unsafe.Pointer, dsIndex, sampleIndex1 C.int, x1, y1 C.double, sampleIndex2 C.int, x2, y2 C.double, button C.int) C.int {
@@ -86,9 +77,6 @@ func setPlotClickSegmentFunc(ih Ihandle, f PlotClickSegmentFunc) {
 
 //--------------------
 
-// PlotDrawSampleFunc for DRAWSAMPLE_CB callback in IupPlot.
-type PlotDrawSampleFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64, state int) int
-
 //export goIupPlotDrawSampleCB
 func goIupPlotDrawSampleCB(ih unsafe.Pointer, dsIndex, sampleIndex C.int, x, y C.double, state C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DRAWSAMPLE_CB")
@@ -105,9 +93,6 @@ func setPlotDrawSampleFunc(ih Ihandle, f PlotDrawSampleFunc) {
 }
 
 //--------------------
-
-// PlotMotionFunc for PLOTMOTION_CB callback in IupPlot.
-type PlotMotionFunc func(ih Ihandle, x, y float64, status string) int
 
 //export goIupPlotMotionCB
 func goIupPlotMotionCB(ih unsafe.Pointer, x, y C.double, status unsafe.Pointer) C.int {
@@ -127,9 +112,6 @@ func setPlotMotionFunc(ih Ihandle, f PlotMotionFunc) {
 
 //--------------------
 
-// PlotButtonFunc for PLOTBUTTON_CB callback in IupPlot.
-type PlotButtonFunc func(ih Ihandle, button, pressed int, x, y float64, status string) int
-
 //export goIupPlotButtonCB
 func goIupPlotButtonCB(ih unsafe.Pointer, button, pressed C.int, x, y C.double, status unsafe.Pointer) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_PLOTBUTTON_CB")
@@ -148,9 +130,6 @@ func setPlotButtonFunc(ih Ihandle, f PlotButtonFunc) {
 
 //--------------------
 
-// PlotEditSampleFunc for EDITSAMPLE_CB callback in IupPlot.
-type PlotEditSampleFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64) int
-
 //export goIupPlotEditSampleCB
 func goIupPlotEditSampleCB(ih unsafe.Pointer, dsIndex, sampleIndex C.int, x, y C.double) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_EDITSAMPLE_CB")
@@ -167,9 +146,6 @@ func setPlotEditSampleFunc(ih Ihandle, f PlotEditSampleFunc) {
 }
 
 //--------------------
-
-// PlotDeleteFunc for DELETE_CB callback in IupPlot.
-type PlotDeleteFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64) int
 
 //export goIupPlotDeleteCB
 func goIupPlotDeleteCB(ih unsafe.Pointer, dsIndex, sampleIndex C.int, x, y C.double) C.int {
@@ -188,9 +164,6 @@ func setPlotDeleteFunc(ih Ihandle, f PlotDeleteFunc) {
 
 //--------------------
 
-// PlotDeleteBeginFunc for DELETEBEGIN_CB callback in IupPlot.
-type PlotDeleteBeginFunc func(ih Ihandle) int
-
 //export goIupPlotDeleteBeginCB
 func goIupPlotDeleteBeginCB(ih unsafe.Pointer) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DELETEBEGIN_CB")
@@ -207,9 +180,6 @@ func setPlotDeleteBeginFunc(ih Ihandle, f PlotDeleteBeginFunc) {
 }
 
 //--------------------
-
-// PlotDeleteEndFunc for DELETEEND_CB callback in IupPlot.
-type PlotDeleteEndFunc func(ih Ihandle) int
 
 //export goIupPlotDeleteEndCB
 func goIupPlotDeleteEndCB(ih unsafe.Pointer) C.int {
@@ -228,9 +198,6 @@ func setPlotDeleteEndFunc(ih Ihandle, f PlotDeleteEndFunc) {
 
 //--------------------
 
-// PlotSelectFunc for SELECT_CB callback in IupPlot.
-type PlotSelectFunc func(ih Ihandle, dsIndex, sampleIndex int, x, y float64, selected int) int
-
 //export goIupPlotSelectCB
 func goIupPlotSelectCB(ih unsafe.Pointer, dsIndex, sampleIndex C.int, x, y C.double, selected C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_PLOT_SELECT_CB")
@@ -247,9 +214,6 @@ func setPlotSelectFunc(ih Ihandle, f PlotSelectFunc) {
 }
 
 //--------------------
-
-// PlotSelectBeginFunc for SELECTBEGIN_CB callback in IupPlot.
-type PlotSelectBeginFunc func(ih Ihandle) int
 
 //export goIupPlotSelectBeginCB
 func goIupPlotSelectBeginCB(ih unsafe.Pointer) C.int {
@@ -268,9 +232,6 @@ func setPlotSelectBeginFunc(ih Ihandle, f PlotSelectBeginFunc) {
 
 //--------------------
 
-// PlotSelectEndFunc for SELECTEND_CB callback in IupPlot.
-type PlotSelectEndFunc func(ih Ihandle) int
-
 //export goIupPlotSelectEndCB
 func goIupPlotSelectEndCB(ih unsafe.Pointer) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_SELECTEND_CB")
@@ -287,9 +248,6 @@ func setPlotSelectEndFunc(ih Ihandle, f PlotSelectEndFunc) {
 }
 
 //--------------------
-
-// PlotMenuContextFunc for MENUCONTEXT_CB callback in IupPlot.
-type PlotMenuContextFunc func(ih, menu Ihandle, x, y int) int
 
 //export goIupPlotMenuContextCB
 func goIupPlotMenuContextCB(ih, menu unsafe.Pointer, x, y C.int) C.int {
@@ -308,9 +266,6 @@ func setPlotMenuContextFunc(ih Ihandle, f PlotMenuContextFunc) {
 
 //--------------------
 
-// PlotMenuContextCloseFunc for MENUCONTEXTCLOSE_CB callback in IupPlot.
-type PlotMenuContextCloseFunc func(ih, menu Ihandle, x, y int) int
-
 //export goIupPlotMenuContextCloseCB
 func goIupPlotMenuContextCloseCB(ih, menu unsafe.Pointer, x, y C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_PLOT_MENUCONTEXTCLOSE_CB")
@@ -328,9 +283,6 @@ func setPlotMenuContextCloseFunc(ih Ihandle, f PlotMenuContextCloseFunc) {
 
 //--------------------
 
-// PlotPropertiesChangedFunc for PROPERTIESCHANGED_CB callback in IupPlot.
-type PlotPropertiesChangedFunc func(ih Ihandle) int
-
 //export goIupPlotPropertiesChangedCB
 func goIupPlotPropertiesChangedCB(ih unsafe.Pointer) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_PROPERTIESCHANGED_CB")
@@ -347,9 +299,6 @@ func setPlotPropertiesChangedFunc(ih Ihandle, f PlotPropertiesChangedFunc) {
 }
 
 //--------------------
-
-// PlotPropertiesValidateFunc for PROPERTIESVALIDATE_CB callback in IupPlot.
-type PlotPropertiesValidateFunc func(ih Ihandle, name, value string) int
 
 //export goIupPlotPropertiesValidateCB
 func goIupPlotPropertiesValidateCB(ih unsafe.Pointer, name, value unsafe.Pointer) C.int {
@@ -370,9 +319,6 @@ func setPlotPropertiesValidateFunc(ih Ihandle, f PlotPropertiesValidateFunc) {
 
 //--------------------
 
-// PlotDSPropertiesChangedFunc for DSPROPERTIESCHANGED_CB callback in IupPlot.
-type PlotDSPropertiesChangedFunc func(ih Ihandle, dsIndex int) int
-
 //export goIupPlotDSPropertiesChangedCB
 func goIupPlotDSPropertiesChangedCB(ih unsafe.Pointer, dsIndex C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DSPROPERTIESCHANGED_CB")
@@ -390,9 +336,6 @@ func setPlotDSPropertiesChangedFunc(ih Ihandle, f PlotDSPropertiesChangedFunc) {
 
 //--------------------
 
-// PlotDSPropertiesValidateFunc for DSPROPERTIESVALIDATE_CB callback in IupPlot.
-type PlotDSPropertiesValidateFunc func(ih, dialog Ihandle, dsIndex int) int
-
 //export goIupPlotDSPropertiesValidateCB
 func goIupPlotDSPropertiesValidateCB(ih, dialog unsafe.Pointer, dsIndex C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DSPROPERTIESVALIDATE_CB")
@@ -409,10 +352,6 @@ func setPlotDSPropertiesValidateFunc(ih Ihandle, f PlotDSPropertiesValidateFunc)
 }
 
 //--------------------
-
-// PlotTickFormatNumberFunc for XTICKFORMATNUMBER_CB and YTICKFORMATNUMBER_CB callbacks in IupPlot.
-// Returns the tick text and DEFAULT to use it, CONTINUE for the internal formatter, or IGNORE.
-type PlotTickFormatNumberFunc func(ih Ihandle, format string, value float64, decimalSymbol string) (string, int)
 
 func plotTickFormatNumber(ih unsafe.Pointer, name string, buffer, format unsafe.Pointer, value C.double, decimalSymbol unsafe.Pointer) C.int {
 	ch := loadCallback((Ihandle)(ih), name)

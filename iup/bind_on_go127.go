@@ -3,6 +3,7 @@
 package iup
 
 // On sets the callback cb of ih to fn and returns ih, like the [On] function.
+// It needs Go 1.27, which adds generic methods; with older Go use the [On] function.
 //
 //	iup.Button("OK").On(iup.ActionCB, func(ih iup.Ihandle) int { return iup.CLOSE })
 //
