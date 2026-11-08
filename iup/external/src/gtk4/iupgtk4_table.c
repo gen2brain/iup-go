@@ -499,7 +499,7 @@ static gboolean on_text_key_pressed(GtkEventControllerKey* controller, guint key
 
 static void gtk4TableEditorChanged(GtkEditable* editable, Ihandle* ih)
 {
-  IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+  IFniis cb = (IFniis)IupGetCallback(ih, "EDITCHANGED_CB");
   const char* text = gtk_editable_get_text(editable);
   const char* last = (const char*)g_object_get_data(G_OBJECT(editable), "_iup_edit_text");
 
@@ -968,7 +968,7 @@ static void gtk4TableNotifyRow(Igtk4TableData* gtk_data, int lin)
 static void gtk4TableUpdateCellFocusRect(Ihandle* ih, GtkWidget* box, int row_index, int col_index)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
-  int is_focus_cell = iupAttribGetBoolean(ih, "FOCUSRECT") &&
+  int is_focus_cell = iupAttribGetBoolean(ih, "FOCUSFEEDBACK") &&
                       row_index == gtk_data->current_row &&
                       col_index + 1 == gtk_data->current_col;
 
@@ -3447,7 +3447,7 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "SIZE", NULL, NULL, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FOCUSFEEDBACK", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, gtk4TableSetSortableAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, gtk4TableSetAllowReorderAttrib);

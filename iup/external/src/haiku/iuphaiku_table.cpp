@@ -941,7 +941,7 @@ bool IupHaikuTableEditor::CheckEdit(const BString& text)
   if (!fReady || fEnded || fReplacing || !fTv || !fTv->GetIhandle())
     return true;
 
-  auto cb = reinterpret_cast<IFniis>(IupGetCallback(fTv->GetIhandle(), "EDITION_CB"));
+  auto cb = reinterpret_cast<IFniis>(IupGetCallback(fTv->GetIhandle(), "EDITCHANGED_CB"));
   return !cb || cb(fTv->GetIhandle(), fLin, fCol, const_cast<char*>(text.String())) != IUP_IGNORE;
 }
 
@@ -1494,7 +1494,7 @@ public:
       parent->StrokeLine(BPoint(rect.left, rect.bottom), BPoint(rect.right, rect.bottom));
     }
 
-    if (tv && fIhandle && row && iupAttribGetBoolean(fIhandle, "FOCUSRECT"))
+    if (tv && fIhandle && row && iupAttribGetBoolean(fIhandle, "FOCUSFEEDBACK"))
     {
       BRow* fr = tv->FocusRow();
       if (!fr) fr = tv->CurrentSelection();

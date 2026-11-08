@@ -689,7 +689,7 @@ static void winuiTablePopulateVirtualContainer(Ihandle* ih, int lin, Primitives:
 
     if (border)
     {
-      bool is_focused = (lin == aux->current_row && j + 1 == aux->current_col && iupAttribGetBoolean(ih, "FOCUSRECT"));
+      bool is_focused = (lin == aux->current_row && j + 1 == aux->current_col && iupAttribGetBoolean(ih, "FOCUSFEEDBACK"));
       if (is_focused)
       {
         border.BorderThickness(ThicknessHelper::FromLengths(1, 1, 1, 1));
@@ -947,7 +947,7 @@ static void winuiTableSetFocusVisual(Ihandle* ih, int lin, int col)
   if (lin <= 0 || col <= 0)
     return;
 
-  if (!iupAttribGetBoolean(ih, "FOCUSRECT"))
+  if (!iupAttribGetBoolean(ih, "FOCUSFEEDBACK"))
     return;
 
   Grid rowGrid = winuiTableGetRowGrid(ih, lin);
@@ -1764,7 +1764,7 @@ static void winuiTableStartEdit(Ihandle* ih, int lin, int col)
   editBox.SelectAll();
 
   editBox.BeforeTextChanging([ih, lin, col](TextBox const&, TextBoxBeforeTextChangingEventArgs const& args) {
-    auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "EDITION_CB"));
+    auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "EDITCHANGED_CB"));
     if (!cb)
       return;
     char* text = iupwinuiHStringToString(args.NewText());
@@ -3877,7 +3877,7 @@ extern "C" IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", nullptr, winuiTableSetUserResizeAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ACTIVE", nullptr, winuiTableSetActiveAttrib);
 
-  iupClassRegisterAttribute(ic, "FOCUSRECT", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FOCUSFEEDBACK", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "ALIGNMENT", nullptr, static_cast<IattribSetIdFunc>(winuiTableSetAlignmentAttrib), IUPAF_NO_INHERIT);
 

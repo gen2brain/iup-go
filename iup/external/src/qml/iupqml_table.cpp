@@ -923,7 +923,7 @@ static void qmlTableEditChanged(Ihandle* ih, QObject* editor)
     return;
 
   QString text = editor->property("text").toString();
-  auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "EDITION_CB"));
+  auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "EDITCHANGED_CB"));
   if (cb && cb(ih, data->edit_lin, data->edit_col, const_cast<char*>(text.toUtf8().constData())) == IUP_IGNORE)
   {
     int pos = editor->property("cursorPosition").toInt();
@@ -1468,7 +1468,7 @@ static int qmlTableMapMethod(Ihandle* ih)
   view->setProperty("selectionModel", QVariant::fromValue<QItemSelectionModel*>(data->selection));
 
   root->setProperty("iupShowGrid", iupAttribGetBoolean(ih, "SHOWGRID") ? true : false);
-  root->setProperty("iupFocusRect", iupAttribGetBoolean(ih, "FOCUSRECT") ? true : false);
+  root->setProperty("iupFocusRect", iupAttribGetBoolean(ih, "FOCUSFEEDBACK") ? true : false);
   root->setProperty("iupReorder", ih->data->allow_reorder ? true : false);
   root->setProperty("iupResize", ih->data->user_resize ? true : false);
   root->setProperty("iupDragDrop", ih->data->show_dragdrop ? true : false);
@@ -2170,7 +2170,7 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", nullptr, qmlTableSetAllowReorderAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", nullptr, qmlTableSetUserResizeAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "SELECTIONMODE", nullptr, qmlTableSetSelectionModeAttrib);
-  iupClassRegisterReplaceAttribFunc(ic, "FOCUSRECT", nullptr, qmlTableSetFocusRectAttrib);
+  iupClassRegisterReplaceAttribFunc(ic, "FOCUSFEEDBACK", nullptr, qmlTableSetFocusRectAttrib);
 }
 
 }

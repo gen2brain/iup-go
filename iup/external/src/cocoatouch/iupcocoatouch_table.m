@@ -532,7 +532,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	if (num_col <= 0) { cell.label.text = @""; return cell; }
 
 	NSInteger col = [ip item] % num_col;
-	BOOL focus_rect = _ihandle ? iupAttribGetBoolean(_ihandle, "FOCUSRECT") : YES;
+	BOOL focus_rect = _ihandle ? iupAttribGetBoolean(_ihandle, "FOCUSFEEDBACK") : YES;
 	cell.focusRectEnabled = focus_rect;
 	[cell setSeparatorsHidden:!_showGrid];
 
@@ -629,7 +629,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 {
 	NSNumber* lin = objc_getAssociatedObject(textField, &kIupTableEditLinKey);
 	NSNumber* col = objc_getAssociatedObject(textField, &kIupTableEditColKey);
-	IFniis cb = _ihandle ? (IFniis)IupGetCallback(_ihandle, "EDITION_CB") : NULL;
+	IFniis cb = _ihandle ? (IFniis)IupGetCallback(_ihandle, "EDITCHANGED_CB") : NULL;
 	if (!lin || !col || !cb) return YES;
 
 	NSString* text = [(textField.text ?: @"") stringByReplacingCharactersInRange:range withString:string];
@@ -1687,7 +1687,7 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "ALTERNATECOLOR", NULL, cocoaTouchTableSetReloadAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "EVENROWCOLOR",   NULL, cocoaTouchTableSetReloadAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "ODDROWCOLOR",    NULL, cocoaTouchTableSetReloadAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "FOCUSRECT",      NULL, cocoaTouchTableSetReloadAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "FOCUSFEEDBACK",      NULL, cocoaTouchTableSetReloadAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 	iupClassRegisterReplaceAttribFunc(ic, "SORTABLE",     NULL, cocoaTouchTableSetSortableAttrib);
 	iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, cocoaTouchTableSetAllowReorderAttrib);
 	iupClassRegisterReplaceAttribFunc(ic, "ACTIVE",       NULL, cocoaTouchTableSetActiveAttrib);

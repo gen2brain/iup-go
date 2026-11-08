@@ -1029,7 +1029,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     }
   }
 
-  if (is_focused_cell && iupAttribGetBoolean(ih, "FOCUSRECT"))
+  if (is_focused_cell && iupAttribGetBoolean(ih, "FOCUSFEEDBACK"))
   {
     /* Use XOR mode for focus rectangle, always creates contrast by inverting pixels */
     XSetFunction(display, mot_data->gc, GXxor);
@@ -1266,7 +1266,7 @@ static void motTableEditModifyVerifyCallback(Widget w, XtPointer client_data, Xt
   Ihandle* ih = (Ihandle*)client_data;
   XmTextVerifyCallbackStruct* cbs = (XmTextVerifyCallbackStruct*)call_data;
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
-  IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+  IFniis cb = (IFniis)IupGetCallback(ih, "EDITCHANGED_CB");
   char *value, *insert, *new_value;
   int len;
 

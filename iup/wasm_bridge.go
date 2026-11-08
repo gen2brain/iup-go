@@ -462,8 +462,10 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih, i1, i2, sarg)
 	case EnterItemFunc:
 		ret = f(ih, i1, i2)
-	case TableEditionFunc:
+	case TableEditChangedFunc:
 		ret = f(ih, i1, i2, sarg)
+	case EditionFunc:
+		ret = f(ih, i1, i2, i3, i4)
 	case TableRightClickFunc:
 		ret = f(ih, i1, i2)
 	case CellSelectionFunc:

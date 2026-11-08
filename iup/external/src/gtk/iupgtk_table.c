@@ -458,7 +458,7 @@ static void gtkTableEditorDeleteText(GtkEditable* editable, gint start, gint end
 
 static void gtkTableEditorChanged(GtkEditable* editable, Ihandle* ih)
 {
-  IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+  IFniis cb = (IFniis)IupGetCallback(ih, "EDITCHANGED_CB");
   const char* text = gtk_entry_get_text(GTK_ENTRY(editable));
   const char* last = (const char*)g_object_get_data(G_OBJECT(editable), "_iup_edit_text");
 
@@ -1378,7 +1378,7 @@ static gboolean gtkTableDrawFocusRect(GtkWidget* widget, GdkEventExpose* event, 
   if (!gtk_data)
     return FALSE;
 
-  if (!iupAttribGetBoolean(ih, "FOCUSRECT"))
+  if (!iupAttribGetBoolean(ih, "FOCUSFEEDBACK"))
     return FALSE;
 
   GtkTreePath* path = NULL;
@@ -2117,7 +2117,7 @@ static int gtkTableMapMethod(Ihandle* ih)
   ih->handle = gtk_data->tree_view;
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)gtk_data->scrolled_win);
 
-  /* Suppress GTK's built-in focus rendering, we draw our own via FOCUSRECT */
+  /* Suppress GTK's built-in focus rendering, we draw our own via FOCUSFEEDBACK */
 #if GTK_CHECK_VERSION(3, 0, 0)
   {
     GtkCssProvider* provider = gtk_css_provider_new();

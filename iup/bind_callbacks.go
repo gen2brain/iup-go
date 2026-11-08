@@ -2333,22 +2333,22 @@ func setUpdateFunc(ih Ihandle, f UpdateFunc) {
 
 //--------------------
 
-// TableEditionFunc for EDITION_CB callback.
+// TableEditChangedFunc for EDITCHANGED_CB callback.
 // Called when a cell is being edited in a table/matrix control.
 // update: The new value entered by the user.
-type TableEditionFunc func(ih Ihandle, lin, col int, update string) int
+type TableEditChangedFunc func(ih Ihandle, lin, col int, update string) int
 
-//export goIupTableEditionCB
-func goIupTableEditionCB(ih unsafe.Pointer, lin, col C.int, update *C.char) C.int {
-	f := loadCallback((Ihandle)(ih), "_IUPGO_EDITION_CB").Value().(TableEditionFunc)
+//export goIupTableEditChangedCB
+func goIupTableEditChangedCB(ih unsafe.Pointer, lin, col C.int, update *C.char) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_EDITCHANGED_CB").Value().(TableEditChangedFunc)
 
 	return C.int(f((Ihandle)(ih), int(lin), int(col), C.GoString(update)))
 }
 
-// setTableEditionFunc for EDITION_CB (Table version).
-func setTableEditionFunc(ih Ihandle, f TableEditionFunc) {
-	storeCallback(ih, "_IUPGO_EDITION_CB", f)
-	C.goIupSetTableEditionFunc(ih.ptr())
+// setTableEditChangedFunc for EDITCHANGED_CB.
+func setTableEditChangedFunc(ih Ihandle, f TableEditChangedFunc) {
+	storeCallback(ih, "_IUPGO_EDITCHANGED_CB", f)
+	C.goIupSetTableEditChangedFunc(ih.ptr())
 }
 
 //--------------------

@@ -280,12 +280,9 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "TABCLOSE_CB":
 		setTabCloseFunc(ih, fn.(TabCloseFunc))
 	case "EDITION_CB":
-		switch v := fn.(type) {
-		case TableEditionFunc:
-			setTableEditionFunc(ih, v)
-		case EditionFunc:
-			setEditionFunc(ih, v)
-		}
+		setEditionFunc(ih, fn.(EditionFunc))
+	case "EDITCHANGED_CB":
+		setTableEditChangedFunc(ih, fn.(TableEditChangedFunc))
 	case "SORT_CB":
 		setTableSortFunc(ih, fn.(TableSortFunc))
 	case "LINK_CB":
@@ -2043,18 +2040,18 @@ func setTabCloseFunc(ih Ihandle, f TabCloseFunc) {
 	iupSetCallback(uintptr(ih), "TABCLOSE_CB", tabCloseCB)
 }
 
-type TableEditionFunc func(ih Ihandle, lin, col int, update string) int
+type TableEditChangedFunc func(ih Ihandle, lin, col int, update string) int
 
-var tableEditionCB = purego.NewCallback(func(ih uintptr, lin, col int32, update uintptr) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_EDITION_CB").(TableEditionFunc); ok {
+var tableEditChangedCB = purego.NewCallback(func(ih uintptr, lin, col int32, update uintptr) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_EDITCHANGED_CB").(TableEditChangedFunc); ok {
 		return f(Ihandle(ih), int(lin), int(col), goString(update))
 	}
 	return 0
 })
 
-func setTableEditionFunc(ih Ihandle, f TableEditionFunc) {
-	storeCallback(ih, "_IUPGO_EDITION_CB", f)
-	iupSetCallback(uintptr(ih), "EDITION_CB", tableEditionCB)
+func setTableEditChangedFunc(ih Ihandle, f TableEditChangedFunc) {
+	storeCallback(ih, "_IUPGO_EDITCHANGED_CB", f)
+	iupSetCallback(uintptr(ih), "EDITCHANGED_CB", tableEditChangedCB)
 }
 
 type TableRightClickFunc func(ih Ihandle, lin, col int) int
