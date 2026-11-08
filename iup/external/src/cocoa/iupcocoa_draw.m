@@ -774,7 +774,7 @@ static void iupCocoaDrawGradient(CGContextRef ctx, CGGradientRef gradient, const
 
     CGFloat w = (CGFloat)(gx2 - gx1);
     CGFloat h = (CGFloat)(gy2 - gy1);
-    CGFloat rad = src->angle * M_PI / 180.0f;
+    CGFloat rad = -src->angle * M_PI / 180.0f;
     CGFloat cx = gx1 + w / 2.0f;
     CGFloat cy = gy1 + h / 2.0f;
 
@@ -815,7 +815,7 @@ static void iupCocoaDrawGradientPathGNUstep(IdrawCanvas* dc, const IupDrawSource
 
           CGFloat gw = (CGFloat)(gx2 - gx1);
           CGFloat gh = (CGFloat)(gy2 - gy1);
-          CGFloat rad = src->angle * M_PI / 180.0f;
+          CGFloat rad = -src->angle * M_PI / 180.0f;
           CGFloat gcx = gx1 + gw / 2.0f;
           CGFloat gcy = gy1 + gh / 2.0f;
 
@@ -1401,7 +1401,7 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
   }
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   CGContextRef cg_context = dc->cgContext;
   CGColorSpaceRef colorSpace = iupcocoaGetRGBColorSpace();
@@ -1422,7 +1422,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
 
   CGGradientRef gradient = CGGradientCreateWithColorComponents(colorSpace, components, locations, count);
 
-  CGFloat rad = angle * M_PI / 180.0f;
+  CGFloat rad = -angle * M_PI / 180.0f;
 
   CGFloat w = (CGFloat)(x2 - x1);
   CGFloat h = (CGFloat)(y2 - y1);

@@ -186,7 +186,7 @@ var (
 	iupImageRGB        func(w, h int32, pix []byte) uintptr
 	iupImageRGBA       func(w, h int32, pix []byte) uintptr
 	iupImageGetHandle  func(name string) uintptr
-	iupImageFromHandle func(handle uintptr) uintptr
+	iupImageFromNative func(handle uintptr) uintptr
 	iupMenuv           func(children []uintptr) uintptr
 	iupMenuItem        func(title *byte) uintptr
 	iupMenuSeparator   func() uintptr
@@ -273,9 +273,9 @@ var (
 	iupDrawGetImageInfo        func(name string, w, h, bpp *int32)
 	iupDrawGetImage            func(ih uintptr) uintptr
 	iupDrawGetSvg              func(ih uintptr) string
-	iupDrawLinearGradient      func(ih uintptr, x1, y1, x2, y2 int32, angle float32, color1, color2 string)
+	iupDrawLinearGradient      func(ih uintptr, x1, y1, x2, y2 int32, angle float64, color1, color2 string)
 	iupDrawRadialGradient      func(ih uintptr, cx, cy, radius int32, colorCenter, colorEdge string)
-	iupDrawLinearGradientStops func(ih uintptr, x1, y1, x2, y2 int32, angle float32, colors *uintptr, offsets *float32, count int32)
+	iupDrawLinearGradientStops func(ih uintptr, x1, y1, x2, y2 int32, angle float64, colors *uintptr, offsets *float32, count int32)
 	iupDrawRadialGradientStops func(ih uintptr, cx, cy, radius int32, colors *uintptr, offsets *float32, count int32)
 
 	iupDrawPathBegin               func(ih uintptr)
@@ -300,7 +300,7 @@ var (
 	iupDrawPathStroke              func(ih uintptr)
 	iupDrawSetClipPath             func(ih uintptr, rule int32)
 	iupDrawSetSourceSolid          func(ih uintptr, color string)
-	iupDrawSetSourceLinearGradient func(ih uintptr, x1, y1, x2, y2 int32, angle float32, colors *uintptr, offsets *float32, count int32)
+	iupDrawSetSourceLinearGradient func(ih uintptr, x1, y1, x2, y2 int32, angle float64, colors *uintptr, offsets *float32, count int32)
 	iupDrawSetSourceRadialGradient func(ih uintptr, cx, cy, radius int32, colors *uintptr, offsets *float32, count int32)
 	iupDrawResetSource             func(ih uintptr)
 
@@ -537,7 +537,7 @@ func ensureBase() {
 		reg(&iupImageRGB, "IupImageRGB")
 		reg(&iupImageRGBA, "IupImageRGBA")
 		reg(&iupImageGetHandle, "IupImageGetHandle")
-		reg(&iupImageFromHandle, "IupImageFromHandle")
+		reg(&iupImageFromNative, "IupImageFromNative")
 		reg(&iupMenuv, "IupMenuv")
 		reg(&iupMenuItem, "IupMenuItem")
 		reg(&iupMenuSeparator, "IupMenuSeparator")

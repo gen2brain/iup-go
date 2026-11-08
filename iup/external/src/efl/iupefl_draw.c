@@ -986,7 +986,7 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
   iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   Efl_VG* shape;
   Efl_Canvas_Vg_Gradient* grad;
@@ -999,7 +999,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
 
   w = (double)(x2 - x1);
   h = (double)(y2 - y1);
-  rad = angle * M_PI / 180.0;
+  rad = -angle * M_PI / 180.0;
 
   gx0 = x1 + w / 2.0 - (w * cos(rad)) / 2.0;
   gy0 = y1 + h / 2.0 - (h * sin(rad)) / 2.0;
@@ -1150,7 +1150,7 @@ static Efl_VG* iDrawCreateGradient(Efl_VG* parent, const IupDrawSource* src)
 
     w = (double)(x2 - x1);
     h = (double)(y2 - y1);
-    rad = src->angle * M_PI / 180.0;
+    rad = -src->angle * M_PI / 180.0;
 
     gx0 = x1 + w / 2.0 - (w * cos(rad)) / 2.0;
     gy0 = y1 + h / 2.0 - (h * sin(rad)) / 2.0;

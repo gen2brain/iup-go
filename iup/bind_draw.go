@@ -181,11 +181,11 @@ func DrawPixel(ih Ihandle, x, y int) {
 }
 
 // DrawRoundedRectangle draws a rectangle with rounded corners.
-// The corner_radius parameter defines the radius of the corner arcs.
+// The cornerRadius parameter defines the radius of the corner arcs.
 //
 // https://gen2brain.github.io/iup-go/func/iup_draw.html
-func DrawRoundedRectangle(ih Ihandle, x1, y1, x2, y2, corner_radius int) {
-	C.IupDrawRoundedRectangle(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(corner_radius))
+func DrawRoundedRectangle(ih Ihandle, x1, y1, x2, y2, cornerRadius int) {
+	C.IupDrawRoundedRectangle(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.int(cornerRadius))
 }
 
 // DrawText draws a text in the given position using the font defined by DRAWFONT, if not defined then use FONT.
@@ -320,20 +320,20 @@ func DrawGetSvg(ih Ihandle) string {
 // color1 and color2 are color strings (e.g., "255 0 0" for red).
 //
 // https://gen2brain.github.io/iup-go/func/iup_draw.html
-func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, color1, color2 string) {
+func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float64, color1, color2 string) {
 	cColor1 := C.CString(color1)
 	defer C.free(unsafe.Pointer(cColor1))
 	cColor2 := C.CString(color2)
 	defer C.free(unsafe.Pointer(cColor2))
 
-	C.IupDrawLinearGradient(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.float(angle), cColor1, cColor2)
+	C.IupDrawLinearGradient(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.double(angle), cColor1, cColor2)
 }
 
 // DrawLinearGradientStops draws a linear gradient across count color stops.
 // offsets are in the 0-1 range, ascending; if nil the stops are evenly spaced.
 //
 // https://gen2brain.github.io/iup-go/func/iup_draw.html
-func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
+func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float64, colors []string, offsets []float32) {
 	n := len(colors)
 	if n < 2 || (len(offsets) != 0 && len(offsets) != n) {
 		return
@@ -353,7 +353,7 @@ func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colo
 		cOffsets = (*C.float)(unsafe.Pointer(&offsets[0]))
 	}
 
-	C.IupDrawLinearGradientStops(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.float(angle), (**C.char)(unsafe.Pointer(&cColors[0])), cOffsets, C.int(n))
+	C.IupDrawLinearGradientStops(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.double(angle), (**C.char)(unsafe.Pointer(&cColors[0])), cOffsets, C.int(n))
 }
 
 // DrawRadialGradientStops draws a radial gradient across count color stops.
@@ -575,7 +575,7 @@ func DrawSetSourceSolid(ih Ihandle, color string) {
 // offsets are in the 0-1 range, ascending; if nil the stops are evenly spaced.
 //
 // https://gen2brain.github.io/iup-go/func/iup_draw.html
-func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
+func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float64, colors []string, offsets []float32) {
 	n := len(colors)
 	if n < 2 || (len(offsets) != 0 && len(offsets) != n) {
 		return
@@ -595,7 +595,7 @@ func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, 
 		cOffsets = (*C.float)(unsafe.Pointer(&offsets[0]))
 	}
 
-	C.IupDrawSetSourceLinearGradient(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.float(angle), (**C.char)(unsafe.Pointer(&cColors[0])), cOffsets, C.int(n))
+	C.IupDrawSetSourceLinearGradient(ih.ptr(), C.int(x1), C.int(y1), C.int(x2), C.int(y2), C.double(angle), (**C.char)(unsafe.Pointer(&cColors[0])), cOffsets, C.int(n))
 }
 
 // DrawSetSourceRadialGradient sets a radial gradient as the current source.

@@ -143,7 +143,7 @@ static void iFlatToggleDrawSwitch(IdrawCanvas* dc, Ihandle* ih, int check_left, 
       if (gradient)
       {
         char color1[30], color2[30];
-        float angle = iupAttribGetFloat(ih, "SWITCHTRACKGRADIENTANGLE");
+        double angle = iupAttribGetDouble(ih, "SWITCHTRACKGRADIENTANGLE");
         if (iupStrToStrStr(gradient, color1, sizeof(color1), color2, sizeof(color2), ':'))
           iupFlatDrawGradientBox(dc, track_xmin, track_xmin + track_width,
                                  track_ymin, track_ymin + track_height,
@@ -396,7 +396,7 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
   else if (!ih->data->check_size && iupAttribGet(ih, "GRADIENT"))
   {
     char* gradient = iupAttribGet(ih, "GRADIENT");
-    float angle = iupAttribGetFloat(ih, "GRADIENTANGLE");
+    double angle = iupAttribGetDouble(ih, "GRADIENTANGLE");
     int radius = iupAttribGetInt(ih, "CORNERRADIUS");
     int shade = 0;
 
@@ -1232,12 +1232,12 @@ Iclass* iupFlatToggleNewClass(void)
   iupClassRegisterAttribute(ic, "GRADIENT", NULL, iFlatToggleSetAttribPostRedraw, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GRADIENTHL", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GRADIENTPS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "GRADIENTANGLE", NULL, iFlatToggleSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "90", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENTANGLE", NULL, iFlatToggleSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "270", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CHECKCORNERRADIUS", NULL, iFlatToggleSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SWITCHCORNERRADIUS", NULL, iFlatToggleSetAttribPostRedraw, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SWITCHTRACKGRADIENT", NULL, iFlatToggleSetAttribPostRedraw, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SWITCHTRACKONGRADIENT", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SWITCHTRACKGRADIENTANGLE", NULL, iFlatToggleSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "90", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SWITCHTRACKGRADIENTANGLE", NULL, iFlatToggleSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "270", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SWITCHTHUMBCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "255 255 255", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SWITCHTHUMBHLCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SWITCHTHUMBPSCOLOR", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

@@ -327,7 +327,7 @@ namespace Iup
 
     static Image RGB(int width, int height, const unsigned char* pixels) { return Image(IupImageRGB(width, height, pixels)); }
     static Image RGBA(int width, int height, const unsigned char* pixels) { return Image(IupImageRGBA(width, height, pixels)); }
-    static Image FromHandle(void* handle) { return Image(IupImageFromHandle(handle)); }
+    static Image FromNative(void* handle) { return Image(IupImageFromNative(handle)); }
 
     int Save(const char* filename, const char* format) { return IupImageSave(ih, filename, format); }
     unsigned char* SaveToBuffer(const char* format, int* size) { return IupImageSaveToBuffer(ih, format, size); }
@@ -453,9 +453,9 @@ namespace Iup
     void DrawPixel(int x, int y) { IupDrawPixel(ih, x, y); }
     void DrawBezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4) { IupDrawBezier(ih, x1, y1, x2, y2, x3, y3, x4, y4); }
     void DrawQuadraticBezier(int x1, int y1, int x2, int y2, int x3, int y3) { IupDrawQuadraticBezier(ih, x1, y1, x2, y2, x3, y3); }
-    void DrawLinearGradient(int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2) { IupDrawLinearGradient(ih, x1, y1, x2, y2, angle, color1, color2); }
+    void DrawLinearGradient(int x1, int y1, int x2, int y2, double angle, const char* color1, const char* color2) { IupDrawLinearGradient(ih, x1, y1, x2, y2, angle, color1, color2); }
     void DrawRadialGradient(int cx, int cy, int radius, const char* colorCenter, const char* colorEdge) { IupDrawRadialGradient(ih, cx, cy, radius, colorCenter, colorEdge); }
-    void DrawLinearGradientStops(int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count) { IupDrawLinearGradientStops(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
+    void DrawLinearGradientStops(int x1, int y1, int x2, int y2, double angle, const char** colors, const float* offsets, int count) { IupDrawLinearGradientStops(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
     void DrawRadialGradientStops(int cx, int cy, int radius, const char** colors, const float* offsets, int count) { IupDrawRadialGradientStops(ih, cx, cy, radius, colors, offsets, count); }
     void DrawPathBegin() { IupDrawPathBegin(ih); }
     void DrawPathMoveTo(int x, int y) { IupDrawPathMoveTo(ih, x, y); }
@@ -474,7 +474,7 @@ namespace Iup
     void DrawPathStroke() { IupDrawPathStroke(ih); }
     void DrawSetClipPath(int rule) { IupDrawSetClipPath(ih, rule); }
     void DrawSetSourceSolid(const char* color) { IupDrawSetSourceSolid(ih, color); }
-    void DrawSetSourceLinearGradient(int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count) { IupDrawSetSourceLinearGradient(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
+    void DrawSetSourceLinearGradient(int x1, int y1, int x2, int y2, double angle, const char** colors, const float* offsets, int count) { IupDrawSetSourceLinearGradient(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
     void DrawSetSourceRadialGradient(int cx, int cy, int radius, const char** colors, const float* offsets, int count) { IupDrawSetSourceRadialGradient(ih, cx, cy, radius, colors, offsets, count); }
     void DrawResetSource() { IupDrawResetSource(ih); }
     void DrawText(const char* text, int len, int x, int y, int w, int h) { IupDrawText(ih, text, len, x, y, w, h); }
@@ -783,9 +783,9 @@ namespace Iup
     void DrawPixel(int x, int y) { IupDrawPixel(ih, x, y); }
     void DrawBezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4) { IupDrawBezier(ih, x1, y1, x2, y2, x3, y3, x4, y4); }
     void DrawQuadraticBezier(int x1, int y1, int x2, int y2, int x3, int y3) { IupDrawQuadraticBezier(ih, x1, y1, x2, y2, x3, y3); }
-    void DrawLinearGradient(int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2) { IupDrawLinearGradient(ih, x1, y1, x2, y2, angle, color1, color2); }
+    void DrawLinearGradient(int x1, int y1, int x2, int y2, double angle, const char* color1, const char* color2) { IupDrawLinearGradient(ih, x1, y1, x2, y2, angle, color1, color2); }
     void DrawRadialGradient(int cx, int cy, int radius, const char* colorCenter, const char* colorEdge) { IupDrawRadialGradient(ih, cx, cy, radius, colorCenter, colorEdge); }
-    void DrawLinearGradientStops(int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count) { IupDrawLinearGradientStops(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
+    void DrawLinearGradientStops(int x1, int y1, int x2, int y2, double angle, const char** colors, const float* offsets, int count) { IupDrawLinearGradientStops(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
     void DrawRadialGradientStops(int cx, int cy, int radius, const char** colors, const float* offsets, int count) { IupDrawRadialGradientStops(ih, cx, cy, radius, colors, offsets, count); }
     void DrawPathBegin() { IupDrawPathBegin(ih); }
     void DrawPathMoveTo(int x, int y) { IupDrawPathMoveTo(ih, x, y); }
@@ -804,7 +804,7 @@ namespace Iup
     void DrawPathStroke() { IupDrawPathStroke(ih); }
     void DrawSetClipPath(int rule) { IupDrawSetClipPath(ih, rule); }
     void DrawSetSourceSolid(const char* color) { IupDrawSetSourceSolid(ih, color); }
-    void DrawSetSourceLinearGradient(int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count) { IupDrawSetSourceLinearGradient(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
+    void DrawSetSourceLinearGradient(int x1, int y1, int x2, int y2, double angle, const char** colors, const float* offsets, int count) { IupDrawSetSourceLinearGradient(ih, x1, y1, x2, y2, angle, colors, offsets, count); }
     void DrawSetSourceRadialGradient(int cx, int cy, int radius, const char** colors, const float* offsets, int count) { IupDrawSetSourceRadialGradient(ih, cx, cy, radius, colors, offsets, count); }
     void DrawResetSource() { IupDrawResetSource(ih); }
     void DrawText(const char* text, int len, int x, int y, int w, int h) { IupDrawText(ih, text, len, x, y, w, h); }

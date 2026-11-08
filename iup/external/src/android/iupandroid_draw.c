@@ -362,7 +362,7 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   if (!dc || !dc->view) return;
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
@@ -371,7 +371,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   jfloatArray joffsets = (*jni_env)->NewFloatArray(jni_env, count);
   (*jni_env)->SetFloatArrayRegion(jni_env, joffsets, 0, count, offsets);
 
-  double rad = angle * M_PI / 180.0;
+  double rad = -angle * M_PI / 180.0;
   double w = (double)(x2 - x1);
   double h = (double)(y2 - y1);
   int sx = (int)(x1 + w / 2.0 - (w * cos(rad)) / 2.0);
@@ -677,7 +677,7 @@ IUP_SDK_API void iupdrvDrawPathFill(IdrawCanvas* dc, const IupPathSeg* segs, int
 
     if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
     {
-      double rad = src->angle * M_PI / 180.0;
+      double rad = -src->angle * M_PI / 180.0;
       double w = (double)(src->x2 - src->x1);
       double h = (double)(src->y2 - src->y1);
       int sx = (int)(src->x1 + w / 2.0 - (w * cos(rad)) / 2.0);
@@ -753,7 +753,7 @@ IUP_SDK_API void iupdrvDrawPathStroke(IdrawCanvas* dc, const IupPathSeg* segs, i
 
     if (src->type == IUP_SOURCE_LINEAR_GRADIENT)
     {
-      double rad = src->angle * M_PI / 180.0;
+      double rad = -src->angle * M_PI / 180.0;
       double w = (double)(src->x2 - src->x1);
       double h = (double)(src->y2 - src->y1);
       int sx = (int)(src->x1 + w / 2.0 - (w * cos(rad)) / 2.0);

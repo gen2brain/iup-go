@@ -2321,7 +2321,7 @@ static long x11InterpolateStops(const long* colors, const float* offsets, int co
   return colors[count - 1];
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   int i, steps;
   float frac, dx, dy, length;
@@ -2331,7 +2331,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  float rad = angle * 3.14159265359f / 180.0f;
+  float rad = -angle * 3.14159265359f / 180.0f;
   dx = (float)cos(rad);
   dy = (float)sin(rad);
 
@@ -2503,7 +2503,7 @@ IUP_SDK_API void iupdrvDrawRadialGradient(IdrawCanvas* dc, int cx, int cy, int r
   }
 }
 
-static Picture motDrawCreateLinearGradientPicture(int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+static Picture motDrawCreateLinearGradientPicture(int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   float w, h, rad, dx, dy, gx, gy;
   XLinearGradient grad;
@@ -2518,7 +2518,7 @@ static Picture motDrawCreateLinearGradientPicture(int x1, int y1, int x2, int y2
 
   w = (float)(x2 - x1);
   h = (float)(y2 - y1);
-  rad = angle * 3.14159265359f / 180.0f;
+  rad = -angle * 3.14159265359f / 180.0f;
   dx = (float)cos(rad);
   dy = (float)sin(rad);
   gx = (w * dx) / 2.0f;

@@ -96,7 +96,7 @@ IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, int y1, int 
 /** Draws a linear gradient across count color stops (offsets in 0-1, ascending).
  * angle: 0=horizontal right, 90=vertical down, 180=horizontal left, 270=vertical up
  * \ingroup drvdraw */
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count);
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count);
 
 /** Draws a radial gradient from center to edge across count color stops.
  * \ingroup drvdraw */
@@ -120,7 +120,7 @@ typedef struct _IupDrawSource
   int type;
   long color;
   int x1, y1, x2, y2;
-  float angle;
+  double angle;
   int cx, cy, radius;
   long colors[IUP_GRADIENT_MAX_STOPS];
   float offsets[IUP_GRADIENT_MAX_STOPS];

@@ -47,7 +47,7 @@ var demos = []demo{
 		circle(ih, 75, 65, 50)
 		circle(ih, 75, 65, 25)
 		iup.DrawSetClipPath(ih, iup.DRAW_RULE_EVENODD)
-		iup.DrawSetSourceLinearGradient(ih, 20, 10, 130, 120, 45, []string{"40 160 90", "220 240 120"}, nil)
+		iup.DrawSetSourceLinearGradient(ih, 20, 10, 130, 120, 315, []string{"40 160 90", "220 240 120"}, nil)
 		iup.DrawPathBegin(ih)
 		iup.DrawPathMoveTo(ih, 0, 0)
 		iup.DrawPathLineTo(ih, 149, 0)

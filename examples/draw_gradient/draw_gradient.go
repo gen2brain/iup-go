@@ -39,7 +39,7 @@ func draw(ih iup.Ihandle) int {
 		[]float32{0.0, 0.2, 1.0})
 
 	label(ih, "vertical, translucent stops", 20, 332)
-	iup.DrawLinearGradientStops(ih, 20, 348, 360, 408, 90,
+	iup.DrawLinearGradientStops(ih, 20, 348, 360, 408, 270,
 		[]string{"255 0 0 255", "0 255 0 60", "0 0 255 255"}, nil)
 
 	label(ih, "radial, 4-stop", 420, 44)

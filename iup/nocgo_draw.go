@@ -80,7 +80,7 @@ func DrawPolygon(ih Ihandle, points []int, count int) {
 	iupDrawPolygon(uintptr(ih), cp, int32(count))
 }
 
-func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
+func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float64, colors []string, offsets []float32) {
 	n := len(colors)
 	if n < 2 || (len(offsets) != 0 && len(offsets) != n) {
 		return
@@ -122,8 +122,8 @@ func DrawPixel(ih Ihandle, x, y int) {
 	iupDrawPixel(uintptr(ih), int32(x), int32(y))
 }
 
-func DrawRoundedRectangle(ih Ihandle, x1, y1, x2, y2, corner_radius int) {
-	iupDrawRoundedRectangle(uintptr(ih), int32(x1), int32(y1), int32(x2), int32(y2), int32(corner_radius))
+func DrawRoundedRectangle(ih Ihandle, x1, y1, x2, y2, cornerRadius int) {
+	iupDrawRoundedRectangle(uintptr(ih), int32(x1), int32(y1), int32(x2), int32(y2), int32(cornerRadius))
 }
 
 func DrawText(ih Ihandle, str string, x, y, w, h int) {
@@ -182,7 +182,7 @@ func DrawGetSvg(ih Ihandle) string {
 	return iupDrawGetSvg(uintptr(ih))
 }
 
-func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, color1, color2 string) {
+func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float64, color1, color2 string) {
 	iupDrawLinearGradient(uintptr(ih), int32(x1), int32(y1), int32(x2), int32(y2), angle, color1, color2)
 }
 
@@ -274,7 +274,7 @@ func DrawSetSourceSolid(ih Ihandle, color string) {
 	iupDrawSetSourceSolid(uintptr(ih), color)
 }
 
-func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
+func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float64, colors []string, offsets []float32) {
 	n := len(colors)
 	if n < 2 || (len(offsets) != 0 && len(offsets) != n) {
 		return
