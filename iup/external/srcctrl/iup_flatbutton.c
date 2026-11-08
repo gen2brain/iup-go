@@ -179,7 +179,6 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
     if (gradient)
     {
       float angle = iupAttribGetFloat(ih, "GRADIENTANGLE");
-      if (angle == 0) angle = 90;  /* default is top to bottom */
       iupFlatDrawGradientBoxStops(dc, border_width, draw_w - 1 - border_width,
                                   border_width, draw_h - 1 - border_width,
                                   corner_radius, angle, gradient, bgcolor, 1, shade);  /* background is always active */
