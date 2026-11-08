@@ -240,7 +240,7 @@ func Table() Ihandle {
 	return h
 }
 
-// TreeSetAttributeHandle .
+// TreeSetAttributeHandle sets a tree node attribute to the name of another interface element.
 //
 // https://gen2brain.github.io/iup-go/elem/iup_tree.html
 func TreeSetAttributeHandle(ih Ihandle, name string, id int, ihNamed Ihandle) {

@@ -11,10 +11,6 @@ import (
 */
 import "C"
 
-// ListReleaseFunc for LISTRELEASE_CB callback in MatrixList.
-// Called when mouse button is released over a list item.
-type ListReleaseFunc func(ih Ihandle, lin, col int, status string) int
-
 //export goIupListReleaseCB
 func goIupListReleaseCB(ih unsafe.Pointer, lin, col C.int, status *C.char) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_LISTRELEASE_CB")
@@ -35,10 +31,6 @@ func setListReleaseFunc(ih Ihandle, f ListReleaseFunc) {
 }
 
 //--------------------
-
-// ListInsertFunc for LISTINSERT_CB callback in MatrixList.
-// Called when an item is inserted.
-type ListInsertFunc func(ih Ihandle, pos int) int
 
 //export goIupListInsertCB
 func goIupListInsertCB(ih unsafe.Pointer, pos C.int) C.int {
@@ -61,10 +53,6 @@ func setListInsertFunc(ih Ihandle, f ListInsertFunc) {
 
 //--------------------
 
-// ListRemoveFunc for LISTREMOVE_CB callback in MatrixList.
-// Called when an item is removed.
-type ListRemoveFunc func(ih Ihandle, pos int) int
-
 //export goIupListRemoveCB
 func goIupListRemoveCB(ih unsafe.Pointer, pos C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_LISTREMOVE_CB")
@@ -86,10 +74,6 @@ func setListRemoveFunc(ih Ihandle, f ListRemoveFunc) {
 
 //--------------------
 
-// ListEditionFunc for LISTEDITION_CB callback in MatrixList.
-// Called during list item editing.
-type ListEditionFunc func(ih Ihandle, lin, col, mode, update int) int
-
 //export goIupListEditionCB
 func goIupListEditionCB(ih unsafe.Pointer, lin, col, mode, update C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_LISTEDITION_CB")
@@ -110,10 +94,6 @@ func setListEditionFunc(ih Ihandle, f ListEditionFunc) {
 }
 
 //--------------------
-
-// ListDrawFunc for LISTDRAW_CB callback in MatrixList.
-// Called to draw a list item (custom drawing).
-type ListDrawFunc func(ih Ihandle, lin, col, x1, x2, y1, y2 int) int
 
 //export goIupListDrawCB
 func goIupListDrawCB(ih unsafe.Pointer, lin, col, x1, x2, y1, y2 C.int) C.int {
@@ -138,10 +118,6 @@ func setListDrawFunc(ih Ihandle, f ListDrawFunc) {
 // MatrixEx Callbacks
 //--------------------
 
-// BusyFunc for BUSY_CB callback in MatrixEx.
-// Called during busy/long operations.
-type BusyFunc func(ih Ihandle, lin, col int, status string) int
-
 //export goIupBusyCB
 func goIupBusyCB(ih unsafe.Pointer, lin, col C.int, status *C.char) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_BUSY_CB")
@@ -162,10 +138,6 @@ func setBusyFunc(ih Ihandle, f BusyFunc) {
 }
 
 //--------------------
-
-// MenuContextFunc for MENUCONTEXT_CB callback in MatrixEx.
-// Called to show context menu for a cell.
-type MenuContextFunc func(ih, menu Ihandle, lin, col int) int
 
 //export goIupMenuContextCB
 func goIupMenuContextCB(ih, menu unsafe.Pointer, lin, col C.int) C.int {
@@ -188,10 +160,6 @@ func setMenuContextFunc(ih Ihandle, f MenuContextFunc) {
 
 //--------------------
 
-// MenuContextCloseFunc for MENUCONTEXTCLOSE_CB callback in MatrixEx.
-// Called when context menu is closed.
-type MenuContextCloseFunc func(ih, menu Ihandle, lin, col int) int
-
 //export goIupMenuContextCloseCB
 func goIupMenuContextCloseCB(ih, menu unsafe.Pointer, lin, col C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_MENUCONTEXTCLOSE_CB")
@@ -212,10 +180,6 @@ func setMenuContextCloseFunc(ih Ihandle, f MenuContextCloseFunc) {
 }
 
 //--------------------
-
-// PasteSizeFunc for PASTESIZE_CB callback in MatrixEx.
-// Called to determine paste area size.
-type PasteSizeFunc func(ih Ihandle, numlin, numcol int) int
 
 //export goIupPasteSizeCB
 func goIupPasteSizeCB(ih unsafe.Pointer, numlin, numcol C.int) C.int {
@@ -240,10 +204,6 @@ func setPasteSizeFunc(ih Ihandle, f PasteSizeFunc) {
 // Matrix Numeric Callbacks
 //--------------------
 
-// NumericGetValueFunc for NUMERICGETVALUE_CB callback in Matrix.
-// Called to get numeric value from a cell (returns double).
-type NumericGetValueFunc func(ih Ihandle, lin, col int) float64
-
 //export goIupNumericGetValueCB
 func goIupNumericGetValueCB(ih unsafe.Pointer, lin, col C.int) C.double {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_NUMERICGETVALUE_CB")
@@ -265,10 +225,6 @@ func setNumericGetValueFunc(ih Ihandle, f NumericGetValueFunc) {
 
 //--------------------
 
-// NumericSetValueFunc for NUMERICSETVALUE_CB callback in Matrix.
-// Called to set numeric value in a cell.
-type NumericSetValueFunc func(ih Ihandle, lin, col int, value float64) int
-
 //export goIupNumericSetValueCB
 func goIupNumericSetValueCB(ih unsafe.Pointer, lin, col C.int, value C.double) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_NUMERICSETVALUE_CB")
@@ -289,10 +245,6 @@ func setNumericSetValueFunc(ih Ihandle, f NumericSetValueFunc) {
 }
 
 //--------------------
-
-// SortColumnCompareFunc for SORTCOLUMNCOMPARE_CB callback in Matrix.
-// Called to compare two rows during column sort.
-type SortColumnCompareFunc func(ih Ihandle, col, lin1, lin2 int) int
 
 //export goIupSortColumnCompareCB
 func goIupSortColumnCompareCB(ih unsafe.Pointer, col, lin1, lin2 C.int) C.int {
@@ -317,10 +269,6 @@ func setSortColumnCompareFunc(ih Ihandle, f SortColumnCompareFunc) {
 // Cells Control Callbacks
 //--------------------
 
-// CellsDrawFunc for DRAW_CB callback in Cells control.
-// Called to draw a cell.
-type CellsDrawFunc func(ih Ihandle, i, j, xmin, xmax, ymin, ymax int) int
-
 //export goIupCellsDrawCB
 func goIupCellsDrawCB(ih unsafe.Pointer, i, j, xmin, xmax, ymin, ymax C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_CELLS_DRAW_CB").Value().(CellsDrawFunc)
@@ -335,10 +283,6 @@ func setCellsDrawFunc(ih Ihandle, f CellsDrawFunc) {
 }
 
 //--------------------
-
-// MouseClickFunc for MOUSECLICK_CB callback.
-// Called when mouse is clicked in a cell.
-type MouseClickFunc func(ih Ihandle, button, pressed, i, j, x, y int, status string) int
 
 //export goIupMouseClickCB
 func goIupMouseClickCB(ih unsafe.Pointer, button, pressed, i, j, x, y C.int, status unsafe.Pointer) C.int {
@@ -356,10 +300,6 @@ func setMouseClickFunc(ih Ihandle, f MouseClickFunc) {
 
 //--------------------
 
-// MouseMotionFunc for MOUSEMOTION_CB callback.
-// Called when mouse moves over a cell.
-type MouseMotionFunc func(ih Ihandle, i, j, x, y int, status string) int
-
 //export goIupMouseMotionCB
 func goIupMouseMotionCB(ih unsafe.Pointer, i, j, x, y C.int, status unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_MOUSEMOTION_CB").Value().(MouseMotionFunc)
@@ -376,10 +316,6 @@ func setMouseMotionFunc(ih Ihandle, f MouseMotionFunc) {
 
 //--------------------
 
-// ScrollingFunc for SCROLLING_CB callback.
-// Called when cells are scrolled.
-type ScrollingFunc func(ih Ihandle, i, j int) int
-
 //export goIupScrollingCB
 func goIupScrollingCB(ih unsafe.Pointer, i, j C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_SCROLLING_CB").Value().(ScrollingFunc)
@@ -394,10 +330,6 @@ func setScrollingFunc(ih Ihandle, f ScrollingFunc) {
 }
 
 //--------------------
-
-// NColsFunc for NCOLS_CB callback.
-// Called to get the number of columns.
-type NColsFunc func(ih Ihandle) int
 
 //export goIupNColsCB
 func goIupNColsCB(ih unsafe.Pointer) C.int {
@@ -414,10 +346,6 @@ func setNColsFunc(ih Ihandle, f NColsFunc) {
 
 //--------------------
 
-// NLinesFunc for NLINES_CB callback.
-// Called to get the number of lines.
-type NLinesFunc func(ih Ihandle) int
-
 //export goIupNLinesCB
 func goIupNLinesCB(ih unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_NLINES_CB").Value().(NLinesFunc)
@@ -432,10 +360,6 @@ func setNLinesFunc(ih Ihandle, f NLinesFunc) {
 }
 
 //--------------------
-
-// HSpanFunc for HSPAN_CB callback.
-// Called to get horizontal span of a cell.
-type HSpanFunc func(ih Ihandle, i, j int) int
 
 //export goIupHSpanCB
 func goIupHSpanCB(ih unsafe.Pointer, i, j C.int) C.int {
@@ -452,10 +376,6 @@ func setHSpanFunc(ih Ihandle, f HSpanFunc) {
 
 //--------------------
 
-// VSpanFunc for VSPAN_CB callback.
-// Called to get vertical span of a cell.
-type VSpanFunc func(ih Ihandle, i, j int) int
-
 //export goIupVSpanCB
 func goIupVSpanCB(ih unsafe.Pointer, i, j C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_VSPAN_CB").Value().(VSpanFunc)
@@ -470,10 +390,6 @@ func setVSpanFunc(ih Ihandle, f VSpanFunc) {
 }
 
 //--------------------
-
-// HeightFunc for HEIGHT_CB callback.
-// Called to get the height of a line.
-type HeightFunc func(ih Ihandle, i int) int
 
 //export goIupHeightCB
 func goIupHeightCB(ih unsafe.Pointer, i C.int) C.int {
@@ -490,10 +406,6 @@ func setHeightFunc(ih Ihandle, f HeightFunc) {
 
 //--------------------
 
-// WidthFunc for WIDTH_CB callback.
-// Called to get the width of a column.
-type WidthFunc func(ih Ihandle, j int) int
-
 //export goIupWidthCB
 func goIupWidthCB(ih unsafe.Pointer, j C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_WIDTH_CB").Value().(WidthFunc)
@@ -508,10 +420,6 @@ func setWidthFunc(ih Ihandle, f WidthFunc) {
 }
 
 //--------------------
-
-// BgColorFunc for BGCOLOR_CB callback.
-// Called to determine the background color of a cell.
-type BgColorFunc func(ih Ihandle, lin, col int) (r, g, b int, ret int)
 
 //export goIupBgColorCB
 func goIupBgColorCB(ih unsafe.Pointer, lin, col C.int, r, g, b *C.int) C.int {
@@ -531,10 +439,6 @@ func setBgColorFunc(ih Ihandle, f BgColorFunc) {
 }
 
 //--------------------
-
-// ClickFunc for CLICK_CB callback.
-// Called when a cell is clicked.
-type ClickFunc func(ih Ihandle, lin, col int, status string) int
 
 //export goIupClickCB
 func goIupClickCB(ih unsafe.Pointer, lin, col C.int, status unsafe.Pointer) C.int {
@@ -566,10 +470,6 @@ func setListClickFunc(ih Ihandle, f ClickFunc) {
 
 //--------------------
 
-// ColResizeFunc for COLRESIZE_CB callback.
-// Called when a column is resized.
-type ColResizeFunc func(ih Ihandle, col int) int
-
 //export goIupColResizeCB
 func goIupColResizeCB(ih unsafe.Pointer, col C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_COLRESIZE_CB").Value().(ColResizeFunc)
@@ -585,10 +485,6 @@ func setColResizeFunc(ih Ihandle, f ColResizeFunc) {
 
 //--------------------
 
-// DropCheckFunc for DROPCHECK_CB callback.
-// Called to check if dropdown should be shown.
-type DropCheckFunc func(ih Ihandle, lin, col int) int
-
 //export goIupDropCheckCB
 func goIupDropCheckCB(ih unsafe.Pointer, lin, col C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_DROPCHECK_CB").Value().(DropCheckFunc)
@@ -603,10 +499,6 @@ func setDropCheckFunc(ih Ihandle, f DropCheckFunc) {
 }
 
 //--------------------
-
-// DropSelectFunc for DROPSELECT_CB callback.
-// Called when dropdown item is selected.
-type DropSelectFunc func(ih Ihandle, lin, col int, drop Ihandle, text string, item, col2 int) int
 
 //export goIupDropSelectCB
 func goIupDropSelectCB(ih unsafe.Pointer, lin, col C.int, drop unsafe.Pointer, text *C.char, item, col2 C.int) C.int {
@@ -627,10 +519,6 @@ func setDropSelectFunc(ih Ihandle, f DropSelectFunc) {
 
 //--------------------
 
-// EditBeginFunc for EDITBEGIN_CB callback.
-// Called when cell editing begins.
-type EditBeginFunc func(ih Ihandle, lin, col int) int
-
 //export goIupEditBeginCB
 func goIupEditBeginCB(ih unsafe.Pointer, lin, col C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_EDITBEGIN_CB").Value().(EditBeginFunc)
@@ -645,10 +533,6 @@ func setEditBeginFunc(ih Ihandle, f EditBeginFunc) {
 }
 
 //--------------------
-
-// EditClickFunc for EDITCLICK_CB callback.
-// Called when edit field is clicked.
-type EditClickFunc func(ih Ihandle, lin, col int, status string) int
 
 //export goIupEditClickCB
 func goIupEditClickCB(ih unsafe.Pointer, lin, col C.int, status *C.char) C.int {
@@ -669,10 +553,6 @@ func setEditClickFunc(ih Ihandle, f EditClickFunc) {
 
 //--------------------
 
-// EditEndFunc for EDITEND_CB callback.
-// Called when cell editing ends.
-type EditEndFunc func(ih Ihandle, lin, col int, newValue string, apply int) int
-
 //export goIupEditEndCB
 func goIupEditEndCB(ih unsafe.Pointer, lin, col C.int, newValue *C.char, apply C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_EDITEND_CB").Value().(EditEndFunc)
@@ -687,10 +567,6 @@ func setEditEndFunc(ih Ihandle, f EditEndFunc) {
 }
 
 //--------------------
-
-// EditMouseMoveFunc for EDITMOUSEMOVE_CB callback.
-// Called when mouse moves in edit field.
-type EditMouseMoveFunc func(ih Ihandle, lin, col int) int
 
 //export goIupEditMouseMoveCB
 func goIupEditMouseMoveCB(ih unsafe.Pointer, lin, col C.int) C.int {
@@ -709,10 +585,6 @@ func setEditMouseMoveFunc(ih Ihandle, f EditMouseMoveFunc) {
 }
 
 //--------------------
-
-// EditReleaseFunc for EDITRELEASE_CB callback.
-// Called when mouse button is released in edit field.
-type EditReleaseFunc func(ih Ihandle, lin, col int, status string) int
 
 //export goIupEditReleaseCB
 func goIupEditReleaseCB(ih unsafe.Pointer, lin, col C.int, status *C.char) C.int {
@@ -733,10 +605,6 @@ func setEditReleaseFunc(ih Ihandle, f EditReleaseFunc) {
 
 //--------------------
 
-// EditionFunc for EDITION_CB callback.
-// Called during cell editing.
-type EditionFunc func(ih Ihandle, lin, col, mode, update int) int
-
 //export goIupEditionCB
 func goIupEditionCB(ih unsafe.Pointer, lin, col, mode, update C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_EDITION_CB").Value().(EditionFunc)
@@ -752,10 +620,6 @@ func setEditionFunc(ih Ihandle, f EditionFunc) {
 
 //--------------------
 
-// EnterItemFunc for ENTERITEM_CB callback.
-// Called when a cell is entered.
-type EnterItemFunc func(ih Ihandle, lin, col int) int
-
 //export goIupEnterItemCB
 func goIupEnterItemCB(ih unsafe.Pointer, lin, col C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_ENTERITEM_CB").Value().(EnterItemFunc)
@@ -770,10 +634,6 @@ func setEnterItemFunc(ih Ihandle, f EnterItemFunc) {
 }
 
 //--------------------
-
-// FgColorFunc for FGCOLOR_CB callback.
-// Called to determine the foreground color of a cell.
-type FgColorFunc func(ih Ihandle, lin, col int) (r, g, b int, ret int)
 
 //export goIupFgColorCB
 func goIupFgColorCB(ih unsafe.Pointer, lin, col C.int, r, g, b *C.int) C.int {
@@ -794,10 +654,6 @@ func setFgColorFunc(ih Ihandle, f FgColorFunc) {
 
 //--------------------
 
-// LeaveItemFunc for LEAVEITEM_CB callback.
-// Called when a cell is left.
-type LeaveItemFunc func(ih Ihandle, lin, col int) int
-
 //export goIupLeaveItemCB
 func goIupLeaveItemCB(ih unsafe.Pointer, lin, col C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_LEAVEITEM_CB").Value().(LeaveItemFunc)
@@ -812,10 +668,6 @@ func setLeaveItemFunc(ih Ihandle, f LeaveItemFunc) {
 }
 
 //--------------------
-
-// MarkEditFunc for MARKEDIT_CB callback.
-// Called when cell mark is edited.
-type MarkEditFunc func(ih Ihandle, lin, col, marked int) int
 
 //export goIupMarkEditCB
 func goIupMarkEditCB(ih unsafe.Pointer, lin, col, marked C.int) C.int {
@@ -832,10 +684,6 @@ func setMarkEditFunc(ih Ihandle, f MarkEditFunc) {
 
 //--------------------
 
-// MarkFunc for MARK_CB callback.
-// Called when a cell is marked.
-type MarkFunc func(ih Ihandle, lin, col int) int
-
 //export goIupMarkCB
 func goIupMarkCB(ih unsafe.Pointer, lin, col C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_MARK_CB").Value().(MarkFunc)
@@ -850,10 +698,6 @@ func setMarkFunc(ih Ihandle, f MarkFunc) {
 }
 
 //--------------------
-
-// MatrixActionFunc for ACTION_CB callback in Matrix control.
-// Called for keyboard actions in a cell.
-type MatrixActionFunc func(ih Ihandle, key, lin, col, edition int, status string) int
 
 //export goIupMatrixActionCB
 func goIupMatrixActionCB(ih unsafe.Pointer, key, lin, col, edition C.int, status *C.char) C.int {
@@ -874,10 +718,6 @@ func setMatrixActionFunc(ih Ihandle, f MatrixActionFunc) {
 
 //--------------------
 
-// MatrixDrawFunc for DRAW_CB callback in Matrix control.
-// Called to draw a cell.
-type MatrixDrawFunc func(ih Ihandle, lin, col, x1, x2, y1, y2 int) int
-
 //export goIupMatrixDrawCB
 func goIupMatrixDrawCB(ih unsafe.Pointer, lin, col, x1, x2, y1, y2 C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_MATRIX_DRAW_CB").Value().(MatrixDrawFunc)
@@ -892,10 +732,6 @@ func setMatrixDrawFunc(ih Ihandle, f MatrixDrawFunc) {
 }
 
 //--------------------
-
-// MatrixDropFunc for DROP_CB callback in Matrix control.
-// Called when a dropdown is shown.
-type MatrixDropFunc func(ih, drop Ihandle, lin, col int) int
 
 //export goIupMatrixDropCB
 func goIupMatrixDropCB(ih, drop unsafe.Pointer, lin, col C.int) C.int {
@@ -914,11 +750,6 @@ func setMatrixDropFunc(ih Ihandle, f MatrixDropFunc) {
 }
 
 //--------------------
-
-// MatrixFontFunc for FONT_CB callback.
-// Called to get the font for a cell.
-// Returns font string.
-type MatrixFontFunc func(ih Ihandle, lin, col int) string
 
 //export goIupMatrixFontCB
 func goIupMatrixFontCB(ih unsafe.Pointer, lin, col C.int) *C.char {
@@ -942,10 +773,6 @@ func setMatrixFontFunc(ih Ihandle, f MatrixFontFunc) {
 
 //--------------------
 
-// MatrixMouseMoveFunc for MOUSEMOVE_CB callback in Matrix.
-// Called when mouse moves over a cell.
-type MatrixMouseMoveFunc func(ih Ihandle, lin, col int) int
-
 //export goIupMatrixMouseMoveCB
 func goIupMatrixMouseMoveCB(ih unsafe.Pointer, lin, col C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_MATRIX_MOUSEMOVE_CB").Value().(MatrixMouseMoveFunc)
@@ -960,10 +787,6 @@ func setMatrixMouseMoveFunc(ih Ihandle, f MatrixMouseMoveFunc) {
 }
 
 //--------------------
-
-// MatrixToggleValueFunc for TOGGLEVALUE_CB callback in Matrix control.
-// Called when toggle value changes.
-type MatrixToggleValueFunc func(ih Ihandle, lin, col, value int) int
 
 //export goIupMatrixToggleValueCB
 func goIupMatrixToggleValueCB(ih unsafe.Pointer, lin, col, value C.int) C.int {
@@ -982,11 +805,6 @@ func setMatrixToggleValueFunc(ih Ihandle, f MatrixToggleValueFunc) {
 }
 
 //--------------------
-
-// MatrixTypeFunc for TYPE_CB callback.
-// Called to get the type of a cell.
-// Returns type string.
-type MatrixTypeFunc func(ih Ihandle, lin, col int) string
 
 //export goIupMatrixTypeCB
 func goIupMatrixTypeCB(ih unsafe.Pointer, lin, col C.int) *C.char {
@@ -1010,11 +828,6 @@ func setMatrixTypeFunc(ih Ihandle, f MatrixTypeFunc) {
 
 //--------------------
 
-// MatrixValueFunc for VALUE_CB callback.
-// Called to get the value of a cell.
-// Returns value string.
-type MatrixValueFunc func(ih Ihandle, lin, col int) string
-
 //export goIupMatrixValueCB
 func goIupMatrixValueCB(ih unsafe.Pointer, lin, col C.int) *C.char {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_VALUE_CB")
@@ -1037,10 +850,6 @@ func setMatrixValueFunc(ih Ihandle, f MatrixValueFunc) {
 
 //--------------------
 
-// MenuDropFunc for MENUDROP_CB callback.
-// Called to show dropdown menu for a cell.
-type MenuDropFunc func(ih, menu Ihandle, lin, col int) int
-
 //export goIupMenuDropCB
 func goIupMenuDropCB(ih, menu unsafe.Pointer, lin, col C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_MENUDROP_CB")
@@ -1059,10 +868,6 @@ func setMenuDropFunc(ih Ihandle, f MenuDropFunc) {
 
 //--------------------
 
-// ReleaseFunc for RELEASE_CB callback.
-// Called when mouse button is released over a cell.
-type ReleaseFunc func(ih Ihandle, lin, col int, status string) int
-
 //export goIupReleaseCB
 func goIupReleaseCB(ih unsafe.Pointer, lin, col C.int, status unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_RELEASE_CB").Value().(ReleaseFunc)
@@ -1079,10 +884,6 @@ func setReleaseFunc(ih Ihandle, f ReleaseFunc) {
 
 //--------------------
 
-// ResizeMatrixFunc for RESIZEMATRIX_CB callback.
-// Called when the matrix is resized.
-type ResizeMatrixFunc func(ih Ihandle, width, height int) int
-
 //export goIupResizeMatrixCB
 func goIupResizeMatrixCB(ih unsafe.Pointer, width, height C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_RESIZEMATRIX_CB").Value().(ResizeMatrixFunc)
@@ -1098,10 +899,6 @@ func setResizeMatrixFunc(ih Ihandle, f ResizeMatrixFunc) {
 
 //--------------------
 
-// ScrollTopFunc for SCROLLTOP_CB callback.
-// Called when scrolling to top.
-type ScrollTopFunc func(ih Ihandle, lin, col int) int
-
 //export goIupScrollTopCB
 func goIupScrollTopCB(ih unsafe.Pointer, lin, col C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_SCROLLTOP_CB").Value().(ScrollTopFunc)
@@ -1116,11 +913,6 @@ func setScrollTopFunc(ih Ihandle, f ScrollTopFunc) {
 }
 
 //--------------------
-
-// TranslateValueFunc for TRANSLATEVALUE_CB callback.
-// Called to translate cell value for display.
-// Returns translated string.
-type TranslateValueFunc func(ih Ihandle, lin, col int, value string) string
 
 //export goIupTranslateValueCB
 func goIupTranslateValueCB(ih unsafe.Pointer, lin, col C.int, value *C.char) *C.char {
@@ -1145,10 +937,6 @@ func setTranslateValueFunc(ih Ihandle, f TranslateValueFunc) {
 
 //--------------------
 
-// ValueEditFunc for VALUE_EDIT_CB callback.
-// Called to edit cell value.
-type ValueEditFunc func(ih Ihandle, lin, col int, newval string) int
-
 //export goIupValueEditCB
 func goIupValueEditCB(ih unsafe.Pointer, lin, col C.int, newval unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_VALUE_EDIT_CB").Value().(ValueEditFunc)
@@ -1168,14 +956,6 @@ func setValueEditFunc(ih Ihandle, f ValueEditFunc) {
 //--------------------
 // MatrixList Control Callbacks (srcctrl/iup_matrixlist.c)
 //--------------------
-
-// MatrixListActionFunc for ACTION_CB and IMAGEVALUECHANGED_CB callbacks in MatrixList.
-// Called when item selection or image value changes.
-//
-// f: func(ih Ihandle, item, state int) int
-//
-// https://gen2brain.github.io/iup-go/ctrl/iup_matrixlist.html
-type MatrixListActionFunc func(ih Ihandle, item, state int) int
 
 //export goIupMatrixListActionCB
 func goIupMatrixListActionCB(ih unsafe.Pointer, item, state C.int) C.int {
@@ -1210,10 +990,6 @@ func setMatrixListActionFunc(ih Ihandle, name string, f MatrixListActionFunc) {
 
 //--------------------
 
-// FlatActionFunc for FLAT_ACTION callback.
-// Action generated when the button 1 (usually left) is selected.
-type FlatActionFunc func(ih Ihandle) int
-
 //export goIupFlatActionCB
 func goIupFlatActionCB(ih unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_FLAT_ACTION").Value().(FlatActionFunc)
@@ -1229,10 +1005,6 @@ func setFlatActionFunc(ih Ihandle, f FlatActionFunc) {
 }
 
 //--------------------
-
-// FlatListActionFunc for FlatList FLAT_ACTION callback.
-// Action generated when the state of an item in the list is interactively changed.
-type FlatListActionFunc func(ih Ihandle, text string, item, state int) int
 
 //export goIupFlatListActionCB
 func goIupFlatListActionCB(ih, text unsafe.Pointer, item, state C.int) C.int {
@@ -1250,10 +1022,6 @@ func setFlatListActionFunc(ih Ihandle, f FlatListActionFunc) {
 }
 
 //--------------------
-
-// FlatToggleActionFunc for FlatToggle FLAT_ACTION callback.
-// Action generated when the toggle's state (on/off) was changed.
-type FlatToggleActionFunc func(ih Ihandle, state int) int
 
 //export goIupFlatToggleActionCB
 func goIupFlatToggleActionCB(ih unsafe.Pointer, state C.int) C.int {

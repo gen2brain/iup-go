@@ -11,18 +11,6 @@ import (
 */
 import "C"
 
-// PlayEndFunc for PLAYEND_CB callback.
-// Called when playback reaches the end of the file.
-type PlayEndFunc func(ih Ihandle) int
-
-// ReadyFunc for READY_CB callback.
-// Called when the source is ready to play.
-type ReadyFunc func(ih Ihandle) int
-
-// StateChangedFunc for STATECHANGED_CB callback.
-// Called when the playback state changes.
-type StateChangedFunc func(ih Ihandle, state string) int
-
 //export goIupReadyCB
 func goIupReadyCB(ih unsafe.Pointer) C.int {
 	f := loadCallback(Ihandle(ih), "_IUPGO_READY_CB").Value().(ReadyFunc)
@@ -59,10 +47,6 @@ func setPlayEndFunc(ih Ihandle, f PlayEndFunc) {
 	C.goIupSetPlayEndFunc(ih.ptr())
 }
 
-// FrameFunc for FRAME_CB callback.
-// Called for every captured frame, before it is drawn. The data slice holds packed RGB pixels and is valid only during the callback.
-type FrameFunc func(ih Ihandle, width, height int, data []byte) int
-
 //export goIupFrameCB
 func goIupFrameCB(ih unsafe.Pointer, width, height C.int, data unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_FRAME_CB").Value().(FrameFunc)
@@ -76,10 +60,6 @@ func setFrameFunc(ih Ihandle, f FrameFunc) {
 
 	C.goIupSetFrameFunc(ih.ptr())
 }
-
-// SamplesFunc for SAMPLES_CB callback.
-// Called for every block of captured audio. The samples slice holds 16-bit interleaved frames and is valid only during the callback.
-type SamplesFunc func(ih Ihandle, frames, channels int, samples []int16) int
 
 //export goIupSamplesCB
 func goIupSamplesCB(ih unsafe.Pointer, frames, channels C.int, samples unsafe.Pointer) C.int {

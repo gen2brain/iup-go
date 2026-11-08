@@ -36,7 +36,7 @@ func ConfigSave(ih Ihandle) int {
 	return int(C.IupConfigSave(ih.ptr()))
 }
 
-// ConfigSetVariableStr .
+// ConfigSetVariableStr stores a string variable in a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigSetVariableStr(ih Ihandle, group, key string, value string) {
@@ -48,7 +48,7 @@ func ConfigSetVariableStr(ih Ihandle, group, key string, value string) {
 	C.IupConfigSetVariableStr(ih.ptr(), cGroup, cKey, cValue)
 }
 
-// ConfigSetVariableStrId .
+// ConfigSetVariableStrId stores a string variable with an id in a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigSetVariableStrId(ih Ihandle, group, key string, id int, value string) {
@@ -60,7 +60,7 @@ func ConfigSetVariableStrId(ih Ihandle, group, key string, id int, value string)
 	C.IupConfigSetVariableStrId(ih.ptr(), cGroup, cKey, C.int(id), cValue)
 }
 
-// ConfigSetVariableInt .
+// ConfigSetVariableInt stores an integer variable in a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigSetVariableInt(ih Ihandle, group, key string, value int) {
@@ -71,7 +71,7 @@ func ConfigSetVariableInt(ih Ihandle, group, key string, value int) {
 	C.IupConfigSetVariableInt(ih.ptr(), cGroup, cKey, C.int(value))
 }
 
-// ConfigSetVariableIntId .
+// ConfigSetVariableIntId stores an integer variable with an id in a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigSetVariableIntId(ih Ihandle, group, key string, id int, value int) {
@@ -82,7 +82,7 @@ func ConfigSetVariableIntId(ih Ihandle, group, key string, id int, value int) {
 	C.IupConfigSetVariableIntId(ih.ptr(), cGroup, cKey, C.int(id), C.int(value))
 }
 
-// ConfigSetVariableDouble .
+// ConfigSetVariableDouble stores a floating point variable in a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigSetVariableDouble(ih Ihandle, group, key string, value float64) {
@@ -93,7 +93,7 @@ func ConfigSetVariableDouble(ih Ihandle, group, key string, value float64) {
 	C.IupConfigSetVariableDouble(ih.ptr(), cGroup, cKey, C.double(value))
 }
 
-// ConfigSetVariableDoubleId .
+// ConfigSetVariableDoubleId stores a floating point variable with an id in a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigSetVariableDoubleId(ih Ihandle, group, key string, id int, value float64) {
@@ -104,7 +104,7 @@ func ConfigSetVariableDoubleId(ih Ihandle, group, key string, id int, value floa
 	C.IupConfigSetVariableDoubleId(ih.ptr(), cGroup, cKey, C.int(id), C.double(value))
 }
 
-// ConfigGetVariableStr .
+// ConfigGetVariableStr returns a string variable of a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigGetVariableStr(ih Ihandle, group, key string) string {
@@ -115,7 +115,7 @@ func ConfigGetVariableStr(ih Ihandle, group, key string) string {
 	return C.GoString(C.IupConfigGetVariableStr(ih.ptr(), cGroup, cKey))
 }
 
-// ConfigGetVariableStrId .
+// ConfigGetVariableStrId returns a string variable with an id of a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigGetVariableStrId(ih Ihandle, group, key string, id int) string {
@@ -126,7 +126,7 @@ func ConfigGetVariableStrId(ih Ihandle, group, key string, id int) string {
 	return C.GoString(C.IupConfigGetVariableStrId(ih.ptr(), cGroup, cKey, C.int(id)))
 }
 
-// ConfigGetVariableInt .
+// ConfigGetVariableInt returns an integer variable of a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigGetVariableInt(ih Ihandle, group, key string) int {
@@ -137,7 +137,7 @@ func ConfigGetVariableInt(ih Ihandle, group, key string) int {
 	return int(C.IupConfigGetVariableInt(ih.ptr(), cGroup, cKey))
 }
 
-// ConfigGetVariableIntId .
+// ConfigGetVariableIntId returns an integer variable with an id of a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigGetVariableIntId(ih Ihandle, group, key string, id int) int {
@@ -148,7 +148,7 @@ func ConfigGetVariableIntId(ih Ihandle, group, key string, id int) int {
 	return int(C.IupConfigGetVariableIntId(ih.ptr(), cGroup, cKey, C.int(id)))
 }
 
-// ConfigGetVariableDouble .
+// ConfigGetVariableDouble returns a floating point variable of a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigGetVariableDouble(ih Ihandle, group, key string) float64 {
@@ -159,7 +159,7 @@ func ConfigGetVariableDouble(ih Ihandle, group, key string) float64 {
 	return float64(C.IupConfigGetVariableDouble(ih.ptr(), cGroup, cKey))
 }
 
-// ConfigGetVariableDoubleId .
+// ConfigGetVariableDoubleId returns a floating point variable with an id of a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigGetVariableDoubleId(ih Ihandle, group, key string, id int) float64 {
@@ -170,7 +170,7 @@ func ConfigGetVariableDoubleId(ih Ihandle, group, key string, id int) float64 {
 	return float64(C.IupConfigGetVariableDoubleId(ih.ptr(), cGroup, cKey, C.int(id)))
 }
 
-// ConfigGetVariableStrDef .
+// ConfigGetVariableStrDef returns a string variable of a group, or def when it is not set.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigGetVariableStrDef(ih Ihandle, group, key string, def string) string {
@@ -182,7 +182,7 @@ func ConfigGetVariableStrDef(ih Ihandle, group, key string, def string) string {
 	return C.GoString(C.IupConfigGetVariableStrDef(ih.ptr(), cGroup, cKey, cDef))
 }
 
-// ConfigGetVariableStrIdDef .
+// ConfigGetVariableStrIdDef returns a string variable with an id of a group, or def when it is not set.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigGetVariableStrIdDef(ih Ihandle, group, key string, id int, def string) string {
@@ -194,7 +194,7 @@ func ConfigGetVariableStrIdDef(ih Ihandle, group, key string, id int, def string
 	return C.GoString(C.IupConfigGetVariableStrIdDef(ih.ptr(), cGroup, cKey, C.int(id), cDef))
 }
 
-// ConfigGetVariableIntDef .
+// ConfigGetVariableIntDef returns an integer variable of a group, or def when it is not set.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigGetVariableIntDef(ih Ihandle, group, key string, def int) int {
@@ -205,7 +205,7 @@ func ConfigGetVariableIntDef(ih Ihandle, group, key string, def int) int {
 	return int(C.IupConfigGetVariableIntDef(ih.ptr(), cGroup, cKey, C.int(def)))
 }
 
-// ConfigGetVariableIntIdDef .
+// ConfigGetVariableIntIdDef returns an integer variable with an id of a group, or def when it is not set.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigGetVariableIntIdDef(ih Ihandle, group, key string, id int, def int) int {
@@ -216,7 +216,7 @@ func ConfigGetVariableIntIdDef(ih Ihandle, group, key string, id int, def int) i
 	return int(C.IupConfigGetVariableIntIdDef(ih.ptr(), cGroup, cKey, C.int(id), C.int(def)))
 }
 
-// ConfigGetVariableDoubleDef .
+// ConfigGetVariableDoubleDef returns a floating point variable of a group, or def when it is not set.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigGetVariableDoubleDef(ih Ihandle, group, key string, def float64) float64 {
@@ -227,7 +227,7 @@ func ConfigGetVariableDoubleDef(ih Ihandle, group, key string, def float64) floa
 	return float64(C.IupConfigGetVariableDoubleDef(ih.ptr(), cGroup, cKey, C.double(def)))
 }
 
-// ConfigGetVariableDoubleIdDef .
+// ConfigGetVariableDoubleIdDef returns a floating point variable with an id of a group, or def when it is not set.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigGetVariableDoubleIdDef(ih Ihandle, group, key string, id int, def float64) float64 {
@@ -238,7 +238,7 @@ func ConfigGetVariableDoubleIdDef(ih Ihandle, group, key string, id int, def flo
 	return float64(C.IupConfigGetVariableDoubleIdDef(ih.ptr(), cGroup, cKey, C.int(id), C.double(def)))
 }
 
-// ConfigSetListVariable .
+// ConfigSetListVariable adds a value to, or removes it from, a list variable of a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html
 func ConfigSetListVariable(ih Ihandle, group, key, value string, add int) {
