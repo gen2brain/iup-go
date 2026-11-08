@@ -263,7 +263,7 @@ func main() {
 		"TITLE":        "Chat",
 		"DEFAULTENTER": "sendButton",
 	})
-	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(themeChanged))
+	dlg.SetCallback("APPEARANCECHANGED_CB", iup.AppearanceChangedFunc(themeChanged))
 
 	dlg.SetAttributeHandle("STARTFOCUS", composer)
 

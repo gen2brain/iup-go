@@ -503,7 +503,7 @@ static void androidTableApplyRowColors(Ihandle* ih)
   androidTableCallRgb(ih, "setOddRowColor", r, g, b);
 }
 
-static int androidTableSetAlternateColorAttrib(Ihandle* ih, const char* value)
+static int androidTableSetAlternateRowsAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle) return 1;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
@@ -512,7 +512,7 @@ static int androidTableSetAlternateColorAttrib(Ihandle* ih, const char* value)
   (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jboolean)(iupStrBoolean(value) ? JNI_TRUE : JNI_FALSE));
   iupAndroid_CheckException(env, "IupTableHelper.setAlternateColor");
   (*env)->DeleteLocalRef(env, cls);
-  iupAttribSetStr(ih, "ALTERNATECOLOR", value);
+  iupAttribSetStr(ih, "ALTERNATEROWS", value);
   androidTableApplyRowColors(ih);
   return 1;
 }
@@ -867,8 +867,8 @@ static int androidTableMapMethod(Ihandle* ih)
   if (v) androidTableSetBgColorAttrib(ih, v);
   v = iupAttribGet(ih, "FGCOLOR");
   if (v) androidTableSetFgColorAttrib(ih, v);
-  v = iupAttribGet(ih, "ALTERNATECOLOR");
-  if (v) androidTableSetAlternateColorAttrib(ih, v);
+  v = iupAttribGet(ih, "ALTERNATEROWS");
+  if (v) androidTableSetAlternateRowsAttrib(ih, v);
 
   androidTableReplayStoredCells(ih);
 
@@ -899,7 +899,7 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 
   iupClassRegisterAttributeId(ic, "ALIGNMENT", NULL, androidTableSetAlignmentIdAttrib, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "ALTERNATECOLOR", NULL, androidTableSetAlternateColorAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ALTERNATEROWS", NULL, androidTableSetAlternateRowsAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "EVENROWCOLOR", NULL, androidTableSetEvenRowColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ODDROWCOLOR", NULL, androidTableSetOddRowColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 

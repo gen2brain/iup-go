@@ -119,7 +119,7 @@ VALUE0 contains the path (same value returned in DIRECTORY), and VALUE1, VALUE2,
 **MULTIVALUEPATH**: force a full path in MULTIVALUE and VALUE attributes when MULTIPLEFILES=YES (id=0 will still contain the path of the first file).
 In Windows and Motif, only files in the same folder may be selected, but in GTK when using the "Recent Files" files from different folders can be selected.
 
-**VALUE_URI** [Android and iOS Only] (read-only) (non-inheritable): the URI of the selected file, the first one when MULTIPLEFILES=YES.
+**VALUEURI** [Android and iOS Only] (read-only) (non-inheritable): the URI of the selected file, the first one when MULTIPLEFILES=YES.
 In Android it is a `content://` URI that stays valid after the application restarts. Use it with `IupConfigRecentUpdate`.
 In iOS it is the `file://` URL of VALUE in OPEN mode and of the selected location in SAVE mode.
 

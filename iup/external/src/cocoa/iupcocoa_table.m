@@ -564,7 +564,7 @@ static void cocoaTableSetCellValue(Ihandle* ih, int lin, int col, const char* va
 
 static void cocoaTableUpdateAlternatingRows(Ihandle* ih, NSTableView* tableView)
 {
-  BOOL system_colors = iupAttribGetBoolean(ih, "ALTERNATECOLOR") &&
+  BOOL system_colors = iupAttribGetBoolean(ih, "ALTERNATEROWS") &&
                        !iupAttribGet(ih, "EVENROWCOLOR") && !iupAttribGet(ih, "ODDROWCOLOR");
   [tableView setUsesAlternatingRowBackgroundColors:system_colors];
 }

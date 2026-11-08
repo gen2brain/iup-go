@@ -1163,7 +1163,7 @@ static Ihandle* iImageGetHandleFromImage(void* handle)
   return NULL;
 }
 
-IUP_API Ihandle* IupImageFromHandle(void* handle)
+IUP_API Ihandle* IupImageFromNative(void* handle)
 {
   if (!handle)
     return NULL;
@@ -1272,7 +1272,7 @@ IUP_API int IupImageSave(Ihandle* ih, const char* filename, const char* format)
   if (bpp == 8)
     iupImageInitColorTable(ih, colors, &colors_count);
 
-  if (!format)
+  if (!format || !format[0])
     format = iImageGetFormatFromFilename(filename);
   if (!format)
     return 0;

@@ -113,7 +113,7 @@ IUP_SDK_API void iupGlobalNotifyThemeChanged(void)
   dialog = iupDlgListFirst();
   while (dialog)
   {
-    IFni cb = (IFni)IupGetCallback(dialog, "THEMECHANGED_CB");
+    IFni cb = (IFni)IupGetCallback(dialog, "APPEARANCECHANGED_CB");
     if (cb && cb(dialog, dark) == IUP_CLOSE)
       IupExitLoop();
     dialog = iupDlgListNext();

@@ -164,7 +164,7 @@ static void wasmTableStripeCss(const char* value, char* css)
 static void wasmTableApplyColors(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih);
-  int alt = iupAttribGetBoolean(ih, "ALTERNATECOLOR");
+  int alt = iupAttribGetBoolean(ih, "ALTERNATEROWS");
   char even[20], odd[20];
   wasmTableStripeCss(iupTableGetAlternateColor(ih, 2), even);
   wasmTableStripeCss(iupTableGetAlternateColor(ih, 1), odd);

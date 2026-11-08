@@ -56,7 +56,7 @@ func main() {
 	tree.SetCallback("SELECTION_CB", iup.SelectionFunc(folderSelected))
 
 	table := iup.Table().SetAttributes(`EXPAND=YES, NUMCOL=5, SHOWIMAGE=YES, SORTABLE=YES, USERRESIZE=YES,
-		STRETCHLAST=YES, ALTERNATECOLOR=YES, FOCUSFEEDBACK=NO, VISIBLELINES=8`).SetHandle("mail_table")
+		STRETCHLAST=YES, ALTERNATEROWS=YES, FOCUSFEEDBACK=NO, VISIBLELINES=8`).SetHandle("mail_table")
 	table.SetAttributes(map[string]string{
 		"TITLE1": " ", "TITLE2": "From", "TITLE3": "Subject", "TITLE4": "Date", "TITLE5": "Size",
 		"ALIGNMENT5": "ARIGHT",
@@ -133,7 +133,7 @@ func main() {
 		"MENU":      "mail_menu",
 		"PLACEMENT": "MAXIMIZED",
 	})
-	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(iup.Ihandle, int) int { retheme(); return iup.DEFAULT }))
+	dlg.SetCallback("APPEARANCECHANGED_CB", iup.AppearanceChangedFunc(func(iup.Ihandle, int) int { retheme(); return iup.DEFAULT }))
 	buildMenu()
 
 	iup.Show(dlg)

@@ -1684,7 +1684,7 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 	ic->Map   = cocoaTouchTableMapMethod;
 	ic->UnMap = cocoaTouchTableUnMapMethod;
 
-	iupClassRegisterAttribute(ic, "ALTERNATECOLOR", NULL, cocoaTouchTableSetReloadAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "ALTERNATEROWS", NULL, cocoaTouchTableSetReloadAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "EVENROWCOLOR",   NULL, cocoaTouchTableSetReloadAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "ODDROWCOLOR",    NULL, cocoaTouchTableSetReloadAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "FOCUSFEEDBACK",      NULL, cocoaTouchTableSetReloadAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);

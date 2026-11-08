@@ -65,7 +65,7 @@ func main() {
 	}
 
 	// Enable alternating row colors by default
-	table.SetAttribute("ALTERNATECOLOR", "YES")
+	table.SetAttribute("ALTERNATEROWS", "YES")
 
 	// Buttons for testing
 	btnAddRow := iup.Button("Add Row").SetAttribute("PADDING", "5x0")
@@ -120,12 +120,12 @@ func main() {
 
 	iup.SetCallback(btnToggleColors, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		t := iup.GetHandle("table")
-		currentValue := t.GetAttribute("ALTERNATECOLOR")
+		currentValue := t.GetAttribute("ALTERNATEROWS")
 		if currentValue == "YES" {
-			t.SetAttribute("ALTERNATECOLOR", "NO")
+			t.SetAttribute("ALTERNATEROWS", "NO")
 			ih.SetAttribute("TITLE", "Enable Alternating Colors")
 		} else {
-			t.SetAttribute("ALTERNATECOLOR", "YES")
+			t.SetAttribute("ALTERNATEROWS", "YES")
 			ih.SetAttribute("TITLE", "Disable Alternating Colors")
 		}
 		t.SetAttribute("REDRAW", "YES")

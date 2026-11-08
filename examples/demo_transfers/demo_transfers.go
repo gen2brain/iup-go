@@ -170,7 +170,7 @@ func main() {
 	dlg := iup.Dialog(iup.Vbox(header, toolbar(), center, footer).SetAttributes("NGAP=0")).SetHandle("transfer_dlg")
 	dlg.SetAttributes("TITLE=\"Backup and Transfer Center\", ICON=transfer_icon")
 	dlg.SetCallback("CLOSE_CB", iup.CloseFunc(closeDialog))
-	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(iup.Ihandle, int) int {
+	dlg.SetCallback("APPEARANCECHANGED_CB", iup.AppearanceChangedFunc(func(iup.Ihandle, int) int {
 		refreshTable()
 		return iup.DEFAULT
 	}))
@@ -288,7 +288,7 @@ func sourceTree() iup.Ihandle {
 }
 
 func queueTable() iup.Ihandle {
-	table := iup.Table().SetAttributes("NUMCOL=6, VISIBLELINES=13, EXPAND=YES, SORTABLE=YES, USERRESIZE=YES, ALLOWREORDER=YES, STRETCHLAST=YES, ALTERNATECOLOR=YES, SELECTIONMODE=MULTIPLE, EDITABLE=YES, FOCUSFEEDBACK=NO").SetHandle("transfer_table")
+	table := iup.Table().SetAttributes("NUMCOL=6, VISIBLELINES=13, EXPAND=YES, SORTABLE=YES, USERRESIZE=YES, ALLOWREORDER=YES, STRETCHLAST=YES, ALTERNATEROWS=YES, SELECTIONMODE=MULTIPLE, EDITABLE=YES, FOCUSFEEDBACK=NO").SetHandle("transfer_table")
 	for col, title := range []string{"Name", "Folder", "Size", "Status", "Progress", "Priority"} {
 		iup.SetAttributeId(table, "TITLE", col+1, title)
 	}

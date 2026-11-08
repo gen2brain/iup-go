@@ -219,7 +219,7 @@ func main() {
 	table.SetAttribute("RASTERWIDTH1", "40")
 	table.SetAttribute("RASTERWIDTH2", "80")
 	table.SetAttribute("RASTERWIDTH3", "50")
-	table.SetAttribute("ALTERNATECOLOR", "YES")
+	table.SetAttribute("ALTERNATEROWS", "YES")
 
 	sampleData := [][]string{
 		{"1", "Alice", "25", "NYC"},

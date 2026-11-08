@@ -57,7 +57,7 @@ func main() {
 		).SetAttributes(`GAP=10, MARGIN=10x10`),
 	).SetAttributes(`TITLE="Appearance"`)
 
-	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(ih iup.Ihandle, darkMode int) int {
+	dlg.SetCallback("APPEARANCECHANGED_CB", iup.AppearanceChangedFunc(func(ih iup.Ihandle, darkMode int) int {
 		updateStatus()
 		return iup.DEFAULT
 	}))

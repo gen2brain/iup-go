@@ -348,7 +348,7 @@ public class IupActivity extends AppCompatActivity
     native protected void HideDialog(long ihandlePtr);
     native protected boolean CloseRequested(long ihandlePtr);
 
-    /** refreshes DLG/TXT palette on the C side and fires THEMECHANGED_CB. */
+    /** refreshes DLG/TXT palette on the C side and fires APPEARANCECHANGED_CB. */
     native protected void NotifyThemeChanged(long ihandlePtr, int darkMode);
 
     @Override

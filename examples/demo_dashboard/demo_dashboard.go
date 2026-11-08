@@ -169,7 +169,7 @@ func workerTab() iup.Ihandle {
 	}))
 
 	table := iup.Table().SetAttributes(`EXPAND=YES, NUMCOL=4, SORTABLE=YES, USERRESIZE=YES,
-		STRETCHLAST=YES, ALTERNATECOLOR=YES`).SetHandle("dash_table")
+		STRETCHLAST=YES, ALTERNATEROWS=YES`).SetHandle("dash_table")
 	table.SetAttributes(map[string]string{
 		"TITLE1": "Worker", "TITLE2": "State", "TITLE3": "Iterations", "TITLE4": "Allocated",
 		"ALIGNMENT3": "ARIGHT", "ALIGNMENT4": "ARIGHT",

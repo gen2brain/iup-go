@@ -188,7 +188,7 @@ func (app *studio) build() {
 		}
 		return iup.DEFAULT
 	}))
-	app.dialog.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(iup.Ihandle, int) int {
+	app.dialog.SetCallback("APPEARANCECHANGED_CB", iup.AppearanceChangedFunc(func(iup.Ihandle, int) int {
 		iup.Update(app.waveform)
 		return iup.DEFAULT
 	}))
@@ -336,7 +336,7 @@ func (app *studio) microphonePanel() iup.Ihandle {
 }
 
 func (app *studio) takesPanel() iup.Ihandle {
-	app.table = iup.Table().SetAttributes("NUMCOL=5, VISIBLECOLUMNS=4, VISIBLELINES=9, EXPAND=YES, ALTERNATECOLOR=YES, USERRESIZE=YES, ALLOWREORDER=YES, STRETCHLAST=YES, FOCUSFEEDBACK=NO")
+	app.table = iup.Table().SetAttributes("NUMCOL=5, VISIBLECOLUMNS=4, VISIBLELINES=9, EXPAND=YES, ALTERNATEROWS=YES, USERRESIZE=YES, ALLOWREORDER=YES, STRETCHLAST=YES, FOCUSFEEDBACK=NO")
 	for col, title := range []string{"Take", "Recorded", "Duration", "Format", "File"} {
 		iup.SetAttributeId(app.table, "TITLE", col+1, title)
 	}
