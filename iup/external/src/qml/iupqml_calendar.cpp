@@ -6,11 +6,6 @@
 
 #include <QQuickItem>
 #include <QDate>
-#include <QElapsedTimer>
-#include <QGuiApplication>
-#include <QStyleHints>
-
-#include <cstdio>
 
 extern "C" {
 #include "iup.h"
@@ -30,7 +25,7 @@ static const char* qmlCalendarQml =
   "  property int iupYear: 2000; property int iupMonth: 0; property string iupSelected: \"\"; property bool iupWeeks: false\n"
   "  property font iupFont\n"
   "  signal iupKey(int key)\n"
-  "  Keys.onPressed: (event) => { if (event.key === Qt.Key_Left || event.key === Qt.Key_Right || event.key === Qt.Key_Up || event.key === Qt.Key_Down || event.key === Qt.Key_PageUp || event.key === Qt.Key_PageDown || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) { cal.iupKey(event.key); event.accepted = true } }\n"
+  "  Keys.onPressed: (event) => { if (event.key === Qt.Key_Left || event.key === Qt.Key_Right || event.key === Qt.Key_Up || event.key === Qt.Key_Down || event.key === Qt.Key_PageUp || event.key === Qt.Key_PageDown) { cal.iupKey(event.key); event.accepted = true } }\n"
   "  contentItem: Column { spacing: 2\n"
   "    Row { id: nav; objectName: \"nav\"; width: parent.width; height: prevBtn.implicitHeight\n"
   "      ToolButton { id: prevBtn; text: \"\\u2039\"; font: cal.iupFont; focusPolicy: Qt.NoFocus; onClicked: { if (cal.iupMonth == 0) { cal.iupMonth = 11; cal.iupYear-- } else cal.iupMonth-- } }\n"
@@ -59,8 +54,6 @@ struct IupQmlCalendarData
 {
   QQuickItem* item = nullptr;
   QDate selected;
-  QElapsedTimer click_timer;
-  QDate last_click;
 };
 
 static IupQmlCalendarData* qmlCalendarGetData(Ihandle* ih)
@@ -186,27 +179,12 @@ static void qmlCalendarClicked(Ihandle* ih, const QDateTime& datetime)
 
   QDate date = datetime.date();
   bool same = (date == data->selected);
-  bool dbl = data->click_timer.isValid() && data->last_click == date &&
-             data->click_timer.elapsed() < QGuiApplication::styleHints()->mouseDoubleClickInterval();
 
   data->selected = date;
-  data->last_click = date;
-  data->click_timer.restart();
   qmlCalendarApplySelected(ih);
 
   if (!same)
     iupBaseCallValueChangedCb(ih);
-
-  if (dbl)
-  {
-    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "SELECT_CB"));
-    if (cb)
-    {
-      char date_str[64];
-      snprintf(date_str, sizeof(date_str), "%d/%d/%d", date.year(), date.month(), date.day());
-      cb(ih, date_str);
-    }
-  }
 }
 
 static void qmlCalendarKey(Ihandle* ih, int key)
@@ -224,18 +202,6 @@ static void qmlCalendarKey(Ihandle* ih, int key)
   case Qt::Key_Down: date = date.addDays(7); break;
   case Qt::Key_PageUp: date = date.addMonths(-1); break;
   case Qt::Key_PageDown: date = date.addMonths(1); break;
-  case Qt::Key_Return:
-  case Qt::Key_Enter:
-    {
-      IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "SELECT_CB"));
-      if (cb)
-      {
-        char date_str[64];
-        snprintf(date_str, sizeof(date_str), "%d/%d/%d", date.year(), date.month(), date.day());
-        cb(ih, date_str);
-      }
-    }
-    return;
   default:
     return;
   }
@@ -321,7 +287,6 @@ extern "C" Iclass* iupCalendarNewClass(void)
   ic->LayoutUpdate = iupdrvBaseLayoutUpdateMethod;
 
   iupClassRegisterCallback(ic, "VALUECHANGED_CB", "");
-  iupClassRegisterCallback(ic, "SELECT_CB", "s");
 
   iupBaseRegisterCommonCallbacks(ic);
   iupBaseRegisterCommonAttrib(ic);

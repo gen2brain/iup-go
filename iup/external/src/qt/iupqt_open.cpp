@@ -545,10 +545,6 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
-  IupSetGlobal("HIGHDPI_AWARE", "YES");
-#endif
-
   QString style_name = QApplication::style()->objectName();
   IupStoreGlobal("QTSTYLE", style_name.toUtf8().constData());
 

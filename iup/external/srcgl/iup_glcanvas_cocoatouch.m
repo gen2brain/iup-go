@@ -124,21 +124,15 @@ static EAGLRenderingAPI cocoaTouchGLChooseAPI(Ihandle* ih)
 	return kEAGLRenderingAPIOpenGLES3;
 }
 
-static void cocoaTouchGLConfigureLayer(IupGLView* view, Ihandle* ih)
+static void cocoaTouchGLConfigureLayer(IupGLView* view)
 {
 	CAEAGLLayer* layer = (CAEAGLLayer*)view.layer;
 	layer.opaque = YES;
 	[view updateContentScale];
 
-	NSString* color_format = kEAGLColorFormatRGBA8;
-	if (iupStrEqualNoCase(iupAttribGetStr(ih, "COLOR_FORMAT"), "RGB565"))
-		color_format = kEAGLColorFormatRGB565;
-
-	BOOL retained = iupAttribGetBoolean(ih, "RETAINEDBACKING") ? YES : NO;
-
 	layer.drawableProperties = @{
-		kEAGLDrawablePropertyColorFormat: color_format,
-		kEAGLDrawablePropertyRetainedBacking: [NSNumber numberWithBool:retained]
+		kEAGLDrawablePropertyColorFormat: kEAGLColorFormatRGBA8,
+		kEAGLDrawablePropertyRetainedBacking: @NO
 	};
 }
 
@@ -243,7 +237,7 @@ static int cocoaTouchGLCanvasMapMethod(Ihandle* ih)
 
 	IupGLView* view = [[IupGLView alloc] initWithFrame:CGRectMake(0, 0, ih->currentwidth, ih->currentheight)];
 	view.ihandle = ih;
-	cocoaTouchGLConfigureLayer(view, ih);
+	cocoaTouchGLConfigureLayer(view);
 
 	gldata->view = view;
 	ih->handle = view;
@@ -296,8 +290,6 @@ void iupGlCanvasInitClass(Iclass* ic)
 	ic->Map     = cocoaTouchGLCanvasMapMethod;
 	ic->UnMap   = cocoaTouchGLCanvasUnMapMethod;
 
-	iupClassRegisterAttribute(ic, "RETAINEDBACKING", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "COLOR_FORMAT",    NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 }
 
 IUPGL_API int IupGLIsCurrent(Ihandle* ih)

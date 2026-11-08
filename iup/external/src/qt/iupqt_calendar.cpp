@@ -9,8 +9,6 @@
 #include <QWidget>
 #include <QFocusEvent>
 
-#include <cstdio>
-
 extern "C" {
 #include "iup.h"
 #include "iupcbs.h"
@@ -216,17 +214,6 @@ static void qtCalendarSelectionChanged(Ihandle* ih)
   iupBaseCallValueChangedCb(ih);
 }
 
-static void qtCalendarActivated(const QDate& date, Ihandle* ih)
-{
-  IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "SELECT_CB"));
-  if (cb)
-  {
-    char date_str[64];
-    snprintf(date_str, sizeof(date_str), "%d/%d/%d", date.year(), date.month(), date.day());
-    cb(ih, date_str);
-  }
-}
-
 /****************************************************************************
  * Map Method
  ****************************************************************************/
@@ -247,10 +234,6 @@ static int qtCalendarMapMethod(Ihandle* ih)
 
   QObject::connect(calendar, &QCalendarWidget::selectionChanged, [ih]() {
     qtCalendarSelectionChanged(ih);
-  });
-
-  QObject::connect(calendar, &QCalendarWidget::activated, [ih](const QDate& date) {
-    qtCalendarActivated(date, ih);
   });
 
   return IUP_NOERROR;
@@ -296,7 +279,6 @@ extern "C" Iclass* iupCalendarNewClass(void)
   ic->LayoutUpdate = iupdrvBaseLayoutUpdateMethod;
 
   iupClassRegisterCallback(ic, "VALUECHANGED_CB", "");
-  iupClassRegisterCallback(ic, "SELECT_CB", "s");
 
   iupBaseRegisterCommonCallbacks(ic);
   iupBaseRegisterCommonAttrib(ic);

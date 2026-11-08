@@ -804,7 +804,6 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
   iupqmlSetGlobalColors();
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");
-  IupSetGlobal("HIGHDPI_AWARE", "YES");
 
   if (QQuickStyle::name().isEmpty())
     QQuickStyle::setStyle("Fusion");

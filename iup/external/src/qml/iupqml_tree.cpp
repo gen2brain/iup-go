@@ -48,7 +48,6 @@ extern "C" {
 #define IUPQML_ROLE_TITLE          Qt::DisplayRole
 #define IUPQML_ROLE_IMAGE          (Qt::UserRole + 1)
 #define IUPQML_ROLE_FGCOLOR        (Qt::UserRole + 2)
-#define IUPQML_ROLE_BGCOLOR        (Qt::UserRole + 3)
 #define IUPQML_ROLE_FONT           (Qt::UserRole + 4)
 #define IUPQML_ROLE_HASFONT        (Qt::UserRole + 5)
 #define IUPQML_ROLE_TOGGLE         (Qt::UserRole + 6)
@@ -69,7 +68,6 @@ struct IupQmlTreeNode
   QFont font;
   bool has_font;
   QColor fg;
-  QColor bg;
   int toggle;
   bool toggle_visible;
 
@@ -186,7 +184,6 @@ public:
     roles[IUPQML_ROLE_TITLE] = "title";
     roles[IUPQML_ROLE_IMAGE] = "image";
     roles[IUPQML_ROLE_FGCOLOR] = "fgcolor";
-    roles[IUPQML_ROLE_BGCOLOR] = "bgcolor";
     roles[IUPQML_ROLE_FONT] = "font";
     roles[IUPQML_ROLE_HASFONT] = "hasfont";
     roles[IUPQML_ROLE_TOGGLE] = "toggle";
@@ -238,8 +235,6 @@ public:
       return iupqmlImageSourceSize(nodeImage(node));
     case IUPQML_ROLE_FGCOLOR:
       return node->fg.isValid() ? QVariant(node->fg) : QVariant();
-    case IUPQML_ROLE_BGCOLOR:
-      return node->bg.isValid() ? QVariant(node->bg) : QVariant();
     case IUPQML_ROLE_FONT:
       return QVariant::fromValue(node->font);
     case IUPQML_ROLE_HASFONT:
@@ -696,7 +691,6 @@ static IupQmlTreeNode* qmlTreeCloneNode(Ihandle* dst_ih, IupQmlTreeNode* src)
   node->font = src->font;
   node->has_font = src->has_font;
   node->fg = src->fg;
-  node->bg = src->bg;
   node->toggle = src->toggle;
   node->toggle_visible = dst_ih->data->show_toggle ? src->toggle_visible : true;
 
@@ -1080,7 +1074,7 @@ static char* qmlTreeGetTitleFontAttrib(Ihandle* ih, int id)
   return iupStrReturnStr(node->font_name.toUtf8().constData());
 }
 
-static int qmlTreeSetTitleFgColorAttrib(Ihandle* ih, int id, const char* value)
+static int qmlTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
 {
   IupQmlTreeData* data = qmlTreeGetData(ih);
   IupQmlTreeNode* node = qmlTreeFindNode(ih, id);
@@ -1104,28 +1098,6 @@ static char* qmlTreeGetColorAttrib(Ihandle* ih, int id)
     return nullptr;
 
   return iupStrReturnRGB(node->fg.red(), node->fg.green(), node->fg.blue());
-}
-
-static int qmlTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
-{
-  return qmlTreeSetTitleFgColorAttrib(ih, id, value);
-}
-
-static int qmlTreeSetTitleBgColorAttrib(Ihandle* ih, int id, const char* value)
-{
-  IupQmlTreeData* data = qmlTreeGetData(ih);
-  IupQmlTreeNode* node = qmlTreeFindNode(ih, id);
-  if (!data || !node)
-    return 0;
-
-  unsigned char r, g, b;
-  if (iupStrToRGB(value, &r, &g, &b))
-    node->bg = QColor(r, g, b);
-  else
-    node->bg = QColor();
-
-  data->model->refresh(node);
-  return 1;
 }
 
 static int qmlTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
@@ -2357,7 +2329,7 @@ static const char* qmlTreeViewQml =
   "    Component.onCompleted: { if (view.iupHideButtons && indicator) indicator.visible = false }\n"
   "    background: Rectangle {\n"
   "      readonly property bool __ignoreNotCustomizable: true\n"
-  "      color: d.highlighted ? d.palette.highlight : (d.model.bgcolor ? d.model.bgcolor : \"transparent\")\n"
+  "      color: d.highlighted ? d.palette.highlight : \"transparent\"\n"
   "    }\n"
   "    contentItem: Row {\n"
   "      readonly property bool __ignoreNotCustomizable: true\n"
@@ -2782,8 +2754,6 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "CHILDCOUNT", qmlTreeGetChildCountAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TITLE", qmlTreeGetTitleAttrib, qmlTreeSetTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TITLEFONT", qmlTreeGetTitleFontAttrib, qmlTreeSetTitleFontAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TITLEFGCOLOR", nullptr, qmlTreeSetTitleFgColorAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TITLEBGCOLOR", nullptr, qmlTreeSetTitleBgColorAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "COLOR", qmlTreeGetColorAttrib, qmlTreeSetColorAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGE", nullptr, qmlTreeSetImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGEEXPANDED", nullptr, qmlTreeSetImageExpandedAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
