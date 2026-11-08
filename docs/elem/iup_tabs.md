@@ -187,8 +187,8 @@ Called only when ALLOWREORDER=YES. Not supported in Motif.
 int function(Ihandle* ih, int old_pos, int new_pos);
 
 **ih**: identifier of the element that activated the event.\
-**old_pos**: the original tab position before the reorder.\
-**new_pos**: the new tab position after the reorder.
+**old_pos**: the original tab position before the reorder (0-based, as in VALUEPOS).\
+**new_pos**: the new tab position after the reorder (0-based, as in VALUEPOS).
 
 **Returns**: if IUP_IGNORE is returned the reorder is rejected and the tab returns to its original position.
 

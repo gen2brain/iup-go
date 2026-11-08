@@ -42,11 +42,11 @@ Default: "YES".
 **YAUTOHIDE**: When enabled, if DY >= YMAX-YMIN then the vertical scrollbar is hidden.
 Default: "YES".
 
-**XHIDDEN** [read-only]: returns if the scrollbar is hidden or not when XAUTOHIDE=YES.
+**XHIDDEN** (read-only): returns if the scrollbar is hidden or not when XAUTOHIDE=YES.
 
-**YHIDDEN** [read-only]: returns if the scrollbar is hidden or not when YAUTOHIDE=YES.
+**YHIDDEN** (read-only): returns if the scrollbar is hidden or not when YAUTOHIDE=YES.
 
-**SB_RESIZE** [read-only]: returns if a scrollbar visibility was changed forcing a canvas resize after setting DX or DY.
+**SB_RESIZE** (read-only): returns if a scrollbar visibility was changed forcing a canvas resize after setting DX or DY.
 
 **SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.

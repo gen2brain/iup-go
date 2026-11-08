@@ -64,8 +64,8 @@ Called only when ALLOWREORDER=YES.
     int function(Ihandle *ih, int old_pos, int new_pos);
 
 **ih**: identifier of the element that activated the event.\
-**old_pos**: the original column position before the reorder.\
-**new_pos**: the new column position after the reorder.
+**old_pos**: the original column position before the reorder (1-based).\
+**new_pos**: the new column position after the reorder (1-based).
 
 **Returns**: if IUP_IGNORE is returned the reorder is rejected and the column is not moved.
 

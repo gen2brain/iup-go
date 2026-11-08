@@ -13,16 +13,16 @@ It is not mapped in the native system, but it will exist while its **IupParamBox
 
 ### Attributes
 
-**LABEL** [read-only]: returns an IUP Ihandle*, the label associated with the parameter.
+**LABEL** (read-only): returns an IUP Ihandle*, the label associated with the parameter.
 Valid only after the **IupParamBox** is created.
 
-**CONTROL** [read-only]: returns an IUP Ihandle*, the real control associated with the parameter.
+**CONTROL** (read-only): returns an IUP Ihandle*, the real control associated with the parameter.
 Valid only after the **IupParamBox** is created.
 
-**AUXCONTROL** [read-only]: returns an IUP Ihandle*, the auxiliary control associated with the parameter (for instance Valuators).
+**AUXCONTROL** (read-only): returns an IUP Ihandle*, the auxiliary control associated with the parameter (for instance Valuators).
 Valid only after the **IupParamBox** is created.
 
-**INDEX** [read-only]: returns an integer value associated with the parameter index.
+**INDEX** (read-only): returns an integer value associated with the parameter index.
 **IupGetInt** can also be used. Valid only after the **IupParamBox** is created.
 
 **VALUE** - the value of the parameter. **IupGetFloat** and **IupGetInt** can also be used.

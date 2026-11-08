@@ -17,21 +17,21 @@ Can be: YES or NO. Default: NO.
 
 ### Auxiliary Attributes
 
-#### ADDFORMATTAG [write-only] (non-inheritable)
+#### ADDFORMATTAG (write-only) (non-inheritable)
 
 Name of a format tag element to be added to the **IupText**.
 The name is associated in C using [IupSetHandle](../func/iup_sethandle.md).
 The name association must be done before setting the attribute.
 It will set the ADDFORMATTAG_HANDLE with the associated handle.
 
-#### ADDFORMATTAG_HANDLE [write-only] (non-inheritable)
+#### ADDFORMATTAG_HANDLE (write-only) (non-inheritable)
 
 Handle of a format tag element to be added to the **IupText**.
 The tag element will be automatically destroyed when the **IupText** is mapped.
 If the **IupText** is already mapped, the format tag is immediately destroyed when the attribute is set.
 The format tag cannot be reused.
 
-#### REMOVEFORMATTING [write-only] (non-inheritable)
+#### REMOVEFORMATTING (write-only) (non-inheritable)
 
 Removes the formatting of the current selection if YES or NULL, and from all text if ALL is used.
 

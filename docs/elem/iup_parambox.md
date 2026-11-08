@@ -19,14 +19,14 @@ The list of params cannot be changed after the box is created.
 
 ### Attributes
 
-**BUTTON1**, **BUTTON2**, **BUTTON3** [read-only]: returns an IUP Ihandle* of the respective button in the button box.
+**BUTTON1**, **BUTTON2**, **BUTTON3** (read-only): returns an IUP Ihandle* of the respective button in the button box.
 Returns NULL when the 'x' parameter has NOBUTTONS=YES.
 
-**PARAM*n*** [read-only]: returns an IUP Ihandle* representing the n<sup>th</sup> parameter, indexed by the declaration order, not counting separators or button names. n starts at 0.
+**PARAM*n*** (read-only): returns an IUP Ihandle* representing the n<sup>th</sup> parameter, indexed by the declaration order, not counting separators or button names. n starts at 0.
 
-**PARAMCOUNT** [read-only]: returns the number of parameters not counting separators and button names.
+**PARAMCOUNT** (read-only): returns the number of parameters not counting separators and button names.
 
-**STATUS** [read-only]: set to 1 when button1 is activated, and set to 0 when button2 is activated or the IupGetParam dialog close button is clicked.
+**STATUS** (read-only): set to 1 when button1 is activated, and set to 0 when button2 is activated or the IupGetParam dialog close button is clicked.
 
 **LABELALIGN**: controls the alignment of all labels. Can be ALEFT or ARIGHT.
 Default: ALEFT.

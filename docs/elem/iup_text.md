@@ -99,11 +99,11 @@ When MULTILINE=NO returns always "1".
 **LINEVALUE** (read-only): returns the text of the line where the caret is. It does not include the "\n" character.
 When MULTILINE=NO returns the same as VALUE.
 
-**LOADRTF** (write-only) [Win32, WinUI Only]: loads formatted text from a Rich Text Format file given its filename.
+**LOADRTF** (write-only) [Win32 and WinUI Only]: loads formatted text from a Rich Text Format file given its filename.
 The attribute LOADRTFSTATUS is set to OK or FAILED after the file is loaded.
 Requires FORMATTING=YES.
 
-**SAVERTF** (write-only) [Win32, WinUI Only]: saves formatted text to a Rich Text Format file given its filename.
+**SAVERTF** (write-only) [Win32 and WinUI Only]: saves formatted text to a Rich Text Format file given its filename.
 The attribute SAVERTFSTATUS is set to OK or FAILED after the file is saved.
 Requires FORMATTING=YES.
 

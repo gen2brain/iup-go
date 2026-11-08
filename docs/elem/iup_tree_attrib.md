@@ -2,7 +2,7 @@
 
 ### General
 
-**AUTOREDRAW** [Windows] (non-inheritable): automatically redraws the tree when something has changed.
+**AUTOREDRAW** [Windows Only] (non-inheritable): automatically redraws the tree when something has changed.
 Set to NO to change many nodes without updating the display. Default: "YES".
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of the tree.
