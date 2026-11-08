@@ -50,7 +50,7 @@ func main() {
 	tree.SetCallback("DROPDATA_CB", iup.DropDataFunc(dropped))
 
 	table := iup.Table().SetAttributes(`EXPAND=YES, NUMCOL=3, SORTABLE=YES, USERRESIZE=YES,
-		STRETCHLAST=YES, ALTERNATECOLOR=YES, SHOWIMAGE=YES, FOCUSRECT=NO,
+		STRETCHLAST=YES, ALTERNATECOLOR=YES, SHOWIMAGE=YES, FOCUSFEEDBACK=NO,
 		SELECTIONMODE=MULTIPLE, DRAGSOURCE=YES, DRAGTYPES=` + dragType).SetHandle("fm_table")
 	table.SetAttributes(map[string]string{
 		"TITLE1": "Name", "TITLE2": "Size", "TITLE3": "Modified",

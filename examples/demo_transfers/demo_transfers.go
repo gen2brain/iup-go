@@ -288,7 +288,7 @@ func sourceTree() iup.Ihandle {
 }
 
 func queueTable() iup.Ihandle {
-	table := iup.Table().SetAttributes("NUMCOL=6, VISIBLELINES=13, EXPAND=YES, SORTABLE=YES, USERRESIZE=YES, ALLOWREORDER=YES, STRETCHLAST=YES, ALTERNATECOLOR=YES, SELECTIONMODE=MULTIPLE, EDITABLE=YES, FOCUSRECT=NO").SetHandle("transfer_table")
+	table := iup.Table().SetAttributes("NUMCOL=6, VISIBLELINES=13, EXPAND=YES, SORTABLE=YES, USERRESIZE=YES, ALLOWREORDER=YES, STRETCHLAST=YES, ALTERNATECOLOR=YES, SELECTIONMODE=MULTIPLE, EDITABLE=YES, FOCUSFEEDBACK=NO").SetHandle("transfer_table")
 	for col, title := range []string{"Name", "Folder", "Size", "Status", "Progress", "Priority"} {
 		iup.SetAttributeId(table, "TITLE", col+1, title)
 	}

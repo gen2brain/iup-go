@@ -72,7 +72,7 @@ func main() {
 	table.SetAttribute("NUMLIN", "100000")
 
 	// Disable cell/column dashed rectangle.
-	table.SetAttribute("FOCUSRECT", "NO")
+	table.SetAttribute("FOCUSFEEDBACK", "NO")
 
 	// Set VALUE_CB callback to provide data on demand
 	iup.SetCallback(table, "VALUE_CB", iup.TableValueFunc(func(ih iup.Ihandle, lin, col int) string {

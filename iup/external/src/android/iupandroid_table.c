@@ -859,7 +859,7 @@ static int androidTableMapMethod(Ihandle* ih)
   if (ih->data->allow_reorder) androidTableCallBool(ih, "setAllowReorder", 1);
   if (ih->data->show_dragdrop) androidTableCallBool(ih, "setShowDragDrop", 1);
   if (iupAttribGetBoolean(ih, "VIRTUALMODE")) androidTableCallBool(ih, "setVirtualMode", 1);
-  v = iupAttribGet(ih, "FOCUSRECT");
+  v = iupAttribGet(ih, "FOCUSFEEDBACK");
   if (v) androidTableCallBool(ih, "setFocusRect", iupStrBoolean(v));
   androidTableCallBool(ih, "setStretchLast", ih->data->stretch_last);
 
@@ -910,6 +910,6 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "USERRESIZE", androidTableGetUserResizeAttrib, androidTableSetUserResizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ALLOWREORDER", androidTableGetAllowReorderAttrib, androidTableSetAllowReorderAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VIRTUALMODE", NULL, androidTableSetVirtualModeAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, androidTableSetFocusRectAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FOCUSFEEDBACK", NULL, androidTableSetFocusRectAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTIONMODE", NULL, androidTableSetSelectionModeAttrib, IUPAF_SAMEASSYSTEM, "SINGLE", IUPAF_NO_INHERIT);
 }
