@@ -10,7 +10,7 @@ Saves an **IupImage** to a file using native driver image encoding.
 
 **filename**: file path to save to.
 
-**format**: image format string: `"PNG"`, `"JPEG"`, or `"BMP"`. Can be NULL to auto-detect from the filename extension.
+**format**: image format string: `"PNG"`, `"JPEG"`, or `"BMP"`. Can be NULL or empty to auto-detect from the filename extension.
 
 **Returns:** 1 on success, 0 on failure.
 
@@ -30,7 +30,7 @@ The image is encoded using the native GUI toolkit, with no external library depe
 - **Android**: PNG, JPEG, BMP, WebP via Bitmap.compress
 - **Haiku**: PNG, JPEG, BMP via the Translation Kit (BTranslatorRoster); also accepts GIF, TIFF, TGA and PPM format strings
 
-If **format** is NULL, the format is detected from the filename extension (`.png`, `.jpg`/`.jpeg`, `.bmp`).
+If **format** is NULL or empty, the format is detected from the filename extension (`.png`, `.jpg`/`.jpeg`, `.bmp`).
 
 JPEG quality defaults to 85 and can be configured with `IupSetGlobal("IMAGESAVEQUALITY", "90")`, where the value is 0-100.
 
