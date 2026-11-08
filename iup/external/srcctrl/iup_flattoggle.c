@@ -144,7 +144,6 @@ static void iFlatToggleDrawSwitch(IdrawCanvas* dc, Ihandle* ih, int check_left, 
       {
         char color1[30], color2[30];
         float angle = iupAttribGetFloat(ih, "SWITCHTRACKGRADIENTANGLE");
-        if (angle == 0) angle = 90;
         if (iupStrToStrStr(gradient, color1, sizeof(color1), color2, sizeof(color2), ':'))
           iupFlatDrawGradientBox(dc, track_xmin, track_xmin + track_width,
                                  track_ymin, track_ymin + track_height,
@@ -418,7 +417,6 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
         shade = 30;
     }
 
-    if (angle == 0) angle = 90;
     iupFlatDrawGradientBoxStops(dc, border_width, draw_w - 1 - border_width,
                                 border_width, draw_h - 1 - border_width,
                                 radius > border_width ? radius - border_width : 0, angle, gradient, bgcolor, 1, shade);

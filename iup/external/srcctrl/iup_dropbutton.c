@@ -227,7 +227,6 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
     if (gradient)
     {
       float angle = iupAttribGetFloat(ih, "GRADIENTANGLE");
-      if (angle == 0) angle = 90;
       if (drop_onarrow)
       {
         iupFlatDrawGradientBoxStops(dc, border_width, draw_w - 1 - border_width - ih->data->arrow_size,
