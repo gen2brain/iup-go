@@ -16,7 +16,7 @@ import "C"
 // ControlsOpen initializes the additional controls library (Cells, Matrix, MatrixList, MatrixEx).
 // Must be called after IupOpen.
 //
-// Returns: IUP_NOERROR on success, IUP_OPENED if already opened, IUP_ERROR on failure.
+// Returns NOERROR on success, OPENED if already opened, ERROR on failure.
 func ControlsOpen() int {
 	return int(C.IupControlsOpen())
 }

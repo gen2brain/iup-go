@@ -46,45 +46,45 @@ var attribFlagName = []struct {
 	bit  int
 	name string
 }{
-	{iup.AttribNoInherit, "NO_INHERIT"},
-	{iup.AttribNoDefaultValue, "NO_DEFAULTVALUE"},
-	{iup.AttribNoString, "NO_STRING"},
-	{iup.AttribNotMapped, "NOT_MAPPED"},
-	{iup.AttribHasID, "HAS_ID"},
-	{iup.AttribReadOnly, "READONLY"},
-	{iup.AttribWriteOnly, "WRITEONLY"},
-	{iup.AttribHasID2, "HAS_ID2"},
-	{iup.AttribCallback, "CALLBACK"},
-	{iup.AttribNoSave, "NO_SAVE"},
-	{iup.AttribNotSupported, "NOT_SUPPORTED"},
-	{iup.AttribIhandleName, "IHANDLENAME"},
-	{iup.AttribIhandle, "IHANDLE"},
+	{iup.AF_NO_INHERIT, "NO_INHERIT"},
+	{iup.AF_NO_DEFAULTVALUE, "NO_DEFAULTVALUE"},
+	{iup.AF_NO_STRING, "NO_STRING"},
+	{iup.AF_NOT_MAPPED, "NOT_MAPPED"},
+	{iup.AF_HAS_ID, "HAS_ID"},
+	{iup.AF_READONLY, "READONLY"},
+	{iup.AF_WRITEONLY, "WRITEONLY"},
+	{iup.AF_HAS_ID2, "HAS_ID2"},
+	{iup.AF_CALLBACK, "CALLBACK"},
+	{iup.AF_NO_SAVE, "NO_SAVE"},
+	{iup.AF_NOT_SUPPORTED, "NOT_SUPPORTED"},
+	{iup.AF_IHANDLENAME, "IHANDLENAME"},
+	{iup.AF_IHANDLE, "IHANDLE"},
 }
 
 var globalFlagName = []struct {
 	bit  int
 	name string
 }{
-	{iup.GlobalReadOnly, "READONLY"},
-	{iup.GlobalPointer, "POINTER"},
-	{iup.GlobalWriteOnly, "WRITEONLY"},
+	{iup.GF_READONLY, "READONLY"},
+	{iup.GF_POINTER, "POINTER"},
+	{iup.GF_WRITEONLY, "WRITEONLY"},
 }
 
 var driverName = []struct {
 	bit  int
 	name string
 }{
-	{iup.DriverWin, "Win32"},
-	{iup.DriverMotif, "Motif"},
-	{iup.DriverGTK, "GTK"},
-	{iup.DriverCocoa, "Cocoa"},
-	{iup.DriverQt, "Qt"},
-	{iup.DriverGTK4, "GTK4"},
-	{iup.DriverEFL, "EFL"},
-	{iup.DriverWinUI, "WinUI"},
-	{iup.DriverFLTK, "FLTK"},
-	{iup.DriverAndroid, "Android"},
-	{iup.DriverCocoaTouch, "CocoaTouch"},
+	{iup.DRV_WIN, "Win32"},
+	{iup.DRV_MOTIF, "Motif"},
+	{iup.DRV_GTK, "GTK"},
+	{iup.DRV_COCOA, "Cocoa"},
+	{iup.DRV_QT, "Qt"},
+	{iup.DRV_GTK4, "GTK4"},
+	{iup.DRV_EFL, "EFL"},
+	{iup.DRV_WINUI, "WinUI"},
+	{iup.DRV_FLTK, "FLTK"},
+	{iup.DRV_ANDROID, "Android"},
+	{iup.DRV_COCOATOUCH, "CocoaTouch"},
 }
 
 var ctorChar = map[byte]string{
@@ -111,7 +111,7 @@ var formatChar = map[byte]string{
 }
 
 func flagsString(flags int) string {
-	if flags == iup.AttribDefault {
+	if flags == iup.AF_DEFAULT {
 		return "DEFAULT"
 	}
 	parts := make([]string, 0, 4)
@@ -124,7 +124,7 @@ func flagsString(flags int) string {
 }
 
 func globalFlagsString(flags int) string {
-	if flags == iup.GlobalNormal {
+	if flags == iup.GF_NORMAL {
 		return "-"
 	}
 	parts := make([]string, 0, 2)
@@ -170,7 +170,7 @@ func boolString(b bool) string {
 	return "no"
 }
 
-func constructorString(className string, c iup.ClassConstructor) string {
+func constructorString(className string, c iup.ClassConstructorInfo) string {
 	parts := make([]string, 0, len(c.Format))
 	for i := 0; i < len(c.Format); i++ {
 		ch := c.Format[i]

@@ -72,7 +72,7 @@ func customCursor() iup.Ihandle {
 }
 
 func cellAt(ih iup.Ihandle, x, y int) int {
-	_, w, h := ih.GetIntInt("DRAWSIZE")
+	_, w, h := ih.GetInt2("DRAWSIZE")
 	rows := (len(names) + columns - 1) / columns
 	if w <= 0 || h <= 0 || x < 0 || y < 0 || x >= w || y >= h {
 		return -1

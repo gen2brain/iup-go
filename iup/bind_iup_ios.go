@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-var pendingEntry func()
+var pendingEntry EntryPointFunc
 
 // Pre-open IUP for code that runs in a package init().
 func init() {
@@ -74,7 +74,7 @@ func Open() int {
 	ret := openShared()
 	if entry := pendingEntry; entry != nil {
 		pendingEntry = nil
-		SetFunction("ENTRY_POINT", EntryPointFunc(entry))
+		SetFunction("ENTRY_POINT", entry)
 	}
 	if ret == OPENED {
 		return NOERROR
@@ -101,6 +101,6 @@ func Close() {}
 //	    iup.Show(iup.Dialog(...))
 //	    iup.MainLoop()
 //	}
-func EntryPoint(entry func()) {
+func EntryPoint(entry EntryPointFunc) {
 	pendingEntry = entry
 }

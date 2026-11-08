@@ -55,7 +55,7 @@ func Close() {
 	closeEmbeddedLibs()
 }
 
-func EntryPoint(entry func()) {}
+func EntryPoint(entry EntryPointFunc) {}
 
 func Version() string {
 	return iupVersion()

@@ -102,7 +102,7 @@ func main() {
 	fmt.Printf("  LINKFGCOLOR:     %s\n", g("LINKFGCOLOR"))
 
 	fmt.Println("\nTyped:")
-	_, w, h := iup.GetGlobalIntInt("SCREENSIZE")
+	_, w, h := iup.GetGlobalInt2("SCREENSIZE")
 	r, gr, b := iup.GetGlobalRGB("DLGBGCOLOR")
 	fmt.Printf("  screen %dx%d at %d dpi, dialog background %d,%d,%d, dark mode %v\n",
 		w, h, iup.GetGlobalInt("SCREENDPI"), r, gr, b, iup.GetGlobalBool("DARKMODE"))

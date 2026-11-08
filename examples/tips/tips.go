@@ -72,7 +72,7 @@ func main() {
 	dlg.SetAttribute("TITLE", "Tips")
 
 	iup.Map(dlg)
-	_, w, h := half.GetIntInt("RASTERSIZE")
+	_, w, h := half.GetInt2("RASTERSIZE")
 	half.SetAttribute("TIPRECT", fmt.Sprintf("0 0 %d %d", w/2, h))
 
 	iup.Show(dlg)

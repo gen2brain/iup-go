@@ -93,6 +93,6 @@ func Close() {}
 //	    iup.Show(iup.Dialog(...))
 //	    iup.MainLoop()
 //	}
-func EntryPoint(entry func()) {
-	SetFunction("ENTRY_POINT", EntryPointFunc(entry))
+func EntryPoint(entry EntryPointFunc) {
+	SetFunction("ENTRY_POINT", entry)
 }

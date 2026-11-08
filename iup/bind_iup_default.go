@@ -29,4 +29,4 @@ func Close() {
 // EntryPoint is a portability shim. On desktop it is a no-op; on
 // Android and iOS it registers entry as the ENTRY_POINT callback.
 // Call from init() to keep a single main() portable.
-func EntryPoint(entry func()) {}
+func EntryPoint(entry EntryPointFunc) {}

@@ -11,8 +11,8 @@ import "C"
 // WebBrowserOpen must be called after Open, so that the control can be used.
 //
 // https://gen2brain.github.io/iup-go/ctrl/iup_web.html
-func WebBrowserOpen() {
-	C.IupWebBrowserOpen()
+func WebBrowserOpen() int {
+	return int(C.IupWebBrowserOpen())
 }
 
 // WebBrowser creates a web browser control.
