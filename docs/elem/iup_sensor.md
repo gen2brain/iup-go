@@ -15,10 +15,10 @@ Supported in Win32, WinUI, Android, iOS and WebAssembly.
 
 **TYPE** (non-inheritable): Sensor to read. Can be "ACCELEROMETER", "GYROSCOPE", "MAGNETOMETER",
 "GRAVITY", "LINEARACCELERATION", "ORIENTATION" or "COMPASS". Default: "ACCELEROMETER".
-Can be changed only while ACTIVE=NO.
+Can be changed only while RUN=NO.
 GRAVITY and LINEARACCELERATION are not supported in Win32.
 
-**ACTIVE** (non-inheritable): Starts readings when "YES" and stops them when "NO". Default: "NO".
+**RUN** (non-inheritable): Starts readings when "YES" and stops them when "NO". Default: "NO".
 Readings are stopped when the element is destroyed.
 
 **INTERVAL** (non-inheritable): Minimum time between two readings in milliseconds. Default: "200".
@@ -85,7 +85,7 @@ All three callbacks are called from the main loop on every driver.
 Android and iOS need no permission and no manifest or Info.plist entry, COMPASS included.
 
 WebAssembly needs a secure context (HTTPS or localhost). On iOS the browser asks for permission the first
-time ACTIVE is set to YES, and the request is only accepted from a user event such as a button ACTION.
+time RUN is set to YES, and the request is only accepted from a user event such as a button ACTION.
 
 Win32 uses the Windows Sensor API, deprecated since Windows 8 but present through Windows 11.
 

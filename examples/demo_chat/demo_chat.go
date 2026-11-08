@@ -745,7 +745,7 @@ func emoticonPopover(anchor iup.Ihandle) {
 		keys = append(keys, b)
 	}
 	pop = iup.Popover(iup.Hbox(keys...).SetAttributes("MARGIN=6x6, GAP=4, ALIGNMENT=ACENTER"))
-	pop.SetAttribute("POSITION", "TOP")
+	pop.SetAttribute("PLACEMENT", "TOP")
 	pop.SetAttributeHandle("ANCHOR", anchor)
 	anchor.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		pop.SetAttribute("VISIBLE", "YES")
@@ -809,7 +809,7 @@ func attachPopover(anchor iup.Ihandle) {
 		item("file", "File", sendFile),
 		item("pin", "Location", sendLocation),
 	).SetAttributes("MARGIN=6x6, GAP=2"))
-	pop.SetAttribute("POSITION", "TOP")
+	pop.SetAttribute("PLACEMENT", "TOP")
 	pop.SetAttributeHandle("ANCHOR", anchor)
 	anchor.SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		pop.SetAttribute("VISIBLE", "YES")
@@ -849,19 +849,19 @@ func fileSize(n int64) string {
 func makeLocation() {
 	location := iup.Location().SetHandle("chat_location")
 	location.SetCallback("LOCATION_CB", iup.LocationFunc(func(ih iup.Ihandle, lat, lon float64) int {
-		ih.SetAttribute("ACTIVE", "NO")
+		ih.SetAttribute("RUN", "NO")
 		sendBody(fmt.Sprintf("[My location](https://maps.google.com/?q=%.5f,%.5f)", lat, lon))
 		return iup.DEFAULT
 	}))
 	location.SetCallback("PERMISSION_CB", iup.PermissionFunc(func(ih iup.Ihandle, granted int) int {
 		if granted == 0 {
-			ih.SetAttribute("ACTIVE", "NO")
+			ih.SetAttribute("RUN", "NO")
 			iup.Message("Location", "Location access was denied")
 		}
 		return iup.DEFAULT
 	}))
 	location.SetCallback("ERROR_CB", iup.ErrorFunc(func(ih iup.Ihandle, msg string) int {
-		ih.SetAttribute("ACTIVE", "NO")
+		ih.SetAttribute("RUN", "NO")
 		iup.Message("Location", msg)
 		return iup.DEFAULT
 	}))
@@ -874,7 +874,7 @@ func sendLocation() {
 		iup.Message("Location", "No location service on this system")
 		return
 	}
-	location.SetAttribute("ACTIVE", "YES")
+	location.SetAttribute("RUN", "YES")
 }
 
 type sdf func(x, y float64) float64

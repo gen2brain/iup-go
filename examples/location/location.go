@@ -44,10 +44,10 @@ func main() {
 	active := iup.Toggle("Active")
 	active.SetCallback("ACTION", iup.ToggleActionFunc(func(ih iup.Ihandle, state int) int {
 		if state == 1 {
-			loc.SetAttribute("ACTIVE", "YES")
-			ih.SetAttribute("VALUE", loc.GetAttribute("ACTIVE"))
+			loc.SetAttribute("RUN", "YES")
+			ih.SetAttribute("VALUE", loc.GetAttribute("RUN"))
 		} else {
-			loc.SetAttribute("ACTIVE", "NO")
+			loc.SetAttribute("RUN", "NO")
 		}
 		return iup.DEFAULT
 	}))
