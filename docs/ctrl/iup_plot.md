@@ -476,7 +476,7 @@ Out of range indices are ignored.
 
 **CLEAR** (write-only): removes all datasets. Value is ignored.
 
-**COUNT** [read-only]: total number of datasets.
+**COUNT** (read-only): total number of datasets.
 
 **CURRENT**: current dataset index. Default is -1. When a dataset is added it becomes the current dataset.
 The index starts at 0. All "DS_*" attributes are dependent on this value.
@@ -569,10 +569,10 @@ The value can be greater than 1, the text will be oriented inwards.
 The value can be negative to orient the text outwards. Used only for PIE mode.
 Default: 0.95
 
-**DS_STRXDATA** [read-only]: returns if the dataset has strings for X coordinates, i.e. the strXdata parameter in IupPlotBegin was non-zero.
+**DS_STRXDATA** (read-only): returns if the dataset has strings for X coordinates, i.e. the strXdata parameter in IupPlotBegin was non-zero.
 Can be: YES or NO.
 
-**DS_EXTRA** [read-only]: returns if the dataset has extra values, i.e.,
+**DS_EXTRA** (read-only): returns if the dataset has extra values, i.e.,
 IupPlotSetSampleExtra was called for the dataset. Can be: YES or NO.
 
 **DS_ORDEREDX**: informs if the dataset X values are ordered.

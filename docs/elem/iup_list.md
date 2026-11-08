@@ -34,7 +34,7 @@ Ignored if set before map.
 **AUTOHIDE**: scrollbars are shown only if they are necessary. Default: "YES".
 Not supported in Android and iOS.
 
-**AUTOREDRAW** [Windows] (non-inheritable): automatically redraws the list when something has change.
+**AUTOREDRAW** [Windows Only] (non-inheritable): automatically redraws the list when something has change.
 Set to NO to add many items to the list without updating the display. Default: "YES".
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of the text. Default: the global attribute TXTBGCOLOR.
