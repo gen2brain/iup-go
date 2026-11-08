@@ -69,7 +69,7 @@ func main() {
 			value = "YES"
 		}
 		for _, sensor := range []iup.Ihandle{gravity, compass, motion} {
-			sensor.SetAttribute("ACTIVE", value)
+			sensor.SetAttribute("RUN", value)
 		}
 		timer.SetAttribute("RUN", value)
 		return iup.DEFAULT

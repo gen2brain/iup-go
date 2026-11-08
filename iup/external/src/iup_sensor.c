@@ -85,7 +85,7 @@ IUP_SDK_API void iupSensorPost(Ihandle* ih, const IsensorMsg* msg)
   IupPostMessage(ih, NULL, 0, 0, copy);
 }
 
-static int iSensorSetActiveAttrib(Ihandle* ih, const char* value)
+static int iSensorSetRunAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
@@ -100,7 +100,7 @@ static int iSensorSetActiveAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iSensorGetActiveAttrib(Ihandle* ih)
+static char* iSensorGetRunAttrib(Ihandle* ih)
 {
   return iupStrReturnBoolean(iupAttribGetBoolean(ih, "_IUP_SENSOR_ACTIVE"));
 }
@@ -163,7 +163,7 @@ Iclass* iupSensorNewClass(void)
   iupClassRegisterCallback(ic, "ERROR_CB", "s");
 
   iupClassRegisterAttribute(ic, "TYPE", NULL, iSensorSetTypeAttrib, IUPAF_SAMEASSYSTEM, "ACCELEROMETER", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "ACTIVE", iSensorGetActiveAttrib, iSensorSetActiveAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RUN", iSensorGetRunAttrib, iSensorSetRunAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INTERVAL", NULL, NULL, IUPAF_SAMEASSYSTEM, "200", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "X", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);

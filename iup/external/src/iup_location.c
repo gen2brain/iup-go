@@ -78,7 +78,7 @@ IUP_SDK_API void iupLocationPost(Ihandle* ih, const IlocationMsg* msg)
   IupPostMessage(ih, NULL, 0, 0, copy);
 }
 
-static int iLocationSetActiveAttrib(Ihandle* ih, const char* value)
+static int iLocationSetRunAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrBoolean(value))
   {
@@ -93,7 +93,7 @@ static int iLocationSetActiveAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* iLocationGetActiveAttrib(Ihandle* ih)
+static char* iLocationGetRunAttrib(Ihandle* ih)
 {
   return iupStrReturnBoolean(iupAttribGetBoolean(ih, "_IUP_LOCATION_ACTIVE"));
 }
@@ -148,7 +148,7 @@ Iclass* iupLocationNewClass(void)
   iupClassRegisterCallback(ic, "PERMISSION_CB", "i");
   iupClassRegisterCallback(ic, "ERROR_CB", "s");
 
-  iupClassRegisterAttribute(ic, "ACTIVE", iLocationGetActiveAttrib, iLocationSetActiveAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "RUN", iLocationGetRunAttrib, iLocationSetRunAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACCURACY", NULL, NULL, IUPAF_SAMEASSYSTEM, "COARSE", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INTERVAL", NULL, NULL, IUPAF_SAMEASSYSTEM, "1000", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DISTANCE", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
