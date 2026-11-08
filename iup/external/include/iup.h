@@ -217,7 +217,8 @@ enum {
 enum {
   IUPGF_NORMAL   = 0,
   IUPGF_READONLY = 1,
-  IUPGF_POINTER  = 2
+  IUPGF_POINTER  = 2,
+  IUPGF_WRITEONLY = 4
 };
 enum {
   IUPDRV_WIN        = 1,

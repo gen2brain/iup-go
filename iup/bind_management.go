@@ -283,9 +283,10 @@ func GetAllFunctions() (names []string) {
 
 // Flag bits returned by [GetGlobalInfo].
 const (
-	GlobalNormal   = 0
-	GlobalReadOnly = 1
-	GlobalPointer  = 2
+	GlobalNormal    = 0
+	GlobalReadOnly  = 1
+	GlobalPointer   = 2
+	GlobalWriteOnly = 4
 )
 
 // Driver bits returned by [GetGlobalInfo].
