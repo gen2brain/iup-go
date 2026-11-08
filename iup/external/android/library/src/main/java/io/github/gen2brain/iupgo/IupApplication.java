@@ -3,7 +3,6 @@ package io.github.gen2brain.iupgo;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
-import android.util.Log;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
@@ -14,8 +13,6 @@ import java.lang.ref.WeakReference;
 /* Tracks the current foreground Activity for the C driver. */
 public class IupApplication extends Application
 {
-    private static final String TAG = "Iup";
-
     private static IupApplication sSharedInstance;
     private WeakReference<Activity> currentActivity = new WeakReference<>(null);
 
@@ -40,7 +37,6 @@ public class IupApplication extends Application
         super.onCreate();
         sSharedInstance = this;
         registerActivityLifecycleCallbacks(new IupActivityLifecycleHandler());
-        Log.i(TAG, "IupApplication.onCreate pkg=" + getPackageName());
     }
 
     private final class IupActivityLifecycleHandler implements ActivityLifecycleCallbacks

@@ -71,7 +71,6 @@ public final class IupNotifyHelper
         Activity act = IupActivity.currentActivity();
         if (act != null)
         {
-            Log.i(TAG, "IupNotify requesting POST_NOTIFICATIONS permission");
             act.requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 0);
         }
         else

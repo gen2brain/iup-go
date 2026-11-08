@@ -55,7 +55,6 @@ public class IupLaunchActivity extends Activity
             System.loadLibrary(lib);
         }
         sLibrariesLoaded = true;
-        Log.i(TAG, "IupLaunchActivity.loadLibraries loaded " + java.util.Arrays.toString(libs));
     }
 
     @Override
