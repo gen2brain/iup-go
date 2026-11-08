@@ -519,8 +519,8 @@ static int iMatrixEditTextAction_CB(Ihandle* ih_text, int c, char* after)
     return c;
   }
 
-  /* TODO: Latin characters, like � or �, are not processed by the ACTION_CB,
-           only the respective keys, like � and o, or ~ and a. */
+  /* TODO: Latin characters, like ó or ã, are not processed by the ACTION_CB,
+           only the respective keys, like ´ and o, or ~ and a. */
 
   return IUP_DEFAULT;
 }
