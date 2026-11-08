@@ -86,7 +86,8 @@ static XFontStruct* motLoadFont(const char* foundry, const char* typeface, int s
   else
     slant = "r";
 
-  snprintf(font_name, sizeof(font_name), "-%s-%s-%s-%s-*-*-*-*-*-*-*-*-*-*", foundry, typeface, weight, slant);
+  if (snprintf(font_name, sizeof(font_name), "-%s-%s-%s-%s-*-*-*-*-*-*-*-*-*-*", foundry, typeface, weight, slant) >= (int)sizeof(font_name))
+    return NULL;
 
   font_names_list = XListFonts(iupmot_display, font_name, 32767, &num_fonts);
   if (!num_fonts && italic)
@@ -104,7 +105,8 @@ static XFontStruct* motLoadFont(const char* foundry, const char* typeface, int s
     if (font_names_list)
       XFreeFontNames(font_names_list);
     weight = "medium";
-    snprintf(font_name, sizeof(font_name), "-%s-%s-%s-%s-*-*-*-*-*-*-*-*-*-*", foundry, typeface, weight, slant);
+    if (snprintf(font_name, sizeof(font_name), "-%s-%s-%s-%s-*-*-*-*-*-*-*-*-*-*", foundry, typeface, weight, slant) >= (int)sizeof(font_name))
+      return NULL;
     font_names_list = XListFonts(iupmot_display, font_name, 32767, &num_fonts);
   }
   if (!num_fonts)
@@ -137,7 +139,8 @@ static XFontStruct* motLoadFont(const char* foundry, const char* typeface, int s
 
   XFreeFontNames(font_names_list);
 
-  snprintf(font_name, sizeof(font_name), "-%s-%s-%s-%s-*-*-*-%d-*-*-*-*-*-*", foundry, typeface, weight, slant, near_size);
+  if (snprintf(font_name, sizeof(font_name), "-%s-%s-%s-%s-*-*-*-%d-*-*-*-*-*-*", foundry, typeface, weight, slant, near_size) >= (int)sizeof(font_name))
+    return NULL;
   fontstruct = XLoadQueryFont(iupmot_display, font_name);
 
   if (fontstruct)
