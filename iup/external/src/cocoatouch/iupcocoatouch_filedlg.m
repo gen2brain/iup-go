@@ -294,5 +294,5 @@ IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "FILTERINFO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "FILTERUSED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MULTIPLEFILES", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "VALUE_URI", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "VALUE_URI", NULL, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }
