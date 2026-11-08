@@ -171,12 +171,7 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 			setTableValueChangedFunc(ih, v)
 		}
 	case "CLOSE_CB":
-		switch v := fn.(type) {
-		case CloseFunc:
-			setCloseFunc(ih, v)
-		case NotifyCloseFunc:
-			setNotifyCloseFunc(ih, v)
-		}
+		setCloseFunc(ih, fn.(CloseFunc))
 	case "HELP_CB":
 		setHelpFunc(ih, fn.(HelpFunc))
 	case "CANCEL_CB":
@@ -241,6 +236,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setMultiUnselectionFunc(ih, fn.(MultiUnselectionFunc))
 	case "NOTIFY_CB":
 		setNotifyFunc(ih, fn.(NotifyFunc))
+	case "DISMISS_CB":
+		setNotifyDismissFunc(ih, fn.(NotifyDismissFunc))
 	case "IMAGEVALUECHANGED_CB":
 		setImageValueChangedFunc(ih, fn.(MatrixListActionFunc))
 	case "LOCATION_CB":
@@ -287,8 +284,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setTableSortFunc(ih, fn.(TableSortFunc))
 	case "LINK_CB":
 		setTextLinkFunc(ih, fn.(TextLinkFunc))
-	case "THEMECHANGED_CB":
-		setThemeChangedFunc(ih, fn.(ThemeChangedFunc))
+	case "APPEARANCECHANGED_CB":
+		setAppearanceChangedFunc(ih, fn.(AppearanceChangedFunc))
 	case "TOGGLEVALUE_CB":
 		switch v := fn.(type) {
 		case ToggleValueFunc:
@@ -330,20 +327,26 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setDropFilesFunc(ih, fn.(DropFilesFunc))
 	case "COPYDATA_CB":
 		setCopyDataFunc(ih, fn.(CopyDataFunc))
+	case "CUSTOMFRAMEDRAW_CB":
+		setCustomFrameDrawFunc(ih, fn.(CustomFrameDrawFunc))
+	case "CUSTOMFRAMEACTIVATE_CB":
+		setCustomFrameActivateFunc(ih, fn.(CustomFrameActivateFunc))
+	case "WOM_CB":
+		setWomFunc(ih, fn.(WomFunc))
 	case "PAGINATE_CB":
 		setPaginateFunc(ih, fn.(PaginateFunc))
 	case "PRINTPAGE_CB":
 		setPrintPageFunc(ih, fn.(PrintPageFunc))
 	case "INPUT_CB":
 		setTerminalInputFunc(ih, fn.(TerminalInputFunc))
-	case "TITLE_CB":
-		setTerminalTitleFunc(ih, fn.(TerminalTitleFunc))
+	case "TITLECHANGED_CB":
+		setTerminalTitleChangedFunc(ih, fn.(TerminalTitleChangedFunc))
 	case "BELL_CB":
 		setTerminalBellFunc(ih, fn.(TerminalBellFunc))
 	case "TERMSIZE_CB":
 		setTerminalSizeFunc(ih, fn.(TerminalSizeFunc))
-	case "EXIT_CB":
-		setTerminalExitFunc(ih, fn.(TerminalExitFunc))
+	case "EXECEXIT_CB":
+		setTerminalExecExitFunc(ih, fn.(TerminalExecExitFunc))
 	case "TEXTINPUT_CB":
 		setTextInputFunc(ih, fn.(TextInputFunc))
 	case "SCROLL_CB":
@@ -600,12 +603,6 @@ var (
 	globalLeaveModal GlobalLeaveModalFunc
 )
 
-type IdleFunc func() int
-
-type EntryPointFunc func()
-
-type ExitFunc func()
-
 var idleCB = purego.NewCallback(func() int {
 	if globalIdle != nil {
 		return globalIdle()
@@ -627,8 +624,6 @@ var exitCB = purego.NewCallback(func() int {
 	return 0
 })
 
-type GlobalKeyPressFunc func(c, press int) int
-
 var globalKeyPressCB = sync.OnceValue(func() uintptr {
 	return purego.NewCallback(func(c, press int32) int {
 		if globalKeyPress != nil {
@@ -637,8 +632,6 @@ var globalKeyPressCB = sync.OnceValue(func() uintptr {
 		return 0
 	})
 })
-
-type GlobalButtonFunc func(button, pressed, x, y int, status string) int
 
 var globalButtonCB = sync.OnceValue(func() uintptr {
 	return purego.NewCallback(func(button, pressed, x, y int32, status uintptr) int {
@@ -649,8 +642,6 @@ var globalButtonCB = sync.OnceValue(func() uintptr {
 	})
 })
 
-type GlobalMotionFunc func(x, y int, status string) int
-
 var globalMotionCB = sync.OnceValue(func() uintptr {
 	return purego.NewCallback(func(x, y int32, status uintptr) int {
 		if globalMotion != nil {
@@ -659,8 +650,6 @@ var globalMotionCB = sync.OnceValue(func() uintptr {
 		return 0
 	})
 })
-
-type GlobalWheelFunc func(delta float64, x, y int, status string) int
 
 var globalWheelCB = sync.OnceValue(func() uintptr {
 	return newFloatCallback(func(delta float32, x, y int32, status uintptr) int {
@@ -671,8 +660,6 @@ var globalWheelCB = sync.OnceValue(func() uintptr {
 	})
 })
 
-type GlobalEnterModalFunc func(level int) int
-
 var globalEnterModalCB = sync.OnceValue(func() uintptr {
 	return purego.NewCallback(func(level int32) int {
 		if globalEnterModal != nil {
@@ -681,8 +668,6 @@ var globalEnterModalCB = sync.OnceValue(func() uintptr {
 		return 0
 	})
 })
-
-type GlobalLeaveModalFunc func(level int) int
 
 var globalLeaveModalCB = sync.OnceValue(func() uintptr {
 	return purego.NewCallback(func(level int32) int {
@@ -766,7 +751,7 @@ func init() {
 		"VALUECHANGED_CB", "CLOSE_CB", "HELP_CB",
 		"CANCEL_CB", "COLORUPDATE_CB", "HIGHLIGHT_CB", "LAYOUTUPDATE_CB",
 		"MENUCLOSE_CB", "MENUOPEN_CB", "SWAPBUFFERS_CB", "THREAD_CB", "UPDATE_CB",
-		"BELL_CB",
+		"BELL_CB", "CUSTOMFRAMEDRAW_CB",
 	} {
 		key := "_IUPGO_" + name
 		isThread := name == "THREAD_CB"
@@ -788,111 +773,69 @@ func setIhIntFunc(ih Ihandle, name string, f func(Ihandle) int) {
 	iupSetCallback(uintptr(ih), name, ihIntCB[name])
 }
 
-type ActionFunc func(Ihandle) int
-
 func setActionFunc(ih Ihandle, f ActionFunc) { setIhIntFunc(ih, "ACTION", (func(Ihandle) int)(f)) }
-
-type MapFunc func(Ihandle) int
 
 func setMapFunc(ih Ihandle, f MapFunc) { setIhIntFunc(ih, "MAP_CB", (func(Ihandle) int)(f)) }
 
-type UnmapFunc func(Ihandle) int
-
 func setUnmapFunc(ih Ihandle, f UnmapFunc) { setIhIntFunc(ih, "UNMAP_CB", (func(Ihandle) int)(f)) }
-
-type DestroyFunc func(Ihandle) int
 
 func setDestroyFunc(ih Ihandle, f DestroyFunc) {
 	setIhIntFunc(ih, "DESTROY_CB", (func(Ihandle) int)(f))
 }
 
-type GetFocusFunc func(Ihandle) int
-
 func setGetFocusFunc(ih Ihandle, f GetFocusFunc) {
 	setIhIntFunc(ih, "GETFOCUS_CB", (func(Ihandle) int)(f))
 }
-
-type KillFocusFunc func(Ihandle) int
 
 func setKillFocusFunc(ih Ihandle, f KillFocusFunc) {
 	setIhIntFunc(ih, "KILLFOCUS_CB", (func(Ihandle) int)(f))
 }
 
-type EnterWindowFunc func(Ihandle) int
-
 func setEnterWindowFunc(ih Ihandle, f EnterWindowFunc) {
 	setIhIntFunc(ih, "ENTERWINDOW_CB", (func(Ihandle) int)(f))
 }
-
-type LeaveWindowFunc func(Ihandle) int
 
 func setLeaveWindowFunc(ih Ihandle, f LeaveWindowFunc) {
 	setIhIntFunc(ih, "LEAVEWINDOW_CB", (func(Ihandle) int)(f))
 }
 
-type ValueChangedFunc func(Ihandle) int
-
 func setValueChangedFunc(ih Ihandle, f ValueChangedFunc) {
 	setIhIntFunc(ih, "VALUECHANGED_CB", (func(Ihandle) int)(f))
 }
 
-type CloseFunc func(Ihandle) int
-
 func setCloseFunc(ih Ihandle, f CloseFunc) { setIhIntFunc(ih, "CLOSE_CB", (func(Ihandle) int)(f)) }
-
-type HelpFunc func(Ihandle) int
 
 func setHelpFunc(ih Ihandle, f HelpFunc) { setIhIntFunc(ih, "HELP_CB", (func(Ihandle) int)(f)) }
 
-type CancelFunc func(Ihandle) int
-
 func setCancelFunc(ih Ihandle, f CancelFunc) { setIhIntFunc(ih, "CANCEL_CB", (func(Ihandle) int)(f)) }
-
-type ColorUpdateFunc func(Ihandle) int
 
 func setColorUpdateFunc(ih Ihandle, f ColorUpdateFunc) {
 	setIhIntFunc(ih, "COLORUPDATE_CB", (func(Ihandle) int)(f))
 }
 
-type HighlightFunc func(Ihandle) int
-
 func setHighlightFunc(ih Ihandle, f HighlightFunc) {
 	setIhIntFunc(ih, "HIGHLIGHT_CB", (func(Ihandle) int)(f))
 }
-
-type LayoutUpdateFunc func(Ihandle) int
 
 func setLayoutUpdateFunc(ih Ihandle, f LayoutUpdateFunc) {
 	setIhIntFunc(ih, "LAYOUTUPDATE_CB", (func(Ihandle) int)(f))
 }
 
-type MenuCloseFunc func(Ihandle) int
-
 func setMenuCloseFunc(ih Ihandle, f MenuCloseFunc) {
 	setIhIntFunc(ih, "MENUCLOSE_CB", (func(Ihandle) int)(f))
 }
-
-type MenuOpenFunc func(Ihandle) int
 
 func setMenuOpenFunc(ih Ihandle, f MenuOpenFunc) {
 	setIhIntFunc(ih, "MENUOPEN_CB", (func(Ihandle) int)(f))
 }
 
-type SwapBuffersFunc func(Ihandle) int
-
 func setSwapBuffersFunc(ih Ihandle, f SwapBuffersFunc) {
 	setIhIntFunc(ih, "SWAPBUFFERS_CB", (func(Ihandle) int)(f))
 }
 
-type ThreadFunc func(Ihandle) int
-
 func setThreadFunc(ih Ihandle, f ThreadFunc) { setIhIntFunc(ih, "THREAD_CB", (func(Ihandle) int)(f)) }
 
-type UpdateFunc func(Ihandle) int
-
 func setUpdateFunc(ih Ihandle, f UpdateFunc) { setIhIntFunc(ih, "UPDATE_CB", (func(Ihandle) int)(f)) }
-
-type TimerActionFunc func(Ihandle) int
 
 var timerActionCB = purego.NewCallback(func(ih uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TIMER_ACTION").(func(Ihandle) int); ok {
@@ -925,8 +868,6 @@ func cReturnStr(s string) uintptr {
 	return uintptr(unsafe.Pointer(&b[0]))
 }
 
-type ListValueFunc func(ih Ihandle, pos int) string
-
 var listValueCB = purego.NewCallback(func(ih uintptr, pos int32) uintptr {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_LIST_VALUE_CB").(ListValueFunc); ok {
 		return cReturnStr(f(Ihandle(ih), int(pos)))
@@ -938,8 +879,6 @@ func setListValueFunc(ih Ihandle, f ListValueFunc) {
 	storeCallback(ih, "_IUPGO_LIST_VALUE_CB", f)
 	iupSetCallback(uintptr(ih), "VALUE_CB", listValueCB)
 }
-
-type ListImageFunc func(ih Ihandle, pos int) string
 
 var listImageCB = purego.NewCallback(func(ih uintptr, pos int32) uintptr {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_LIST_IMAGE_CB").(ListImageFunc); ok {
@@ -953,8 +892,6 @@ func setListImageFunc(ih Ihandle, f ListImageFunc) {
 	iupSetCallback(uintptr(ih), "IMAGE_CB", listImageCB)
 }
 
-type TableValueFunc func(ih Ihandle, lin, col int) string
-
 var tableValueCB = purego.NewCallback(func(ih uintptr, lin, col int32) uintptr {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TABLE_VALUE_CB").(TableValueFunc); ok {
 		return cReturnStr(f(Ihandle(ih), int(lin), int(col)))
@@ -966,8 +903,6 @@ func setTableValueFunc(ih Ihandle, f TableValueFunc) {
 	storeCallback(ih, "_IUPGO_TABLE_VALUE_CB", f)
 	iupSetCallback(uintptr(ih), "VALUE_CB", tableValueCB)
 }
-
-type TableImageFunc func(ih Ihandle, lin, col int) string
 
 var tableImageCB = purego.NewCallback(func(ih uintptr, lin, col int32) uintptr {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TABLE_IMAGE_CB").(TableImageFunc); ok {
@@ -981,8 +916,6 @@ func setTableImageFunc(ih Ihandle, f TableImageFunc) {
 	iupSetCallback(uintptr(ih), "IMAGE_CB", tableImageCB)
 }
 
-type KAnyFunc func(Ihandle, int) int
-
 var kAnyCB = purego.NewCallback(func(ih uintptr, c int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_K_ANY").(KAnyFunc); ok {
 		return f(Ihandle(ih), int(c))
@@ -994,8 +927,6 @@ func setKAnyFunc(ih Ihandle, f KAnyFunc) {
 	storeCallback(ih, "_IUPGO_K_ANY", f)
 	iupSetCallback(uintptr(ih), "K_ANY", kAnyCB)
 }
-
-type KeyPressFunc func(ih Ihandle, c, press int) int
 
 var keyPressCB = purego.NewCallback(func(ih uintptr, c, press int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_KEYPRESS_CB").(KeyPressFunc); ok {
@@ -1009,8 +940,6 @@ func setKeyPressFunc(ih Ihandle, f KeyPressFunc) {
 	iupSetCallback(uintptr(ih), "KEYPRESS_CB", keyPressCB)
 }
 
-type TipsFunc func(ih Ihandle, x, y int) int
-
 var tipsCB = purego.NewCallback(func(ih uintptr, x, y int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TIPS_CB").(TipsFunc); ok {
 		return f(Ihandle(ih), int(x), int(y))
@@ -1022,8 +951,6 @@ func setTipsFunc(ih Ihandle, f TipsFunc) {
 	storeCallback(ih, "_IUPGO_TIPS_CB", f)
 	iupSetCallback(uintptr(ih), "TIPS_CB", tipsCB)
 }
-
-type MoveFunc func(ih Ihandle, x, y int) int
 
 var moveCB = purego.NewCallback(func(ih uintptr, x, y int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_MOVE_CB").(MoveFunc); ok {
@@ -1037,8 +964,6 @@ func setMoveFunc(ih Ihandle, f MoveFunc) {
 	iupSetCallback(uintptr(ih), "MOVE_CB", moveCB)
 }
 
-type ResizeFunc func(ih Ihandle, width, height int) int
-
 var resizeCB = purego.NewCallback(func(ih uintptr, width, height int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_RESIZE_CB").(ResizeFunc); ok {
 		return f(Ihandle(ih), int(width), int(height))
@@ -1050,8 +975,6 @@ func setResizeFunc(ih Ihandle, f ResizeFunc) {
 	storeCallback(ih, "_IUPGO_RESIZE_CB", f)
 	iupSetCallback(uintptr(ih), "RESIZE_CB", resizeCB)
 }
-
-type SpinFunc func(ih Ihandle, inc int) int
 
 var spinCB = purego.NewCallback(func(ih uintptr, inc int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SPIN_CB").(SpinFunc); ok {
@@ -1065,8 +988,6 @@ func setSpinFunc(ih Ihandle, f SpinFunc) {
 	iupSetCallback(uintptr(ih), "SPIN_CB", spinCB)
 }
 
-type CaretFunc func(ih Ihandle, lin, col, pos int) int
-
 var caretCB = purego.NewCallback(func(ih uintptr, lin, col, pos int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_CARET_CB").(CaretFunc); ok {
 		return f(Ihandle(ih), int(lin), int(col), int(pos))
@@ -1078,8 +999,6 @@ func setCaretFunc(ih Ihandle, f CaretFunc) {
 	storeCallback(ih, "_IUPGO_CARET_CB", f)
 	iupSetCallback(uintptr(ih), "CARET_CB", caretCB)
 }
-
-type TabChangePosFunc func(ih Ihandle, newPos, oldPos int) int
 
 var tabChangePosCB = purego.NewCallback(func(ih uintptr, newPos, oldPos int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TABCHANGEPOS_CB").(TabChangePosFunc); ok {
@@ -1093,8 +1012,6 @@ func setTabChangePosFunc(ih Ihandle, f TabChangePosFunc) {
 	iupSetCallback(uintptr(ih), "TABCHANGEPOS_CB", tabChangePosCB)
 }
 
-type TabChangeFunc func(ih, newTab, oldTab Ihandle) int
-
 var tabChangeCB = purego.NewCallback(func(ih, newTab, oldTab uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TABCHANGE_CB").(TabChangeFunc); ok {
 		return f(Ihandle(ih), Ihandle(newTab), Ihandle(oldTab))
@@ -1106,8 +1023,6 @@ func setTabChangeFunc(ih Ihandle, f TabChangeFunc) {
 	storeCallback(ih, "_IUPGO_TABCHANGE_CB", f)
 	iupSetCallback(uintptr(ih), "TABCHANGE_CB", tabChangeCB)
 }
-
-type DblclickFunc func(ih Ihandle, item int, text string) int
 
 var dblclickCB = purego.NewCallback(func(ih uintptr, item int32, text uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DBLCLICK_CB").(DblclickFunc); ok {
@@ -1121,8 +1036,6 @@ func setDblclickFunc(ih Ihandle, f DblclickFunc) {
 	iupSetCallback(uintptr(ih), "DBLCLICK_CB", dblclickCB)
 }
 
-type MotionFunc func(ih Ihandle, x, y int, status string) int
-
 var motionCB = purego.NewCallback(func(ih uintptr, x, y int32, status uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_MOTION_CB").(MotionFunc); ok {
 		return f(Ihandle(ih), int(x), int(y), goString(status))
@@ -1134,8 +1047,6 @@ func setMotionFunc(ih Ihandle, f MotionFunc) {
 	storeCallback(ih, "_IUPGO_MOTION_CB", f)
 	iupSetCallback(uintptr(ih), "MOTION_CB", motionCB)
 }
-
-type ButtonFunc func(Ihandle, int, int, int, int, string) int
 
 var buttonCB = purego.NewCallback(func(ih uintptr, button, pressed, x, y int32, status uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_BUTTON_CB").(ButtonFunc); ok {
@@ -1149,8 +1060,6 @@ func setButtonFunc(ih Ihandle, f ButtonFunc) {
 	iupSetCallback(uintptr(ih), "BUTTON_CB", buttonCB)
 }
 
-type DropFilesFunc func(Ihandle, string, int, int, int) int
-
 var dropFilesCB = purego.NewCallback(func(ih, filename uintptr, num, x, y int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DROPFILES_CB").(DropFilesFunc); ok {
 		return f(Ihandle(ih), goString(filename), int(num), int(x), int(y))
@@ -1162,8 +1071,6 @@ func setDropFilesFunc(ih Ihandle, f DropFilesFunc) {
 	storeCallback(ih, "_IUPGO_DROPFILES_CB", f)
 	iupSetCallback(uintptr(ih), "DROPFILES_CB", dropFilesCB)
 }
-
-type CopyDataFunc func(ih Ihandle, cmdLine string, size int) int
 
 var copyDataCB = purego.NewCallback(func(ih, cmdLine uintptr, size int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_COPYDATA_CB").(CopyDataFunc); ok {
@@ -1177,8 +1084,6 @@ func setCopyDataFunc(ih Ihandle, f CopyDataFunc) {
 	iupSetCallback(uintptr(ih), "COPYDATA_CB", copyDataCB)
 }
 
-type PaginateFunc func(ih Ihandle, width, height int) int
-
 var paginateCB = purego.NewCallback(func(ih uintptr, width, height int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PAGINATE_CB").(PaginateFunc); ok {
 		return f(Ihandle(ih), int(width), int(height))
@@ -1191,8 +1096,6 @@ func setPaginateFunc(ih Ihandle, f PaginateFunc) {
 	iupSetCallback(uintptr(ih), "PAGINATE_CB", paginateCB)
 }
 
-type PrintPageFunc func(ih Ihandle, page, width, height int) int
-
 var printPageCB = purego.NewCallback(func(ih uintptr, page, width, height int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PRINTPAGE_CB").(PrintPageFunc); ok {
 		return f(Ihandle(ih), int(page), int(width), int(height))
@@ -1204,8 +1107,6 @@ func setPrintPageFunc(ih Ihandle, f PrintPageFunc) {
 	storeCallback(ih, "_IUPGO_PRINTPAGE_CB", f)
 	iupSetCallback(uintptr(ih), "PRINTPAGE_CB", printPageCB)
 }
-
-type TerminalInputFunc func(ih Ihandle, bytes []byte) int
 
 var terminalInputCB = purego.NewCallback(func(ih, b uintptr, length int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TERMINAL_INPUT").(TerminalInputFunc); ok {
@@ -1223,27 +1124,21 @@ func setTerminalInputFunc(ih Ihandle, f TerminalInputFunc) {
 	iupSetCallback(uintptr(ih), "INPUT_CB", terminalInputCB)
 }
 
-type TerminalTitleFunc func(ih Ihandle, title string) int
-
-var terminalTitleCB = purego.NewCallback(func(ih, title uintptr) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TERMINAL_TITLE").(TerminalTitleFunc); ok {
+var terminalTitleChangedCB = purego.NewCallback(func(ih, title uintptr) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TITLECHANGED_CB").(TerminalTitleChangedFunc); ok {
 		return f(Ihandle(ih), goString(title))
 	}
 	return 0
 })
 
-func setTerminalTitleFunc(ih Ihandle, f TerminalTitleFunc) {
-	storeCallback(ih, "_IUPGO_TERMINAL_TITLE", f)
-	iupSetCallback(uintptr(ih), "TITLE_CB", terminalTitleCB)
+func setTerminalTitleChangedFunc(ih Ihandle, f TerminalTitleChangedFunc) {
+	storeCallback(ih, "_IUPGO_TITLECHANGED_CB", f)
+	iupSetCallback(uintptr(ih), "TITLECHANGED_CB", terminalTitleChangedCB)
 }
-
-type TerminalBellFunc func(ih Ihandle) int
 
 func setTerminalBellFunc(ih Ihandle, f TerminalBellFunc) {
 	setIhIntFunc(ih, "BELL_CB", (func(Ihandle) int)(f))
 }
-
-type TerminalSizeFunc func(ih Ihandle, cols, lines int) int
 
 var terminalSizeCB = purego.NewCallback(func(ih uintptr, cols, lines int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TERMINAL_SIZE").(TerminalSizeFunc); ok {
@@ -1257,21 +1152,17 @@ func setTerminalSizeFunc(ih Ihandle, f TerminalSizeFunc) {
 	iupSetCallback(uintptr(ih), "TERMSIZE_CB", terminalSizeCB)
 }
 
-type TerminalExitFunc func(ih Ihandle, status int) int
-
-var terminalExitCB = purego.NewCallback(func(ih uintptr, status int32) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TERMINAL_EXIT").(TerminalExitFunc); ok {
+var terminalExecExitCB = purego.NewCallback(func(ih uintptr, status int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_EXECEXIT_CB").(TerminalExecExitFunc); ok {
 		return f(Ihandle(ih), int(status))
 	}
 	return 0
 })
 
-func setTerminalExitFunc(ih Ihandle, f TerminalExitFunc) {
-	storeCallback(ih, "_IUPGO_TERMINAL_EXIT", f)
-	iupSetCallback(uintptr(ih), "EXIT_CB", terminalExitCB)
+func setTerminalExecExitFunc(ih Ihandle, f TerminalExecExitFunc) {
+	storeCallback(ih, "_IUPGO_EXECEXIT_CB", f)
+	iupSetCallback(uintptr(ih), "EXECEXIT_CB", terminalExecExitCB)
 }
-
-type TextInputFunc func(ih Ihandle, text string) int
 
 var textInputCB = purego.NewCallback(func(ih, text uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TEXTINPUT").(TextInputFunc); ok {
@@ -1284,8 +1175,6 @@ func setTextInputFunc(ih Ihandle, f TextInputFunc) {
 	storeCallback(ih, "_IUPGO_TEXTINPUT", f)
 	iupSetCallback(uintptr(ih), "TEXTINPUT_CB", textInputCB)
 }
-
-type WheelFunc func(ih Ihandle, delta float64, x, y int, status string) int
 
 var wheelCB = sync.OnceValue(func() uintptr {
 	return newFloatCallback(func(ih uintptr, delta float32, x, y int32, status uintptr) int {
@@ -1301,8 +1190,6 @@ func setWheelFunc(ih Ihandle, f WheelFunc) {
 	iupSetCallback(uintptr(ih), "WHEEL_CB", wheelCB())
 }
 
-type ScrollFunc func(ih Ihandle, op int, posx, posy float64) int
-
 var scrollCB = sync.OnceValue(func() uintptr {
 	return newFloatCallback(func(ih uintptr, op int32, posx, posy float32) int {
 		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SCROLL_CB").(ScrollFunc); ok {
@@ -1317,8 +1204,6 @@ func setScrollFunc(ih Ihandle, f ScrollFunc) {
 	iupSetCallback(uintptr(ih), "SCROLL_CB", scrollCB())
 }
 
-type ListActionFunc func(ih Ihandle, text string, item, state int) int
-
 var listActionCB = purego.NewCallback(func(ih, text uintptr, item, state int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_LIST_ACTION").(ListActionFunc); ok {
 		return f(Ihandle(ih), goString(text), int(item), int(state))
@@ -1330,8 +1215,6 @@ func setListActionFunc(ih Ihandle, f ListActionFunc) {
 	storeCallback(ih, "_IUPGO_LIST_ACTION", f)
 	iupSetCallback(uintptr(ih), "ACTION", listActionCB)
 }
-
-type TextActionFunc func(ih Ihandle, ch int, newValue string) int
 
 var textActionCB = purego.NewCallback(func(ih uintptr, c int32, newValue uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TEXT_ACTION").(TextActionFunc); ok {
@@ -1345,8 +1228,6 @@ func setTextActionFunc(ih Ihandle, f TextActionFunc) {
 	iupSetCallback(uintptr(ih), "ACTION", textActionCB)
 }
 
-type ToggleActionFunc func(ih Ihandle, state int) int
-
 var toggleActionCB = purego.NewCallback(func(ih uintptr, state int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TOGGLE_ACTION").(ToggleActionFunc); ok {
 		return f(Ihandle(ih), int(state))
@@ -1358,8 +1239,6 @@ func setToggleActionFunc(ih Ihandle, f ToggleActionFunc) {
 	storeCallback(ih, "_IUPGO_TOGGLE_ACTION", f)
 	iupSetCallback(uintptr(ih), "ACTION", toggleActionCB)
 }
-
-type LinkActionFunc func(ih Ihandle, url string) int
 
 var linkActionCB = purego.NewCallback(func(ih, url uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_LINK_ACTION").(LinkActionFunc); ok {
@@ -1373,8 +1252,6 @@ func setLinkActionFunc(ih Ihandle, f LinkActionFunc) {
 	iupSetCallback(uintptr(ih), "ACTION", linkActionCB)
 }
 
-type DropDownFunc func(ih Ihandle, state int) int
-
 var dropDownCB = purego.NewCallback(func(ih uintptr, state int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DROPDOWN_CB").(DropDownFunc); ok {
 		return f(Ihandle(ih), int(state))
@@ -1386,8 +1263,6 @@ func setDropDownFunc(ih Ihandle, f DropDownFunc) {
 	storeCallback(ih, "_IUPGO_DROPDOWN_CB", f)
 	iupSetCallback(uintptr(ih), "DROPDOWN_CB", dropDownCB)
 }
-
-type MultiselectFunc func(ih Ihandle, text string) int
 
 var multiselectCB = purego.NewCallback(func(ih, text uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_MULTISELECT_CB").(MultiselectFunc); ok {
@@ -1401,8 +1276,6 @@ func setMultiselectFunc(ih Ihandle, f MultiselectFunc) {
 	iupSetCallback(uintptr(ih), "MULTISELECT_CB", multiselectCB)
 }
 
-type EditFunc func(ih Ihandle, c int, newValue string) int
-
 var editCB = purego.NewCallback(func(ih uintptr, item int32, text uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_EDIT_CB").(EditFunc); ok {
 		return f(Ihandle(ih), int(item), goString(text))
@@ -1414,8 +1287,6 @@ func setEditFunc(ih Ihandle, f EditFunc) {
 	storeCallback(ih, "_IUPGO_EDIT_CB", f)
 	iupSetCallback(uintptr(ih), "EDIT_CB", editCB)
 }
-
-type DetachedFunc func(Ihandle, Ihandle, int, int) int
 
 var detachedCB = purego.NewCallback(func(ih, newParent uintptr, x, y int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DETACHED_CB").(DetachedFunc); ok {
@@ -1429,8 +1300,6 @@ func setDetachedFunc(ih Ihandle, f DetachedFunc) {
 	iupSetCallback(uintptr(ih), "DETACHED_CB", detachedCB)
 }
 
-type SelectionFunc func(ih Ihandle, id, status int) int
-
 var selectionCB = purego.NewCallback(func(ih uintptr, id, status int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SELECTION_CB").(SelectionFunc); ok {
 		return f(Ihandle(ih), int(id), int(status))
@@ -1442,8 +1311,6 @@ func setSelectionFunc(ih Ihandle, f SelectionFunc) {
 	storeCallback(ih, "_IUPGO_SELECTION_CB", f)
 	iupSetCallback(uintptr(ih), "SELECTION_CB", selectionCB)
 }
-
-type MultiSelectionFunc func(ih Ihandle, ids []int, n int) int
 
 var multiSelectionCB = purego.NewCallback(func(ih, ids uintptr, n int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_MULTISELECTION_CB").(MultiSelectionFunc); ok {
@@ -1462,8 +1329,6 @@ func setMultiSelectionFunc(ih Ihandle, f MultiSelectionFunc) {
 	iupSetCallback(uintptr(ih), "MULTISELECTION_CB", multiSelectionCB)
 }
 
-type BranchOpenFunc func(ih Ihandle, id int) int
-
 var branchOpenCB = purego.NewCallback(func(ih uintptr, id int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_BRANCHOPEN_CB").(BranchOpenFunc); ok {
 		return f(Ihandle(ih), int(id))
@@ -1475,8 +1340,6 @@ func setBranchOpenFunc(ih Ihandle, f BranchOpenFunc) {
 	storeCallback(ih, "_IUPGO_BRANCHOPEN_CB", f)
 	iupSetCallback(uintptr(ih), "BRANCHOPEN_CB", branchOpenCB)
 }
-
-type BranchCloseFunc func(ih Ihandle, id int) int
 
 var branchCloseCB = purego.NewCallback(func(ih uintptr, id int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_BRANCHCLOSE_CB").(BranchCloseFunc); ok {
@@ -1490,8 +1353,6 @@ func setBranchCloseFunc(ih Ihandle, f BranchCloseFunc) {
 	iupSetCallback(uintptr(ih), "BRANCHCLOSE_CB", branchCloseCB)
 }
 
-type ExecuteLeafFunc func(ih Ihandle, id int) int
-
 var executeLeafCB = purego.NewCallback(func(ih uintptr, id int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_EXECUTELEAF_CB").(ExecuteLeafFunc); ok {
 		return f(Ihandle(ih), int(id))
@@ -1503,8 +1364,6 @@ func setExecuteLeafFunc(ih Ihandle, f ExecuteLeafFunc) {
 	storeCallback(ih, "_IUPGO_EXECUTELEAF_CB", f)
 	iupSetCallback(uintptr(ih), "EXECUTELEAF_CB", executeLeafCB)
 }
-
-type ExecuteBranchFunc func(ih Ihandle, id int) int
 
 var executeBranchCB = purego.NewCallback(func(ih uintptr, id int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_EXECUTEBRANCH_CB").(ExecuteBranchFunc); ok {
@@ -1518,8 +1377,6 @@ func setExecuteBranchFunc(ih Ihandle, f ExecuteBranchFunc) {
 	iupSetCallback(uintptr(ih), "EXECUTEBRANCH_CB", executeBranchCB)
 }
 
-type ShowRenameFunc func(ih Ihandle, id int) int
-
 var showRenameCB = purego.NewCallback(func(ih uintptr, id int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SHOWRENAME_CB").(ShowRenameFunc); ok {
 		return f(Ihandle(ih), int(id))
@@ -1531,8 +1388,6 @@ func setShowRenameFunc(ih Ihandle, f ShowRenameFunc) {
 	storeCallback(ih, "_IUPGO_SHOWRENAME_CB", f)
 	iupSetCallback(uintptr(ih), "SHOWRENAME_CB", showRenameCB)
 }
-
-type RenameFunc func(ih Ihandle, id int, title string) int
 
 var renameCB = purego.NewCallback(func(ih uintptr, id int32, title uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_RENAME_CB").(RenameFunc); ok {
@@ -1546,8 +1401,6 @@ func setRenameFunc(ih Ihandle, f RenameFunc) {
 	iupSetCallback(uintptr(ih), "RENAME_CB", renameCB)
 }
 
-type NodeRemovedFunc func(ih Ihandle, userId uintptr) int
-
 var nodeRemovedCB = purego.NewCallback(func(ih, userData uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_NODEREMOVED_CB").(NodeRemovedFunc); ok {
 		return f(Ihandle(ih), userData)
@@ -1559,8 +1412,6 @@ func setNodeRemovedFunc(ih Ihandle, f NodeRemovedFunc) {
 	storeCallback(ih, "_IUPGO_NODEREMOVED_CB", f)
 	iupSetCallback(uintptr(ih), "NODEREMOVED_CB", nodeRemovedCB)
 }
-
-type DragDropFunc func(ih Ihandle, dragId, dropId, isShift, isControl int) int
 
 var dragDropCB = purego.NewCallback(func(ih uintptr, dragId, dropId, isShift, isControl int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DRAGDROP_CB").(DragDropFunc); ok {
@@ -1574,8 +1425,6 @@ func setDragDropFunc(ih Ihandle, f DragDropFunc) {
 	iupSetCallback(uintptr(ih), "DRAGDROP_CB", dragDropCB)
 }
 
-type DragBeginFunc func(ih Ihandle, x, y int) int
-
 var dragBeginCB = purego.NewCallback(func(ih uintptr, x, y int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DRAGBEGIN_CB").(DragBeginFunc); ok {
 		return f(Ihandle(ih), int(x), int(y))
@@ -1587,8 +1436,6 @@ func setDragBeginFunc(ih Ihandle, f DragBeginFunc) {
 	storeCallback(ih, "_IUPGO_DRAGBEGIN_CB", f)
 	iupSetCallback(uintptr(ih), "DRAGBEGIN_CB", dragBeginCB)
 }
-
-type DragDataSizeFunc func(ih Ihandle, dragType string) int
 
 var dragDataSizeCB = purego.NewCallback(func(ih, dragType uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DRAGDATASIZE_CB").(DragDataSizeFunc); ok {
@@ -1602,8 +1449,6 @@ func setDragDataSizeFunc(ih Ihandle, f DragDataSizeFunc) {
 	iupSetCallback(uintptr(ih), "DRAGDATASIZE_CB", dragDataSizeCB)
 }
 
-type DragDataFunc func(ih Ihandle, dragType string, data unsafe.Pointer, size int) int
-
 var dragDataCB = purego.NewCallback(func(ih, dragType, data uintptr, size int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DRAGDATA_CB").(DragDataFunc); ok {
 		return f(Ihandle(ih), goString(dragType), goPtr(data), int(size))
@@ -1616,8 +1461,6 @@ func setDragDataFunc(ih Ihandle, f DragDataFunc) {
 	iupSetCallback(uintptr(ih), "DRAGDATA_CB", dragDataCB)
 }
 
-type DragEndFunc func(ih Ihandle, action int) int
-
 var dragEndCB = purego.NewCallback(func(ih uintptr, action int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DRAGEND_CB").(DragEndFunc); ok {
 		return f(Ihandle(ih), int(action))
@@ -1629,8 +1472,6 @@ func setDragEndFunc(ih Ihandle, f DragEndFunc) {
 	storeCallback(ih, "_IUPGO_DRAGEND_CB", f)
 	iupSetCallback(uintptr(ih), "DRAGEND_CB", dragEndCB)
 }
-
-type DropDataFunc func(ih Ihandle, dragType string, data unsafe.Pointer, size, x, y int) int
 
 var dropDataCB = purego.NewCallback(func(ih, dragType, data uintptr, size, x, y int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DROPDATA_CB").(DropDataFunc); ok {
@@ -1656,8 +1497,6 @@ func intSlice(p uintptr, n int32) []int {
 	return out
 }
 
-type CellFunc func(ih Ihandle, cell int) string
-
 var cellCB = purego.NewCallback(func(ih uintptr, cell int32) uintptr {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_CELL_CB").(CellFunc); ok {
 		return cReturnStr(f(Ihandle(ih), int(cell)))
@@ -1669,8 +1508,6 @@ func setCellFunc(ih Ihandle, f CellFunc) {
 	storeCallback(ih, "_IUPGO_CELL_CB", f)
 	iupSetCallback(uintptr(ih), "CELL_CB", cellCB)
 }
-
-type ExtendedFunc func(ih Ihandle, cell int) int
 
 var extendedCB = purego.NewCallback(func(ih uintptr, cell int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_EXTENDED_CB").(ExtendedFunc); ok {
@@ -1684,8 +1521,6 @@ func setExtendedFunc(ih Ihandle, f ExtendedFunc) {
 	iupSetCallback(uintptr(ih), "EXTENDED_CB", extendedCB)
 }
 
-type ChangeFunc func(ih Ihandle, r, g, b uint8) int
-
 var changeCB = purego.NewCallback(func(ih uintptr, r, g, b uint8) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_CHANGE_CB").(ChangeFunc); ok {
 		return f(Ihandle(ih), r, g, b)
@@ -1697,8 +1532,6 @@ func setChangeFunc(ih Ihandle, f ChangeFunc) {
 	storeCallback(ih, "_IUPGO_CHANGE_CB", f)
 	iupSetCallback(uintptr(ih), "CHANGE_CB", changeCB)
 }
-
-type DragFunc func(ih Ihandle, r, g, b uint8) int
 
 var dragCB = purego.NewCallback(func(ih uintptr, r, g, b uint8) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DRAG_CB").(DragFunc); ok {
@@ -1712,8 +1545,6 @@ func setDragFunc(ih Ihandle, f DragFunc) {
 	iupSetCallback(uintptr(ih), "DRAG_CB", dragCB)
 }
 
-type DropMotionFunc func(ih Ihandle, x, y int, status string) int
-
 var dropMotionCB = purego.NewCallback(func(ih uintptr, x, y int32, status uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DROPMOTION_CB").(DropMotionFunc); ok {
 		return f(Ihandle(ih), int(x), int(y), goString(status))
@@ -1725,8 +1556,6 @@ func setDropMotionFunc(ih Ihandle, f DropMotionFunc) {
 	storeCallback(ih, "_IUPGO_DROPMOTION_CB", f)
 	iupSetCallback(uintptr(ih), "DROPMOTION_CB", dropMotionCB)
 }
-
-type DropShowFunc func(ih Ihandle, state int) int
 
 var dropShowCB = purego.NewCallback(func(ih uintptr, state int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DROPSHOW_CB").(DropShowFunc); ok {
@@ -1740,8 +1569,6 @@ func setDropShowFunc(ih Ihandle, f DropShowFunc) {
 	iupSetCallback(uintptr(ih), "DROPSHOW_CB", dropShowCB)
 }
 
-type ExtraButtonFunc func(Ihandle, int, int) int
-
 var extraButtonCB = purego.NewCallback(func(ih uintptr, button, pressed int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_EXTRABUTTON_CB").(ExtraButtonFunc); ok {
 		return f(Ihandle(ih), int(button), int(pressed))
@@ -1753,8 +1580,6 @@ func setExtraButtonFunc(ih Ihandle, f ExtraButtonFunc) {
 	storeCallback(ih, "_IUPGO_EXTRABUTTON_CB", f)
 	iupSetCallback(uintptr(ih), "EXTRABUTTON_CB", extraButtonCB)
 }
-
-type FileFunc func(ih Ihandle, filename, status string) int
 
 var fileCB = purego.NewCallback(func(ih, filename, status uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_FILE_CB").(FileFunc); ok {
@@ -1768,8 +1593,6 @@ func setFileFunc(ih Ihandle, f FileFunc) {
 	iupSetCallback(uintptr(ih), "FILE_CB", fileCB)
 }
 
-type FocusFunc func(Ihandle, int) int
-
 var focusCB = purego.NewCallback(func(ih uintptr, c int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_FOCUS_CB").(FocusFunc); ok {
 		return f(Ihandle(ih), int(c))
@@ -1781,8 +1604,6 @@ func setFocusFunc(ih Ihandle, f FocusFunc) {
 	storeCallback(ih, "_IUPGO_FOCUS_CB", f)
 	iupSetCallback(uintptr(ih), "FOCUS_CB", focusCB)
 }
-
-type GestureFunc func(ih Ihandle, gesture, state, x, y int, v1, v2 float64) int
 
 var gestureCB = sync.OnceValue(func() uintptr {
 	return newFloatCallback(func(ih uintptr, gesture, state, x, y int32, v1, v2 float64) int {
@@ -1798,8 +1619,6 @@ func setGestureFunc(ih Ihandle, f GestureFunc) {
 	iupSetCallback(uintptr(ih), "GESTURE_CB", gestureCB())
 }
 
-type MaskFailFunc func(ih Ihandle, newValue string) int
-
 var maskFailCB = purego.NewCallback(func(ih, newValue uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_MASKFAIL_CB").(MaskFailFunc); ok {
 		return f(Ihandle(ih), goString(newValue))
@@ -1811,8 +1630,6 @@ func setMaskFailFunc(ih Ihandle, f MaskFailFunc) {
 	storeCallback(ih, "_IUPGO_MASKFAIL_CB", f)
 	iupSetCallback(uintptr(ih), "MASKFAIL_CB", maskFailCB)
 }
-
-type MultiTouchFunc func(ih Ihandle, count int, pid, px, py, pstate []int) int
 
 var multiTouchCB = purego.NewCallback(func(ih uintptr, count int32, pid, px, py, pstate uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_MULTITOUCH_CB").(MultiTouchFunc); ok {
@@ -1826,8 +1643,6 @@ func setMultiTouchFunc(ih Ihandle, f MultiTouchFunc) {
 	iupSetCallback(uintptr(ih), "MULTITOUCH_CB", multiTouchCB)
 }
 
-type MultiUnselectionFunc func(ih Ihandle, ids []int, n int) int
-
 var multiUnselectionCB = purego.NewCallback(func(ih, ids uintptr, n int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_MULTIUNSELECTION_CB").(MultiUnselectionFunc); ok {
 		return f(Ihandle(ih), intSlice(ids, n), int(n))
@@ -1839,8 +1654,6 @@ func setMultiUnselectionFunc(ih Ihandle, f MultiUnselectionFunc) {
 	storeCallback(ih, "_IUPGO_MULTIUNSELECTION_CB", f)
 	iupSetCallback(uintptr(ih), "MULTIUNSELECTION_CB", multiUnselectionCB)
 }
-
-type NotifyFunc func(ih Ihandle, actionId int) int
 
 var notifyCB = purego.NewCallback(func(ih uintptr, actionId int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_NOTIFY_CB").(NotifyFunc); ok {
@@ -1854,21 +1667,17 @@ func setNotifyFunc(ih Ihandle, f NotifyFunc) {
 	iupSetCallback(uintptr(ih), "NOTIFY_CB", notifyCB)
 }
 
-type NotifyCloseFunc func(ih Ihandle, reason int) int
-
-var notifyCloseCB = purego.NewCallback(func(ih uintptr, reason int32) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_NOTIFY_CLOSE_CB").(NotifyCloseFunc); ok {
+var notifyDismissCB = purego.NewCallback(func(ih uintptr, reason int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DISMISS_CB").(NotifyDismissFunc); ok {
 		return f(Ihandle(ih), int(reason))
 	}
 	return 0
 })
 
-func setNotifyCloseFunc(ih Ihandle, f NotifyCloseFunc) {
-	storeCallback(ih, "_IUPGO_NOTIFY_CLOSE_CB", f)
-	iupSetCallback(uintptr(ih), "CLOSE_CB", notifyCloseCB)
+func setNotifyDismissFunc(ih Ihandle, f NotifyDismissFunc) {
+	storeCallback(ih, "_IUPGO_DISMISS_CB", f)
+	iupSetCallback(uintptr(ih), "DISMISS_CB", notifyDismissCB)
 }
-
-type LocationFunc func(ih Ihandle, latitude, longitude float64) int
 
 var locationCB = sync.OnceValue(func() uintptr {
 	return newFloatCallback(func(ih uintptr, latitude, longitude float64) int {
@@ -1884,8 +1693,6 @@ func setLocationFunc(ih Ihandle, f LocationFunc) {
 	iupSetCallback(uintptr(ih), "LOCATION_CB", locationCB())
 }
 
-type SensorFunc func(ih Ihandle, x, y, z float64) int
-
 var sensorCB = sync.OnceValue(func() uintptr {
 	return newFloatCallback(func(ih uintptr, x, y, z float64) int {
 		if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SENSOR_CB").(SensorFunc); ok {
@@ -1900,8 +1707,6 @@ func setSensorFunc(ih Ihandle, f SensorFunc) {
 	iupSetCallback(uintptr(ih), "SENSOR_CB", sensorCB())
 }
 
-type PermissionFunc func(ih Ihandle, granted int) int
-
 var permissionCB = purego.NewCallback(func(ih uintptr, granted int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PERMISSION_CB").(PermissionFunc); ok {
 		return f(Ihandle(ih), int(granted))
@@ -1913,8 +1718,6 @@ func setPermissionFunc(ih Ihandle, f PermissionFunc) {
 	storeCallback(ih, "_IUPGO_PERMISSION_CB", f)
 	iupSetCallback(uintptr(ih), "PERMISSION_CB", permissionCB)
 }
-
-type OpenCloseFunc func(ih Ihandle, state int) int
 
 var openCloseCB = purego.NewCallback(func(ih uintptr, state int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_OPENCLOSE_CB").(OpenCloseFunc); ok {
@@ -1928,8 +1731,6 @@ func setOpenCloseFunc(ih Ihandle, f OpenCloseFunc) {
 	iupSetCallback(uintptr(ih), "OPENCLOSE_CB", openCloseCB)
 }
 
-type ParamFunc func(paramBox Ihandle, paramIndex int) int
-
 var paramCB = purego.NewCallback(func(ih uintptr, paramIndex int32, userData uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_PARAM_CB").(ParamFunc); ok {
 		return f(Ihandle(ih), int(paramIndex))
@@ -1941,8 +1742,6 @@ func setParamFunc(ih Ihandle, f ParamFunc) {
 	storeCallback(ih, "_IUPGO_PARAM_CB", f)
 	iupSetCallback(uintptr(ih), "PARAM_CB", paramCB)
 }
-
-type ReorderFunc func(ih Ihandle, oldPos, newPos int) int
 
 var reorderCB = purego.NewCallback(func(ih uintptr, oldPos, newPos int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_REORDER_CB").(ReorderFunc); ok {
@@ -1956,8 +1755,6 @@ func setReorderFunc(ih Ihandle, f ReorderFunc) {
 	iupSetCallback(uintptr(ih), "REORDER_CB", reorderCB)
 }
 
-type RestoredFunc func(Ihandle, Ihandle, int, int) int
-
 var restoredCB = purego.NewCallback(func(ih, oldParent uintptr, x, y int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_RESTORED_CB").(RestoredFunc); ok {
 		return f(Ihandle(ih), Ihandle(oldParent), int(x), int(y))
@@ -1969,8 +1766,6 @@ func setRestoredFunc(ih Ihandle, f RestoredFunc) {
 	storeCallback(ih, "_IUPGO_RESTORED_CB", f)
 	iupSetCallback(uintptr(ih), "RESTORED_CB", restoredCB)
 }
-
-type RightClickFunc func(Ihandle, int) int
 
 var rightClickCB = purego.NewCallback(func(ih uintptr, pos int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_RIGHTCLICK_CB").(RightClickFunc); ok {
@@ -1984,8 +1779,6 @@ func setRightClickFunc(ih Ihandle, f RightClickFunc) {
 	iupSetCallback(uintptr(ih), "RIGHTCLICK_CB", rightClickCB)
 }
 
-type SelectFunc func(ih Ihandle, cell, _type int) int
-
 var selectCB = purego.NewCallback(func(ih uintptr, cell, typ int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SELECT_CB").(SelectFunc); ok {
 		return f(Ihandle(ih), int(cell), int(typ))
@@ -1997,8 +1790,6 @@ func setSelectFunc(ih Ihandle, f SelectFunc) {
 	storeCallback(ih, "_IUPGO_SELECT_CB", f)
 	iupSetCallback(uintptr(ih), "SELECT_CB", selectCB)
 }
-
-type ShowFunc func(ih Ihandle, state int) int
 
 var showCB = purego.NewCallback(func(ih uintptr, state int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SHOW_CB").(ShowFunc); ok {
@@ -2012,8 +1803,6 @@ func setShowFunc(ih Ihandle, f ShowFunc) {
 	iupSetCallback(uintptr(ih), "SHOW_CB", showCB)
 }
 
-type SwitchFunc func(ih Ihandle, primCell, secCell int) int
-
 var switchCB = purego.NewCallback(func(ih uintptr, primCell, secCell int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SWITCH_CB").(SwitchFunc); ok {
 		return f(Ihandle(ih), int(primCell), int(secCell))
@@ -2025,8 +1814,6 @@ func setSwitchFunc(ih Ihandle, f SwitchFunc) {
 	storeCallback(ih, "_IUPGO_SWITCH_CB", f)
 	iupSetCallback(uintptr(ih), "SWITCH_CB", switchCB)
 }
-
-type TabCloseFunc func(Ihandle, int) int
 
 var tabCloseCB = purego.NewCallback(func(ih uintptr, pos int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TABCLOSE_CB").(TabCloseFunc); ok {
@@ -2040,8 +1827,6 @@ func setTabCloseFunc(ih Ihandle, f TabCloseFunc) {
 	iupSetCallback(uintptr(ih), "TABCLOSE_CB", tabCloseCB)
 }
 
-type TableEditChangedFunc func(ih Ihandle, lin, col int, update string) int
-
 var tableEditChangedCB = purego.NewCallback(func(ih uintptr, lin, col int32, update uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_EDITCHANGED_CB").(TableEditChangedFunc); ok {
 		return f(Ihandle(ih), int(lin), int(col), goString(update))
@@ -2053,8 +1838,6 @@ func setTableEditChangedFunc(ih Ihandle, f TableEditChangedFunc) {
 	storeCallback(ih, "_IUPGO_EDITCHANGED_CB", f)
 	iupSetCallback(uintptr(ih), "EDITCHANGED_CB", tableEditChangedCB)
 }
-
-type TableRightClickFunc func(ih Ihandle, lin, col int) int
 
 var tableRightClickCB = purego.NewCallback(func(ih uintptr, lin, col int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_RIGHTCLICK_CB").(TableRightClickFunc); ok {
@@ -2068,8 +1851,6 @@ func setTableRightClickFunc(ih Ihandle, f TableRightClickFunc) {
 	iupSetCallback(uintptr(ih), "RIGHTCLICK_CB", tableRightClickCB)
 }
 
-type CellSelectionFunc func(ih Ihandle, lin1, col1, lin2, col2 int) int
-
 var cellSelectionCB = purego.NewCallback(func(ih uintptr, lin1, col1, lin2, col2 int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_CELLSELECTION_CB").(CellSelectionFunc); ok {
 		return f(Ihandle(ih), int(lin1), int(col1), int(lin2), int(col2))
@@ -2081,8 +1862,6 @@ func setCellSelectionFunc(ih Ihandle, f CellSelectionFunc) {
 	storeCallback(ih, "_IUPGO_CELLSELECTION_CB", f)
 	iupSetCallback(uintptr(ih), "CELLSELECTION_CB", cellSelectionCB)
 }
-
-type TableSortFunc func(ih Ihandle, col int) int
 
 var tableSortCB = purego.NewCallback(func(ih uintptr, col int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_SORT_CB").(TableSortFunc); ok {
@@ -2096,8 +1875,6 @@ func setTableSortFunc(ih Ihandle, f TableSortFunc) {
 	iupSetCallback(uintptr(ih), "SORT_CB", tableSortCB)
 }
 
-type TableValueChangedFunc func(ih Ihandle, lin, col int) int
-
 var tableValueChangedCB = purego.NewCallback(func(ih uintptr, lin, col int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TABLE_VALUECHANGED_CB").(TableValueChangedFunc); ok {
 		return f(Ihandle(ih), int(lin), int(col))
@@ -2109,8 +1886,6 @@ func setTableValueChangedFunc(ih Ihandle, f TableValueChangedFunc) {
 	storeCallback(ih, "_IUPGO_TABLE_VALUECHANGED_CB", f)
 	iupSetCallback(uintptr(ih), "VALUECHANGED_CB", tableValueChangedCB)
 }
-
-type TextLinkFunc func(ih Ihandle, url string) int
 
 var textLinkCB = purego.NewCallback(func(ih, url uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_LINK_CB").(TextLinkFunc); ok {
@@ -2124,21 +1899,17 @@ func setTextLinkFunc(ih Ihandle, f TextLinkFunc) {
 	iupSetCallback(uintptr(ih), "LINK_CB", textLinkCB)
 }
 
-type ThemeChangedFunc func(ih Ihandle, darkMode int) int
-
-var themeChangedCB = purego.NewCallback(func(ih uintptr, darkMode int32) int {
-	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_THEMECHANGED_CB").(ThemeChangedFunc); ok {
+var appearanceChangedCB = purego.NewCallback(func(ih uintptr, darkMode int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_APPEARANCECHANGED_CB").(AppearanceChangedFunc); ok {
 		return f(Ihandle(ih), int(darkMode))
 	}
 	return 0
 })
 
-func setThemeChangedFunc(ih Ihandle, f ThemeChangedFunc) {
-	storeCallback(ih, "_IUPGO_THEMECHANGED_CB", f)
-	iupSetCallback(uintptr(ih), "THEMECHANGED_CB", themeChangedCB)
+func setAppearanceChangedFunc(ih Ihandle, f AppearanceChangedFunc) {
+	storeCallback(ih, "_IUPGO_APPEARANCECHANGED_CB", f)
+	iupSetCallback(uintptr(ih), "APPEARANCECHANGED_CB", appearanceChangedCB)
 }
-
-type ToggleValueFunc func(ih Ihandle, id, state int) int
 
 var toggleValueCB = purego.NewCallback(func(ih uintptr, id, state int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TOGGLEVALUE_CB").(ToggleValueFunc); ok {
@@ -2152,8 +1923,6 @@ func setToggleValueFunc(ih Ihandle, f ToggleValueFunc) {
 	iupSetCallback(uintptr(ih), "TOGGLEVALUE_CB", toggleValueCB)
 }
 
-type TouchFunc func(ih Ihandle, id, x, y int, state string) int
-
 var touchCB = purego.NewCallback(func(ih uintptr, id, x, y int32, state uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TOUCH_CB").(TouchFunc); ok {
 		return f(Ihandle(ih), int(id), int(x), int(y), goString(state))
@@ -2165,8 +1934,6 @@ func setTouchFunc(ih Ihandle, f TouchFunc) {
 	storeCallback(ih, "_IUPGO_TOUCH_CB", f)
 	iupSetCallback(uintptr(ih), "TOUCH_CB", touchCB)
 }
-
-type TrayClickFunc func(Ihandle, int, int, int) int
 
 var trayClickCB = purego.NewCallback(func(ih uintptr, but, pressed, dclick int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_TRAYCLICK_CB").(TrayClickFunc); ok {
@@ -2180,8 +1947,6 @@ func setTrayClickFunc(ih Ihandle, f TrayClickFunc) {
 	iupSetCallback(uintptr(ih), "TRAYCLICK_CB", trayClickCB)
 }
 
-type ValueChangingFunc func(ih Ihandle, start int) int
-
 var valueChangingCB = purego.NewCallback(func(ih uintptr, start int32) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_VALUECHANGING_CB").(ValueChangingFunc); ok {
 		return f(Ihandle(ih), int(start))
@@ -2193,8 +1958,6 @@ func setValueChangingFunc(ih Ihandle, f ValueChangingFunc) {
 	storeCallback(ih, "_IUPGO_VALUECHANGING_CB", f)
 	iupSetCallback(uintptr(ih), "VALUECHANGING_CB", valueChangingCB)
 }
-
-type PostMessageFunc func(Ihandle, string, int, any) int
 
 // Payload ids of posted messages not yet delivered, per element with a Go POSTMESSAGE_CB.
 var (
@@ -2273,11 +2036,37 @@ func PostMessage(ih Ihandle, s string, i int, p any) {
 	iupPostMessage(uintptr(ih), s, int32(i), 0.0, uintptr(id))
 }
 
-type GetParamFunc func(dialog Ihandle, paramIndex int) int
-
 var getParamCB = purego.NewCallback(func(dialog uintptr, paramIndex int32, userData uintptr) int {
 	if f, ok := cbLoad(uint64(userData)).(GetParamFunc); ok {
 		return f(Ihandle(dialog), int(paramIndex))
 	}
 	return 1
 })
+
+func setCustomFrameDrawFunc(ih Ihandle, f CustomFrameDrawFunc) {
+	setIhIntFunc(ih, "CUSTOMFRAMEDRAW_CB", (func(Ihandle) int)(f))
+}
+
+var customFrameActivateCB = purego.NewCallback(func(ih uintptr, active int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_CUSTOMFRAMEACTIVATE_CB").(CustomFrameActivateFunc); ok {
+		return f(Ihandle(ih), int(active))
+	}
+	return 0
+})
+
+func setCustomFrameActivateFunc(ih Ihandle, f CustomFrameActivateFunc) {
+	storeCallback(ih, "_IUPGO_CUSTOMFRAMEACTIVATE_CB", f)
+	iupSetCallback(uintptr(ih), "CUSTOMFRAMEACTIVATE_CB", customFrameActivateCB)
+}
+
+var womCB = purego.NewCallback(func(ih uintptr, state int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_WOM_CB").(WomFunc); ok {
+		return f(Ihandle(ih), int(state))
+	}
+	return 0
+})
+
+func setWomFunc(ih Ihandle, f WomFunc) {
+	storeCallback(ih, "_IUPGO_WOM_CB", f)
+	iupSetCallback(uintptr(ih), "WOM_CB", womCB)
+}

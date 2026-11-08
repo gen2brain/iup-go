@@ -21,6 +21,7 @@
 
 #include "iup_object.h"
 #include "iup_attrib.h"
+#include "iup_str.h"
 #include "iup_class.h"
 #include "iup_notify.h"
 #include "iup_image.h"
@@ -94,10 +95,10 @@ static DBusHandlerResult unixNotifySignalFilter(DBusConnection* connection, DBus
     {
       if (id == notify->notification_id)
       {
-        IFni close_cb = (IFni)IupGetCallback(notify->ih, "CLOSE_CB");
-        if (close_cb)
+        IFni dismiss_cb = (IFni)IupGetCallback(notify->ih, "DISMISS_CB");
+        if (dismiss_cb)
         {
-          int ret = close_cb(notify->ih, (int)reason);
+          int ret = dismiss_cb(notify->ih, (int)reason);
           if (ret == IUP_CLOSE)
             IupExitLoop();
         }
@@ -401,12 +402,15 @@ static int unixNotifySend(IupUnixNotify* notify)
 
   dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{sv}", &dict_iter);
   {
-    int urgency = IupGetInt(ih, "URGENCY");
-    if (urgency >= 0 && urgency <= 2)
     {
+      const char* urgency = iupAttribGetStr(ih, "URGENCY");
       DBusMessageIter dict_entry_iter, variant_iter;
       const char* key = "urgency";
-      unsigned char val = (unsigned char)urgency;
+      unsigned char val = 1;
+      if (iupStrEqualNoCase(urgency, "LOW"))
+        val = 0;
+      else if (iupStrEqualNoCase(urgency, "HIGH"))
+        val = 2;
 
       dbus_message_iter_open_container(&dict_iter, DBUS_TYPE_DICT_ENTRY, NULL, &dict_entry_iter);
       dbus_message_iter_append_basic(&dict_entry_iter, DBUS_TYPE_STRING, &key);
@@ -685,7 +689,7 @@ IUP_SDK_API int iupdrvNotifyIsAvailable(void)
 
 IUP_SDK_API void iupdrvNotifyInitClass(Iclass* ic)
 {
-  iupClassRegisterAttribute(ic, "URGENCY", NULL, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "URGENCY", NULL, NULL, IUPAF_SAMEASSYSTEM, "NORMAL", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPICON", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TRANSIENT", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 }

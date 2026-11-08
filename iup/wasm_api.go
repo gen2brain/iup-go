@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 	"syscall/js"
-	"unsafe"
 )
 
 // Callback return values.
@@ -54,147 +53,6 @@ const (
 	BUTTON5 = '5'
 )
 
-// ActionFunc is the type for the ACTION callback.
-type ActionFunc func(Ihandle) int
-
-// ToggleActionFunc is the type for the toggle ACTION callback (with state).
-type ToggleActionFunc func(ih Ihandle, state int) int
-
-// TextActionFunc is the type for the text ACTION callback.
-type TextActionFunc func(ih Ihandle, ch int, newValue string) int
-
-// ValueChangedFunc is the type for the VALUECHANGED_CB callback.
-type ValueChangedFunc func(ih Ihandle) int
-
-// KAnyFunc is the type for the K_ANY keyboard callback.
-type KAnyFunc func(ih Ihandle, c int) int
-
-// ListActionFunc is the type for the list ACTION callback.
-type ListActionFunc func(ih Ihandle, text string, item, state int) int
-
-// DblclickFunc is the type for the DBLCLICK_CB callback.
-type DblclickFunc func(ih Ihandle, item int, text string) int
-
-// MultiselectFunc is the type for the MULTISELECT_CB callback.
-type MultiselectFunc func(ih Ihandle, text string) int
-
-// GetFocusFunc is the type for the GETFOCUS_CB callback.
-type GetFocusFunc func(ih Ihandle) int
-
-// KillFocusFunc is the type for the KILLFOCUS_CB callback.
-type KillFocusFunc func(ih Ihandle) int
-
-// DropDownFunc is the type for the DROPDOWN_CB callback.
-type DropDownFunc func(ih Ihandle, state int) int
-
-// EditFunc is the type for the EDIT_CB callback.
-type EditFunc func(ih Ihandle, c int, newValue string) int
-
-// ButtonFunc is the type for the BUTTON_CB callback.
-type ButtonFunc func(ih Ihandle, button, pressed, x, y int, status string) int
-
-// TabChangeFunc is the type for the TABCHANGE_CB callback.
-type TabChangeFunc func(ih, newTab, oldTab Ihandle) int
-
-// TabChangePosFunc is the type for the TABCHANGEPOS_CB callback.
-type TabChangePosFunc func(ih Ihandle, newPos, oldPos int) int
-
-// ReorderFunc is the type for the REORDER_CB callback.
-type ReorderFunc func(ih Ihandle, oldPos, newPos int) int
-
-// TabCloseFunc is the type for the TABCLOSE_CB callback.
-type TabCloseFunc func(ih Ihandle, pos int) int
-
-// RightClickFunc is the type for the RIGHTCLICK_CB callback.
-type RightClickFunc func(ih Ihandle, pos int) int
-
-// TimerActionFunc is the type for the timer ACTION_CB callback.
-type TimerActionFunc func(ih Ihandle) int
-
-// ResizeFunc is the type for the RESIZE_CB callback.
-type ResizeFunc func(ih Ihandle, width, height int) int
-
-// TerminalInputFunc is the type for the Terminal INPUT_CB callback.
-type TerminalInputFunc func(ih Ihandle, bytes []byte) int
-
-// TerminalTitleFunc is the type for the Terminal TITLE_CB callback.
-type TerminalTitleFunc func(ih Ihandle, title string) int
-
-// TerminalBellFunc is the type for the Terminal BELL_CB callback.
-type TerminalBellFunc func(ih Ihandle) int
-
-// TerminalSizeFunc is the type for the Terminal TERMSIZE_CB callback.
-type TerminalSizeFunc func(ih Ihandle, cols, lines int) int
-
-// TerminalExitFunc is the type for the Terminal EXIT_CB callback.
-type TerminalExitFunc func(ih Ihandle, status int) int
-
-// TextInputFunc is the type for the TEXTINPUT_CB callback.
-type TextInputFunc func(ih Ihandle, text string) int
-
-// MotionFunc is the type for the MOTION_CB callback.
-type MotionFunc func(ih Ihandle, x, y int, status string) int
-
-// WheelFunc is the type for the WHEEL_CB callback.
-type WheelFunc func(ih Ihandle, delta float64, x, y int, status string) int
-
-// CloseFunc is the type for the dialog CLOSE_CB callback.
-type CloseFunc func(Ihandle) int
-
-// CopyDataFunc is the type for the dialog COPYDATA_CB callback.
-type CopyDataFunc func(ih Ihandle, cmdLine string, size int) int
-
-// PaginateFunc is the type for the PrintDlg PAGINATE_CB callback.
-type PaginateFunc func(ih Ihandle, width, height int) int
-
-// PrintPageFunc is the type for the PrintDlg PRINTPAGE_CB callback.
-type PrintPageFunc func(ih Ihandle, page, width, height int) int
-
-// NotifyFunc is the type for the IupNotify NOTIFY_CB callback.
-type NotifyFunc func(ih Ihandle, actionId int) int
-
-// NotifyCloseFunc is the type for the IupNotify CLOSE_CB callback.
-type NotifyCloseFunc func(ih Ihandle, reason int) int
-
-// LocationFunc is the type for the IupLocation LOCATION_CB callback.
-type LocationFunc func(ih Ihandle, latitude, longitude float64) int
-
-// SensorFunc is the type for the IupSensor SENSOR_CB callback.
-type SensorFunc func(ih Ihandle, x, y, z float64) int
-
-// PermissionFunc is the type for the PERMISSION_CB callback.
-type PermissionFunc func(ih Ihandle, granted int) int
-
-// ErrorFunc is the type for the ERROR_CB callback.
-type ErrorFunc func(ih Ihandle, url string) int
-
-// CompletedFunc is the type for the IupWebBrowser COMPLETED_CB callback.
-type CompletedFunc func(ih Ihandle, url string) int
-
-// NavigateFunc is the type for the IupWebBrowser NAVIGATE_CB callback.
-type NavigateFunc func(ih Ihandle, url string) int
-
-// NewWindowFunc is the type for the IupWebBrowser NEWWINDOW_CB callback.
-type NewWindowFunc func(ih Ihandle, url string) int
-
-// UpdateFunc is the type for the IupWebBrowser UPDATE_CB callback.
-type UpdateFunc func(ih Ihandle) int
-
-// PlayEndFunc is the type for the IupAudio PLAYEND_CB callback.
-type PlayEndFunc func(ih Ihandle) int
-
-// ReadyFunc is the type for the IupVideo READY_CB callback.
-type ReadyFunc func(ih Ihandle) int
-
-// StateChangedFunc is the type for the IupVideo STATECHANGED_CB callback.
-type StateChangedFunc func(ih Ihandle, state string) int
-
-// FrameFunc is the type for the IupCamera FRAME_CB callback. The data slice holds packed RGB pixels.
-type FrameFunc func(ih Ihandle, width, height int, data []byte) int
-
-// SamplesFunc is the type for the IupMicrophone SAMPLES_CB callback. The samples slice holds 16-bit interleaved frames.
-type SamplesFunc func(ih Ihandle, frames, channels int, samples []int16) int
-
 // Open initializes the IUP toolkit.
 //
 // https://gen2brain.github.io/iup-go/func/iup_open.html
@@ -219,7 +77,7 @@ func Close() {
 
 // EntryPoint is a portability shim. Under WebAssembly the Go main runs
 // directly, so this is a no-op (matching the desktop behavior).
-func EntryPoint(entry func()) {}
+func EntryPoint(entry EntryPointFunc) {}
 
 // MainLoop runs the application main loop. The Go top-level stays on the async
 // JS event loop (a synchronous wait would freeze Go's scheduler) until a
@@ -440,87 +298,6 @@ func MenuItem(title string) Ihandle {
 func MenuSeparator() Ihandle {
 	return ccallHandle("IupMenuSeparator", nil, nil)
 }
-
-// ClickFunc is the type for the table CLICK_CB callback.
-type ClickFunc func(ih Ihandle, lin, col int, status string) int
-
-// EnterItemFunc is the type for the table ENTERITEM_CB callback.
-type EnterItemFunc func(ih Ihandle, lin, col int) int
-
-// TableEditChangedFunc is the type for the table EDITCHANGED_CB callback.
-type TableEditChangedFunc func(ih Ihandle, lin, col int, update string) int
-
-// TableRightClickFunc is the type for the table RIGHTCLICK_CB callback.
-type TableRightClickFunc func(ih Ihandle, lin, col int) int
-
-// CellSelectionFunc is the type for the table CELLSELECTION_CB callback.
-type CellSelectionFunc func(ih Ihandle, lin1, col1, lin2, col2 int) int
-
-// TableValueChangedFunc is the type for the table VALUECHANGED_CB callback.
-type TableValueChangedFunc func(ih Ihandle, lin, col int) int
-
-// ThemeChangedFunc is the type for the THEMECHANGED_CB callback.
-type ThemeChangedFunc func(ih Ihandle, darkMode int) int
-
-// ScrollFunc is the type for the SCROLL_CB callback.
-type ScrollFunc func(ih Ihandle, op int, posx, posy float64) int
-
-// ShowFunc is the type for the SHOW_CB callback.
-type ShowFunc func(ih Ihandle, state int) int
-
-// DragDropFunc is the type for the list/tree DRAGDROP_CB callback.
-type DragDropFunc func(ih Ihandle, dragId, dropId, isShift, isControl int) int
-
-// DragBeginFunc is the type for the DRAGBEGIN_CB callback.
-type DragBeginFunc func(ih Ihandle, x, y int) int
-
-// DragDataSizeFunc is the type for the DRAGDATASIZE_CB callback.
-type DragDataSizeFunc func(ih Ihandle, dragType string) int
-
-// DragDataFunc is the type for the DRAGDATA_CB callback.
-type DragDataFunc func(ih Ihandle, dragType string, data unsafe.Pointer, size int) int
-
-// DragEndFunc is the type for the DRAGEND_CB callback.
-type DragEndFunc func(ih Ihandle, action int) int
-
-// DropDataFunc is the type for the DROPDATA_CB callback.
-type DropDataFunc func(ih Ihandle, dragType string, data unsafe.Pointer, size, x, y int) int
-
-// DropMotionFunc is the type for the DROPMOTION_CB callback.
-type DropMotionFunc func(ih Ihandle, x, y int, status string) int
-
-// DropFilesFunc is the type for the DROPFILES_CB callback.
-type DropFilesFunc func(ih Ihandle, fileName string, num, x, y int) int
-
-// SelectionFunc is the type for the tree SELECTION_CB callback.
-type SelectionFunc func(ih Ihandle, id, status int) int
-
-// BranchOpenFunc is the type for the tree BRANCHOPEN_CB callback.
-type BranchOpenFunc func(ih Ihandle, id int) int
-
-// BranchCloseFunc is the type for the tree BRANCHCLOSE_CB callback.
-type BranchCloseFunc func(ih Ihandle, id int) int
-
-// ExecuteLeafFunc is the type for the tree EXECUTELEAF_CB callback.
-type ExecuteLeafFunc func(ih Ihandle, id int) int
-
-// ExecuteBranchFunc is the type for the tree EXECUTEBRANCH_CB callback.
-type ExecuteBranchFunc func(ih Ihandle, id int) int
-
-// ShowRenameFunc is the type for the tree SHOWRENAME_CB callback.
-type ShowRenameFunc func(ih Ihandle, id int) int
-
-// RenameFunc is the type for the tree RENAME_CB callback.
-type RenameFunc func(ih Ihandle, id int, title string) int
-
-// HighlightFunc is the type for the menu item HIGHLIGHT_CB callback.
-type HighlightFunc func(ih Ihandle) int
-
-// MenuOpenFunc is the type for the MENUOPEN_CB callback.
-type MenuOpenFunc func(ih Ihandle) int
-
-// MenuCloseFunc is the type for the MENUCLOSE_CB callback.
-type MenuCloseFunc func(ih Ihandle) int
 
 // Calendar creates a calendar (date picker) element.
 //
@@ -1125,8 +902,8 @@ func DrawResetClip(ih Ihandle) {
 // DrawLinearGradient draws a linear gradient between two colors.
 //
 // https://gen2brain.github.io/iup-go/func/iup_draw.html
-func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, color1, color2 string) {
-	ccall("IupDrawLinearGradient", "", []interface{}{"number", "number", "number", "number", "number", "number", "string", "string"}, []interface{}{int(ih), x1, y1, x2, y2, float64(angle), color1, color2})
+func DrawLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float64, color1, color2 string) {
+	ccall("IupDrawLinearGradient", "", []interface{}{"number", "number", "number", "number", "number", "number", "string", "string"}, []interface{}{int(ih), x1, y1, x2, y2, angle, color1, color2})
 }
 
 func drawGradientStopArgs(colors []string, offsets []float32) (colorsPtr, offsetsPtr, n int, free func()) {
@@ -1151,12 +928,12 @@ func drawGradientStopArgs(colors []string, offsets []float32) (colorsPtr, offset
 // DrawLinearGradientStops draws a linear gradient across count color stops.
 //
 // https://gen2brain.github.io/iup-go/func/iup_draw.html
-func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
+func DrawLinearGradientStops(ih Ihandle, x1, y1, x2, y2 int, angle float64, colors []string, offsets []float32) {
 	if len(colors) < 2 || (len(offsets) != 0 && len(offsets) != len(colors)) {
 		return
 	}
 	cp, op, n, free := drawGradientStopArgs(colors, offsets)
-	ccall("IupDrawLinearGradientStops", "", []interface{}{"number", "number", "number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, float64(angle), cp, op, n})
+	ccall("IupDrawLinearGradientStops", "", []interface{}{"number", "number", "number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, angle, cp, op, n})
 	free()
 }
 
@@ -1344,12 +1121,12 @@ func DrawSetSourceSolid(ih Ihandle, color string) {
 // DrawSetSourceLinearGradient sets a linear gradient as the current source.
 //
 // https://gen2brain.github.io/iup-go/func/iup_draw.html
-func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float32, colors []string, offsets []float32) {
+func DrawSetSourceLinearGradient(ih Ihandle, x1, y1, x2, y2 int, angle float64, colors []string, offsets []float32) {
 	if len(colors) < 2 || (len(offsets) != 0 && len(offsets) != len(colors)) {
 		return
 	}
 	cp, op, n, free := drawGradientStopArgs(colors, offsets)
-	ccall("IupDrawSetSourceLinearGradient", "", []interface{}{"number", "number", "number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, float64(angle), cp, op, n})
+	ccall("IupDrawSetSourceLinearGradient", "", []interface{}{"number", "number", "number", "number", "number", "number", "number", "number", "number"}, []interface{}{int(ih), x1, y1, x2, y2, angle, cp, op, n})
 	free()
 }
 

@@ -26,7 +26,9 @@ func On[F any](ih Ihandle, cb Callback[F], fn F) Ihandle {
 var callbackTypes = map[string][]reflect.Type{}
 
 func newCallback[F any](name string) Callback[F] {
-	callbackTypes[name] = append(callbackTypes[name], reflect.TypeOf((*F)(nil)).Elem())
+	if t := reflect.TypeOf((*F)(nil)).Elem(); !slices.Contains(callbackTypes[name], t) {
+		callbackTypes[name] = append(callbackTypes[name], t)
+	}
 	return Callback[F]{name}
 }
 
@@ -75,6 +77,7 @@ func checkCallback(name string, fn any) any {
 // Callbacks for [On], one per function type of a name, such as [ActionCB] and [ListActionCB].
 var (
 	ActionCB                      = newCallback[ActionFunc]("ACTION")
+	AppearanceChangedCB           = newCallback[AppearanceChangedFunc]("APPEARANCECHANGED_CB")
 	BgColorCB                     = newCallback[BgColorFunc]("BGCOLOR_CB")
 	BranchCloseCB                 = newCallback[BranchCloseFunc]("BRANCHCLOSE_CB")
 	BranchOpenCB                  = newCallback[BranchOpenFunc]("BRANCHOPEN_CB")
@@ -91,6 +94,8 @@ var (
 	ColorUpdateCB                 = newCallback[ColorUpdateFunc]("COLORUPDATE_CB")
 	CompletedCB                   = newCallback[CompletedFunc]("COMPLETED_CB")
 	CopyDataCB                    = newCallback[CopyDataFunc]("COPYDATA_CB")
+	CustomFrameActivateCB         = newCallback[CustomFrameActivateFunc]("CUSTOMFRAMEACTIVATE_CB")
+	CustomFrameDrawCB             = newCallback[CustomFrameDrawFunc]("CUSTOMFRAMEDRAW_CB")
 	DblclickCB                    = newCallback[DblclickFunc]("DBLCLICK_CB")
 	DestroyCB                     = newCallback[DestroyFunc]("DESTROY_CB")
 	DetachedCB                    = newCallback[DetachedFunc]("DETACHED_CB")
@@ -193,7 +198,7 @@ var (
 	NewWindowCB                   = newCallback[NewWindowFunc]("NEWWINDOW_CB")
 	NodeRemovedCB                 = newCallback[NodeRemovedFunc]("NODEREMOVED_CB")
 	NotifyCB                      = newCallback[NotifyFunc]("NOTIFY_CB")
-	NotifyCloseCB                 = newCallback[NotifyCloseFunc]("CLOSE_CB")
+	NotifyDismissCB               = newCallback[NotifyDismissFunc]("DISMISS_CB")
 	NumericGetValueCB             = newCallback[NumericGetValueFunc]("NUMERICGETVALUE_CB")
 	NumericSetValueCB             = newCallback[NumericSetValueFunc]("NUMERICSETVALUE_CB")
 	OpenCloseCB                   = newCallback[OpenCloseFunc]("OPENCLOSE_CB")
@@ -258,14 +263,13 @@ var (
 	TableValueCB                  = newCallback[TableValueFunc]("VALUE_CB")
 	TableValueChangedCB           = newCallback[TableValueChangedFunc]("VALUECHANGED_CB")
 	TerminalBellCB                = newCallback[TerminalBellFunc]("BELL_CB")
-	TerminalExitCB                = newCallback[TerminalExitFunc]("EXIT_CB")
+	TerminalExecExitCB            = newCallback[TerminalExecExitFunc]("EXECEXIT_CB")
 	TerminalInputCB               = newCallback[TerminalInputFunc]("INPUT_CB")
 	TerminalSizeCB                = newCallback[TerminalSizeFunc]("TERMSIZE_CB")
-	TerminalTitleCB               = newCallback[TerminalTitleFunc]("TITLE_CB")
+	TerminalTitleChangedCB        = newCallback[TerminalTitleChangedFunc]("TITLECHANGED_CB")
 	TextActionCB                  = newCallback[TextActionFunc]("ACTION")
 	TextInputCB                   = newCallback[TextInputFunc]("TEXTINPUT_CB")
 	TextLinkCB                    = newCallback[TextLinkFunc]("LINK_CB")
-	ThemeChangedCB                = newCallback[ThemeChangedFunc]("THEMECHANGED_CB")
 	ThreadCB                      = newCallback[ThreadFunc]("THREAD_CB")
 	TimerActionCB                 = newCallback[TimerActionFunc]("ACTION_CB")
 	FdWatchActionCB               = newCallback[TimerActionFunc]("ACTION_CB")
@@ -283,4 +287,5 @@ var (
 	ValueEditCB                   = newCallback[ValueEditFunc]("VALUE_EDIT_CB")
 	WheelCB                       = newCallback[WheelFunc]("WHEEL_CB")
 	WidthCB                       = newCallback[WidthFunc]("WIDTH_CB")
+	WomCB                         = newCallback[WomFunc]("WOM_CB")
 )

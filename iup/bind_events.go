@@ -172,20 +172,26 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setDropFilesFunc(ih, fn.(DropFilesFunc))
 	case "COPYDATA_CB":
 		setCopyDataFunc(ih, fn.(CopyDataFunc))
+	case "CUSTOMFRAMEDRAW_CB":
+		setCustomFrameDrawFunc(ih, fn.(CustomFrameDrawFunc))
+	case "CUSTOMFRAMEACTIVATE_CB":
+		setCustomFrameActivateFunc(ih, fn.(CustomFrameActivateFunc))
+	case "WOM_CB":
+		setWomFunc(ih, fn.(WomFunc))
 	case "PAGINATE_CB":
 		setPaginateFunc(ih, fn.(PaginateFunc))
 	case "PRINTPAGE_CB":
 		setPrintPageFunc(ih, fn.(PrintPageFunc))
 	case "INPUT_CB":
 		setTerminalInputFunc(ih, fn.(TerminalInputFunc))
-	case "TITLE_CB":
-		setTerminalTitleFunc(ih, fn.(TerminalTitleFunc))
+	case "TITLECHANGED_CB":
+		setTerminalTitleChangedFunc(ih, fn.(TerminalTitleChangedFunc))
 	case "BELL_CB":
 		setTerminalBellFunc(ih, fn.(TerminalBellFunc))
 	case "TERMSIZE_CB":
 		setTerminalSizeFunc(ih, fn.(TerminalSizeFunc))
-	case "EXIT_CB":
-		setTerminalExitFunc(ih, fn.(TerminalExitFunc))
+	case "EXECEXIT_CB":
+		setTerminalExecExitFunc(ih, fn.(TerminalExecExitFunc))
 	case "TEXTINPUT_CB":
 		setTextInputFunc(ih, fn.(TextInputFunc))
 	case "CARET_CB":
@@ -220,12 +226,7 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "POSTMESSAGE_CB":
 		setPostMessageFunc(ih, fn.(PostMessageFunc))
 	case "CLOSE_CB":
-		switch v := fn.(type) {
-		case CloseFunc:
-			setCloseFunc(ih, v)
-		case NotifyCloseFunc:
-			setNotifyCloseFunc(ih, v)
-		}
+		setCloseFunc(ih, fn.(CloseFunc))
 	case "FOCUS_CB":
 		setFocusFunc(ih, fn.(FocusFunc))
 	case "MOVE_CB":
@@ -263,6 +264,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setTrayClickFunc(ih, fn.(TrayClickFunc))
 	case "NOTIFY_CB":
 		setNotifyFunc(ih, fn.(NotifyFunc))
+	case "DISMISS_CB":
+		setNotifyDismissFunc(ih, fn.(NotifyDismissFunc))
 	case "LOCATION_CB":
 		setLocationFunc(ih, fn.(LocationFunc))
 	case "SENSOR_CB":
@@ -368,8 +371,8 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setMultiUnselectionFunc(ih, fn.(MultiUnselectionFunc))
 	case "MENUOPEN_CB":
 		setMenuOpenFunc(ih, fn.(MenuOpenFunc))
-	case "THEMECHANGED_CB":
-		setThemeChangedFunc(ih, fn.(ThemeChangedFunc))
+	case "APPEARANCECHANGED_CB":
+		setAppearanceChangedFunc(ih, fn.(AppearanceChangedFunc))
 	case "COMPLETED_CB":
 		setCompletedFunc(ih, fn.(CompletedFunc))
 	case "ERROR_CB":

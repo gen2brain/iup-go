@@ -40,7 +40,7 @@ func main() {
 	if strings.HasPrefix(sys, "macOS") || strings.HasPrefix(sys, "iOS") {
 		permNotify := iup.Notify()
 		permission := permNotify.GetAttribute("PERMISSION")
-		if permission == "NOTDETERMINED" {
+		if permission == "PROMPT" {
 			permNotify.SetAttribute("REQUESTPERMISSION", "YES")
 			fmt.Println("Requested notification permission from user")
 		} else {
@@ -81,7 +81,7 @@ func main() {
 			return iup.DEFAULT
 		}))
 
-		notify.SetCallback("CLOSE_CB", iup.NotifyCloseFunc(func(ih iup.Ihandle, reason int) int {
+		notify.SetCallback("DISMISS_CB", iup.NotifyDismissFunc(func(ih iup.Ihandle, reason int) int {
 			reasonStr := "unknown"
 			switch reason {
 			case 1:
@@ -128,7 +128,7 @@ func main() {
 			return iup.DEFAULT
 		}))
 
-		notify.SetCallback("CLOSE_CB", iup.NotifyCloseFunc(func(ih iup.Ihandle, reason int) int {
+		notify.SetCallback("DISMISS_CB", iup.NotifyDismissFunc(func(ih iup.Ihandle, reason int) int {
 			appendLog(fmt.Sprintf("Notification with actions closed. Reason: %d", reason))
 			return iup.DEFAULT
 		}))
@@ -154,7 +154,7 @@ func main() {
 		notify = iup.Notify()
 		notify.SetAttribute("TITLE", "Critical Alert!")
 		notify.SetAttribute("BODY", "This is an urgent notification that won't auto-dismiss.")
-		notify.SetAttribute("URGENCY", "2")
+		notify.SetAttribute("URGENCY", "HIGH")
 		notify.SetAttribute("TIMEOUT", "0")
 		notify.SetAttribute("SHOW", "YES")
 		appendLog("Sent urgent notification (Linux only)")
@@ -177,7 +177,7 @@ func main() {
 			return iup.DEFAULT
 		}))
 
-		notify.SetCallback("CLOSE_CB", iup.NotifyCloseFunc(func(ih iup.Ihandle, reason int) int {
+		notify.SetCallback("DISMISS_CB", iup.NotifyDismissFunc(func(ih iup.Ihandle, reason int) int {
 			appendLog(fmt.Sprintf("Icon notification closed. Reason: %d", reason))
 			return iup.DEFAULT
 		}))
@@ -194,7 +194,7 @@ func main() {
 		notify.SetAttribute("BODY", "Your image is ready to view.")
 		notify.SetAttribute("IMAGE", "NOTIFY_IMAGE")
 
-		notify.SetCallback("CLOSE_CB", iup.NotifyCloseFunc(func(ih iup.Ihandle, reason int) int {
+		notify.SetCallback("DISMISS_CB", iup.NotifyDismissFunc(func(ih iup.Ihandle, reason int) int {
 			appendLog(fmt.Sprintf("Image notification closed. Reason: %d", reason))
 			return iup.DEFAULT
 		}))

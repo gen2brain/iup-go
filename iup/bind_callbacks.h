@@ -151,9 +151,9 @@ static void goIupSetTerminalInputFunc(Ihandle *ih) {
 	IupSetCallback(ih, "INPUT_CB", (Icallback) goIupTerminalInputCB);
 }
 
-CGO_EXPORT extern int goIupTerminalTitleCB(void *, void *title);
-static void goIupSetTerminalTitleFunc(Ihandle *ih) {
-	IupSetCallback(ih, "TITLE_CB", (Icallback) goIupTerminalTitleCB);
+CGO_EXPORT extern int goIupTerminalTitleChangedCB(void *, void *title);
+static void goIupSetTerminalTitleChangedFunc(Ihandle *ih) {
+	IupSetCallback(ih, "TITLECHANGED_CB", (Icallback) goIupTerminalTitleChangedCB);
 }
 
 CGO_EXPORT extern int goIupTerminalBellCB(void *);
@@ -166,9 +166,9 @@ static void goIupSetTerminalSizeFunc(Ihandle *ih) {
 	IupSetCallback(ih, "TERMSIZE_CB", (Icallback) goIupTerminalSizeCB);
 }
 
-CGO_EXPORT extern int goIupTerminalExitCB(void *, int status);
-static void goIupSetTerminalExitFunc(Ihandle *ih) {
-	IupSetCallback(ih, "EXIT_CB", (Icallback) goIupTerminalExitCB);
+CGO_EXPORT extern int goIupTerminalExecExitCB(void *, int status);
+static void goIupSetTerminalExecExitFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EXECEXIT_CB", (Icallback) goIupTerminalExecExitCB);
 }
 
 CGO_EXPORT extern int goIupTextInputCB(void *, void *text);
@@ -576,9 +576,9 @@ static void goIupSetMenuOpenFunc(Ihandle *ih) {
 	IupSetCallback(ih, "MENUOPEN_CB", (Icallback) goIupMenuOpenCB);
 }
 
-CGO_EXPORT extern int goIupThemeChangedCB(void *, int darkMode);
-static void goIupSetThemeChangedFunc(Ihandle *ih) {
-	IupSetCallback(ih, "THEMECHANGED_CB", (Icallback) goIupThemeChangedCB);
+CGO_EXPORT extern int goIupAppearanceChangedCB(void *, int darkMode);
+static void goIupSetAppearanceChangedFunc(Ihandle *ih) {
+	IupSetCallback(ih, "APPEARANCECHANGED_CB", (Icallback) goIupAppearanceChangedCB);
 }
 
 CGO_EXPORT extern int goIupUpdateCB(void *);
@@ -653,9 +653,9 @@ static void goIupSetNotifyFunc(Ihandle *ih) {
 	IupSetCallback(ih, "NOTIFY_CB", (Icallback) goIupNotifyCB);
 }
 
-CGO_EXPORT extern int goIupNotifyCloseCB(void *, int reason);
-static void goIupSetNotifyCloseFunc(Ihandle *ih) {
-	IupSetCallback(ih, "CLOSE_CB", (Icallback) goIupNotifyCloseCB);
+CGO_EXPORT extern int goIupNotifyDismissCB(void *, int reason);
+static void goIupSetNotifyDismissFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DISMISS_CB", (Icallback) goIupNotifyDismissCB);
 }
 
 CGO_EXPORT extern int goIupLocationCB(void *, double latitude, double longitude);
@@ -1144,6 +1144,21 @@ static void goIupSetFrameFunc(Ihandle *ih) {
 CGO_EXPORT extern int goIupSamplesCB(void *, int frames, int channels, void *samples);
 static void goIupSetSamplesFunc(Ihandle *ih) {
 	IupSetCallback(ih, "SAMPLES_CB", (Icallback) goIupSamplesCB);
+}
+
+CGO_EXPORT extern int goIupCustomFrameDrawCB(void *);
+static void goIupSetCustomFrameDrawFunc(Ihandle *ih) {
+	IupSetCallback(ih, "CUSTOMFRAMEDRAW_CB", (Icallback) goIupCustomFrameDrawCB);
+}
+
+CGO_EXPORT extern int goIupCustomFrameActivateCB(void *, int active);
+static void goIupSetCustomFrameActivateFunc(Ihandle *ih) {
+	IupSetCallback(ih, "CUSTOMFRAMEACTIVATE_CB", (Icallback) goIupCustomFrameActivateCB);
+}
+
+CGO_EXPORT extern int goIupWomCB(void *, int state);
+static void goIupSetWomFunc(Ihandle *ih) {
+	IupSetCallback(ih, "WOM_CB", (Icallback) goIupWomCB);
 }
 
 #endif /* BIND_CALLBACKS_H */

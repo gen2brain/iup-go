@@ -54,7 +54,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmNotifyEvent(int ihptr, int id, int type)
   }
   else if (type == 1)
   {
-    IFni cb = (IFni)IupGetCallback(ih, "CLOSE_CB");
+    IFni cb = (IFni)IupGetCallback(ih, "DISMISS_CB");
     if (cb && cb(ih, id) == IUP_CLOSE)
       IupExitLoop();
   }

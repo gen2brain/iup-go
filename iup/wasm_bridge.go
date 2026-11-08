@@ -412,13 +412,13 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih, i1, i2, wasmReadBytes(i3, i1*i2*3))
 	case SamplesFunc:
 		ret = f(ih, i1, i2, wasmReadInt16(i3, i1*i2))
-	case TerminalTitleFunc:
+	case TerminalTitleChangedFunc:
 		ret = f(ih, sarg)
 	case TerminalBellFunc:
 		ret = f(ih)
 	case TerminalSizeFunc:
 		ret = f(ih, i1, i2)
-	case TerminalExitFunc:
+	case TerminalExecExitFunc:
 		ret = f(ih, i1)
 	case TextInputFunc:
 		ret = f(ih, sarg)
@@ -436,6 +436,12 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih)
 	case CopyDataFunc:
 		ret = f(ih, sarg, i1)
+	case CustomFrameDrawFunc:
+		ret = f(ih)
+	case CustomFrameActivateFunc:
+		ret = f(ih, i1)
+	case WomFunc:
+		ret = f(ih, i1)
 	case PaginateFunc:
 		ret = f(ih, i1, i2)
 	case PrintPageFunc:
@@ -444,7 +450,7 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih, i1)
 	case PermissionFunc:
 		ret = f(ih, i1)
-	case NotifyCloseFunc:
+	case NotifyDismissFunc:
 		ret = f(ih, i1)
 	case ParamFunc:
 		ret = f(ih, i1)
@@ -474,7 +480,7 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih, i1, i2)
 	case TableSortFunc:
 		ret = f(ih, i1)
-	case ThemeChangedFunc:
+	case AppearanceChangedFunc:
 		ret = f(ih, i1)
 	case ShowFunc:
 		ret = f(ih, i1)
