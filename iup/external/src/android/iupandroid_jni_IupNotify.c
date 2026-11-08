@@ -32,7 +32,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupNotifyHelper_dispatchCl
   (void)jni_env; (void)cls;
   Ihandle* ih = (Ihandle*)ihandle_ptr;
   if (!ih || !iupObjectCheck(ih)) return;
-  IFni cb = (IFni)IupGetCallback(ih, "CLOSE_CB");
+  IFni cb = (IFni)IupGetCallback(ih, "DISMISS_CB");
   if (cb)
   {
     int ret = cb(ih, (int)reason);

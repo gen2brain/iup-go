@@ -27,7 +27,7 @@ Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/
 On Android, TITLE and BODY are reused as the expanded title and summary.
 On macOS it becomes the notification attachment, and ICON is used instead when IMAGE is not set.
 
-**SUBTITLE** [macOS / iOS Only] (non-inheritable): The notification subtitle, displayed below the title.
+**SUBTITLE** [macOS and iOS Only] (non-inheritable): The notification subtitle, displayed below the title.
 
 #### Action Buttons
 
@@ -54,22 +54,22 @@ All content attributes (TITLE, BODY, ICON, etc.) should be set before showing.
 
 #### Platform-Specific
 
-**URGENCY** [Linux/Unix and Android Only] (non-inheritable): Notification urgency level.
-Can be "0" (low), "1" (normal), or "2" (high). Default: "1".
+**URGENCY** [Unix and Android Only] (non-inheritable): Notification urgency level.
+Can be "LOW", "NORMAL" or "HIGH". Default: "NORMAL".
 
-**APPICON** [Linux/Unix, Android and WebAssembly Only] (non-inheritable): Application icon name used as a fallback when ICON is not set.
+**APPICON** [Unix, Android and WebAssembly Only] (non-inheritable): Application icon name used as a fallback when ICON is not set.
 
-**TRANSIENT** [Linux/Unix and Android Only] (non-inheritable): When set, the notification is transient and may be skipped from the notification history.
+**TRANSIENT** [Unix and Android Only] (non-inheritable): When set, the notification is transient and may be skipped from the notification history.
 
-**PERMISSION** [macOS / iOS Only] (read-only) (non-inheritable): Returns the current notification permission status.
-Can be "GRANTED", "DENIED", or "NOTDETERMINED".
+**PERMISSION** [macOS and iOS Only] (read-only) (non-inheritable): Returns the current notification permission status.
+Can be "GRANTED", "DENIED" or "PROMPT" (not asked yet).
 
-**REQUESTPERMISSION** [macOS / iOS Only] (write-only) (non-inheritable): Set to "YES" to request notification permission from the user.
+**REQUESTPERMISSION** [macOS and iOS Only] (write-only) (non-inheritable): Set to "YES" to request notification permission from the user.
 Apps should request it once at startup; until granted, SHOW fires ERROR_CB.
 
-**THREADID** [macOS / iOS Only] (non-inheritable): Notification thread identifier used to group related notifications together.
+**THREADID** [macOS and iOS Only] (non-inheritable): Notification thread identifier used to group related notifications together.
 
-**STYLE** [Android / iOS Only] (non-inheritable): Selects the delivery channel. Values: "NOTIFICATION" (default) or "TOAST" (transient in-app overlay).
+**STYLE** [Android and iOS Only] (non-inheritable): Selects the delivery channel. Values: "NOTIFICATION" (default) or "TOAST" (transient in-app overlay).
 TOAST does not require notification permission. TITLE, BODY, ICON, and TIMEOUT are honored; ACTION1-4, SUBTITLE, and other notification-only attributes are ignored.
 
 **PROGRESS** [Android Only] (non-inheritable): Adds a progress bar.
@@ -92,7 +92,7 @@ Values: "NONE", "MIN", "LOW", "DEFAULT", "HIGH", "MAX". Default: "DEFAULT".
 
 **Returns**: IUP_CLOSE will be processed.
 
-**CLOSE_CB**: Called when the notification is closed.
+**DISMISS_CB**: Called when the notification is dismissed.
 
     int function(Ihandle *ih, int reason);
 

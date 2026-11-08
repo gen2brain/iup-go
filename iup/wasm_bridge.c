@@ -55,7 +55,7 @@ static int wasmCbRightClick(Ihandle* ih, int pos) { return iupwasmGoDispatch(ih,
 static int wasmCbActionCb(Ihandle* ih) { return iupwasmGoDispatch(ih, "ACTION_CB", 0, 0, 0, 0, 0); }
 static int wasmCbNotify(Ihandle* ih, int id) { return iupwasmGoDispatch(ih, "NOTIFY_CB", id, 0, 0, 0, 0); }
 static int wasmCbPermission(Ihandle* ih, int granted) { return iupwasmGoDispatch(ih, "PERMISSION_CB", granted, 0, 0, 0, 0); }
-static int wasmCbNotifyClose(Ihandle* ih, int reason) { return iupwasmGoDispatch(ih, "CLOSE_CB", reason, 0, 0, 0, 0); }
+static int wasmCbNotifyDismiss(Ihandle* ih, int reason) { return iupwasmGoDispatch(ih, "DISMISS_CB", reason, 0, 0, 0, 0); }
 static int wasmCbClose(Ihandle* ih) { return iupwasmGoDispatch(ih, "CLOSE_CB", 0, 0, 0, 0, 0); }
 static int wasmCbError(Ihandle* ih, char* msg) { return iupwasmGoDispatch(ih, "ERROR_CB", 0, 0, 0, 0, msg); }
 static int wasmCbCompleted(Ihandle* ih, char* url) { return iupwasmGoDispatch(ih, "COMPLETED_CB", 0, 0, 0, 0, url); }
@@ -150,7 +150,7 @@ static int wasmCbEdition(Ihandle* ih, int lin, int col, int mode, int update) { 
 static int wasmCbTableRightClick(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "RIGHTCLICK_CB", lin, col, 0, 0, 0); }
 static int wasmCbCellSelection(Ihandle* ih, int lin1, int col1, int lin2, int col2) { return iupwasmGoDispatch(ih, "CELLSELECTION_CB", lin1, col1, lin2, col2, 0); }
 static int wasmCbTableValueChanged(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "VALUECHANGED_CB", lin, col, 0, 0, 0); }
-static int wasmCbThemeChanged(Ihandle* ih, int dark) { return iupwasmGoDispatch(ih, "THEMECHANGED_CB", dark, 0, 0, 0, 0); }
+static int wasmCbAppearanceChanged(Ihandle* ih, int dark) { return iupwasmGoDispatch(ih, "APPEARANCECHANGED_CB", dark, 0, 0, 0, 0); }
 static int wasmCbShow(Ihandle* ih, int state) { return iupwasmGoDispatch(ih, "SHOW_CB", state, 0, 0, 0, 0); }
 static int wasmCbDragDrop(Ihandle* ih, int dragId, int dropId, int isShift, int isCtrl) { return iupwasmGoDispatch(ih, "DRAGDROP_CB", dragId, dropId, isShift, isCtrl, 0); }
 static int wasmCbSelection(Ihandle* ih, int id, int status) { return iupwasmGoDispatch(ih, "SELECTION_CB", id, status, 0, 0, 0); }
@@ -186,10 +186,10 @@ static int wasmCbMenuClose(Ihandle* ih) { return iupwasmGoDispatch(ih, "MENUCLOS
 static int wasmCbResize(Ihandle* ih, int w, int h) { return iupwasmGoDispatch(ih, "RESIZE_CB", w, h, 0, 0, 0); }
 static int wasmCbPaginate(Ihandle* ih, int w, int h) { return iupwasmGoDispatch(ih, "PAGINATE_CB", w, h, 0, 0, 0); }
 static int wasmCbPrintPage(Ihandle* ih, int page, int w, int h) { return iupwasmGoDispatch(ih, "PRINTPAGE_CB", page, w, h, 0, 0); }
-static int wasmCbTerminalTitle(Ihandle* ih, char* title) { return iupwasmGoDispatch(ih, "TITLE_CB", 0, 0, 0, 0, title); }
+static int wasmCbTerminalTitleChanged(Ihandle* ih, char* title) { return iupwasmGoDispatch(ih, "TITLECHANGED_CB", 0, 0, 0, 0, title); }
 static int wasmCbTerminalBell(Ihandle* ih) { return iupwasmGoDispatch(ih, "BELL_CB", 0, 0, 0, 0, 0); }
 static int wasmCbTerminalSize(Ihandle* ih, int cols, int lines) { return iupwasmGoDispatch(ih, "TERMSIZE_CB", cols, lines, 0, 0, 0); }
-static int wasmCbTerminalExit(Ihandle* ih, int status) { return iupwasmGoDispatch(ih, "EXIT_CB", status, 0, 0, 0, 0); }
+static int wasmCbTerminalExecExit(Ihandle* ih, int status) { return iupwasmGoDispatch(ih, "EXECEXIT_CB", status, 0, 0, 0, 0); }
 static int wasmCbTextInput(Ihandle* ih, char* text) { return iupwasmGoDispatch(ih, "TEXTINPUT_CB", 0, 0, 0, 0, text); }
 static int wasmCbPlayEnd(Ihandle* ih) { return iupwasmGoDispatch(ih, "PLAYEND_CB", 0, 0, 0, 0, 0); }
 static int wasmCbReady(Ihandle* ih) { return iupwasmGoDispatch(ih, "READY_CB", 0, 0, 0, 0, 0); }
@@ -411,8 +411,8 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbTableEditChanged);
   else if (strcmp(name, "EDITION_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbEdition);
-  else if (strcmp(name, "THEMECHANGED_CB") == 0)
-    IupSetCallback(ih, name, (Icallback)wasmCbThemeChanged);
+  else if (strcmp(name, "APPEARANCECHANGED_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbAppearanceChanged);
   else if (strcmp(name, "SHOW_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbShow);
   else if (strcmp(name, "DRAGDROP_CB") == 0)
@@ -491,6 +491,8 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbActionCb);
   else if (strcmp(name, "NOTIFY_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbNotify);
+  else if (strcmp(name, "DISMISS_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbNotifyDismiss);
   else if (strcmp(name, "LOCATION_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbLocation);
   else if (strcmp(name, "SENSOR_CB") == 0)
@@ -508,13 +510,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
   else if (strcmp(name, "UPDATE_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbUpdate);
   else if (strcmp(name, "CLOSE_CB") == 0)
-  {
-    const char* cls = IupGetClassName(ih);
-    if (cls && strcmp(cls, "notify") == 0)
-      IupSetCallback(ih, name, (Icallback)wasmCbNotifyClose);
-    else
-      IupSetCallback(ih, name, (Icallback)wasmCbClose);
-  }
+    IupSetCallback(ih, name, (Icallback)wasmCbClose);
   else if (strcmp(name, "MAP_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbMap);
   else if (strcmp(name, "UNMAP_CB") == 0)
@@ -533,14 +529,14 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbPrintPage);
   else if (strcmp(name, "INPUT_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbTerminalInput);
-  else if (strcmp(name, "TITLE_CB") == 0)
-    IupSetCallback(ih, name, (Icallback)wasmCbTerminalTitle);
+  else if (strcmp(name, "TITLECHANGED_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTerminalTitleChanged);
   else if (strcmp(name, "BELL_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbTerminalBell);
   else if (strcmp(name, "TERMSIZE_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbTerminalSize);
-  else if (strcmp(name, "EXIT_CB") == 0)
-    IupSetCallback(ih, name, (Icallback)wasmCbTerminalExit);
+  else if (strcmp(name, "EXECEXIT_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTerminalExecExit);
   else if (strcmp(name, "TEXTINPUT_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbTextInput);
   else if (strcmp(name, "PLAYEND_CB") == 0)

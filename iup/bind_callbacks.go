@@ -140,12 +140,6 @@ func goIupLDestroyCB(ih unsafe.Pointer) C.int {
 
 //--------------------
 
-// IdleFunc for IDLE_ACTION callback.
-// generated when there are no events or messages to be processed. Often used to perform background operations.
-//
-// https://gen2brain.github.io/iup-go/call/iup_idle_action.html
-type IdleFunc func() int
-
 //export goIupIdleCB
 func goIupIdleCB() C.int {
 	f := globalIdleHandle.Value().(IdleFunc)
@@ -159,12 +153,6 @@ func setIdleFunc(f IdleFunc) {
 }
 
 //--------------------
-
-// EntryPointFunc for ENTRY_POINT callback.
-// generated when there are no events or messages to be processed. Often used to perform background operations.
-//
-// https://gen2brain.github.io/iup-go/call/iup_entry_point.html
-type EntryPointFunc func()
 
 //export goIupEntryPointCB
 func goIupEntryPointCB() {
@@ -180,12 +168,6 @@ func setEntryPointFunc(f EntryPointFunc) {
 
 //--------------------
 
-// ExitFunc for EXIT_CB callback.
-// Global callback for an exit. Used when main is not possible, such as in iOS and Android systems.
-//
-// https://gen2brain.github.io/iup-go/call/iup_exit_cb.html
-type ExitFunc func()
-
 //export goIupExitCB
 func goIupExitCB() {
 	f := globalExitHandle.Value().(ExitFunc)
@@ -200,12 +182,6 @@ func setExitFunc(f ExitFunc) {
 
 //--------------------
 
-// GlobalKeyPressFunc for GLOBALKEYPRESS_CB callback.
-// Same as KeyPressFunc, without the Ihandle. Needs the INPUTCALLBACKS global attribute.
-//
-// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#inputcallbacks
-type GlobalKeyPressFunc func(c, press int) int
-
 //export goIupGlobalKeyPressCB
 func goIupGlobalKeyPressCB(c, press C.int) C.int {
 	f := globalKeyPressHandle.Value().(GlobalKeyPressFunc)
@@ -218,12 +194,6 @@ func setGlobalKeyPressFunc(f GlobalKeyPressFunc) {
 }
 
 //--------------------
-
-// GlobalButtonFunc for GLOBALBUTTON_CB callback.
-// Same as ButtonFunc, without the Ihandle. Needs the INPUTCALLBACKS global attribute.
-//
-// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#inputcallbacks
-type GlobalButtonFunc func(button, pressed, x, y int, status string) int
 
 //export goIupGlobalButtonCB
 func goIupGlobalButtonCB(button, pressed, x, y C.int, status *C.char) C.int {
@@ -238,12 +208,6 @@ func setGlobalButtonFunc(f GlobalButtonFunc) {
 
 //--------------------
 
-// GlobalMotionFunc for GLOBALMOTION_CB callback.
-// Same as MotionFunc, without the Ihandle. Needs the INPUTCALLBACKS global attribute.
-//
-// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#inputcallbacks
-type GlobalMotionFunc func(x, y int, status string) int
-
 //export goIupGlobalMotionCB
 func goIupGlobalMotionCB(x, y C.int, status *C.char) C.int {
 	f := globalMotionHandle.Value().(GlobalMotionFunc)
@@ -256,12 +220,6 @@ func setGlobalMotionFunc(f GlobalMotionFunc) {
 }
 
 //--------------------
-
-// GlobalWheelFunc for GLOBALWHEEL_CB callback.
-// Same as WheelFunc, without the Ihandle. Needs the INPUTCALLBACKS global attribute.
-//
-// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#inputcallbacks
-type GlobalWheelFunc func(delta float64, x, y int, status string) int
 
 //export goIupGlobalWheelCB
 func goIupGlobalWheelCB(delta C.float, x, y C.int, status *C.char) C.int {
@@ -276,10 +234,6 @@ func setGlobalWheelFunc(f GlobalWheelFunc) {
 
 //--------------------
 
-// GlobalEnterModalFunc for GLOBALENTERMODAL_CB callback.
-// Called when a dialog becomes modal, with the modal level.
-type GlobalEnterModalFunc func(level int) int
-
 //export goIupGlobalEnterModalCB
 func goIupGlobalEnterModalCB(level C.int) C.int {
 	f := globalEnterModalHandle.Value().(GlobalEnterModalFunc)
@@ -293,10 +247,6 @@ func setGlobalEnterModalFunc(f GlobalEnterModalFunc) {
 
 //--------------------
 
-// GlobalLeaveModalFunc for GLOBALLEAVEMODAL_CB callback.
-// Called when a modal dialog is closed, with the modal level.
-type GlobalLeaveModalFunc func(level int) int
-
 //export goIupGlobalLeaveModalCB
 func goIupGlobalLeaveModalCB(level C.int) C.int {
 	f := globalLeaveModalHandle.Value().(GlobalLeaveModalFunc)
@@ -309,13 +259,6 @@ func setGlobalLeaveModalFunc(f GlobalLeaveModalFunc) {
 }
 
 //--------------------
-
-// MapFunc for MAP_CB callback.
-// Called right after an element is mapped and its attributes updated in Map.
-// When the element is a dialog, it is called after the layout is updated. For all other elements is called before the layout is updated.
-//
-// https://gen2brain.github.io/iup-go/call/iup_map_cb.html
-type MapFunc func(Ihandle) int
 
 //export goIupMapCB
 func goIupMapCB(ih unsafe.Pointer) C.int {
@@ -334,12 +277,6 @@ func setMapFunc(ih Ihandle, f MapFunc) {
 
 //--------------------
 
-// UnmapFunc for UNMAP_CB callback.
-// Called right before an element is unmapped.
-//
-// https://gen2brain.github.io/iup-go/call/iup_unmap_cb.html
-type UnmapFunc func(Ihandle) int
-
 //export goIupUnmapCB
 func goIupUnmapCB(ih unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_UNMAP_CB").Value().(UnmapFunc)
@@ -355,12 +292,6 @@ func setUnmapFunc(ih Ihandle, f UnmapFunc) {
 }
 
 //--------------------
-
-// DestroyFunc for DESTROY_CB callback.
-// Called right before an element is destroyed.
-//
-// https://gen2brain.github.io/iup-go/call/iup_destroy_cb.html
-type DestroyFunc func(Ihandle) int
 
 //export goIupDestroyCB
 func goIupDestroyCB(ih unsafe.Pointer) C.int {
@@ -378,12 +309,6 @@ func setDestroyFunc(ih Ihandle, f DestroyFunc) {
 
 //--------------------
 
-// GetFocusFunc for GETFOCUS_CB callback.
-// Action generated when an element is given keyboard focus.
-//
-// https://gen2brain.github.io/iup-go/call/iup_getfocus_cb.html
-type GetFocusFunc func(Ihandle) int
-
 //export goIupGetFocusCB
 func goIupGetFocusCB(ih unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_GETFOCUS_CB").Value().(GetFocusFunc)
@@ -399,12 +324,6 @@ func setGetFocusFunc(ih Ihandle, f GetFocusFunc) {
 }
 
 //--------------------
-
-// KillFocusFunc for KILLFOCUS_CB callback.
-// Action generated when an element loses keyboard focus.
-//
-// https://gen2brain.github.io/iup-go/call/iup_killfocus_cb.html
-type KillFocusFunc func(Ihandle) int
 
 //export goIupKillFocusCB
 func goIupKillFocusCB(ih unsafe.Pointer) C.int {
@@ -422,12 +341,6 @@ func setKillFocusFunc(ih Ihandle, f KillFocusFunc) {
 
 //--------------------
 
-// EnterWindowFunc for ENTERWINDOW_CB callback.
-// Action generated when the mouse enters the native element.
-//
-// https://gen2brain.github.io/iup-go/call/iup_enterwindow_cb.html
-type EnterWindowFunc func(Ihandle) int
-
 //export goIupEnterWindowCB
 func goIupEnterWindowCB(ih unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_ENTERWINDOW_CB").Value().(EnterWindowFunc)
@@ -443,12 +356,6 @@ func setEnterWindowFunc(ih Ihandle, f EnterWindowFunc) {
 }
 
 //--------------------
-
-// LeaveWindowFunc for LEAVEWINDOW_CB callback.
-// Action generated when the mouse leaves the native element.
-//
-// https://gen2brain.github.io/iup-go/call/iup_leavewindow_cb.html
-type LeaveWindowFunc func(Ihandle) int
 
 //export goIupLeaveWindowCB
 func goIupLeaveWindowCB(ih unsafe.Pointer) C.int {
@@ -466,12 +373,6 @@ func setLeaveWindowFunc(ih Ihandle, f LeaveWindowFunc) {
 
 //--------------------
 
-// TipsFunc for TIPS_CB callback.
-// Action before a tip is displayed.
-//
-// https://gen2brain.github.io/iup-go/attrib/iup_tip.html
-type TipsFunc func(ih Ihandle, x, y int) int
-
 //export goIupTipsCB
 func goIupTipsCB(ih unsafe.Pointer, x, y C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_TIPS_CB").Value().(TipsFunc)
@@ -487,12 +388,6 @@ func setTipsFunc(ih Ihandle, f TipsFunc) {
 }
 
 //--------------------
-
-// KAnyFunc for K_ANY callback.
-// Action generated when a keyboard event occurs.
-//
-// https://gen2brain.github.io/iup-go/call/iup_k_any.html
-type KAnyFunc func(Ihandle, int) int
 
 //export goIupKAnyCB
 func goIupKAnyCB(ih unsafe.Pointer, c C.int) C.int {
@@ -510,12 +405,6 @@ func setKAnyFunc(ih Ihandle, f KAnyFunc) {
 
 //--------------------
 
-// HelpFunc for HELP_CB callback.
-// Action generated when the user presses F1 at a control.
-//
-// https://gen2brain.github.io/iup-go/call/iup_help_cb.html
-type HelpFunc func(Ihandle) int
-
 //export goIupHelpCB
 func goIupHelpCB(ih unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_HELP_CB").Value().(HelpFunc)
@@ -532,12 +421,6 @@ func setHelpFunc(ih Ihandle, f HelpFunc) {
 
 //--------------------
 
-// ActionFunc for ACTION callback.
-// Action generated when the element is activated. Affects each element differently.
-//
-// https://gen2brain.github.io/iup-go/call/iup_action.html
-type ActionFunc func(Ihandle) int
-
 //export goIupActionCB
 func goIupActionCB(ih unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_ACTION").Value().(ActionFunc)
@@ -553,12 +436,6 @@ func setActionFunc(ih Ihandle, f ActionFunc) {
 }
 
 //--------------------
-
-// ButtonFunc for BUTTON_CB callback.
-// Action generated when a mouse button is pressed or released.
-//
-// https://gen2brain.github.io/iup-go/call/iup_button_cb.html
-type ButtonFunc func(Ihandle, int, int, int, int, string) int
 
 //export goIupButtonCB
 func goIupButtonCB(ih unsafe.Pointer, button, pressed, x, y C.int, status unsafe.Pointer) C.int {
@@ -577,12 +454,6 @@ func setButtonFunc(ih Ihandle, f ButtonFunc) {
 
 //--------------------
 
-// TouchFunc for TOUCH_CB callback.
-// Action generated when a touch event occurred.
-//
-// https://gen2brain.github.io/iup-go/elem/iup_canvas.html
-type TouchFunc func(ih Ihandle, id, x, y int, state string) int
-
 //export goIupTouchCB
 func goIupTouchCB(ih unsafe.Pointer, id, x, y C.int, state unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_TOUCH_CB").Value().(TouchFunc)
@@ -598,12 +469,6 @@ func setTouchFunc(ih Ihandle, f TouchFunc) {
 }
 
 //--------------------
-
-// MultiTouchFunc for MULTITOUCH_CB callback.
-// Action generated when multiple touch events occurred.
-//
-// https://gen2brain.github.io/iup-go/elem/iup_canvas.html
-type MultiTouchFunc func(ih Ihandle, count int, pid, px, py, pstate []int) int
 
 //export goIupMultiTouchCB
 func goIupMultiTouchCB(ih unsafe.Pointer, count C.int, pid, px, py, pstate *C.int) C.int {
@@ -630,12 +495,6 @@ func setMultiTouchFunc(ih Ihandle, f MultiTouchFunc) {
 
 //--------------------
 
-// GestureFunc for GESTURE_CB callback.
-// Action generated when a pinch, rotate, pan, swipe, tap or long-press gesture is recognized.
-//
-// https://gen2brain.github.io/iup-go/elem/iup_canvas.html
-type GestureFunc func(ih Ihandle, gesture, state, x, y int, v1, v2 float64) int
-
 //export goIupGestureCB
 func goIupGestureCB(ih unsafe.Pointer, gesture, state, x, y C.int, v1, v2 C.double) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_GESTURE_CB").Value().(GestureFunc)
@@ -652,9 +511,6 @@ func setGestureFunc(ih Ihandle, f GestureFunc) {
 
 //--------------------
 
-// TerminalInputFunc for Terminal INPUT_CB callback.
-type TerminalInputFunc func(ih Ihandle, bytes []byte) int
-
 //export goIupTerminalInputCB
 func goIupTerminalInputCB(ih, b unsafe.Pointer, length C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_TERMINAL_INPUT").Value().(TerminalInputFunc)
@@ -668,24 +524,18 @@ func setTerminalInputFunc(ih Ihandle, f TerminalInputFunc) {
 
 //--------------------
 
-// TerminalTitleFunc for Terminal TITLE_CB callback.
-type TerminalTitleFunc func(ih Ihandle, title string) int
-
-//export goIupTerminalTitleCB
-func goIupTerminalTitleCB(ih, title unsafe.Pointer) C.int {
-	f := loadCallback((Ihandle)(ih), "_IUPGO_TERMINAL_TITLE").Value().(TerminalTitleFunc)
+//export goIupTerminalTitleChangedCB
+func goIupTerminalTitleChangedCB(ih, title unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_TITLECHANGED_CB").Value().(TerminalTitleChangedFunc)
 	return C.int(f((Ihandle)(ih), C.GoString((*C.char)(title))))
 }
 
-func setTerminalTitleFunc(ih Ihandle, f TerminalTitleFunc) {
-	storeCallback(ih, "_IUPGO_TERMINAL_TITLE", f)
-	C.goIupSetTerminalTitleFunc(ih.ptr())
+func setTerminalTitleChangedFunc(ih Ihandle, f TerminalTitleChangedFunc) {
+	storeCallback(ih, "_IUPGO_TITLECHANGED_CB", f)
+	C.goIupSetTerminalTitleChangedFunc(ih.ptr())
 }
 
 //--------------------
-
-// TerminalBellFunc for Terminal BELL_CB callback.
-type TerminalBellFunc func(ih Ihandle) int
 
 //export goIupTerminalBellCB
 func goIupTerminalBellCB(ih unsafe.Pointer) C.int {
@@ -700,9 +550,6 @@ func setTerminalBellFunc(ih Ihandle, f TerminalBellFunc) {
 
 //--------------------
 
-// TerminalSizeFunc for Terminal TERMSIZE_CB callback.
-type TerminalSizeFunc func(ih Ihandle, cols, lines int) int
-
 //export goIupTerminalSizeCB
 func goIupTerminalSizeCB(ih unsafe.Pointer, cols, lines C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_TERMINAL_SIZE").Value().(TerminalSizeFunc)
@@ -716,24 +563,18 @@ func setTerminalSizeFunc(ih Ihandle, f TerminalSizeFunc) {
 
 //--------------------
 
-// TerminalExitFunc for Terminal EXIT_CB callback.
-type TerminalExitFunc func(ih Ihandle, status int) int
-
-//export goIupTerminalExitCB
-func goIupTerminalExitCB(ih unsafe.Pointer, status C.int) C.int {
-	f := loadCallback((Ihandle)(ih), "_IUPGO_TERMINAL_EXIT").Value().(TerminalExitFunc)
+//export goIupTerminalExecExitCB
+func goIupTerminalExecExitCB(ih unsafe.Pointer, status C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_EXECEXIT_CB").Value().(TerminalExecExitFunc)
 	return C.int(f((Ihandle)(ih), int(status)))
 }
 
-func setTerminalExitFunc(ih Ihandle, f TerminalExitFunc) {
-	storeCallback(ih, "_IUPGO_TERMINAL_EXIT", f)
-	C.goIupSetTerminalExitFunc(ih.ptr())
+func setTerminalExecExitFunc(ih Ihandle, f TerminalExecExitFunc) {
+	storeCallback(ih, "_IUPGO_EXECEXIT_CB", f)
+	C.goIupSetTerminalExecExitFunc(ih.ptr())
 }
 
 //--------------------
-
-// TextInputFunc for TEXTINPUT_CB callback.
-type TextInputFunc func(ih Ihandle, text string) int
 
 //export goIupTextInputCB
 func goIupTextInputCB(ih, text unsafe.Pointer) C.int {
@@ -747,12 +588,6 @@ func setTextInputFunc(ih Ihandle, f TextInputFunc) {
 }
 
 //--------------------
-
-// DropFilesFunc for DROPFILES_CB callback.
-// Action called when a file is "dropped" into control.
-//
-// https://gen2brain.github.io/iup-go/call/iup_dropfiles_cb.html
-type DropFilesFunc func(Ihandle, string, int, int, int) int
 
 //export goIupDropFilesCB
 func goIupDropFilesCB(ih, filename unsafe.Pointer, num, x, y C.int) C.int {
@@ -771,13 +606,6 @@ func setDropFilesFunc(ih Ihandle, f DropFilesFunc) {
 
 //--------------------
 
-// CopyDataFunc for COPYDATA_CB callback.
-// Called at the first instance when a second instance is running, with the command line of the second instance.
-// Requires the global attribute SINGLEINSTANCE.
-//
-// https://gen2brain.github.io/iup-go/dlg/iup_dialog.html
-type CopyDataFunc func(ih Ihandle, cmdLine string, size int) int
-
 //export goIupCopyDataCB
 func goIupCopyDataCB(ih, cmdLine unsafe.Pointer, size C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_COPYDATA_CB").Value().(CopyDataFunc)
@@ -793,12 +621,6 @@ func setCopyDataFunc(ih Ihandle, f CopyDataFunc) {
 }
 
 //--------------------
-
-// PaginateFunc for PAGINATE_CB callback.
-// Called by the PrintDlg when the size of the printable area is known, before the pages are drawn; returns the number of pages.
-//
-// https://gen2brain.github.io/iup-go/dlg/iup_printdlg.html
-type PaginateFunc func(ih Ihandle, width, height int) int
 
 //export goIupPaginateCB
 func goIupPaginateCB(ih unsafe.Pointer, width, height C.int) C.int {
@@ -816,12 +638,6 @@ func setPaginateFunc(ih Ihandle, f PaginateFunc) {
 
 //--------------------
 
-// PrintPageFunc for PRINTPAGE_CB callback.
-// Called by the PrintDlg for each page to print; draw the page with the Draw functions between DrawBegin and DrawEnd.
-//
-// https://gen2brain.github.io/iup-go/dlg/iup_printdlg.html
-type PrintPageFunc func(ih Ihandle, page, width, height int) int
-
 //export goIupPrintPageCB
 func goIupPrintPageCB(ih unsafe.Pointer, page, width, height C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_PRINTPAGE_CB").Value().(PrintPageFunc)
@@ -837,10 +653,6 @@ func setPrintPageFunc(ih Ihandle, f PrintPageFunc) {
 }
 
 //--------------------
-
-// ListActionFunc for List ACTION callback.
-// Action generated when the state of an item in the list is changed.
-type ListActionFunc func(ih Ihandle, text string, item, state int) int
 
 //export goIupListActionCB
 func goIupListActionCB(ih, text unsafe.Pointer, item, state C.int) C.int {
@@ -858,12 +670,6 @@ func setListActionFunc(ih Ihandle, f ListActionFunc) {
 }
 
 //--------------------
-
-// ListValueFunc for List VALUE_CB callback in virtual mode.
-// Called to get the text value of an item when VIRTUALMODE=YES.
-// pos is 1-based item index.
-// Returns the string to display for the item.
-type ListValueFunc func(ih Ihandle, pos int) string
 
 //export goIupListValueCB
 func goIupListValueCB(ih unsafe.Pointer, pos C.int) *C.char {
@@ -887,11 +693,6 @@ func setListValueFunc(ih Ihandle, f ListValueFunc) {
 
 //--------------------
 
-// ListImageFunc for List IMAGE_CB callback in virtual mode.
-// Called to get the image name for an item when VIRTUALMODE=YES and SHOWIMAGE=YES.
-// Returns the image name to display for the item, or empty string for no image.
-type ListImageFunc func(ih Ihandle, pos int) string
-
 //export goIupListImageCB
 func goIupListImageCB(ih unsafe.Pointer, pos C.int) *C.char {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_LIST_IMAGE_CB")
@@ -914,10 +715,6 @@ func setListImageFunc(ih Ihandle, f ListImageFunc) {
 
 //--------------------
 
-// CaretFunc for CARET_CB callback.
-// Action generated when the caret/cursor position is changed.
-type CaretFunc func(ih Ihandle, lin, col, pos int) int
-
 //export goIupCaretCB
 func goIupCaretCB(ih unsafe.Pointer, lin, col, pos C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_CARET_CB").Value().(CaretFunc)
@@ -933,10 +730,6 @@ func setCaretFunc(ih Ihandle, f CaretFunc) {
 }
 
 //--------------------
-
-// DblclickFunc for DBLCLICK_CB callback.
-// Action generated when the user double click an item.
-type DblclickFunc func(ih Ihandle, item int, text string) int
 
 //export goIupDblclickCB
 func goIupDblclickCB(ih unsafe.Pointer, item C.int, text unsafe.Pointer) C.int {
@@ -955,9 +748,6 @@ func setDblclickFunc(ih Ihandle, f DblclickFunc) {
 
 //--------------------
 
-// EditFunc for EDIT_CB callback.
-type EditFunc func(ih Ihandle, c int, newValue string) int
-
 //export goIupEditCB
 func goIupEditCB(ih unsafe.Pointer, item C.int, text unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_EDIT_CB").Value().(EditFunc)
@@ -974,10 +764,6 @@ func setEditFunc(ih Ihandle, f EditFunc) {
 }
 
 //--------------------
-
-// MotionFunc for MOTION_CB callback.
-// Action generated when the mouse is moved over the list.
-type MotionFunc func(ih Ihandle, x, y int, status string) int
 
 //export goIupMotionCB
 func goIupMotionCB(ih unsafe.Pointer, x, y C.int, status unsafe.Pointer) C.int {
@@ -996,10 +782,6 @@ func setMotionFunc(ih Ihandle, f MotionFunc) {
 
 //--------------------
 
-// MultiselectFunc for MULTISELECT_CB callback.
-// Action generated when the state of an item in the multiple selection list is changed.
-type MultiselectFunc func(ih Ihandle, text string) int
-
 //export goIupMultiselectCB
 func goIupMultiselectCB(ih, text unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_MULTISELECT_CB").Value().(MultiselectFunc)
@@ -1017,10 +799,6 @@ func setMultiselectFunc(ih Ihandle, f MultiselectFunc) {
 
 //--------------------
 
-// ValueChangedFunc for VALUECHANGED_CB callback.
-// Called after the value was interactively changed by the user.
-type ValueChangedFunc func(ih Ihandle) int
-
 //export goIupValueChangedCB
 func goIupValueChangedCB(ih unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_VALUECHANGED_CB").Value().(ValueChangedFunc)
@@ -1036,10 +814,6 @@ func setValueChangedFunc(ih Ihandle, f ValueChangedFunc) {
 }
 
 //--------------------
-
-// TextActionFunc for Text ACTION callback.
-// Action generated when the text is edited, but before its value is actually changed.
-type TextActionFunc func(ih Ihandle, ch int, newValue string) int
 
 //export goIupTextActionCB
 func goIupTextActionCB(ih unsafe.Pointer, c C.int, newValue unsafe.Pointer) C.int {
@@ -1058,10 +832,6 @@ func setTextActionFunc(ih Ihandle, f TextActionFunc) {
 
 //--------------------
 
-// ToggleActionFunc for Toggle ACTION callback.
-// Action generated when the toggle's state (on/off) was changed.
-type ToggleActionFunc func(ih Ihandle, state int) int
-
 //export goIupToggleActionCB
 func goIupToggleActionCB(ih unsafe.Pointer, state C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_TOGGLE_ACTION").Value().(ToggleActionFunc)
@@ -1077,9 +847,6 @@ func setToggleActionFunc(ih Ihandle, f ToggleActionFunc) {
 }
 
 //--------------------
-
-// TabChangeFunc for TABCHANGE_CB callback.
-type TabChangeFunc func(ih, newTab, oldTab Ihandle) int
 
 //export goIupTabChangeCB
 func goIupTabChangeCB(ih, newTab, oldTab unsafe.Pointer) C.int {
@@ -1097,9 +864,6 @@ func setTabChangeFunc(ih Ihandle, f TabChangeFunc) {
 
 //--------------------
 
-// TabChangePosFunc for TABCHANGEPOS_CB callback.
-type TabChangePosFunc func(ih Ihandle, newPos, oldPos int) int
-
 //export goIupTabChangePosCB
 func goIupTabChangePosCB(ih unsafe.Pointer, newPos, oldPos C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_TABCHANGEPOS_CB").Value().(TabChangePosFunc)
@@ -1115,9 +879,6 @@ func setTabChangePosFunc(ih Ihandle, f TabChangePosFunc) {
 }
 
 //--------------------
-
-// ReorderFunc for REORDER_CB callback.
-type ReorderFunc func(ih Ihandle, oldPos, newPos int) int
 
 //export goIupReorderCB
 func goIupReorderCB(ih unsafe.Pointer, oldPos, newPos C.int) C.int {
@@ -1135,9 +896,6 @@ func setReorderFunc(ih Ihandle, f ReorderFunc) {
 
 //--------------------
 
-// SpinFunc for SPIN_CB callback.
-type SpinFunc func(ih Ihandle, inc int) int
-
 //export goIupSpinCB
 func goIupSpinCB(ih unsafe.Pointer, inc C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_SPIN_CB").Value().(SpinFunc)
@@ -1153,9 +911,6 @@ func setSpinFunc(ih Ihandle, f SpinFunc) {
 }
 
 //--------------------
-
-// PostMessageFunc for POSTMESSAGE_CB callback.
-type PostMessageFunc func(Ihandle, string, int, any) int
 
 // Payload handles of posted messages not yet delivered, per element with a Go POSTMESSAGE_CB.
 var (
@@ -1228,11 +983,6 @@ func setPostMessageFunc(ih Ihandle, f PostMessageFunc) {
 
 //--------------------
 
-// CloseFunc for CLOSE_CB callback.
-// Called just before a dialog is closed when the user clicks the close button
-// of the title bar or an equivalent action.
-type CloseFunc func(Ihandle) int
-
 //export goIupCloseCB
 func goIupCloseCB(ih unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_CLOSE_CB").Value().(CloseFunc)
@@ -1248,11 +998,6 @@ func setCloseFunc(ih Ihandle, f CloseFunc) {
 }
 
 //--------------------
-
-// FocusFunc for FOCUS_CB callback.
-// Called when the dialog or any of its children gets the focus, or when
-// another dialog or any control in another dialog gets the focus.
-type FocusFunc func(Ihandle, int) int
 
 //export goIupFocusCB
 func goIupFocusCB(ih unsafe.Pointer, c C.int) C.int {
@@ -1270,10 +1015,6 @@ func setFocusFunc(ih Ihandle, f FocusFunc) {
 
 //--------------------
 
-// MoveFunc for MOVE_CB callback.
-// Called after the dialog was moved on screen.
-type MoveFunc func(ih Ihandle, x, y int) int
-
 //export goIupMoveCB
 func goIupMoveCB(ih unsafe.Pointer, x, y C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_MOVE_CB").Value().(MoveFunc)
@@ -1289,10 +1030,6 @@ func setMoveFunc(ih Ihandle, f MoveFunc) {
 }
 
 //--------------------
-
-// ResizeFunc for RESIZE_CB callback.
-// Action generated when the canvas or dialog size is changed.
-type ResizeFunc func(ih Ihandle, width, height int) int
 
 //export goIupResizeCB
 func goIupResizeCB(ih unsafe.Pointer, width, height C.int) C.int {
@@ -1310,10 +1047,6 @@ func setResizeFunc(ih Ihandle, f ResizeFunc) {
 
 //--------------------
 
-// ShowFunc for SHOW_CB callback.
-// Called right after the dialog is shown, hidden, maximized, minimized or restored from minimized/maximized.
-type ShowFunc func(ih Ihandle, state int) int
-
 //export goIupShowCB
 func goIupShowCB(ih unsafe.Pointer, inc C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_SHOW_CB").Value().(ShowFunc)
@@ -1329,10 +1062,6 @@ func setShowFunc(ih Ihandle, f ShowFunc) {
 }
 
 //--------------------
-
-// ChangeFunc for CHANGE_CB callback.
-// Called when the user releases the left mouse button over the control, defining the selected color.
-type ChangeFunc func(ih Ihandle, r, g, b uint8) int
 
 //export goIupChangeCB
 func goIupChangeCB(ih unsafe.Pointer, r, g, b C.uchar) C.int {
@@ -1350,10 +1079,6 @@ func setChangeFunc(ih Ihandle, f ChangeFunc) {
 
 //--------------------
 
-// DragFunc for DRAG_CB callback.
-// Called several times while the color is being changed by dragging the mouse over the control.
-type DragFunc func(ih Ihandle, r, g, b uint8) int
-
 //export goIupDragCB
 func goIupDragCB(ih unsafe.Pointer, r, g, b C.uchar) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_DRAG_CB").Value().(DragFunc)
@@ -1369,9 +1094,6 @@ func setDragFunc(ih Ihandle, f DragFunc) {
 }
 
 //--------------------
-
-// DetachedFunc for DETACHED_CB callback.
-type DetachedFunc func(Ihandle, Ihandle, int, int) int
 
 //export goIupDetachedCB
 func goIupDetachedCB(ih, newParent unsafe.Pointer, x, y C.int) C.int {
@@ -1389,10 +1111,6 @@ func setDetachedFunc(ih Ihandle, f DetachedFunc) {
 
 //--------------------
 
-// RestoredFunc for RESTORED_CB callback.
-// Called when the box is restored if RESTOREWHENCLOSED=Yes.
-type RestoredFunc func(Ihandle, Ihandle, int, int) int
-
 //export goIupRestoredCB
 func goIupRestoredCB(ih, oldParent unsafe.Pointer, x, y C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_RESTORED_CB").Value().(RestoredFunc)
@@ -1408,10 +1126,6 @@ func setRestoredFunc(ih Ihandle, f RestoredFunc) {
 }
 
 //--------------------
-
-// SwapBuffersFunc for SWAPBUFFERS_CB callback.
-// Action generated when GLSwapBuffers is called.
-type SwapBuffersFunc func(Ihandle) int
 
 //export goIupSwapBuffersCB
 func goIupSwapBuffersCB(ih unsafe.Pointer) C.int {
@@ -1429,10 +1143,6 @@ func setSwapBuffersFunc(ih Ihandle, f SwapBuffersFunc) {
 
 //--------------------
 
-// CancelFunc for CANCEL_CB callback.
-// Action generated when the user clicked on the Cancel button.
-type CancelFunc func(Ihandle) int
-
 //export goIupCancelCB
 func goIupCancelCB(ih unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_CANCEL_CB").Value().(CancelFunc)
@@ -1449,11 +1159,6 @@ func setCancelFunc(ih Ihandle, f CancelFunc) {
 
 //--------------------
 
-// TimerActionFunc for ACTION_CB callback.
-// Called every time the defined time interval is reached.
-// To stop the callback from being called, stop the timer with RUN=NO.
-type TimerActionFunc func(ih Ihandle) int
-
 //export goIupTimerActionCB
 func goIupTimerActionCB(ih unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_TIMER_ACTION").Value().(TimerActionFunc)
@@ -1469,11 +1174,6 @@ func setTimerActionFunc(ih Ihandle, f TimerActionFunc) {
 }
 
 //--------------------
-
-// ThreadFunc for THREAD_CB callback.
-// Action generated when the thread is started.
-// If this callback returns or does not exist, the thread is terminated.
-type ThreadFunc func(ih Ihandle) int
 
 //export goIupThreadCB
 func goIupThreadCB(ih unsafe.Pointer) C.int {
@@ -1494,10 +1194,6 @@ func setThreadFunc(ih Ihandle, f ThreadFunc) {
 
 //--------------------
 
-// ScrollFunc for SCROLL_CB callback.
-// Called when the scrollbar is manipulated.
-type ScrollFunc func(ih Ihandle, op int, posx, posy float64) int
-
 //export goIupScrollCB
 func goIupScrollCB(ih unsafe.Pointer, op C.int, posx, posy C.float) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_SCROLL_CB").Value().(ScrollFunc)
@@ -1513,10 +1209,6 @@ func setScrollFunc(ih Ihandle, f ScrollFunc) {
 }
 
 //--------------------
-
-// TrayClickFunc for TRAYCLICK_CB callback.
-// Called right after the mouse button is pressed or released over the tray icon.
-type TrayClickFunc func(Ihandle, int, int, int) int
 
 //export goIupTrayClickCB
 func goIupTrayClickCB(ih unsafe.Pointer, but, pressed, dclick C.int) C.int {
@@ -1534,10 +1226,6 @@ func setTrayClickFunc(ih Ihandle, f TrayClickFunc) {
 
 //--------------------
 
-// TabCloseFunc for TABCLOSE_CB callback.
-// Called when the user clicks on the close button.
-type TabCloseFunc func(Ihandle, int) int
-
 //export goIupTabCloseCB
 func goIupTabCloseCB(ih unsafe.Pointer, pos C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_TABCLOSE_CB").Value().(TabCloseFunc)
@@ -1553,10 +1241,6 @@ func setTabCloseFunc(ih Ihandle, f TabCloseFunc) {
 }
 
 //--------------------
-
-// RightClickFunc for RIGHTCLICK_CB callback.
-// Called when the user clicks on some tab using the right mouse button.
-type RightClickFunc func(Ihandle, int) int
 
 //export goIupRightClickCB
 func goIupRightClickCB(ih unsafe.Pointer, pos C.int) C.int {
@@ -1574,10 +1258,6 @@ func setRightClickFunc(ih Ihandle, f RightClickFunc) {
 
 //--------------------
 
-// ExtraButtonFunc for EXTRABUTTON_CB callback.
-// Action generated when any mouse button is pressed or released.
-type ExtraButtonFunc func(Ihandle, int, int) int
-
 //export goIupExtraButtonCB
 func goIupExtraButtonCB(ih unsafe.Pointer, button, pressed C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_EXTRABUTTON_CB").Value().(ExtraButtonFunc)
@@ -1593,10 +1273,6 @@ func setExtraButtonFunc(ih Ihandle, f ExtraButtonFunc) {
 }
 
 //--------------------
-
-// OpenCloseFunc for OPENCLOSE_CB callback.
-// Action generated before the expander state is interactively changed.
-type OpenCloseFunc func(ih Ihandle, state int) int
 
 //export goIupOpenCloseCB
 func goIupOpenCloseCB(ih unsafe.Pointer, state C.int) C.int {
@@ -1614,10 +1290,6 @@ func setOpenCloseFunc(ih Ihandle, f OpenCloseFunc) {
 
 //--------------------
 
-// ValueChangingFunc for VALUECHANGING_CB callback.
-// Called when the value starts or ends to be interactively changed by the user.
-type ValueChangingFunc func(ih Ihandle, start int) int
-
 //export goIupValueChangingCB
 func goIupValueChangingCB(ih unsafe.Pointer, start C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_VALUECHANGING_CB").Value().(ValueChangingFunc)
@@ -1633,10 +1305,6 @@ func setValueChangingFunc(ih Ihandle, f ValueChangingFunc) {
 }
 
 //--------------------
-
-// DropDownFunc for DROPDOWN_CB callback.
-// Action generated right before the drop child is shown or hidden.
-type DropDownFunc func(ih Ihandle, state int) int
 
 //export goIupDropDownCB
 func goIupDropDownCB(ih unsafe.Pointer, state C.int) C.int {
@@ -1654,10 +1322,6 @@ func setDropDownFunc(ih Ihandle, f DropDownFunc) {
 
 //--------------------
 
-// DropShowFunc for DROPSHOW_CB callback.
-// Action generated right after the drop child is shown or hidden.
-type DropShowFunc func(ih Ihandle, state int) int
-
 //export goIupDropShowCB
 func goIupDropShowCB(ih unsafe.Pointer, state C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_DROPSHOW_CB").Value().(DropShowFunc)
@@ -1674,10 +1338,6 @@ func setDropShowFunc(ih Ihandle, f DropShowFunc) {
 
 //--------------------
 
-// KeyPressFunc for KEYPRESS_CB callback.
-// Action generated when a key is pressed or released.
-type KeyPressFunc func(ih Ihandle, c, press int) int
-
 //export goIupKeyPressCB
 func goIupKeyPressCB(ih unsafe.Pointer, c, press C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_KEYPRESS_CB").Value().(KeyPressFunc)
@@ -1693,11 +1353,6 @@ func setKeyPressFunc(ih Ihandle, f KeyPressFunc) {
 }
 
 //--------------------
-
-// CellFunc for CELL_CB callback.
-// Called when the user double clicks a color cell to change its value.
-// Returns the new color, or an empty string to ignore the change.
-type CellFunc func(ih Ihandle, cell int) string
 
 //export goIupCellCB
 func goIupCellCB(ih unsafe.Pointer, cell C.int) *C.char {
@@ -1721,10 +1376,6 @@ func setCellFunc(ih Ihandle, f CellFunc) {
 
 //--------------------
 
-// ExtendedFunc for EXTENDED_CB callback.
-// Called when the user right click a cell with the Shift key pressed.
-type ExtendedFunc func(ih Ihandle, cell int) int
-
 //export goIupExtendedCB
 func goIupExtendedCB(ih unsafe.Pointer, cell C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_EXTENDED_CB").Value().(ExtendedFunc)
@@ -1740,10 +1391,6 @@ func setExtendedFunc(ih Ihandle, f ExtendedFunc) {
 }
 
 //--------------------
-
-// SelectFunc for SELECT_CB callback.
-// Called when a color is selected.
-type SelectFunc func(ih Ihandle, cell, _type int) int
 
 //export goIupSelectCB
 func goIupSelectCB(ih unsafe.Pointer, cell, _type C.int) C.int {
@@ -1761,11 +1408,6 @@ func setSelectFunc(ih Ihandle, f SelectFunc) {
 
 //--------------------
 
-// SwitchFunc for SWITCH_CB callback.
-// Called when the user double clicks the preview area outside the preview cells
-// to switch the primary and secondary selections.
-type SwitchFunc func(ih Ihandle, primCell, secCell int) int
-
 //export goIupSwitchCB
 func goIupSwitchCB(ih unsafe.Pointer, primCell, secCell C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_SWITCH_CB").Value().(SwitchFunc)
@@ -1781,9 +1423,6 @@ func setSwitchFunc(ih Ihandle, f SwitchFunc) {
 }
 
 //--------------------
-
-// LinkActionFunc for Link ACTION callback.
-type LinkActionFunc func(ih Ihandle, url string) int
 
 //export goIupLinkActionCB
 func goIupLinkActionCB(ih, url unsafe.Pointer) C.int {
@@ -1802,10 +1441,6 @@ func setLinkActionFunc(ih Ihandle, f LinkActionFunc) {
 
 //--------------------
 
-// TextLinkFunc for LINK_CB callback on multiline text controls.
-// Action generated when a hyperlink in formatted text is clicked.
-type TextLinkFunc func(ih Ihandle, url string) int
-
 //export goIupTextLinkCB
 func goIupTextLinkCB(ih, url unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_LINK_CB").Value().(TextLinkFunc)
@@ -1822,10 +1457,6 @@ func setTextLinkFunc(ih Ihandle, f TextLinkFunc) {
 }
 
 //--------------------
-
-// MaskFailFunc for MASKFAIL_CB callback.
-// Action generated when the new text fails at the mask check.
-type MaskFailFunc func(ih Ihandle, newValue string) int
 
 //export goIupMaskFailCB
 func goIupMaskFailCB(ih, newValue unsafe.Pointer) C.int {
@@ -1844,10 +1475,6 @@ func setMaskFailFunc(ih Ihandle, f MaskFailFunc) {
 
 //--------------------
 
-// WheelFunc for WHEEL_CB callback.
-// Action generated when the mouse wheel is rotated.
-type WheelFunc func(ih Ihandle, delta float64, x, y int, status string) int
-
 //export goIupWheelCB
 func goIupWheelCB(ih unsafe.Pointer, delta C.float, x, y C.int, status unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_WHEEL_CB").Value().(WheelFunc)
@@ -1865,10 +1492,6 @@ func setWheelFunc(ih Ihandle, f WheelFunc) {
 
 //--------------------
 
-// DragDropFunc for DRAGDROP_CB callback.
-// Action generated when an internal drag and drop is executed.
-type DragDropFunc func(ih Ihandle, dragId, dropId, isShift, isControl int) int
-
 //export goIupDragDropCB
 func goIupDragDropCB(ih unsafe.Pointer, dragId, dropId, isShift, isControl C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_DRAGDROP_CB").Value().(DragDropFunc)
@@ -1884,10 +1507,6 @@ func setDragDropFunc(ih Ihandle, f DragDropFunc) {
 }
 
 //--------------------
-
-// DragBeginFunc for DRAGBEGIN_CB callback.
-// Called when drag operation begins.
-type DragBeginFunc func(ih Ihandle, x, y int) int
 
 //export goIupDragBeginCB
 func goIupDragBeginCB(ih unsafe.Pointer, x, y C.int) C.int {
@@ -1910,10 +1529,6 @@ func setDragBeginFunc(ih Ihandle, f DragBeginFunc) {
 
 //--------------------
 
-// DragDataSizeFunc for DRAGDATASIZE_CB callback.
-// Called to query the size of drag data.
-type DragDataSizeFunc func(ih Ihandle, dragType string) int
-
 //export goIupDragDataSizeCB
 func goIupDragDataSizeCB(ih unsafe.Pointer, dragType *C.char) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DRAGDATASIZE_CB")
@@ -1934,10 +1549,6 @@ func setDragDataSizeFunc(ih Ihandle, f DragDataSizeFunc) {
 }
 
 //--------------------
-
-// DragDataFunc for DRAGDATA_CB callback.
-// Called to get drag data.
-type DragDataFunc func(ih Ihandle, dragType string, data unsafe.Pointer, size int) int
 
 //export goIupDragDataCB
 func goIupDragDataCB(ih unsafe.Pointer, dragType *C.char, data unsafe.Pointer, size C.int) C.int {
@@ -1960,10 +1571,6 @@ func setDragDataFunc(ih Ihandle, f DragDataFunc) {
 
 //--------------------
 
-// DragEndFunc for DRAGEND_CB callback.
-// Called when drag operation ends.
-type DragEndFunc func(ih Ihandle, action int) int
-
 //export goIupDragEndCB
 func goIupDragEndCB(ih unsafe.Pointer, action C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DRAGEND_CB")
@@ -1984,10 +1591,6 @@ func setDragEndFunc(ih Ihandle, f DragEndFunc) {
 }
 
 //--------------------
-
-// DropDataFunc for DROPDATA_CB callback.
-// Called when data is dropped.
-type DropDataFunc func(ih Ihandle, dragType string, data unsafe.Pointer, size, x, y int) int
 
 //export goIupDropDataCB
 func goIupDropDataCB(ih unsafe.Pointer, dragType *C.char, data unsafe.Pointer, size, x, y C.int) C.int {
@@ -2010,10 +1613,6 @@ func setDropDataFunc(ih Ihandle, f DropDataFunc) {
 
 //--------------------
 
-// DropMotionFunc for DROPMOTION_CB callback.
-// Called during drag motion over drop target.
-type DropMotionFunc func(ih Ihandle, x, y int, status string) int
-
 //export goIupDropMotionCB
 func goIupDropMotionCB(ih unsafe.Pointer, x, y C.int, status *C.char) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_DROPMOTION_CB")
@@ -2035,10 +1634,6 @@ func setDropMotionFunc(ih Ihandle, f DropMotionFunc) {
 
 //--------------------
 
-// SelectionFunc for SELECTION_CB callback.
-// Action generated when a node is selected or deselected.
-type SelectionFunc func(ih Ihandle, id, status int) int
-
 //export goIupSelectionCB
 func goIupSelectionCB(ih unsafe.Pointer, id, status C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_SELECTION_CB").Value().(SelectionFunc)
@@ -2054,10 +1649,6 @@ func setSelectionFunc(ih Ihandle, f SelectionFunc) {
 }
 
 //--------------------
-
-// BranchOpenFunc for BRANCHOPEN_CB callback.
-// Action generated when a branch is expanded.
-type BranchOpenFunc func(ih Ihandle, id int) int
 
 //export goIupBranchOpenCB
 func goIupBranchOpenCB(ih unsafe.Pointer, id C.int) C.int {
@@ -2075,10 +1666,6 @@ func setBranchOpenFunc(ih Ihandle, f BranchOpenFunc) {
 
 //--------------------
 
-// BranchCloseFunc for BRANCHCLOSE_CB callback.
-// Action generated when a branch is collapsed.
-type BranchCloseFunc func(ih Ihandle, id int) int
-
 //export goIupBranchCloseCB
 func goIupBranchCloseCB(ih unsafe.Pointer, id C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_BRANCHCLOSE_CB").Value().(BranchCloseFunc)
@@ -2094,10 +1681,6 @@ func setBranchCloseFunc(ih Ihandle, f BranchCloseFunc) {
 }
 
 //--------------------
-
-// ExecuteLeafFunc for EXECUTELEAF_CB callback.
-// Action generated when a leaf is executed.
-type ExecuteLeafFunc func(ih Ihandle, id int) int
 
 //export goIupExecuteLeafCB
 func goIupExecuteLeafCB(ih unsafe.Pointer, id C.int) C.int {
@@ -2115,10 +1698,6 @@ func setExecuteLeafFunc(ih Ihandle, f ExecuteLeafFunc) {
 
 //--------------------
 
-// ExecuteBranchFunc for EXECUTEBRANCH_CB callback.
-// Action generated when a branch is executed.
-type ExecuteBranchFunc func(ih Ihandle, id int) int
-
 //export goIupExecuteBranchCB
 func goIupExecuteBranchCB(ih unsafe.Pointer, id C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_EXECUTEBRANCH_CB").Value().(ExecuteBranchFunc)
@@ -2135,10 +1714,6 @@ func setExecuteBranchFunc(ih Ihandle, f ExecuteBranchFunc) {
 
 //--------------------
 
-// ShowRenameFunc for SHOWRENAME_CB callback.
-// Action generated when a node is about to be renamed.
-type ShowRenameFunc func(ih Ihandle, id int) int
-
 //export goIupShowRenameCB
 func goIupShowRenameCB(ih unsafe.Pointer, id C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_SHOWRENAME_CB").Value().(ShowRenameFunc)
@@ -2154,10 +1729,6 @@ func setShowRenameFunc(ih Ihandle, f ShowRenameFunc) {
 }
 
 //--------------------
-
-// RenameFunc for RENAME_CB callback.
-// Action generated after a node was renamed in place.
-type RenameFunc func(ih Ihandle, id int, title string) int
 
 //export goIupRenameCB
 func goIupRenameCB(ih unsafe.Pointer, id C.int, title unsafe.Pointer) C.int {
@@ -2176,10 +1747,6 @@ func setRenameFunc(ih Ihandle, f RenameFunc) {
 
 //--------------------
 
-// ToggleValueFunc for TOGGLEVALUE_CB callback.
-// Action generated when the toggle's state was changed.
-type ToggleValueFunc func(ih Ihandle, id, state int) int
-
 //export goIupToggleValueCB
 func goIupToggleValueCB(ih unsafe.Pointer, id, state C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_TOGGLEVALUE_CB").Value().(ToggleValueFunc)
@@ -2196,11 +1763,6 @@ func setToggleValueFunc(ih Ihandle, f ToggleValueFunc) {
 
 //--------------------
 
-// NodeRemovedFunc for NODEREMOVED_CB callback. userId is the USERDATA pointer
-// that was set on the node via TreeSetUserId; useful for releasing whatever it
-// pointed at (e.g. cgo.Handle(userId).Delete()).
-type NodeRemovedFunc func(ih Ihandle, userId uintptr) int
-
 //export goIupNodeRemovedCB
 func goIupNodeRemovedCB(ih, userData unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_NODEREMOVED_CB").Value().(NodeRemovedFunc)
@@ -2216,10 +1778,6 @@ func setNodeRemovedFunc(ih Ihandle, f NodeRemovedFunc) {
 }
 
 //--------------------
-
-// MultiSelectionFunc for MULTISELECTION_CB callback.
-// Action generated after a continuous range of nodes is selected in one single operation.
-type MultiSelectionFunc func(ih Ihandle, ids []int, n int) int
 
 //export goIupMultiSelectionCB
 func goIupMultiSelectionCB(ih unsafe.Pointer, ids *C.int, n C.int) C.int {
@@ -2243,10 +1801,6 @@ func setMultiSelectionFunc(ih Ihandle, f MultiSelectionFunc) {
 
 //--------------------
 
-// MultiUnselectionFunc for MULTIUNSELECTION_CB callback.
-// Action generated before multiple nodes are unselected in one single operation.
-type MultiUnselectionFunc func(ih Ihandle, ids []int, n int) int
-
 //export goIupMultiUnselectionCB
 func goIupMultiUnselectionCB(ih unsafe.Pointer, ids *C.int, n C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_MULTIUNSELECTION_CB").Value().(MultiUnselectionFunc)
@@ -2269,12 +1823,6 @@ func setMultiUnselectionFunc(ih Ihandle, f MultiUnselectionFunc) {
 
 //--------------------
 
-// MenuOpenFunc for MENUOPEN_CB callback.
-// Called just before the menu is opened.
-//
-// https://gen2brain.github.io/iup-go/call/iup_menuopen_cb.html
-type MenuOpenFunc func(ih Ihandle) int
-
 //export goIupMenuOpenCB
 func goIupMenuOpenCB(ih unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_MENUOPEN_CB").Value().(MenuOpenFunc)
@@ -2291,31 +1839,21 @@ func setMenuOpenFunc(ih Ihandle, f MenuOpenFunc) {
 
 //--------------------
 
-// ThemeChangedFunc for THEMECHANGED_CB callback.
-// Action generated when the user changes the UI theme.
-type ThemeChangedFunc func(ih Ihandle, darkMode int) int
-
-//export goIupThemeChangedCB
-func goIupThemeChangedCB(ih unsafe.Pointer, darkMode C.int) C.int {
-	f := loadCallback((Ihandle)(ih), "_IUPGO_THEMECHANGED_CB").Value().(ThemeChangedFunc)
+//export goIupAppearanceChangedCB
+func goIupAppearanceChangedCB(ih unsafe.Pointer, darkMode C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_APPEARANCECHANGED_CB").Value().(AppearanceChangedFunc)
 
 	return C.int(f((Ihandle)(ih), int(darkMode)))
 }
 
-// setThemeChangedFunc for THEMECHANGED_CB callback.
-func setThemeChangedFunc(ih Ihandle, f ThemeChangedFunc) {
-	storeCallback(ih, "_IUPGO_THEMECHANGED_CB", f)
+// setAppearanceChangedFunc for APPEARANCECHANGED_CB callback.
+func setAppearanceChangedFunc(ih Ihandle, f AppearanceChangedFunc) {
+	storeCallback(ih, "_IUPGO_APPEARANCECHANGED_CB", f)
 
-	C.goIupSetThemeChangedFunc(ih.ptr())
+	C.goIupSetAppearanceChangedFunc(ih.ptr())
 }
 
 //--------------------
-
-//--------------------
-
-// UpdateFunc for UPDATE_CB callback.
-// Action generated when the selection was changed and the editor interface needs an update.
-type UpdateFunc func(ih Ihandle) int
 
 //export goIupUpdateCB
 func goIupUpdateCB(ih unsafe.Pointer) C.int {
@@ -2333,11 +1871,6 @@ func setUpdateFunc(ih Ihandle, f UpdateFunc) {
 
 //--------------------
 
-// TableEditChangedFunc for EDITCHANGED_CB callback.
-// Called when a cell is being edited in a table/matrix control.
-// update: The new value entered by the user.
-type TableEditChangedFunc func(ih Ihandle, lin, col int, update string) int
-
 //export goIupTableEditChangedCB
 func goIupTableEditChangedCB(ih unsafe.Pointer, lin, col C.int, update *C.char) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_EDITCHANGED_CB").Value().(TableEditChangedFunc)
@@ -2352,10 +1885,6 @@ func setTableEditChangedFunc(ih Ihandle, f TableEditChangedFunc) {
 }
 
 //--------------------
-
-// TableRightClickFunc for RIGHTCLICK_CB callback.
-// Called when the right mouse button is pressed over a table cell.
-type TableRightClickFunc func(ih Ihandle, lin, col int) int
 
 //export goIupTableRightClickCB
 func goIupTableRightClickCB(ih unsafe.Pointer, lin, col C.int) C.int {
@@ -2372,10 +1901,6 @@ func setTableRightClickFunc(ih Ihandle, f TableRightClickFunc) {
 
 //--------------------
 
-// CellSelectionFunc for CELLSELECTION_CB callback.
-// Called when the selected cell range of a table changes in CELLS selection mode.
-type CellSelectionFunc func(ih Ihandle, lin1, col1, lin2, col2 int) int
-
 //export goIupCellSelectionCB
 func goIupCellSelectionCB(ih unsafe.Pointer, lin1, col1, lin2, col2 C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_CELLSELECTION_CB").Value().(CellSelectionFunc)
@@ -2391,11 +1916,6 @@ func setCellSelectionFunc(ih Ihandle, f CellSelectionFunc) {
 
 //--------------------
 
-// TableValueChangedFunc for VALUECHANGED_CB callback.
-// Called after a cell value has been changed in a table/matrix control.
-// Triggered by edits, paste operations, or programmatic value changes.
-type TableValueChangedFunc func(ih Ihandle, lin, col int) int
-
 //export goIupTableValueChangedCB
 func goIupTableValueChangedCB(ih unsafe.Pointer, lin, col C.int) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_TABLEVALUECHANGED_CB").Value().(TableValueChangedFunc)
@@ -2410,11 +1930,6 @@ func setTableValueChangedFunc(ih Ihandle, f TableValueChangedFunc) {
 }
 
 //--------------------
-
-// TableValueFunc for VALUE_CB callback.
-// Called to get the value of a cell in virtual mode.
-// Returns the string value to display in the cell.
-type TableValueFunc func(ih Ihandle, lin, col int) string
 
 //export goIupTableValueCB
 func goIupTableValueCB(ih unsafe.Pointer, lin, col C.int) *C.char {
@@ -2438,11 +1953,6 @@ func setTableValueFunc(ih Ihandle, f TableValueFunc) {
 
 //--------------------
 
-// TableImageFunc for IMAGE_CB callback.
-// Called to get the image name for a cell in virtual mode when SHOWIMAGE=YES.
-// Returns the image name to display in the cell, or empty string for no image.
-type TableImageFunc func(ih Ihandle, lin, col int) string
-
 //export goIupTableImageCB
 func goIupTableImageCB(ih unsafe.Pointer, lin, col C.int) *C.char {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_TABLE_IMAGE_CB")
@@ -2463,11 +1973,6 @@ func setTableImageFunc(ih Ihandle, f TableImageFunc) {
 	C.goIupSetTableImageFunc(ih.ptr())
 }
 
-// TableSortFunc for SORT_CB callback.
-// Called when user clicks a column header to sort.
-// Returns DEFAULT to proceed with sorting or IGNORE to cancel.
-type TableSortFunc func(ih Ihandle, col int) int
-
 //export goIupTableSortCB
 func goIupTableSortCB(ih unsafe.Pointer, col C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_SORT_CB")
@@ -2486,11 +1991,6 @@ func setTableSortFunc(ih Ihandle, f TableSortFunc) {
 }
 
 //--------------------
-
-// FileFunc for FILE_CB callback.
-// Called when a file is selected in FileDlg.
-// status: "OK", "NEW", or "CANCEL"
-type FileFunc func(ih Ihandle, filename, status string) int
 
 //export goIupFileCB
 func goIupFileCB(ih unsafe.Pointer, filename, status *C.char) C.int {
@@ -2513,10 +2013,6 @@ func setFileFunc(ih Ihandle, f FileFunc) {
 
 //--------------------
 
-// LayoutUpdateFunc for LAYOUTUPDATE_CB callback.
-// Called when layout is updated in FlatScrollBox or ScrollBox.
-type LayoutUpdateFunc func(ih Ihandle) int
-
 //export goIupLayoutUpdateCB
 func goIupLayoutUpdateCB(ih unsafe.Pointer) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_LAYOUTUPDATE_CB")
@@ -2537,10 +2033,6 @@ func setLayoutUpdateFunc(ih Ihandle, f LayoutUpdateFunc) {
 }
 
 //--------------------
-
-// HighlightFunc for HIGHLIGHT_CB callback.
-// Called when a menu item is highlighted.
-type HighlightFunc func(ih Ihandle) int
 
 //export goIupHighlightCB
 func goIupHighlightCB(ih unsafe.Pointer) C.int {
@@ -2563,10 +2055,6 @@ func setHighlightFunc(ih Ihandle, f HighlightFunc) {
 
 //--------------------
 
-// MenuCloseFunc for MENUCLOSE_CB callback.
-// Called when a menu is closed.
-type MenuCloseFunc func(ih Ihandle) int
-
 //export goIupMenuCloseCB
 func goIupMenuCloseCB(ih unsafe.Pointer) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_MENUCLOSE_CB")
@@ -2587,10 +2075,6 @@ func setMenuCloseFunc(ih Ihandle, f MenuCloseFunc) {
 }
 
 //--------------------
-
-// ColorUpdateFunc for COLORUPDATE_CB callback.
-// Called when color is updated in ColorDlg.
-type ColorUpdateFunc func(ih Ihandle) int
 
 //export goIupColorUpdateCB
 func goIupColorUpdateCB(ih unsafe.Pointer) C.int {
@@ -2631,11 +2115,6 @@ func setRecentFunc(config Ihandle, f ActionFunc) {
 
 //--------------------
 
-// NotifyFunc for NOTIFY_CB callback.
-// Called when the notification is activated (clicked or action button pressed).
-// action_id: 0=body clicked, 1-4=action buttons
-type NotifyFunc func(ih Ihandle, actionId int) int
-
 //export goIupNotifyCB
 func goIupNotifyCB(ih unsafe.Pointer, actionId C.int) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_NOTIFY_CB")
@@ -2654,32 +2133,23 @@ func setNotifyFunc(ih Ihandle, f NotifyFunc) {
 
 //--------------------
 
-// NotifyCloseFunc for CLOSE_CB callback on notification.
-// Called when the notification is dismissed.
-// reason: 1=expired, 2=user dismissed, 3=closed programmatically, 4=unknown
-type NotifyCloseFunc func(ih Ihandle, reason int) int
-
-//export goIupNotifyCloseCB
-func goIupNotifyCloseCB(ih unsafe.Pointer, reason C.int) C.int {
-	ch := loadCallback((Ihandle)(ih), "_IUPGO_NOTIFY_CLOSE_CB")
+//export goIupNotifyDismissCB
+func goIupNotifyDismissCB(ih unsafe.Pointer, reason C.int) C.int {
+	ch := loadCallback((Ihandle)(ih), "_IUPGO_DISMISS_CB")
 	if ch == 0 {
 		return C.int(DEFAULT)
 	}
-	f := ch.Value().(NotifyCloseFunc)
+	f := ch.Value().(NotifyDismissFunc)
 	return C.int(f((Ihandle)(ih), int(reason)))
 }
 
-// setNotifyCloseFunc for CLOSE_CB on notifications.
-func setNotifyCloseFunc(ih Ihandle, f NotifyCloseFunc) {
-	storeCallback(ih, "_IUPGO_NOTIFY_CLOSE_CB", f)
-	C.goIupSetNotifyCloseFunc(ih.ptr())
+// setNotifyDismissFunc for DISMISS_CB on notifications.
+func setNotifyDismissFunc(ih Ihandle, f NotifyDismissFunc) {
+	storeCallback(ih, "_IUPGO_DISMISS_CB", f)
+	C.goIupSetNotifyDismissFunc(ih.ptr())
 }
 
 //--------------------
-
-// LocationFunc for LOCATION_CB callback.
-// Called on every position update of an IupLocation element.
-type LocationFunc func(ih Ihandle, latitude, longitude float64) int
 
 //export goIupLocationCB
 func goIupLocationCB(ih unsafe.Pointer, latitude, longitude C.double) C.int {
@@ -2699,10 +2169,6 @@ func setLocationFunc(ih Ihandle, f LocationFunc) {
 
 //--------------------
 
-// SensorFunc for SENSOR_CB callback.
-// Called on every reading of an IupSensor element.
-type SensorFunc func(ih Ihandle, x, y, z float64) int
-
 //export goIupSensorCB
 func goIupSensorCB(ih unsafe.Pointer, x, y, z C.double) C.int {
 	ch := loadCallback((Ihandle)(ih), "_IUPGO_SENSOR_CB")
@@ -2720,10 +2186,6 @@ func setSensorFunc(ih Ihandle, f SensorFunc) {
 }
 
 //--------------------
-
-// PermissionFunc for PERMISSION_CB callback.
-// Called when the user answers a permission request; granted is 1 or 0.
-type PermissionFunc func(ih Ihandle, granted int) int
 
 //export goIupPermissionCB
 func goIupPermissionCB(ih unsafe.Pointer, granted C.int) C.int {
@@ -2743,14 +2205,6 @@ func setPermissionFunc(ih Ihandle, f PermissionFunc) {
 
 //--------------------
 
-// GetParamFunc is the callback for GetParam dialog.
-// It is called when a parameter value changes, a button is pressed, or the dialog is mapped/initialized.
-// The paramIndex is >= 0 for parameter changes, or one of the GETPARAM_* constants for events.
-// Return 1 to accept the change or 0 to reject it.
-//
-// https://gen2brain.github.io/iup-go/dlg/iup_getparam.html
-type GetParamFunc func(dialog Ihandle, paramIndex int) int
-
 //export goIupGetParamCB
 func goIupGetParamCB(dialog unsafe.Pointer, paramIndex C.int, userData unsafe.Pointer) C.int {
 	ch := goHandle(userData)
@@ -2759,12 +2213,6 @@ func goIupGetParamCB(dialog unsafe.Pointer, paramIndex C.int, userData unsafe.Po
 }
 
 //--------------------
-
-// ParamFunc for PARAM_CB callback.
-// Called when a parameter value changes or a button is pressed.
-//
-// https://gen2brain.github.io/iup-go/elem/iup_parambox.html
-type ParamFunc func(paramBox Ihandle, paramIndex int) int
 
 //export goIupParamCB
 func goIupParamCB(ih unsafe.Pointer, paramIndex C.int, userData unsafe.Pointer) C.int {
@@ -2780,4 +2228,46 @@ func goIupParamCB(ih unsafe.Pointer, paramIndex C.int, userData unsafe.Pointer) 
 func setParamFunc(ih Ihandle, f ParamFunc) {
 	storeCallback(ih, "_IUPGO_PARAM_CB", f)
 	C.goIupSetParamFunc(ih.ptr())
+}
+
+//--------------------
+
+//export goIupCustomFrameDrawCB
+func goIupCustomFrameDrawCB(ih unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_CUSTOMFRAMEDRAW_CB").Value().(CustomFrameDrawFunc)
+	return C.int(f((Ihandle)(ih)))
+}
+
+// setCustomFrameDrawFunc for CUSTOMFRAMEDRAW_CB.
+func setCustomFrameDrawFunc(ih Ihandle, f CustomFrameDrawFunc) {
+	storeCallback(ih, "_IUPGO_CUSTOMFRAMEDRAW_CB", f)
+	C.goIupSetCustomFrameDrawFunc(ih.ptr())
+}
+
+//--------------------
+
+//export goIupCustomFrameActivateCB
+func goIupCustomFrameActivateCB(ih unsafe.Pointer, active C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_CUSTOMFRAMEACTIVATE_CB").Value().(CustomFrameActivateFunc)
+	return C.int(f((Ihandle)(ih), int(active)))
+}
+
+// setCustomFrameActivateFunc for CUSTOMFRAMEACTIVATE_CB.
+func setCustomFrameActivateFunc(ih Ihandle, f CustomFrameActivateFunc) {
+	storeCallback(ih, "_IUPGO_CUSTOMFRAMEACTIVATE_CB", f)
+	C.goIupSetCustomFrameActivateFunc(ih.ptr())
+}
+
+//--------------------
+
+//export goIupWomCB
+func goIupWomCB(ih unsafe.Pointer, state C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_WOM_CB").Value().(WomFunc)
+	return C.int(f((Ihandle)(ih), int(state)))
+}
+
+// setWomFunc for WOM_CB.
+func setWomFunc(ih Ihandle, f WomFunc) {
+	storeCallback(ih, "_IUPGO_WOM_CB", f)
+	C.goIupSetWomFunc(ih.ptr())
 }

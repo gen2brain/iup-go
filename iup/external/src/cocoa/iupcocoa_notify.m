@@ -65,10 +65,10 @@ didReceiveNotificationResponse:(UNNotificationResponse*)response
   }
   else if ([actionId isEqualToString:UNNotificationDismissActionIdentifier])
   {
-    IFni close_cb = (IFni)IupGetCallback(ih, "CLOSE_CB");
-    if (close_cb)
+    IFni dismiss_cb = (IFni)IupGetCallback(ih, "DISMISS_CB");
+    if (dismiss_cb)
     {
-      int ret = close_cb(ih, 2);
+      int ret = dismiss_cb(ih, 2);
       if (ret == IUP_CLOSE)
         IupExitLoop();
     }
@@ -343,7 +343,7 @@ static char* cocoaNotifyGetPermissionAttrib(Ihandle* ih)
   else if (status == 0)
     return "DENIED";
   else
-    return "NOTDETERMINED";
+    return "PROMPT";
 }
 
 static int cocoaNotifySetRequestPermissionAttrib(Ihandle* ih, const char* value)
@@ -592,7 +592,7 @@ IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
     [[UNUserNotificationCenter currentNotificationCenter]
         removeDeliveredNotificationsWithIdentifiers:@[notify->identifier]];
 
-    IFni cb = (IFni)IupGetCallback(ih, "CLOSE_CB");
+    IFni cb = (IFni)IupGetCallback(ih, "DISMISS_CB");
     if (cb)
     {
       int ret = cb(ih, 3);

@@ -63,10 +63,10 @@ didReceiveNotificationResponse:(UNNotificationResponse*)response
 	NSString* action_id = response.actionIdentifier;
 	if ([action_id isEqualToString:UNNotificationDismissActionIdentifier])
 	{
-		IFni close_cb = (IFni)IupGetCallback(ih, "CLOSE_CB");
-		if (close_cb)
+		IFni dismiss_cb = (IFni)IupGetCallback(ih, "DISMISS_CB");
+		if (dismiss_cb)
 		{
-			int ret = close_cb(ih, 2);
+			int ret = dismiss_cb(ih, 2);
 			if (ret == IUP_CLOSE) IupExitLoop();
 		}
 		completionHandler();
@@ -338,7 +338,7 @@ static void cocoaTouchToastDismiss(Ihandle* ih, int reason)
 
 		if (ih_ref && iupObjectCheck(ih_ref))
 		{
-			IFni cb = (IFni)IupGetCallback(ih_ref, "CLOSE_CB");
+			IFni cb = (IFni)IupGetCallback(ih_ref, "DISMISS_CB");
 			if (cb)
 			{
 				int ret = cb(ih_ref, reason);
@@ -469,7 +469,7 @@ static char* cocoaTouchNotifyGetPermissionAttrib(Ihandle* ih)
 		case UNAuthorizationStatusDenied:
 			return "DENIED";
 		default:
-			return "NOTDETERMINED";
+			return "PROMPT";
 	}
 }
 
@@ -604,7 +604,7 @@ IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
 	[center removeDeliveredNotificationsWithIdentifiers:@[n->identifier]];
 	[center removePendingNotificationRequestsWithIdentifiers:@[n->identifier]];
 
-	IFni cb = (IFni)IupGetCallback(ih, "CLOSE_CB");
+	IFni cb = (IFni)IupGetCallback(ih, "DISMISS_CB");
 	if (cb)
 	{
 		int ret = cb(ih, 3);

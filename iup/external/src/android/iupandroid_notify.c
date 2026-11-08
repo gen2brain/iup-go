@@ -27,10 +27,10 @@ IUPJNI_DECLARE_CLASS_STATIC(IupNotifyHelper);
 
 static int androidNotifyUrgency(Ihandle* ih)
 {
-  int u = IupGetInt(ih, "URGENCY");
-  if (u < 0) return 0;
-  if (u > 2) return 2;
-  return u;
+  const char* value = iupAttribGetStr(ih, "URGENCY");
+  if (iupStrEqualNoCase(value, "LOW")) return 0;
+  if (iupStrEqualNoCase(value, "HIGH")) return 2;
+  return 1;
 }
 
 IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
@@ -175,7 +175,7 @@ IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
   iupAndroid_CheckException(jni_env, "IupNotifyHelper.close");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
-  IFni cb = (IFni)IupGetCallback(ih, "CLOSE_CB");
+  IFni cb = (IFni)IupGetCallback(ih, "DISMISS_CB");
   if (cb)
   {
     int ret = cb(ih, 3);
@@ -223,7 +223,7 @@ IUP_SDK_API int iupdrvNotifyIsAvailable(void)
 
 IUP_SDK_API void iupdrvNotifyInitClass(Iclass* ic)
 {
-  iupClassRegisterAttribute(ic, "URGENCY", NULL, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "URGENCY", NULL, NULL, IUPAF_SAMEASSYSTEM, "NORMAL", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPICON", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TRANSIENT", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   /* STYLE=TOAST → android.widget.Toast; default NOTIFICATION → shade via NotificationManager. */

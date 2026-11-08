@@ -185,10 +185,10 @@ static LRESULT CALLBACK iupwinNotifyWndProc(HWND hwnd, UINT msg, WPARAM wParam, 
 
           case NIN_BALLOONTIMEOUT:
           {
-            IFni close_cb = (IFni)IupGetCallback(ih, "CLOSE_CB");
-            if (close_cb)
+            IFni dismiss_cb = (IFni)IupGetCallback(ih, "DISMISS_CB");
+            if (dismiss_cb)
             {
-              int ret = close_cb(ih, 1);
+              int ret = dismiss_cb(ih, 1);
               if (ret == IUP_CLOSE)
                 IupExitLoop();
             }
@@ -197,10 +197,10 @@ static LRESULT CALLBACK iupwinNotifyWndProc(HWND hwnd, UINT msg, WPARAM wParam, 
 
           case NIN_BALLOONHIDE:
           {
-            IFni close_cb = (IFni)IupGetCallback(ih, "CLOSE_CB");
-            if (close_cb)
+            IFni dismiss_cb = (IFni)IupGetCallback(ih, "DISMISS_CB");
+            if (dismiss_cb)
             {
-              int ret = close_cb(ih, 2);
+              int ret = dismiss_cb(ih, 2);
               if (ret == IUP_CLOSE)
                 IupExitLoop();
             }
@@ -406,7 +406,7 @@ IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
   Shell_NotifyIconW(NIM_MODIFY, &notify->nid);
 
   {
-    IFni cb = (IFni)IupGetCallback(ih, "CLOSE_CB");
+    IFni cb = (IFni)IupGetCallback(ih, "DISMISS_CB");
     if (cb)
     {
       int ret = cb(ih, 3);

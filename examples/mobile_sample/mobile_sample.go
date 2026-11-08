@@ -39,7 +39,7 @@ func main() {
 		iup.Tabs(tab1, tab2),
 	).SetAttributes(`TITLE="Mobile Sample", MENU=menu, DRAWER=drawer, ICON=img1`)
 
-	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(ih iup.Ihandle, darkMode int) int {
+	dlg.SetCallback("APPEARANCECHANGED_CB", iup.AppearanceChangedFunc(func(ih iup.Ihandle, darkMode int) int {
 		iup.Update(iup.GetHandle("canvas"))
 		return iup.DEFAULT
 	}))
@@ -168,7 +168,7 @@ func requestNotifyPermission() {
 	}
 	n := iup.Notify()
 	defer iup.Destroy(n)
-	if n.GetAttribute("PERMISSION") == "NOTDETERMINED" {
+	if n.GetAttribute("PERMISSION") == "PROMPT" {
 		n.SetAttribute("REQUESTPERMISSION", "YES")
 	}
 }
@@ -445,7 +445,7 @@ func buildDialogButtons() iup.Ihandle {
 						"ALPHA":          "142",
 						"SHOWALPHA":      "YES",
 						"SHOWCOLORTABLE": "YES",
-						"SHOWCOMPACT":    "YES",
+						"COMPACT":        "YES",
 					})
 					defer d.Destroy()
 					iup.Popup(d, iup.CENTER, iup.CENTER)

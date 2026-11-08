@@ -55,7 +55,7 @@ Iclass* iupNotifyNewClass(void)
 
   /* Callbacks */
   iupClassRegisterCallback(ic, "NOTIFY_CB", "i");
-  iupClassRegisterCallback(ic, "CLOSE_CB", "i");
+  iupClassRegisterCallback(ic, "DISMISS_CB", "i");
   iupClassRegisterCallback(ic, "ERROR_CB", "s");
 
   /* Common attributes - content */
