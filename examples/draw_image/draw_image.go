@@ -35,7 +35,7 @@ func draw(ih iup.Ihandle) int {
 	iup.DrawBegin(ih)
 	w, _ := iup.DrawGetSize(ih)
 
-	iup.DrawLinearGradient(ih, 0, 0, 719, 519, 90, "24 26 48", "58 34 78")
+	iup.DrawLinearGradient(ih, 0, 0, 719, 519, 270, "24 26 48", "58 34 78")
 
 	ih.SetAttribute("DRAWCOLOR", "255 255 255")
 	ih.SetAttribute("DRAWFONT", "Helvetica, Bold 13")
@@ -61,7 +61,7 @@ func draw(ih iup.Ihandle) int {
 	ih.SetAttribute("DRAWCOLOR", "255 220 80")
 	iup.DrawRectangle(ih, 395+frame*44-2, 98, 395+frame*44+45, 133)
 	label(ih, "sheet 22x8", 395, 142, 88)
-	ih.SetAttribute("DRAWIMAGESRCRECT", fmt.Sprintf("%d 0 11 8", frame*11))
+	ih.SetAttribute("DRAWIMAGESRCRECT", fmt.Sprintf("%d 0 %d 7", frame*11, frame*11+10))
 	iup.DrawImage(ih, "alien", 525, 75, 143, 104)
 	ih.SetAttribute("DRAWIMAGESRCRECT", "")
 	label(ih, "one frame, 13x, NEAREST", 510, 190, 170)

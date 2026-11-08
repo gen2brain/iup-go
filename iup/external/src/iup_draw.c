@@ -1167,7 +1167,7 @@ static int iDrawBuildStops(const char** colors, const float* offsets, int count,
   return count;
 }
 
-IUP_API void IupDrawLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2)
+IUP_API void IupDrawLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, double angle, const char* color1, const char* color2)
 {
   const char* colors[2];
   colors[0] = color1;
@@ -1175,7 +1175,7 @@ IUP_API void IupDrawLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, 
   IupDrawLinearGradientStops(ih, x1, y1, x2, y2, angle, colors, NULL, 2);
 }
 
-IUP_API void IupDrawLinearGradientStops(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count)
+IUP_API void IupDrawLinearGradientStops(Ihandle* ih, int x1, int y1, int x2, int y2, double angle, const char** colors, const float* offsets, int count)
 {
   iSvgCanvas* svg;
   long c[IUP_GRADIENT_MAX_STOPS];
@@ -1989,7 +1989,7 @@ IUP_API void IupDrawSetSourceSolid(Ihandle* ih, const char* color)
     iupAttribSetStr(ih, "DRAWCOLOR", color);
 }
 
-IUP_API void IupDrawSetSourceLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count)
+IUP_API void IupDrawSetSourceLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, double angle, const char** colors, const float* offsets, int count)
 {
   IupDrawSource value, *src;
 
@@ -2434,10 +2434,12 @@ IUP_API void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, in
     quality = IUP_DRAW_IMAGE_NEAREST;
 
   value = iupAttribGetStr(ih, "DRAWIMAGESRCRECT");
-  if (value && iupStrToRect(value, &sx, &sy, &sw, &sh) && sw > 0 && sh > 0)
+  if (value && iupStrToRect(value, &sx, &sy, &sw, &sh) && sw >= sx && sh >= sy)
   {
     int img_w = 0, img_h = 0;
     Ihandle* image = iupImageGetImageFromName(name);
+    sw = sw - sx + 1;
+    sh = sh - sy + 1;
     if (image)
     {
       img_w = image->currentwidth;
@@ -3231,14 +3233,14 @@ IUP_SDK_API void iupFlatDrawBadge(Ihandle* ih, IdrawCanvas* dc, int xmax, int ym
   if (width < height)
     width = height;
 
-  bgcolor = iupDrawStrToColor(iupAttribGetStr(ih, "BADGECOLOR"), iupDrawColor(220, 50, 50, 255));
-  fgcolor = iupDrawStrToColor(iupAttribGetStr(ih, "BADGETEXTCOLOR"), iupDrawColor(255, 255, 255, 255));
+  bgcolor = iupDrawStrToColor(iupAttribGetStr(ih, "BADGEBGCOLOR"), iupDrawColor(220, 50, 50, 255));
+  fgcolor = iupDrawStrToColor(iupAttribGetStr(ih, "BADGEFGCOLOR"), iupDrawColor(255, 255, 255, 255));
 
   iupdrvDrawRoundedRectangle(dc, xmax - width + 1, ymin, xmax, ymin + height - 1, height / 2, bgcolor, IUP_DRAW_FILL, 1);
   iupdrvDrawText(dc, text, len, xmax - width + 1 + (width - w) / 2, ymin + (height - h) / 2, w, h, fgcolor, font, 0, 0);
 }
 
-IUP_SDK_API void iupFlatDrawGradientBox(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius, float angle, const char* color1, const char* color2, const char* bgcolor, int active)
+IUP_SDK_API void iupFlatDrawGradientBox(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius, double angle, const char* color1, const char* color2, const char* bgcolor, int active)
 {
   long c1, c2;
 
@@ -3291,7 +3293,7 @@ static long iFlatDrawColorShade(long color, int shade)
   return iupDrawColor((unsigned char)r, (unsigned char)g, (unsigned char)b, a);
 }
 
-IUP_SDK_API void iupFlatDrawGradientBoxStops(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius, float angle, const char* gradient, const char* bgcolor, int active, int shade)
+IUP_SDK_API void iupFlatDrawGradientBoxStops(IdrawCanvas* dc, int xmin, int xmax, int ymin, int ymax, int corner_radius, double angle, const char* gradient, const char* bgcolor, int active, int shade)
 {
   long colors[IUP_GRADIENT_MAX_STOPS];
   float offsets[IUP_GRADIENT_MAX_STOPS];
@@ -3504,10 +3506,17 @@ IUP_SDK_API void iupFlatDrawIcon(Ihandle* ih, IdrawCanvas* dc, int icon_x, int i
   char* font;
   int clip_x1, clip_y1, clip_x2, clip_y2;
   long tint = IUP_DRAW_NO_TINT;
+  const char* tint_color = iupAttribGetStr(ih, "IMAGETINT");
 
-  if (imagename && fgcolor && iupAttribGetBoolean(ih, "IMAGETINT"))
+  if (imagename && tint_color && !iupStrFalse(tint_color))
   {
-    tint = iupDrawStrToColor(fgcolor, 0);
+    if (iupStrBoolean(tint_color))
+      tint_color = fgcolor;
+    tint = iupDrawStrToColor(tint_color, IUP_DRAW_NO_TINT);
+  }
+
+  if (tint != IUP_DRAW_NO_TINT)
+  {
     if (!active)
       tint = iFlatDrawColorMakeInactive(tint, bgcolor);
     make_inactive = 0;
