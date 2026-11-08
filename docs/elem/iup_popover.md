@@ -26,7 +26,7 @@ A click on the anchor element does not trigger auto-hide, so the anchor callback
 In GTK 3, Qt and Motif the click hides the popover and is consumed, so it does not reach the anchor.
 Can be "YES" or "NO". Default: "YES".
 
-**POSITION** (non-inheritable): The position of the popover relative to the anchor element.
+**PLACEMENT** (non-inheritable): The position of the popover relative to the anchor element.
 Can be "BOTTOM", "TOP", "LEFT", "RIGHT", "BOTTOMLEFT", "BOTTOMRIGHT", "TOPLEFT", "TOPRIGHT", "LEFTBOTTOM", "LEFTTOP", "RIGHTBOTTOM" or "RIGHTTOP". Default: "BOTTOM".
 
 The basic values (BOTTOM, TOP, LEFT, RIGHT) center the popover along the anchor edge. The compound values specify both the edge and the alignment: the first word is the edge where the popover appears, the second word is the alignment along that edge. For example, "BOTTOMLEFT" places the popover below the anchor with left edges aligned, and "RIGHTTOP" places it to the right with top edges aligned.

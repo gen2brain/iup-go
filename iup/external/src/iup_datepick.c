@@ -109,7 +109,7 @@ static int iDatePickToggleAction_CB(Ihandle* ih_toggle, int state)
 
       popover = IupPopover(calendar);
       IupSetAttributeHandle(popover, "ANCHOR", ih);
-      IupSetAttribute(popover, "POSITION", "BOTTOM");
+      IupSetAttribute(popover, "PLACEMENT", "BOTTOM");
       IupSetAttribute(popover, "ARROW", "NO");
       IupSetAttribute(popover, "AUTOHIDE", "YES");
       IupSetCallback(popover, "SHOW_CB", (Icallback)iDatePickPopoverShow_CB);

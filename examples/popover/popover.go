@@ -33,7 +33,7 @@ func main() {
 				iup.Label("Popover content here"),
 			).SetAttributes("MARGIN=10x8, GAP=4"),
 		)
-		popover.SetAttribute("POSITION", position)
+		popover.SetAttribute("PLACEMENT", position)
 		popover.SetAttribute("ARROW", "NO")
 		popover.SetAttributeHandle("ANCHOR", btn)
 		btn.SetCallback("ACTION", togglePopover(popover))
@@ -96,7 +96,7 @@ func main() {
 			createMenuItem("Exit"),
 		).SetAttributes("MARGIN=4x4, GAP=1"),
 	)
-	menuPopover.SetAttribute("POSITION", "BOTTOMLEFT")
+	menuPopover.SetAttribute("PLACEMENT", "BOTTOMLEFT")
 	menuPopover.SetAttributeHandle("ANCHOR", menuBtn)
 	menuBtn.SetCallback("ACTION", togglePopover(menuPopover))
 
@@ -121,7 +121,7 @@ func main() {
 			submitBtn,
 		).SetAttributes("MARGIN=10x10, GAP=8"),
 	)
-	formPopover.SetAttribute("POSITION", "BOTTOMRIGHT")
+	formPopover.SetAttribute("PLACEMENT", "BOTTOMRIGHT")
 	formPopover.SetAttributeHandle("ANCHOR", formBtn)
 	formBtn.SetCallback("ACTION", togglePopover(formPopover))
 
@@ -156,7 +156,7 @@ func main() {
 			selectedColor.SetAttribute("EXPAND", "HORIZONTAL"),
 		).SetAttributes("MARGIN=10x10, GAP=8"),
 	)
-	colorPopover.SetAttribute("POSITION", "RIGHTTOP")
+	colorPopover.SetAttribute("PLACEMENT", "RIGHTTOP")
 	colorPopover.SetAttribute("AUTOHIDE", "NO")
 	colorPopover.SetAttributeHandle("ANCHOR", colorBtn)
 	colorBtn.SetCallback("ACTION", togglePopover(colorPopover))
@@ -170,7 +170,7 @@ func main() {
 			iup.Label("appearing above with left edges aligned."),
 		).SetAttributes("MARGIN=10x8, GAP=4"),
 	)
-	infoPopover.SetAttribute("POSITION", "TOPLEFT")
+	infoPopover.SetAttribute("PLACEMENT", "TOPLEFT")
 	infoPopover.SetAttributeHandle("ANCHOR", infoBtn)
 	infoBtn.SetCallback("ACTION", togglePopover(infoPopover))
 
@@ -182,7 +182,7 @@ func main() {
 			iup.Label("10px gap below anchor"),
 		).SetAttributes("MARGIN=10x8, GAP=4"),
 	)
-	offsetPopover.SetAttribute("POSITION", "BOTTOM")
+	offsetPopover.SetAttribute("PLACEMENT", "BOTTOM")
 	offsetPopover.SetAttribute("OFFSETY", "10")
 	offsetPopover.SetAttributeHandle("ANCHOR", offsetBtn)
 	offsetBtn.SetCallback("ACTION", togglePopover(offsetPopover))
