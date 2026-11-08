@@ -6,6 +6,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 
 extern "C" {
 #include "iup.h"
@@ -159,10 +160,30 @@ static void winuiSetFocusToIsland(Ihandle* dialog)
   }
 }
 
+static Ihandle* winui_focus_pending = nullptr;
+
+/* a ListView focused before it is loaded stays alive after it is destroyed */
+static void winuiFocusWhenLoaded(Ihandle* ih, FrameworkElement const& fe)
+{
+  winui_focus_pending = ih;
+
+  auto token = std::make_shared<winrt::event_token>();
+  *token = fe.Loaded([ih, token](Windows::Foundation::IInspectable const& sender, RoutedEventArgs const&) {
+    auto loaded = sender.as<FrameworkElement>();
+    loaded.Loaded(*token);
+    if (winui_focus_pending != ih)
+      return;
+    winui_focus_pending = nullptr;
+    loaded.Focus(FocusState::Programmatic);
+  });
+}
+
 extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 {
   if (!ih || !ih->handle)
     return;
+
+  winui_focus_pending = nullptr;
 
   if (IupClassMatch(ih, "dialog"))
   {
@@ -184,10 +205,17 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
     iupwinuiBringWindowToForeground(reinterpret_cast<HWND>(dialog->handle));
 
   UIElement elem = winuiGetFocusableElement(ih);
-  if (elem)
-    elem.Focus(FocusState::Programmatic);  /* GotFocus updates the current focus */
-  else
+  if (!elem)
+  {
     iupSetCurrentFocus(ih);
+    return;
+  }
+
+  auto fe = elem.try_as<FrameworkElement>();
+  if (fe && !fe.IsLoaded())
+    winuiFocusWhenLoaded(ih, fe);
+  else
+    elem.Focus(FocusState::Programmatic);  /* GotFocus updates the current focus */
 }
 
 extern "C" IUP_SDK_API void iupdrvActivate(Ihandle* ih)
