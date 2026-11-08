@@ -145,9 +145,10 @@ const (
 )
 
 const (
-	GlobalNormal   = 0
-	GlobalReadOnly = 1
-	GlobalPointer  = 2
+	GlobalNormal    = 0
+	GlobalReadOnly  = 1
+	GlobalPointer   = 2
+	GlobalWriteOnly = 4
 )
 
 const (

@@ -67,6 +67,7 @@ var globalFlagName = []struct {
 }{
 	{iup.GlobalReadOnly, "READONLY"},
 	{iup.GlobalPointer, "POINTER"},
+	{iup.GlobalWriteOnly, "WRITEONLY"},
 }
 
 var driverName = []struct {

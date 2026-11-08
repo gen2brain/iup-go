@@ -33,6 +33,7 @@
 #define UNIX (M|G|C|Q|G4|E|F|HK|QM)
 #define MOB  (A|CT)
 #define R  IUPGF_READONLY
+#define WO IUPGF_WRITEONLY
 #define P  IUPGF_POINTER
 
 /* Sorted alphabetically; keep in sync when a driver adds a global. */
@@ -78,7 +79,6 @@ static const iGlobalRegEntry registry[] = {
   { "FLTKTHEME",              0,    F },
   { "FLTKVERSION",            R,    F },
   { "FONTLIST",               R,    ALL },
-  { "MONOSPACEFONTLIST",      R,    ALL },
   { "FULLSIZE",               R,    ALL },
   { "GLOBALLAYOUTRESIZEKEY",  0,    ALL },
   { "GLOBALMENU",             0,    G },
@@ -90,6 +90,7 @@ static const iGlobalRegEntry registry[] = {
   { "GSKRENDERER",            0,    G4 },
   { "GTKDEVVERSION",          R,    G|G4 },
   { "GTKVERSION",             R,    G|G4 },
+  { "HAPTIC",                 WO,   A|CT },
   { "HELPAPP",                0,    M|G|G4|E|F|HK },
   { "HINSTANCE",              R|P,  W },
   { "ICON",                   0,    ALL },
@@ -98,9 +99,10 @@ static const iGlobalRegEntry registry[] = {
   { "IMAGESTOCKAUTOSCALE",    0,    ALL },
   { "IMAGESTOCKSIZE",         0,    ALL },
   { "INPUTCALLBACKS",         0,    W|M|G|C|Q|QM|G4|E|WU|F|A|HK },
-  { "KEY",                    R,    ALL },
-  { "KEYPRESS",               R,    ALL },
-  { "KEYRELEASE",             R,    ALL },
+  { "KEEPAWAKE",              0,    ALL },
+  { "KEY",                    WO,   ALL },
+  { "KEYPRESS",               WO,   ALL },
+  { "KEYRELEASE",             WO,   ALL },
   { "LANGUAGE",               0,    ALL },
   { "LASTERROR",              0,    W|WU },
   { "LINKFGCOLOR",            0,    ALL },
@@ -110,9 +112,12 @@ static const iGlobalRegEntry registry[] = {
   { "MODKEYSTATE",            R,    ALL },
   { "MONITORSCOUNT",          R,    W|G|C|Q|QM|G4|E|WU|F|A|CT|HK|WS },
   { "MONITORSINFO",           R,    W|G|C|Q|QM|G4|E|WU|F|A|CT|HK|WS },
+  { "MONOSPACEFONTLIST",      R,    ALL },
   { "MOTIFNUMBER",            R,    M },
   { "MOTIFVERSION",           R,    M },
-  { "MOUSEBUTTON",            R,    ALL },
+  { "MOUSEBUTTON",            WO,   ALL },
+  { "NETWORK",                0,    A|CT },
+  { "NETWORKHANDLE",          R,    A|CT },
   { "OVERLAYSCROLLBAR",       0,    G|G4 },
   { "PARENTDIALOG",           0,    ALL },
   { "PROCESSWINDOWSGHOSTING", 0,    W },
@@ -120,6 +125,7 @@ static const iGlobalRegEntry registry[] = {
   { "QTDEVVERSION",           R,    Q|QM },
   { "QTSTYLE",                0,    Q|QM },
   { "QTVERSION",              R,    Q|QM },
+  { "RESOURCEDIR",            R,    ALL },
   { "SANDBOX",                R,    M|G|Q|QM|G4|E|F },
   { "SB_BGCOLOR",             0,    M|G|G4 },
   { "SCREENDEPTH",            R,    ALL },

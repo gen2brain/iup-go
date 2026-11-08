@@ -14,11 +14,12 @@ Returns the registered metadata of a global attribute: flag bits and the set of 
 
 ### Flags
 
-| Flag           | Value | Meaning                                                                    |
-|----------------|-------|----------------------------------------------------------------------------|
-| IUPGF_NORMAL   | 0     | normal read/write string global                                            |
-| IUPGF_READONLY | 1     | cannot be set                                                              |
-| IUPGF_POINTER  | 2     | value is an opaque pointer (returned by IupGetGlobal as a string of bytes) |
+| Flag            | Value | Meaning                                                                    |
+|-----------------|-------|----------------------------------------------------------------------------|
+| IUPGF_NORMAL    | 0     | normal read/write string global                                            |
+| IUPGF_READONLY  | 1     | cannot be set                                                              |
+| IUPGF_POINTER   | 2     | value is an opaque pointer (returned by IupGetGlobal as a string of bytes) |
+| IUPGF_WRITEONLY | 4     | cannot be read                                                             |
 
 ### Drivers
 
