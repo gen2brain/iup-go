@@ -18,7 +18,7 @@ var (
 	iupGLPalette        func(ih uintptr, index int32, r, g, b float32)
 	iupGLUseFont        func(ih uintptr, first, count, listBase int32)
 	iupGLWait           func(gl int32)
-	iupGLGetProcAddress func(name string) uintptr
+	iupGLGetProcAddress func(name string) unsafe.Pointer
 )
 
 func init() {
@@ -63,5 +63,5 @@ func GLUseFont(ih Ihandle, first, count, listBase int) {
 func GLWait(gl int) { iupGLWait(int32(gl)) }
 
 func GLGetProcAddress(name string) unsafe.Pointer {
-	return unsafe.Pointer(iupGLGetProcAddress(name))
+	return iupGLGetProcAddress(name)
 }

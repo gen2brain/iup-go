@@ -5,6 +5,7 @@ package iup
 import (
 	"strconv"
 	"syscall/js"
+	"unsafe"
 )
 
 // GLCanvasOpen must be called after Open, so that the control can be used.
@@ -88,4 +89,11 @@ func GLCanvasElement(ih Ihandle) js.Value {
 		}
 	}
 	return js.Null()
+}
+
+// GLGetProcAddress returns the address of the named OpenGL function, or nil. Call GLMakeCurrent first.
+//
+// https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
+func GLGetProcAddress(name string) unsafe.Pointer {
+	return nil
 }

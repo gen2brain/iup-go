@@ -956,8 +956,7 @@ func setDblclickFunc(ih Ihandle, f DblclickFunc) {
 //--------------------
 
 // EditFunc for EDIT_CB callback.
-// Action generated when the user double click an item.
-type EditFunc func(ih Ihandle, item int, text string) int
+type EditFunc func(ih Ihandle, c int, newValue string) int
 
 //export goIupEditCB
 func goIupEditCB(ih unsafe.Pointer, item C.int, text unsafe.Pointer) C.int {

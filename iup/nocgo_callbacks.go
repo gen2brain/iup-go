@@ -1404,7 +1404,7 @@ func setMultiselectFunc(ih Ihandle, f MultiselectFunc) {
 	iupSetCallback(uintptr(ih), "MULTISELECT_CB", multiselectCB)
 }
 
-type EditFunc func(ih Ihandle, item int, text string) int
+type EditFunc func(ih Ihandle, c int, newValue string) int
 
 var editCB = purego.NewCallback(func(ih uintptr, item int32, text uintptr) int {
 	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_EDIT_CB").(EditFunc); ok {

@@ -26,8 +26,8 @@ func Destroy(ih Ihandle) {
 	iupDestroy(uintptr(ih))
 }
 
-func SetHandle(name string, ih Ihandle) {
-	iupSetHandle(name, uintptr(ih))
+func SetHandle(name string, ih Ihandle) Ihandle {
+	return mkih(iupSetHandle(name, uintptr(ih)))
 }
 
 func GetHandle(name string) Ihandle {

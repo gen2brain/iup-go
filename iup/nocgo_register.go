@@ -98,7 +98,7 @@ var (
 	iupRefresh   func(ih uintptr)
 	iupUpdate    func(ih uintptr)
 	iupDestroy   func(ih uintptr)
-	iupSetHandle func(name string, ih uintptr)
+	iupSetHandle func(name string, ih uintptr) uintptr
 	iupGetHandle func(name string) uintptr
 
 	iupAnimatedLabel          func(anim uintptr) uintptr
