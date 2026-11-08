@@ -115,16 +115,31 @@ static void winuiTextSetScrollBarArrowCursors(DependencyObject parent)
   }
 }
 
+static void winuiTextMarkProgramValue(Ihandle* ih)
+{
+  iupAttribSetStr(ih, "_IUPWINUI_PROGRAM_VALUE", IupGetAttribute(ih, "VALUE"));
+}
+
+static int winuiTextIsProgramValue(Ihandle* ih)
+{
+  char* program_value = iupAttribGet(ih, "_IUPWINUI_PROGRAM_VALUE");
+  if (!program_value)
+    return 0;
+
+  if (iupStrEqual(program_value, IupGetAttribute(ih, "VALUE")))
+    return 1;
+
+  iupAttribSet(ih, "_IUPWINUI_PROGRAM_VALUE", nullptr);
+  return 0;
+}
+
 static void winuiTextCallValueChanged(Ihandle* ih)
 {
   if (ih->data->disable_callbacks)
     return;
 
-  if (iupAttribGet(ih, "_IUPWINUI_IGNORE_VALUECHANGED"))
-  {
-    iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", nullptr);
+  if (winuiTextIsProgramValue(ih))
     return;
-  }
 
   IFn cb = static_cast<IFn>(IupGetCallback(ih, "VALUECHANGED_CB"));
   if (cb)
@@ -168,10 +183,10 @@ static void winuiTextBoxApplyCaseFilter(Ihandle* ih)
     if (dst != src)
     {
       ih->data->disable_callbacks = 1;
-      iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
       range.SetText(Microsoft::UI::Text::TextSetOptions::None, hstring(dst));
       sel.SetRange(start, end);
       ih->data->disable_callbacks = 0;
+      winuiTextMarkProgramValue(ih);
     }
   }
   else
@@ -189,22 +204,19 @@ static void winuiTextBoxApplyCaseFilter(Ihandle* ih)
     if (dst != src)
     {
       ih->data->disable_callbacks = 1;
-      iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
       tb.Text(hstring(dst));
       tb.Select(start, len);
       aux->savedText = dst;
       ih->data->disable_callbacks = 0;
+      winuiTextMarkProgramValue(ih);
     }
   }
 }
 
 static void winuiTextBoxTextChanged(Ihandle* ih)
 {
-  if (ih->data->disable_callbacks)
-  {
-    iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", nullptr);
+  if (ih->data->disable_callbacks || winuiTextIsProgramValue(ih))
     return;
-  }
 
   winuiTextBoxApplyCaseFilter(ih);
   winuiTextCallValueChanged(ih);
@@ -373,12 +385,12 @@ static void winuiTextBeforeTextChanging(Ihandle* ih, TextBox const& sender, Text
           std::wstring text(a->savedText);
           text.replace(insertPos, replaced, 1, static_cast<wchar_t>(replaceCh));
 
-          iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
           ih->data->disable_callbacks = 1;
           tb.Text(hstring(text));
           tb.SelectionStart(insertPos + 1);
           tb.SelectionLength(0);
           ih->data->disable_callbacks = 0;
+          winuiTextMarkProgramValue(ih);
 
           a->savedText = text;
         });
@@ -397,17 +409,8 @@ static void winuiTextSpinValueChanged(Ihandle* ih, NumberBox const& nb, NumberBo
 {
   (void)nb;
 
-  if (ih->data->disable_callbacks)
-  {
-    iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", nullptr);
+  if (ih->data->disable_callbacks || winuiTextIsProgramValue(ih))
     return;
-  }
-
-  if (iupAttribGet(ih, "_IUPWINUI_IGNORE_VALUECHANGED"))
-  {
-    iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", nullptr);
-    return;
-  }
 
   auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
 
@@ -526,7 +529,6 @@ static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
   if (!aux)
     return 0;
 
-  iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
   ih->data->disable_callbacks = 1;
 
   if (aux->isSpin)
@@ -580,6 +582,7 @@ static int winuiTextSetValueAttrib(Ihandle* ih, const char* value)
   }
 
   ih->data->disable_callbacks = 0;
+  winuiTextMarkProgramValue(ih);
 
   return 0;
 }
@@ -650,7 +653,6 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
   if (!value)
     value = "";
 
-  iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
   ih->data->disable_callbacks = 1;
 
   if (aux->isPassword)
@@ -731,6 +733,7 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
   }
 
   ih->data->disable_callbacks = 0;
+  winuiTextMarkProgramValue(ih);
   return 0;
 }
 
@@ -1673,10 +1676,10 @@ static int winuiTextSetSpinValueAttrib(Ihandle* ih, const char* value)
   auto nb = winuiGetHandle<NumberBox>(ih);
   if (nb)
   {
-    iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
     ih->data->disable_callbacks = 1;
     nb.Value(static_cast<double>(val));
     ih->data->disable_callbacks = 0;
+    winuiTextMarkProgramValue(ih);
   }
 
   return 1;
@@ -2782,7 +2785,6 @@ static int winuiTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
         std::wstring fullText(tb.Text().c_str());
         std::wstring replacement = winuiTextToControl(ih, value);
         fullText.replace(start, len, replacement);
-        iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
         tb.Text(hstring(fullText));
         tb.Select(start + static_cast<int>(replacement.size()), 0);
         aux->savedText = fullText;
@@ -2791,6 +2793,7 @@ static int winuiTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
   }
 
   ih->data->disable_callbacks = 0;
+  winuiTextMarkProgramValue(ih);
   return 0;
 }
 
@@ -3181,7 +3184,6 @@ static int winuiTextSetInsertAttrib(Ihandle* ih, const char* value)
       std::wstring fullText(tb.Text().c_str());
       std::wstring insertText = winuiTextToControl(ih, value);
       fullText.replace(pos, len, insertText);
-      iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
       tb.Text(hstring(fullText));
       tb.Select(pos + static_cast<int>(insertText.size()), 0);
       aux->savedText = fullText;
@@ -3189,6 +3191,7 @@ static int winuiTextSetInsertAttrib(Ihandle* ih, const char* value)
   }
 
   ih->data->disable_callbacks = 0;
+  winuiTextMarkProgramValue(ih);
   return 0;
 }
 
@@ -3402,13 +3405,13 @@ static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
           std::wstring selected(text.c_str() + start, len);
           winuiTextCopyToClipboard(selected.c_str());
           ih->data->disable_callbacks = 1;
-          iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
           std::wstring fullText(text.c_str());
           fullText.erase(start, len);
           tb.Text(hstring(fullText));
           tb.Select(start, 0);
           aux->savedText = fullText;
           ih->data->disable_callbacks = 0;
+          winuiTextMarkProgramValue(ih);
         }
       }
     }
@@ -3434,12 +3437,12 @@ static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
           std::wstring fullText(tb.Text().c_str());
           std::wstring paste(pasteText);
           ih->data->disable_callbacks = 1;
-          iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
           fullText.replace(start, len, paste);
           tb.Text(hstring(fullText));
           tb.Select(start + static_cast<int>(paste.size()), 0);
           aux->savedText = fullText;
           ih->data->disable_callbacks = 0;
+          winuiTextMarkProgramValue(ih);
           free(pasteText);
         }
       }
@@ -3463,13 +3466,13 @@ static int winuiTextSetClipboardAttrib(Ihandle* ih, const char* value)
         if (len > 0)
         {
           ih->data->disable_callbacks = 1;
-          iupAttribSet(ih, "_IUPWINUI_IGNORE_VALUECHANGED", "1");
           std::wstring fullText(tb.Text().c_str());
           fullText.erase(start, len);
           tb.Text(hstring(fullText));
           tb.Select(start, 0);
           aux->savedText = fullText;
           ih->data->disable_callbacks = 0;
+          winuiTextMarkProgramValue(ih);
         }
       }
     }
