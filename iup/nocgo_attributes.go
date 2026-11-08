@@ -99,7 +99,7 @@ func ResetAttribute(ih Ihandle, name string) {
 	iupResetAttribute(uintptr(ih), name)
 }
 
-func SetAtt(ih Ihandle, handle_name string, args ...string) Ihandle {
+func SetAtt(ih Ihandle, handleName string, args ...string) Ihandle {
 	attrs := bytes.NewBufferString("")
 	for i := 0; i < len(args); i += 2 {
 		if i > 0 {
@@ -109,6 +109,9 @@ func SetAtt(ih Ihandle, handle_name string, args ...string) Ihandle {
 	}
 
 	SetAttributes(ih, attrs.String())
+	if handleName != "" {
+		SetHandle(handleName, ih)
+	}
 
 	return ih
 }
@@ -186,7 +189,7 @@ func attribIsNotString(ih Ihandle, name string) bool {
 		return false
 	}
 
-	return flags&AttribNoString != 0
+	return flags&AF_NO_STRING != 0
 }
 
 func GetAllAttributes(ih Ihandle) (ret []string) {
