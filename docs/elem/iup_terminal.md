@@ -67,18 +67,18 @@ Changing it, or FONTFACE, FONTSIZE and FONTSTYLE, recomputes the number of colum
 Bold and italic text is drawn with the corresponding style of the same font.
 Box drawing characters (U+2500 to U+257F) and block elements (U+2580 to U+259F) are drawn by the control to fill the cell, not taken from the font.
 
-**SELECTEDTEXT** (non-inheritable): the currently selected text, in UTF-8, or NULL when there is
-no selection. Lines are separated by "\n"; a line wrapped by the terminal is joined without a separator. Set to NULL to clear the selection.
+**SELECTEDTEXT** (read-only) (non-inheritable): the currently selected text, in UTF-8, or NULL when there is
+no selection. Lines are separated by "\n"; a line wrapped by the terminal is joined without a separator.
+
+**SELECTION** (write-only) (non-inheritable): "ALL" selects the whole buffer, including the history; "NONE" clears the selection.
 
 **AUTOCOPY** (non-inheritable): copy the selection to the clipboard when the mouse button is
 released. Can be YES or NO. Default: NO.
 
-**COPYSELECTION** (write-only) (non-inheritable): copy the selection to the clipboard.
+**CLIPBOARD** (write-only) (non-inheritable): clipboard operations. "COPY" copies the selection to the clipboard; "PASTE" sends the clipboard text to the application as if it were typed.
 
-**PASTE** (write-only) (non-inheritable): send text to the application as if it were typed.
-If the value is NULL the clipboard text is used. When the application enabled bracketed paste the text is wrapped in the paste markers.
-
-**SELECTALL** (write-only) (non-inheritable): select the whole buffer, including the history.
+**INSERT** (write-only) (non-inheritable): sends the text to the application as if it were pasted.
+When the application enabled bracketed paste, pasted and inserted text is wrapped in the paste markers.
 
 **RESET** (write-only) (non-inheritable): fully resets the terminal and clears the history.
 
@@ -101,7 +101,7 @@ Not supported in iOS and WebAssembly.
 
 **PTYERROR** (read-only) (non-inheritable): description of the last EXEC failure, or NULL.
 
-**PTYSUPPORT** (read-only) (non-inheritable): "YES" when the platform can run EXEC.
+**AVAILABLE** (read-only) (non-inheritable): "YES" when the platform can run EXEC.
 In Windows it is "NO" before Windows 10 version 1809.
 
 [EXPAND](../attrib/iup_expand.md): the default is "YES".
@@ -123,7 +123,7 @@ The bytes are encoded in xterm keyboard format.
 **bytes**: encoded input bytes. Not NUL terminated.\
 **len**: number of bytes.
 
-**TITLE_CB**: action generated when the application sets the window title (OSC 0 or OSC 2).
+**TITLECHANGED_CB**: action generated when the application sets the window title (OSC 0 or OSC 2).
 
     int function(Ihandle *ih, char *title);
 
@@ -143,7 +143,7 @@ The bytes are encoded in xterm keyboard format.
 **ih**: identifier of the element that activated the event.\
 **columns, lines**: new size of the grid in cells.
 
-**EXIT_CB**: action generated when the EXEC command terminates.
+**EXECEXIT_CB**: action generated when the EXEC command terminates.
 
     int function(Ihandle *ih, int status);
 

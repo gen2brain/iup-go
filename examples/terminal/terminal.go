@@ -100,7 +100,7 @@ func main() {
 	}
 
 	run := btn("Run Shell", "Start a shell on a pseudo terminal", execCb)
-	if !iup.GetBool(term, "PTYSUPPORT") {
+	if !iup.GetBool(term, "AVAILABLE") {
 		run.SetAttributes("ACTIVE=NO").SetAttribute("TIP", "No pseudo terminal on this platform")
 	}
 
@@ -128,11 +128,11 @@ func main() {
 	demos := group(btn("Colors", "Write an ANSI color chart", colorsCb),
 		btn("Boxes", "Write box drawing characters", boxesCb))
 	clipboard := group(btn("Copy", "Copy the selection", func(iup.Ihandle) int {
-		iup.GetHandle("terminal").SetAttribute("COPYSELECTION", "YES")
+		iup.GetHandle("terminal").SetAttribute("CLIPBOARD", "COPY")
 		return iup.DEFAULT
 	}),
 		btn("Paste", "Paste the clipboard", func(iup.Ihandle) int {
-			iup.GetHandle("terminal").SetAttribute("PASTE", "YES")
+			iup.GetHandle("terminal").SetAttribute("CLIPBOARD", "PASTE")
 			return iup.DEFAULT
 		}),
 		btn("Clear", "Clear the screen", func(iup.Ihandle) int {
@@ -153,12 +153,12 @@ func main() {
 		status(ih)
 		return iup.DEFAULT
 	}))
-	term.SetCallback("TITLE_CB", iup.TerminalTitleFunc(func(ih iup.Ihandle, title string) int {
+	term.SetCallback("TITLECHANGED_CB", iup.TerminalTitleChangedFunc(func(ih iup.Ihandle, title string) int {
 		ih.SetAttribute("APPTITLE", title)
 		status(ih)
 		return iup.DEFAULT
 	}))
-	term.SetCallback("EXIT_CB", iup.TerminalExitFunc(func(ih iup.Ihandle, code int) int {
+	term.SetCallback("EXECEXIT_CB", iup.TerminalExecExitFunc(func(ih iup.Ihandle, code int) int {
 		write(fmt.Sprintf("\r\n\033[33m[command exited with %d]\033[0m\r\n", code))
 		status(ih)
 		return iup.DEFAULT
