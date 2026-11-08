@@ -362,9 +362,9 @@ Not supported in Android and iOS.
 
 [DROPFILES_CB](../call/iup_dropfiles_cb.md): Action generated when one or more files are dropped in the dialog.
 
-**CUSTOMFRAME_CB** [Windows Only]: Called when the dialog must be redrawn.
+**CUSTOMFRAMEDRAW_CB** [Windows Only]: Called when the dialog must be redrawn.
 Although it is designed for drawing the frame elements, all the dialog must be painted.
-Works only when CUSTOMFRAME or CUSTOMFRAMEEX is defined.
+Works only when CUSTOMFRAME or CUSTOMFRAMEDRAW is defined.
 The dialog can be used just like an IupCanvas to draw its elements, the **HDC_WMPAINT** and **CLIPRECT** attributes are defined during the callback.
 For mouse callbacks use the same callbacks as **IupCanvas**, such as [BUTTON_CB](../call/iup_button_cb.md) and [MOTION_CB](../call/iup_motion_cb.md).
 
@@ -373,7 +373,7 @@ For mouse callbacks use the same callbacks as **IupCanvas**, such as [BUTTON_CB]
 > **ih**: identifier of the element that activated the event.
 
 **CUSTOMFRAMEACTIVATE_CB** [Windows Only]: Called when the dialog active state is changed (for instance, the user Alt+Tab to another application, or clicked in another window).
-Works only when CUSTOMFRAME or CUSTOMFRAMEEX is defined.
+Works only when CUSTOMFRAME or CUSTOMFRAMEDRAW is defined.
 
     int function(Ihandle *ih, int active);
 
