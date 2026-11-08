@@ -919,7 +919,6 @@ Iclass* iupWebBrowserNewClass(void)
   iupClassRegisterAttribute(ic, "BACKCOLOR",      androidWebBrowserGetBackColorAttrib, androidWebBrowserSetBackColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "COMMAND",        NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COMMANDSHOWUI",  NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMMANDSTATE",   androidWebBrowserGetCommandStateAttrib,   NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMMANDENABLED", androidWebBrowserGetCommandEnabledAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COMMANDVALUE",   androidWebBrowserGetCommandValueAttrib,   NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
