@@ -1,8 +1,8 @@
 on: [push, pull_request]
 name: Build
 env:
-  CGO_CFLAGS: -Werror
-  CGO_CXXFLAGS: -Werror
+  CGO_CFLAGS: -O2 -g -Werror
+  CGO_CXXFLAGS: -O2 -g -Werror
 jobs:
   linux-gtk3:
     runs-on: ubuntu-latest
@@ -14,9 +14,15 @@ jobs:
       with:
         go-version: stable
     - name: Install dependencies
-      run: sudo apt-get update -y && sudo apt-get install -y libgtk-3-dev
+      run: sudo apt-get update -y && sudo apt-get install -y libgtk-3-dev xvfb
     - name: Build
       run: go build
+      working-directory: iup
+    - name: Vet
+      run: go vet
+      working-directory: iup
+    - name: Test
+      run: xvfb-run -a go test
       working-directory: iup
 
   linux-gtk3-ctrl:
@@ -679,6 +685,43 @@ jobs:
       run: |
         emcmake cmake -S iup/external -B build/wasm -DIUP_BACKEND=wasm -DIUP_BUILD_GL=ON -DIUP_BUILD_WEB=ON -DIUP_BUILD_CTRL=ON -DIUP_BUILD_PLOT=ON -DIUP_BUILD_MEDIA=ON
         cmake --build build/wasm --parallel
+
+  linux-purego:
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: 0
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Vet
+      run: go vet -tags ctrl,plot,web,gl,media
+      working-directory: iup
+    - name: Build examples
+      run: |
+        GOOS=linux go build -tags ctrl,plot,web,media ./...
+        GOOS=windows go build -tags ctrl,plot,web,media ./...
+        GOOS=darwin go build -tags ctrl,plot,web,media ./...
+      working-directory: examples
+
+  iupkg:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: Vet
+      run: go vet ./...
+      working-directory: cmd/iupkg
+    - name: Test
+      run: go test ./...
+      working-directory: cmd/iupkg
 
   linux-cmake:
     runs-on: ubuntu-latest
