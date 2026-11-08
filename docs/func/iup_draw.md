@@ -155,16 +155,16 @@ Draws a quadratic Bezier curve from (x1,y1) to (x3,y3) with control point (x2,y2
 
 Gradient colors are passed as parameters, not controlled by DRAWCOLOR. Both colors also accept the alpha component in the "R G B A" format for translucent gradients.
 
-    void IupDrawLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char* color1, const char* color2);
+    void IupDrawLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, double angle, const char* color1, const char* color2);
 
 Draws a linear gradient fill in the given rectangle.
-The angle is in degrees and defines the gradient direction.
+The angle is in degrees and defines the gradient direction, counterclockwise relative to the 3 o'clock position like the other angles of the drawing functions: 0 is left to right, 90 is bottom to top and 270 is top to bottom.
 
     void IupDrawRadialGradient(Ihandle* ih, int cx, int cy, int radius, const char* colorCenter, const char* colorEdge);
 
 Draws a radial gradient fill centered at (cx, cy) with the given radius.
 
-    void IupDrawLinearGradientStops(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count);
+    void IupDrawLinearGradientStops(Ihandle* ih, int x1, int y1, int x2, int y2, double angle, const char** colors, const float* offsets, int count);
     void IupDrawRadialGradientStops(Ihandle* ih, int cx, int cy, int radius, const char** colors, const float* offsets, int count);
 
 Same as the two-color functions with **count** color stops, from 2 to 64. **offsets** is NULL or an array of **count** ascending positions in the 0-1 range. NULL uses evenly spaced stops. Colors accept an alpha component.
@@ -220,7 +220,7 @@ Sets the current path as the clipping region, replacing the previous clipping re
 
 Sets a solid "R G B [A]" source for path drawing. Also sets **DRAWCOLOR**.
 
-    void IupDrawSetSourceLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, float angle, const char** colors, const float* offsets, int count);
+    void IupDrawSetSourceLinearGradient(Ihandle* ih, int x1, int y1, int x2, int y2, double angle, const char** colors, const float* offsets, int count);
     void IupDrawSetSourceRadialGradient(Ihandle* ih, int cx, int cy, int radius, const char** colors, const float* offsets, int count);
 
 Sets a linear or radial gradient source for path drawing. The gradient geometry, colors, offsets and count have the same meaning as IupDrawLinearGradientStops and IupDrawRadialGradientStops.
@@ -300,7 +300,7 @@ The **DRAWBGCOLOR** can be used to control the inactive state background color o
 w and h are optional and can be -1 or 0, then the source size will be used, and no zoom will be performed.
 For an image with [SCALE](../elem/iup_image.md) the default size is the size the image occupies, as returned by **IupDrawGetImageInfo**.
 
-The **DRAWIMAGESRCRECT** attribute selects a source sub-rectangle in the format "X Y W H" (in image pixels), so a region of the image can be drawn without creating a new image. Default: NULL (whole image).
+The **DRAWIMAGESRCRECT** attribute selects a source sub-rectangle in the format "x1 y1 x2 y2" (in image pixels, inclusive), so a region of the image can be drawn without creating a new image. Default: NULL (whole image).
 
 The **DRAWIMAGETINT** attribute is a color "R G B [A]" that replaces the image color keeping its alpha channel, recoloring a monochrome image while preserving its shape. The tint alpha component is multiplied into the image alpha. Default: NULL (no tint).
 
