@@ -168,6 +168,8 @@ static int qtDatePickSetValueAttrib(Ihandle* ih, const char* value)
   if (!datepick)
     return 0;
 
+  bool blocked = datepick->blockSignals(true);
+
   if (iupStrEqualNoCase(value, "TODAY"))
   {
     datepick->setDate(QDate::currentDate());
@@ -187,6 +189,8 @@ static int qtDatePickSetValueAttrib(Ihandle* ih, const char* value)
         datepick->setDate(date);
     }
   }
+
+  datepick->blockSignals(blocked);
 
   return 0;
 }
