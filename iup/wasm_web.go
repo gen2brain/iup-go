@@ -5,8 +5,8 @@ package iup
 // WebBrowserOpen must be called after Open, so that the control can be used.
 //
 // https://gen2brain.github.io/iup-go/ctrl/iup_web.html
-func WebBrowserOpen() {
-	ccall("IupWebBrowserOpen", "number", nil, nil)
+func WebBrowserOpen() int {
+	return ccall("IupWebBrowserOpen", "number", nil, nil).Int()
 }
 
 // WebBrowser creates a web browser control. Under WebAssembly it is an HTML <iframe>.

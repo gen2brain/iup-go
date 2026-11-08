@@ -5,8 +5,8 @@ package iup
 // MediaOpen must be called after Open, so that the media elements can be used.
 //
 // https://gen2brain.github.io/iup-go/ctrl/iup_audio.html
-func MediaOpen() {
-	ccall("IupMediaOpen", "number", nil, nil)
+func MediaOpen() int {
+	return ccall("IupMediaOpen", "number", nil, nil).Int()
 }
 
 // Audio creates an audio player.

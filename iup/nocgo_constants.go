@@ -128,44 +128,44 @@ const (
 )
 
 const (
-	AttribDefault        = 0
-	AttribNoInherit      = 1
-	AttribNoDefaultValue = 2
-	AttribNoString       = 4
-	AttribNotMapped      = 8
-	AttribHasID          = 16
-	AttribReadOnly       = 32
-	AttribWriteOnly      = 64
-	AttribHasID2         = 128
-	AttribCallback       = 256
-	AttribNoSave         = 512
-	AttribNotSupported   = 1024
-	AttribIhandleName    = 2048
-	AttribIhandle        = 4096
+	AF_DEFAULT         = 0
+	AF_NO_INHERIT      = 1
+	AF_NO_DEFAULTVALUE = 2
+	AF_NO_STRING       = 4
+	AF_NOT_MAPPED      = 8
+	AF_HAS_ID          = 16
+	AF_READONLY        = 32
+	AF_WRITEONLY       = 64
+	AF_HAS_ID2         = 128
+	AF_CALLBACK        = 256
+	AF_NO_SAVE         = 512
+	AF_NOT_SUPPORTED   = 1024
+	AF_IHANDLENAME     = 2048
+	AF_IHANDLE         = 4096
 )
 
 const (
-	GlobalNormal    = 0
-	GlobalReadOnly  = 1
-	GlobalPointer   = 2
-	GlobalWriteOnly = 4
+	GF_NORMAL    = 0
+	GF_READONLY  = 1
+	GF_POINTER   = 2
+	GF_WRITEONLY = 4
 )
 
 const (
-	DriverWin        = 1
-	DriverMotif      = 2
-	DriverGTK        = 4
-	DriverCocoa      = 8
-	DriverQt         = 16
-	DriverGTK4       = 32
-	DriverEFL        = 64
-	DriverWinUI      = 128
-	DriverFLTK       = 256
-	DriverAndroid    = 512
-	DriverCocoaTouch = 1024
-	DriverHaiku      = 2048
-	DriverWasm       = 4096
-	DriverQML        = 8192
+	DRV_WIN        = 1
+	DRV_MOTIF      = 2
+	DRV_GTK        = 4
+	DRV_COCOA      = 8
+	DRV_QT         = 16
+	DRV_GTK4       = 32
+	DRV_EFL        = 64
+	DRV_WINUI      = 128
+	DRV_FLTK       = 256
+	DRV_ANDROID    = 512
+	DRV_COCOATOUCH = 1024
+	DRV_HAIKU      = 2048
+	DRV_WASM       = 4096
+	DRV_QML        = 8192
 )
 
 // DrawPathFill fill rules

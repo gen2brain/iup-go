@@ -5,7 +5,7 @@ package iup
 import "github.com/ebitengine/purego"
 
 var (
-	iupMediaOpen  func()
+	iupMediaOpen  func() int32
 	iupAudio      func() uintptr
 	iupVideo      func() uintptr
 	iupCamera     func() uintptr
@@ -28,8 +28,8 @@ func init() {
 // MediaOpen must be called after Open, so that the media elements can be used.
 //
 // https://gen2brain.github.io/iup-go/ctrl/iup_audio.html
-func MediaOpen() {
-	iupMediaOpen()
+func MediaOpen() int {
+	return int(iupMediaOpen())
 }
 
 // Audio creates an audio player.

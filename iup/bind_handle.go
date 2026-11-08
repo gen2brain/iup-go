@@ -264,14 +264,14 @@ func (ih Ihandle) GetRGB(name string, ids ...interface{}) (r, g, b uint8) {
 // Returns true for "YES", "ON", "TRUE", "1" (case insensitive), false otherwise.
 //
 // https://gen2brain.github.io/iup-go/func/iup_getattribute.html
-func (ih Ihandle) GetBool(name string, ids ...interface{}) bool {
+func (ih Ihandle) GetBool(name string, ids ...int) bool {
 	switch len(ids) {
 	case 0:
 		return GetBool(ih, name)
 	case 1:
-		return GetBoolId(ih, name, ids[0].(int))
+		return GetBoolId(ih, name, ids[0])
 	case 2:
-		return GetBoolId2(ih, name, ids[0].(int), ids[1].(int))
+		return GetBoolId2(ih, name, ids[0], ids[1])
 	default:
 		panic("bad arguments passed to GetBool")
 	}
@@ -280,21 +280,21 @@ func (ih Ihandle) GetBool(name string, ids ...interface{}) bool {
 // SetBool sets a boolean attribute value. Writes "YES" or "NO".
 //
 // https://gen2brain.github.io/iup-go/func/iup_setattribute.html
-func (ih Ihandle) SetBool(name string, value bool, ids ...interface{}) Ihandle {
+func (ih Ihandle) SetBool(name string, value bool, ids ...int) Ihandle {
 	switch len(ids) {
 	case 0:
 		SetBool(ih, name, value)
 	case 1:
-		SetBoolId(ih, name, ids[0].(int), value)
+		SetBoolId(ih, name, ids[0], value)
 	case 2:
-		SetBoolId2(ih, name, ids[0].(int), ids[1].(int), value)
+		SetBoolId2(ih, name, ids[0], ids[1], value)
 	default:
 		panic("bad arguments passed to SetBool")
 	}
 	return ih
 }
 
-// GetPtr .
+// GetPtr returns an attribute as a pointer. Optional ids select an id or a (lin, col) position.
 func (ih Ihandle) GetPtr(name string, ids ...interface{}) uintptr {
 	switch len(ids) {
 	case 0:
@@ -308,7 +308,7 @@ func (ih Ihandle) GetPtr(name string, ids ...interface{}) uintptr {
 	}
 }
 
-// GetPtr .
+// GetPtr returns an attribute as a pointer.
 func GetPtr(ih Ihandle, name string) uintptr {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -316,7 +316,7 @@ func GetPtr(ih Ihandle, name string) uintptr {
 	return uintptr(unsafe.Pointer(C.IupGetAttribute(ih.ptr(), cName)))
 }
 
-// GetPtrId .
+// GetPtrId returns an attribute with an id as a pointer.
 func GetPtrId(ih Ihandle, name string, id int) uintptr {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
@@ -324,7 +324,7 @@ func GetPtrId(ih Ihandle, name string, id int) uintptr {
 	return uintptr(unsafe.Pointer(C.IupGetAttributeId(ih.ptr(), cName, C.int(id))))
 }
 
-// GetPtrId2 .
+// GetPtrId2 returns an attribute with a (lin, col) position as a pointer.
 func GetPtrId2(ih Ihandle, name string, lin, col int) uintptr {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))

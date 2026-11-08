@@ -5,7 +5,7 @@ package iup
 import "github.com/ebitengine/purego"
 
 var (
-	iupWebBrowserOpen func()
+	iupWebBrowserOpen func() int32
 	iupWebBrowser     func() uintptr
 )
 
@@ -19,6 +19,6 @@ func init() {
 	purego.RegisterLibFunc(&iupWebBrowser, lib, "IupWebBrowser")
 }
 
-func WebBrowserOpen() { iupWebBrowserOpen() }
+func WebBrowserOpen() int { return int(iupWebBrowserOpen()) }
 
 func WebBrowser() Ihandle { return mkih(iupWebBrowser()) }

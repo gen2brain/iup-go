@@ -207,14 +207,6 @@ func GetAllFunctions() (names []string) {
 	return
 }
 
-type ClassInfo struct {
-	Parent        string
-	NativeType    string
-	ChildType     int
-	IsInteractive bool
-	HasAttribID   int
-}
-
 func GetClassInfo(className string) (info ClassInfo, ok bool) {
 	var parent, nativeType uintptr
 	var childType, isInteractive, hasAttribID int32
@@ -230,12 +222,7 @@ func GetClassInfo(className string) (info ClassInfo, ok bool) {
 	return
 }
 
-type ClassConstructor struct {
-	Format     string
-	FormatAttr string
-}
-
-func GetClassConstructor(className string) (info ClassConstructor, ok bool) {
+func GetClassConstructor(className string) (info ClassConstructorInfo, ok bool) {
 	var format, formatAttr uintptr
 	if iupGetClassConstructor(className, &format, &formatAttr) < 0 {
 		return
@@ -244,12 +231,6 @@ func GetClassConstructor(className string) (info ClassConstructor, ok bool) {
 	info.FormatAttr = goString(formatAttr)
 	ok = true
 	return
-}
-
-type ClassAttributeInfo struct {
-	DefaultValue  string
-	SystemDefault string
-	Flags         int
 }
 
 func GetClassAttributeInfo(className, name string) (info ClassAttributeInfo, ok bool) {
@@ -267,11 +248,6 @@ func GetClassAttributeInfo(className, name string) (info ClassAttributeInfo, ok 
 
 func GetClassCallbackFormat(className, name string) string {
 	return iupGetClassCallbackFormat(className, name)
-}
-
-type GlobalInfo struct {
-	Flags   int
-	Drivers int
 }
 
 func GetGlobalInfo(name string) (info GlobalInfo, ok bool) {

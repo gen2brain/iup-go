@@ -2,25 +2,6 @@
 
 package iup
 
-type ClassAttributeInfo struct {
-	DefaultValue  string
-	SystemDefault string
-	Flags         int
-}
-
-type ClassConstructor struct {
-	Format     string
-	FormatAttr string
-}
-
-type ClassInfo struct {
-	Parent        string
-	NativeType    string
-	ChildType     int
-	IsInteractive bool
-	HasAttribID   int
-}
-
 func ClassMatch(ih Ihandle, className string) bool {
 	return ccall("IupClassMatch", "number", []interface{}{"number", "string"}, []interface{}{int(ih), className}).Int() != 0
 }
@@ -71,7 +52,7 @@ func GetClassCallbacks(className string) []string {
 	return wasmNames("IupGetClassCallbacks", []interface{}{"string"}, []interface{}{className})
 }
 
-func GetClassConstructor(className string) (info ClassConstructor, ok bool) {
+func GetClassConstructor(className string) (info ClassConstructorInfo, ok bool) {
 	pf, pa := wasmMalloc(4), wasmMalloc(4)
 	defer wasmFree(pf)
 	defer wasmFree(pa)
@@ -126,11 +107,6 @@ func GetGlobalInfo(name string) (info GlobalInfo, ok bool) {
 	info.Drivers = wasmGetI32(pd)
 	ok = true
 	return
-}
-
-type GlobalInfo struct {
-	Flags   int
-	Drivers int
 }
 
 func Map(ih Ihandle) int {

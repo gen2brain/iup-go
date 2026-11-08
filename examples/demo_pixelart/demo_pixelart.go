@@ -619,7 +619,7 @@ func (app *editor) savePNG() {
 		}
 		img := iup.ImageFromImage(app.sprite())
 		defer img.Destroy()
-		if iup.ImageSave(img, name, "PNG") == 0 {
+		if !iup.ImageSave(img, name, "PNG") {
 			app.setStatus("PNG download failed")
 		} else {
 			app.setStatus("Downloaded " + name)

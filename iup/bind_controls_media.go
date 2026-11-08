@@ -11,8 +11,8 @@ import "C"
 // MediaOpen must be called after Open, so that the media elements can be used.
 //
 // https://gen2brain.github.io/iup-go/ctrl/iup_audio.html
-func MediaOpen() {
-	C.IupMediaOpen()
+func MediaOpen() int {
+	return int(C.IupMediaOpen())
 }
 
 // Audio creates an audio player.

@@ -21,10 +21,10 @@ func GetGlobalBool(name string) bool {
 	return strToBool(GetGlobal(name))
 }
 
-// GetGlobalIntInt returns a global attribute holding two integers and how many were found.
+// GetGlobalInt2 returns a global attribute holding two integers and how many were found.
 //
 // https://gen2brain.github.io/iup-go/func/iup_getglobal.html
-func GetGlobalIntInt(name string) (count, i1, i2 int) {
+func GetGlobalInt2(name string) (count, i1, i2 int) {
 	return strToIntInt(GetGlobal(name))
 }
 
@@ -101,10 +101,10 @@ func (ih Ihandle) SetRGB(name string, r, g, b uint8, ids ...int) Ihandle {
 	return ih
 }
 
-// GetIntInt returns an attribute holding two integers and how many were found.
+// GetInt2 returns an attribute holding two integers and how many were found.
 //
 // https://gen2brain.github.io/iup-go/func/iup_getattribute.html
-func (ih Ihandle) GetIntInt(name string) (count, i1, i2 int) {
+func (ih Ihandle) GetInt2(name string) (count, i1, i2 int) {
 	return GetInt2(ih, name)
 }
 

@@ -139,28 +139,21 @@ func GetClassCallbacks(className string) (names []string) {
 
 // Attribute flag bits returned by [GetClassAttributeInfo].
 const (
-	AttribDefault        = 0
-	AttribNoInherit      = 1
-	AttribNoDefaultValue = 2
-	AttribNoString       = 4
-	AttribNotMapped      = 8
-	AttribHasID          = 16
-	AttribReadOnly       = 32
-	AttribWriteOnly      = 64
-	AttribHasID2         = 128
-	AttribCallback       = 256
-	AttribNoSave         = 512
-	AttribNotSupported   = 1024
-	AttribIhandleName    = 2048
-	AttribIhandle        = 4096
+	AF_DEFAULT         = 0
+	AF_NO_INHERIT      = 1
+	AF_NO_DEFAULTVALUE = 2
+	AF_NO_STRING       = 4
+	AF_NOT_MAPPED      = 8
+	AF_HAS_ID          = 16
+	AF_READONLY        = 32
+	AF_WRITEONLY       = 64
+	AF_HAS_ID2         = 128
+	AF_CALLBACK        = 256
+	AF_NO_SAVE         = 512
+	AF_NOT_SUPPORTED   = 1024
+	AF_IHANDLENAME     = 2048
+	AF_IHANDLE         = 4096
 )
-
-// ClassAttributeInfo is the metadata returned by [GetClassAttributeInfo].
-type ClassAttributeInfo struct {
-	DefaultValue  string
-	SystemDefault string
-	Flags         int
-}
 
 // GetClassAttributeInfo returns the default value, system default and flag bits
 // of a registered attribute. ok is false when the class or attribute is not
@@ -202,15 +195,6 @@ func GetClassCallbackFormat(className, name string) string {
 	return C.GoString(C.IupGetClassCallbackFormat(cClassName, cName))
 }
 
-// ClassInfo is the metadata returned by [GetClassInfo].
-type ClassInfo struct {
-	Parent        string
-	NativeType    string
-	ChildType     int
-	IsInteractive bool
-	HasAttribID   int
-}
-
 // GetClassInfo returns class-level metadata: parent class, native type, child
 // constraints, focus interactivity and id-attribute support. ok is false when
 // the class is not registered.
@@ -236,17 +220,11 @@ func GetClassInfo(className string) (info ClassInfo, ok bool) {
 	return
 }
 
-// ClassConstructor is the metadata returned by [GetClassConstructor].
-type ClassConstructor struct {
-	Format     string // creation parameter format ("h", "g", "s", "i" + "c", ...) or "" if NULL
-	FormatAttr string // attribute name receiving the first parameter when Format starts with "s" or "a"
-}
-
 // GetClassConstructor returns the parameter format that IupCreate accepts for
 // the class. ok is false when the class is not registered.
 //
 // https://gen2brain.github.io/iup-go/func/iup_getclassconstructor.html
-func GetClassConstructor(className string) (info ClassConstructor, ok bool) {
+func GetClassConstructor(className string) (info ClassConstructorInfo, ok bool) {
 	cClassName := C.CString(className)
 	defer C.free(unsafe.Pointer(cClassName))
 
@@ -283,35 +261,29 @@ func GetAllFunctions() (names []string) {
 
 // Flag bits returned by [GetGlobalInfo].
 const (
-	GlobalNormal    = 0
-	GlobalReadOnly  = 1
-	GlobalPointer   = 2
-	GlobalWriteOnly = 4
+	GF_NORMAL    = 0
+	GF_READONLY  = 1
+	GF_POINTER   = 2
+	GF_WRITEONLY = 4
 )
 
 // Driver bits returned by [GetGlobalInfo].
 const (
-	DriverWin        = 1
-	DriverMotif      = 2
-	DriverGTK        = 4
-	DriverCocoa      = 8
-	DriverQt         = 16
-	DriverGTK4       = 32
-	DriverEFL        = 64
-	DriverWinUI      = 128
-	DriverFLTK       = 256
-	DriverAndroid    = 512
-	DriverCocoaTouch = 1024
-	DriverHaiku      = 2048
-	DriverWasm       = 4096
-	DriverQML        = 8192
+	DRV_WIN        = 1
+	DRV_MOTIF      = 2
+	DRV_GTK        = 4
+	DRV_COCOA      = 8
+	DRV_QT         = 16
+	DRV_GTK4       = 32
+	DRV_EFL        = 64
+	DRV_WINUI      = 128
+	DRV_FLTK       = 256
+	DRV_ANDROID    = 512
+	DRV_COCOATOUCH = 1024
+	DRV_HAIKU      = 2048
+	DRV_WASM       = 4096
+	DRV_QML        = 8192
 )
-
-// GlobalInfo is the metadata returned by [GetGlobalInfo].
-type GlobalInfo struct {
-	Flags   int // OR of Global* flag bits
-	Drivers int // OR of Driver* driver bits
-}
 
 // GetAllGlobals returns the union of registered globals and any user-set
 // globals not already in the registry.

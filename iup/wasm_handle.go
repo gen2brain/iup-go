@@ -218,27 +218,27 @@ func (ih Ihandle) GetRGB(name string, ids ...interface{}) (r, g, b uint8) {
 	}
 }
 
-func (ih Ihandle) GetBool(name string, ids ...interface{}) bool {
+func (ih Ihandle) GetBool(name string, ids ...int) bool {
 	switch len(ids) {
 	case 0:
 		return GetBool(ih, name)
 	case 1:
-		return GetBoolId(ih, name, ids[0].(int))
+		return GetBoolId(ih, name, ids[0])
 	case 2:
-		return GetBoolId2(ih, name, ids[0].(int), ids[1].(int))
+		return GetBoolId2(ih, name, ids[0], ids[1])
 	default:
 		panic("bad arguments passed to GetBool")
 	}
 }
 
-func (ih Ihandle) SetBool(name string, value bool, ids ...interface{}) Ihandle {
+func (ih Ihandle) SetBool(name string, value bool, ids ...int) Ihandle {
 	switch len(ids) {
 	case 0:
 		SetBool(ih, name, value)
 	case 1:
-		SetBoolId(ih, name, ids[0].(int), value)
+		SetBoolId(ih, name, ids[0], value)
 	case 2:
-		SetBoolId2(ih, name, ids[0].(int), ids[1].(int), value)
+		SetBoolId2(ih, name, ids[0], ids[1], value)
 	default:
 		panic("bad arguments passed to SetBool")
 	}
