@@ -21,9 +21,9 @@ The program must be linked to the controls library (iupctrl).
 
 Inherits all attributes and callbacks of the [IupBackgroundBox](../elem/iup_backgroundbox.md), but redefines a few attributes.
 
-**DECORATION** [read-only] (non-inheritable): return YES.
+**DECORATION** (read-only) (non-inheritable): return YES.
 
-**DECOROFFSET** and **DECORSIZE** [read-only] (non-inheritable): are calculated according to FRAME, FRAMEWIDTH, FRAMESPACE and the title area.
+**DECOROFFSET** and **DECORSIZE** (read-only) (non-inheritable): are calculated according to FRAME, FRAMEWIDTH, FRAMESPACE and the title area.
 
 **BGCOLOR**: background color of the child area.
 If not defined it will use the background color of the native parent.
@@ -63,7 +63,7 @@ See also [IupImage](../elem/iup_image.md).
 
 **INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
 
-**IMAGETINT** (non-inheritable): when "YES", the title image is drawn recolored with the current text color, keeping its alpha channel. Default: "NO".
+**IMAGETINT** (non-inheritable): color "R G B" used to draw the title image recolored, keeping its alpha channel. "YES" uses the current text color; "NO" draws the image unchanged. Default: "NO".
 
 **TITLEIMAGEINACTIVE** (non-inheritable): image used in title when inactive.
 If it is not defined then the TITLEIMAGE is used and its colors will be replaced by a modified version creating the disabled effect.

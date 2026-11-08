@@ -40,7 +40,7 @@ Default: "0" (no rounding).
 
 **INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
 
-**IMAGETINT** (non-inheritable): when "YES", the node image is drawn recolored with the current text color, keeping its alpha channel. Default: "NO".
+**IMAGETINT** (non-inheritable): color "R G B" used to draw the node image recolored, keeping its alpha channel. "YES" uses the current text color; "NO" draws the image unchanged. Default: "NO".
 
 **ICONSPACING** (non-inheritable): spacing between the image and the text. Default: "2".
 

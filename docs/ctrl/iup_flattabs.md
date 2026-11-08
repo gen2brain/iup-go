@@ -125,13 +125,13 @@ Default is "HORIZONTAL". When set to vertical it will simply set TABSTEXTORIENTA
 
 **TABBADGEn** (non-inheritable): text drawn in a small pill at the top right corner of the respective tab title. Default: NULL.
 
-**BADGECOLOR** (non-inheritable): background color of the tab badges. Default: "220 50 50".
+**BADGEBGCOLOR** (non-inheritable): background color of the tab badges. Default: "220 50 50".
 
-**BADGETEXTCOLOR** (non-inheritable): text color of the tab badges. Default: "255 255 255".
+**BADGEFGCOLOR** (non-inheritable): text color of the tab badges. Default: "255 255 255".
 
 **INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
 
-**IMAGETINT** (non-inheritable): when "YES", the tab image is drawn recolored with the current text color, keeping its alpha channel. Default: "NO".
+**IMAGETINT** (non-inheritable): color "R G B" used to draw the tab image recolored, keeping its alpha channel. "YES" uses the current text color; "NO" draws the image unchanged. Default: "NO".
 
 **TABSIMAGEPOSITION**: position of the image relative to the text when both are displayed.
 Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
@@ -212,7 +212,7 @@ When not defined works as "YES".
 **EXTRABORDERWIDTH*id***: width of the button border. Set this attribute to at least 1 to enable the border.
 Default: 0
 
-**EXTRABOX*id*** [read-only]: the box limits of the button in the format "xmin ymin xmax ymax" or "%d %d %d %d" in C.
+**EXTRABOX*id*** (read-only): the box limits of the button in the format "xmin ymin xmax ymax" or "%d %d %d %d" in C.
 Coordinates are relative to the IupFlatTabs top left corner.
 
 **EXTRASHOWBORDER*id***: always show the button border. If not defined the border is shown when highlighted or pressed.
@@ -355,8 +355,8 @@ Called only when ALLOWREORDER=YES.
 int function(Ihandle* ih, int old_pos, int new_pos);
 
 **ih**: identifier of the element that activated the event.\
-**old_pos**: the original tab position before the reorder.\
-**new_pos**: the new tab position after the reorder.
+**old_pos**: the original tab position before the reorder (0-based, as in VALUEPOS).\
+**new_pos**: the new tab position after the reorder (0-based, as in VALUEPOS).
 
 **Returns**: if IUP_IGNORE is returned the reorder is rejected and the tab stays in its original position.
 

@@ -2765,8 +2765,8 @@ Iclass* iupFlatTabsNewClass(void)
   iupClassRegisterAttributeId(ic, "TABFONT", NULL, (IattribSetIdFunc)iFlatTabsSetAttribPostRedraw, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABTIP", NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABBADGE", NULL, (IattribSetIdFunc)iFlatTabsSetAttribPostRedraw, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BADGECOLOR", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "220 50 50", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "BADGETEXTCOLOR", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "255 255 255", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BADGEBGCOLOR", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "220 50 50", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BADGEFGCOLOR", NULL, iFlatTabsSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "255 255 255", IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "TABFONTSTYLE", iFlatTabsGetTabFontStyleAttrib, iFlatTabsSetTabFontStyleAttrib, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABFONTSIZE", iFlatTabsGetTabFontSizeAttrib, iFlatTabsSetTabFontSizeAttrib, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
