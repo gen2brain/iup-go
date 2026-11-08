@@ -168,14 +168,14 @@ static int androidFileDlgPopup(Ihandle* ih, int x, int y)
     iupAttribSet(ih, "STATUS", is_save ? "1" : "0");
     iupAttribSet(ih, "FILEEXIST", is_save ? "NO" : "YES");
 
-    /* VALUE_URI = stable SAF URI for recent-files; VALUE stays a cache path for fopen. */
+    /* VALUEURI = stable SAF URI for recent-files; VALUE stays a cache path for fopen. */
     jmethodID m_uri = (*jni_env)->GetStaticMethodID(jni_env, java_class, "getLastUri", "()Ljava/lang/String;");
     jstring j_uri = (jstring)(*jni_env)->CallStaticObjectMethod(jni_env, java_class, m_uri);
     iupAndroid_CheckException(jni_env, "IupFileDlgHelper.getLastUri");
     if (j_uri)
     {
       const char* c_uri = (*jni_env)->GetStringUTFChars(jni_env, j_uri, NULL);
-      iupAttribSetStr(ih, "VALUE_URI", c_uri);
+      iupAttribSetStr(ih, "VALUEURI", c_uri);
       (*jni_env)->ReleaseStringUTFChars(jni_env, j_uri, c_uri);
       (*jni_env)->DeleteLocalRef(jni_env, j_uri);
     }
@@ -189,7 +189,7 @@ static int androidFileDlgPopup(Ihandle* ih, int x, int y)
     iupAttribSet(ih, "STATUS", "-1");
     iupAttribSet(ih, "FILTERUSED", NULL);
     iupAttribSet(ih, "VALUE", NULL);
-    iupAttribSet(ih, "VALUE_URI", NULL);
+    iupAttribSet(ih, "VALUEURI", NULL);
   }
 
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
@@ -222,5 +222,5 @@ IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FILTERUSED",    NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MULTIPLEFILES", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   /* Android-only; SAF content:// URI for the last successful pick. */
-  iupClassRegisterAttribute(ic, "VALUE_URI",     NULL, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUEURI",     NULL, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

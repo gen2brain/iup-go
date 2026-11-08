@@ -164,7 +164,7 @@ static void cocoaTouchFileDlgStoreFiles(Ihandle* ih, NSArray<NSURL*>* urls)
 		iupAttribSetStr(ih, "VALUE", [value UTF8String]);
 	}
 
-	iupAttribSetStr(ih, "VALUE_URI", [[urls[0] absoluteString] UTF8String]);
+	iupAttribSetStr(ih, "VALUEURI", [[urls[0] absoluteString] UTF8String]);
 }
 
 static int cocoaTouchFileDlgPopup(Ihandle* ih, int x, int y)
@@ -231,7 +231,7 @@ static int cocoaTouchFileDlgPopup(Ihandle* ih, int x, int y)
 		iupAttribSet(ih, "STATUS", "-1");
 		iupAttribSet(ih, "FILTERUSED", NULL);
 		iupAttribSet(ih, "VALUE", NULL);
-		iupAttribSet(ih, "VALUE_URI", NULL);
+		iupAttribSet(ih, "VALUEURI", NULL);
 		return IUP_NOERROR;
 	}
 
@@ -244,7 +244,7 @@ static int cocoaTouchFileDlgPopup(Ihandle* ih, int x, int y)
 		NSURL* dest_url = delegate.pickedUrls[0];
 		iupAttribSetStr(ih, "VALUE", [scratch_path UTF8String]);
 		iupAttribSetStr(ih, "DIRECTORY", [[[scratch_path stringByDeletingLastPathComponent] stringByAppendingString:@"/"] UTF8String]);
-		iupAttribSetStr(ih, "VALUE_URI", [[dest_url absoluteString] UTF8String]);
+		iupAttribSetStr(ih, "VALUEURI", [[dest_url absoluteString] UTF8String]);
 		iupAttribSet(ih, "STATUS", "1");
 		iupAttribSet(ih, "FILEEXIST", "NO");
 		iupAttribSetStr(ih, "_IUPCOCOATOUCH_FILEDLG_SCRATCH", [scratch_path UTF8String]);
@@ -294,5 +294,5 @@ IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "FILTERINFO", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "FILTERUSED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MULTIPLEFILES", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "VALUE_URI", NULL, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "VALUEURI", NULL, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }

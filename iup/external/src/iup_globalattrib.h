@@ -41,7 +41,7 @@ IUP_SDK_API int iupGlobalIsAppearanceNative(void);
 /* Re-applies the global palette to every mapped element that did not set its own color. */
 IUP_SDK_API void iupGlobalUpdateThemeColors(void);
 
-/* Calls THEMECHANGED_CB on every dialog, unless the palette and the dark mode are unchanged. */
+/* Calls APPEARANCECHANGED_CB on every dialog, unless the palette and the dark mode are unchanged. */
 IUP_SDK_API void iupGlobalNotifyThemeChanged(void);
 
 IUP_SDK_API void iupGlobalKeepAwake(int acquire);

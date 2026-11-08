@@ -625,7 +625,7 @@ static int iColorDlgSetShowAlphaAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static int iColorDlgSetShowCompactAttrib(Ihandle* ih, const char* value)
+static int iColorDlgSetCompactAttrib(Ihandle* ih, const char* value)
 {
   IcolorDlgData* d = (IcolorDlgData*)iupAttribGetInherit(ih, "_IUP_GC_DATA");
   Ihandle* lin2;
@@ -755,7 +755,7 @@ static int iColorDlgSetShowCompactAttrib(Ihandle* ih, const char* value)
                                                   NULL),
                                           "NMARGIN=10x10, NGAP=10"));
 
-  /* Replay opt-in toggles set before SHOWCOMPACT. */
+  /* Replay opt-in toggles set before COMPACT. */
   if (iupAttribGetBoolean(ih, "SHOWALPHA"))      iColorDlgSetShowAlphaAttrib(ih, "YES");
   if (iupAttribGetBoolean(ih, "SHOWHEX"))        iColorDlgSetShowHexAttrib(ih, "YES");
   if (iupAttribGetBoolean(ih, "SHOWCOLORTABLE")) iColorDlgSetShowColorTableAttrib(ih, "YES");
@@ -1237,7 +1237,7 @@ Iclass* iupColorDlgNewClass(void)
   iupClassRegisterAttribute(ic, "VALUEHEX", iColorDlgGetValueHexAttrib, iColorDlgSetValueHexAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWALPHA", NULL, iColorDlgSetShowAlphaAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWCOLORTABLE", NULL, iColorDlgSetShowColorTableAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SHOWCOMPACT", NULL, iColorDlgSetShowCompactAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "COMPACT", NULL, iColorDlgSetCompactAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWHEX", NULL, iColorDlgSetShowHexAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWHELP", NULL, iColorDlgSetShowHelpAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 

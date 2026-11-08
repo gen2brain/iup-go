@@ -549,7 +549,7 @@ func pasteImage() {
 		iup.GetHandle("iv_file").SetAttribute("TITLE", "No image in the clipboard")
 		return
 	}
-	h := iup.ImageFromHandle(iup.GetPtr(clip, "NATIVEIMAGE"))
+	h := iup.ImageFromNative(iup.GetPtr(clip, "NATIVEIMAGE"))
 	if h == 0 {
 		iup.MessageError(dlg, "The clipboard image cannot be read")
 		return
@@ -591,7 +591,7 @@ func saveDialog() {
 	if filepath.Ext(path) == "" {
 		path += []string{".png", ".jpg", ".bmp"}[max(fdlg.GetInt("FILTERUSED"), 1)-1]
 	}
-	if iup.ImageSave(img, path, "") == 0 {
+	if !iup.ImageSave(img, path, "") {
 		iup.MessageError(dlg, "Cannot save "+path)
 	}
 }

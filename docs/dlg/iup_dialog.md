@@ -261,10 +261,10 @@ Available in Win32, WinUI, or in the GTK, GTK 4, Qt and FLTK drivers on Windows.
 Its default value is YES if the dialog has a parent dialog.
 Largely a no-op on modern composited window systems (DWM on Windows, KWin/Mutter on Linux); other drivers do not expose an equivalent primitive.
 
-**XWINDOW** [UNIX Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
+**XWINDOW** [Unix Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
 Available in Motif, GTK, GTK 4, Qt, QML, FLTK and EFL on X11.
 
-**WL_SURFACE** [UNIX Only] (non-inheritable, read-only): Returns the Wayland surface handle.
+**WL_SURFACE** [Unix Only] (non-inheritable, read-only): Returns the Wayland surface handle.
 Available in GTK, GTK 4, Qt, QML, FLTK and EFL on Wayland.
 
 **NSVIEW** [macOS Only] (non-inheritable, read-only): Returns the Cocoa NSView handle.
@@ -288,7 +288,7 @@ But maximize, minimize and close buttons must be manually implemented in the BUT
 One drawback is that menu bars will not work.
 Not available in WinUI, use CUSTOMFRAME instead.
 
-**CUSTOMFRAMECAPTIONHEIGHT** [Win32, WinUI Only] (non-inheritable): height of the caption area.
+**CUSTOMFRAMECAPTIONHEIGHT** [Win32 and WinUI Only] (non-inheritable): height of the caption area.
 If not defined it will use the system size.
 
 **CUSTOMFRAMECAPTIONLIMITS** [Win32 Only] (non-inheritable): limits of the caption area at left and at right.
@@ -313,13 +313,13 @@ IMPORTANT: when you hide using HIDETASKBAR, you must show using HIDETASKBAR also
 Possible values: YES, NO.
 Not supported in Android and iOS.
 
-**TASKBARPROGRESS** [Win32, WinUI, Cocoa Only] (write-only): enables a progress bar drawn on the application's taskbar/Dock button.
+**TASKBARPROGRESS** [Win32, WinUI and macOS Only] (write-only): enables a progress bar drawn on the application's taskbar/Dock button.
 Default: NO.
 
-**TASKBARPROGRESSSTATE** [Win32, WinUI, Cocoa Only] (write-only): sets the type and state of the progress indicator.
+**TASKBARPROGRESSSTATE** [Win32, WinUI and macOS Only] (write-only): sets the type and state of the progress indicator.
 Possible values: NORMAL, PAUSED, ERROR, INDETERMINATE, NOPROGRESS. Default: NORMAL.
 
-**TASKBARPROGRESSVALUE** [Win32, WinUI, Cocoa Only] (write-only): updates the progress bar to the given percentage. The value must be between 0 and 100.
+**TASKBARPROGRESSVALUE** [Win32, WinUI and macOS Only] (write-only): updates the progress bar to the given percentage. The value must be between 0 and 100.
 
 **TASKBARBUTTON**: If set to SHOW force the application button to be shown on the taskbar even if the dialog does not have decorations.
 If set to HIDE force the application button to be hidden from the taskbar.
@@ -334,7 +334,7 @@ Not supported in macOS, Haiku, Android, iOS and WebAssembly.
 - `"CURRENT"`: pinned to the workspace the dialog is currently on.
 - Comma-separated 0-based indices (e.g. `"0,2,5"`): a custom workspace mask.
 
-#### Exclusive [Android and iOS]
+#### Exclusive [Android and iOS Only]
 
 **ORIENTATION** (non-inheritable): requested orientation. Values: "PORTRAIT", "LANDSCAPE", "SENSOR", "LOCKED", "UNSPECIFIED" (default).
 
@@ -347,6 +347,15 @@ Not supported in macOS, Haiku, Android, iOS and WebAssembly.
 Not supported: MAXBOX, MINBOX, MENUBOX, RESIZE, RESIZEINC, BORDER, DIALOGFRAME, CUSTOMFRAME, CUSTOMFRAMESIMULATE, HIDETASKBAR, TASKBARPROGRESS, TASKBARBUTTON, HELPBUTTON, TOOLBOX, SAVEUNDER, COMPOSITED, TOPMOST, OPACITYIMAGE, SHAPEIMAGE.
 
 ### Callbacks
+
+**APPEARANCECHANGED_CB**: Called when the appearance changes, either from a system theme or color scheme switch or from the [APPEARANCE](../attrib/iup_globals.md) global. It is not called when the new appearance resolves to the same colors as the current one.
+
+    int function(Ihandle *ih, int dark_mode);
+
+**ih**: identifier of the element that activated the event.\
+**dark_mode**: is non-zero if the appearance is now dark, zero if light.
+
+In Motif and FLTK only an APPEARANCE change calls it, there is no system theme notification.
 
 [CLOSE_CB](../call/iup_close_cb.md): Called right before the dialog is closed.
 
@@ -403,15 +412,6 @@ Not called on Wayland.
 If returns IUP_IGNORE the dialog layout is NOT recalculated.
 
 [SHOW_CB](../call/iup_show_cb.md): Called right after the dialog is shown, hidden, maximized, minimized or restored from minimized/maximized.
-
-**THEMECHANGED_CB**: Called when the appearance changes, either from a system theme or color scheme switch or from the [APPEARANCE](../attrib/iup_globals.md) global. It is not called when the new appearance resolves to the same colors as the current one.
-
-    int function(Ihandle *ih, int dark_mode);
-
-**ih**: identifier of the element that activated the event.\
-**dark_mode**: is non-zero if the appearance is now dark, zero if light.
-
-In Motif and FLTK only an APPEARANCE change calls it, there is no system theme notification.
 
 >
 >

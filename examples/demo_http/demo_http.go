@@ -437,7 +437,7 @@ func pairTable(values *[]entry) iup.Ihandle {
 	if phone() {
 		lines = 2
 	}
-	table := iup.Table().SetAttributes(fmt.Sprintf("NUMCOL=2, VISIBLELINES=%d, EXPAND=YES, EDITABLE=YES, STRETCHLAST=YES, USERRESIZE=YES, ALTERNATECOLOR=YES", lines))
+	table := iup.Table().SetAttributes(fmt.Sprintf("NUMCOL=2, VISIBLELINES=%d, EXPAND=YES, EDITABLE=YES, STRETCHLAST=YES, USERRESIZE=YES, ALTERNATEROWS=YES", lines))
 	iup.SetAttributeId(table, "TITLE", 1, "Key")
 	iup.SetAttributeId(table, "TITLE", 2, "Value")
 	updatePairs(table, *values)

@@ -145,7 +145,7 @@ func main() {
 	}))
 
 	// Enable alternating colors for better readability
-	table.SetAttribute("ALTERNATECOLOR", "YES")
+	table.SetAttribute("ALTERNATEROWS", "YES")
 
 	// Info label
 	lblInfo := iup.Label(fmt.Sprintf("Virtual mode enabled: 100,000 rows loaded instantly!\n" +

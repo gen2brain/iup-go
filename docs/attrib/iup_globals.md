@@ -58,6 +58,14 @@ Used by the system in Win32, WinUI, macOS, Qt, QML, GTK, EFL and Motif; only sto
 On Android it is read-only and reflects the app's manifest label.
 On iOS, it is read-only and reflects `CFBundleDisplayName` (or `CFBundleName` if not set) from the app's Info.plist.
 
+### ICON
+
+Name of the image used as the dialog icon by [IupAlarm](../dlg/iup_alarm.md), [IupGetFile](../dlg/iup_getfile.md), [IupGetText](../dlg/iup_gettext.md), [IupGetColor](../dlg/iup_getcolor.md) and [IupListDialog](../dlg/iup_listdialog.md).
+
+### PARENTDIALOG
+
+Name of the dialog used as the parent by [IupAlarm](../dlg/iup_alarm.md), [IupGetFile](../dlg/iup_getfile.md), [IupGetText](../dlg/iup_gettext.md), [IupGetColor](../dlg/iup_getcolor.md) and [IupListDialog](../dlg/iup_listdialog.md).
+
 ## System Control
 
 ### LOCKLOOP
@@ -144,7 +152,7 @@ This affects **IupCanvas**, **IupList**, **IupText** and **IupTree**.
 Force the display of images in menus. Default: YES.
 Supported in GTK, GTK 4, Qt, QML, EFL and WinUI.
 
-### OVERLAYSCROLLBAR [GTK, GTK 4 Only]
+### OVERLAYSCROLLBAR [GTK and GTK 4 Only]
 
 Allow the overlay scrollbar in **IupCanvas** to use a minimum space.
 By default, IUP will use a regular scrollbar space even when overlay scrollbar is enabled in the system.
@@ -369,7 +377,7 @@ Re-seeds the global palette (DLGBGCOLOR, TXTBGCOLOR, MENUBGCOLOR and their foreg
 In Win32 the native file, font and month-calendar dialogs are not affected. In Qt it needs Qt 6.8 or newer for the platform theme, older versions only get the palette. In Qt a style with a "-dark" variant, such as Adwaita, switches to the variant that matches. In GTK and GTK 4 it selects the dark variant of the current theme, so a theme without one keeps its colors. In EFL and GNUstep only the IUP palette follows it, the widgets keep the toolkit theme. In Haiku the controls and menus of the IUP dialogs draw with the palette; the native dialogs, tooltips and the window frame keep the system colors.
 In GTK 3, Motif, FLTK, EFL and GNUstep on Linux and BSD, SYSTEM follows the color-scheme setting of the XDG Desktop Portal when the portal reports one.
 
-The [dialog](../dlg/iup_dialog.md) THEMECHANGED_CB is called when the appearance changes, whether from a live system switch or from this attribute.
+The [dialog](../dlg/iup_dialog.md) APPEARANCECHANGED_CB is called when the appearance changes, whether from a live system switch or from this attribute.
 
 ### WINDOWING (read-only)
 
@@ -476,17 +484,17 @@ Available in GTK, GTK 4, Qt, QML, FLTK, EFL and Motif.
 
 ## Toolkit Versions and Themes
 
-### GTKVERSION (read-only) [GTK, GTK 4 Only]
+### GTKVERSION (read-only) [GTK and GTK 4 Only]
 
 Returns the run time version of the GTK toolkit.
 This is the version being used at the time of the IupOpen function was called by the application.
 
-### GTKDEVVERSION (read-only) [GTK, GTK 4 Only]
+### GTKDEVVERSION (read-only) [GTK and GTK 4 Only]
 
 Returns the development version of the GTK toolkit.
 This is the version at the time the IUP library was compiled.
 
-### GSKRENDERER [GTK4 Only]
+### GSKRENDERER [GTK 4 Only]
 
 Sets the GSK renderer used by GTK4 for drawing. Must be set **before** any dialog is created (before `IupShow`). Can also be set via the `GSK_RENDERER` environment variable, but this attribute takes priority.
 

@@ -314,7 +314,7 @@ func main() {
 			updateStatus()
 			return iup.DEFAULT
 		}
-		img := iup.ImageFromHandle(iup.GetPtr(clipboard, "NATIVEIMAGE"))
+		img := iup.ImageFromNative(iup.GetPtr(clipboard, "NATIVEIMAGE"))
 		if img == 0 {
 			logMsg("Clipboard image could not be converted")
 			updateStatus()

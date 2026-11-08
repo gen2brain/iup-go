@@ -44,7 +44,7 @@ func main() {
 	generate()
 
 	table := iup.Table().SetAttributes(`EXPAND=YES, NUMCOL=5, VIRTUALMODE=YES, USERRESIZE=YES,
-		STRETCHLAST=YES, ALTERNATECOLOR=YES, SHOWGRID=NO, FOCUSFEEDBACK=NO`).SetHandle("log_table")
+		STRETCHLAST=YES, ALTERNATEROWS=YES, SHOWGRID=NO, FOCUSFEEDBACK=NO`).SetHandle("log_table")
 	table.SetAttributes(map[string]string{
 		"TITLE1": "#", "TITLE2": "Time", "TITLE3": "Level", "TITLE4": "Source", "TITLE5": "Message",
 		"ALIGNMENT1": "ARIGHT", "RASTERWIDTH1": "70", "RASTERWIDTH2": "180",

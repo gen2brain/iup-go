@@ -131,7 +131,7 @@ func (app *dashboard) seed() {
 }
 
 func (app *dashboard) build() {
-	app.table = iup.Table().SetAttributes("NUMCOL=6, EXPAND=YES, VISIBLELINES=12, SORTABLE=YES, USERRESIZE=YES, ALLOWREORDER=YES, SELECTIONMODE=MULTIPLE, EDITABLE=YES, ALTERNATECOLOR=YES, STRETCHLAST=YES, FOCUSFEEDBACK=NO")
+	app.table = iup.Table().SetAttributes("NUMCOL=6, EXPAND=YES, VISIBLELINES=12, SORTABLE=YES, USERRESIZE=YES, ALLOWREORDER=YES, SELECTIONMODE=MULTIPLE, EDITABLE=YES, ALTERNATEROWS=YES, STRETCHLAST=YES, FOCUSFEEDBACK=NO")
 	if phone() {
 		app.table.SetAttribute("VISIBLELINES", 6)
 	}
@@ -249,7 +249,7 @@ func (app *dashboard) build() {
 		return iup.DEFAULT
 	}))
 	app.dialog.SetCallback("CLOSE_CB", iup.CloseFunc(func(iup.Ihandle) int { app.save(); return iup.CLOSE }))
-	app.dialog.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(iup.Ihandle, int) int {
+	app.dialog.SetCallback("APPEARANCECHANGED_CB", iup.AppearanceChangedFunc(func(iup.Ihandle, int) int {
 		app.refreshPlots()
 		return iup.DEFAULT
 	}))

@@ -48,7 +48,7 @@ public final class IupFileDlgHelper
     private static Uri    sPendingSaveUri;
     private static String sPendingCachePath;
 
-    /* Raw URIs from the last pick; C reads these into VALUE_URI for recent-files. */
+    /* Raw URIs from the last pick; C reads these into VALUEURI for recent-files. */
     private static String sLastUri;
     private static String[] sLastUris;
 

@@ -82,7 +82,7 @@ func open(set *dataset) {
 		return
 	}
 
-	table := iup.Table().SetAttributes(fmt.Sprintf("NUMCOL=%d, NUMLIN=%d, VISIBLELINES=%d, ALTERNATECOLOR=YES, EXPAND=YES",
+	table := iup.Table().SetAttributes(fmt.Sprintf("NUMCOL=%d, NUMLIN=%d, VISIBLELINES=%d, ALTERNATEROWS=YES, EXPAND=YES",
 		len(set.cols), len(set.rows), len(set.rows)))
 	for i, title := range set.cols {
 		iup.SetAttributeId(table, "TITLE", i+1, title)

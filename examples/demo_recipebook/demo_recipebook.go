@@ -255,7 +255,7 @@ func (app *cookbook) build() {
 	footer := iup.Hbox(app.status, app.themeButton).SetAttributes("NMARGIN=12x6, ALIGNMENT=ACENTER")
 	dlg := iup.Dialog(iup.Vbox(content, footer).SetAttributes("NGAP=0")).SetAttributes(map[string]string{"TITLE": "Recipe Book", "PLACEMENT": "MAXIMIZED"})
 	app.dialog = dlg
-	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(iup.Ihandle, int) int {
+	dlg.SetCallback("APPEARANCECHANGED_CB", iup.AppearanceChangedFunc(func(iup.Ihandle, int) int {
 		if !app.applyingTheme && app.themeIndex < 3 {
 			app.applyTheme()
 		}

@@ -76,11 +76,11 @@ func ImageGetHandle(name string) Ihandle {
 	return mkih(iupImageGetHandle(name))
 }
 
-// ImageFromHandle creates an IUP image from a native image handle (e.g. the IupClipboard NATIVEIMAGE).
+// ImageFromNative creates an IUP image from a native image handle (e.g. the IupClipboard NATIVEIMAGE).
 //
-// https://gen2brain.github.io/iup-go/func/iup_imagefromhandle.html
-func ImageFromHandle(handle uintptr) Ihandle {
-	return mkih(iupImageFromHandle(handle))
+// https://gen2brain.github.io/iup-go/func/iup_imagefromnative.html
+func ImageFromNative(handle uintptr) Ihandle {
+	return mkih(iupImageFromNative(handle))
 }
 
 func Menu(children ...Ihandle) Ihandle {
@@ -152,6 +152,6 @@ func SetLanguagePack(ih Ihandle) { iupSetLanguagePack(uintptr(ih)) }
 
 func Log(_type, str string) { iupLog(_type, "%s", str) }
 
-func ImageSave(ih Ihandle, filename, format string) int {
-	return int(iupImageSave(uintptr(ih), filename, format))
+func ImageSave(ih Ihandle, filename, format string) bool {
+	return iupImageSave(uintptr(ih), filename, format) != 0
 }

@@ -46,12 +46,12 @@ func ImageGetHandle(name string) Ihandle {
 	return ccallHandle("IupImageGetHandle", []interface{}{"string"}, []interface{}{name})
 }
 
-func ImageFromHandle(handle uintptr) Ihandle {
-	return ccallHandle("IupImageFromHandle", []interface{}{"number"}, []interface{}{int(handle)})
+func ImageFromNative(handle uintptr) Ihandle {
+	return ccallHandle("IupImageFromNative", []interface{}{"number"}, []interface{}{int(handle)})
 }
 
-func ImageSave(ih Ihandle, filename, format string) int {
-	return ccall("IupImageSave", "number", []interface{}{"number", "string", "string"}, []interface{}{int(ih), filename, format}).Int()
+func ImageSave(ih Ihandle, filename, format string) bool {
+	return ccall("IupImageSave", "number", []interface{}{"number", "string", "string"}, []interface{}{int(ih), filename, format}).Int() != 0
 }
 
 func ImageSaveToBuffer(ih Ihandle, format string) []byte {

@@ -19,14 +19,14 @@ Default: no defined, or 255 if SHOWALPHA=YES.
 **COLORTABLE**: list of colors separated by ";". If a color is not specified then the default color is used.
 You can skip colors using ";;". The maximum number of colors is 20.
 
+**COMPACT**: if enabled hides the HSI (Hue/Saturation/Intensity) column, leaving the wheel + preview + RGB + OK/Cancel. Intended for narrow dialogs (mobile screens).
+
 [PARENTDIALOG](../attrib/iup_parentdialog.md) (creation-only): Name of a dialog to be used as parent.
 This dialog will always be in front of the parent dialog.
 
 **SHOWALPHA**: if enabled will display the alpha selection controls, regardless if ALPHA is defined for the initial value or not.
 
 **SHOWCOLORTABLE**: if enabled will display the color table, regardless if **COLORTABLE** is defined or not.
-
-**SHOWCOMPACT**: if enabled hides the HSI (Hue/Saturation/Intensity) column, leaving the wheel + preview + RGB + OK/Cancel. Intended for narrow dialogs (mobile screens).
 
 **SHOWHEX**: if enabled will display the Hexadecimal notation of the color.
 

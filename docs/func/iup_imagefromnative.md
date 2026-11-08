@@ -1,10 +1,10 @@
-## IupImageFromHandle
+## IupImageFromNative
 
 Creates an **IupImage** from a native image handle.
 
 ### Parameters/Return
 
-    Ihandle* IupImageFromHandle(void* handle);
+    Ihandle* IupImageFromNative(void* handle);
 
 **handle**: a native image handle, such as the **NATIVEIMAGE** returned by [IupClipboard](../elem/iup_clipboard.md).
 

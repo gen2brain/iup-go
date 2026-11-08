@@ -107,19 +107,19 @@ func ImageGetHandle(name string) Ihandle {
 	return h
 }
 
-// ImageFromHandle creates an IUP image from a native image handle (e.g. the IupClipboard NATIVEIMAGE).
+// ImageFromNative creates an IUP image from a native image handle (e.g. the IupClipboard NATIVEIMAGE).
 //
-// https://gen2brain.github.io/iup-go/func/iup_imagefromhandle.html
-func ImageFromHandle(handle uintptr) Ihandle {
-	return mkih(C.IupImageFromHandle(unsafe.Pointer(cih(Ihandle(handle)))))
+// https://gen2brain.github.io/iup-go/func/iup_imagefromnative.html
+func ImageFromNative(handle uintptr) Ihandle {
+	return mkih(C.IupImageFromNative(unsafe.Pointer(cih(Ihandle(handle)))))
 }
 
 // ImageSave saves an IUP image to a file in the specified format.
 // Format can be "PNG", "JPEG", or "BMP". If empty, the format is detected from the filename extension.
-// Returns 1 on success, 0 on failure.
+// Returns true on success.
 //
 // https://gen2brain.github.io/iup-go/func/iup_imagesave.html
-func ImageSave(ih Ihandle, filename, format string) int {
+func ImageSave(ih Ihandle, filename, format string) bool {
 	cFilename := C.CString(filename)
 	defer C.free(unsafe.Pointer(cFilename))
 
@@ -129,7 +129,7 @@ func ImageSave(ih Ihandle, filename, format string) int {
 		defer C.free(unsafe.Pointer(cFormat))
 	}
 
-	return int(C.IupImageSave(ih.ptr(), cFilename, cFormat))
+	return C.IupImageSave(ih.ptr(), cFilename, cFormat) != 0
 }
 
 // ImageSaveToBuffer saves an IUP image to a byte slice in the specified format.
