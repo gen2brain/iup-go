@@ -19,6 +19,8 @@
 
 static Itable* wintimer_id_table = NULL; /* table indexed by ID containing Ihandle* address */
 
+typedef UINT_PTR (WINAPI *winSetCoalescableTimer)(HWND, UINT_PTR, UINT, TIMERPROC, ULONG);
+
 static VOID CALLBACK winTimerFunc(HWND hwnd, UINT msg, UINT_PTR wid, DWORD time)
 {
   Icallback cb;
@@ -51,7 +53,20 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
   time_ms = iupAttribGetInt(ih, "TIME");
   if (time_ms > 0)
   {
-    ih->serial = (int)SetTimer(NULL, 0, time_ms, winTimerFunc);  /* minimum is 10 ms */
+    static winSetCoalescableTimer set_coalescable_timer = NULL;
+    static int set_coalescable_timer_loaded = 0;
+    int tolerance_ms = iupAttribGetInt(ih, "TOLERANCE");
+
+    if (!set_coalescable_timer_loaded)
+    {
+      set_coalescable_timer = (winSetCoalescableTimer)GetProcAddress(GetModuleHandleA("user32.dll"), "SetCoalescableTimer");
+      set_coalescable_timer_loaded = 1;
+    }
+
+    if (tolerance_ms > 0 && set_coalescable_timer)
+      ih->serial = (int)set_coalescable_timer(NULL, 0, time_ms, winTimerFunc, (ULONG)tolerance_ms);
+    else
+      ih->serial = (int)SetTimer(NULL, 0, time_ms, winTimerFunc);  /* minimum is 10 ms */
     iupTableSet(wintimer_id_table, (const char*)(intptr_t)ih->serial, ih, IUPTABLE_POINTER);
   }
 }

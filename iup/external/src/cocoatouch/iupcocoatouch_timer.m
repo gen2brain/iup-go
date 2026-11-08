@@ -72,6 +72,10 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
 		repeats:YES];
 	[controller setTheTimer:timer];
 
+	int tolerance_ms = iupAttribGetInt(ih, "TOLERANCE");
+	if (tolerance_ms > 0)
+		[timer setTolerance:(tolerance_ms/1000.0)];
+
 	/* CommonModes keeps the timer firing through modal sheets and scroll tracking */
 	[[NSRunLoop currentRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
 
