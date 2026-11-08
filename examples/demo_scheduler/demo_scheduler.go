@@ -108,7 +108,7 @@ func main() {
 		title,
 		iup.Hbox(kindList(), button("Delete", remove), button("Done", done)).SetAttributes("NGAP=6, ALIGNMENT=ACENTER"),
 	).SetAttributes("NMARGIN=10x8, NGAP=6")).SetHandle("sc_editor")
-	editor.SetAttributes("POSITION=BOTTOMLEFT, AUTOHIDE=YES, ARROW=YES")
+	editor.SetAttributes("PLACEMENT=BOTTOMLEFT, AUTOHIDE=YES, ARROW=YES")
 	editor.SetAttributeHandle("ANCHOR", canvas)
 
 	head := iup.Hbox(

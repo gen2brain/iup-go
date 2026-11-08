@@ -364,7 +364,7 @@ func (app *wizard) errorAt(field iup.Ihandle, message string) {
 		return
 	}
 	app.popover = iup.Popover(iup.Label(message).SetAttributes("PADDING=8x6"))
-	app.popover.SetAttributes("POSITION=BOTTOMLEFT, AUTOHIDE=YES")
+	app.popover.SetAttributes("PLACEMENT=BOTTOMLEFT, AUTOHIDE=YES")
 	app.popover.SetAttributeHandle("ANCHOR", field)
 	app.popover.SetAttribute("VISIBLE", "YES")
 }

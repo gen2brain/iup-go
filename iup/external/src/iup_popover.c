@@ -26,7 +26,7 @@
 
 IUP_API int iupPopoverGetPosition(Ihandle* ih)
 {
-  char* pos = iupAttribGetStr(ih, "POSITION");
+  char* pos = iupAttribGetStr(ih, "PLACEMENT");
 
   if (iupStrEqualNoCase(pos, "TOP"))          return IUP_POPOVER_TOP;
   if (iupStrEqualNoCase(pos, "LEFT"))         return IUP_POPOVER_LEFT;
@@ -323,7 +323,7 @@ Iclass* iupPopoverNewClass(void)
 
   /* Popover specific attributes */
   iupClassRegisterAttribute(ic, "ANCHOR", NULL, iPopoverSetAnchorAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "POSITION", NULL, NULL, IUPAF_SAMEASSYSTEM, "BOTTOM", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "PLACEMENT", NULL, NULL, IUPAF_SAMEASSYSTEM, "BOTTOM", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ARROW", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOHIDE", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OFFSETX", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
