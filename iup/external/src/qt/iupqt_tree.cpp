@@ -1096,7 +1096,7 @@ static char* qtTreeGetTitleFontAttrib(Ihandle* ih, int id)
   return iupStrReturnStr(font.toString().toUtf8().constData());
 }
 
-static int qtTreeSetTitleFgColorAttrib(Ihandle* ih, int id, const char* value)
+static int qtTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
 {
   QTreeWidgetItem* item = qtTreeFindNode(ih, id);
   if (!item)
@@ -1122,24 +1122,6 @@ static char* qtTreeGetColorAttrib(Ihandle* ih, int id)
     return nullptr;
 
   return iupStrReturnRGB(color.red(), color.green(), color.blue());
-}
-
-static int qtTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
-{
-  return qtTreeSetTitleFgColorAttrib(ih, id, value);
-}
-
-static int qtTreeSetTitleBgColorAttrib(Ihandle* ih, int id, const char* value)
-{
-  QTreeWidgetItem* item = qtTreeFindNode(ih, id);
-  if (!item)
-    return 0;
-
-  unsigned char r, g, b;
-  if (iupStrToRGB(value, &r, &g, &b))
-    item->setBackground(0, QBrush(QColor(r, g, b)));
-
-  return 1;
 }
 
 /* Expanded branch icon: per-node IMAGEEXPANDED if set, else the global IMAGEBRANCHEXPANDED */
@@ -2249,8 +2231,6 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "CHILDCOUNT", qtTreeGetChildCountAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TITLE", qtTreeGetTitleAttrib, qtTreeSetTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TITLEFONT", qtTreeGetTitleFontAttrib, qtTreeSetTitleFontAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TITLEFGCOLOR", nullptr, qtTreeSetTitleFgColorAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TITLEBGCOLOR", nullptr, qtTreeSetTitleBgColorAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "COLOR", qtTreeGetColorAttrib, qtTreeSetColorAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGE", nullptr, qtTreeSetImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGEEXPANDED", nullptr, qtTreeSetImageExpandedAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);

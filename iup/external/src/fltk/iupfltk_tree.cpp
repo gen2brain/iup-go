@@ -1653,26 +1653,6 @@ static char* fltkTreeGetIndentationAttrib(Ihandle* ih)
   return iupStrReturnInt(tree->connectorwidth());
 }
 
-static int fltkTreeSetTitleFgColorAttrib(Ihandle* ih, int id, const char* value)
-{
-  return fltkTreeSetColorAttrib(ih, id, value);
-}
-
-static int fltkTreeSetTitleBgColorAttrib(Ihandle* ih, int id, const char* value)
-{
-  Fl_Tree_Item* item = fltkTreeGetItemFromId(ih, id);
-  if (!item)
-    return 0;
-
-  unsigned char r, g, b;
-  if (iupStrToRGB(value, &r, &g, &b))
-    item->labelbgcolor(fl_rgb_color(r, g, b));
-
-  auto* tree = reinterpret_cast<IupFltkTree*>(ih->handle);
-  tree->redraw();
-  return 0;
-}
-
 /****************************************************************************
  * FLTK Default Images (clean, lightweight style)
  ****************************************************************************/
@@ -1922,8 +1902,6 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "CHILDCOUNT", fltkTreeGetChildCountAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TITLE", fltkTreeGetTitleAttrib, fltkTreeSetTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TITLEFONT", nullptr, fltkTreeSetTitleFontAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TITLEFGCOLOR", nullptr, fltkTreeSetTitleFgColorAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttributeId(ic, "TITLEBGCOLOR", nullptr, fltkTreeSetTitleBgColorAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "COLOR", fltkTreeGetColorAttrib, fltkTreeSetColorAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGE", nullptr, fltkTreeSetImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGEEXPANDED", nullptr, fltkTreeSetImageExpandedAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);

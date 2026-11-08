@@ -142,7 +142,7 @@ static void iupAndroidPushPaletteToJava(int dark)
     int menuBg = iupAndroidParseColorToArgb(IupGetGlobal("MENUBGCOLOR"));
     int menuFg = iupAndroidParseColorToArgb(IupGetGlobal("MENUFGCOLOR"));
     int txtHlBg = iupAndroidParseColorToArgb(IupGetGlobal("TXTHLCOLOR"));
-    int txtHlFg = iupAndroidParseColorToArgb(IupGetGlobal("TXTHLFGCOLOR"));
+    int txtHlFg = iupAndroidParseColorToArgb(IupGetGlobal("_IUP_TXTHLFGCOLOR"));
     int accent  = iupAndroidParseColorToArgb(IupGetGlobal("ACCENTCOLOR"));
     (*env)->CallStaticVoidMethod(env, cls, m,
       (jint)dlgBg, (jint)dlgFg, (jint)txtBg, (jint)txtFg, (jint)menuBg, (jint)menuFg,
@@ -190,7 +190,7 @@ void iupAndroidUpdateGlobalColors(void)
   IUP_RGB_FROM_ARGB(lk,    link_argb);
 
   iupGlobalSetDefaultColorAttrib("TXTHLCOLOR",   hl_r, hl_g, hl_b);
-  iupGlobalSetDefaultColorAttrib("TXTHLFGCOLOR", hf_r, hf_g, hf_b);
+  iupGlobalSetDefaultColorAttrib("_IUP_TXTHLFGCOLOR", hf_r, hf_g, hf_b);
   iupGlobalSetDefaultColorAttrib("ACCENTCOLOR",  ac_r, ac_g, ac_b);
   iupGlobalSetDefaultColorAttrib("LINKFGCOLOR",  lk_r, lk_g, lk_b);
 

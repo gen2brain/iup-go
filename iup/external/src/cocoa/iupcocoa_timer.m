@@ -82,12 +82,6 @@ IUP_SDK_API void iupdrvTimerRun(Ihandle* ih)
                                               userInfo:[NSValue valueWithPointer:ih]
                                                repeats:YES];
 
-    float tolerance = iupAttribGetFloat(ih, "TOLERANCE");
-    if (tolerance > 0.0f)
-    {
-      [ns_timer setTolerance:(NSTimeInterval)tolerance];
-    }
-
 #ifdef GNUSTEP
     /* GNUstep takes NSRunLoopCommonModes as a literal mode name, so timers never fire from the default mode */
     [[NSRunLoop currentRunLoop] addTimer:ns_timer forMode:NSDefaultRunLoopMode];
@@ -121,5 +115,4 @@ IUP_SDK_API void iupdrvTimerInitClass(Iclass* ic)
 {
   ic->UnMap = iupdrvTimerStop;
 
-  iupClassRegisterAttribute(ic, "TOLERANCE", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 }

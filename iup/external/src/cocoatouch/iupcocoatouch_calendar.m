@@ -84,34 +84,6 @@ static int cocoaTouchCalendarSetValueAttrib(Ihandle* ih, const char* value)
 	return 0;
 }
 
-static int cocoaTouchCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
-{
-	UIDatePicker* picker = cocoaTouchCalendarGet(ih);
-	if (!picker) return 1;
-	picker.minimumDate = value ? cocoaTouchCalendarParseDate(value) : nil;
-	return 1;
-}
-
-static int cocoaTouchCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
-{
-	UIDatePicker* picker = cocoaTouchCalendarGet(ih);
-	if (!picker) return 1;
-	picker.maximumDate = value ? cocoaTouchCalendarParseDate(value) : nil;
-	return 1;
-}
-
-static char* cocoaTouchCalendarGetMinDateAttrib(Ihandle* ih)
-{
-	UIDatePicker* picker = cocoaTouchCalendarGet(ih);
-	return (picker && picker.minimumDate) ? cocoaTouchCalendarFormatDate(picker.minimumDate) : NULL;
-}
-
-static char* cocoaTouchCalendarGetMaxDateAttrib(Ihandle* ih)
-{
-	UIDatePicker* picker = cocoaTouchCalendarGet(ih);
-	return (picker && picker.maximumDate) ? cocoaTouchCalendarFormatDate(picker.maximumDate) : NULL;
-}
-
 static int cocoaTouchCalendarSetStyleAttrib(Ihandle* ih, const char* value)
 {
 	UIDatePicker* picker = cocoaTouchCalendarGet(ih);
@@ -240,8 +212,6 @@ Iclass* iupCalendarNewClass(void)
 	iupClassRegisterAttribute(ic, "VALUE", cocoaTouchCalendarGetValueAttrib, cocoaTouchCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "TODAY", cocoaTouchCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-	iupClassRegisterAttribute(ic, "MINDATE", cocoaTouchCalendarGetMinDateAttrib, cocoaTouchCalendarSetMinDateAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "MAXDATE", cocoaTouchCalendarGetMaxDateAttrib, cocoaTouchCalendarSetMaxDateAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttribute(ic, "STYLE", NULL, cocoaTouchCalendarSetStyleAttrib, IUPAF_SAMEASSYSTEM, "INLINE", IUPAF_NO_INHERIT);
 
