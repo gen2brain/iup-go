@@ -819,7 +819,7 @@ static void itermModelClipboard(void* user, const char* text)
 static void itermModelTitle(void* user, const char* title)
 {
   Ihandle* ih = (Ihandle*)user;
-  IFns cb = (IFns)IupGetCallback(ih, "TITLE_CB");
+  IFns cb = (IFns)IupGetCallback(ih, "TITLECHANGED_CB");
   if (cb)
     cb(ih, (char*)title);
 }
@@ -1435,18 +1435,11 @@ static char* itermGetSelectedTextAttrib(Ihandle* ih)
   return ret;
 }
 
-static int itermSetCopySelectionAttrib(Ihandle* ih, const char* value)
+static int itermSetClipboardAttrib(Ihandle* ih, const char* value)
 {
-  (void)value;
-  itermCopySelection(ih);
-  return 0;
-}
-
-static int itermSetPasteAttrib(Ihandle* ih, const char* value)
-{
-  if (value && value[0])
-    itermPasteText(ih, value);
-  else
+  if (iupStrEqualNoCase(value, "COPY"))
+    itermCopySelection(ih);
+  else if (iupStrEqualNoCase(value, "PASTE"))
   {
     char* text = itermGetClipboard();
     if (text)
@@ -1458,27 +1451,31 @@ static int itermSetPasteAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int itermSetSelectAllAttrib(Ihandle* ih, const char* value)
+static int itermSetInsertAttrib(Ihandle* ih, const char* value)
 {
-  Iterm* t = &ih->data->term;
-  (void)value;
-  ih->data->sel_valid = 1;
-  ih->data->sel_mode = ITERM_SEL_LINE;
-  ih->data->sel_start_line = t->sb_pushed - t->sb_count;
-  ih->data->sel_start_col = 0;
-  ih->data->sel_end_line = t->sb_pushed + t->rows - 1;
-  ih->data->sel_end_col = t->cols;
-  itermRedraw(ih);
+  if (value && value[0])
+    itermPasteText(ih, value);
   return 0;
 }
 
 static int itermSetSelectionAttrib(Ihandle* ih, const char* value)
 {
-  if (!value || !value[0])
+  if (iupStrEqualNoCase(value, "ALL"))
   {
-    ih->data->sel_valid = 0;
-    itermRedraw(ih);
+    Iterm* t = &ih->data->term;
+    ih->data->sel_valid = 1;
+    ih->data->sel_mode = ITERM_SEL_LINE;
+    ih->data->sel_start_line = t->sb_pushed - t->sb_count;
+    ih->data->sel_start_col = 0;
+    ih->data->sel_end_line = t->sb_pushed + t->rows - 1;
+    ih->data->sel_end_col = t->cols;
   }
+  else if (iupStrEqualNoCase(value, "NONE"))
+    ih->data->sel_valid = 0;
+  else
+    return 0;
+
+  itermRedraw(ih);
   return 0;
 }
 
@@ -1570,7 +1567,7 @@ static int itermPtyTimer_CB(Ihandle* timer)
     {
       IFni cb;
       itermPtyDetach(ih);
-      cb = (IFni)IupGetCallback(ih, "EXIT_CB");
+      cb = (IFni)IupGetCallback(ih, "EXECEXIT_CB");
       if (cb)
         cb(ih, status);
     }
@@ -1626,7 +1623,7 @@ static char* itermGetPtyErrorAttrib(Ihandle* ih)
   return iupAttribGet(ih, "_IUPTERM_PTYERROR");
 }
 
-static char* itermGetPtySupportAttrib(Ihandle* ih)
+static char* itermGetAvailableAttrib(Ihandle* ih)
 {
   (void)ih;
   return iupStrReturnBoolean(iupTermPtyAvailable());
@@ -1732,10 +1729,10 @@ Iclass* iupTerminalNewClass(void)
   ic->ComputeNaturalSize = itermComputeNaturalSizeMethod;
 
   iupClassRegisterCallback(ic, "INPUT_CB", "si");
-  iupClassRegisterCallback(ic, "TITLE_CB", "s");
+  iupClassRegisterCallback(ic, "TITLECHANGED_CB", "s");
   iupClassRegisterCallback(ic, "BELL_CB", "");
   iupClassRegisterCallback(ic, "TERMSIZE_CB", "ii");
-  iupClassRegisterCallback(ic, "EXIT_CB", "i");
+  iupClassRegisterCallback(ic, "EXECEXIT_CB", "i");
 
   iupClassRegisterReplaceAttribDef(ic, "BORDER", "NO", NULL);
   iupClassRegisterReplaceAttribFlags(ic, "BORDER", IUPAF_READONLY | IUPAF_NO_INHERIT);
@@ -1759,12 +1756,12 @@ Iclass* iupTerminalNewClass(void)
   iupClassRegisterAttribute(ic, "KILL", NULL, itermSetKillAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PTYPID", itermGetPtyPidAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PTYERROR", itermGetPtyErrorAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PTYSUPPORT", itermGetPtySupportAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AVAILABLE", itermGetAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TERMNAME", NULL, NULL, IUPAF_SAMEASSYSTEM, "xterm-256color", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", itermGetSelectedTextAttrib, itermSetSelectionAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "COPYSELECTION", NULL, itermSetCopySelectionAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "PASTE", NULL, itermSetPasteAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTALL", NULL, itermSetSelectAllAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", itermGetSelectedTextAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_SAVE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", NULL, itermSetSelectionAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, itermSetClipboardAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, itermSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOCOPY", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "COLOR", itermGetColorAttrib, itermSetColorAttrib, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
