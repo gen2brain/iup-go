@@ -107,7 +107,7 @@ Returns NULL when the table has no lines.
 **SHOWGRID** (non-inheritable): Shows grid lines between cells.
 Can be "YES" or "NO". Default: "YES".
 
-**FOCUSRECT** (non-inheritable): Draws a dashed focus rectangle around the focused cell.
+**FOCUSFEEDBACK** (non-inheritable): Draws a dashed focus rectangle around the focused cell.
 Can be "YES" or "NO". Default: "YES".
 
 **SHOW** (write-only): Scrolls the table to make the specified cell visible.
@@ -331,7 +331,7 @@ Called only when SHOWDRAGDROP=YES.
 
 **Returns:** IUP_IGNORE to reject the edit and keep the old value.
 
-**EDITION_CB**: Called while the user is editing a cell, on each text change.
+**EDITCHANGED_CB**: Called while the user is editing a cell, on each text change.
 
     int function(Ihandle *ih, int lin, int col, char *new_text);
 

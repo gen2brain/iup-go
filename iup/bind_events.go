@@ -414,12 +414,9 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 	case "RELEASE_CB":
 		setReleaseFunc(ih, fn.(ReleaseFunc))
 	case "EDITION_CB":
-		switch v := fn.(type) {
-		case EditionFunc:
-			setEditionFunc(ih, v)
-		case TableEditionFunc:
-			setTableEditionFunc(ih, v)
-		}
+		setEditionFunc(ih, fn.(EditionFunc))
+	case "EDITCHANGED_CB":
+		setTableEditChangedFunc(ih, fn.(TableEditChangedFunc))
 	case "EDITBEGIN_CB":
 		setEditBeginFunc(ih, fn.(EditBeginFunc))
 	case "EDITEND_CB":

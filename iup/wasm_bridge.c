@@ -145,7 +145,8 @@ static int wasmCbYTickFormatNumber(Ihandle* ih, char* buffer, char* format, doub
 static int wasmCbScroll(Ihandle* ih, int op, float posx, float posy) { return iupwasmGoDispatchF(ih, "SCROLL_CB", op, posx, posy, 0); }
 static int wasmCbTableClick(Ihandle* ih, int lin, int col, char* status) { return iupwasmGoDispatch(ih, "CLICK_CB", lin, col, 0, 0, status); }
 static int wasmCbEnterItem(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "ENTERITEM_CB", lin, col, 0, 0, 0); }
-static int wasmCbTableEdition(Ihandle* ih, int lin, int col, char* text) { return iupwasmGoDispatch(ih, "EDITION_CB", lin, col, 0, 0, text); }
+static int wasmCbTableEditChanged(Ihandle* ih, int lin, int col, char* text) { return iupwasmGoDispatch(ih, "EDITCHANGED_CB", lin, col, 0, 0, text); }
+static int wasmCbEdition(Ihandle* ih, int lin, int col, int mode, int update) { return iupwasmGoDispatch(ih, "EDITION_CB", lin, col, mode, update, 0); }
 static int wasmCbTableRightClick(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "RIGHTCLICK_CB", lin, col, 0, 0, 0); }
 static int wasmCbCellSelection(Ihandle* ih, int lin1, int col1, int lin2, int col2) { return iupwasmGoDispatch(ih, "CELLSELECTION_CB", lin1, col1, lin2, col2, 0); }
 static int wasmCbTableValueChanged(Ihandle* ih, int lin, int col) { return iupwasmGoDispatch(ih, "VALUECHANGED_CB", lin, col, 0, 0, 0); }
@@ -406,8 +407,10 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbTableClick);
   else if (strcmp(name, "ENTERITEM_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbEnterItem);
+  else if (strcmp(name, "EDITCHANGED_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTableEditChanged);
   else if (strcmp(name, "EDITION_CB") == 0)
-    IupSetCallback(ih, name, (Icallback)wasmCbTableEdition);
+    IupSetCallback(ih, name, (Icallback)wasmCbEdition);
   else if (strcmp(name, "THEMECHANGED_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbThemeChanged);
   else if (strcmp(name, "SHOW_CB") == 0)

@@ -306,7 +306,7 @@ static void eflTableSetCellBgColor(Ihandle* ih, int lin, int col)
     a = 255;
   }
 
-  if (iupAttribGetBoolean(ih, "FOCUSRECT") &&
+  if (iupAttribGetBoolean(ih, "FOCUSFEEDBACK") &&
       lin == data->selected_lin && col == data->selected_col)
   {
     int factor = data->has_focus ? (255 - 80) : (255 - 30);
@@ -1501,7 +1501,7 @@ static void eflTableEditKeyDownCallback(void* data, const Efl_Event* ev)
 static void eflTableEditReport(Ihandle* ih, Eo* entry)
 {
   IeflTableData* table_data = IEFL_TABLE_DATA(ih);
-  IFniis edition_cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+  IFniis edition_cb = (IFniis)IupGetCallback(ih, "EDITCHANGED_CB");
   const char* text;
 
   if (!edition_cb || !table_data || table_data->editing_lin == 0)

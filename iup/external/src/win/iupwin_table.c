@@ -2388,7 +2388,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
         case CDDS_ITEMPOSTPAINT:
         {
           if (data->current_row > 0 && data->current_col > 0 &&
-              iupAttribGetBoolean(ih, "FOCUSRECT") &&
+              iupAttribGetBoolean(ih, "FOCUSFEEDBACK") &&
               GetFocus() == data->list_view)
           {
             int lin = (int)lplvcd->nmcd.dwItemSpec + 1;
@@ -2572,7 +2572,7 @@ static LRESULT CALLBACK winTableEditWndProc(HWND hwnd, UINT msg, WPARAM wp, LPAR
 
     if (strcmp(before, after) != 0)
     {
-      IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+      IFniis cb = (IFniis)IupGetCallback(ih, "EDITCHANGED_CB");
       if (cb && cb(ih, lin, col, after) == IUP_IGNORE)
       {
         SetWindowTextA(hwnd, before);
@@ -3231,7 +3231,7 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, winTableSetAllowReorderAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "USERRESIZE", NULL, winTableSetUserResizeAttrib);
 
-  iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FOCUSFEEDBACK", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   /* the alignment is applied when the titles are set */
   iupClassRegisterAttributeId(ic, "ALIGNMENT", NULL, (IattribSetIdFunc)winTableSetAlignmentAttrib, IUPAF_NO_INHERIT);

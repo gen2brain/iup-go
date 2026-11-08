@@ -157,7 +157,7 @@ public:
 
     QStyledItemDelegate::paint(painter, opt, index);
 
-    if (hasFocus && iupAttribGetBoolean(ih, "FOCUSRECT"))
+    if (hasFocus && iupAttribGetBoolean(ih, "FOCUSFEEDBACK"))
     {
       QStyleOptionFocusRect focusOption;
       focusOption.rect = option.rect.adjusted(1, 1, -1, -1);
@@ -201,7 +201,7 @@ public:
 
     Ihandle* table = ih;
     QObject::connect(fixedLineEdit, &QLineEdit::textEdited, fixedLineEdit, [table, lin, col, fixedLineEdit](const QString& text) {
-      auto cb = reinterpret_cast<IFniis>(IupGetCallback(table, "EDITION_CB"));
+      auto cb = reinterpret_cast<IFniis>(IupGetCallback(table, "EDITCHANGED_CB"));
       QVariant last = fixedLineEdit->property("iup_edit_text");
       if (!last.isValid())
       {

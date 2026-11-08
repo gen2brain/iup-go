@@ -188,7 +188,7 @@ public:
 
     if (strcmp(before, value()) != 0)
     {
-      auto cb = reinterpret_cast<IFniis>(IupGetCallback(iup_handle, "EDITION_CB"));
+      auto cb = reinterpret_cast<IFniis>(IupGetCallback(iup_handle, "EDITCHANGED_CB"));
       if (cb && cb(iup_handle, iupAttribGetInt(iup_handle, "_IUPFLTK_TABLE_EDIT_LIN"),
                    iupAttribGetInt(iup_handle, "_IUPFLTK_TABLE_EDIT_COL"), const_cast<char*>(value())) == IUP_IGNORE)
       {

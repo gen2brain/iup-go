@@ -37,7 +37,7 @@ func main() {
 	table.SetAttribute("FOCUSCELL", "6:4")
 
 	// Disable cell/column dashed rectangle.
-	table.SetAttribute("FOCUSRECT", "NO")
+	table.SetAttribute("FOCUSFEEDBACK", "NO")
 
 	// Populate with sample data
 	sampleData := [][]string{
@@ -172,9 +172,9 @@ func main() {
 	}))
 
 	// Edition callback (for editable columns)
-	iup.SetCallback(table, "EDITION_CB", iup.TableEditionFunc(func(ih iup.Ihandle, lin, col int, update string) int {
+	iup.SetCallback(table, "EDITCHANGED_CB", iup.TableEditChangedFunc(func(ih iup.Ihandle, lin, col int, update string) int {
 		log := iup.GetHandle("log")
-		log.SetAttribute("APPEND", fmt.Sprintf("EDITION_CB: Cell [%d,%d] edited to '%s'\n", lin, col, update))
+		log.SetAttribute("APPEND", fmt.Sprintf("EDITCHANGED_CB: Cell [%d,%d] edited to '%s'\n", lin, col, update))
 		return iup.DEFAULT
 	}))
 

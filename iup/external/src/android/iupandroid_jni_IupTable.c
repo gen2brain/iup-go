@@ -124,7 +124,7 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchEdi
   Ihandle* ih = (Ihandle*)ihandle_ptr;
   if (!ih) return 0;
 
-  IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+  IFniis cb = (IFniis)IupGetCallback(ih, "EDITCHANGED_CB");
   if (!cb) return 0;
 
   const char* text = j_text ? (*jni_env)->GetStringUTFChars(jni_env, j_text, NULL) : "";

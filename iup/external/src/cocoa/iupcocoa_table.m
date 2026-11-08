@@ -94,7 +94,7 @@ typedef struct _IcocoaTableData {
 static void cocoaTableDrawFocusRect(IupCocoaTableCellView* cellView, NSRect bounds)
 {
   Ihandle* ih = cellView.ih;
-  if (!cellView.isFocusedCell || !ih || !iupAttribGetBoolean(ih, "FOCUSRECT"))
+  if (!cellView.isFocusedCell || !ih || !iupAttribGetBoolean(ih, "FOCUSFEEDBACK"))
     return;
 
   NSView* rowView = [cellView superview];
@@ -2277,7 +2277,7 @@ static NSInteger cocoaTableRowOfField(Ihandle* ih, NSTableView* tableView, NSVie
     last = value ? [NSString stringWithUTF8String:value] : @"";
   }
 
-  IFniis cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+  IFniis cb = (IFniis)IupGetCallback(ih, "EDITCHANGED_CB");
   if (cb && cb(ih, lin, col, (char*)[text UTF8String]) == IUP_IGNORE)
   {
     NSInteger pos = (NSInteger)[editor selectedRange].location;
@@ -3615,7 +3615,7 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
   ic->UnMap = cocoaTableUnMapMethod;
   ic->LayoutUpdate = cocoaTableLayoutUpdateMethod;
 
-  iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FOCUSFEEDBACK", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   iupClassRegisterReplaceAttribFunc(ic, "SORTABLE", NULL, cocoaTableSetSortableAttrib);
   iupClassRegisterReplaceAttribFunc(ic, "ALLOWREORDER", NULL, cocoaTableSetReorderAttrib);

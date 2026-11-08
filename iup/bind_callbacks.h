@@ -586,9 +586,9 @@ static void goIupSetUpdateFunc(Ihandle *ih) {
 	IupSetCallback(ih, "UPDATE_CB", (Icallback) goIupUpdateCB);
 }
 
-CGO_EXPORT extern int goIupTableEditionCB(void *, int lin, int col, char* update);
-static void goIupSetTableEditionFunc(Ihandle *ih) {
-	IupSetCallback(ih, "EDITION_CB", (Icallback) goIupTableEditionCB);
+CGO_EXPORT extern int goIupTableEditChangedCB(void *, int lin, int col, char* update);
+static void goIupSetTableEditChangedFunc(Ihandle *ih) {
+	IupSetCallback(ih, "EDITCHANGED_CB", (Icallback) goIupTableEditChangedCB);
 }
 
 CGO_EXPORT extern int goIupTableRightClickCB(void *, int lin, int col);

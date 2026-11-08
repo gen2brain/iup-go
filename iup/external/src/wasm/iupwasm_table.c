@@ -437,7 +437,7 @@ static void wasmTableUpdateFocus(Ihandle* ih, int lin, int col)
 {
   int id = iupwasmIdOf(ih);
   int select = !iupStrEqualNoCase(IupGetAttribute(ih, "SELECTIONMODE"), "NONE") && !iupTableCellsMode(ih);
-  int focusrect = iupAttribGetBoolean(ih, "FOCUSRECT");
+  int focusrect = iupAttribGetBoolean(ih, "FOCUSFEEDBACK");
   if (id && !iupAttribGetBoolean(ih, "VIRTUALMODE"))  /* virtual rows aren't lin-indexed in the DOM */
     iupwasmJsTableFocus(id, lin, col, select, focusrect);
 }
@@ -1076,7 +1076,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableEditChange(int id, int lin, int col, const
 
   if (ih)
   {
-    cb = (IFniis)IupGetCallback(ih, "EDITION_CB");
+    cb = (IFniis)IupGetCallback(ih, "EDITCHANGED_CB");
     if (cb && cb(ih, lin, col, (char*)text) == IUP_IGNORE)
       ok = 0;
   }

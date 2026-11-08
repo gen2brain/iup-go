@@ -1541,7 +1541,7 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterCallback(ic, "VALUECHANGED_CB", "ii");
   iupClassRegisterCallback(ic, "EDITBEGIN_CB", "ii");
   iupClassRegisterCallback(ic, "EDITEND_CB", "iisi");
-  iupClassRegisterCallback(ic, "EDITION_CB", "iis");
+  iupClassRegisterCallback(ic, "EDITCHANGED_CB", "iis");
   iupClassRegisterCallback(ic, "VALUE_CB", "ii=s");
   iupClassRegisterCallback(ic, "IMAGE_CB", "ii=s");
   iupClassRegisterCallback(ic, "REORDER_CB", "ii");
@@ -1596,7 +1596,7 @@ Iclass* iupTableNewClass(void)
 
   /* Display attributes */
   iupClassRegisterAttribute(ic, "SHOWGRID", NULL, iTableSetShowGridAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FOCUSRECT", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FOCUSFEEDBACK", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
 
   /* Editing attributes */
   iupClassRegisterAttribute(ic, "EDITABLE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);

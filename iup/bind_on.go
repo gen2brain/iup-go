@@ -251,7 +251,7 @@ var (
 	TabChangeCB                   = newCallback[TabChangeFunc]("TABCHANGE_CB")
 	TabChangePosCB                = newCallback[TabChangePosFunc]("TABCHANGEPOS_CB")
 	TabCloseCB                    = newCallback[TabCloseFunc]("TABCLOSE_CB")
-	TableEditionCB                = newCallback[TableEditionFunc]("EDITION_CB")
+	TableEditChangedCB            = newCallback[TableEditChangedFunc]("EDITCHANGED_CB")
 	TableRightClickCB             = newCallback[TableRightClickFunc]("RIGHTCLICK_CB")
 	TableImageCB                  = newCallback[TableImageFunc]("IMAGE_CB")
 	TableSortCB                   = newCallback[TableSortFunc]("SORT_CB")
