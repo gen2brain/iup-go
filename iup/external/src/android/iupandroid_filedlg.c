@@ -222,5 +222,5 @@ IUP_SDK_API void iupdrvFileDlgInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FILTERUSED",    NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MULTIPLEFILES", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   /* Android-only; SAF content:// URI for the last successful pick. */
-  iupClassRegisterAttribute(ic, "VALUE_URI",     NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE_URI",     NULL, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 }
