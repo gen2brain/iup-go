@@ -123,7 +123,7 @@ func previewButton() iup.Ihandle {
 	iup.SetCallback(b, "ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
 		view := iup.Text()
 		view.SetAttributes(`MULTILINE=YES, READONLY=YES, WORDWRAP=YES, EXPAND=YES, SIZE=380x220, FONT="Courier, 10"`)
-		view.SetAttribute("VALUE", editorOf(ih).GetAttribute("GETMARKDOWNVALUE"))
+		view.SetAttribute("VALUE", editorOf(ih).GetAttribute("MARKDOWNVALUE"))
 
 		btnClose := iup.Button("Close")
 		btnClose.SetAttribute("PADDING", "10x2")
