@@ -307,6 +307,11 @@ IUP_SDK_API int iupStrToLinColRange(const char* str, int* lin1, int* col1, int* 
  * \ingroup str */
 IUP_SDK_API int iupStrToDate(const char* str, int* year, int* month, int* day);
 
+/** Clamps the date to the range given by min_date and max_date, both "year/month/day" or NULL for no limit.
+ * Returns 1 when the date was changed, else 0.
+ * \ingroup str */
+IUP_SDK_API int iupStrDateClamp(const char* min_date, const char* max_date, int* year, int* month, int* day);
+
 /** Returns the file extension of a file name.
  * Supports UNIX and Windows directory separators.
  * Must free the returned string.

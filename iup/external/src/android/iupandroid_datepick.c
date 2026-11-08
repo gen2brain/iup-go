@@ -131,9 +131,53 @@ static int androidDatePickSetValueAttrib(Ihandle* ih, const char* value)
   }
   if (m < 1) m = 1; else if (m > 12) m = 12;
   if (d < 1) d = 1; else if (d > 31) d = 31;
+  iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &y, &m, &d);
   androidDatePickStoreDate(ih, y, m, d);
   androidDatePickPushValue(ih, y, m, d);
   return 0;
+}
+
+static void androidDatePickUpdateRange(Ihandle* ih)
+{
+  int min_y = 0, min_m = 0, min_d = 0, max_y = 0, max_m = 0, max_d = 0;
+  int y = iupAttribGetInt(ih, "_IUPDATEPICK_YEAR");
+  int m = iupAttribGetInt(ih, "_IUPDATEPICK_MONTH");
+  int d = iupAttribGetInt(ih, "_IUPDATEPICK_DAY");
+
+  if (!iupStrToDate(iupAttribGet(ih, "MINDATE"), &min_y, &min_m, &min_d))
+    min_y = 0;
+  if (!iupStrToDate(iupAttribGet(ih, "MAXDATE"), &max_y, &max_m, &max_d))
+    max_y = 0;
+
+  if (ih->handle)
+  {
+    JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+    jclass cls = androidDatePickFindHelper(env);
+    jmethodID mid = (*env)->GetStaticMethodID(env, cls, "setRange", "(Lcom/google/android/material/button/MaterialButton;IIIIII)V");
+    (*env)->CallStaticVoidMethod(env, cls, mid, (jobject)ih->handle, (jint)min_y, (jint)min_m, (jint)min_d, (jint)max_y, (jint)max_m, (jint)max_d);
+    iupAndroid_CheckException(env, "IupDatePickHelper.setRange");
+    (*env)->DeleteLocalRef(env, cls);
+  }
+
+  if (y != 0 && iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &y, &m, &d))
+  {
+    androidDatePickStoreDate(ih, y, m, d);
+    androidDatePickPushValue(ih, y, m, d);
+  }
+}
+
+static int androidDatePickSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MINDATE", value);
+  androidDatePickUpdateRange(ih);
+  return 1;
+}
+
+static int androidDatePickSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MAXDATE", value);
+  androidDatePickUpdateRange(ih);
+  return 1;
 }
 
 static char* androidDatePickGetValueAttrib(Ihandle* ih)
@@ -273,6 +317,8 @@ Iclass* iupDatePickNewClass(void)
 
   iupClassRegisterAttribute(ic, "VALUE", androidDatePickGetValueAttrib, androidDatePickSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", androidDatePickGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", NULL, androidDatePickSetMinDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", NULL, androidDatePickSetMaxDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SEPARATOR", NULL, androidDatePickSetSeparatorAttrib, IUPAF_SAMEASSYSTEM, "/", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ZEROPRECED", NULL, androidDatePickSetZeroprecedAttrib, NULL, NULL, IUPAF_NO_INHERIT);

@@ -36,10 +36,51 @@ static void gtk4CalendarSetDate(GtkCalendar* calendar, GDateTime* dt)
 #endif
 }
 
+static void gtk4CalendarDaySelected(GtkCalendar* calendar, Ihandle* ih);
+
+static int gtk4CalendarGetDateKey(Ihandle* ih)
+{
+  GDateTime* dt = gtk_calendar_get_date(GTK_CALENDAR(ih->handle));
+  int key = g_date_time_get_year(dt) * 10000 + g_date_time_get_month(dt) * 100 + g_date_time_get_day_of_month(dt);
+  g_date_time_unref(dt);
+  return key;
+}
+
+static int gtk4CalendarClamp(Ihandle* ih)
+{
+  GDateTime* dt = gtk_calendar_get_date(GTK_CALENDAR(ih->handle));
+  int year = g_date_time_get_year(dt);
+  int month = g_date_time_get_month(dt);
+  int day = g_date_time_get_day_of_month(dt);
+  g_date_time_unref(dt);
+
+  if (!iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+    return 0;
+
+  dt = g_date_time_new_local(year, month, day, 0, 0, 0);
+  if (!dt)
+    return 0;
+
+  g_signal_handlers_block_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtk4CalendarDaySelected), ih);
+  gtk4CalendarSetDate(GTK_CALENDAR(ih->handle), dt);
+  g_signal_handlers_unblock_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtk4CalendarDaySelected), ih);
+  g_date_time_unref(dt);
+  return 1;
+}
+
 static void gtk4CalendarDaySelected(GtkCalendar* calendar, Ihandle* ih)
 {
-  iupBaseCallValueChangedCb(ih);
+  int date;
   (void)calendar;
+
+  gtk4CalendarClamp(ih);
+  date = gtk4CalendarGetDateKey(ih);
+
+  if (date != iupAttribGetInt(ih, "_IUP_OLD_DATE"))
+  {
+    iupAttribSetInt(ih, "_IUP_OLD_DATE", date);
+    iupBaseCallValueChangedCb(ih);
+  }
 }
 
 static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
@@ -86,7 +127,26 @@ static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
 
   g_signal_handlers_unblock_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtk4CalendarDaySelected), ih);
 
+  gtk4CalendarClamp(ih);
+  iupAttribSetInt(ih, "_IUP_OLD_DATE", gtk4CalendarGetDateKey(ih));
+
   return 0; /* do not store value in hash table */
+}
+
+static int gtk4CalendarSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MINDATE", value);
+  if (gtk4CalendarClamp(ih))
+    iupAttribSetInt(ih, "_IUP_OLD_DATE", gtk4CalendarGetDateKey(ih));
+  return 1;
+}
+
+static int gtk4CalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MAXDATE", value);
+  if (gtk4CalendarClamp(ih))
+    iupAttribSetInt(ih, "_IUP_OLD_DATE", gtk4CalendarGetDateKey(ih));
+  return 1;
 }
 
 static char* gtk4CalendarGetValueAttrib(Ihandle* ih)
@@ -191,6 +251,8 @@ Iclass* iupCalendarNewClass(void)
   iupClassRegisterAttribute(ic, "VALUE", gtk4CalendarGetValueAttrib, gtk4CalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WEEKNUMBERS", NULL, gtk4CalendarSetWeekNumbersAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", gtk4CalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", NULL, gtk4CalendarSetMinDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", NULL, gtk4CalendarSetMaxDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   return ic;
 }

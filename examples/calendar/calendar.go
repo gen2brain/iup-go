@@ -10,7 +10,7 @@ func main() {
 	iup.Open()
 	defer iup.Close()
 
-	cal := iup.Calendar().SetAttributes(`EXPAND=YES, VALUE="2024/06/15", WEEKNUMBERS=YES`)
+	cal := iup.Calendar().SetAttributes(`EXPAND=YES, VALUE="2024/06/15", WEEKNUMBERS=YES, MINDATE="2024/06/05", MAXDATE="2024/06/25"`)
 
 	dlg := iup.Dialog(
 		iup.Frame(cal),

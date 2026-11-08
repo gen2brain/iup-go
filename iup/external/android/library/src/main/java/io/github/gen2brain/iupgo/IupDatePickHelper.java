@@ -8,9 +8,14 @@ import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.fragment.app.FragmentActivity;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.datepicker.CalendarConstraints;
+import com.google.android.material.datepicker.CompositeDateValidator;
+import com.google.android.material.datepicker.DateValidatorPointBackward;
+import com.google.android.material.datepicker.DateValidatorPointForward;
 import com.google.android.material.datepicker.MaterialDatePicker;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Locale;
@@ -26,6 +31,7 @@ public final class IupDatePickHelper
     {
         long ihandlePtr;
         int year, month, day;
+        long minMs = Long.MIN_VALUE, maxMs = Long.MAX_VALUE;
         String pattern = "d/M/yyyy";
         MaterialDatePicker<Long> currentPicker;
 
@@ -52,6 +58,22 @@ public final class IupDatePickHelper
         if (!(button instanceof IupDatePickButton b)) return;
         b.year = year; b.month = month; b.day = day;
         renderText(b);
+    }
+
+    @Keep
+    public static void setRange(MaterialButton button, int minYear, int minMonth, int minDay, int maxYear, int maxMonth, int maxDay)
+    {
+        if (!(button instanceof IupDatePickButton b)) return;
+        b.minMs = minYear > 0 ? utcMillis(minYear, minMonth, minDay) : Long.MIN_VALUE;
+        b.maxMs = maxYear > 0 ? utcMillis(maxYear, maxMonth, maxDay) : Long.MAX_VALUE;
+    }
+
+    private static long utcMillis(int year, int month, int day)
+    {
+        Calendar utc = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
+        utc.clear();
+        utc.set(year, month - 1, day);
+        return utc.getTimeInMillis();
     }
 
     @Keep
@@ -91,14 +113,28 @@ public final class IupDatePickHelper
         if (!(a instanceof FragmentActivity fa)) return;
 
         /* MaterialDatePicker uses UTC midnight ms. */
-        Calendar utc = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-        utc.clear();
-        utc.set(b.year, b.month - 1, b.day);
-        long selection = utc.getTimeInMillis();
+        long selection = utcMillis(b.year, b.month, b.day);
 
-        MaterialDatePicker<Long> picker = MaterialDatePicker.Builder.datePicker()
-            .setSelection(selection)
-            .build();
+        MaterialDatePicker.Builder<Long> builder = MaterialDatePicker.Builder.datePicker().setSelection(selection);
+        if (b.minMs != Long.MIN_VALUE || b.maxMs != Long.MAX_VALUE)
+        {
+            CalendarConstraints.Builder constraints = new CalendarConstraints.Builder();
+            ArrayList<CalendarConstraints.DateValidator> validators = new ArrayList<>();
+            if (b.minMs != Long.MIN_VALUE)
+            {
+                constraints.setStart(b.minMs);
+                validators.add(DateValidatorPointForward.from(b.minMs));
+            }
+            if (b.maxMs != Long.MAX_VALUE)
+            {
+                constraints.setEnd(b.maxMs);
+                validators.add(DateValidatorPointBackward.before(b.maxMs));
+            }
+            constraints.setOpenAt(selection);
+            constraints.setValidator(CompositeDateValidator.allOf(validators));
+            builder.setCalendarConstraints(constraints.build());
+        }
+        MaterialDatePicker<Long> picker = builder.build();
 
         picker.addOnPositiveButtonClickListener(ms -> {
             Calendar c = new GregorianCalendar(TimeZone.getTimeZone("UTC"));

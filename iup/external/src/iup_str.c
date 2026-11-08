@@ -1126,6 +1126,26 @@ IUP_SDK_API int iupStrToDate(const char* str, int* year, int* month, int* day)
   return 1;
 }
 
+IUP_SDK_API int iupStrDateClamp(const char* min_date, const char* max_date, int* year, int* month, int* day)
+{
+  int y, m, d;
+  int key = *year * 10000 + *month * 100 + *day;
+
+  if (iupStrToDate(min_date, &y, &m, &d) && key < y * 10000 + m * 100 + d)
+  {
+    *year = y; *month = m; *day = d;
+    return 1;
+  }
+
+  if (iupStrToDate(max_date, &y, &m, &d) && key > y * 10000 + m * 100 + d)
+  {
+    *year = y; *month = m; *day = d;
+    return 1;
+  }
+
+  return 0;
+}
+
 IUP_SDK_API char* iupStrFileGetPath(const char* filename)
 {
   if (!filename)

@@ -35,6 +35,8 @@ struct IupWinUICalendarAux
 {
   event_token selectedDatesChangedToken;
   bool ignoreChange;
+  DateTime defaultMinDate{};
+  DateTime defaultMaxDate{};
 
   winrt::event_token gotFocusToken{};
   winrt::event_token lostFocusToken{};
@@ -96,28 +98,73 @@ static int winuiCalendarSetValueAttrib(Ihandle* ih, const char* value)
   if (!cv || !aux)
     return 0;
 
-  aux->ignoreChange = true;
+  int year, month, day;
   if (value && iupStrEqualNoCase(value, "TODAY"))
   {
-    auto now = winrt::clock::now();
-    cv.SelectedDates().Clear();
-    cv.SelectedDates().Append(now);
-    cv.SetDisplayDate(now);
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    year = st.wYear; month = st.wMonth; day = st.wDay;
   }
-  else if (value)
-  {
-    int year, month, day;
-    if (iupStrToDate(value, &year, &month, &day))
-    {
-      auto dt = winuiCalendarMakeDateTime(year, month, day);
-      cv.SelectedDates().Clear();
-      cv.SelectedDates().Append(dt);
-      cv.SetDisplayDate(dt);
-    }
-  }
+  else if (!iupStrToDate(value, &year, &month, &day))
+    return 0;
+
+  iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day);
+
+  auto dt = winuiCalendarMakeDateTime(year, month, day);
+  aux->ignoreChange = true;
+  cv.SelectedDates().Clear();
+  cv.SelectedDates().Append(dt);
+  cv.SetDisplayDate(dt);
   aux->ignoreChange = false;
 
   return 0;
+}
+
+static void winuiCalendarUpdateRange(Ihandle* ih)
+{
+  auto cv = winuiGetHandle<CalendarView>(ih);
+  auto* aux = winuiGetAux<IupWinUICalendarAux>(ih, IUPWINUI_CALENDAR_AUX);
+  int year, month, day;
+  if (!cv || !aux)
+    return;
+
+  if (iupStrToDate(iupAttribGet(ih, "MINDATE"), &year, &month, &day))
+    cv.MinDate(winuiCalendarMakeDateTime(year, month, day));
+  else
+    cv.MinDate(aux->defaultMinDate);
+
+  if (iupStrToDate(iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+    cv.MaxDate(winuiCalendarMakeDateTime(year, month, day));
+  else
+    cv.MaxDate(aux->defaultMaxDate);
+
+  if (cv.SelectedDates().Size() > 0)
+  {
+    winuiCalendarGetDate(cv.SelectedDates().GetAt(0), &year, &month, &day);
+    if (iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+    {
+      auto dt = winuiCalendarMakeDateTime(year, month, day);
+      aux->ignoreChange = true;
+      cv.SelectedDates().Clear();
+      cv.SelectedDates().Append(dt);
+      cv.SetDisplayDate(dt);
+      aux->ignoreChange = false;
+    }
+  }
+}
+
+static int winuiCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MINDATE", value);
+  winuiCalendarUpdateRange(ih);
+  return 1;
+}
+
+static int winuiCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MAXDATE", value);
+  winuiCalendarUpdateRange(ih);
+  return 1;
 }
 
 static char* winuiCalendarGetValueAttrib(Ihandle* ih)
@@ -155,6 +202,8 @@ static int winuiCalendarMapMethod(Ihandle* ih)
   cv.HorizontalAlignment(HorizontalAlignment::Left);
   cv.VerticalAlignment(VerticalAlignment::Top);
   cv.SelectionMode(CalendarViewSelectionMode::Single);
+  aux->defaultMinDate = cv.MinDate();
+  aux->defaultMaxDate = cv.MaxDate();
 
   auto now = winrt::clock::now();
   cv.SelectedDates().Append(now);
@@ -266,6 +315,8 @@ extern "C" Iclass* iupCalendarNewClass(void)
 
   iupClassRegisterAttribute(ic, "VALUE", winuiCalendarGetValueAttrib, winuiCalendarSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", winuiCalendarGetTodayAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", nullptr, winuiCalendarSetMinDateAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", nullptr, winuiCalendarSetMaxDateAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WEEKNUMBERS", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
   return ic;

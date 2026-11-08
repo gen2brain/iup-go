@@ -34,41 +34,91 @@ static const void* IUP_COCOA_CALENDAR_DELEGATE_OBJ_KEY = "IUP_COCOA_CALENDAR_DEL
 
 @end
 
+static NSDate* cocoaCalendarMakeDate(int year, int month, int day)
+{
+  NSDateComponents* components = [[NSDateComponents alloc] init];
+  NSDate* date;
+
+  [components setYear:year];
+  [components setMonth:month];
+  [components setDay:day];
+  date = [[NSCalendar currentCalendar] dateFromComponents:components];
+  [components release];
+  return date;
+}
+
+static void cocoaCalendarGetDate(NSDate* date, int* year, int* month, int* day)
+{
+  NSDateComponents* components = [[NSCalendar currentCalendar] components:NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay
+                                                                 fromDate:date];
+  *year = (int)[components year];
+  *month = (int)[components month];
+  *day = (int)[components day];
+}
+
 static int cocoaCalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
   NSDatePicker* date_picker = (NSDatePicker*)ih->handle;
+  int year, month, day;
+  NSDate* date;
 
   if (iupStrEqualNoCase(value, "TODAY"))
+    cocoaCalendarGetDate([NSDate date], &year, &month, &day);
+  else if (iupStrToDate(value, &year, &month, &day))
   {
-    [date_picker setDateValue:[NSDate date]];
+    if (month < 1) month = 1;
+    if (month > 12) month = 12;
+    if (day < 1) day = 1;
+    if (day > 31) day = 31;
   }
-  else if (value)
-  {
-    int year, month, day;
-    if (iupStrToDate(value, &year, &month, &day))
-    {
-      if (month < 1) month = 1;
-      if (month > 12) month = 12;
-      if (day < 1) day = 1;
-      if (day > 31) day = 31;
+  else
+    return 0;
 
-      NSDateComponents* components = [[NSDateComponents alloc] init];
-      [components setYear:year];
-      [components setMonth:month];
-      [components setDay:day];
+  iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day);
 
-      NSCalendar* calendar = [NSCalendar currentCalendar];
-      NSDate* parsed_date = [calendar dateFromComponents:components];
-      [components release];
-
-      if (parsed_date)
-      {
-        [date_picker setDateValue:parsed_date];
-      }
-    }
-  }
+  date = cocoaCalendarMakeDate(year, month, day);
+  if (date)
+    [date_picker setDateValue:date];
 
   return 0;
+}
+
+static void cocoaCalendarUpdateRange(Ihandle* ih)
+{
+  NSDatePicker* date_picker = (NSDatePicker*)ih->handle;
+  int year, month, day;
+
+  if (iupStrToDate(iupAttribGet(ih, "MINDATE"), &year, &month, &day))
+    [date_picker setMinDate:cocoaCalendarMakeDate(year, month, day)];
+  else
+    [date_picker setMinDate:nil];
+
+  if (iupStrToDate(iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+    [date_picker setMaxDate:cocoaCalendarMakeDate(year, month, day)];
+  else
+    [date_picker setMaxDate:nil];
+
+  cocoaCalendarGetDate([date_picker dateValue], &year, &month, &day);
+  if (iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  {
+    NSDate* date = cocoaCalendarMakeDate(year, month, day);
+    if (date)
+      [date_picker setDateValue:date];
+  }
+}
+
+static int cocoaCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MINDATE", value);
+  cocoaCalendarUpdateRange(ih);
+  return 1;
+}
+
+static int cocoaCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MAXDATE", value);
+  cocoaCalendarUpdateRange(ih);
+  return 1;
 }
 
 static char* cocoaCalendarGetIupStrFromDate(NSDate* the_date)
@@ -260,6 +310,8 @@ Iclass* iupCalendarNewClass(void)
   iupClassRegisterAttribute(ic, "VALUE", cocoaCalendarGetValueAttrib, cocoaCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WEEKNUMBERS", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", cocoaCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", NULL, cocoaCalendarSetMinDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", NULL, cocoaCalendarSetMaxDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   return ic;
 }

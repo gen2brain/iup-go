@@ -195,6 +195,42 @@ static int qtDatePickSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int qtDatePickSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  auto* datepick = reinterpret_cast<IupQtDatePick*>(ih->handle);
+  int year, month, day;
+
+  if (!datepick)
+    return 1;
+
+  bool blocked = datepick->blockSignals(true);
+  if (iupStrToDate(value, &year, &month, &day) && QDate(year, month, day).isValid())
+    datepick->setMinimumDate(QDate(year, month, day));
+  else
+    datepick->clearMinimumDate();
+  datepick->blockSignals(blocked);
+
+  return 1;
+}
+
+static int qtDatePickSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  auto* datepick = reinterpret_cast<IupQtDatePick*>(ih->handle);
+  int year, month, day;
+
+  if (!datepick)
+    return 1;
+
+  bool blocked = datepick->blockSignals(true);
+  if (iupStrToDate(value, &year, &month, &day) && QDate(year, month, day).isValid())
+    datepick->setMaximumDate(QDate(year, month, day));
+  else
+    datepick->clearMaximumDate();
+  datepick->blockSignals(blocked);
+
+  return 1;
+}
+
 static char* qtDatePickGetValueAttrib(Ihandle* ih)
 {
   auto* datepick = reinterpret_cast<IupQtDatePick*>(ih->handle);
@@ -350,6 +386,8 @@ extern "C" Iclass* iupDatePickNewClass(void)
 
   iupClassRegisterAttribute(ic, "VALUE", qtDatePickGetValueAttrib, qtDatePickSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", qtDatePickGetTodayAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", nullptr, qtDatePickSetMinDateAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", nullptr, qtDatePickSetMaxDateAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SEPARATOR", nullptr, qtDatePickSetSeparatorAttrib, IUPAF_SAMEASSYSTEM, "/", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ZEROPRECED", nullptr, qtDatePickSetZeroprecedAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);

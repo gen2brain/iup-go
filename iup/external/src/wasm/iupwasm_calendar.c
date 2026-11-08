@@ -98,6 +98,11 @@ static void wasmCalendarMonthLabel(int y, int m, char* buf, int len)
   snprintf(buf, len, "%s %d", names[m - 1], y);
 }
 
+static int wasmCalendarOutOfRange(Ihandle* ih, int y, int m, int d)
+{
+  return iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &y, &m, &d);
+}
+
 static void wasmCalendarRender(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih);
@@ -148,6 +153,8 @@ static void wasmCalendarRender(Ihandle* ih)
     {
       int is_today = (cell_y == today_y && cell_m == today_m && cell_d == today_d);
       int is_sel = (cell_y == sel_y && cell_m == sel_m && cell_d == sel_d);
+      if (wasmCalendarOutOfRange(ih, cell_y, cell_m, cell_d))
+        outside = 1;
       iupwasmJsCalCell(id, i, cell_d, cell_y, cell_m, outside, is_today, is_sel);
     }
 
@@ -173,6 +180,8 @@ static int wasmCalendarSetValueAttrib(Ihandle* ih, const char* value)
   if (d < 1) d = 1;
   if (d > 31) d = 31;
 
+  iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &y, &m, &d);
+
   iupAttribSetInt(ih, "_IUP_SEL_Y", y);
   iupAttribSetInt(ih, "_IUP_SEL_M", m);
   iupAttribSetInt(ih, "_IUP_SEL_D", d);
@@ -183,6 +192,39 @@ static int wasmCalendarSetValueAttrib(Ihandle* ih, const char* value)
   if (ih->handle)
     wasmCalendarRender(ih);
   return 0;
+}
+
+static int wasmCalendarSetRangeAttrib(Ihandle* ih, const char* name, const char* value)
+{
+  int y = iupAttribGetInt(ih, "_IUP_SEL_Y");
+  int m = iupAttribGetInt(ih, "_IUP_SEL_M");
+  int d = iupAttribGetInt(ih, "_IUP_SEL_D");
+
+  iupAttribSetStr(ih, name, value);
+
+  if (y && iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &y, &m, &d))
+  {
+    iupAttribSetInt(ih, "_IUP_SEL_Y", y);
+    iupAttribSetInt(ih, "_IUP_SEL_M", m);
+    iupAttribSetInt(ih, "_IUP_SEL_D", d);
+    iupAttribSetInt(ih, "_IUP_SHOW_Y", y);
+    iupAttribSetInt(ih, "_IUP_SHOW_M", m);
+    iupAttribSetInt(ih, "_IUP_OLD_DAY", d);
+  }
+
+  if (ih->handle)
+    wasmCalendarRender(ih);
+  return 1;
+}
+
+static int wasmCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  return wasmCalendarSetRangeAttrib(ih, "MINDATE", value);
+}
+
+static int wasmCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  return wasmCalendarSetRangeAttrib(ih, "MAXDATE", value);
 }
 
 static char* wasmCalendarGetValueAttrib(Ihandle* ih)
@@ -217,7 +259,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmCalendarSelect(int id, int year, int month, int
   Icallback cb;
   int old_day;
 
-  if (!ih)
+  if (!ih || wasmCalendarOutOfRange(ih, year, month, day))
     return;
 
   iupAttribSetInt(ih, "_IUP_SEL_Y", year);
@@ -313,6 +355,8 @@ Iclass* iupCalendarNewClass(void)
 
   iupClassRegisterAttribute(ic, "VALUE", wasmCalendarGetValueAttrib, wasmCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", wasmCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", NULL, wasmCalendarSetMinDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", NULL, wasmCalendarSetMaxDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WEEKNUMBERS", NULL, wasmCalendarSetWeekNumbersAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   return ic;

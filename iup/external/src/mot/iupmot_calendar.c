@@ -81,6 +81,11 @@ static int motCalendarISOWeek(int year, int month, int day)
   return week;
 }
 
+static int motCalendarOutOfRange(Ihandle* ih, int year, int month, int day)
+{
+  return iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day);
+}
+
 static void motCalendarRebuildGrid(Ihandle* ih)
 {
   IcalData* data = (IcalData*)iupAttribGet(ih, "_IUP_CALDATA");
@@ -189,6 +194,7 @@ static void motCalendarRebuildGrid(Ihandle* ih)
       if (!btn) continue;
 
       IupSetfAttribute(btn, "TITLE", "%d", data->grid_day[r][c]);
+      IupSetAttribute(btn, "ACTIVE", motCalendarOutOfRange(ih, data->grid_year[r][c], data->grid_month[r][c], data->grid_day[r][c]) ? "NO" : "YES");
 
       is_cur_month = (data->grid_month[r][c] == data->cur_month);
       is_selected = (data->grid_year[r][c] == data->sel_year && data->grid_month[r][c] == data->sel_month && data->grid_day[r][c] == data->sel_day);
@@ -234,6 +240,9 @@ static int motCalendarDayButton_CB(Ihandle* btn)
 
   r = iupAttribGetInt(btn, "_IUP_CALROW");
   c = iupAttribGetInt(btn, "_IUP_CALCOL");
+
+  if (motCalendarOutOfRange(ih, data->grid_year[r][c], data->grid_month[r][c], data->grid_day[r][c]))
+    return IUP_DEFAULT;
 
   data->sel_year = data->grid_year[r][c];
   data->sel_month = data->grid_month[r][c];
@@ -310,15 +319,46 @@ static int motCalendarSetValueAttrib(Ihandle* ih, const char* value)
       data->sel_year = year;
       data->sel_month = month;
       data->sel_day = day;
-      data->cur_year = year;
-      data->cur_month = month;
     }
   }
+
+  iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &data->sel_year, &data->sel_month, &data->sel_day);
+  data->cur_year = data->sel_year;
+  data->cur_month = data->sel_month;
 
   if (ih->handle)
     motCalendarRebuildGrid(ih);
 
   return 0;
+}
+
+static int motCalendarSetRangeAttrib(Ihandle* ih, const char* name, const char* value)
+{
+  IcalData* data = (IcalData*)iupAttribGet(ih, "_IUP_CALDATA");
+
+  iupAttribSetStr(ih, name, value);
+  if (!data)
+    return 0;
+
+  if (iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &data->sel_year, &data->sel_month, &data->sel_day))
+  {
+    data->cur_year = data->sel_year;
+    data->cur_month = data->sel_month;
+  }
+
+  if (ih->handle)
+    motCalendarRebuildGrid(ih);
+  return 1;
+}
+
+static int motCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  return motCalendarSetRangeAttrib(ih, "MINDATE", value);
+}
+
+static int motCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  return motCalendarSetRangeAttrib(ih, "MAXDATE", value);
 }
 
 static char* motCalendarGetValueAttrib(Ihandle* ih)
@@ -497,6 +537,8 @@ Iclass* iupCalendarNewClass(void)
   iupClassRegisterAttribute(ic, "VALUE", motCalendarGetValueAttrib, motCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WEEKNUMBERS", NULL, motCalendarSetWeekNumbersAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", motCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", NULL, motCalendarSetMinDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", NULL, motCalendarSetMaxDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   return ic;
 }

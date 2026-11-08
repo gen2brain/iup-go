@@ -26,6 +26,7 @@ func main() {
 	dpYMD := iup.DatePick().SetAttributes(`ORDER=YMD, SEPARATOR="-"`)
 	dpZero := iup.DatePick().SetAttributes("ZEROPRECED=YES")
 	dpWeek := iup.DatePick().SetAttributes("CALENDARWEEKNUMBERS=YES")
+	dpRange := iup.DatePick().SetAttributes(`VALUE="2025/6/15", MINDATE="2025/6/10", MAXDATE="2025/6/20"`)
 
 	// Store handles for later access
 	iup.SetHandle("dp_default", dpDefault)
@@ -33,6 +34,7 @@ func main() {
 	iup.SetHandle("dp_ymd", dpYMD)
 	iup.SetHandle("dp_zero", dpZero)
 	iup.SetHandle("dp_week", dpWeek)
+	iup.SetHandle("dp_range", dpRange)
 
 	// Log widget
 	txtLog := iup.Text()
@@ -53,6 +55,7 @@ func main() {
 	dpYMD.SetCallback("VALUECHANGED_CB", valueChangedCb)
 	dpZero.SetCallback("VALUECHANGED_CB", valueChangedCb)
 	dpWeek.SetCallback("VALUECHANGED_CB", valueChangedCb)
+	dpRange.SetCallback("VALUECHANGED_CB", valueChangedCb)
 
 	// Action buttons
 	btnGetToday := iup.Button("Get TODAY").SetCallback("ACTION", iup.ActionFunc(func(ih iup.Ihandle) int {
@@ -86,6 +89,7 @@ func main() {
 		appendLog(fmt.Sprintf("  YMD:     %s", iup.GetAttribute(dpYMD, "VALUE")))
 		appendLog(fmt.Sprintf("  zero:    %s", iup.GetAttribute(dpZero, "VALUE")))
 		appendLog(fmt.Sprintf("  week:    %s", iup.GetAttribute(dpWeek, "VALUE")))
+		appendLog(fmt.Sprintf("  range:   %s", iup.GetAttribute(dpRange, "VALUE")))
 		return iup.DEFAULT
 	}))
 
@@ -102,6 +106,7 @@ func main() {
 			iup.Hbox(iup.Label("ORDER=YMD, SEP=-:"), dpYMD).SetAttribute("ALIGNMENT", "ACENTER"),
 			iup.Hbox(iup.Label("ZEROPRECED=YES:"), dpZero).SetAttribute("ALIGNMENT", "ACENTER"),
 			iup.Hbox(iup.Label("CALENDARWEEKNUMBERS:"), dpWeek).SetAttribute("ALIGNMENT", "ACENTER"),
+			iup.Hbox(iup.Label("MINDATE/MAXDATE:"), dpRange).SetAttribute("ALIGNMENT", "ACENTER"),
 		).SetAttributes("GAP=5, MARGIN=10x10"),
 	).SetAttribute("TITLE", "DatePick Variants")
 
