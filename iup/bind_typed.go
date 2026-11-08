@@ -291,11 +291,15 @@ func SetGlobalWheelFunc(fn GlobalWheelFunc) {
 }
 
 // SetGlobalEnterModalFunc sets the GLOBALENTERMODAL_CB global callback. A nil fn removes it.
+//
+// https://gen2brain.github.io/iup-go/func/iup_popup.html
 func SetGlobalEnterModalFunc(fn GlobalEnterModalFunc) {
 	setTypedFunction("GLOBALENTERMODAL_CB", fn, fn == nil)
 }
 
 // SetGlobalLeaveModalFunc sets the GLOBALLEAVEMODAL_CB global callback. A nil fn removes it.
+//
+// https://gen2brain.github.io/iup-go/func/iup_popup.html
 func SetGlobalLeaveModalFunc(fn GlobalLeaveModalFunc) {
 	setTypedFunction("GLOBALLEAVEMODAL_CB", fn, fn == nil)
 }

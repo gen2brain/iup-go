@@ -11,7 +11,7 @@ var netControl func(network, address string, c syscall.RawConn) error
 // Each new socket is bound when it is created, so changing NETWORK affects the following connections.
 // On platforms without NETWORK it is a plain dialer.
 //
-// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#network
+// https://gen2brain.github.io/iup-go/attrib/iup_globals.html#network-android-and-ios-only
 func NetDialer() *net.Dialer {
 	return &net.Dialer{Control: netControl}
 }

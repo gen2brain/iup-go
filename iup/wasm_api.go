@@ -88,7 +88,7 @@ type KillFocusFunc func(ih Ihandle) int
 type DropDownFunc func(ih Ihandle, state int) int
 
 // EditFunc is the type for the EDIT_CB callback.
-type EditFunc func(ih Ihandle, c int, after string) int
+type EditFunc func(ih Ihandle, c int, newValue string) int
 
 // ButtonFunc is the type for the BUTTON_CB callback.
 type ButtonFunc func(ih Ihandle, button, pressed, x, y int, status string) int
