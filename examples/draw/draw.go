@@ -214,7 +214,7 @@ func drawRectanglesSection(ih iup.Ihandle, x, y, maxW int) {
 		if i == 1 {
 			// Second one: Demonstrate rounded rectangle with gradient using clipping
 			iup.DrawSetClipRoundedRect(ih, rectX, roundedY, rectX+70, roundedY+40, radius)
-			iup.DrawLinearGradient(ih, rectX, roundedY, rectX+70, roundedY+40, 45, "255 100 150", "100 150 255")
+			iup.DrawLinearGradient(ih, rectX, roundedY, rectX+70, roundedY+40, 315, "255 100 150", "100 150 255")
 			iup.DrawResetClip(ih)
 			// Label
 			ih.SetAttribute("DRAWCOLOR", "80 80 80")
@@ -274,14 +274,14 @@ func drawGradientsSection(ih iup.Ihandle, x, y, maxW int) {
 
 	// Linear gradients with different angles
 	gradients := []struct {
-		angle float32
+		angle float64
 		name  string
 		c1    string
 		c2    string
 	}{
 		{0, "0°", "255 100 100", "100 100 255"},
-		{90, "90°", "255 200 100", "100 200 255"},
-		{45, "45°", "255 100 200", "100 255 100"},
+		{270, "270°", "255 200 100", "100 200 255"},
+		{315, "315°", "255 100 200", "100 255 100"},
 	}
 
 	for i, g := range gradients {

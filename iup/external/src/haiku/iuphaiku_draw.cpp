@@ -764,7 +764,7 @@ extern "C" IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, i
   iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   if (!dc || !dc->view) return;
   iupDrawCheckSwapCoord(x1, x2);
@@ -772,7 +772,7 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
   BRect r(x1, y1, x2, y2);
 
   float cx = (x1 + x2) / 2.0f, cy = (y1 + y2) / 2.0f;
-  float rad = angle * 3.14159265f / 180.0f;
+  float rad = -angle * 3.14159265f / 180.0f;
   float dx = cosf(rad) * r.Width() * 0.5f;
   float dy = sinf(rad) * r.Height() * 0.5f;
 
@@ -872,7 +872,7 @@ static BGradient* haikuBuildGradient(const IupDrawSource* src)
     iupDrawCheckSwapCoord(gy1, gy2);
 
     float cx = (gx1 + gx2) / 2.0f, cy = (gy1 + gy2) / 2.0f;
-    float rad = src->angle * 3.14159265f / 180.0f;
+    float rad = -src->angle * 3.14159265f / 180.0f;
     float dx = cosf(rad) * (gx2 - gx1) * 0.5f;
     float dy = sinf(rad) * (gy2 - gy1) * 0.5f;
 

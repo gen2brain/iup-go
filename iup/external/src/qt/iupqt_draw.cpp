@@ -1077,9 +1077,9 @@ extern "C" IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1,
  * Linear Gradient
  ****************************************************************************/
 
-static QLinearGradient* qtDrawCreateLinearGradient(int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+static QLinearGradient* qtDrawCreateLinearGradient(int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
-  qreal rad = angle * M_PI / 180.0;
+  qreal rad = -angle * M_PI / 180.0;
   qreal w = x2 - x1;
   qreal h = y2 - y1;
   qreal cx = x1 + w / 2.0;
@@ -1206,7 +1206,7 @@ static void qtDrawBuildPath(QPainterPath& path, const IupPathSeg* segs, int coun
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   if (!dc || !dc->painter)
     return;

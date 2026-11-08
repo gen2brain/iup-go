@@ -88,7 +88,7 @@ func draw(ih iup.Ihandle) int {
 	iup.DrawPathLineTo(ih, 20, 94)
 	iup.DrawPathQuadTo(ih, 20, 74, 40, 74)
 	iup.DrawPathClose(ih)
-	iup.DrawSetSourceLinearGradient(ih, 20, 74, 230, 160, 45,
+	iup.DrawSetSourceLinearGradient(ih, 20, 74, 230, 160, 315,
 		[]string{"60 130 240", "130 90 220", "240 60 90"}, nil)
 	iup.DrawPathFill(ih, iup.DRAW_RULE_WINDING)
 	iup.DrawSetSourceSolid(ih, "40 40 60")
@@ -130,7 +130,7 @@ func draw(ih iup.Ihandle) int {
 	ih.SetAttribute("DRAWSTYLE", "FILL")
 	iup.DrawRectangle(ih, 375, 175, 485, 335)
 	ih.SetAttribute("DRAWSTYLE", "STROKE")
-	iup.DrawSetSourceLinearGradient(ih, 375, 175, 485, 335, 60,
+	iup.DrawSetSourceLinearGradient(ih, 375, 175, 485, 335, 300,
 		[]string{"40 160 90", "220 240 120"}, nil)
 	for y := 175; y <= 335; y += 8 {
 		iup.DrawPathBegin(ih)

@@ -175,7 +175,7 @@ If it is not defined then the IMAGE is used.
 
 **INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
 
-**IMAGETINT** (non-inheritable): when "YES", the image is drawn recolored with the current text color, keeping its alpha channel. Default: "NO".
+**IMAGETINT** (non-inheritable): color "R G B" used to draw the image recolored, keeping its alpha channel. "YES" uses the current text color; "NO" draws the image unchanged. Default: "NO".
 
 **IMAGEPOSITION** (non-inheritable): Position of the image relative to the text when both are displayed.
 Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
@@ -263,7 +263,7 @@ Default: NULL (solid color). Used as fallback for both OFF and ON states.
 Default: NULL. If not defined, SWITCHTRACKGRADIENT is used when set.
 
 **SWITCHTRACKGRADIENTANGLE** (non-inheritable): gradient angle in degrees, as in
-[GRADIENTANGLE](iup_flatbutton.md). Default: 90 (top to bottom).
+[GRADIENTANGLE](iup_flatbutton.md). Default: 270 (top to bottom).
 
 **SWITCHTHUMBCOLOR** (non-inheritable): thumb fill color. Default: "255 255 255" (white).
 

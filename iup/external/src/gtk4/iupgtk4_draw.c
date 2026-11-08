@@ -891,7 +891,7 @@ IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1, int x2, in
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 224), IUP_DRAW_STROKE_DOT, 1);
 }
 
-static cairo_pattern_t* iDrawCreateLinearPattern(int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+static cairo_pattern_t* iDrawCreateLinearPattern(int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   cairo_pattern_t* pattern;
   float rad, x0, y0, x3, y3;
@@ -904,7 +904,7 @@ static cairo_pattern_t* iDrawCreateLinearPattern(int x1, int y1, int x2, int y2,
   w = (float)(x2 - x1);
   h = (float)(y2 - y1);
 
-  rad = angle * G_PI / 180.0f;
+  rad = -angle * G_PI / 180.0f;
 
   x0 = x1 + w / 2.0f - (w * cos(rad)) / 2.0f;
   y0 = y1 + h / 2.0f - (h * sin(rad)) / 2.0f;
@@ -994,7 +994,7 @@ static void iDrawBuildPath(cairo_t* cr, const IupPathSeg* segs, int count)
   }
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   cairo_pattern_t* pattern;
 

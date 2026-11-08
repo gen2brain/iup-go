@@ -251,7 +251,7 @@ EM_JS(void, iupwasmJsDrawQuadBezier, (int cid, int x1, int y1, int x2, int y2, i
 EM_JS(void, iupwasmJsDrawLinearGradient, (int cid, int x1, int y1, int x2, int y2, double angle, int rgbaPtr, int offsPtr, int count), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
   var w = x2 - x1, h = y2 - y1;
-  var rad = angle * Math.PI / 180;
+  var rad = -angle * Math.PI / 180;
   var x0 = x1 + w / 2 - (w * Math.cos(rad)) / 2;
   var y0 = y1 + h / 2 - (h * Math.sin(rad)) / 2;
   var x3 = x1 + w / 2 + (w * Math.cos(rad)) / 2;
@@ -628,7 +628,7 @@ static void wasmDrawGradientArrays(const long* colors, const float* offsets, int
   }
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   unsigned char rgba[IUP_GRADIENT_MAX_STOPS * 4];
   float offs[IUP_GRADIENT_MAX_STOPS];
@@ -812,7 +812,7 @@ IUP_SDK_API int iupdrvDrawGetImageData(IdrawCanvas* dc, unsigned char* data)
 
 typedef char iupwasmPathSegLayoutCheck[(sizeof(IupPathSeg) == 72 && offsetof(IupPathSeg, op) == 0 && offsetof(IupPathSeg, x1) == 8 && offsetof(IupPathSeg, a1) == 56) ? 1 : -1];
 
-EM_JS(void, iupwasmJsDrawPathFill, (int cid, int segsPtr, int count, int sourceType, long color, int x1, int y1, int x2, int y2, float angle, int cx, int cy, int radius, int rgbaPtr, int offsPtr, int gradCount, int rule), {
+EM_JS(void, iupwasmJsDrawPathFill, (int cid, int segsPtr, int count, int sourceType, long color, int x1, int y1, int x2, int y2, double angle, int cx, int cy, int radius, int rgbaPtr, int offsPtr, int gradCount, int rule), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
   var p = new Path2D();
   for (var i = 0; i < count; i++)
@@ -856,7 +856,7 @@ EM_JS(void, iupwasmJsDrawPathFill, (int cid, int segsPtr, int count, int sourceT
   else if (sourceType == 1)
   {
     var w = x2 - x1, h = y2 - y1;
-    var rad = angle * Math.PI / 180;
+    var rad = -angle * Math.PI / 180;
     var x0 = x1 + w / 2 - (w * Math.cos(rad)) / 2;
     var y0 = y1 + h / 2 - (h * Math.sin(rad)) / 2;
     var x3 = x1 + w / 2 + (w * Math.cos(rad)) / 2;
@@ -879,7 +879,7 @@ EM_JS(void, iupwasmJsDrawPathFill, (int cid, int segsPtr, int count, int sourceT
   ctx.fill(p, rule == 1 ? "evenodd" : "nonzero");
 })
 
-EM_JS(void, iupwasmJsDrawPathStroke, (int cid, int segsPtr, int count, int sourceType, long color, int x1, int y1, int x2, int y2, float angle, int cx, int cy, int radius, int rgbaPtr, int offsPtr, int gradCount, int strokePtr, int lw), {
+EM_JS(void, iupwasmJsDrawPathStroke, (int cid, int segsPtr, int count, int sourceType, long color, int x1, int y1, int x2, int y2, double angle, int cx, int cy, int radius, int rgbaPtr, int offsPtr, int gradCount, int strokePtr, int lw), {
   var ctx = globalThis.__iupCtx(cid); if (!ctx) return;
   var p = new Path2D();
   for (var i = 0; i < count; i++)
@@ -924,7 +924,7 @@ EM_JS(void, iupwasmJsDrawPathStroke, (int cid, int segsPtr, int count, int sourc
   else if (sourceType == 1)
   {
     var w = x2 - x1, h = y2 - y1;
-    var rad = angle * Math.PI / 180;
+    var rad = -angle * Math.PI / 180;
     var x0 = x1 + w / 2 - (w * Math.cos(rad)) / 2;
     var y0 = y1 + h / 2 - (h * Math.sin(rad)) / 2;
     var x3 = x1 + w / 2 + (w * Math.cos(rad)) / 2;

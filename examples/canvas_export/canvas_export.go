@@ -104,8 +104,7 @@ func onNativeSave(format string) func(iup.Ihandle) int {
 		}
 		defer img.Destroy()
 
-		ret := iup.ImageSave(img, filename, format)
-		if ret == 0 {
+		if !iup.ImageSave(img, filename, format) {
 			iup.Message("Error", fmt.Sprintf("Failed to save %s file.", format))
 			return iup.DEFAULT
 		}
@@ -231,7 +230,7 @@ func drawScene(ih iup.Ihandle, w, h int) {
 }
 
 func drawSky(ih iup.Ihandle, w, h int) {
-	iup.DrawLinearGradient(ih, 0, 0, w, h*2/3, 90, "135 206 235", "200 230 255")
+	iup.DrawLinearGradient(ih, 0, 0, w, h*2/3, 270, "135 206 235", "200 230 255")
 }
 
 func drawSun(ih iup.Ihandle, w, h int) {
@@ -268,7 +267,7 @@ func drawMountains(ih iup.Ihandle, w, h int) {
 
 func drawGround(ih iup.Ihandle, w, h int) {
 	groundY := h * 2 / 3
-	iup.DrawLinearGradient(ih, 0, groundY, w, h, 90, "100 180 80", "60 130 50")
+	iup.DrawLinearGradient(ih, 0, groundY, w, h, 270, "100 180 80", "60 130 50")
 }
 
 func drawTrees(ih iup.Ihandle, w, h int) {

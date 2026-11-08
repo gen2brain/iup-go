@@ -73,10 +73,10 @@ without extra configuration (mirroring the HLCOLOR default for solid buttons).
 **GRADIENTPS** (non-inheritable): gradient colors used for the pressed state.
 If not defined, GRADIENT is used automatically darkened.
 
-**GRADIENTANGLE** (non-inheritable): angle in degrees for the gradient direction.
-0 is left to right, 90 is top to bottom, 180 is right to left and 270 is bottom to top.
+**GRADIENTANGLE** (non-inheritable): angle in degrees for the gradient direction, counterclockwise as in [IupDrawLinearGradient](../func/iup_draw.md).
+0 is left to right, 90 is bottom to top, 180 is right to left and 270 is top to bottom.
 The gradient spans the element width for the horizontal component and its height for the vertical one.
-Default: "90" (top to bottom).
+Default: "270" (top to bottom).
 
 **BORDER** (creation-only): the default value is "NO". This is the **IupCanvas** border.
 
@@ -153,13 +153,13 @@ If it is not defined then the IMAGE is used.
 
 **BADGE** (non-inheritable): text drawn in a small pill at the top right corner of the button, over its contents. Default: NULL.
 
-**BADGECOLOR** (non-inheritable): background color of the badge. Default: "220 50 50".
+**BADGEBGCOLOR** (non-inheritable): background color of the badge. Default: "220 50 50".
 
-**BADGETEXTCOLOR** (non-inheritable): text color of the badge. Default: "255 255 255".
+**BADGEFGCOLOR** (non-inheritable): text color of the badge. Default: "255 255 255".
 
 **INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
 
-**IMAGETINT** (non-inheritable): when "YES", the image is drawn recolored with the current text color, keeping its alpha channel. Default: "NO".
+**IMAGETINT** (non-inheritable): color "R G B" used to draw the image recolored, keeping its alpha channel. "YES" uses the current text color; "NO" draws the image unchanged. Default: "NO".
 
 **IMAGEPOSITION** (non-inheritable): Position of the image relative to the text when both are displayed.
 Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.

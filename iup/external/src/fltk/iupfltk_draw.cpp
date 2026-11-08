@@ -387,7 +387,7 @@ static long fltkDrawSourceColor(const IupDrawSource* src, double x, double y)
 
   int x1 = src->x1, y1 = src->y1, x2 = src->x2, y2 = src->y2;
   iupDrawOrderMinMax(&x1, &y1, &x2, &y2);
-  double rad = src->angle * M_PI / 180.0;
+  double rad = -src->angle * M_PI / 180.0;
   double dx = (x2 - x1) * cos(rad);
   double dy = (y2 - y1) * sin(rad);
   double cx = x1 + (x2 - x1) / 2.0;
@@ -1215,12 +1215,12 @@ extern "C" IUP_SDK_API void iupdrvDrawQuadraticBezier(IdrawCanvas* dc, int x1, i
   iupdrvDrawBezier(dc, x1, y1, cx1, cy1, cx2, cy2, x3, y3, color, style, line_width);
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   if (!dc) return;
 
   iupDrawOrderMinMax(&x1, &y1, &x2, &y2);
-  if (!fltkDrawIdentity(dc) || !fltkDrawStopsOpaque(colors, count))
+  if (!fltkDrawIdentity(dc) || !fltkDrawStopsOpaque(colors, count) || (angle != 0 && angle != 90 && angle != 180 && angle != 270))
   {
     IupDrawSource src = {};
     src.type = IUP_SOURCE_LINEAR_GRADIENT;
@@ -1242,7 +1242,7 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
   for (int i = 0; i < steps; i++)
   {
     float t = (steps > 1) ? static_cast<float>(i) / static_cast<float>(steps - 1) : 0.0f;
-    if (angle == 180 || angle == 270) t = 1.0f - t;
+    if (angle == 180 || angle == 90) t = 1.0f - t;
 
     long c = fltkInterpolateStops(colors, offsets, count, t);
     fl_color(iupDrawRed(c), iupDrawGreen(c), iupDrawBlue(c));

@@ -102,7 +102,7 @@ func main() {
 	status := iup.Label("").SetAttributes("EXPAND=HORIZONTAL, PADDING=8x5").SetHandle("diagram_status")
 	dlg := iup.Dialog(iup.Vbox(toolbar(), mainArea, status).SetAttributes("NGAP=0")).SetHandle("diagram_dlg")
 	dlg.SetAttributes(map[string]string{"TITLE": "Diagram Editor", "PLACEMENT": "MAXIMIZED"})
-	dlg.SetCallback("THEMECHANGED_CB", iup.ThemeChangedFunc(func(iup.Ihandle, int) int {
+	dlg.SetCallback("APPEARANCECHANGED_CB", iup.AppearanceChangedFunc(func(iup.Ihandle, int) int {
 		setPalette()
 		iup.Update(canvas)
 		return iup.DEFAULT
@@ -287,7 +287,7 @@ func drawNode(ih iup.Ihandle, n *node) {
 	iup.DrawPathFill(ih, iup.DRAW_RULE_WINDING)
 
 	nodePath(ih, n, 0, 0)
-	iup.DrawSetSourceLinearGradient(ih, n.x, n.y, n.x+nodeW, n.y+nodeH, 90,
+	iup.DrawSetSourceLinearGradient(ih, n.x, n.y, n.x+nodeW, n.y+nodeH, 270,
 		[]string{pal.fills[n.color], mix(pal.fills[n.color], pal.bg, 0.24)}, nil)
 	iup.DrawPathFill(ih, iup.DRAW_RULE_WINDING)
 

@@ -34,7 +34,7 @@ func main() {
 
 	button := func(title, grad string) iup.Ihandle {
 		b := iup.FlatButton(title)
-		b.SetAttributes(`EXPAND=HORIZONTAL, PADDING=12x8, CORNERRADIUS=6, FGCOLOR="255 255 255", GRADIENTANGLE=90`)
+		b.SetAttributes(`EXPAND=HORIZONTAL, PADDING=12x8, CORNERRADIUS=6, FGCOLOR="255 255 255", GRADIENTANGLE=270`)
 		if grad != "" {
 			b.SetAttribute("GRADIENT", grad)
 		}

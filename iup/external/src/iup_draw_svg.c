@@ -527,7 +527,7 @@ static void iSvgWriteStops(iSvgCanvas* dc, const long* colors, const float* offs
   }
 }
 
-void iupSvgDrawLinearGradient(iSvgCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+void iupSvgDrawLinearGradient(iSvgCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   int gid;
   float rad, w, h;
@@ -541,7 +541,7 @@ void iupSvgDrawLinearGradient(iSvgCanvas* dc, int x1, int y1, int x2, int y2, fl
   if (w <= 0 || h <= 0)
     return;
 
-  rad = angle * (float)IUP_DEG2RAD;
+  rad = (float)(-angle * IUP_DEG2RAD);
 
   gx1 = 0.5f - cosf(rad) / 2.0f;
   gy1 = 0.5f - sinf(rad) / 2.0f;
@@ -632,7 +632,7 @@ static int iSvgWriteGradientDef(iSvgCanvas* dc, const IupDrawSource* src)
     w = (float)(x2 - x1);
     h = (float)(y2 - y1);
 
-    rad = src->angle * (float)IUP_DEG2RAD;
+    rad = (float)(-src->angle * IUP_DEG2RAD);
 
     gx1 = (float)x1 + w / 2.0f - (w * cosf(rad)) / 2.0f;
     gy1 = (float)y1 + h / 2.0f - (h * sinf(rad)) / 2.0f;

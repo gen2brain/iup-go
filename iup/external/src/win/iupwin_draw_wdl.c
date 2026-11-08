@@ -666,7 +666,7 @@ static WD_HBRUSH iWdlCreateSourceBrush(IdrawCanvas* dc, const IupDrawSource* src
     iupDrawCheckSwapCoord(gx1, gx2);
     iupDrawCheckSwapCoord(gy1, gy2);
 
-    rad = src->angle * 3.14159265359f / 180.0f;
+    rad = (float)(-src->angle * IUP_DEG2RAD);
     w = (float)(gx2 - gx1);
     h = (float)(gy2 - gy1);
     cx = (float)gx1 + w / 2.0f;
@@ -1159,7 +1159,7 @@ static long iInterpolateStops(const long* colors, const float* offsets, int coun
   return colors[count - 1];
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   WD_HBRUSH brush;
   float rad, dx, dy, cx, cy, w, h;
@@ -1168,7 +1168,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
   iupDrawCheckSwapCoord(x1, x2);
   iupDrawCheckSwapCoord(y1, y2);
 
-  rad = angle * 3.14159265359f / 180.0f;
+  rad = (float)(-angle * IUP_DEG2RAD);
   dx = (float)cos(rad);
   dy = (float)sin(rad);
 

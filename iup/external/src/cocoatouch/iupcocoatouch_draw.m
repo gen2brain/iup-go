@@ -645,7 +645,7 @@ static CGGradientRef cocoaTouchDrawCreateGradient(const long* colors, const floa
 	return gradient;
 }
 
-IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
 	if (!dc) return;
 	iupDrawCheckSwapCoord(x1, x2);
@@ -659,7 +659,7 @@ IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x
 
 	CGFloat w = (CGFloat)(x2 - x1);
 	CGFloat h = (CGFloat)(y2 - y1);
-	CGFloat rad = angle * M_PI / 180.0;
+	CGFloat rad = -angle * M_PI / 180.0;
 
 	CGPoint start = CGPointMake(x1 + w / 2.0 - (w * cos(rad)) / 2.0,
 	                            y1 + h / 2.0 - (h * sin(rad)) / 2.0);
@@ -749,7 +749,7 @@ static void cocoaTouchDrawGradient(CGContextRef ctx, CGGradientRef gradient, con
 
 		CGFloat w = (CGFloat)(gx2 - gx1);
 		CGFloat h = (CGFloat)(gy2 - gy1);
-		CGFloat rad = src->angle * M_PI / 180.0;
+		CGFloat rad = -src->angle * M_PI / 180.0;
 		CGPoint start = CGPointMake(gx1 + w / 2.0 - (w * cos(rad)) / 2.0, gy1 + h / 2.0 - (h * sin(rad)) / 2.0);
 		CGPoint end = CGPointMake(gx1 + w / 2.0 + (w * cos(rad)) / 2.0, gy1 + h / 2.0 + (h * sin(rad)) / 2.0);
 		CGContextDrawLinearGradient(ctx, gradient, start, end, kCGGradientDrawsBeforeStartLocation | kCGGradientDrawsAfterEndLocation);

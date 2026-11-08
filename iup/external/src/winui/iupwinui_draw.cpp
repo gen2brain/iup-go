@@ -1324,7 +1324,7 @@ extern "C" IUP_SDK_API void iupdrvDrawFocusRect(IdrawCanvas* dc, int x1, int y1,
   iupdrvDrawRectangle(dc, x1, y1, x2, y2, iupDrawColor(0, 0, 0, 224), IUP_DRAW_STROKE_DOT, 1);
 }
 
-extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, float angle, const long* colors, const float* offsets, int count)
+extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, int y1, int x2, int y2, double angle, const long* colors, const float* offsets, int count)
 {
   if (!dc || !dc->d2dContext)
     return;
@@ -1337,7 +1337,7 @@ extern "C" IUP_SDK_API void iupdrvDrawLinearGradient(IdrawCanvas* dc, int x1, in
   float cx = x1 + w / 2.0f;
   float cy = y1 + h / 2.0f;
 
-  float rad = angle * static_cast<float>(IUP_DEG2RAD);
+  float rad = static_cast<float>(-angle * IUP_DEG2RAD);
   float sx = cx - (w * cosf(rad)) / 2.0f;
   float sy = cy - (h * sinf(rad)) / 2.0f;
   float ex = cx + (w * cosf(rad)) / 2.0f;
@@ -1496,7 +1496,7 @@ static void winuiDrawFillWithSource(IdrawCanvas* dc, ID2D1Geometry* geometry, co
     auto h = static_cast<float>(gy2 - gy1);
     float cx = gx1 + w / 2.0f;
     float cy = gy1 + h / 2.0f;
-    float rad = src->angle * static_cast<float>(IUP_DEG2RAD);
+    float rad = static_cast<float>(-src->angle * IUP_DEG2RAD);
     float sx = cx - (w * cosf(rad)) / 2.0f;
     float sy = cy - (h * sinf(rad)) / 2.0f;
     float ex = cx + (w * cosf(rad)) / 2.0f;
@@ -1548,7 +1548,7 @@ static void winuiDrawStrokeWithSource(IdrawCanvas* dc, ID2D1Geometry* geometry, 
     auto h = static_cast<float>(gy2 - gy1);
     float cx = gx1 + w / 2.0f;
     float cy = gy1 + h / 2.0f;
-    float rad = src->angle * static_cast<float>(IUP_DEG2RAD);
+    float rad = static_cast<float>(-src->angle * IUP_DEG2RAD);
     float sx = cx - (w * cosf(rad)) / 2.0f;
     float sy = cy - (h * sinf(rad)) / 2.0f;
     float ex = cx + (w * cosf(rad)) / 2.0f;

@@ -226,7 +226,7 @@ static int iDropButtonRedraw_CB(Ihandle* ih)
 
     if (gradient)
     {
-      float angle = iupAttribGetFloat(ih, "GRADIENTANGLE");
+      double angle = iupAttribGetDouble(ih, "GRADIENTANGLE");
       if (drop_onarrow)
       {
         iupFlatDrawGradientBoxStops(dc, border_width, draw_w - 1 - border_width - ih->data->arrow_size,
@@ -1008,7 +1008,7 @@ Iclass* iupDropButtonNewClass(void)
   iupClassRegisterAttribute(ic, "GRADIENT", NULL, iDropButtonSetAttribPostRedraw, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GRADIENTHL", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "GRADIENTPS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "GRADIENTANGLE", NULL, iDropButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "90", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GRADIENTANGLE", NULL, iDropButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "270", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BORDERWIDTH", iDropButtonGetBorderWidthAttrib, iDropButtonSetBorderWidthAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NOT_MAPPED);  /* inheritable */
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, NULL, "DLGFGCOLOR", NULL, IUPAF_DEFAULT);  /* force the new default value */
   iupClassRegisterAttribute(ic, "BGCOLOR", iDropButtonGetBgColorAttrib, iDropButtonSetAttribPostRedraw, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NOT_MAPPED | IUPAF_NO_SAVE);
