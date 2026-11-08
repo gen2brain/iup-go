@@ -13,6 +13,7 @@
 #include "iup.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_class.h"
 #include "iup_classbase.h"
 #include "iup_str.h"
@@ -75,13 +76,50 @@ static NSDate* cocoaTouchCalendarParseDate(const char* value)
 	return [[NSCalendar currentCalendar] dateFromComponents:comps];
 }
 
+static NSDate* cocoaTouchCalendarClampDate(Ihandle* ih, NSDate* date)
+{
+	NSDateComponents* comps = [[NSCalendar currentCalendar]
+		components:(NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay)
+		fromDate:date];
+	int year = (int)comps.year, month = (int)comps.month, day = (int)comps.day;
+
+	if (!iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+		return date;
+
+	return cocoaTouchCalendarParseDate(iupStrReturnStrf("%d/%d/%d", year, month, day));
+}
+
 static int cocoaTouchCalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
 	UIDatePicker* picker = cocoaTouchCalendarGet(ih);
 	if (!picker) return 0;
 	NSDate* parsed = cocoaTouchCalendarParseDate(value ? value : "TODAY");
-	if (parsed) [picker setDate:parsed animated:NO];
+	if (parsed) [picker setDate:cocoaTouchCalendarClampDate(ih, parsed) animated:NO];
 	return 0;
+}
+
+static void cocoaTouchCalendarUpdateRange(Ihandle* ih)
+{
+	UIDatePicker* picker = cocoaTouchCalendarGet(ih);
+	if (!picker) return;
+
+	picker.minimumDate = cocoaTouchCalendarParseDate(iupAttribGet(ih, "MINDATE"));
+	picker.maximumDate = cocoaTouchCalendarParseDate(iupAttribGet(ih, "MAXDATE"));
+	[picker setDate:cocoaTouchCalendarClampDate(ih, [picker date]) animated:NO];
+}
+
+static int cocoaTouchCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+	iupAttribSetStr(ih, "MINDATE", value);
+	cocoaTouchCalendarUpdateRange(ih);
+	return 1;
+}
+
+static int cocoaTouchCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+	iupAttribSetStr(ih, "MAXDATE", value);
+	cocoaTouchCalendarUpdateRange(ih);
+	return 1;
 }
 
 static int cocoaTouchCalendarSetStyleAttrib(Ihandle* ih, const char* value)
@@ -211,6 +249,8 @@ Iclass* iupCalendarNewClass(void)
 
 	iupClassRegisterAttribute(ic, "VALUE", cocoaTouchCalendarGetValueAttrib, cocoaTouchCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "TODAY", cocoaTouchCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "MINDATE", NULL, cocoaTouchCalendarSetMinDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "MAXDATE", NULL, cocoaTouchCalendarSetMaxDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
 
 	iupClassRegisterAttribute(ic, "STYLE", NULL, cocoaTouchCalendarSetStyleAttrib, IUPAF_SAMEASSYSTEM, "INLINE", IUPAF_NO_INHERIT);

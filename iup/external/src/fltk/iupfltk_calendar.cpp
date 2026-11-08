@@ -255,7 +255,7 @@ public:
           day_cells[r][c]->labelcolor(FL_FOREGROUND_COLOR);
           day_cells[r][c]->labelfont(FL_HELVETICA_BOLD);
         }
-        else if (!is_cur_month)
+        else if (!is_cur_month || outOfRange(grid_year[r][c], grid_month[r][c], grid_day[r][c]))
         {
           day_cells[r][c]->box(FL_FLAT_BOX);
           day_cells[r][c]->color(FL_BACKGROUND_COLOR);
@@ -304,8 +304,16 @@ public:
     redraw();
   }
 
-  void selectDay(int r, int c)
+  bool outOfRange(int year, int month, int day)
   {
+    return iup_handle && iupStrDateClamp(iupAttribGet(iup_handle, "MINDATE"), iupAttribGet(iup_handle, "MAXDATE"), &year, &month, &day);
+  }
+
+  bool selectDay(int r, int c)
+  {
+    if (outOfRange(grid_year[r][c], grid_month[r][c], grid_day[r][c]))
+      return false;
+
     sel_year = grid_year[r][c];
     sel_month = grid_month[r][c];
     sel_day = grid_day[r][c];
@@ -324,6 +332,7 @@ public:
 
     if (iup_handle)
       iupBaseCallValueChangedCb(iup_handle);
+    return true;
   }
 
   void prevMonth()
@@ -413,25 +422,26 @@ public:
           return 1;
 
         int key = Fl::event_key();
+        int old_row = focus_row, old_col = focus_col;
         switch (key)
         {
           case FL_Left:
             if (focus_col > 0) focus_col--;
             else if (focus_row > 0) { focus_row--; focus_col = 6; }
-            selectDay(focus_row, focus_col);
+            if (!selectDay(focus_row, focus_col)) { focus_row = old_row; focus_col = old_col; }
             return 1;
           case FL_Right:
             if (focus_col < 6) focus_col++;
             else if (focus_row < 5) { focus_row++; focus_col = 0; }
-            selectDay(focus_row, focus_col);
+            if (!selectDay(focus_row, focus_col)) { focus_row = old_row; focus_col = old_col; }
             return 1;
           case FL_Up:
             if (focus_row > 0) focus_row--;
-            selectDay(focus_row, focus_col);
+            if (!selectDay(focus_row, focus_col)) { focus_row = old_row; focus_col = old_col; }
             return 1;
           case FL_Down:
             if (focus_row < 5) focus_row++;
-            selectDay(focus_row, focus_col);
+            if (!selectDay(focus_row, focus_col)) { focus_row = old_row; focus_col = old_col; }
             return 1;
           case FL_Page_Up:
             prevMonth();
@@ -507,13 +517,43 @@ static int fltkCalendarSetValueAttrib(Ihandle* ih, const char* value)
       cal->sel_year = year;
       cal->sel_month = month;
       cal->sel_day = day;
-      cal->cur_year = year;
-      cal->cur_month = month;
     }
   }
 
+  iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &cal->sel_year, &cal->sel_month, &cal->sel_day);
+  cal->cur_year = cal->sel_year;
+  cal->cur_month = cal->sel_month;
+
   cal->rebuildGrid();
   return 0;
+}
+
+static int fltkCalendarSetRangeAttrib(Ihandle* ih, const char* name, const char* value)
+{
+  auto* cal = reinterpret_cast<IupFltkCalendar*>(ih->handle);
+
+  iupAttribSetStr(ih, name, value);
+  if (!cal)
+    return 0;
+
+  if (iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &cal->sel_year, &cal->sel_month, &cal->sel_day))
+  {
+    cal->cur_year = cal->sel_year;
+    cal->cur_month = cal->sel_month;
+  }
+
+  cal->rebuildGrid();
+  return 1;
+}
+
+static int fltkCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  return fltkCalendarSetRangeAttrib(ih, "MINDATE", value);
+}
+
+static int fltkCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  return fltkCalendarSetRangeAttrib(ih, "MAXDATE", value);
 }
 
 static char* fltkCalendarGetValueAttrib(Ihandle* ih)
@@ -592,6 +632,8 @@ extern "C" Iclass* iupCalendarNewClass(void)
   iupClassRegisterAttribute(ic, "VALUE", fltkCalendarGetValueAttrib, fltkCalendarSetValueAttrib, nullptr, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WEEKNUMBERS", nullptr, fltkCalendarSetWeekNumbersAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", fltkCalendarGetTodayAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", nullptr, fltkCalendarSetMinDateAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", nullptr, fltkCalendarSetMaxDateAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   return ic;
 }

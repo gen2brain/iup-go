@@ -38,6 +38,15 @@ extern "C" {
 #define IUPHAIKU_CAL_YEAR_NEXT   'yUp0'
 
 
+static bool haikuCalendarClampDate(Ihandle* ih, BDate& date)
+{
+  int y = date.Year(), m = date.Month(), d = date.Day();
+  if (!ih || !iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &y, &m, &d))
+    return false;
+  date = BDate(y, m, d);
+  return true;
+}
+
 class IupHaikuCalendarGrid : public BPrivate::BCalendarView
 {
 public:
@@ -58,6 +67,10 @@ public:
   {
     if (msg && msg->what == IUPHAIKU_CAL_MSG && fIhandle)
     {
+      BDate date = Date();
+      if (haikuCalendarClampDate(fIhandle, date))
+        SetDate(date);
+
       Icallback cb = IupGetCallback(fIhandle, "VALUECHANGED_CB");
       int ret = cb ? cb(fIhandle) : IUP_DEFAULT;
       if (ret == IUP_CLOSE) IupExitLoop();
@@ -193,6 +206,7 @@ public:
     }
     if (handled)
     {
+      haikuCalendarClampDate(fIhandle, date);
       fGrid->SetDate(date);
       UpdateHeader();
       if (fIhandle)
@@ -248,10 +262,39 @@ static int haikuCalendarSetValueAttrib(Ihandle* ih, const char* value)
   if (!cal) return 0;
   int y, m, d;
   if (!haikuCalendarParseValue(value, &y, &m, &d)) return 0;
+  iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &y, &m, &d);
   LooperLockGuard guard(cal->Looper());
   cal->Grid()->SetDate(y, m, d);
   cal->UpdateHeader();
   return 0;
+}
+
+static int haikuCalendarSetRangeAttrib(Ihandle* ih, const char* name, const char* value)
+{
+  auto* cal = reinterpret_cast<IupHaikuCalendar*>(ih->handle);
+
+  iupAttribSetStr(ih, name, value);
+  if (!cal)
+    return 0;
+
+  LooperLockGuard guard(cal->Looper());
+  BDate date = cal->Grid()->Date();
+  if (haikuCalendarClampDate(ih, date))
+  {
+    cal->Grid()->SetDate(date);
+    cal->UpdateHeader();
+  }
+  return 1;
+}
+
+static int haikuCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  return haikuCalendarSetRangeAttrib(ih, "MINDATE", value);
+}
+
+static int haikuCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  return haikuCalendarSetRangeAttrib(ih, "MAXDATE", value);
 }
 
 static char* haikuCalendarGetValueAttrib(Ihandle* ih)
@@ -355,6 +398,8 @@ extern "C" Iclass* iupCalendarNewClass(void)
   iupClassRegisterAttribute(ic, "FONT", nullptr, iupdrvSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "VALUE", haikuCalendarGetValueAttrib, haikuCalendarSetValueAttrib, nullptr, "TODAY", IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", haikuCalendarGetTodayAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", nullptr, haikuCalendarSetMinDateAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", nullptr, haikuCalendarSetMaxDateAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WEEKNUMBERS", nullptr, haikuCalendarSetWeekNumbersAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 
   return ic;

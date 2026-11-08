@@ -59,6 +59,9 @@ static void iDatePickUpdateDayLimits(Ihandle* ih)
     IupSetInt(txt_day, "VALUE", max_day);
 }
 
+static int iDatePickClamp(Ihandle* ih);
+static char* iDatePickGetValueAttrib(Ihandle* ih);
+
 static int iDatePickCalendarValueChanged_CB(Ihandle* ih_calendar)
 {
   Ihandle* ih = (Ihandle*)iupAttribGet(ih_calendar, "_IUP_DATEPICK");
@@ -117,6 +120,8 @@ static int iDatePickToggleAction_CB(Ihandle* ih_toggle, int state)
       iupAttribSet(ih, "_IUP_POPOVER", (char*)popover);
     }
 
+    IupSetStrAttribute(calendar, "MINDATE", iupAttribGet(ih, "MINDATE"));
+    IupSetStrAttribute(calendar, "MAXDATE", iupAttribGet(ih, "MAXDATE"));
     IupSetStrAttribute(calendar, "VALUE", IupGetAttribute(ih, "VALUE"));
     IupSetAttribute(popover, "VISIBLE", "YES");
   }
@@ -144,6 +149,7 @@ static void iDatePickTextStep(Ihandle* ih_text, int step)
 {
   Ihandle* ih = IupGetParent(IupGetParent(ih_text));
   int value = IupGetInt(ih_text, "VALUE") + step;
+  char* old_value = iupStrDup(iDatePickGetValueAttrib(ih));
 
   if (iupAttribGetBoolean(ih, "ZEROPRECED"))
     IupSetStrf(ih_text, "VALUEMASKED", "%02d", value);
@@ -151,7 +157,21 @@ static void iDatePickTextStep(Ihandle* ih_text, int step)
     IupSetInt(ih_text, "VALUEMASKED", value);
 
   if (IupGetInt(ih_text, "VALUE") == value)
-    iDatePickTextValueChanged_CB(ih_text);
+  {
+    iDatePickClamp(ih);
+    if (!iupStrEqual(old_value, iDatePickGetValueAttrib(ih)))
+      iDatePickTextValueChanged_CB(ih_text);
+  }
+
+  free(old_value);
+}
+
+static int iDatePickTextKillFocus_CB(Ihandle* ih_text)
+{
+  Ihandle* ih = IupGetParent(IupGetParent(ih_text));
+  if (iDatePickClamp(ih))
+    iupBaseCallValueChangedCb(ih);
+  return IUP_DEFAULT;
 }
 
 static int iDatePickTextWheel_CB(Ihandle* ih_text, float delta, int x, int y, char* status)
@@ -246,65 +266,82 @@ static int iDatePickSetShowDropdownAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void iDatePickSetFields(Ihandle* ih, int year, int month, int day)
+{
+  Ihandle* txt_year = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_YEAR");
+  Ihandle* txt_month = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_MONTH");
+  Ihandle* txt_day = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_DAY");
+
+  IupSetInt(txt_year, "VALUE", year);
+  if (iupAttribGetBoolean(ih, "ZEROPRECED"))
+    IupSetStrf(txt_month, "VALUE", "%02d", month);
+  else
+    IupSetInt(txt_month, "VALUE", month);
+
+  iDatePickUpdateDayLimits(ih);
+
+  if (iupAttribGetBoolean(ih, "ZEROPRECED"))
+    IupSetStrf(txt_day, "VALUE", "%02d", day);
+  else
+    IupSetInt(txt_day, "VALUE", day);
+}
+
+static int iDatePickClamp(Ihandle* ih)
+{
+  int year, month, day;
+
+  if (!iupStrToDate(iDatePickGetValueAttrib(ih), &year, &month, &day) ||
+      !iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+    return 0;
+
+  iDatePickSetFields(ih, year, month, day);
+  return 1;
+}
+
 static int iDatePickSetValueAttrib(Ihandle* ih, const char* value)
 {
+  int year, month, day, max_day;
+
   if (iupStrEqualNoCase(value, "TODAY"))
   {
-    Ihandle* txt_year = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_YEAR");
-    Ihandle* txt_month = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_MONTH");
-    Ihandle* txt_day = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_DAY");
     struct tm * timeinfo;
     time_t timer;
     time(&timer);
     timeinfo = localtime(&timer);
-
-    if (iupAttribGetBoolean(ih, "ZEROPRECED"))
-    {
-      IupSetInt(txt_year, "VALUE", timeinfo->tm_year + 1900);
-      IupSetStrf(txt_month, "VALUE", "%02d", timeinfo->tm_mon + 1);
-      IupSetStrf(txt_day, "VALUE", "%02d", timeinfo->tm_mday);
-    }
-    else
-    {
-      IupSetInt(txt_year, "VALUE", timeinfo->tm_year + 1900);
-      IupSetInt(txt_month, "VALUE", timeinfo->tm_mon + 1);
-      IupSetInt(txt_day, "VALUE", timeinfo->tm_mday);
-    }
-
-    iDatePickUpdateDayLimits(ih);
+    if (!timeinfo)
+      return 0;
+    year = timeinfo->tm_year + 1900;
+    month = timeinfo->tm_mon + 1;
+    day = timeinfo->tm_mday;
   }
-  else
-  {
-    int year, month, day;
-    if (iupStrToDate(value, &year, &month, &day))
-    {
-      Ihandle* txt_year = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_YEAR");
-      Ihandle* txt_month = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_MONTH");
-      Ihandle* txt_day = (Ihandle*)iupAttribGet(ih, "_IUP_DATE_DAY");
-      int max_day;
+  else if (!iupStrToDate(value, &year, &month, &day))
+    return 0;
 
-      if (month < 1) month = 1;
-      if (month > 12) month = 12;
+  if (month < 1) month = 1;
+  if (month > 12) month = 12;
 
-      max_day = iDatePickDaysInMonth(month, year);
-      if (day < 1) day = 1;
-      if (day > max_day) day = max_day;
+  max_day = iDatePickDaysInMonth(month, year);
+  if (day < 1) day = 1;
+  if (day > max_day) day = max_day;
 
-      IupSetInt(txt_year, "VALUE", year);
-      if (iupAttribGetBoolean(ih, "ZEROPRECED"))
-        IupSetStrf(txt_month, "VALUE", "%02d", month);
-      else
-       IupSetInt(txt_month, "VALUE", month);
+  iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day);
 
-      iDatePickUpdateDayLimits(ih);
-
-      if (iupAttribGetBoolean(ih, "ZEROPRECED"))
-        IupSetStrf(txt_day, "VALUE", "%02d", day);
-      else
-        IupSetInt(txt_day, "VALUE", day);
-    }
-  }
+  iDatePickSetFields(ih, year, month, day);
   return 0; /* do not store value in hash table */
+}
+
+static int iDatePickSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MINDATE", value);
+  iDatePickClamp(ih);
+  return 1;
+}
+
+static int iDatePickSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MAXDATE", value);
+  iDatePickClamp(ih);
+  return 1;
 }
 
 static char* iDatePickGetValueAttrib(Ihandle* ih)
@@ -460,6 +497,7 @@ static Ihandle* iDatePickCreateText(void)
   IupSetCallback(txt, "K_ANY", (Icallback)iDatePickTextKAny_CB);
   IupSetCallback(txt, "WHEEL_CB", (Icallback)iDatePickTextWheel_CB);
   IupSetCallback(txt, "VALUECHANGED_CB", iDatePickTextValueChanged_CB);
+  IupSetCallback(txt, "KILLFOCUS_CB", iDatePickTextKillFocus_CB);
   return txt;
 }
 
@@ -527,6 +565,8 @@ Iclass* iupDatePickNewClass(void)
 
   iupClassRegisterAttribute(ic, "VALUE", iDatePickGetValueAttrib, iDatePickSetValueAttrib, IUPAF_SAMEASSYSTEM, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", iDatePickGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", NULL, iDatePickSetMinDateAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", NULL, iDatePickSetMaxDateAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SEPARATOR", NULL, iDatePickSetSeparatorAttrib, IUPAF_SAMEASSYSTEM, "/", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ORDER", NULL, iDatePickSetOrderAttrib, IUPAF_SAMEASSYSTEM, "DMY", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);

@@ -35,6 +35,20 @@ public final class IupCalendarHelper
     }
 
     @Keep
+    public static void setMinDate(CalendarView cv, int year, int month, int day)
+    {
+        Calendar c = year > 0 ? new GregorianCalendar(year, month - 1, day) : new GregorianCalendar(1900, 0, 1);
+        cv.setMinDate(c.getTimeInMillis());
+    }
+
+    @Keep
+    public static void setMaxDate(CalendarView cv, int year, int month, int day)
+    {
+        Calendar c = year > 0 ? new GregorianCalendar(year, month - 1, day) : new GregorianCalendar(2100, 0, 1);
+        cv.setMaxDate(c.getTimeInMillis());
+    }
+
+    @Keep
     public static String getDate(CalendarView cv)
     {
         Calendar c = Calendar.getInstance();

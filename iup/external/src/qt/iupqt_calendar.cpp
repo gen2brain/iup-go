@@ -173,6 +173,8 @@ static int qtCalendarSetValueAttrib(Ihandle* ih, const char* value)
       if (day < 1) day = 1;
       if (day > 31) day = 31;
 
+      iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day);
+
       QDate date(year, month, day);
       if (date.isValid())
         calendar->setSelectedDate(date);
@@ -182,6 +184,42 @@ static int qtCalendarSetValueAttrib(Ihandle* ih, const char* value)
   calendar->blockSignals(blocked);
 
   return 0;
+}
+
+static int qtCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  auto* calendar = reinterpret_cast<IupQtCalendar*>(ih->handle);
+  int year, month, day;
+
+  if (!calendar)
+    return 1;
+
+  bool blocked = calendar->blockSignals(true);
+  if (iupStrToDate(value, &year, &month, &day) && QDate(year, month, day).isValid())
+    calendar->setMinimumDate(QDate(year, month, day));
+  else
+    calendar->setMinimumDate(QDate::fromJulianDay(1));
+  calendar->blockSignals(blocked);
+
+  return 1;
+}
+
+static int qtCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  auto* calendar = reinterpret_cast<IupQtCalendar*>(ih->handle);
+  int year, month, day;
+
+  if (!calendar)
+    return 1;
+
+  bool blocked = calendar->blockSignals(true);
+  if (iupStrToDate(value, &year, &month, &day) && QDate(year, month, day).isValid())
+    calendar->setMaximumDate(QDate(year, month, day));
+  else
+    calendar->setMaximumDate(QDate(9999, 12, 31));
+  calendar->blockSignals(blocked);
+
+  return 1;
 }
 
 static char* qtCalendarGetValueAttrib(Ihandle* ih)
@@ -287,6 +325,8 @@ extern "C" Iclass* iupCalendarNewClass(void)
   iupClassRegisterAttribute(ic, "VALUE", qtCalendarGetValueAttrib, qtCalendarSetValueAttrib, nullptr, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WEEKNUMBERS", nullptr, qtCalendarSetWeekNumbersAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", qtCalendarGetTodayAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", nullptr, qtCalendarSetMinDateAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", nullptr, qtCalendarSetMaxDateAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   return ic;
 }

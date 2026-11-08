@@ -22,6 +22,11 @@ In Qt, uses QDateEdit display format.
 Android uses the same pattern letters as Windows/Qt.
 Default: "d'/'M'/'yyyy". See Notes below.
 
+**MAXDATE**: the latest date that can be selected, in VALUE format. Default: NULL (no limit).
+
+**MINDATE**: the earliest date that can be selected, in VALUE format. Default: NULL (no limit).
+A date outside MINDATE and MAXDATE, set in VALUE, typed or current when they are set, is changed to the nearest of them.
+
 **MONTHSHORTNAMES** [Windows, Qt and Android Only]: Month display will use a short name instead of numbers.
 Must be set before ORDER. Default: NO. Names will be in the language of the system.
 

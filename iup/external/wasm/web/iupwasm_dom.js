@@ -829,7 +829,14 @@
         var di = document.createElement('input');
         di.type = 'date'; di.style.position = 'absolute'; di.style.boxSizing = 'border-box'; di.style.margin = '0';
         els[c.id] = di; di.dataset.iupId = c.id;
-        di.addEventListener('change', function () { D('iupwasmDispatchValueChanged', c.id); });
+        di.addEventListener('change', function () {
+          if (di.value && di.min && di.value < di.min) di.value = di.min;
+          if (di.value && di.max && di.value > di.max) di.value = di.max;
+          D('iupwasmDispatchValueChanged', c.id);
+        });
+      } break;
+      case 'daterange': {
+        if (el) { el.min = c.min; el.max = c.max; }
       } break;
       case 'inputval': {
         if (el) el.value = c.value;

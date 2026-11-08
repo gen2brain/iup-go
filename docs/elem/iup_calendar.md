@@ -11,6 +11,12 @@ Creates a month calendar interface element, where the user can select a date.
 
 ### Attributes
 
+**MAXDATE**: the latest date that can be selected, in VALUE format. Default: NULL (no limit).
+
+**MINDATE**: the earliest date that can be selected, in VALUE format. Default: NULL (no limit).
+A date outside MINDATE and MAXDATE, set in VALUE or current when they are set, is changed to the nearest of them.
+In GTK, GTK 4 and Haiku the days outside the range are not grayed, and selecting one selects the nearest allowed date.
+
 **TODAY** (read-only): Returns the date corresponding to today in VALUE format.
 
 **VALUE**: the current date always in the format "year/month/day" ("%d/%d/%d" in C).

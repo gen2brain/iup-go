@@ -72,13 +72,50 @@ static NSDate* cocoaTouchDatePickParseDate(const char* value)
 	return [[NSCalendar currentCalendar] dateFromComponents:comps];
 }
 
+static NSDate* cocoaTouchDatePickClampDate(Ihandle* ih, NSDate* date)
+{
+	NSDateComponents* comps = [[NSCalendar currentCalendar]
+		components:(NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay)
+		fromDate:date];
+	int year = (int)comps.year, month = (int)comps.month, day = (int)comps.day;
+
+	if (!iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+		return date;
+
+	return cocoaTouchDatePickParseDate(iupStrReturnStrf("%d/%d/%d", year, month, day));
+}
+
 static int cocoaTouchDatePickSetValueAttrib(Ihandle* ih, const char* value)
 {
 	UIDatePicker* picker = cocoaTouchDatePickGet(ih);
 	if (!picker) return 0;
 	NSDate* parsed = cocoaTouchDatePickParseDate(value ? value : "TODAY");
-	if (parsed) [picker setDate:parsed animated:NO];
+	if (parsed) [picker setDate:cocoaTouchDatePickClampDate(ih, parsed) animated:NO];
 	return 0;
+}
+
+static void cocoaTouchDatePickUpdateRange(Ihandle* ih)
+{
+	UIDatePicker* picker = cocoaTouchDatePickGet(ih);
+	if (!picker) return;
+
+	picker.minimumDate = iupAttribGet(ih, "MINDATE") ? cocoaTouchDatePickParseDate(iupAttribGet(ih, "MINDATE")) : nil;
+	picker.maximumDate = iupAttribGet(ih, "MAXDATE") ? cocoaTouchDatePickParseDate(iupAttribGet(ih, "MAXDATE")) : nil;
+	[picker setDate:cocoaTouchDatePickClampDate(ih, [picker date]) animated:NO];
+}
+
+static int cocoaTouchDatePickSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+	iupAttribSetStr(ih, "MINDATE", value);
+	cocoaTouchDatePickUpdateRange(ih);
+	return 1;
+}
+
+static int cocoaTouchDatePickSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+	iupAttribSetStr(ih, "MAXDATE", value);
+	cocoaTouchDatePickUpdateRange(ih);
+	return 1;
 }
 
 static char* cocoaTouchDatePickGetValueAttrib(Ihandle* ih)
@@ -172,6 +209,8 @@ Iclass* iupDatePickNewClass(void)
 
 	iupClassRegisterAttribute(ic, "VALUE", cocoaTouchDatePickGetValueAttrib, cocoaTouchDatePickSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "TODAY", cocoaTouchDatePickGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "MINDATE", NULL, cocoaTouchDatePickSetMinDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "MAXDATE", NULL, cocoaTouchDatePickSetMaxDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
 	/* compact label uses locale's medium-date style; no override path */
 	iupClassRegisterAttribute(ic, "ORDER",           NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);

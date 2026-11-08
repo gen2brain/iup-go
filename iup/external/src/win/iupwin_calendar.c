@@ -94,12 +94,70 @@ static char* winCalendarGetForeColorAttrib(Ihandle* ih)
 }
 #endif
 
+static void winCalendarClamp(Ihandle* ih)
+{
+  SYSTEMTIME st;
+  int year, month, day;
+
+  ZeroMemory(&st, sizeof(SYSTEMTIME));
+  SendMessage(ih->handle, MCM_GETCURSEL, 0, (LPARAM)&st);
+  year = st.wYear; month = st.wMonth; day = st.wDay;
+
+  if (iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  {
+    st.wYear = (WORD)year;
+    st.wMonth = (WORD)month;
+    st.wDay = (WORD)day;
+    SendMessage(ih->handle, MCM_SETCURSEL, 0, (LPARAM)&st);
+  }
+}
+
+static void winCalendarUpdateRange(Ihandle* ih)
+{
+  SYSTEMTIME st[2];
+  WPARAM flags = 0;
+  int year, month, day;
+
+  ZeroMemory(st, sizeof(st));
+  if (iupStrToDate(iupAttribGet(ih, "MINDATE"), &year, &month, &day))
+  {
+    st[0].wYear = (WORD)year; st[0].wMonth = (WORD)month; st[0].wDay = (WORD)day;
+    flags |= GDTR_MIN;
+  }
+  if (iupStrToDate(iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  {
+    st[1].wYear = (WORD)year; st[1].wMonth = (WORD)month; st[1].wDay = (WORD)day;
+    flags |= GDTR_MAX;
+  }
+  SendMessage(ih->handle, MCM_SETRANGE, flags, (LPARAM)st);
+
+  winCalendarClamp(ih);
+}
+
+static int winCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MINDATE", value);
+  winCalendarUpdateRange(ih);
+  return 1;
+}
+
+static int winCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MAXDATE", value);
+  winCalendarUpdateRange(ih);
+  return 1;
+}
+
 static int winCalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrEqualNoCase(value, "TODAY"))
   {
     SYSTEMTIME st;
+    int year, month, day;
     GetLocalTime(&st);
+    year = st.wYear; month = st.wMonth; day = st.wDay;
+    iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day);
+    st.wYear = (WORD)year; st.wMonth = (WORD)month; st.wDay = (WORD)day;
     SendMessage(ih->handle, MCM_SETCURSEL, 0, (LPARAM)&st);
   }
   else
@@ -113,6 +171,8 @@ static int winCalendarSetValueAttrib(Ihandle* ih, const char* value)
       if (month > 12) month = 12;
       if (day < 1) day = 1;
       if (day > 31) day = 31;
+
+      iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day);
 
       st.wYear = (WORD)year;
       st.wMonth = (WORD)month;
@@ -237,6 +297,8 @@ Iclass* iupCalendarNewClass(void)
   iupClassRegisterAttribute(ic, "VALUE", winCalendarGetValueAttrib, winCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WEEKNUMBERS", NULL, NULL, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", winCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", NULL, winCalendarSetMinDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", NULL, winCalendarSetMaxDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
 #if NOT_WORKING
   /* Works only when NOT using Visual Styles */

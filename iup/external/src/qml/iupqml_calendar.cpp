@@ -23,6 +23,7 @@ static const char* qmlCalendarQml =
   "import QtQuick\nimport QtQuick.Controls\n"
   "Control { id: cal; objectName: \"cal\"; padding: 0; focusPolicy: Qt.StrongFocus; hoverEnabled: true\n"
   "  property int iupYear: 2000; property int iupMonth: 0; property string iupSelected: \"\"; property bool iupWeeks: false\n"
+  "  property string iupMin: \"\"; property string iupMax: \"\"\n"
   "  property font iupFont\n"
   "  signal iupKey(int key)\n"
   "  Keys.onPressed: (event) => { if (event.key === Qt.Key_Left || event.key === Qt.Key_Right || event.key === Qt.Key_Up || event.key === Qt.Key_Down || event.key === Qt.Key_PageUp || event.key === Qt.Key_PageDown) { cal.iupKey(event.key); event.accepted = true } }\n"
@@ -42,8 +43,9 @@ static const char* qmlCalendarQml =
   "      MonthGrid { id: grid; objectName: \"grid\"; width: parent.width - weeks.width; height: parent.height; month: cal.iupMonth; year: cal.iupYear; font: cal.iupFont\n"
   "        onClicked: if (cal.focusPolicy !== Qt.NoFocus) cal.forceActiveFocus()\n"
   "        delegate: Rectangle { required property var model; radius: 3\n"
+  "          readonly property bool outRange: (cal.iupMin !== \"\" && Qt.formatDate(model.date, \"yyyy-MM-dd\") < cal.iupMin) || (cal.iupMax !== \"\" && Qt.formatDate(model.date, \"yyyy-MM-dd\") > cal.iupMax)\n"
   "          color: Qt.formatDate(model.date, \"yyyy-MM-dd\") === cal.iupSelected ? palette.highlight : \"transparent\"\n"
-  "          Text { anchors.centerIn: parent; text: model.day; font: cal.iupFont; opacity: model.month === grid.month ? 1 : 0.3\n"
+  "          Text { anchors.centerIn: parent; text: model.day; font: cal.iupFont; opacity: model.month === grid.month && !outRange ? 1 : 0.3\n"
   "            color: Qt.formatDate(model.date, \"yyyy-MM-dd\") === cal.iupSelected ? palette.highlightedText : palette.text } }\n"
   "      }\n"
   "    }\n"
@@ -70,6 +72,18 @@ static void qmlCalendarApplySelected(Ihandle* ih)
   data->item->setProperty("iupSelected", data->selected.toString("yyyy-MM-dd"));
   data->item->setProperty("iupMonth", data->selected.month() - 1);
   data->item->setProperty("iupYear", data->selected.year());
+}
+
+static bool qmlCalendarClampDate(Ihandle* ih, QDate& date)
+{
+  int year = date.year(), month = date.month(), day = date.day();
+  if (!iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+    return false;
+  QDate clamped(year, month, day);
+  if (!clamped.isValid())
+    return false;
+  date = clamped;
+  return true;
 }
 
 static void qmlCalendarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
@@ -136,8 +150,39 @@ static int qmlCalendarSetValueAttrib(Ihandle* ih, const char* value)
     }
   }
 
+  qmlCalendarClampDate(ih, data->selected);
   qmlCalendarApplySelected(ih);
   return 0;
+}
+
+static void qmlCalendarSetRange(Ihandle* ih, const char* name, const char* property, const char* value)
+{
+  IupQmlCalendarData* data = qmlCalendarGetData(ih);
+  int year, month, day;
+
+  iupAttribSetStr(ih, name, value);
+  if (!data)
+    return;
+
+  if (iupStrToDate(value, &year, &month, &day) && QDate(year, month, day).isValid())
+    data->item->setProperty(property, QDate(year, month, day).toString("yyyy-MM-dd"));
+  else
+    data->item->setProperty(property, QString());
+
+  if (qmlCalendarClampDate(ih, data->selected))
+    qmlCalendarApplySelected(ih);
+}
+
+static int qmlCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  qmlCalendarSetRange(ih, "MINDATE", "iupMin", value);
+  return 1;
+}
+
+static int qmlCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  qmlCalendarSetRange(ih, "MAXDATE", "iupMax", value);
+  return 1;
 }
 
 static char* qmlCalendarGetValueAttrib(Ihandle* ih)
@@ -178,6 +223,10 @@ static void qmlCalendarClicked(Ihandle* ih, const QDateTime& datetime)
     return;
 
   QDate date = datetime.date();
+  QDate clamped = date;
+  if (qmlCalendarClampDate(ih, clamped))
+    return;
+
   bool same = (date == data->selected);
 
   data->selected = date;
@@ -205,6 +254,9 @@ static void qmlCalendarKey(Ihandle* ih, int key)
   default:
     return;
   }
+
+  if (date.isValid())
+    qmlCalendarClampDate(ih, date);
 
   if (!date.isValid() || date == data->selected)
     return;
@@ -296,6 +348,8 @@ extern "C" Iclass* iupCalendarNewClass(void)
   iupClassRegisterAttribute(ic, "VALUE", qmlCalendarGetValueAttrib, qmlCalendarSetValueAttrib, nullptr, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "WEEKNUMBERS", nullptr, qmlCalendarSetWeekNumbersAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", qmlCalendarGetTodayAttrib, nullptr, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", nullptr, qmlCalendarSetMinDateAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", nullptr, qmlCalendarSetMaxDateAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   return ic;
 }

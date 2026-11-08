@@ -33,6 +33,10 @@ EM_JS(void, iupwasmJsDateSet, (int id, const char* iso), {
   globalThis.__iupApply({ op: 'inputval', id: id, value: UTF8ToString(iso) });
 })
 
+EM_JS(void, iupwasmJsDateRange, (int id, const char* min, const char* max), {
+  globalThis.__iupApply({ op: 'daterange', id: id, min: UTF8ToString(min), max: UTF8ToString(max) });
+})
+
 EM_JS(void, iupwasmJsDateShowPicker, (int id), {
   globalThis.__iupApply({ op: 'dateshowpicker', id: id });
 })
@@ -72,9 +76,51 @@ static int wasmDatePickSetValueAttrib(Ihandle* ih, const char* value)
   else if (sscanf(value, "%d%*[/-]%d%*[/-]%d", &y, &m, &d) != 3)
     return 0;
 
+  iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &y, &m, &d);
+
   snprintf(iso, sizeof(iso), "%04d-%02d-%02d", y, m, d);
   iupwasmJsDateSet(id, iso);
   return 0;
+}
+
+static char* wasmDatePickGetValueAttrib(Ihandle* ih);
+
+static void wasmDatePickUpdateRange(Ihandle* ih)
+{
+  int id = iupwasmIdOf(ih);
+  char min_iso[16] = "", max_iso[16] = "";
+  int y, m, d;
+
+  if (!id)
+    return;
+
+  if (iupStrToDate(iupAttribGet(ih, "MINDATE"), &y, &m, &d))
+    snprintf(min_iso, sizeof(min_iso), "%04d-%02d-%02d", y, m, d);
+  if (iupStrToDate(iupAttribGet(ih, "MAXDATE"), &y, &m, &d))
+    snprintf(max_iso, sizeof(max_iso), "%04d-%02d-%02d", y, m, d);
+  iupwasmJsDateRange(id, min_iso, max_iso);
+
+  if (iupStrToDate(wasmDatePickGetValueAttrib(ih), &y, &m, &d) &&
+      iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &y, &m, &d))
+  {
+    char iso[16];
+    snprintf(iso, sizeof(iso), "%04d-%02d-%02d", y, m, d);
+    iupwasmJsDateSet(id, iso);
+  }
+}
+
+static int wasmDatePickSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MINDATE", value);
+  wasmDatePickUpdateRange(ih);
+  return 1;
+}
+
+static int wasmDatePickSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MAXDATE", value);
+  wasmDatePickUpdateRange(ih);
+  return 1;
 }
 
 static char* wasmDatePickGetValueAttrib(Ihandle* ih)
@@ -162,6 +208,8 @@ Iclass* iupDatePickNewClass(void)
 
   iupClassRegisterAttribute(ic, "VALUE", wasmDatePickGetValueAttrib, wasmDatePickSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", wasmDatePickGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", NULL, wasmDatePickSetMinDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", NULL, wasmDatePickSetMaxDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, wasmDatePickSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);

@@ -38,9 +38,20 @@ static void eflCalendarChangedCallback(void* data, const Efl_Event* ev)
   }
 }
 
+static struct tm eflCalendarMakeTime(int year, int month, int day)
+{
+  struct tm t;
+  memset(&t, 0, sizeof(struct tm));
+  t.tm_year = year - 1900;
+  t.tm_mon = month - 1;
+  t.tm_mday = day;
+  return t;
+}
+
 static int eflCalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
   Eo* calendar = iupeflGetWidget(ih);
+  int year, month, day;
 
   if (!calendar)
     return 0;
@@ -51,33 +62,74 @@ static int eflCalendarSetValueAttrib(Ihandle* ih, const char* value)
     time_t timer;
     time(&timer);
     timeinfo = localtime(&timer);
-    if (timeinfo)
-      efl_ui_calendar_date_set(calendar, *timeinfo);
+    if (!timeinfo)
+      return 0;
+    year = timeinfo->tm_year + 1900;
+    month = timeinfo->tm_mon + 1;
+    day = timeinfo->tm_mday;
+  }
+  else if (iupStrToDate(value, &year, &month, &day))
+  {
+    if (month < 1) month = 1;
+    if (month > 12) month = 12;
+    if (day < 1) day = 1;
+    if (day > 31) day = 31;
   }
   else
-  {
-    int year, month, day;
-    if (iupStrToDate(value, &year, &month, &day))
-    {
-      struct tm selected_time;
+    return 0;
 
-      if (month < 1) month = 1;
-      if (month > 12) month = 12;
-      if (day < 1) day = 1;
-      if (day > 31) day = 31;
-
-      memset(&selected_time, 0, sizeof(struct tm));
-      selected_time.tm_year = year - 1900;
-      selected_time.tm_mon = month - 1;
-      selected_time.tm_mday = day;
-
-      efl_ui_calendar_date_set(calendar, selected_time);
-    }
-  }
+  iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day);
+  efl_ui_calendar_date_set(calendar, eflCalendarMakeTime(year, month, day));
 
   iupAttribSetInt(ih, "_IUP_OLD_DAY", efl_ui_calendar_date_get(calendar).tm_mday);
 
   return 0;
+}
+
+static void eflCalendarUpdateRange(Ihandle* ih)
+{
+  Eo* calendar = iupeflGetWidget(ih);
+  struct tm current;
+  int year, month, day;
+
+  if (!calendar)
+    return;
+
+  if (!iupStrToDate(iupAttribGet(ih, "MINDATE"), &year, &month, &day))
+    iupStrToDate(iupAttribGet(ih, "_IUPEFL_DEFAULT_MINDATE"), &year, &month, &day);
+  efl_ui_calendar_date_min_set(calendar, eflCalendarMakeTime(year, month, day));
+
+  if (iupStrToDate(iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  {
+    efl_ui_calendar_date_max_set(calendar, eflCalendarMakeTime(year, month, day));
+    iupAttribSet(ih, "_IUPEFL_MAXDATE_SET", "1");
+  }
+  else if (iupAttribGet(ih, "_IUPEFL_MAXDATE_SET"))
+    efl_ui_calendar_date_max_set(calendar, eflCalendarMakeTime(9999, 12, 31));
+
+  current = efl_ui_calendar_date_get(calendar);
+  year = current.tm_year + 1900;
+  month = current.tm_mon + 1;
+  day = current.tm_mday;
+  if (iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  {
+    efl_ui_calendar_date_set(calendar, eflCalendarMakeTime(year, month, day));
+    iupAttribSetInt(ih, "_IUP_OLD_DAY", day);
+  }
+}
+
+static int eflCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MINDATE", value);
+  eflCalendarUpdateRange(ih);
+  return 1;
+}
+
+static int eflCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MAXDATE", value);
+  eflCalendarUpdateRange(ih);
+  return 1;
 }
 
 static char* eflCalendarGetValueAttrib(Ihandle* ih)
@@ -135,6 +187,11 @@ static int eflCalendarMapMethod(Ihandle* ih)
 
   ih->handle = (InativeHandle*)calendar;
 
+  {
+    struct tm min_date = efl_ui_calendar_date_min_get(calendar);
+    iupAttribSetStrf(ih, "_IUPEFL_DEFAULT_MINDATE", "%d/%d/%d", min_date.tm_year + 1900, min_date.tm_mon + 1, min_date.tm_mday);
+  }
+
   efl_event_callback_add(calendar, EFL_UI_CALENDAR_EVENT_CHANGED, eflCalendarChangedCallback, ih);
 
   iupeflBaseAddCallbacks(ih, calendar);
@@ -185,6 +242,8 @@ Iclass* iupCalendarNewClass(void)
 
   iupClassRegisterAttribute(ic, "VALUE", eflCalendarGetValueAttrib, eflCalendarSetValueAttrib, NULL, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", eflCalendarGetTodayAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", NULL, eflCalendarSetMinDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", NULL, eflCalendarSetMaxDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   return ic;
 }

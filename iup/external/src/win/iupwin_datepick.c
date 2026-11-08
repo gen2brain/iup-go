@@ -43,12 +43,70 @@
 #endif
 
 
+static void winDatePickClamp(Ihandle* ih)
+{
+  SYSTEMTIME st;
+  int year, month, day;
+
+  ZeroMemory(&st, sizeof(SYSTEMTIME));
+  SendMessage(ih->handle, DTM_GETSYSTEMTIME, 0, (LPARAM)&st);
+  year = st.wYear; month = st.wMonth; day = st.wDay;
+
+  if (iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  {
+    st.wYear = (WORD)year;
+    st.wMonth = (WORD)month;
+    st.wDay = (WORD)day;
+    SendMessage(ih->handle, DTM_SETSYSTEMTIME, GDT_VALID, (LPARAM)&st);
+  }
+}
+
+static void winDatePickUpdateRange(Ihandle* ih)
+{
+  SYSTEMTIME st[2];
+  WPARAM flags = 0;
+  int year, month, day;
+
+  ZeroMemory(st, sizeof(st));
+  if (iupStrToDate(iupAttribGet(ih, "MINDATE"), &year, &month, &day))
+  {
+    st[0].wYear = (WORD)year; st[0].wMonth = (WORD)month; st[0].wDay = (WORD)day;
+    flags |= GDTR_MIN;
+  }
+  if (iupStrToDate(iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  {
+    st[1].wYear = (WORD)year; st[1].wMonth = (WORD)month; st[1].wDay = (WORD)day;
+    flags |= GDTR_MAX;
+  }
+  SendMessage(ih->handle, DTM_SETRANGE, flags, (LPARAM)st);
+
+  winDatePickClamp(ih);
+}
+
+static int winDatePickSetMinDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MINDATE", value);
+  winDatePickUpdateRange(ih);
+  return 1;
+}
+
+static int winDatePickSetMaxDateAttrib(Ihandle* ih, const char* value)
+{
+  iupAttribSetStr(ih, "MAXDATE", value);
+  winDatePickUpdateRange(ih);
+  return 1;
+}
+
 static int winDatePickSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrEqualNoCase(value, "TODAY"))
   {
     SYSTEMTIME st;
+    int year, month, day;
     GetLocalTime(&st);
+    year = st.wYear; month = st.wMonth; day = st.wDay;
+    iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day);
+    st.wYear = (WORD)year; st.wMonth = (WORD)month; st.wDay = (WORD)day;
     SendMessage(ih->handle, DTM_SETSYSTEMTIME, GDT_VALID, (LPARAM)&st);
   }
   else
@@ -63,6 +121,8 @@ static int winDatePickSetValueAttrib(Ihandle* ih, const char* value)
       if (month > 12) month = 12;
       if (day < 1) day = 1;
       if (day > 31) day = 31;
+
+      iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day);
 
       st.wYear = (WORD)year;
       st.wMonth = (WORD)month;
@@ -276,6 +336,8 @@ Iclass* iupDatePickNewClass(void)
 
   iupClassRegisterAttribute(ic, "VALUE", winDatePickGetValueAttrib, winDatePickSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", winDatePickGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MINDATE", NULL, winDatePickSetMinDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "MAXDATE", NULL, winDatePickSetMaxDateAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SEPARATOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "/", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ZEROPRECED", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
