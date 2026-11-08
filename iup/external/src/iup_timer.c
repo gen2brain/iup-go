@@ -85,6 +85,7 @@ Iclass* iupTimerNewClass(void)
   iupClassRegisterAttribute(ic, "RUN", iTimerGetRunAttrib, iTimerSetRunAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ELAPSEDTIME", iTimerGetElapsedTimeAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TIME", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "TOLERANCE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupdrvTimerInitClass(ic);
 
