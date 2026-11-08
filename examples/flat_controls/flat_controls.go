@@ -127,10 +127,10 @@ func createButtonsAndTogglesTab() iup.Ihandle {
 		return iup.DEFAULT
 	}))
 
-	flatBtnGrad3 := iup.FlatButton("Gradient 45°")
+	flatBtnGrad3 := iup.FlatButton("Gradient 315°")
 	flatBtnGrad3.SetAttributes(`PADDING=10x5, GRADIENT="150 255 150:50 180 50", GRADIENTANGLE=315, FGCOLOR="255 255 255"`)
 	iup.SetCallback(flatBtnGrad3, "FLAT_ACTION", iup.FlatActionFunc(func(ih iup.Ihandle) int {
-		updateStatus("Gradient button (45°) clicked")
+		updateStatus("Gradient button (315°) clicked")
 		return iup.DEFAULT
 	}))
 

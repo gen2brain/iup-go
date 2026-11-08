@@ -112,7 +112,7 @@ func main() {
 	iup.SetCallback(sw15, "FLAT_ACTION", iup.FlatToggleActionFunc(actionCb))
 
 	// Gradient both + angle
-	sw16 := iup.FlatToggle("Gradient Both 45deg")
+	sw16 := iup.FlatToggle("Gradient Both 315deg")
 	sw16.SetAttributes(`SWITCH=YES, VALUE=ON, SWITCHTRACKGRADIENT="230 230 230:180 180 180", SWITCHTRACKONGRADIENT="80 200 120:30 140 60", SWITCHTRACKGRADIENTANGLE=315`)
 	iup.SetCallback(sw16, "FLAT_ACTION", iup.FlatToggleActionFunc(actionCb))
 
