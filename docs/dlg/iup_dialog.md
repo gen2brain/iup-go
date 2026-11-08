@@ -274,6 +274,8 @@ Available in the Cocoa, GTK, GTK 4, Qt and FLTK drivers on macOS.
 
 #### Exclusive [Windows Only]
 
+**BACKDROP** [WinUI Only] (non-inheritable): system backdrop of the dialog. Can be "MICA", "MICAALT" or "ACRYLIC". Default: NULL.
+
 **COMPOSITED** [Win32 Only] (creation-only): controls if the window will have an automatic double buffer for all children.
 Default is "NO".
 It is NOT compatible with IupCanvas, and all derived IUP controls such as IupFlat*, IupGL*, IupPlot and IupMatrix, because IupCanvas uses CS_OWNDC in the window class.
