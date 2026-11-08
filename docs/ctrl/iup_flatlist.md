@@ -90,7 +90,7 @@ See also [IupImage](../elem/iup_image.md). Images don't need to have the same si
 
 **INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
 
-**IMAGETINT** (non-inheritable): when "YES", the image is drawn recolored with the current text color, keeping its alpha channel. Default: "NO".
+**IMAGETINT** (non-inheritable): color "R G B" used to draw the image recolored, keeping its alpha channel. "YES" uses the current text color; "NO" draws the image unchanged. Default: "NO".
 
 **IMAGEPOSITION** (non-inheritable): Position of the image relative to the text when both are displayed.
 Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.

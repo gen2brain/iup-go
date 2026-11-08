@@ -51,9 +51,9 @@ func main() {
 	plain := iup.FlatButton("No tint").SetAttributes("IMAGE=tint_ring, PADDING=8x6")
 
 	labels := iup.Hbox(
-		iup.FlatLabel("Red").SetAttributes(`IMAGE=tint_disc, IMAGETINT=YES, FGCOLOR="200 60 60"`),
-		iup.FlatLabel("Green").SetAttributes(`IMAGE=tint_disc, IMAGETINT=YES, FGCOLOR="60 160 90"`),
-		iup.FlatLabel("Blue").SetAttributes(`IMAGE=tint_disc, IMAGETINT=YES, FGCOLOR="60 120 200"`),
+		iup.FlatLabel("Red").SetAttributes(`IMAGE=tint_disc, IMAGETINT="200 60 60"`),
+		iup.FlatLabel("Green").SetAttributes(`IMAGE=tint_disc, IMAGETINT="60 160 90"`),
+		iup.FlatLabel("Blue").SetAttributes(`IMAGE=tint_disc, IMAGETINT="60 120 200"`),
 	).SetAttributes("GAP=16")
 
 	tree := iup.FlatTree().SetAttributes(map[string]string{

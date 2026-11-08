@@ -28,7 +28,7 @@ func main() {
 		return iup.DEFAULT
 	}))
 	updates := iup.FlatButton("Updates").SetAttributes(map[string]string{
-		"BADGE": "new", "BADGECOLOR": "60 160 90", "SHOWBORDER": "YES", "BORDERCOLOR": accent, "CORNERRADIUS": "8", "PADDING": "18x10",
+		"BADGE": "new", "BADGEBGCOLOR": "60 160 90", "SHOWBORDER": "YES", "BORDERCOLOR": accent, "CORNERRADIUS": "8", "PADDING": "18x10",
 	})
 
 	tabs := iup.FlatTabs(
