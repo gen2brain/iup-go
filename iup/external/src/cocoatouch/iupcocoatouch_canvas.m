@@ -968,9 +968,9 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 
 	iupClassRegisterAttribute(ic, "CANFOCUS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-	iupClassRegisterAttribute(ic, "CGCONTEXT", cocoaTouchCanvasGetCgContextAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "UIVIEW", cocoaTouchCanvasGetUiViewAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "DRAWABLE", cocoaTouchCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "CGCONTEXT", cocoaTouchCanvasGetCgContextAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "UIVIEW", cocoaTouchCanvasGetUiViewAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "DRAWABLE", cocoaTouchCanvasGetDrawableAttrib, NULL, NULL, NULL, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
 
 	/* iOS has no native scrollbars on plain UIView; POSX/POSY/DX/DY still let IUP track scroll state without chrome. */
 	iupClassRegisterAttribute(ic, "SCROLLBAR", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
