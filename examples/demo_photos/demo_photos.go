@@ -175,7 +175,7 @@ func phone() bool {
 }
 
 func photoTable() iup.Ihandle {
-	table := iup.Table().SetAttributes("NUMCOL=7, SHOWIMAGE=YES, FITIMAGE=NO, VISIBLECOLUMNS=5, VISIBLELINES=8, EXPAND=YES, SORTABLE=YES, USERRESIZE=YES, ALLOWREORDER=YES, STRETCHLAST=YES, ALTERNATECOLOR=YES, SELECTIONMODE=MULTIPLE, FOCUSRECT=NO, EDITABLE4=YES").SetHandle("cull_table")
+	table := iup.Table().SetAttributes("NUMCOL=7, SHOWIMAGE=YES, FITIMAGE=NO, VISIBLECOLUMNS=5, VISIBLELINES=8, EXPAND=YES, SORTABLE=YES, USERRESIZE=YES, ALLOWREORDER=YES, STRETCHLAST=YES, ALTERNATECOLOR=YES, SELECTIONMODE=MULTIPLE, FOCUSFEEDBACK=NO, EDITABLE4=YES").SetHandle("cull_table")
 	for col, title := range []string{"Photo", "Captured", "Dimensions", "Rating", "Flag", "Quality", "Exposure"} {
 		iup.SetAttributeId(table, "TITLE", col+1, title)
 	}

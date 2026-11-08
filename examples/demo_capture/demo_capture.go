@@ -336,7 +336,7 @@ func (app *studio) microphonePanel() iup.Ihandle {
 }
 
 func (app *studio) takesPanel() iup.Ihandle {
-	app.table = iup.Table().SetAttributes("NUMCOL=5, VISIBLECOLUMNS=4, VISIBLELINES=9, EXPAND=YES, ALTERNATECOLOR=YES, USERRESIZE=YES, ALLOWREORDER=YES, STRETCHLAST=YES, FOCUSRECT=NO")
+	app.table = iup.Table().SetAttributes("NUMCOL=5, VISIBLECOLUMNS=4, VISIBLELINES=9, EXPAND=YES, ALTERNATECOLOR=YES, USERRESIZE=YES, ALLOWREORDER=YES, STRETCHLAST=YES, FOCUSFEEDBACK=NO")
 	for col, title := range []string{"Take", "Recorded", "Duration", "Format", "File"} {
 		iup.SetAttributeId(app.table, "TITLE", col+1, title)
 	}
