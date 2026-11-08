@@ -134,7 +134,7 @@ func ResetAttribute(ih Ihandle, name string) {
 // SetAtt sets several attributes of an interface element and optionally sets its name.
 //
 // https://gen2brain.github.io/iup-go/func/iup_setatt.html
-func SetAtt(ih Ihandle, handle_name string, args ...string) Ihandle {
+func SetAtt(ih Ihandle, handleName string, args ...string) Ihandle {
 	attrs := bytes.NewBufferString("")
 	for i := 0; i < len(args); i += 2 {
 		if i > 0 {
@@ -144,6 +144,9 @@ func SetAtt(ih Ihandle, handle_name string, args ...string) Ihandle {
 	}
 
 	SetAttributes(ih, attrs.String())
+	if handleName != "" {
+		SetHandle(handleName, ih)
+	}
 
 	return ih
 }
@@ -153,7 +156,7 @@ func SetAtt(ih Ihandle, handle_name string, args ...string) Ihandle {
 //	box := iup.Hbox(button1, button2).SetAttrs("GAP", "5", "MARGIN", "8x8")
 //
 // C Iup provides SetAtt for this purpose but in Go Iup SetAttrs is an easier method to
-// accomplish this task due to no necessity of handle_name.
+// accomplish this task due to no necessity of handleName.
 func SetAttrs(ih Ihandle, args ...string) Ihandle {
 	return SetAtt(ih, "", args...)
 }

@@ -89,7 +89,7 @@ func attribIsNotString(ih Ihandle, name string) bool {
 		return false
 	}
 
-	return wasmGetI32(pflags)&AttribNoString != 0
+	return wasmGetI32(pflags)&AF_NO_STRING != 0
 }
 
 func GetInt2(ih Ihandle, name string) (count, i1, i2 int) {
@@ -149,7 +149,7 @@ func ResetAttribute(ih Ihandle, name string) {
 	ccall("IupResetAttribute", "", []interface{}{"number", "string"}, []interface{}{int(ih), name})
 }
 
-func SetAtt(ih Ihandle, handle_name string, args ...string) Ihandle {
+func SetAtt(ih Ihandle, handleName string, args ...string) Ihandle {
 	attrs := bytes.NewBufferString("")
 	for i := 0; i < len(args); i += 2 {
 		if i > 0 {
@@ -158,6 +158,9 @@ func SetAtt(ih Ihandle, handle_name string, args ...string) Ihandle {
 		attrs.WriteString(fmt.Sprintf("%s=\"%s\"", args[i], args[i+1]))
 	}
 	SetAttributes(ih, attrs.String())
+	if handleName != "" {
+		SetHandle(handleName, ih)
+	}
 	return ih
 }
 

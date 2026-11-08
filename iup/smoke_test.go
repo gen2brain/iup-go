@@ -493,6 +493,13 @@ func TestHandleName(t *testing.T) {
 		}
 		SetHandle("SMOKE_HANDLE", 0)
 		Destroy(b)
+
+		l := SetAtt(Label(""), "SMOKE_SETATT", "TITLE", "x")
+		if GetHandle("SMOKE_SETATT") != l || GetAttribute(l, "TITLE") != "x" {
+			t.Fatal("SetAtt did not set the name and attributes")
+		}
+		SetHandle("SMOKE_SETATT", 0)
+		Destroy(l)
 	})
 }
 
