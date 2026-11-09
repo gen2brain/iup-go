@@ -17,16 +17,26 @@
 {
 @public
   int status;
+  int waiting;
 }
 @end
 
 @implementation IupCocoaShareDelegate
 
+- (void)finish:(int)result
+{
+  if (status != 2)
+    return;
+  status = result;
+  if (waiting)
+    IupExitLoop();
+}
+
 - (void)sharingServicePicker:(NSSharingServicePicker*)picker didChooseSharingService:(NSSharingService*)service
 {
   (void)picker;
   if (!service)
-    status = 0;
+    [self finish:0];
 }
 
 - (id<NSSharingServiceDelegate>)sharingServicePicker:(NSSharingServicePicker*)picker delegateForSharingService:(NSSharingService*)service
@@ -38,13 +48,13 @@
 - (void)sharingService:(NSSharingService*)service didShareItems:(NSArray*)items
 {
   (void)service; (void)items;
-  status = 1;
+  [self finish:1];
 }
 
 - (void)sharingService:(NSSharingService*)service didFailToShareItems:(NSArray*)items error:(NSError*)error
 {
   (void)service; (void)items;
-  status = ([error code] == NSUserCancelledError) ? 0 : -1;
+  [self finish:([error code] == NSUserCancelledError) ? 0 : -1];
 }
 
 @end
@@ -94,16 +104,14 @@ static int cocoaShareDlgPopup(Ihandle* ih, int x, int y)
   [picker setDelegate:delegate];
   [picker showRelativeToRect:rect ofView:view preferredEdge:NSMinYEdge];
 
-  while (delegate->status == 2)
+  if (delegate->status == 2)
   {
-    @autoreleasepool {
-      NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate dateWithTimeIntervalSinceNow:0.05] inMode:NSDefaultRunLoopMode dequeue:YES];
-      if (event)
-        [NSApp sendEvent:event];
-    }
+    delegate->waiting = 1;
+    IupMainLoop();
+    delegate->waiting = 0;
   }
 
-  iupAttribSet(ih, "STATUS", delegate->status == 1 ? "1" : (delegate->status == 0 ? "0" : "-1"));
+  iupAttribSet(ih, "STATUS", delegate->status == 1 ? "1" : (delegate->status == -1 ? "-1" : "0"));
 
   [picker setDelegate:nil];
   [picker release];
