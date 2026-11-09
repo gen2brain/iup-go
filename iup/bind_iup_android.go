@@ -12,6 +12,7 @@ package iup
 import "C"
 
 import (
+	"net"
 	"os"
 	"syscall"
 	"time"
@@ -23,7 +24,7 @@ import (
 func init() {
 	Open()
 	setTimeLocal()
-	netControl = androidNetControl
+	netDialerSetup = func(d *net.Dialer) { d.Control = androidNetControl }
 }
 
 // androidNetControl binds a socket to the network selected with NETWORK.
