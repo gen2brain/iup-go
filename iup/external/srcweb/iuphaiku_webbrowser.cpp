@@ -18,6 +18,7 @@
 #include <Messenger.h>
 #include <Path.h>
 #include <String.h>
+#include <ToolTip.h>
 #include <View.h>
 #include <Window.h>
 
@@ -240,7 +241,6 @@ static void haikuWebBrowserBindView(Ihandle* ih, BWebView* view)
   haikuWebBrowserJSExecMessenger(ih, view->WebPage());
 
   iupAttribSet(ih, "_IUPWEB_READY", "1");
-  iupAttribUpdate(ih);
 }
 
 static void haikuWebBrowserDestroyJSExecHandler(Ihandle* ih)
@@ -991,6 +991,16 @@ static void haikuWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h,
   *h = natural_h;
 }
 
+static void haikuWebBrowserApplyStored(Ihandle* ih, const char* name, int (*set)(Ihandle*, const char*))
+{
+  char* value = iupStrDup(iupAttribGet(ih, name));
+  if (!value) return;
+  iupAttribSet(ih, name, nullptr);
+  if (set(ih, value))
+    iupAttribSetStr(ih, name, value);
+  free(value);
+}
+
 class IupHaikuWebDispatcher : public BHandler
 {
 public:
@@ -1019,6 +1029,9 @@ public:
     LooperLockGuard guard(parent->Looper());
 
     BRect frame = placeholder->Frame();
+    bool hidden = placeholder->IsHidden(placeholder);
+    BToolTip* tip = placeholder->ToolTip();
+    if (tip) tip->AcquireReference();
     parent->RemoveChild(placeholder);
     delete placeholder;
     ih->handle = nullptr;
@@ -1030,8 +1043,21 @@ public:
     parent->AddChild(view);
     view->MoveTo(frame.LeftTop());
     view->ResizeTo(frame.Width(), frame.Height());
+    if (hidden) view->Hide();
+    if (tip)
+    {
+      view->SetToolTip(tip);
+      tip->ReleaseReference();
+    }
+    auto* cursor = reinterpret_cast<BCursor*>(iupAttribGet(ih, "_IUPHAIKU_CURSOR"));
+    if (cursor) view->SetViewCursor(cursor, true);
 
     haikuWebBrowserBindView(ih, view);
+
+    haikuWebBrowserApplyStored(ih, "VALUE", haikuWebBrowserSetValueAttrib);
+    haikuWebBrowserApplyStored(ih, "HTML", haikuWebBrowserSetHTMLAttrib);
+    haikuWebBrowserApplyStored(ih, "ZOOM", haikuWebBrowserSetZoomAttrib);
+    haikuWebBrowserApplyStored(ih, "EDITABLE", haikuWebBrowserSetEditableAttrib);
   }
 };
 
