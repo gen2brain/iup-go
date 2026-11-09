@@ -86,7 +86,7 @@ static int eflCalendarSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static void eflCalendarUpdateRange(Ihandle* ih)
+static void eflCalendarUpdateRange(Ihandle* ih, const char* min_date, const char* max_date)
 {
   Eo* calendar = iupeflGetWidget(ih);
   struct tm current;
@@ -95,11 +95,11 @@ static void eflCalendarUpdateRange(Ihandle* ih)
   if (!calendar)
     return;
 
-  if (!iupStrToDate(iupAttribGet(ih, "MINDATE"), &year, &month, &day))
+  if (!iupStrToDate(min_date, &year, &month, &day))
     iupStrToDate(iupAttribGet(ih, "_IUPEFL_DEFAULT_MINDATE"), &year, &month, &day);
   efl_ui_calendar_date_min_set(calendar, eflCalendarMakeTime(year, month, day));
 
-  if (iupStrToDate(iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  if (iupStrToDate(max_date, &year, &month, &day))
   {
     efl_ui_calendar_date_max_set(calendar, eflCalendarMakeTime(year, month, day));
     iupAttribSet(ih, "_IUPEFL_MAXDATE_SET", "1");
@@ -111,7 +111,7 @@ static void eflCalendarUpdateRange(Ihandle* ih)
   year = current.tm_year + 1900;
   month = current.tm_mon + 1;
   day = current.tm_mday;
-  if (iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  if (iupStrDateClamp(min_date, max_date, &year, &month, &day))
   {
     efl_ui_calendar_date_set(calendar, eflCalendarMakeTime(year, month, day));
     iupAttribSetInt(ih, "_IUP_OLD_DAY", day);
@@ -120,15 +120,13 @@ static void eflCalendarUpdateRange(Ihandle* ih)
 
 static int eflCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MINDATE", value);
-  eflCalendarUpdateRange(ih);
+  eflCalendarUpdateRange(ih, value, iupAttribGet(ih, "MAXDATE"));
   return 1;
 }
 
 static int eflCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MAXDATE", value);
-  eflCalendarUpdateRange(ih);
+  eflCalendarUpdateRange(ih, iupAttribGet(ih, "MINDATE"), value);
   return 1;
 }
 

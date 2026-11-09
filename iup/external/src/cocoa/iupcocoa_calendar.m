@@ -83,23 +83,23 @@ static int cocoaCalendarSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static void cocoaCalendarUpdateRange(Ihandle* ih)
+static void cocoaCalendarUpdateRange(Ihandle* ih, const char* min_date, const char* max_date)
 {
   NSDatePicker* date_picker = (NSDatePicker*)ih->handle;
   int year, month, day;
 
-  if (iupStrToDate(iupAttribGet(ih, "MINDATE"), &year, &month, &day))
+  if (iupStrToDate(min_date, &year, &month, &day))
     [date_picker setMinDate:cocoaCalendarMakeDate(year, month, day)];
   else
     [date_picker setMinDate:nil];
 
-  if (iupStrToDate(iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  if (iupStrToDate(max_date, &year, &month, &day))
     [date_picker setMaxDate:cocoaCalendarMakeDate(year, month, day)];
   else
     [date_picker setMaxDate:nil];
 
   cocoaCalendarGetDate([date_picker dateValue], &year, &month, &day);
-  if (iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  if (iupStrDateClamp(min_date, max_date, &year, &month, &day))
   {
     NSDate* date = cocoaCalendarMakeDate(year, month, day);
     if (date)
@@ -109,15 +109,13 @@ static void cocoaCalendarUpdateRange(Ihandle* ih)
 
 static int cocoaCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MINDATE", value);
-  cocoaCalendarUpdateRange(ih);
+  cocoaCalendarUpdateRange(ih, value, iupAttribGet(ih, "MAXDATE"));
   return 1;
 }
 
 static int cocoaCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MAXDATE", value);
-  cocoaCalendarUpdateRange(ih);
+  cocoaCalendarUpdateRange(ih, iupAttribGet(ih, "MINDATE"), value);
   return 1;
 }
 

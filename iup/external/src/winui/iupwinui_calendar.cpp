@@ -120,7 +120,7 @@ static int winuiCalendarSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static void winuiCalendarUpdateRange(Ihandle* ih)
+static void winuiCalendarUpdateRange(Ihandle* ih, const char* min_date, const char* max_date)
 {
   auto cv = winuiGetHandle<CalendarView>(ih);
   auto* aux = winuiGetAux<IupWinUICalendarAux>(ih, IUPWINUI_CALENDAR_AUX);
@@ -128,12 +128,12 @@ static void winuiCalendarUpdateRange(Ihandle* ih)
   if (!cv || !aux)
     return;
 
-  if (iupStrToDate(iupAttribGet(ih, "MINDATE"), &year, &month, &day))
+  if (iupStrToDate(min_date, &year, &month, &day))
     cv.MinDate(winuiCalendarMakeDateTime(year, month, day));
   else
     cv.MinDate(aux->defaultMinDate);
 
-  if (iupStrToDate(iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  if (iupStrToDate(max_date, &year, &month, &day))
     cv.MaxDate(winuiCalendarMakeDateTime(year, month, day));
   else
     cv.MaxDate(aux->defaultMaxDate);
@@ -141,7 +141,7 @@ static void winuiCalendarUpdateRange(Ihandle* ih)
   if (cv.SelectedDates().Size() > 0)
   {
     winuiCalendarGetDate(cv.SelectedDates().GetAt(0), &year, &month, &day);
-    if (iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+    if (iupStrDateClamp(min_date, max_date, &year, &month, &day))
     {
       auto dt = winuiCalendarMakeDateTime(year, month, day);
       aux->ignoreChange = true;
@@ -155,15 +155,13 @@ static void winuiCalendarUpdateRange(Ihandle* ih)
 
 static int winuiCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MINDATE", value);
-  winuiCalendarUpdateRange(ih);
+  winuiCalendarUpdateRange(ih, value, iupAttribGet(ih, "MAXDATE"));
   return 1;
 }
 
 static int winuiCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MAXDATE", value);
-  winuiCalendarUpdateRange(ih);
+  winuiCalendarUpdateRange(ih, iupAttribGet(ih, "MINDATE"), value);
   return 1;
 }
 

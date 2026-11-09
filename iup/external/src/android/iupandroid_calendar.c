@@ -24,6 +24,16 @@
 
 IUPJNI_DECLARE_CLASS_STATIC(IupCalendarHelper);
 
+static void androidCalendarSetDate(Ihandle* ih, int year, int month, int day)
+{
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupCalendarHelper, jni_env, "io/github/gen2brain/iupgo/IupCalendarHelper");
+  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setDate", "(Landroid/widget/CalendarView;III)V");
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, (jint)year, (jint)month, (jint)day);
+  iupAndroid_CheckException(jni_env, "IupCalendarHelper.setDate");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+}
+
 static int androidCalendarSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle) return 0;
@@ -47,12 +57,7 @@ static int androidCalendarSetValueAttrib(Ihandle* ih, const char* value)
 
   iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day);
 
-  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
-  jclass java_class = IUPJNI_FindClass(IupCalendarHelper, jni_env, "io/github/gen2brain/iupgo/IupCalendarHelper");
-  jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "setDate", "(Landroid/widget/CalendarView;III)V");
-  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, (jint)year, (jint)month, (jint)day);
-  iupAndroid_CheckException(jni_env, "IupCalendarHelper.setDate");
-  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  androidCalendarSetDate(ih, year, month, day);
   return 0;
 }
 
@@ -73,31 +78,29 @@ static void androidCalendarSetBound(Ihandle* ih, const char* method, const char*
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-static void androidCalendarUpdateRange(Ihandle* ih)
+static void androidCalendarUpdateRange(Ihandle* ih, const char* min_date, const char* max_date)
 {
   int year, month, day;
 
   if (!ih->handle) return;
 
-  androidCalendarSetBound(ih, "setMinDate", iupAttribGet(ih, "MINDATE"));
-  androidCalendarSetBound(ih, "setMaxDate", iupAttribGet(ih, "MAXDATE"));
+  androidCalendarSetBound(ih, "setMinDate", min_date);
+  androidCalendarSetBound(ih, "setMaxDate", max_date);
 
   if (iupStrToDate(androidCalendarGetValueAttrib(ih), &year, &month, &day) &&
-      iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
-    androidCalendarSetValueAttrib(ih, iupStrReturnStrf("%d/%d/%d", year, month, day));
+      iupStrDateClamp(min_date, max_date, &year, &month, &day))
+    androidCalendarSetDate(ih, year, month, day);
 }
 
 static int androidCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MINDATE", value);
-  androidCalendarUpdateRange(ih);
+  androidCalendarUpdateRange(ih, value, iupAttribGet(ih, "MAXDATE"));
   return 1;
 }
 
 static int androidCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MAXDATE", value);
-  androidCalendarUpdateRange(ih);
+  androidCalendarUpdateRange(ih, iupAttribGet(ih, "MINDATE"), value);
   return 1;
 }
 

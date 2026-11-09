@@ -137,16 +137,16 @@ static int androidDatePickSetValueAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static void androidDatePickUpdateRange(Ihandle* ih)
+static void androidDatePickUpdateRange(Ihandle* ih, const char* min_date, const char* max_date)
 {
   int min_y = 0, min_m = 0, min_d = 0, max_y = 0, max_m = 0, max_d = 0;
   int y = iupAttribGetInt(ih, "_IUPDATEPICK_YEAR");
   int m = iupAttribGetInt(ih, "_IUPDATEPICK_MONTH");
   int d = iupAttribGetInt(ih, "_IUPDATEPICK_DAY");
 
-  if (!iupStrToDate(iupAttribGet(ih, "MINDATE"), &min_y, &min_m, &min_d))
+  if (!iupStrToDate(min_date, &min_y, &min_m, &min_d))
     min_y = 0;
-  if (!iupStrToDate(iupAttribGet(ih, "MAXDATE"), &max_y, &max_m, &max_d))
+  if (!iupStrToDate(max_date, &max_y, &max_m, &max_d))
     max_y = 0;
 
   if (ih->handle)
@@ -159,7 +159,7 @@ static void androidDatePickUpdateRange(Ihandle* ih)
     (*env)->DeleteLocalRef(env, cls);
   }
 
-  if (y != 0 && iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &y, &m, &d))
+  if (y != 0 && iupStrDateClamp(min_date, max_date, &y, &m, &d))
   {
     androidDatePickStoreDate(ih, y, m, d);
     androidDatePickPushValue(ih, y, m, d);
@@ -168,15 +168,13 @@ static void androidDatePickUpdateRange(Ihandle* ih)
 
 static int androidDatePickSetMinDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MINDATE", value);
-  androidDatePickUpdateRange(ih);
+  androidDatePickUpdateRange(ih, value, iupAttribGet(ih, "MAXDATE"));
   return 1;
 }
 
 static int androidDatePickSetMaxDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MAXDATE", value);
-  androidDatePickUpdateRange(ih);
+  androidDatePickUpdateRange(ih, iupAttribGet(ih, "MINDATE"), value);
   return 1;
 }
 
