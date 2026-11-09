@@ -611,7 +611,7 @@ static IupCocoaTouchMenuRow* cocoaTouchMenuNewRow(Ihandle* item, int recent_inde
 
 - (void)finish
 {
-	[self dismissViewControllerAnimated:YES completion:^{ self.done = YES; }];
+	[self dismissViewControllerAnimated:YES completion:^{ self.done = YES; iupCocoaTouchWakeWait(); }];
 }
 
 - (void)activateRow:(IupCocoaTouchMenuRow*)row
@@ -728,6 +728,7 @@ static IupCocoaTouchMenuRow* cocoaTouchMenuNewRow(Ihandle* item, int recent_inde
 {
 	(void)presentationController;
 	self.done = YES;
+	iupCocoaTouchWakeWait();
 }
 
 @end
@@ -827,9 +828,7 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
 	iupCocoaTouchModalBegin();
 	while (!vc.done)
 	{
-		@autoreleasepool {
-			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.1, false);
-		}
+		iupCocoaTouchWaitEvent();
 	}
 
 	NSArray<NSValue*>* open_menus = [[[vc openMenus] copy] autorelease];

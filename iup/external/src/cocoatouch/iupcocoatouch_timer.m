@@ -15,6 +15,8 @@
 #include "iup_attrib.h"
 #include "iup_timer.h"
 
+#include "iupcocoatouch_drv.h"
+
 
 @interface IupCocoaTouchTimerController : NSObject
 @property(retain) NSTimer* theTimer;
@@ -40,6 +42,7 @@
 	{
 		IupExitLoop();
 	}
+	iupCocoaTouchWakeWait();
 }
 @end
 

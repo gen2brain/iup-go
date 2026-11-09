@@ -62,6 +62,7 @@ static int cocoaTouchShareDlgPopup(Ihandle* ih, int x, int y)
 	controller.completionWithItemsHandler = ^(UIActivityType type, BOOL completed, NSArray* returned, NSError* error) {
 		(void)type; (void)returned;
 		status = error ? -1 : (completed ? 1 : 0);
+		iupCocoaTouchWakeWait();
 	};
 
 	if (controller.popoverPresentationController)
@@ -77,9 +78,7 @@ static int cocoaTouchShareDlgPopup(Ihandle* ih, int x, int y)
 	iupCocoaTouchModalBegin();
 	while (status == 2)
 	{
-		@autoreleasepool {
-			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true);
-		}
+		iupCocoaTouchWaitEvent();
 	}
 
 	iupAttribSet(ih, "STATUS", status == 1 ? "1" : (status == 0 ? "0" : "-1"));

@@ -123,6 +123,8 @@ IUP_DRV_API int iupCocoaTouchSetBgColorAttrib(Ihandle* ih, const char* value);
 IUP_DRV_API void iupCocoaTouchMarkEntryFinished(void);
 
 IUP_DRV_API void iupCocoaTouchModalBegin(void);
+IUP_DRV_API void iupCocoaTouchWaitEvent(void);
+IUP_DRV_API void iupCocoaTouchWakeWait(void);
 IUP_DRV_API unsigned int iupCocoaTouchModalSerial(void);
 IUP_DRV_API void iupCocoaTouchRunLater(void (^block)(void));
 

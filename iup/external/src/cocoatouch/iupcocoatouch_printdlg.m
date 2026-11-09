@@ -78,14 +78,13 @@ static int cocoaTouchPrintDlgPopup(Ihandle* ih, int x, int y)
 	[controller presentAnimated:YES completionHandler:^(UIPrintInteractionController* c, BOOL completed, NSError* error) {
 		(void)c;
 		status = error ? -1 : (completed ? 1 : 0);
+		iupCocoaTouchWakeWait();
 	}];
 
 	iupCocoaTouchModalBegin();
 	while (status == 2)
 	{
-		@autoreleasepool {
-			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true);
-		}
+		iupCocoaTouchWaitEvent();
 	}
 
 	if (status == 1 && renderer->canceled)
