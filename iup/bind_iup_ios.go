@@ -20,6 +20,7 @@ unsigned int iupCocoaTouchGetNetworkIndex(void);
 import "C"
 
 import (
+	"net"
 	"strings"
 	"syscall"
 	"time"
@@ -31,7 +32,7 @@ var pendingEntry EntryPointFunc
 func init() {
 	Open()
 	setTimeLocal()
-	netControl = iosNetControl
+	netDialerSetup = func(d *net.Dialer) { d.Control = iosNetControl }
 }
 
 // iosNetControl binds a socket to the interface of the network selected with NETWORK.
