@@ -3412,7 +3412,10 @@ globalThis.__iupApply = apply;
 
 globalThis.__iupPrintPages = function (req) {
   var paper = (req.letter ? 'letter' : 'A4') + (req.landscape ? ' landscape' : ' portrait');
+  var old = document.getElementById('iup-print-frame');
+  if (old) old.remove();
   var frame = document.createElement('iframe');
+  frame.id = 'iup-print-frame';
   frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
   document.body.appendChild(frame);
   var doc = frame.contentDocument;
@@ -3427,7 +3430,6 @@ globalThis.__iupPrintPages = function (req) {
   var win = frame.contentWindow;
   var done = function () { if (frame.parentNode) frame.parentNode.removeChild(frame); };
   win.addEventListener('afterprint', function () { setTimeout(done, 0); });
-  setTimeout(done, 600000);
   win.focus();
   win.print();
   return 0;
