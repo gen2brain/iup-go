@@ -38,6 +38,7 @@
 	self.pickedDescriptor = viewController.selectedFontDescriptor;
 	[viewController dismissViewControllerAnimated:YES completion:^{
 		if (_stateOut) *_stateOut = IUPCOCOATOUCH_FONTDLG_PICKED;
+		iupCocoaTouchWakeWait();
 	}];
 }
 
@@ -45,6 +46,7 @@
 {
 	[viewController dismissViewControllerAnimated:YES completion:^{
 		if (_stateOut) *_stateOut = IUPCOCOATOUCH_FONTDLG_CANCEL;
+		iupCocoaTouchWakeWait();
 	}];
 }
 
@@ -75,9 +77,7 @@ static void cocoaTouchFontDlgPumpUntil(int* state)
 	iupCocoaTouchModalBegin();
 	while (*state == IUPCOCOATOUCH_FONTDLG_PENDING)
 	{
-		@autoreleasepool {
-			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true);
-		}
+		iupCocoaTouchWaitEvent();
 	}
 }
 
@@ -111,6 +111,7 @@ static int cocoaTouchFontDlgShowSizeAlert(UIViewController* host, int initial_si
 	[alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction* a) {
 		(void)a;
 		state = IUPCOCOATOUCH_FONTDLG_CANCEL;
+		iupCocoaTouchWakeWait();
 	}]];
 	[alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* a) {
 		(void)a;
@@ -119,6 +120,7 @@ static int cocoaTouchFontDlgShowSizeAlert(UIViewController* host, int initial_si
 		if (text && iupStrToInt([text UTF8String], &sz) && sz > 0)
 			picked_size = sz;
 		state = IUPCOCOATOUCH_FONTDLG_PICKED;
+		iupCocoaTouchWakeWait();
 	}]];
 
 	[host presentViewController:alert animated:YES completion:nil];

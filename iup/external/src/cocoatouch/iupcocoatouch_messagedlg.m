@@ -410,7 +410,6 @@ static int cocoaTouchMessageDlgPopup(Ihandle* ih, int x, int y)
 
 	int response = IUPCOCOATOUCH_MSGDLG_PENDING;
 	int* response_ref = &response;
-	CFRunLoopRef rl = CFRunLoopGetCurrent();
 
 	BOOL keep_showing = YES;
 	while (keep_showing)
@@ -460,7 +459,7 @@ static int cocoaTouchMessageDlgPopup(Ihandle* ih, int x, int y)
 		      cornerStyle:corner_style_ns
 		            onTap:^(int resp) {
 			*response_ref = resp;
-			CFRunLoopStop(rl);
+			iupCocoaTouchWakeWait();
 		}];
 
 		[alert showInWindow:window];
@@ -468,9 +467,7 @@ static int cocoaTouchMessageDlgPopup(Ihandle* ih, int x, int y)
 		iupCocoaTouchModalBegin();
 		while (response == IUPCOCOATOUCH_MSGDLG_PENDING)
 		{
-			@autoreleasepool {
-				CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true);
-			}
+			iupCocoaTouchWaitEvent();
 		}
 
 		[alert dismissAnimated];

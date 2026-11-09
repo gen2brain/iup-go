@@ -39,12 +39,14 @@
 	(void)controller;
 	self.pickedUrls = urls;
 	if (_stateOut) *_stateOut = IUPCOCOATOUCH_FILEDLG_PICKED;
+	iupCocoaTouchWakeWait();
 }
 
 - (void)documentPickerWasCancelled:(UIDocumentPickerViewController*)controller
 {
 	(void)controller;
 	if (_stateOut) *_stateOut = IUPCOCOATOUCH_FILEDLG_CANCEL;
+	iupCocoaTouchWakeWait();
 }
 
 - (void)dealloc
@@ -74,9 +76,7 @@ static void cocoaTouchFileDlgPumpUntil(int* state)
 	iupCocoaTouchModalBegin();
 	while (*state == IUPCOCOATOUCH_FILEDLG_PENDING)
 	{
-		@autoreleasepool {
-			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true);
-		}
+		iupCocoaTouchWaitEvent();
 	}
 }
 

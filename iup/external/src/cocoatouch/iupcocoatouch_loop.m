@@ -113,6 +113,7 @@ void IupExitLoop(void)
 	if (s_modal_loop_level > 0)
 	{
 		s_modal_should_exit = 1;
+		iupCocoaTouchWakeWait();
 		return;
 	}
 	UIViewController* top = iupCocoaTouchFindTopPresentedViewController();
@@ -130,9 +131,30 @@ IUP_DRV_API unsigned int iupCocoaTouchModalSerial(void)
 	return s_modal_serial;
 }
 
+static int s_wait_level = 0;
+
+IUP_DRV_API void iupCocoaTouchWaitEvent(void)
+{
+	s_wait_level++;
+	@autoreleasepool {
+		CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1.0e10, true);
+	}
+	s_wait_level--;
+}
+
+IUP_DRV_API void iupCocoaTouchWakeWait(void)
+{
+	if (s_wait_level > 0)
+		CFRunLoopStop(CFRunLoopGetMain());
+}
+
 IUP_DRV_API void iupCocoaTouchRunLater(void (^block)(void))
 {
-	CFRunLoopPerformBlock(CFRunLoopGetMain(), kCFRunLoopCommonModes, block);
+	void (^copy)(void) = [[block copy] autorelease];
+	CFRunLoopPerformBlock(CFRunLoopGetMain(), kCFRunLoopCommonModes, ^{
+		copy();
+		iupCocoaTouchWakeWait();
+	});
 	CFRunLoopWakeUp(CFRunLoopGetMain());
 }
 
@@ -177,9 +199,7 @@ int IupMainLoop(void)
 	s_modal_should_exit = 0;
 	while (!s_modal_should_exit)
 	{
-		@autoreleasepool {
-			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true);
-		}
+		iupCocoaTouchWaitEvent();
 	}
 	s_modal_loop_level--;
 	return IUP_NOERROR;
@@ -187,9 +207,7 @@ int IupMainLoop(void)
 
 int IupLoopStepWait(void)
 {
-	@autoreleasepool {
-		CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true);
-	}
+	iupCocoaTouchWaitEvent();
 	return IUP_DEFAULT;
 }
 
