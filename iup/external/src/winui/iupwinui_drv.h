@@ -371,6 +371,7 @@ struct IupWinUIToggleAux
 struct IupWinUITextAux
 {
   winrt::event_token beforeTextChangingToken;
+  winrt::event_token textChangingToken;
   winrt::event_token textChangedToken;
   winrt::event_token gotFocusToken;
   winrt::event_token lostFocusToken;
@@ -387,11 +388,12 @@ struct IupWinUITextAux
   bool spinauto;
   double spinActualMin;
   double spinStep;
+  int programTextChanges;
 
-  IupWinUITextAux() : beforeTextChangingToken{}, textChangedToken{}, gotFocusToken{}, lostFocusToken{},
+  IupWinUITextAux() : beforeTextChangingToken{}, textChangingToken{}, textChangedToken{}, gotFocusToken{}, lostFocusToken{},
                        valueChangedToken{}, keyDownToken{}, tappedToken{}, selectionChangedToken{},
                        isPassword(false), isMultiline(false), isSpin(false), isFormatted(false), spinauto(true),
-                       spinActualMin(0), spinStep(0) {}
+                       spinActualMin(0), spinStep(0), programTextChanges(0) {}
 };
 
 struct IupWinUIFrameAux
