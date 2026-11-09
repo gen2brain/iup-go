@@ -16,7 +16,6 @@
 #include "iup_class.h"
 #include "iup_classbase.h"
 #include "iup_childtree.h"
-#include "iup_dialog.h"
 
 #include "iupmot_drv.h"
 #include "iupweb_host.h"
@@ -78,15 +77,13 @@ void* iupwebHostMap(Ihandle* ih)
   iupMOT_SETARG(args, num_args, XmNheight, 10);
 
   ih->handle = XtCreateManagedWidget(
-    iupDialogGetChildIdStr(ih),
+    "iup-webbrowser",
     xmDrawingAreaWidgetClass,
     iupChildTreeGetNativeParentHandle(ih),
     args, num_args);
 
   if (!ih->handle)
     return NULL;
-
-  ih->serial = iupDialogGetChildId(ih);
 
   XtAddCallback(ih->handle, XmNresizeCallback, (XtCallbackProc)motWebHostResizeCallback, (XtPointer)ih);
 
@@ -95,7 +92,7 @@ void* iupwebHostMap(Ihandle* ih)
   XtAddEventHandler(ih->handle, KeyReleaseMask, False, (XtEventHandler)motWebHostKeyEvent, (XtPointer)ih);
 
   XtRealizeWidget(ih->handle);
-  XSync(iupmot_display, False);
+  XSync((Display*)IupGetGlobal("XDISPLAY"), False);
 
   return (void*)(uintptr_t)XtWindow(ih->handle);
 }
