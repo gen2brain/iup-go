@@ -46,7 +46,7 @@ static int gtk4CalendarGetDateKey(Ihandle* ih)
   return key;
 }
 
-static int gtk4CalendarClamp(Ihandle* ih)
+static int gtk4CalendarClamp(Ihandle* ih, const char* min_date, const char* max_date)
 {
   GDateTime* dt = gtk_calendar_get_date(GTK_CALENDAR(ih->handle));
   int year = g_date_time_get_year(dt);
@@ -54,7 +54,7 @@ static int gtk4CalendarClamp(Ihandle* ih)
   int day = g_date_time_get_day_of_month(dt);
   g_date_time_unref(dt);
 
-  if (!iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  if (!iupStrDateClamp(min_date, max_date, &year, &month, &day))
     return 0;
 
   dt = g_date_time_new_local(year, month, day, 0, 0, 0);
@@ -73,7 +73,7 @@ static void gtk4CalendarDaySelected(GtkCalendar* calendar, Ihandle* ih)
   int date;
   (void)calendar;
 
-  gtk4CalendarClamp(ih);
+  gtk4CalendarClamp(ih, iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"));
   date = gtk4CalendarGetDateKey(ih);
 
   if (date != iupAttribGetInt(ih, "_IUP_OLD_DATE"))
@@ -127,7 +127,7 @@ static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
 
   g_signal_handlers_unblock_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtk4CalendarDaySelected), ih);
 
-  gtk4CalendarClamp(ih);
+  gtk4CalendarClamp(ih, iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"));
   iupAttribSetInt(ih, "_IUP_OLD_DATE", gtk4CalendarGetDateKey(ih));
 
   return 0; /* do not store value in hash table */
@@ -135,16 +135,14 @@ static int gtk4CalendarSetValueAttrib(Ihandle* ih, const char* value)
 
 static int gtk4CalendarSetMinDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MINDATE", value);
-  if (gtk4CalendarClamp(ih))
+  if (gtk4CalendarClamp(ih, value, iupAttribGet(ih, "MAXDATE")))
     iupAttribSetInt(ih, "_IUP_OLD_DATE", gtk4CalendarGetDateKey(ih));
   return 1;
 }
 
 static int gtk4CalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MAXDATE", value);
-  if (gtk4CalendarClamp(ih))
+  if (gtk4CalendarClamp(ih, iupAttribGet(ih, "MINDATE"), value))
     iupAttribSetInt(ih, "_IUP_OLD_DATE", gtk4CalendarGetDateKey(ih));
   return 1;
 }

@@ -76,14 +76,14 @@ static NSDate* cocoaTouchCalendarParseDate(const char* value)
 	return [[NSCalendar currentCalendar] dateFromComponents:comps];
 }
 
-static NSDate* cocoaTouchCalendarClampDate(Ihandle* ih, NSDate* date)
+static NSDate* cocoaTouchCalendarClampDate(Ihandle* ih, const char* min_date, const char* max_date, NSDate* date)
 {
 	NSDateComponents* comps = [[NSCalendar currentCalendar]
 		components:(NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay)
 		fromDate:date];
 	int year = (int)comps.year, month = (int)comps.month, day = (int)comps.day;
 
-	if (!iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+	if (!iupStrDateClamp(min_date, max_date, &year, &month, &day))
 		return date;
 
 	return cocoaTouchCalendarParseDate(iupStrReturnStrf("%d/%d/%d", year, month, day));
@@ -94,31 +94,29 @@ static int cocoaTouchCalendarSetValueAttrib(Ihandle* ih, const char* value)
 	UIDatePicker* picker = cocoaTouchCalendarGet(ih);
 	if (!picker) return 0;
 	NSDate* parsed = cocoaTouchCalendarParseDate(value ? value : "TODAY");
-	if (parsed) [picker setDate:cocoaTouchCalendarClampDate(ih, parsed) animated:NO];
+	if (parsed) [picker setDate:cocoaTouchCalendarClampDate(ih, iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), parsed) animated:NO];
 	return 0;
 }
 
-static void cocoaTouchCalendarUpdateRange(Ihandle* ih)
+static void cocoaTouchCalendarUpdateRange(Ihandle* ih, const char* min_date, const char* max_date)
 {
 	UIDatePicker* picker = cocoaTouchCalendarGet(ih);
 	if (!picker) return;
 
-	picker.minimumDate = cocoaTouchCalendarParseDate(iupAttribGet(ih, "MINDATE"));
-	picker.maximumDate = cocoaTouchCalendarParseDate(iupAttribGet(ih, "MAXDATE"));
-	[picker setDate:cocoaTouchCalendarClampDate(ih, [picker date]) animated:NO];
+	picker.minimumDate = cocoaTouchCalendarParseDate(min_date);
+	picker.maximumDate = cocoaTouchCalendarParseDate(max_date);
+	[picker setDate:cocoaTouchCalendarClampDate(ih, min_date, max_date, [picker date]) animated:NO];
 }
 
 static int cocoaTouchCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
 {
-	iupAttribSetStr(ih, "MINDATE", value);
-	cocoaTouchCalendarUpdateRange(ih);
+	cocoaTouchCalendarUpdateRange(ih, value, iupAttribGet(ih, "MAXDATE"));
 	return 1;
 }
 
 static int cocoaTouchCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
 {
-	iupAttribSetStr(ih, "MAXDATE", value);
-	cocoaTouchCalendarUpdateRange(ih);
+	cocoaTouchCalendarUpdateRange(ih, iupAttribGet(ih, "MINDATE"), value);
 	return 1;
 }
 

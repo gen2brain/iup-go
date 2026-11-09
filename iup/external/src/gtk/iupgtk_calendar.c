@@ -49,7 +49,7 @@ static int gtkCalendarGetDateKey(GtkCalendar* calendar)
 
 static void gtkCalendarDaySelected(GtkCalendar* calendar, Ihandle* ih);
 
-static int gtkCalendarClamp(Ihandle* ih)
+static int gtkCalendarClamp(Ihandle* ih, const char* min_date, const char* max_date)
 {
   guint gyear, gmonth, gday;
   int year, month, day;
@@ -57,7 +57,7 @@ static int gtkCalendarClamp(Ihandle* ih)
   gtk_calendar_get_date(GTK_CALENDAR(ih->handle), &gyear, &gmonth, &gday);
   year = (int)gyear; month = (int)gmonth + 1; day = (int)gday;
 
-  if (!iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  if (!iupStrDateClamp(min_date, max_date, &year, &month, &day))
     return 0;
 
   g_signal_handlers_block_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkCalendarDaySelected), ih);
@@ -80,11 +80,11 @@ static void gtkCalendarDaySelected(GtkCalendar* calendar, Ihandle* ih)
   if (iupAttribGet(ih, "_IUPGTK_CAL_NAVIGATE"))
   {
     iupAttribSet(ih, "_IUPGTK_CAL_NAVIGATE", NULL);
-    gtkCalendarClamp(ih);
+    gtkCalendarClamp(ih, iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"));
     return;
   }
 
-  gtkCalendarClamp(ih);
+  gtkCalendarClamp(ih, iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"));
   date = gtkCalendarGetDateKey(calendar);
 
   if (date != iupAttribGetInt(ih, "_IUP_OLD_DATE"))
@@ -128,7 +128,7 @@ static int gtkCalendarSetValueAttrib(Ihandle* ih, const char* value)
 
   g_signal_handlers_unblock_by_func(G_OBJECT(ih->handle), G_CALLBACK(gtkCalendarDaySelected), ih);
 
-  gtkCalendarClamp(ih);
+  gtkCalendarClamp(ih, iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"));
   iupAttribSetInt(ih, "_IUP_OLD_DATE", gtkCalendarGetDateKey(GTK_CALENDAR(ih->handle)));
 
   return 0; /* do not store value in hash table */
@@ -136,16 +136,14 @@ static int gtkCalendarSetValueAttrib(Ihandle* ih, const char* value)
 
 static int gtkCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MINDATE", value);
-  if (gtkCalendarClamp(ih))
+  if (gtkCalendarClamp(ih, value, iupAttribGet(ih, "MAXDATE")))
     iupAttribSetInt(ih, "_IUP_OLD_DATE", gtkCalendarGetDateKey(GTK_CALENDAR(ih->handle)));
   return 1;
 }
 
 static int gtkCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MAXDATE", value);
-  if (gtkCalendarClamp(ih))
+  if (gtkCalendarClamp(ih, iupAttribGet(ih, "MINDATE"), value))
     iupAttribSetInt(ih, "_IUP_OLD_DATE", gtkCalendarGetDateKey(GTK_CALENDAR(ih->handle)));
   return 1;
 }

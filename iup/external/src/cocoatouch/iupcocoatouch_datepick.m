@@ -72,14 +72,14 @@ static NSDate* cocoaTouchDatePickParseDate(const char* value)
 	return [[NSCalendar currentCalendar] dateFromComponents:comps];
 }
 
-static NSDate* cocoaTouchDatePickClampDate(Ihandle* ih, NSDate* date)
+static NSDate* cocoaTouchDatePickClampDate(Ihandle* ih, const char* min_date, const char* max_date, NSDate* date)
 {
 	NSDateComponents* comps = [[NSCalendar currentCalendar]
 		components:(NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay)
 		fromDate:date];
 	int year = (int)comps.year, month = (int)comps.month, day = (int)comps.day;
 
-	if (!iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+	if (!iupStrDateClamp(min_date, max_date, &year, &month, &day))
 		return date;
 
 	return cocoaTouchDatePickParseDate(iupStrReturnStrf("%d/%d/%d", year, month, day));
@@ -90,31 +90,29 @@ static int cocoaTouchDatePickSetValueAttrib(Ihandle* ih, const char* value)
 	UIDatePicker* picker = cocoaTouchDatePickGet(ih);
 	if (!picker) return 0;
 	NSDate* parsed = cocoaTouchDatePickParseDate(value ? value : "TODAY");
-	if (parsed) [picker setDate:cocoaTouchDatePickClampDate(ih, parsed) animated:NO];
+	if (parsed) [picker setDate:cocoaTouchDatePickClampDate(ih, iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), parsed) animated:NO];
 	return 0;
 }
 
-static void cocoaTouchDatePickUpdateRange(Ihandle* ih)
+static void cocoaTouchDatePickUpdateRange(Ihandle* ih, const char* min_date, const char* max_date)
 {
 	UIDatePicker* picker = cocoaTouchDatePickGet(ih);
 	if (!picker) return;
 
-	picker.minimumDate = iupAttribGet(ih, "MINDATE") ? cocoaTouchDatePickParseDate(iupAttribGet(ih, "MINDATE")) : nil;
-	picker.maximumDate = iupAttribGet(ih, "MAXDATE") ? cocoaTouchDatePickParseDate(iupAttribGet(ih, "MAXDATE")) : nil;
-	[picker setDate:cocoaTouchDatePickClampDate(ih, [picker date]) animated:NO];
+	picker.minimumDate = min_date ? cocoaTouchDatePickParseDate(min_date) : nil;
+	picker.maximumDate = max_date ? cocoaTouchDatePickParseDate(max_date) : nil;
+	[picker setDate:cocoaTouchDatePickClampDate(ih, min_date, max_date, [picker date]) animated:NO];
 }
 
 static int cocoaTouchDatePickSetMinDateAttrib(Ihandle* ih, const char* value)
 {
-	iupAttribSetStr(ih, "MINDATE", value);
-	cocoaTouchDatePickUpdateRange(ih);
+	cocoaTouchDatePickUpdateRange(ih, value, iupAttribGet(ih, "MAXDATE"));
 	return 1;
 }
 
 static int cocoaTouchDatePickSetMaxDateAttrib(Ihandle* ih, const char* value)
 {
-	iupAttribSetStr(ih, "MAXDATE", value);
-	cocoaTouchDatePickUpdateRange(ih);
+	cocoaTouchDatePickUpdateRange(ih, iupAttribGet(ih, "MINDATE"), value);
 	return 1;
 }
 

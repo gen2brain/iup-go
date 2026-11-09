@@ -94,7 +94,7 @@ static char* winCalendarGetForeColorAttrib(Ihandle* ih)
 }
 #endif
 
-static void winCalendarClamp(Ihandle* ih)
+static void winCalendarClamp(Ihandle* ih, const char* min_date, const char* max_date)
 {
   SYSTEMTIME st;
   int year, month, day;
@@ -103,7 +103,7 @@ static void winCalendarClamp(Ihandle* ih)
   SendMessage(ih->handle, MCM_GETCURSEL, 0, (LPARAM)&st);
   year = st.wYear; month = st.wMonth; day = st.wDay;
 
-  if (iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  if (iupStrDateClamp(min_date, max_date, &year, &month, &day))
   {
     st.wYear = (WORD)year;
     st.wMonth = (WORD)month;
@@ -112,39 +112,37 @@ static void winCalendarClamp(Ihandle* ih)
   }
 }
 
-static void winCalendarUpdateRange(Ihandle* ih)
+static void winCalendarUpdateRange(Ihandle* ih, const char* min_date, const char* max_date)
 {
   SYSTEMTIME st[2];
   WPARAM flags = 0;
   int year, month, day;
 
   ZeroMemory(st, sizeof(st));
-  if (iupStrToDate(iupAttribGet(ih, "MINDATE"), &year, &month, &day))
+  if (iupStrToDate(min_date, &year, &month, &day))
   {
     st[0].wYear = (WORD)year; st[0].wMonth = (WORD)month; st[0].wDay = (WORD)day;
     flags |= GDTR_MIN;
   }
-  if (iupStrToDate(iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  if (iupStrToDate(max_date, &year, &month, &day))
   {
     st[1].wYear = (WORD)year; st[1].wMonth = (WORD)month; st[1].wDay = (WORD)day;
     flags |= GDTR_MAX;
   }
   SendMessage(ih->handle, MCM_SETRANGE, flags, (LPARAM)st);
 
-  winCalendarClamp(ih);
+  winCalendarClamp(ih, min_date, max_date);
 }
 
 static int winCalendarSetMinDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MINDATE", value);
-  winCalendarUpdateRange(ih);
+  winCalendarUpdateRange(ih, value, iupAttribGet(ih, "MAXDATE"));
   return 1;
 }
 
 static int winCalendarSetMaxDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MAXDATE", value);
-  winCalendarUpdateRange(ih);
+  winCalendarUpdateRange(ih, iupAttribGet(ih, "MINDATE"), value);
   return 1;
 }
 

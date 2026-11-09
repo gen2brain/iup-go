@@ -43,7 +43,7 @@
 #endif
 
 
-static void winDatePickClamp(Ihandle* ih)
+static void winDatePickClamp(Ihandle* ih, const char* min_date, const char* max_date)
 {
   SYSTEMTIME st;
   int year, month, day;
@@ -52,7 +52,7 @@ static void winDatePickClamp(Ihandle* ih)
   SendMessage(ih->handle, DTM_GETSYSTEMTIME, 0, (LPARAM)&st);
   year = st.wYear; month = st.wMonth; day = st.wDay;
 
-  if (iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  if (iupStrDateClamp(min_date, max_date, &year, &month, &day))
   {
     st.wYear = (WORD)year;
     st.wMonth = (WORD)month;
@@ -61,39 +61,37 @@ static void winDatePickClamp(Ihandle* ih)
   }
 }
 
-static void winDatePickUpdateRange(Ihandle* ih)
+static void winDatePickUpdateRange(Ihandle* ih, const char* min_date, const char* max_date)
 {
   SYSTEMTIME st[2];
   WPARAM flags = 0;
   int year, month, day;
 
   ZeroMemory(st, sizeof(st));
-  if (iupStrToDate(iupAttribGet(ih, "MINDATE"), &year, &month, &day))
+  if (iupStrToDate(min_date, &year, &month, &day))
   {
     st[0].wYear = (WORD)year; st[0].wMonth = (WORD)month; st[0].wDay = (WORD)day;
     flags |= GDTR_MIN;
   }
-  if (iupStrToDate(iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+  if (iupStrToDate(max_date, &year, &month, &day))
   {
     st[1].wYear = (WORD)year; st[1].wMonth = (WORD)month; st[1].wDay = (WORD)day;
     flags |= GDTR_MAX;
   }
   SendMessage(ih->handle, DTM_SETRANGE, flags, (LPARAM)st);
 
-  winDatePickClamp(ih);
+  winDatePickClamp(ih, min_date, max_date);
 }
 
 static int winDatePickSetMinDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MINDATE", value);
-  winDatePickUpdateRange(ih);
+  winDatePickUpdateRange(ih, value, iupAttribGet(ih, "MAXDATE"));
   return 1;
 }
 
 static int winDatePickSetMaxDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MAXDATE", value);
-  winDatePickUpdateRange(ih);
+  winDatePickUpdateRange(ih, iupAttribGet(ih, "MINDATE"), value);
   return 1;
 }
 

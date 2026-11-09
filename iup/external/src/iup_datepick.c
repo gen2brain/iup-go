@@ -59,7 +59,7 @@ static void iDatePickUpdateDayLimits(Ihandle* ih)
     IupSetInt(txt_day, "VALUE", max_day);
 }
 
-static int iDatePickClamp(Ihandle* ih);
+static int iDatePickClamp(Ihandle* ih, const char* min_date, const char* max_date);
 static char* iDatePickGetValueAttrib(Ihandle* ih);
 
 static int iDatePickCalendarValueChanged_CB(Ihandle* ih_calendar)
@@ -158,7 +158,7 @@ static void iDatePickTextStep(Ihandle* ih_text, int step)
 
   if (IupGetInt(ih_text, "VALUE") == value)
   {
-    iDatePickClamp(ih);
+    iDatePickClamp(ih, iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"));
     if (!iupStrEqual(old_value, iDatePickGetValueAttrib(ih)))
       iDatePickTextValueChanged_CB(ih_text);
   }
@@ -169,7 +169,7 @@ static void iDatePickTextStep(Ihandle* ih_text, int step)
 static int iDatePickTextKillFocus_CB(Ihandle* ih_text)
 {
   Ihandle* ih = IupGetParent(IupGetParent(ih_text));
-  if (iDatePickClamp(ih))
+  if (iDatePickClamp(ih, iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE")))
     iupBaseCallValueChangedCb(ih);
   return IUP_DEFAULT;
 }
@@ -286,12 +286,12 @@ static void iDatePickSetFields(Ihandle* ih, int year, int month, int day)
     IupSetInt(txt_day, "VALUE", day);
 }
 
-static int iDatePickClamp(Ihandle* ih)
+static int iDatePickClamp(Ihandle* ih, const char* min_date, const char* max_date)
 {
   int year, month, day;
 
   if (!iupStrToDate(iDatePickGetValueAttrib(ih), &year, &month, &day) ||
-      !iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &year, &month, &day))
+      !iupStrDateClamp(min_date, max_date, &year, &month, &day))
     return 0;
 
   iDatePickSetFields(ih, year, month, day);
@@ -332,15 +332,13 @@ static int iDatePickSetValueAttrib(Ihandle* ih, const char* value)
 
 static int iDatePickSetMinDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MINDATE", value);
-  iDatePickClamp(ih);
+  iDatePickClamp(ih, value, iupAttribGet(ih, "MAXDATE"));
   return 1;
 }
 
 static int iDatePickSetMaxDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MAXDATE", value);
-  iDatePickClamp(ih);
+  iDatePickClamp(ih, iupAttribGet(ih, "MINDATE"), value);
   return 1;
 }
 

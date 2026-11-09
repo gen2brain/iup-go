@@ -85,7 +85,7 @@ static int wasmDatePickSetValueAttrib(Ihandle* ih, const char* value)
 
 static char* wasmDatePickGetValueAttrib(Ihandle* ih);
 
-static void wasmDatePickUpdateRange(Ihandle* ih)
+static void wasmDatePickUpdateRange(Ihandle* ih, const char* min_date, const char* max_date)
 {
   int id = iupwasmIdOf(ih);
   char min_iso[16] = "", max_iso[16] = "";
@@ -94,14 +94,14 @@ static void wasmDatePickUpdateRange(Ihandle* ih)
   if (!id)
     return;
 
-  if (iupStrToDate(iupAttribGet(ih, "MINDATE"), &y, &m, &d))
+  if (iupStrToDate(min_date, &y, &m, &d))
     snprintf(min_iso, sizeof(min_iso), "%04d-%02d-%02d", y, m, d);
-  if (iupStrToDate(iupAttribGet(ih, "MAXDATE"), &y, &m, &d))
+  if (iupStrToDate(max_date, &y, &m, &d))
     snprintf(max_iso, sizeof(max_iso), "%04d-%02d-%02d", y, m, d);
   iupwasmJsDateRange(id, min_iso, max_iso);
 
   if (iupStrToDate(wasmDatePickGetValueAttrib(ih), &y, &m, &d) &&
-      iupStrDateClamp(iupAttribGet(ih, "MINDATE"), iupAttribGet(ih, "MAXDATE"), &y, &m, &d))
+      iupStrDateClamp(min_date, max_date, &y, &m, &d))
   {
     char iso[16];
     snprintf(iso, sizeof(iso), "%04d-%02d-%02d", y, m, d);
@@ -111,15 +111,13 @@ static void wasmDatePickUpdateRange(Ihandle* ih)
 
 static int wasmDatePickSetMinDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MINDATE", value);
-  wasmDatePickUpdateRange(ih);
+  wasmDatePickUpdateRange(ih, value, iupAttribGet(ih, "MAXDATE"));
   return 1;
 }
 
 static int wasmDatePickSetMaxDateAttrib(Ihandle* ih, const char* value)
 {
-  iupAttribSetStr(ih, "MAXDATE", value);
-  wasmDatePickUpdateRange(ih);
+  wasmDatePickUpdateRange(ih, iupAttribGet(ih, "MINDATE"), value);
   return 1;
 }
 
