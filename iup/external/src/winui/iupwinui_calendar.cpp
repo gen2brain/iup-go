@@ -173,7 +173,7 @@ static char* winuiCalendarGetValueAttrib(Ihandle* ih)
     auto dt = cv.SelectedDates().GetAt(0);
     int year, month, day;
     winuiCalendarGetDate(dt, &year, &month, &day);
-    return iupStrReturnStrf("%d/%02d/%02d", year, month, day);
+    return iupStrReturnStrf("%d/%d/%d", year, month, day);
   }
   return nullptr;
 }
@@ -183,7 +183,7 @@ static char* winuiCalendarGetTodayAttrib(Ihandle* ih)
   (void)ih;
   SYSTEMTIME st;
   GetLocalTime(&st);
-  return iupStrReturnStrf("%d/%02d/%02d", st.wYear, st.wMonth, st.wDay);
+  return iupStrReturnStrf("%d/%d/%d", st.wYear, st.wMonth, st.wDay);
 }
 
 static void winuiCalendarInitResources(CalendarView const& cv)
