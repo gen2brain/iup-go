@@ -104,7 +104,7 @@ static void eflCalendarUpdateRange(Ihandle* ih, const char* min_date, const char
     efl_ui_calendar_date_max_set(calendar, eflCalendarMakeTime(year, month, day));
     iupAttribSet(ih, "_IUPEFL_MAXDATE_SET", "1");
   }
-  else if (iupAttribGet(ih, "_IUPEFL_MAXDATE_SET"))
+  else if (iupAttribGet(ih, "_IUPEFL_MAXDATE_SET"))  /* date_max_set cannot restore the "no limit" tm_year -1, so the widest date clears it */
     efl_ui_calendar_date_max_set(calendar, eflCalendarMakeTime(9999, 12, 31));
 
   current = efl_ui_calendar_date_get(calendar);
