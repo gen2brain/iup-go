@@ -47,6 +47,7 @@ static const GUID iwin_IID_IIteratorStorageItem = { 0x05b487c2, 0x3830, 0x5d3c, 
 static const GUID iwin_IID_DataRequestedHandler = { 0xec6f9cc8, 0x46d0, 0x5e0e, { 0xb4, 0xd2, 0x7d, 0x77, 0x73, 0xae, 0x37, 0xa0 } };
 static const GUID iwin_IID_TargetChosenHandler = { 0xc4ac1ba2, 0x7851, 0x5a44, { 0xbc, 0x8d, 0x3d, 0x7c, 0x71, 0x3f, 0x1f, 0x41 } };
 static const GUID iwin_IID_ShareCanceledHandler = { 0xc156b0c3, 0x1cbc, 0x5ca4, { 0x90, 0x1c, 0x62, 0xc5, 0xa8, 0xca, 0x5c, 0xb5 } };
+static const GUID iwin_IID_StorageFileCompletedHandler = { 0xe521c894, 0x2c26, 0x5946, { 0x9e, 0x61, 0x2b, 0x5e, 0x18, 0x8d, 0x01, 0xed } };
 
 typedef struct _IwinUnknown IwinUnknown;
 typedef struct _IwinUnknownVtbl {
@@ -179,6 +180,8 @@ struct _IwinAsyncOperation { const IwinAsyncOperationVtbl* lpVtbl; };
 typedef struct _IwinShareState {
   volatile LONG refcount;
   volatile LONG status;
+  volatile LONG file_done;
+  Ihandle* wake;
   int wait_cancel;
   IwinHString title;
   IwinHString text;
@@ -515,22 +518,35 @@ static void* winShareFactory(const WCHAR* class_name, const GUID* iid)
   return factory;
 }
 
-static void winShareWait(volatile LONG* flag, LONG pending)
+static int winShareWakeCb(Ihandle* wake, char* s, int i, double d, void* p)
 {
-  while (*flag == pending)
-  {
-    MSG msg;
-    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-    {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-    }
-    else
-      MsgWaitForMultipleObjects(0, NULL, FALSE, 50, QS_ALLINPUT);
-  }
+  volatile LONG* flag = (volatile LONG*)iupAttribGet(wake, "_IUPWIN_SHAREFLAG");
+  (void)s; (void)i; (void)d; (void)p;
+  return (flag && *flag != iupAttribGetInt(wake, "_IUPWIN_SHAREPENDING")) ? IUP_CLOSE : IUP_DEFAULT;
 }
 
-static IwinUnknown* winShareGetStorageItem(const char* path)
+static void winShareSignal(IwinShareState* state)
+{
+  IupPostMessage(state->wake, NULL, 0, 0, NULL);
+}
+
+static void winShareWait(IwinShareState* state, volatile LONG* flag, LONG pending)
+{
+  iupAttribSet(state->wake, "_IUPWIN_SHAREFLAG", (char*)flag);
+  iupAttribSetInt(state->wake, "_IUPWIN_SHAREPENDING", pending);
+  if (*flag == pending)
+    IupMainLoop();
+  iupAttribSet(state->wake, "_IUPWIN_SHAREFLAG", NULL);
+}
+
+static void winShareFileCompleted(IwinShareState* state, void* sender, void* args)
+{
+  (void)sender; (void)args;
+  InterlockedExchange(&state->file_done, 1);
+  winShareSignal(state);
+}
+
+static IwinUnknown* winShareGetStorageItem(IwinShareState* state, const char* path)
 {
   IwinStorageFileStatics* statics = (IwinStorageFileStatics*)winShareFactory(L"Windows.Storage.StorageFile", &iwin_IID_IStorageFileStatics);
   IwinAsyncOperation* op = NULL;
@@ -547,19 +563,12 @@ static IwinUnknown* winShareGetStorageItem(const char* path)
   if (hpath && SUCCEEDED(statics->lpVtbl->GetFileFromPathAsync(statics, hpath, (void**)&op)) && op &&
       SUCCEEDED(op->lpVtbl->QueryInterface(op, &iwin_IID_IAsyncInfo, (void**)&info)))
   {
-    while (SUCCEEDED(info->lpVtbl->get_Status(info, &status)) && status == 0)
-    {
-      MSG msg;
-      if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-      {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-      }
-      else
-        MsgWaitForMultipleObjects(0, NULL, FALSE, 10, QS_ALLINPUT);
-    }
+    IwinUnknown* completed = winShareHandlerNew(&iwin_IID_StorageFileCompletedHandler, state, winShareFileCompleted);
+    if (SUCCEEDED(op->lpVtbl->put_Completed(op, completed)))
+      winShareWait(state, &state->file_done, 0);
+    completed->lpVtbl->Release(completed);
 
-    if (status == 1 && SUCCEEDED(op->lpVtbl->GetResults(op, (void**)&file)) && file)
+    if (SUCCEEDED(info->lpVtbl->get_Status(info, &status)) && status == 1 && SUCCEEDED(op->lpVtbl->GetResults(op, (void**)&file)) && file)
     {
       if (FAILED(file->lpVtbl->QueryInterface(file, &iwin_IID_IStorageItem, (void**)&item)))
         item = NULL;
@@ -578,12 +587,14 @@ static void winShareChosen(IwinShareState* state, void* sender, void* args)
 {
   (void)sender; (void)args;
   InterlockedExchange(&state->status, 1);
+  winShareSignal(state);
 }
 
 static void winShareCanceled(IwinShareState* state, void* sender, void* args)
 {
   (void)sender; (void)args;
   InterlockedCompareExchange(&state->status, 0, 2);
+  winShareSignal(state);
 }
 
 static void winShareDataRequested(IwinShareState* state, void* sender, void* args)
@@ -600,6 +611,7 @@ static void winShareDataRequested(IwinShareState* state, void* sender, void* arg
   if (FAILED(event_args->lpVtbl->get_Request(event_args, (void**)&request)) || !request)
   {
     InterlockedExchange(&state->status, -1);
+    winShareSignal(state);
     return;
   }
 
@@ -650,7 +662,10 @@ static void winShareDataRequested(IwinShareState* state, void* sender, void* arg
   request->lpVtbl->Release(request);
 
   if (!state->wait_cancel)
+  {
     InterlockedExchange(&state->status, 1);
+    winShareSignal(state);
+  }
 }
 
 static int winShareDlgPopup(Ihandle* ih, int x, int y)
@@ -683,6 +698,8 @@ static int winShareDlgPopup(Ihandle* ih, int x, int y)
   state = (IwinShareState*)calloc(1, sizeof(IwinShareState));
   state->refcount = 1;
   state->status = 2;
+  state->wake = IupUser();
+  IupSetCallback(state->wake, "POSTMESSAGE_CB", (Icallback)winShareWakeCb);
 
   if (!title)
     title = file ? file : (url ? url : text);
@@ -703,7 +720,7 @@ static int winShareDlgPopup(Ihandle* ih, int x, int y)
   }
 
   if (file)
-    state->item = winShareGetStorageItem(file);
+    state->item = winShareGetStorageItem(state, file);
 
   if ((file && !state->item) || (url && !state->uri && !text && !file))
     goto done;
@@ -723,8 +740,10 @@ static int winShareDlgPopup(Ihandle* ih, int x, int y)
 
   if (SUCCEEDED(interop->lpVtbl->ShowShareUIForWindow(interop, hwnd)))
   {
-    winShareWait(&state->status, 2);
+    winShareWait(state, &state->status, 2);
     status = (int)state->status;
+    if (status == 2)
+      status = 0;
   }
 
   if (chosen_token)
@@ -736,6 +755,8 @@ done:
   if (interop) interop->lpVtbl->Release(interop);
   if (requested) requested->lpVtbl->Release(requested);
   if (chosen) chosen->lpVtbl->Release(chosen);
+  IupDestroy(state->wake);
+  state->wake = NULL;
   winShareStateRelease(state);
 
   if (SUCCEEDED(ro_init))
