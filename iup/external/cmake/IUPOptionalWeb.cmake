@@ -48,6 +48,18 @@ elseif(IUP_BACKEND STREQUAL "gtk3" OR IUP_BACKEND STREQUAL "gtk4" OR IUP_BACKEND
   list(APPEND _WEB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupgtk_webbrowser.c")
   list(APPEND _WEB_DEFS IUPWEB_USE_DLOPEN)
 
+elseif(IUP_BACKEND STREQUAL "motif" OR IUP_BACKEND STREQUAL "efl" OR IUP_BACKEND STREQUAL "fltk")
+  list(APPEND _WEB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupgtkhost_webbrowser.c")
+  if(IUP_BACKEND STREQUAL "motif")
+    list(APPEND _WEB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupmot_webhost.c")
+  elseif(IUP_BACKEND STREQUAL "efl")
+    list(APPEND _WEB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupefl_webhost.c")
+  else()
+    list(APPEND _WEB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupfltk_webhost.cpp")
+  endif()
+  list(APPEND _WEB_DEFS IUPWEB_USE_DLOPEN IUPWEB_HOSTED)
+  list(APPEND _WEB_LIBS ${CMAKE_DL_LIBS})
+
 elseif(IUP_BACKEND STREQUAL "cocoa")
   list(APPEND _WEB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcweb/iupcocoa_webbrowser.m")
   set_source_files_properties(
