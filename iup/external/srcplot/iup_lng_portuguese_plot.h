@@ -38,7 +38,6 @@ static Ihandle* iup_load_lng_portuguese_plot()
     "IUP_DOTTED", "Pontilhado",
     "IUP_END", "Fim",
     "IUP_ERRORBARS", "Barras de Erro",
-    "IUP_ERRORINVALIDFORMULA", "Fórmula Inválida.",
     "IUP_EXPORT", "Exportar",
     "IUP_FONTSIZE", "Tamanho da Fonte:",
     "IUP_FONTSTYLE", "Estilo da Fonte:",

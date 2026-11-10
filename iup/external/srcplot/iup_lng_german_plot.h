@@ -38,7 +38,6 @@ static Ihandle* iup_load_lng_german_plot()
     "IUP_DOTTED", "Gepunktet",
     "IUP_END", "Ende",
     "IUP_ERRORBARS", "Fehlerbalken",
-    "IUP_ERRORINVALIDFORMULA", "Ungültige Formel.",
     "IUP_EXPORT", "Exportieren",
     "IUP_FONTSIZE", "Schriftgröße:",
     "IUP_FONTSTYLE", "Schriftstil:",
