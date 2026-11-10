@@ -3326,7 +3326,13 @@
       } break;
       case 'treetogglevisible': {
         var ttvisr = globalThis.__iupTree.nodes[c.rowId];
-        if (ttvisr && ttvisr.__iupChk) ttvisr.__iupChk.style.display = c.on ? '' : 'none';
+        if (ttvisr && ttvisr.__iupChk) {
+          var ttvc = ttvisr.__iupChk;
+          ttvc.__iupHidden = !c.on;
+          if (c.on) { ttvc.style.display = ''; ttvc.disabled = false; ttvc.indeterminate = ttvc.__iup3Prev === -1; }
+          else if (c.e3) { ttvc.style.display = ''; ttvc.disabled = true; ttvc.indeterminate = true; }
+          else ttvc.style.display = 'none';
+        }
       } break;
       case 'treecopymove': {
         var T = globalThis.__iupTree;
@@ -3711,7 +3717,7 @@ globalThis.__iupMediaPick = function (kind, index) {
         var rttvn = globalThis.__iupTree && globalThis.__iupTree.nodes[req.rowId]; if (!rttvn || !rttvn.__iupChk) return 0; if (rttvn.__iupChk.indeterminate) return -1; return rttvn.__iupChk.checked ? 1 : 0;
       } break;
       case 'treetogglevisible': {
-        var rttvisn = globalThis.__iupTree && globalThis.__iupTree.nodes[req.rowId]; return (rttvisn && rttvisn.__iupChk && rttvisn.__iupChk.style.display !== 'none') ? 1 : 0;
+        var rttvisn = globalThis.__iupTree && globalThis.__iupTree.nodes[req.rowId]; return (rttvisn && rttvisn.__iupChk && !rttvisn.__iupChk.__iupHidden && rttvisn.__iupChk.style.display !== 'none') ? 1 : 0;
       } break;
       case 'textvalue': {
         return el ? (el.value || '') : '';

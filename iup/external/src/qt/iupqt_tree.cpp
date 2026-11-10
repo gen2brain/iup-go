@@ -1514,8 +1514,7 @@ static int qtTreeSetToggleValueAttrib(Ihandle* ih, int id, const char* value)
     target = Qt::Checked;
   else if (iupStrEqualNoCase(value, "OFF"))
     target = Qt::Unchecked;
-  else if ((iupStrEqualNoCase(value, "NOTDEF") || (iupAttribGetBoolean(ih, "EMPTYAS3STATE") && !value))
-           && ih->data->show_toggle == 2)
+  else if (iupStrEqualNoCase(value, "NOTDEF") && ih->data->show_toggle == 2)
     target = Qt::PartiallyChecked;
 
   /* programmatic change: do not fire TOGGLEVALUE_CB */
@@ -1557,14 +1556,24 @@ static int qtTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* value)
   if (!item)
     return 0;
 
+  QSignalBlocker blocker(reinterpret_cast<IupQtTree*>(ih->handle));
   if (iupStrBoolean(value))
   {
-    if (item->checkState(0) == Qt::Unchecked)
-      item->setCheckState(0, Qt::Unchecked);
+    QVariant last = item->data(0, Qt::UserRole + 3);
+    item->setData(0, Qt::UserRole + 4, QVariant());
+    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+    item->setCheckState(0, last.isValid() ? static_cast<Qt::CheckState>(last.toInt()) : Qt::Unchecked);
   }
   else
   {
-    item->setData(0, Qt::CheckStateRole, QVariant());
+    item->setData(0, Qt::UserRole + 4, true);
+    if (iupAttribGetBoolean(ih, "EMPTYAS3STATE"))
+    {
+      item->setFlags(item->flags() & ~Qt::ItemIsUserCheckable);
+      item->setCheckState(0, Qt::PartiallyChecked);
+    }
+    else
+      item->setData(0, Qt::CheckStateRole, QVariant());
   }
 
   return 1;
@@ -1579,7 +1588,7 @@ static char* qtTreeGetToggleVisibleAttrib(Ihandle* ih, int id)
   if (!item)
     return nullptr;
 
-  return iupStrReturnBoolean(item->data(0, Qt::CheckStateRole).isValid());
+  return iupStrReturnBoolean(!item->data(0, Qt::UserRole + 4).isValid() && item->data(0, Qt::CheckStateRole).isValid());
 }
 
 static char* qtTreeGetScrollVisibleAttrib(Ihandle* ih)

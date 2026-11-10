@@ -951,6 +951,9 @@ static void androidTreePushShowToggle(Ihandle* ih)
       (jboolean)(ih->data->show_toggle ? JNI_TRUE : JNI_FALSE),
       (jboolean)(ih->data->show_toggle == 2 ? JNI_TRUE : JNI_FALSE));
   iupAndroid_CheckException(env, "setShowToggle");
+  m = (*env)->GetStaticMethodID(env, cls, "setEmptyAs3State", "(Landroid/view/View;Z)V");
+  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jboolean)(iupAttribGetBoolean(ih, "EMPTYAS3STATE") ? JNI_TRUE : JNI_FALSE));
+  iupAndroid_CheckException(env, "setEmptyAs3State");
   (*env)->DeleteLocalRef(env, cls);
 }
 
