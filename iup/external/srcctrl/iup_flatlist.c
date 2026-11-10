@@ -282,7 +282,7 @@ static int iFlatListRedraw_CB(Ihandle* ih)
 {
   iFlatListItem* items = (iFlatListItem*)iupArrayGetData(ih->data->items_array);
   int count = iupArrayCount(ih->data->items_array);
-  int text_flags = iupDrawGetTextFlags(ih, "TABSTEXTALIGNMENT", "TABSTEXTWRAP", "TABSTEXTELLIPSIS");
+  int text_flags = iupDrawGetTextFlags(ih, "TEXTALIGNMENT", "TEXTWRAP", "TEXTELLIPSIS");
   char* foreground_color = iupAttribGetStr(ih, "FGCOLOR");
   char* background_color = iupAttribGetStr(ih, "BGCOLOR");
   int posx = IupGetInt(ih, "POSX");
