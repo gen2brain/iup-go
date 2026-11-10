@@ -710,8 +710,6 @@ static GLogWriterOutput gtkLogWriter(GLogLevelFlags log_level, const GLogField* 
 
 IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
-  char* value;
-
   if (!gtk_init_check(argc, argv))
     return IUP_ERROR;
 
@@ -761,10 +759,6 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 #endif
 
   IupSetGlobal("SHOWMENUIMAGES", "YES");
-
-  value = getenv("UBUNTU_MENUPROXY");
-  if (value && (iupStrEqualNoCase(value, "libappmenu.so") || iupStrEqualNoCase(value, "1")))
-    IupSetGlobal("GLOBALMENU", "Yes");
 
   return IUP_NOERROR;
 }

@@ -213,6 +213,8 @@ IUP_SDK_API int iupdrvSetGlobal(const char* name, const char* value)
 
 IUP_SDK_API char* iupdrvGetGlobal(const char* name)
 {
+  if (iupStrEqual(name, "GLOBALMENU"))
+    return iupStrReturnBoolean(iupgtkMenuShellShowsMenubar());
   if (iupStrEqual(name, "VIRTUALSCREEN"))
   {
     int x = 0;

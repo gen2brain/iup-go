@@ -146,10 +146,22 @@ IUP_SDK_API void iupdrvDialogSetPosition(Ihandle* ih, int x, int y)
 
 static int gtkDialogGetMenuSize(Ihandle* ih)
 {
-  if (ih->data->menu && !iupStrBoolean(IupGetGlobal("GLOBALMENU")))
-    return iupdrvMenuGetMenuBarSize(ih->data->menu);
-  else
+  if (!ih->data->menu)
     return 0;
+
+  if (ih->data->menu->handle && iupgtkMenuShellShowsMenubar())
+  {
+    GtkRequisition req;
+#if GTK_CHECK_VERSION(3, 0, 0)
+    gtk_widget_get_preferred_size((GtkWidget*)ih->data->menu->handle, &req, NULL);
+#else
+    gtk_widget_size_request((GtkWidget*)ih->data->menu->handle, &req);
+#endif
+    if (req.height == 0)
+      return 0;
+  }
+
+  return iupdrvMenuGetMenuBarSize(ih->data->menu);
 }
 
 #define iupABS(_x) ((_x)<0? -(_x): (_x))
@@ -682,6 +694,18 @@ static gboolean gtkDialogWindowStateEvent(GtkWidget* widget, GdkEventWindowState
   return FALSE;
 }
 
+static void gtkDialogShellShowsMenubarChanged(GtkSettings* settings, GParamSpec* pspec, Ihandle* ih)
+{
+  (void)settings;
+  (void)pspec;
+
+  if (iupObjectCheck(ih) && ih->data->menu && ih->data->menu->handle)
+  {
+    gtk_widget_queue_resize((GtkWidget*)ih->data->menu->handle);
+    IupRefresh(ih);
+  }
+}
+
 static void gtkDialogThemeChanged(GtkSettings* settings, GParamSpec* pspec, Ihandle* ih)
 {
   (void)settings;
@@ -970,6 +994,12 @@ static int gtkDialogMapMethod(Ihandle* ih)
 
     handler_id = g_signal_connect(G_OBJECT(settings), "notify::gtk-application-prefer-dark-theme", G_CALLBACK(gtkDialogThemeChanged), ih);
     iupAttribSet(ih, "_IUPGTK_THEME_HANDLER2", (char*)(uintptr_t)handler_id);
+
+    if (g_object_class_find_property(G_OBJECT_GET_CLASS(settings), "gtk-shell-shows-menubar"))
+    {
+      handler_id = g_signal_connect(G_OBJECT(settings), "notify::gtk-shell-shows-menubar", G_CALLBACK(gtkDialogShellShowsMenubarChanged), ih);
+      iupAttribSet(ih, "_IUPGTK_THEME_HANDLER3", (char*)(uintptr_t)handler_id);
+    }
   }
 
   return IUP_NOERROR;
@@ -995,6 +1025,10 @@ static void gtkDialogUnMapMethod(Ihandle* ih)
       g_signal_handler_disconnect(G_OBJECT(settings), handler_id);
 
     handler_id = (gulong)(uintptr_t)iupAttribGet(ih, "_IUPGTK_THEME_HANDLER2");
+    if (handler_id != 0)
+      g_signal_handler_disconnect(G_OBJECT(settings), handler_id);
+
+    handler_id = (gulong)(uintptr_t)iupAttribGet(ih, "_IUPGTK_THEME_HANDLER3");
     if (handler_id != 0)
       g_signal_handler_disconnect(G_OBJECT(settings), handler_id);
   }

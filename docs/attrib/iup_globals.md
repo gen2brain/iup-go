@@ -152,7 +152,7 @@ Supported in GTK, GTK 4, Qt, QML, EFL and WinUI.
 Allow the overlay scrollbar in **IupCanvas** to use a minimum space.
 By default, IUP will use a regular scrollbar space even when overlay scrollbar is enabled in the system.
 
-### GLOBALMENU [GTK Only]
+### GLOBALMENU [GTK Only] (read-only)
 
 Flag indicating that GTK is using a global menu instead of a per window menu.
 

@@ -163,6 +163,15 @@ IUP_SDK_API int iupdrvMenuPopup(Ihandle* ih, int x, int y)
   return IUP_NOERROR;
 }
 
+IUP_DRV_API int iupgtkMenuShellShowsMenubar(void)
+{
+  GtkSettings* settings = gtk_settings_get_default();
+  gboolean shows = FALSE;
+  if (settings && g_object_class_find_property(G_OBJECT_GET_CLASS(settings), "gtk-shell-shows-menubar"))
+    g_object_get(settings, "gtk-shell-shows-menubar", &shows, NULL);
+  return shows;
+}
+
 IUP_SDK_API int iupdrvMenuGetMenuBarSize(Ihandle* ih)
 {
   int ch;
