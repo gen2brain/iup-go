@@ -1622,7 +1622,6 @@ static int cocoaDialogMapMethod(Ihandle* ih)
   [nc addObserver:window_delegate selector:@selector(windowWillEnterFullScreen:) name:NSWindowWillEnterFullScreenNotification object:the_window];
   [nc addObserver:window_delegate selector:@selector(windowDidEnterFullScreen:) name:NSWindowDidEnterFullScreenNotification object:the_window];
   [nc addObserver:window_delegate selector:@selector(windowDidExitFullScreen:) name:NSWindowDidExitFullScreenNotification object:the_window];
-  [nc addObserver:window_delegate selector:@selector(windowDidBecomeKey:) name:NSWindowDidBecomeKeyNotification object:the_window];
 
   [the_window addObserver:window_delegate
                forKeyPath:@"effectiveAppearance"
