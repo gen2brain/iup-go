@@ -47,34 +47,34 @@ static char* iMultiBoxGetClientSizeAttrib(Ihandle* ih)
 
 static int iMultiBoxSetCGapHorizAttrib(Ihandle* ih, const char* value)
 {
-  int cgap, charheight;
+  int cgap, charwidth;
   iupStrToInt(value, &cgap);
-  iupdrvFontGetCharSize(ih, NULL, &charheight);
-  ih->data->gap_horiz = iupHEIGHT2RASTER(cgap, charheight);
+  iupdrvFontGetCharSize(ih, &charwidth, NULL);
+  ih->data->gap_horiz = iupWIDTH2RASTER(cgap, charwidth);
   return 0;
 }
 
 static int iMultiBoxSetCGapVertAttrib(Ihandle* ih, const char* value)
 {
-  int cgap, charwidth;
+  int cgap, charheight;
   iupStrToInt(value, &cgap);
-  iupdrvFontGetCharSize(ih, &charwidth, NULL);
-  ih->data->gap_vert = iupWIDTH2RASTER(cgap, charwidth);
+  iupdrvFontGetCharSize(ih, NULL, &charheight);
+  ih->data->gap_vert = iupHEIGHT2RASTER(cgap, charheight);
   return 0;
 }
 
 static char* iMultiBoxGetCGapVertAttrib(Ihandle* ih)
 {
-  int charwidth;
-  iupdrvFontGetCharSize(ih, &charwidth, NULL);
-  return iupStrReturnInt(iupRASTER2WIDTH(ih->data->gap_vert, charwidth));
+  int charheight;
+  iupdrvFontGetCharSize(ih, NULL, &charheight);
+  return iupStrReturnInt(iupRASTER2HEIGHT(ih->data->gap_vert, charheight));
 }
 
 static char* iMultiBoxGetCGapHorizAttrib(Ihandle* ih)
 {
-  int charheight;
-  iupdrvFontGetCharSize(ih, NULL, &charheight);
-  return iupStrReturnInt(iupRASTER2HEIGHT(ih->data->gap_horiz, charheight));
+  int charwidth;
+  iupdrvFontGetCharSize(ih, &charwidth, NULL);
+  return iupStrReturnInt(iupRASTER2WIDTH(ih->data->gap_horiz, charwidth));
 }
 
 static int iMultiBoxSetGapVertAttrib(Ihandle* ih, const char* value)
