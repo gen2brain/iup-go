@@ -176,7 +176,7 @@ The numeric keypad has its own codes, so its keys can be distinguished from the 
 When Num Lock is off the navigation codes are reported, when it is on the digit codes are reported.
 Keypad F1 to F4, Keypad Space and Keypad Tab are reported as K_F1 to K_F4, K_SP and K_TAB.
 TEXTINPUT_CB is not called for the keypad keys, they are reported only in K_ANY and KEYPRESS_CB.
-In macOS and iOS the keypad has no navigation keys.
+In macOS and iOS, the keypad has no navigation keys.
 
 |                Key | Code / Callback |
 |-------------------:|-----------------|

@@ -21,7 +21,7 @@ In GTK, horizontal alignment for multiple lines will align only the text block.
 
 [BGCOLOR](../attrib/iup_bgcolor.md) (non-inheritable): Background color of the button face, also with text, image or FLAT=YES.
 When not defined, the button has the native look and a FLAT button shows the background of the native parent.
-If text and image are not defined, the button is configured to simply show a color, in this case set the button size because the natural size will be very small.
+If text and image are not defined, the button shows only a color, in this case set the button size because the natural size will be very small.
 Not supported in QML with the Imagine style.
 Default: NULL.
 

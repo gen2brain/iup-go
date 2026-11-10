@@ -80,7 +80,7 @@ If it is not defined then the BACKIMAGE is used.
 Aspect ratio is NOT preserved. Can be YES or NO. Default: "NO".
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color.
-If text and image are not defined, the button is configured to simply show a color, in this case set the button size because the natural size will be very small.
+If text and image are not defined, the button shows only a color, in this case set the button size because the natural size will be very small.
 If not defined it will use the background color of the native parent.
 
 **HLCOLOR**: background color used to indicate a highlight state. Pre-defined to "200 225 245".
@@ -99,7 +99,7 @@ This is for the **IupDropButton** drawn border.
 **BORDERHLCOLOR**: color used for borders when highlighted. Default uses BORDERCOLOR.
 
 **BORDERWIDTH**: line width used for borders. Default: "1".
-Any borders can be hidden by simply setting this value to 0.
+Any borders can be hidden by setting this value to 0.
 This is for the **IupDropButton** drawn border.
 
 **GRADIENT**, **GRADIENTHL**, **GRADIENTPS**, **GRADIENTANGLE** (non-inheritable): gradient background, same as in [IupFlatButton](iup_flatbutton.md).

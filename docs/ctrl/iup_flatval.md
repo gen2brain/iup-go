@@ -45,7 +45,7 @@ Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
 Can be set to NULL. If NULL, BORDERCOLOR will be used instead.
 
 **BORDERWIDTH**: line width used for borders. Default: "1".
-Any borders can be hidden by simply setting this value to 0.
+Any borders can be hidden by setting this value to 0.
 This is for the **IupFlatVal** drawn border.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.

@@ -102,7 +102,7 @@ Not supported in FLTK, EFL, Android, WebAssembly and Haiku.
 
 **BGCOLOR**: string containing a color in the format "rrr ggg bbb" for the background of the text.
 
-**DISABLED** [Windows and macOS Only]: Can be YES or NO. Default: "NO". Set the visual appearance to disabled.
+**DISABLED** [Win32 and macOS Only]: Can be YES or NO. Default: "NO". Set the visual appearance to disabled.
 
 **FGCOLOR**: string containing a color in the format "rrr ggg bbb" for the text.
 

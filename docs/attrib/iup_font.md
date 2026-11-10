@@ -16,7 +16,7 @@ The names Helvetica, Courier and Times are always accepted in all systems.
 
 The supported **font style** is a combination of: **Bold**, **Italic**, **Underline** and **Strikeout**.
 The Pango format includes many other definitions not supported by the common format; they are supported only by the GTK driver.
-Unsupported values are simply ignored.
+Unsupported values are ignored.
 The names must be in the same case described here.
 
 **Font size** is in points (1/72 inch) or in pixels (using negative values).
@@ -54,6 +54,7 @@ The DEFAULTFONT is retrieved from the GNOME style, "Sans, 10" assumed otherwise.
 
 The X-Windows Logical Font Description format (XLFD) is also supported.
 The native handle can be obtained using the "**PANGOFONTDESC**" attribute.
+The "**PANGOLAYOUT**" attribute returns the PangoLayout used to measure text with this font.
 
 Font face can be a list of font face names, for example "Arial,Helvetica, 12" (not accepted in the other drivers).
 GTK also accepts the full Pango weight, stretch and variant keywords (Light, Semi-Bold, Condensed, Small-Caps, etc.), but only for a full Pango-compliant string (no underline/strikeout, size>0).
@@ -63,6 +64,7 @@ GTK also accepts the full Pango weight, stretch and variant keywords (Light, Sem
 Same model as GTK: DEFAULTFONT is retrieved from the GNOME style, "Sans, 10" assumed otherwise.
 
 The native handle can be obtained using the "**PANGOFONTDESC**" attribute.
+The "**PANGOLAYOUT**" attribute returns the PangoLayout used to measure text with this font.
 
 #### macOS
 

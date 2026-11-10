@@ -1,7 +1,7 @@
 ## IupThread
 
 Creates a thread element in IUP, which is not associated to any interface element.
-It is a very simple support to create and manage threads in a multithread environment.
+Creates and manages threads in a multithread environment.
 
 It inherits from [IupUser](iup_user.md).
 

@@ -83,6 +83,9 @@ When EDITBOX=YES the image is not displayed at the edit box. Images don't need t
 In Windows, list items are limited to 255 pixels height.
 Not supported in Motif.
 
+**IMAGENATIVEHANDLEid** (non-inheritable) (read-only): returns the native image handle of the image of the specified item, where id is the specified item starting at 1, or NULL when the item has no image.
+Not supported in Motif.
+
 **INSERTITEMid** (write-only): inserts an item before the given id position. id starts at 1.
 If id=COUNT+1 then it will append after the last item. Ignored if out of bounds.
 Ignored if set before map.

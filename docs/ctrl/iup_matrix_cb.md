@@ -165,7 +165,7 @@ Use [IupDraw](../func/iup_draw.md) functions to draw the cell contents.
 
 **DROPCHECK_CB**: Action generated before the current cell is redrawn to determine if a dropdown/popup menu feedback or a toggle should be shown.
 If this action is not registered, no feedback will be shown.
-If the callback is defined and return IUP_DEFAULT for a cell, to show the dropdown/popup menu the user can simply do a single click in the drop feedback area of that cell.
+If the callback is defined and return IUP_DEFAULT for a cell, a single click in the drop feedback area of that cell shows the dropdown/popup menu.
 
     int function(Ihandle *ih, int lin, int col);
 
@@ -271,7 +271,7 @@ If the callback returns IUP_CONTINUE the edit mode is ended and the new value wi
 If the callback returns IUP_IGNORE the editing is not ended, with several exceptions: the **Esc** key was used; the matrix size, scroll or visibility was changed during edition mode; a click in another cell; or the edit control loses its focus.
 
 This callback is also called when the user presses **Del** to clear the cell contents or other multiple cell editing.
-The callback will simply validate the operation for each cell being cleared by checking if the matrix is read-only or if the cell is read-only.
+The callback validates the operation for each cell being cleared by checking if the matrix is read-only or if the cell is read-only.
 In this situation it is called with **mode**=1 and **update**=1.
 When in normal mode (not callback mode) the new value cannot be refused; VALUE_EDIT_CB can reset it, and VALUECHANGED_CB can check all the new values after they were changed.
 
@@ -291,7 +291,7 @@ The existence of this callback when the matrix is mapped defines the callback op
 
 **VALUE_EDIT_CB**: Action generated to notify the application that the value of a cell was changed.
 Never called when READONLY=YES. This callback is usually set in callback mode, but also works in normal mode.
-When in normal mode, it is called after the new value has been internally stored, so to refuse the new value simply reset the cell to the desired value.
+When in normal mode, it is called after the new value has been internally stored, so to refuse the new value, reset the cell to the desired value.
 When it was interactively changed the temporary attribute CELL_EDITED will be set to YES during the callback.
 
     int function(Ihandle *ih, int lin, int col, char* newval);

@@ -51,7 +51,7 @@ The **IupMessageDlg** is a native pre-defined dialog not altered by **IupSetLang
 
 The dialog is mapped only inside **IupPopup**, **IupMap** does nothing.
 
-The **IupMessage** function simply creates and popups a **IupMessageDlg**.
+The **IupMessage** function creates and shows an **IupMessageDlg**.
 
 In Win32, each different DIALOGTYPE plays a different system beep, and PARENTDIALOG makes the dialog modal relative only to its parent.
 

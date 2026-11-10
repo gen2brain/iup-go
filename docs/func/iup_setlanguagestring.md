@@ -25,7 +25,7 @@ If a dialog is created with string names associations and the associations are a
 
 Associations are retrieved using the **IupGetLanguageString** function.
 Attributes set with the regular **IupSetStr\*** functions can use the prefix "_@" to indicate a string name and not the actual string.
-**IupSetAttribute\*** functions cannot be used because they simply store a pointer that may not be a string.
+**IupSetAttribute\*** functions cannot be used because they store a pointer that may not be a string.
 
 ### Examples
 

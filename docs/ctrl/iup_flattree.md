@@ -104,7 +104,7 @@ The callback also receives the new toggle's state.
 There is no ADDROOT attribute.
 **IupFlatTree** behaves as ADDROOT=NO always, so there is never an initial root branch.
 
-The SPACING attribute is simply the vertical space between each node, different from the IupTree.
+The SPACING attribute is the vertical space between each node, different from the IupTree.
 
 The EMPTYTOGGLE attribute replaces EMPTYAS3STATE, and it works in all systems.
 
@@ -202,7 +202,7 @@ Multiple nodes can also be selected using mouse dragging if SHOWDRAGDROP=NO.
 
 When a user keeps the Control key pressed, the individual marking mode is used.
 This way, the focus node can be modified without changing the marked node.
-To reverse a node marking, the user simply has to press the space bar.
+The space bar reverses a node marking.
 
 When the user keeps the Shift key pressed, the block marking mode is used.
 This way, all nodes between the focus node and the initial node are marked, and all others are unmarked.

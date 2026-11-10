@@ -3,7 +3,7 @@
 Opens the given URL in the default application.
 
 The URL is dispatched to the system's default handler.
-In Linux/Unix, the browser can be overridden via the IUP_HELPAPP environment variable or the global attribute HELPAPP.
+In Unix, the browser can be overridden via the IUP_HELPAPP environment variable or the global attribute HELPAPP.
 
 It is a non-synchronous operation, i.e., the function will return just after executing the command, and it will not wait for its result.
 

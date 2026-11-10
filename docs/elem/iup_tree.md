@@ -201,7 +201,7 @@ Using the keyboard:
 - **Esc**: Cancels the in place rename.
 
 In Motif when pressing Tab, the focus goes to the next visible node, if there is no next visible node, then the next control in the dialog receives the focus.
-In other drivers, the focus simply goes directly to the next control.
+In other drivers, the focus goes directly to the next control.
 
 Using the left mouse button:
 

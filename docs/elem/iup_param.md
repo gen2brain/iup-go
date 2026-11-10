@@ -147,7 +147,7 @@ The decimal symbol will use the [DEFAULTDECIMALSYMBOL](../attrib/iup_globals.md#
 There are no extra parameters for the color string.
 The mask is automatically set to capture 3 or 4 unsigned integers from 0 to 255 (R G B) or (R G B A) (alpha is optional).
 
-The date extra parameters are simply [IupDatePick](iup_datepick.md) attributes in a single string for **IupSetAttributes** usage.
+The date extra parameters are [IupDatePick](iup_datepick.md) attributes in a single string for **IupSetAttributes** usage.
 
 When the "s" type is used, the size can be controlled using the VISIBLECOLUMNS attribute at the param element.
 

@@ -2,7 +2,7 @@
 
 Attributes are used to change or consult properties of elements.
 Each element has a set of attributes that affect it, and each attribute can work differently for each element.
-Depending on the element, its value can be computed or simply verified.
+Depending on the element, its value can be computed or verified.
 Also, it can be internally stored or not.
 
 Attribute names are always upper case, lower case names will not work.
@@ -70,7 +70,7 @@ And finally, if still not defined then a default value is returned (the default 
 The parent recursion is done only at the parent hash table; the parent control class is not consulted.
 
 The control class can update or retrieve a value even if the control is not mapped.
-When the control is not mapped and its implementation cannot process the attribute, then the attribute is simply stored in the hash table.
+When the control is not mapped and its implementation cannot process the attribute, then the attribute is stored in the hash table.
 After the element is mapped, its attributes are re-processed to be updated in the native system, and they can be removed from the hash table at that time.
 
 If the attribute is checked before the control is mapped and just after, its value can be completely different.

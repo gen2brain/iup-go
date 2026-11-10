@@ -121,7 +121,7 @@ Default: "TOP". It will not automatically change the TABORIENTATION.
 When changed with the dialog visible the application should call IupRefresh or IupRefreshChildren to update the layout.
 
 **TABORIENTATION** (non-inheritable): the orientation of tab text, which can be "HORIZONTAL" or "VERTICAL".
-Default: "HORIZONTAL". When set to vertical it will simply set TABSTEXTORIENTATION to 90.
+Default: "HORIZONTAL". When set to vertical, it sets TABSTEXTORIENTATION to 90.
 
 **TABSLINECOLOR**: color of the separator line. Default: "160 160 160".
 
