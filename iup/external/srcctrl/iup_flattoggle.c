@@ -276,7 +276,7 @@ static int iFlatToggleRedraw_CB(Ihandle* ih)
   char* bgcolor = iupAttribGet(ih, "BGCOLOR");
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
   char* fgimage = iupAttribGet(ih, "FRONTIMAGE");
-  int text_flags = iupDrawGetTextFlags(ih, "TEXTALIGNMENT", "TEXTWRAP", "TEXTELLIPSIS");
+  int text_flags = iupDrawGetTextFlags(ih, "TEXTALIGNMENT", "TEXTWRAP", "TEXTELLIPSIS") | (iupAttribGetBoolean(ih, "TEXTCLIP") ? IUP_DRAW_CLIP : 0);
   double text_orientation = iupAttribGetDouble(ih, "TEXTORIENTATION");
   int check_at_right = iupAttribGetInt(ih, "CHECKRIGHT");
   Ihandle* radio = iupRadioFindToggleParent(ih);

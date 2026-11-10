@@ -655,7 +655,7 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
   char* tabs_highcolor = iupAttribGetStr(ih, "TABSHIGHCOLOR");
   int img_position = iupFlatGetImagePosition(iupAttribGetStr(ih, "TABSIMAGEPOSITION"));
   char* alignment = iupAttribGetStr(ih, "TABSALIGNMENT");
-  int text_flags = iupDrawGetTextFlags(ih, "TABSTEXTALIGNMENT", "TABSTEXTWRAP", "TABSTEXTELLIPSIS");
+  int text_flags = iupDrawGetTextFlags(ih, "TABSTEXTALIGNMENT", "TABSTEXTWRAP", "TABSTEXTELLIPSIS") | (iupAttribGetBoolean(ih, "TABSTEXTCLIP") ? IUP_DRAW_CLIP : 0);
   double text_orientation = iupAttribGetDouble(ih, "TABSTEXTORIENTATION");
   int active = IupGetInt(ih, "ACTIVE");  /* native implementation */
   int inactive_alpha;

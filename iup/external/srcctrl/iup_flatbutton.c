@@ -60,7 +60,7 @@ static int iFlatButtonRedraw_CB(Ihandle* ih)
   char* bgcolor = iupAttribGet(ih, "BGCOLOR");  /* don't get with default value, if NULL will use from parent */
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
   char* fgimage = iupAttribGet(ih, "FRONTIMAGE");
-  int text_flags = iupDrawGetTextFlags(ih, "TEXTALIGNMENT", "TEXTWRAP", "TEXTELLIPSIS");
+  int text_flags = iupDrawGetTextFlags(ih, "TEXTALIGNMENT", "TEXTWRAP", "TEXTELLIPSIS") | (iupAttribGetBoolean(ih, "TEXTCLIP") ? IUP_DRAW_CLIP : 0);
   double text_orientation = iupAttribGetDouble(ih, "TEXTORIENTATION");
   const char* draw_image;
   int border_width = ih->data->border_width;

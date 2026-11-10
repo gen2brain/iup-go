@@ -111,6 +111,8 @@ For the remaining lines to be visible, the element should use EXPAND=VERTICAL or
 **TABSTEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
 It will be ignored when TABSTEXTWRAP=YES.
 
+**TABSTEXTCLIP** (non-inheritable): If YES, the tab text will be clipped to the tab area. Default: NO.
+
 **TABSTEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
 

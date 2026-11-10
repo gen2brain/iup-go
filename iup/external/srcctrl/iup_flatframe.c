@@ -56,7 +56,7 @@ static int iFlatFrameRedraw_CB(Ihandle* ih)
   int corner_radius = iupAttribGetInt(ih, "CORNERRADIUS");
   int frame_top = 0;
   IdrawCanvas* dc = iupdrvDrawCreateCanvas(ih);
-  int text_flags = iupDrawGetTextFlags(ih, "TITLETEXTALIGNMENT", "TITLETEXTWRAP", "TITLETEXTELLIPSIS");
+  int text_flags = iupDrawGetTextFlags(ih, "TITLETEXTALIGNMENT", "TITLETEXTWRAP", "TITLETEXTELLIPSIS") | (iupAttribGetBoolean(ih, "TITLETEXTCLIP") ? IUP_DRAW_CLIP : 0);
   double text_orientation = iupAttribGetDouble(ih, "TITLETEXTORIENTATION");
   int active = IupGetInt(ih, "ACTIVE");
   int inactive_alpha;
