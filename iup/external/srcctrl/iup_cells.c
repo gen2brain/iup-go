@@ -909,7 +909,6 @@ Iclass* iupCellsNewClass(void)
   iupClassRegisterAttribute(ic, "CLIPPED", iCellsGetClippedAttrib, iCellsSetClippedAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "NON_SCROLLABLE_LINES", iCellsGetNonScrollableLinesAttrib, iCellsSetNonScrollableLinesAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "NON_SCROLLABLE_COLS", iCellsGetNonScrollableColsAttrib, iCellsSetNonScrollableColsAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "NO_COLOR", iupControlBaseGetBgColorAttrib, iCellsSetBgColorAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BUFFERIZE", iCellsGetBufferizeAttrib, iCellsSetBufferizeAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ORIGIN", NULL, iCellsSetOriginAttrib, NULL, NULL, IUPAF_DEFAULT);

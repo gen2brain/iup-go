@@ -24,7 +24,7 @@ func main() {
 
 	plot = iup.Plot().SetAttributes(`RASTERSIZE=640x480, MENUITEMPROPERTIES=NO,
 		TITLE="Sine & Cosine", TITLEFONTSIZE=12,
-		LEGENDSHOW=YES, LEGENDPOS=TOPRIGHT,
+		LEGEND=YES, LEGENDPOS=TOPRIGHT,
 		GRID=YES, GRIDLINESTYLE=DOTTED, GRIDCOLOR="200 200 200",
 		AXS_XLABEL="Angle (radians)", AXS_YLABEL="Amplitude",
 		AXS_XCROSSORIGIN=YES, AXS_YCROSSORIGIN=YES,
@@ -54,7 +54,7 @@ func addSineData() {
 		iup.PlotAdd(plot, rad, math.Sin(rad))
 	}
 	iup.PlotEnd(plot)
-	plot.SetAttribute("DS_LEGEND", "sin(x)")
+	plot.SetAttribute("DS_NAME", "sin(x)")
 	plot.SetAttribute("DS_LINEWIDTH", "2")
 	plot.SetAttribute("DS_COLOR", "220 50 50")
 }
@@ -66,7 +66,7 @@ func addCosineData() {
 		iup.PlotAdd(plot, rad, math.Cos(rad))
 	}
 	iup.PlotEnd(plot)
-	plot.SetAttribute("DS_LEGEND", "cos(x)")
+	plot.SetAttribute("DS_NAME", "cos(x)")
 	plot.SetAttribute("DS_LINEWIDTH", "2")
 	plot.SetAttribute("DS_COLOR", "50 50 220")
 }

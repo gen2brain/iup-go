@@ -2830,7 +2830,6 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 
   iupClassRegisterAttributeId(ic, "MARKED", eflTreeGetMarkedAttrib, eflTreeSetMarkedAttrib, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARK", NULL, eflTreeSetMarkAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STARTING", NULL, eflTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKSTART", eflTreeGetMarkStartAttrib, eflTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKEDNODES", eflTreeGetMarkedNodesAttrib, eflTreeSetMarkedNodesAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 

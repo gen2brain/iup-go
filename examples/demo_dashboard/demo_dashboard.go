@@ -125,7 +125,6 @@ func addSeries(handle, name, color, mode string) *series {
 	s := &series{plot: handle, index: iup.PlotEnd(p), y: make([]float64, samples)}
 	p.SetAttributes(map[string]string{
 		"DS_NAME":             name,
-		"DS_LEGEND":           name,
 		"DS_COLOR":            color,
 		"DS_MODE":             mode,
 		"DS_LINEWIDTH":        "2",

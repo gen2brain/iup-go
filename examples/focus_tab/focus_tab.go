@@ -57,7 +57,6 @@ func main() {
 
 	button := wire(iup.Button("Button"), "button")
 
-	noClick := wire(iup.Button("FOCUSONCLICK=NO"), "noclick").SetAttribute("FOCUSONCLICK", "NO")
 	noFocus := wire(iup.Button("CANFOCUS=NO"), "nofocus").SetAttribute("CANFOCUS", "NO")
 
 	toggle := wire(iup.Toggle("Toggle"), "toggle")
@@ -91,7 +90,7 @@ func main() {
 
 	left := iup.Vbox(
 		iup.Label("Tab through these; watch the log:"),
-		text, spin, iup.Hbox(button, noClick, noFocus).SetAttribute("GAP", "4"), toggle, radio,
+		text, spin, iup.Hbox(button, noFocus).SetAttribute("GAP", "4"), toggle, radio,
 		dropdown, listbox, slider, tree, table, tabs,
 		multi,
 	)
