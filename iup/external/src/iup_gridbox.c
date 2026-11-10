@@ -73,34 +73,34 @@ static char* iGridBoxGetClientSizeAttrib(Ihandle* ih)
 
 static int iGridBoxSetCGapColAttrib(Ihandle* ih, const char* value)
 {
-  int cgap, charheight;
+  int cgap, charwidth;
   iupStrToInt(value, &cgap);
-  iupdrvFontGetCharSize(ih, NULL, &charheight);
-  ih->data->gap_col = iupHEIGHT2RASTER(cgap, charheight);
+  iupdrvFontGetCharSize(ih, &charwidth, NULL);
+  ih->data->gap_col = iupWIDTH2RASTER(cgap, charwidth);
   return 0;
 }
 
 static int iGridBoxSetCGapLinAttrib(Ihandle* ih, const char* value)
 {
-  int cgap, charwidth;
+  int cgap, charheight;
   iupStrToInt(value, &cgap);
-  iupdrvFontGetCharSize(ih, &charwidth, NULL);
-  ih->data->gap_lin = iupWIDTH2RASTER(cgap, charwidth);
+  iupdrvFontGetCharSize(ih, NULL, &charheight);
+  ih->data->gap_lin = iupHEIGHT2RASTER(cgap, charheight);
   return 0;
 }
 
 static char* iGridBoxGetCGapLinAttrib(Ihandle* ih)
 {
-  int charwidth;
-  iupdrvFontGetCharSize(ih, &charwidth, NULL);
-  return iupStrReturnInt(iupRASTER2WIDTH(ih->data->gap_lin, charwidth));
+  int charheight;
+  iupdrvFontGetCharSize(ih, NULL, &charheight);
+  return iupStrReturnInt(iupRASTER2HEIGHT(ih->data->gap_lin, charheight));
 }
 
 static char* iGridBoxGetCGapColAttrib(Ihandle* ih)
 {
-  int charheight;
-  iupdrvFontGetCharSize(ih, NULL, &charheight);
-  return iupStrReturnInt(iupRASTER2HEIGHT(ih->data->gap_col, charheight));
+  int charwidth;
+  iupdrvFontGetCharSize(ih, &charwidth, NULL);
+  return iupStrReturnInt(iupRASTER2WIDTH(ih->data->gap_col, charwidth));
 }
 
 static int iGridBoxSetGapLinAttrib(Ihandle* ih, const char* value)

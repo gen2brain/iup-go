@@ -61,7 +61,7 @@ If FITMAXWIDTHid or FITMAXHEIGHTid are set for the column or line they are used 
 **GAPLIN, CGAPLIN**: Defines a vertical space in pixels between lines, **CGAPLIN** is in the same units of the **SIZE** attribute for the height.
 Default: "0".
 
-**GAPCOL, CGAPCOL**: Defines a horizontal space in pixels between columns, **CGAPCOL** is in the same units of the **SIZE** attribute for the height.
+**GAPCOL, CGAPCOL**: Defines a horizontal space in pixels between columns, **CGAPCOL** is in the same units of the **SIZE** attribute for the width.
 Default: "0".
 
 **NGAPLIN, NCGAPLIN, NGAPCOL, NCGAPCOL** (non-inheritable): Same as **GAPLIN**, **CGAPLIN**, **GAPCOL** and **CGAPCOL**, but non-inheritable.
