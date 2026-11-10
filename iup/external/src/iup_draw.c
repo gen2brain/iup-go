@@ -1374,6 +1374,7 @@ Iclass* iupDrawPathNewClass(void)
   Iclass* ic = iupClassNew(NULL);
 
   ic->name = "drawpath";
+  ic->cons = "DrawPathCreate";
   ic->format = NULL;
   ic->nativetype = IUP_TYPEOTHER;
   ic->childtype = IUP_CHILDNONE;

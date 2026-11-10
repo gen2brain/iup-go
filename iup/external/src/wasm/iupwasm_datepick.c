@@ -186,6 +186,7 @@ Iclass* iupDatePickNewClass(void)
   Iclass* ic = iupClassNew(NULL);
 
   ic->name = "datepick";
+  ic->cons = "DatePick";
   ic->format = NULL;
   ic->nativetype = IUP_TYPECONTROL;
   ic->childtype = IUP_CHILDNONE;

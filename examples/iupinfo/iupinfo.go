@@ -170,7 +170,7 @@ func boolString(b bool) string {
 	return "no"
 }
 
-func constructorString(className string, c iup.ClassConstructorInfo) string {
+func constructorString(c iup.ClassConstructorInfo) string {
 	parts := make([]string, 0, len(c.Format))
 	for i := 0; i < len(c.Format); i++ {
 		ch := c.Format[i]
@@ -185,11 +185,7 @@ func constructorString(className string, c iup.ClassConstructorInfo) string {
 			parts = append(parts, string(ch))
 		}
 	}
-	cap := className
-	if cap != "" {
-		cap = strings.ToUpper(cap[:1]) + cap[1:]
-	}
-	return fmt.Sprintf("Iup%s(%s) -> Ihandle*", cap, strings.Join(parts, ", "))
+	return fmt.Sprintf("(%s) -> Ihandle*", strings.Join(parts, ", "))
 }
 
 func formatSignature(format string) string {
@@ -237,7 +233,7 @@ func dumpClass(w *tabwriter.Writer, name string) {
 	fmt.Fprintf(w, "  interactive\t%s\n", boolString(info.IsInteractive))
 	fmt.Fprintf(w, "  has attrib id\t%d\n", info.HasAttribID)
 	if ctor, ok := iup.GetClassConstructor(name); ok {
-		fmt.Fprintf(w, "  constructor\t%s\n", constructorString(name, ctor))
+		fmt.Fprintf(w, "  constructor\t%s\n", constructorString(ctor))
 	}
 	w.Flush()
 
@@ -299,7 +295,7 @@ func dumpSummary(w *tabwriter.Writer, classes []string) {
 		}
 		ctorSig := "-"
 		if ctor, ok := iup.GetClassConstructor(name); ok {
-			ctorSig = constructorString(name, ctor)
+			ctorSig = constructorString(ctor)
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\n",
 			name, parent, info.NativeType, childString(info.ChildType),

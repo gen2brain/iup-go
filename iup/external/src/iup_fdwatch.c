@@ -85,6 +85,7 @@ Iclass* iupFdWatchNewClass(void)
   Iclass* ic = iupClassNew(NULL);
 
   ic->name = "fdwatch";
+  ic->cons = "FdWatch";
   ic->format = NULL;
   ic->nativetype = IUP_TYPEOTHER;
   ic->childtype = IUP_CHILDNONE;
