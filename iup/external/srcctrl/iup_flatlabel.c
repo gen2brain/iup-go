@@ -43,7 +43,7 @@ static int iFlatLabelRedraw_CB(Ihandle* ih)
   char* bgcolor = NULL; /* always use the parent background color */
   char* bgimage = iupAttribGet(ih, "BACKIMAGE");
   char* fgimage = iupAttribGet(ih, "FRONTIMAGE");
-  int text_flags = iupDrawGetTextFlags(ih, "TEXTALIGNMENT", "TEXTWRAP", "TEXTELLIPSIS");
+  int text_flags = iupDrawGetTextFlags(ih, "TEXTALIGNMENT", "TEXTWRAP", "TEXTELLIPSIS") | (iupAttribGetBoolean(ih, "TEXTCLIP") ? IUP_DRAW_CLIP : 0);
   double text_orientation = iupAttribGetDouble(ih, "TEXTORIENTATION");
   const char* draw_image;
   IdrawCanvas* dc;

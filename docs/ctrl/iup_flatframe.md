@@ -86,6 +86,8 @@ For the remaining lines to be visible, the element should use EXPAND=VERTICAL or
 **TITLETEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
 It will be ignored when TITLETEXTWRAP=YES.
 
+**TITLETEXTCLIP** (non-inheritable): If YES, the title text will be clipped to the title area. Default: NO.
+
 **TITLETEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
 

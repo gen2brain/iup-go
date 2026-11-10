@@ -217,6 +217,8 @@ For the remaining lines to be visible, the element should use EXPAND=VERTICAL or
 **TEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
 It will be ignored when TEXTWRAP=YES.
 
+**TEXTCLIP** (non-inheritable): If YES, the text will be clipped to the button area. Default: NO.
+
 **TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
 
