@@ -36,7 +36,7 @@ It will not affect the natural size, and allows to position controls outside the
 Format "*dx*x*dy*", where *dx* and *dy* are integer values corresponding to the horizontal and vertical offsets, respectively, in pixels.
 Default: 0x0.
 
-[EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "YES".
+[EXPAND](../attrib/iup_expand.md) (non-inheritable): Default: "YES".
 
 **LAYOUTDRAG** (non-inheritable): When the scrollbar is moved, automatically update the children layout.
 Default: YES. If set to NO then the layout will be updated only when the mouse drag is released.
@@ -56,7 +56,7 @@ The child must be contained in the Scrollbox hierarchy.
 [FLATSCROLLBAR](iup_flatscrollbar.md): Can be YES, Vertical or Horizontal.
 Can be set only before map. Default: YES.
 
-**WHEELDROPFOCUS:** set to YES.
+**WHEELDROPFOCUS**: set to YES.
 
 ### Scrollbars Appearance Attributes
 
@@ -72,6 +72,10 @@ See [FLATSCROLLBAR](iup_flatscrollbar.md).
 
 **LAYOUTUPDATE_CB**: Action generated when the layout is updated after a scroll operation.
 
+    int function(Ihandle* ih);
+
+**ih**: identifier of the element that activated the event.
+
 ### Notes
 
 The box allows the application to create a virtual space for the dialog that is actually larger than the visible area.
@@ -83,9 +87,9 @@ So the **IupFlatScrollBox** does not depend on its child's size or expansion, an
 The user can move the box contents by dragging the background.
 Also, the mouse wheel scrolls the contents vertically.
 
-The box can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
+The box can be created with no elements and be dynamically filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
 
-Notice that it is possible to use the **IupFlatScrollBox** to overcome the internal scrollbars of another control like **IupMatrix** by making all cells visible, but this will force all cells to be drawn all the time even when not visible at the scroll box, which is much slower than the internal **IupMatrix** optimization.
+Using **IupFlatScrollBox** instead of the internal scrollbars of a control like **IupMatrix**, by making all cells visible, draws all cells all the time, even when not visible, which is much slower than the internal **IupMatrix** optimization.
 
 ### Examples
 

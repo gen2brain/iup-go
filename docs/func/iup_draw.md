@@ -4,7 +4,7 @@ Functions to draw in an [IupCanvas](../elem/iup_canvas.md) or an [IupBackgroundB
 They also draw the pages of an [IupPrintDlg](../dlg/iup_printdlg.md), from inside its PRINTPAGE_CB callback.
 To redraw at any other time, call [IupUpdate](../func/iup_update.md) or [IupRedraw](../func/iup_redraw.md).
 
-In C/C++ the functions are declared in "iupdraw.h".
+In C/C++, the functions are declared in "iupdraw.h".
 
 Internally, IupDraw uses several drawing APIs depending on the platform:
 - **Windows (Win32)**: Direct2D or GDI+ via WinDrawLib
@@ -28,11 +28,11 @@ All other functions can be called only between calls to DrawBegin and DrawEnd.
 
     void IupDrawBegin(Ihandle* ih);
 
-Initialize the drawing process.
+Initializes the drawing process.
 
     void IupDrawEnd(Ihandle* ih);
 
-Terminates the drawing process and actually draw on screen.
+Terminates the drawing process and draws on screen.
 
     void IupDrawSave(Ihandle* ih);
     void IupDrawRestore(Ihandle* ih);
@@ -54,7 +54,7 @@ Resets the current transform to the identity matrix.
 
     void IupDrawGetTransform(Ihandle* ih, double* a, double* b, double* c, double* d, double* e, double* f);
 
-Returns the current transform. In C unwanted values can be NULL.
+Returns the current transform. In C, unwanted values can be NULL.
 
     void IupDrawTranslate(Ihandle* ih, double tx, double ty);
     void IupDrawScale(Ihandle* ih, double sx, double sy);
@@ -63,8 +63,8 @@ Returns the current transform. In C unwanted values can be NULL.
 Post-multiplies the current transform by a translation, scale or rotation. The rotation angle is in degrees and counterclockwise.
 
 Transforms affect primitives, paths, text, images, sources and clipping regions. A clipping region keeps the transform active when it was set. IupDrawGetSize, IupDrawGetTextSize and IupDrawGetTextMetrics return untransformed values. IupDrawParentBackground ignores the current transform.
-In EFL and FLTK the line width is scaled uniformly by the square root of the transform determinant.
-In Motif transforms require the X11 RENDER extension.
+In EFL and FLTK, the line width is scaled uniformly by the square root of the transform determinant.
+In Motif, transforms require the X11 RENDER extension.
 
     void IupDrawSetClipRect(Ihandle* ih, int x1, int y1, int x2, int y2);
 
@@ -76,7 +76,7 @@ Defines a rounded rectangular clipping region.
 
     void IupDrawResetClip(Ihandle* ih);
 
-Reset the clipping area to none.
+Resets the clipping area to none.
 
     void IupDrawGetClipRect(Ihandle* ih, int *x1, int *y1, int *x2, int *y2);
 
@@ -86,8 +86,8 @@ Returns the previous rectangular clipping region set by IupDrawSetClipRect, if c
 
 The primitives color is controlled by the attribute **DRAWCOLOR**.  Default: "0 0 0".
 The alpha component is also supported, if not specified 255 (opaque) is assumed.
-In Motif alpha requires the X11 RENDER extension (text alpha only in the Xft build).
-In FLTK alpha blending requires the Cairo-based build, otherwise colors are pre-blended with the theme background.
+In Motif, alpha requires the X11 RENDER extension (text alpha only in the Xft build).
+In FLTK, alpha blending requires the Cairo-based build, otherwise colors are pre-blended with the theme background.
 
 Rectangle, Arc, Ellipse and Polygon can be filled or stroked. When stroked, the line style can be continuous, dashed or dotted.
 These are controlled by the attribute **DRAWSTYLE**.
@@ -129,7 +129,7 @@ Draws a rounded rectangle with the given corner radius.
 
 Draws an arc inside a rectangle between the two angles in degrees.
 When filled will draw a pie shape with the vertex at the center of the rectangle.
-Angles are counter-clock wise relative to the 3 o'clock position.
+Angles are counterclockwise relative to the 3 o'clock position.
 
     void IupDrawEllipse(Ihandle* ih, int x1, int y1, int x2, int y2);
 
@@ -198,7 +198,7 @@ Adds a quadratic Bezier curve to (x2, y2), with control point (x1, y1).
 
     void IupDrawPathArcTo(Ihandle* ih, int cx, int cy, int rx, int ry, double a1, double a2);
 
-Adds an elliptical arc centered at (cx, cy), with horizontal radius **rx** and vertical radius **ry**. The angles are in degrees and counter-clockwise relative to the 3 o'clock position. A line connects the current point to the start of the arc.
+Adds an elliptical arc centered at (cx, cy), with horizontal radius **rx** and vertical radius **ry**. The angles are in degrees and counterclockwise relative to the 3 o'clock position. A line connects the current point to the start of the arc.
 
     void IupDrawPathClose(Ihandle* ih);
 
@@ -249,7 +249,7 @@ Replaces the current path of the canvas with the segments of the path handle. Iu
 
     void IupDrawPathGetBounds(Ihandle* path, int* x1, int* y1, int* x2, int* y2);
 
-Returns the bounding rectangle of the path in its own coordinates. Curves contribute their control points and arcs their full ellipse, so the rectangle can be larger than the drawn path. In C unwanted values can be NULL.
+Returns the bounding rectangle of the path in its own coordinates. Curves contribute their control points and arcs their full ellipse, so the rectangle can be larger than the drawn path. In C, unwanted values can be NULL.
 
     int IupDrawPathContains(Ihandle* path, int x, int y, int rule);
 
@@ -276,18 +276,18 @@ Same as the functions without the F suffix, with floating point coordinates. A p
 Draws a text in the given position using the font defined by **DRAWFONT**, if not defined, then use [FONT](../attrib/iup_font.md).
 The size of the string is used only in C. Can be -1 so **strlen** is used internally.
 The coordinates are relative to the top-left corner of the text.
-Strings with multiple lines are accepted using '\n" as line separator.
+Strings with multiple lines are accepted using '\n' as line separator.
 Horizontal text alignment inside the given box can be controlled using **DRAWTEXTALIGNMENT** attribute: ALEFT (default), ARIGHT and ACENTER options.
 The lines of a multiple line text are also aligned against each other.
 For single line texts, if the text is larger than its box and **DRAWTEXTWRAP**=YES, then the line will be automatically broken in multiple lines.
-Notice that this is done internally by the system, the element natural size will still use only a single line.
+The element natural size still uses a single line.
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 If the text is larger that its box and **DRAWTEXTELLIPSIS**=YES, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
-It will be ignored when WRAP=YES.
-w and h are optional and can be -1 or 0, the text size will be used, so WRAP nor ELLIPSIS will not produce any changes.
+It is ignored when DRAWTEXTWRAP=YES.
+w and h are optional and can be -1 or 0, then the text size is used and DRAWTEXTWRAP and DRAWTEXTELLIPSIS have no effect.
 The text is not automatically clipped to the rectangle, if **DRAWTEXTCLIP**=YES it will be clipped but depending on the driver may affect the clipping set by IupDrawSetClipRect.
 The text can be drawn in any angle using **DRAWTEXTORIENTATION**, in degrees and counterclockwise, its layout is not centered inside the given rectangle when text is oriented, to center the layout use **DRAWTEXTLAYOUTCENTER**=YES.
-In Motif only the Xft build draws non-Latin text, the default build is 8 bit.
+In Motif, only the Xft build draws non-Latin text, the default build is 8 bit.
 
     void IupDrawImage(Ihandle* ih, const char* name, int x, int y, int w, int h);
 
@@ -300,7 +300,7 @@ The **DRAWBGCOLOR** can be used to control the inactive state background color o
 w and h are optional and can be -1 or 0, then the source size will be used, and no zoom will be performed.
 For an image with [SCALE](../elem/iup_image.md) the default size is the size the image occupies, as returned by **IupDrawGetImageInfo**.
 
-The **DRAWIMAGESRCRECT** attribute selects a source sub-rectangle in the format "x1 y1 x2 y2" (in image pixels, inclusive), so a region of the image can be drawn without creating a new image. Default: NULL (whole image).
+The **DRAWIMAGESRCRECT** attribute selects a source sub-rectangle in the format "x1 y1 x2 y2" (in image pixels, inclusive). Default: NULL (whole image).
 
 The **DRAWIMAGETINT** attribute is a color "R G B [A]" that replaces the image color keeping its alpha channel, recoloring a monochrome image while preserving its shape. The tint alpha component is multiplied into the image alpha. Default: NULL (no tint).
 
@@ -320,14 +320,14 @@ Draws a focus rectangle.
 
     void IupDrawGetSize(Ihandle* ih, int *w, int *h);
 
-Returns the drawing area size. In C unwanted values can be NULL.
+Returns the drawing area size. In C, unwanted values can be NULL.
 Valid only between IupDrawBegin and IupDrawEnd, outside them read the canvas DRAWSIZE attribute.
 
     void IupDrawGetTextSize(Ihandle* ih, const char* str, int len, int *w, int *h);
 
 Returns the given text size using the font defined by DRAWFONT, if not defined then use [FONT](../attrib/iup_font.md).
 In C, unwanted values can be NULL, and if len is -1 the string must be 0 terminated, and len will be calculated using strlen.
-In WinUI the size can differ from the natural size of a control with the same text.
+In WinUI, the size can differ from the natural size of a control with the same text.
 
     void IupDrawGetTextMetrics(Ihandle* ih, int *ascent, int *descent, int *line_height);
 
@@ -338,7 +338,7 @@ Returns the font vertical metrics for the font defined by DRAWFONT, if not defin
 
 Returns the given image size and bits per pixel. bpp can be 8, 24 or 32.
 For an image with [SCALE](../elem/iup_image.md) it returns the size the image occupies, not its number of pixels.
-In C unwanted values can be NULL.
+In C, unwanted values can be NULL.
 
     Ihandle* IupDrawGetImage(Ihandle* ih);
 
@@ -455,4 +455,4 @@ The returned string must be freed with `free`.
 
 ### See Also
 
-[IupCanvas](../elem/iup_canvas.md), [IupBackgroundBox](../elem/iup_backgroundbox.md), [IupPrintDlg](../dlg/iup_printdlg.md), [IupUpdate](../func/iup_update.md), [IupRedraw](iup_draw.md)
+[IupCanvas](../elem/iup_canvas.md), [IupBackgroundBox](../elem/iup_backgroundbox.md), [IupPrintDlg](../dlg/iup_printdlg.md), [IupUpdate](../func/iup_update.md), [IupRedraw](iup_redraw.md)

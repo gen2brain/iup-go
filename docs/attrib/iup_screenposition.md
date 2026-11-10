@@ -4,10 +4,10 @@ Returns the absolute horizontal and/or vertical position of the top-left corner 
 It is similar to POSITION but relative to the origin of the main screen, instead of the origin of the client area.
 The origin of the main screen is the top-left corner of its work area, the area not covered by task bars, docks, panels and the macOS menu bar.
 
-**IMPORTANT**: For the dialog, it is the position of the top-left corner of the window, **NOT the client area**.
+For the dialog, it is the position of the top-left corner of the window, **NOT the client area**.
 It is the same position used in [IupShowXY](../func/iup_showxy.md) and [IupPopup](../func/iup_popup.md).
 In GTK, if the dialog is hidden the values can be outdated.
-On Wayland the dialog returns 0,0 and the other elements return their position relative to the top-left corner of the dialog contents, below the title bar.
+In Wayland, the dialog returns 0,0 and the other elements return their position relative to the top-left corner of the dialog contents, below the title bar.
 
 ### Value
 

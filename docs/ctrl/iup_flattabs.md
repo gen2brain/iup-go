@@ -33,19 +33,19 @@ BORDER and SCROLLBAR are always NO.
 Default: "255 255 255". It is non-inheritable, but when set will internally propagate to the children.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
-Default: YES.
+Default: "YES".
 
 **FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be YES or NO.
-Default: YES.
+Default: "YES".
 
 **ALLOWREORDER** (non-inheritable): enables the user to reorder tabs by dragging a tab title.
 Can be "YES" or "NO". Default: "NO".
 
 **PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
-Default: NO.
+Default: "NO".
 
 **CHILDSIZEALL** (non-inheritable): compute the natural size using all children.
-If set to NO will compute using only the current tab. Default: YES.
+If set to NO will compute using only the current tab. Default: "YES".
 
 **FORECOLOR**: text color for the current Tab. Default: "50 150 255".
 
@@ -56,9 +56,9 @@ If not defined FORECOLOR will be used.
 **CHILDOFFSET**: Allow specifying a position offset for the child. Available for native containers only.
 It will not affect the natural size, and allows to position controls outside the client area.
 Format "*dx*x*dy*", where *dx* and *dy* are integer values corresponding to the horizontal and vertical offsets, respectively, in pixels.
-Default: 0x0.
+Default: "0x0".
 
-**COUNT** (read-only)**:** returns the number of tabs. Same value returned by **IupGetChildCount**.
+**COUNT** (read-only): returns the number of tabs. Same value returned by **IupGetChildCount**.
 
 [EXPAND](../attrib/iup_expand.md): The default value is "YES".
 
@@ -67,11 +67,11 @@ It does not include padding, nor the close button space if any, i.e., padding an
 
 **HASFOCUS** (read-only): returns the tabs state if it has focus. Can be YES or NO.
 
-**SHOWCLOSE**:  enables the close button on each tab. Default value: "NO". By default, when closed the tab is hidden.
+**SHOWCLOSE**: enables the close button on each tab. Default: "NO". By default, when closed the tab is hidden.
 To change that behavior, use the TABCLOSE_CB callback.
 
 **SHOWLINES**: when enabled, the current tab will be separated from the other tabs by a line.
-Can be YES or NO. Default: YES.
+Can be YES or NO. Default: "YES".
 
 [SIZE](../attrib/iup_size.md): The default size is the smallest size that fits its largest child.
 All child elements are considered even invisible ones.
@@ -83,7 +83,7 @@ Default: "0" (no rounding).
 
 **TABSPADDING**: internal margin of the tab title.
 Works just like the MARGIN attribute of the IupHbox and IupVbox containers, but uses a different name to avoid inheritance problems.
-Alignment does not include the padding area. Default value: "6x4" (default changed in 3.29).
+Alignment does not include the padding area. Default: "6x4".
 
 **TABSFORECOLOR**: text color of the tabs that are not the current tab.
 Default: the global attribute DLGFGCOLOR.
@@ -102,28 +102,28 @@ It is a non-inheritable option for setting the font.
 **TABSFONTSIZE**: text font size. When change will actually set TABSFONT.
 
 **TABSTEXTALIGNMENT** (non-inheritable): Horizontal text alignment for multiple lines.
-Can be: ALEFT, ARIGHT or ACENTER. Default: ALEFT.
+Can be: ALEFT, ARIGHT or ACENTER. Default: "ALEFT".
 
 **TABSTEXTWRAP** (non-inheritable): For single line texts if the text is larger than its box, the line will be automatically broken in multiple lines.
-Notice that this is done internally by the system, the element natural size will still use only a single line.
+The element natural size still uses only a single line.
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TABSTEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
-It will be ignored when TEXTWRAP=YES.
+It will be ignored when TABSTEXTWRAP=YES.
 
-  **TABSTEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
+**TABSTEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
 
 **TABTYPE** (non-inheritable): the type of tabs, which can be "TOP", "BOTTOM", "LEFT" or "RIGHT".
-Default is "TOP". It will not automatically change the TABORIENTATION.
-When changed with the dialog visible the application should call IupRefresh or IupRefresh children to updated the layout when ready.
+Default: "TOP". It will not automatically change the TABORIENTATION.
+When changed with the dialog visible the application should call IupRefresh or IupRefreshChildren to update the layout.
 
 **TABORIENTATION** (non-inheritable): the orientation of tab text, which can be "HORIZONTAL" or "VERTICAL".
-Default is "HORIZONTAL". When set to vertical it will simply set TABSTEXTORIENTATION to 90.
+Default: "HORIZONTAL". When set to vertical it will simply set TABSTEXTORIENTATION to 90.
 
-**TABSLINECOLOR**: color of the separator line. Default: "160 160 160"
+**TABSLINECOLOR**: color of the separator line. Default: "160 160 160".
 
-**TABBADGEn** (non-inheritable): text drawn in a small pill at the top right corner of the respective tab title. Default: NULL.
+**TABBADGEid** (non-inheritable): text drawn in a small pill at the top right corner of the respective tab title. Default: NULL.
 
 **BADGEBGCOLOR** (non-inheritable): background color of the tab badges. Default: "220 50 50".
 
@@ -134,7 +134,7 @@ Default is "HORIZONTAL". When set to vertical it will simply set TABSTEXTORIENTA
 **IMAGETINT** (non-inheritable): color "R G B" used to draw the tab image recolored, keeping its alpha channel. "YES" uses the current text color; "NO" draws the image unchanged. Default: "NO".
 
 **TABSIMAGEPOSITION**: position of the image relative to the text when both are displayed.
-Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
+Can be: LEFT, RIGHT, TOP, BOTTOM. Default: "LEFT".
 
 **TABSIMAGESPACING**: spacing between the image and the text. Default: "2".
 
@@ -145,42 +145,42 @@ Partial values are also accepted, like "ARIGHT" or ":ATOP", the other value will
 
 #### Tab Attributes (non-inheritable)
 
-**TABIMAGEn**: image name to be used in the respective tab.
-Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name. n starts at 0.
+**TABIMAGEid**: image name to be used in the respective tab.
+Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name. id starts at 0.
 See also [IupImage](../elem/iup_image.md).
 
-**TABIMAGEHIGHLIGHTn**: same as TABIMAGEn when in highlight state.
-If not defined TABIMAGEn is used.
+**TABIMAGEHIGHLIGHTid**: same as TABIMAGEid when in highlight state.
+If not defined TABIMAGEid is used.
 
-**TABIMAGEINACTIVEn**: same as TABIMAGEn when in inactive state.
-If not defined TABIMAGEn is used, and its colors will be replaced by a modified version creating the disabled effect.
+**TABIMAGEINACTIVEid**: same as TABIMAGEid when in inactive state.
+If not defined TABIMAGEid is used, and its colors will be replaced by a modified version creating the disabled effect.
 
-**TABVISIBLEn**: controls the visibility of a tab. When a tab is hidden the tabs indices are not changed.
-Can be YES or NO. Default: YES.
+**TABVISIBLEid**: controls the visibility of a tab. When a tab is hidden the tabs indices are not changed.
+Can be YES or NO. Default: "YES".
 
-**TABTITLEn**: contains the text to be shown in the respective tab title. n starts at 0.
+**TABTITLEid**: contains the text to be shown in the respective tab title. id starts at 0.
 If this value is NULL, it will remain empty.
 
-**TABACTIVEn**: active state of the tab.  Can be YES or NO. Default: YES.
+**TABACTIVEid**: active state of the tab. Can be YES or NO. Default: "YES".
 
-**TABFORECOLORn**: text color of the tab title. When not defined TABSFORECOLOR is used.
+**TABFORECOLORid**: text color of the tab title. When not defined TABSFORECOLOR is used.
 
-**TABBACKCOLORn**: background color of the tab. When not defined TABSBACKCOLOR is used.
+**TABBACKCOLORid**: background color of the tab. When not defined TABSBACKCOLOR is used.
 
-**TABHIGHCOLORn**: highlight color of the tab title. When not defined TABSHIGHCOLOR is used.
+**TABHIGHCOLORid**: highlight color of the tab title. When not defined TABSHIGHCOLOR is used.
 
-**TABFONTn**: text font of the tab. When not defined TABSFONT is used.
+**TABFONTid**: text font of the tab. When not defined TABSFONT is used.
 
-**TABFONTSTYLEn**: text font style. When change will actually set TABFONTn.
+**TABFONTSTYLEid**: text font style. When change will actually set TABFONTid.
 
-**TABFONTSIZEn**: text font size. When change will actually set TABFONTn.
+**TABFONTSIZEid**: text font size. When change will actually set TABFONTid.
 
-**TABTIPn**: TIP of the tab.
+**TABTIPid**: TIP of the tab.
 
 #### Tab Close Button Attributes
 
 **CLOSEIMAGE**: image name to be used in the close button.
-Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name. n starts at 0.
+Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](../elem/iup_image.md). Default: "IMGFLATCLOSE".
 
 **CLOSEIMAGEPRESS**: image name to be used in the close button in pressed state.
@@ -199,57 +199,57 @@ Default: "150 200 235".
 #### Extra Buttons Attributes (non-inheritable)
 
 **EXTRABUTTONS**: sets the number of extra image buttons at right in the free space area.
-There can be any number of buttons. See the EXTRABUTTON_CB callback. Default: 0.
+There can be any number of buttons. See the EXTRABUTTON_CB callback. Default: "0".
 
 Button id starts at 1, and are positioned from right to left. Just like the tabs, they do not affect natural width.
-But they also don't affect the tabs title height, if button title or image are larger than the tabs title height, they will be cropped.
+They do not affect the tabs title height either; a button title or image larger than the tabs title height is cropped.
 
-**EXTRATITLE*****id***: text of the respective button.
+**EXTRATITLEid**: text of the respective button.
 
-**EXTRAACTIVE*****id***: active state of the button. Can be YES or NO.
+**EXTRAACTIVEid**: active state of the button. Can be YES or NO.
 When not defined works as "YES".
 
-**EXTRABORDERWIDTH*id***: width of the button border. Set this attribute to at least 1 to enable the border.
-Default: 0
+**EXTRABORDERWIDTHid**: width of the button border. Set this attribute to at least 1 to enable the border.
+Default: "0".
 
-**EXTRABOX*id*** (read-only): the box limits of the button in the format "xmin ymin xmax ymax" or "%d %d %d %d" in C.
+**EXTRABOXid** (read-only): the box limits of the button in the format "xmin ymin xmax ymax" or "%d %d %d %d" in C.
 Coordinates are relative to the IupFlatTabs top left corner.
 
-**EXTRASHOWBORDER*id***: always show the button border. If not defined the border is shown when highlighted or pressed.
-Default: NO
+**EXTRASHOWBORDERid**: always show the button border. If not defined the border is shown when highlighted or pressed.
+Default: "NO".
 
-**EXTRABORDERCOLOR*id***: color of the border. Default: "50 150 255"
+**EXTRABORDERCOLORid**: color of the border. Default: "50 150 255".
 
-**EXTRAFORECOLOR*****id***: text color of the button title. When not defined TABSFORECOLOR is used.
+**EXTRAFORECOLORid**: text color of the button title. When not defined TABSFORECOLOR is used.
 
-**EXTRAPRESSCOLOR*****id***: background color of the button in pressed state.
+**EXTRAPRESSCOLORid**: background color of the button in pressed state.
 Default: "150 200 235".
 
-**EXTRAHIGHCOLOR*****id***: background color of the button in highlight state.
+**EXTRAHIGHCOLORid**: background color of the button in highlight state.
 Default: "200 225 245".
 
-**EXTRAFONT*****id***: text font of the button. When not defined TABSFONT is used.
+**EXTRAFONTid**: text font of the button. When not defined TABSFONT is used.
 
-**EXTRAALIGNMENT*****id***: horizontal and vertical alignment of the button image+text in the format "horizontal:vertical". When not defined TABSALIGNMENT is used.
+**EXTRAALIGNMENTid**: horizontal and vertical alignment of the button image+text in the format "horizontal:vertical". When not defined TABSALIGNMENT is used.
 
-**EXTRAIMAGE*****id***: image name to be used in the respective button.
-Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name. n starts at 0.
+**EXTRAIMAGEid**: image name to be used in the respective button.
+Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](../elem/iup_image.md).
 
-**EXTRAIMAGEPRESS*****id***: same as EXTRAIMAGE*id* when in pressed state.
-If not defined EXTRAIMAGE*id* is used.
+**EXTRAIMAGEPRESSid**: same as EXTRAIMAGEid when in pressed state.
+If not defined EXTRAIMAGEid is used.
 
-**EXTRAIMAGEHIGHLIGHT*****id***: same as EXTRAIMAGE*id* when in highlight state.
-If not defined EXTRAIMAGE*id* is used.
+**EXTRAIMAGEHIGHLIGHTid**: same as EXTRAIMAGEid when in highlight state.
+If not defined EXTRAIMAGEid is used.
 
-**EXTRAIMAGEINACTIVE*****id***: same as EXTRAIMAGE*id* when in inactive state.
-If not defined EXTRAIMAGE*id* is used and its colors will be replaced by a modified version creating the disabled effect.
+**EXTRAIMAGEINACTIVEid**: same as EXTRAIMAGEid when in inactive state.
+If not defined EXTRAIMAGEid is used and its colors will be replaced by a modified version creating the disabled effect.
 
-**EXTRATIP*id***: TIP of the button.
+**EXTRATIPid**: TIP of the button.
 
-**EXTRATOGGLE*id***: enabled the toggle behavior. Default: NO.
+**EXTRATOGGLEid**: enables the toggle behavior. Default: "NO".
 
-**EXTRAVALUE*****id***: Toggle's state. Values can be "ON" or "OFF".
+**EXTRAVALUEid**: Toggle's state. Values can be "ON" or "OFF".
 Default: "OFF".
 
 #### Expand Button Attributes (non-inheritable)
@@ -260,7 +260,7 @@ When collapsed a click on a tab causes that tab to be temporarily expanded until
 
 **EXPANDBUTTONPOS** (read-only): position of the expand button in the extra buttons.
 
-**EXPANDBUTTONSTATE**: The expand button is on expand state. Can be YES or NO. Default: YES.
+**EXPANDBUTTONSTATE**: The expand button is on expand state. Can be YES or NO. Default: "YES".
 
 #### Current Tab (non-inheritable)
 
@@ -286,11 +286,11 @@ The value passed must be the handle of a child contained in the tabs.
 [FLOATING](../attrib/iup_floating.md) (non-inheritable) **(at children only)**: If a child has FLOATING=YES then its size and position will be ignored by the layout processing.
 Default: "NO".
 
-**TABTITLE** (non-inheritable) **(at children only)**: Same as TABTITLEn but set in each child.
-Works only if set before the child is added to the tabs. It is not updated if TABTITLEn is changed.
+**TABTITLE** (non-inheritable) **(at children only)**: Same as TABTITLEid but set in each child.
+Works only if set before the child is added to the tabs. It is not updated if TABTITLEid is changed.
 
-**TABIMAGE** (non-inheritable) **(at children only)**: Same as **TABIMAGEn** but set in each child.
-Works only if set before the child is added to the tabs. It is not updated if TABIMAGEn is changed.
+**TABIMAGE** (non-inheritable) **(at children only)**: Same as **TABIMAGEid** but set in each child.
+Works only if set before the child is added to the tabs. It is not updated if TABIMAGEid is changed.
 
 ### Callbacks
 
@@ -302,7 +302,7 @@ In FLAT_BUTTON_CB and FLAT_MOTION_CB use [IupConvertXYToPos](../func/iup_convert
 
 **TABCHANGE_CB**: Callback called when the user changes the current tab.
 
-int function(Ihandle* ih, Ihandle* new_tab, Ihandle* old_tab);
+    int function(Ihandle* ih, Ihandle* new_tab, Ihandle* old_tab);
 
 **ih**: identifier of the element that activated the event.\
 **new_tab**: the new tab selected by the user\
@@ -313,7 +313,7 @@ int function(Ihandle* ih, Ihandle* new_tab, Ihandle* old_tab);
 **TABCHANGEPOS_CB**: Callback called when the user changes the current tab.
 Called only when TABCHANGE_CB is not defined.
 
-int function(Ihandle* ih, int new_pos, int old_pos);
+    int function(Ihandle* ih, int new_pos, int old_pos);
 
 **ih**: identifier of the element that activated the event.\
 **new_pos**: the new tab position selected by the user\
@@ -324,7 +324,7 @@ int function(Ihandle* ih, int new_pos, int old_pos);
 **TABCLOSE_CB**: Callback called when the user clicks on the close button.
 Called only when SHOWCLOSE=YES.
 
-int function(Ihandle* ih, int pos);
+    int function(Ihandle* ih, int pos);
 
 **ih**: identifier of the element that activated the event.\
 **pos**: the tab position
@@ -335,7 +335,7 @@ If IUP_IGNORE is returned does nothing.
 
 **RIGHTCLICK_CB**: Callback called when the user clicks on some tab using the right mouse button.
 
-int function(Ihandle* ih, int pos);
+    int function(Ihandle* ih, int pos);
 
 **ih**: identifier of the element that activated the event.\
 **pos**: the tab position
@@ -344,7 +344,7 @@ int function(Ihandle* ih, int pos);
 
     int function(Ihandle* ih, int button, int pressed);
 
-**ih**: identifies the element that activated the event.\
+**ih**: identifier of the element that activated the event.\
 **button**: identifies the extra button.
 Can be 1, 2, 3, 4, and so on. (this is not the same as BUTTON_CB)\
 **pressed**: indicates the state of the button (1=pressed, 0=released)
@@ -352,7 +352,7 @@ Can be 1, 2, 3, 4, and so on. (this is not the same as BUTTON_CB)\
 **REORDER_CB**: Callback called when the user reorders a tab by dragging it to a new position.
 Called only when ALLOWREORDER=YES.
 
-int function(Ihandle* ih, int old_pos, int new_pos);
+    int function(Ihandle* ih, int old_pos, int new_pos);
 
 **ih**: identifier of the element that activated the event.\
 **old_pos**: the original tab position before the reorder (0-based, as in VALUEPOS).\
@@ -370,11 +370,11 @@ The Tabs can be created with no children and be dynamic filled using [IupAppend]
 
 Its children automatically receive a name when the child is appended or inserted into the tabs.
 
-**IMPORTANT**: Similar to **IupZbox**, **IupFlatTabs** does depends on the VISIBLE attribute.
-To proper functioning we strongly recommend using a [IupBackgroundBox](../elem/iup_backgroundbox.md) for each child.
+Similar to **IupZbox**, **IupFlatTabs** depends on the VISIBLE attribute.
+Use an [IupBackgroundBox](../elem/iup_backgroundbox.md) for each child.
 
-When you change the current tab, the focus is usually not changed.
-If you want to control the focus behavior, call **IupSetFocus** in the TABCHANGE_CB callback.
+Changing the current tab usually does not change the focus.
+To control the focus, call **IupSetFocus** in the TABCHANGE_CB callback.
 
 When flattabs has the focus, the current tab can be changed using the left and right arrow keys.
 

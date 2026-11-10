@@ -3,7 +3,7 @@
 Creates an interface element that is a label, but it does not have native decorations.
 Its visual presentation can contain a text and/or an image.
 
-It behaves just like an [IupLabel](../elem/iup_label.md), but since it is not a native control, it has more flexibility for additional options.
+It behaves just like an [IupLabel](../elem/iup_label.md), but it is not a native control.
 
 It inherits from [IupCanvas](../elem/iup_canvas.md).
 
@@ -35,7 +35,7 @@ Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/
 See also [IupImage](../elem/iup_image.md).
 
 **BACKIMAGEZOOM** (non-inheritable): if set, the back image will be zoomed to occupy the full background.
-Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
+Aspect ratio is NOT preserved. Can be YES or NO. Default: "NO".
 
 **BORDER** (creation-only): the default value is "NO". This is the **IupCanvas** border.
 
@@ -46,7 +46,7 @@ Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute DLGFGCOLOR.
 
 **FITTOBACKIMAGE** (non-inheritable): enable the natural size to be computed from the BACKIMAGE.
-If BACKIMAGE is not defined will be ignored. Can be YES or NO. Default: NO.
+If BACKIMAGE is not defined will be ignored. Can be YES or NO. Default: "NO".
 
 **FRONTIMAGE** (non-inheritable): image name to be used as foreground.
 The foreground image is drawn in the same position as the background, but it is drawn at last.
@@ -65,10 +65,10 @@ If it is not defined then the IMAGE is used and its colors will be replaced by a
 **IMAGETINT** (non-inheritable): color "R G B" used to draw the image recolored, keeping its alpha channel. "YES" uses the current text color; "NO" draws the image unchanged. Default: "NO".
 
 **IMAGEPOSITION** (non-inheritable): Position of the image relative to the text when both are displayed.
-Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
+Can be: LEFT, RIGHT, TOP, BOTTOM. Default: "LEFT".
 
 **PADDING**: internal margin. Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
-Default value: "0x0". Alignment does not include the padding area.
+Default: "0x0". Alignment does not include the padding area.
 
 **CPADDING**: same as PADDING but using the units of the **SIZE** attribute.
 It will actually set the PADDING attribute.
@@ -82,16 +82,16 @@ It will actually set the SPACING attribute.
 The '\n' character is accepted for line change.
 
 **TEXTALIGNMENT** (non-inheritable): Horizontal text alignment for multiple lines.
-Can be: ALEFT, ARIGHT or ACENTER. Default: ALEFT.
+Can be: ALEFT, ARIGHT or ACENTER. Default: "ALEFT".
 
 **TEXTWRAP** (non-inheritable): For single line texts if the text is larger than its box, the line will be automatically broken in multiple lines.
-Notice that this is done internally by the system, the element natural size will still use only a single line.
+The element natural size still uses only a single line.
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
 It will be ignored when TEXTWRAP=YES.
 
-  **TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
+**TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
 
 > 

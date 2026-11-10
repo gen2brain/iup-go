@@ -1,9 +1,8 @@
 ## FORMATTING (non-inheritable)
 
 When enabled, allows the use of text formatting attributes. Only works when MULTILINE=YES.
-Default: NO.
 
-On GTK and GTK 4 it is always enabled when MULTILINE=YES, regardless of this attribute.
+In GTK and GTK 4, it is always enabled when MULTILINE=YES, regardless of this attribute.
 
 Not supported in Motif.
 
@@ -40,7 +39,7 @@ Removes the formatting of the current selection if YES or NULL, and from all tex
 The format tag element is a simple [IupUser](../elem/iup_user.md) element with some known attributes that will be interpreted when the tag is updated in the native system.
 
 The formatting depends on the existing text, so if VALUE attribute is set, all formatting is lost.
-You must set it again for the new text.
+It must be set again for the new text.
 
 If the FONT attribute of the **IupText** is set, then it will affect the format of all characters in the text.
 
@@ -68,7 +67,7 @@ Setting these attributes here will not change the current setting in **IupText**
 Not supported in FLTK and Haiku.
 
 **INDENT**: paragraph indentation, the distance between the margin and the paragraph.
-In FLTK and Haiku it is inserted as leading spaces that become part of VALUE.
+In FLTK and Haiku, it is inserted as leading spaces that become part of VALUE.
 
 **INDENTRIGHT**, **INDENTOFFSET**: the right indentation, and the indentation of the second and subsequent lines relative to the first line. Used only when INDENT is set.
 Not supported in iOS, FLTK, Haiku, Android and WebAssembly. INDENTOFFSET is also not supported in EFL.
@@ -79,7 +78,7 @@ Not supported in FLTK and Haiku.
 
 **NUMBERING**: Can be BULLET (bullet symbol), ARABIC (arabic numbers - 1,2,3...), LCLETTER (lower case letters - a,b,c...), UCLETTER (upper case letters - A,B,C...), LCROMAN (lower case Roman numerals - i,ii,iii...), UCROMAN (upper case Roman numerals - I,II,III...) and NONE.
 Default: NONE.
-In FLTK and Haiku the bullet or number is inserted as text that becomes part of VALUE.
+In FLTK and Haiku, the bullet or number is inserted as text that becomes part of VALUE.
 
 **NUMBERINGSTYLE**: Can be RIGHTPARENTHESIS "a)", PARENTHESES "(a)", PERIOD "a.", NONUMBER (it will skip the numbering or bullet for the item) and NONE "".
 Default: NONE.
@@ -87,10 +86,10 @@ Default: NONE.
 **NUMBERINGTAB**: Minimum distance from a paragraph numbering or bullet to the paragraph text.
 Not supported in FLTK, Android, WebAssembly, iOS and Haiku.
 
-**SPACEAFTER**: distance left empty above the paragraph.
+**SPACEAFTER**: distance left empty below the paragraph.
 Not supported in FLTK, EFL, Android and Haiku.
 
-**SPACEBEFORE**: distance left empty below the paragraph.
+**SPACEBEFORE**: distance left empty above the paragraph.
 Not supported in FLTK, EFL, Android and Haiku.
 
 **TABSARRAY**: a sequence of tab positions and alignment up to 32 tabs.
@@ -103,7 +102,7 @@ Not supported in FLTK, EFL, Android, WebAssembly and Haiku.
 
 **BGCOLOR**: string containing a color in the format "rrr ggg bbb" for the background of the text.
 
-**DISABLED** [Windows and macOS Only]: Can be YES or NO. Default NO. Set the visual appearance to disabled.
+**DISABLED** [Windows and macOS Only]: Can be YES or NO. Default: "NO". Set the visual appearance to disabled.
 
 **FGCOLOR**: string containing a color in the format "rrr ggg bbb" for the text.
 
@@ -120,7 +119,7 @@ Use WIDTH and HEIGHT to set the display size in pixels, both default to the natu
 The image occupies a single character position in the VALUE string and takes the paragraph formatting of that position.
 Not supported in Motif and FLTK.
 
-**ITALIC**: Can be YES or NO. Default NO.
+**ITALIC**: Can be YES or NO. Default: "NO".
 
 **LANGUAGE** [GTK, GTK 4 and EFL Only]: A text with a description of the text language.
 The same value can be used in the "SYSTEMLANGUAGE" global attribute.
@@ -129,21 +128,20 @@ The same value can be used in the "SYSTEMLANGUAGE" global attribute.
 Unless FGCOLOR or UNDERLINE are also set, the text is shown in blue and underlined.
 
 **RISE**: the distance, positive or negative from the base line.
-Can also use the values SUPERSCRIPT and SUBSCRIPT, but this values will also reduce the size of the font.
+Can also use the values SUPERSCRIPT and SUBSCRIPT, but these values also reduce the size of the font.
 Not supported in FLTK, EFL and Haiku.
 
-**SMALLCAPS**: Can be YES or NO. Default NO. (Does not work always, depends on the font)
+**SMALLCAPS**: Can be YES or NO. Default: "NO". (Does not work always, depends on the font)
 Not supported in Win32, FLTK, EFL, Android and Haiku.
 
-**PROTECTED**: Can be YES or NO. Default NO. When set to YES the selected text cannot be edited.
-Supported in GTK, GTK 4, Qt, Win32 and WinUI.
+**PROTECTED** [GTK, GTK 4, Qt, Win32 and WinUI Only]: Can be YES or NO. Default: "NO". When set to YES the selected text cannot be edited.
 
 **STRETCH** [GTK, GTK 4 and EFL Only]: Can be EXTRA_CONDENSED, CONDENSED, SEMI_CONDENSED, NORMAL, SEMI_EXPANDED, EXPANDED and EXTRA_EXPANDED.
-Default NORMAL. (Does not work always, depends on the font)
+Default: "NORMAL". (Does not work always, depends on the font)
 
-**STRIKEOUT**: Can be YES or NO. Default NO.
+**STRIKEOUT**: Can be YES or NO. Default: "NO".
 
-**UNDERLINE**: Can be SINGLE, DOUBLE, DOTTED or NONE. Default NONE.
+**UNDERLINE**: Can be SINGLE, DOUBLE, DOTTED or NONE. Default: "NONE".
 
 **WEIGHT**: Can be EXTRALIGHT, LIGHT, NORMAL, SEMIBOLD, BOLD, EXTRABOLD and HEAVY. Default: NORMAL.
 

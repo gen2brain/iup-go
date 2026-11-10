@@ -6,7 +6,7 @@ It inherits from [IupCanvas](../elem/iup_canvas.md).
 
 ### Creation
 
-    Ihandle* IupSeparator();
+    Ihandle* IupSeparator(void);
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 

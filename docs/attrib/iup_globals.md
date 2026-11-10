@@ -4,7 +4,7 @@ Global attributes are not associated with any particular element.
 They represent and affect the global behavior of the toolkit.
 
 To access global attributes, use the [IupGetGlobal](../func/iup_getglobal.md) and [IupSetGlobal](../func/iup_setglobal.md) functions.
-In C, the functions [IupGetAttribute](../func/iup_getattribute.md) and [IupSetAttribute](../func/iup_setattribute.md) can also be used if you set the element handle to NULL.
+In C, the functions [IupGetAttribute](../func/iup_getattribute.md) and [IupSetAttribute](../func/iup_setattribute.md) can also be used with a NULL element handle.
 
 ------------------------------------------------------------------------
 
@@ -39,24 +39,23 @@ Available drivers: "Win32", "WinUI", "GTK", "GTK4", "Motif", "Qt", "QML", "FLTK"
 ### APPID
 
 Application identifier used by the desktop environment.
-In GTK/Wayland, it maps to the XDG desktop file ID.
 Also used by [IupConfig](../func/iup_config.md) as a last fallback when neither APP_NAME nor APPNAME is set.
-On X11 it is the WM_CLASS instance name, and on Wayland the application id.
+In X11, it is the WM_CLASS instance name, and in Wayland the application id (the XDG desktop file ID).
 Can be set once. Used by the desktop environment in GTK, GTK 4, Qt, QML, FLTK, EFL and Motif; only stored in the other drivers.
-On Haiku the `BApplication` MIME signature is the one stored in the executable, "application/x-vnd.iup-Application" when it has none.
+In Haiku, the `BApplication` MIME signature is the one stored in the executable, "application/x-vnd.iup-Application" when it has none.
 When not set, GTK, GTK 4, Qt, QML, FLTK, EFL and Motif use the executable name.
-On Android it is read-only and reflects the app's manifest application id.
-On iOS, it is read-only and reflects `CFBundleIdentifier` from the app's Info.plist.
+In Android, it is read-only and reflects the app's manifest application id.
+In iOS, it is read-only and reflects `CFBundleIdentifier` from the app's Info.plist.
 
 ### APPNAME
 
 Application name used by the system.
 In Windows, it is used for the taskbar and tray. In macOS, it is used for the dock.
 Also used by [IupConfig](../func/iup_config.md) as a fallback when APP_NAME is not set (APPNAME is checked first, then APPID).
-On X11 it is the WM_CLASS class name, except in GTK 4, which always uses the instance name, and in FLTK, which uses the capitalized instance name.
+In X11, it is the WM_CLASS class name, except in GTK 4, which always uses the instance name, and in FLTK, which uses the capitalized instance name.
 Used by the system in Win32, WinUI, macOS, Qt, QML, GTK, EFL and Motif; only stored in the other drivers.
-On Android it is read-only and reflects the app's manifest label.
-On iOS, it is read-only and reflects `CFBundleDisplayName` (or `CFBundleName` if not set) from the app's Info.plist.
+In Android, it is read-only and reflects the app's manifest label.
+In iOS, it is read-only and reflects `CFBundleDisplayName` (or `CFBundleName` if not set) from the app's Info.plist.
 
 ### ICON
 
@@ -107,29 +106,25 @@ To use UTF-8 file names, set this attribute to YES. Default: NO.
 
 The main places affected by this attribute are **IupFileDlg** attributes, such as VALUE, FILE and DIRECTORY, and the DROPFILES_CB callback.
 
-Notice that IUP use the **fopen** based functions to read and write files.
-In Windows **fopen** expects the filename string in the **ANSI** encoding by default.
-If your filename, including the path, has characters that cannot be converted to ANSI, **fopen** will fail to open the file.
-In Windows, we could use **_wfopen** combined with UTF-8, but this is a Microsoft only function and most of **fopen** usage in these libraries are in portable modules.
+IUP uses the **fopen** based functions to read and write files.
+In Windows, **fopen** expects the file name in the **ANSI** encoding by default.
+If the file name, including the path, has characters that cannot be converted to ANSI, **fopen** fails to open the file.
 *This is an IUP limitation in Windows.*
 
-The simple workaround is to not use special characters in folders or files name in Windows...
-Legacy applications will also have the same problem.
+Avoid special characters in folder and file names in Windows.
 
 Another option is to call:
 
      setlocale(LC_ALL, ".UTF8"); 
 
-But it will work for **fopen** only in Visual Studio 2017 or newer Microsoft compilers (**setlocale** will return NULL on other compilers).
-**fopen** will successfully open the file if the filename is a UTF-8 string with special characters.
-So you will be able to set both UTF8MODE and UTF8MODE_FILE to YES.
+It works for **fopen** only with Visual Studio 2017 or newer Microsoft compilers (**setlocale** returns NULL with other compilers).
+**fopen** then opens UTF-8 file names with special characters, so both UTF8MODE and UTF8MODE_FILE can be set to YES.
 
-If you decide to use this feature, another interesting option is to set the console code page to UTF-8 executing "chcp 65001" on the command line.
-This will allow your **printf** output to be properly displayed when using UTF-8 strings.
-This feature actually works for all Microsoft compilers in Windows, and for MingW, even when **setlocale** returns NULL.
-Notice that some font packages must be installed for this to fully work for all characters (for instance, Chinese, Japanese and Korean, along with some symbols too).
+Setting the console code page to UTF-8 with "chcp 65001" on the command line displays **printf** output of UTF-8 strings properly.
+It works with all Microsoft compilers in Windows, and with MinGW, even when **setlocale** returns NULL.
+Some font packages must be installed for all characters to display (for instance, Chinese, Japanese and Korean, and some symbols).
 
-As a complement, from **fopen** documentation in MSDN: "You can use either forward slashes (/) or backslashes (\\) as the directory separators in a path".
+From the **fopen** documentation in MSDN: "You can use either forward slashes (/) or backslashes (\\) as the directory separators in a path".
 
 ### DEFAULTPRECISION
 
@@ -144,7 +139,7 @@ Can be "." or "," only. Default uses the one defined by the system locale.
 ### SB_BGCOLOR [GTK, GTK 4 and Motif Only]
 
 By default, the scrollbars will not be affected by the BGCOLOR in native controls.
-If set to YES, the system will try to render scrollbars in the same color of the BGCOLOR, but notice that this may affect scrollbars visibility.
+If set to YES, the system will try to render scrollbars in the same color of the BGCOLOR, which may affect scrollbars visibility.
 This affects **IupCanvas**, **IupList**, **IupText** and **IupTree**.
 
 ### SHOWMENUIMAGES
@@ -196,7 +191,7 @@ Forces the 24x24 default images in [IupFlatTree](../ctrl/iup_flattree.md). Defau
 ### PROCESSWINDOWSGHOSTING [Windows Only]
 
 If set to NO will disable the window ghosting feature for the duration of the process, cannot be enabled again.
-When disabled, the application dialogs cannot be moved or resized while application that is not responding, also the "Not Responding" display at the application tittle bar will not be done anymore.
+When disabled, the application dialogs cannot be moved or resized while the application is not responding, and "Not Responding" is not shown in the title bar.
 
 ### SINGLEINSTANCE
 
@@ -205,33 +200,33 @@ The first dialog that has a COPYDATA_CB callback will receive the command line o
 When consulted returns NULL if inside the second instance.
 So usually in the application initialization after **IupOpen**, set SINGLEINSTANCE and then consult its value, if NULL abort the second instance by calling **IupClose** and returning from *main*.
 
-In Windows (Win32 and WinUI) uses a named mutex for detection and WM_COPYDATA for communication. In Linux/Unix (GTK, GTK4, Qt, QML, Motif, FLTK, EFL) uses D-Bus session bus name ownership. In macOS uses CFMessagePort. In Haiku uses a named-port rendezvous.
-On Android single instance is enforced by the Activity launchMode in the manifest, so the SINGLEINSTANCE attribute and COPYDATA_CB are not implemented. Not supported in iOS and WebAssembly.
+In Windows (Win32 and WinUI), it uses a named mutex for detection and WM_COPYDATA for communication. In Linux/Unix (GTK, GTK4, Qt, QML, Motif, FLTK, EFL), it uses D-Bus session bus name ownership. In macOS, it uses CFMessagePort. In Haiku, it uses a named-port rendezvous.
+In Android, single instance is enforced by the Activity launchMode in the manifest, so the SINGLEINSTANCE attribute and COPYDATA_CB are not implemented. Not supported in iOS and WebAssembly.
 
 ### NETWORK [Android and iOS Only]
 
 Network used by the application connections. Can be "DEFAULT", "CELLULAR" or "WIFI". Default: "DEFAULT".
-In Android sockets created through the C library use that network while it is available.
+In Android, sockets created through the C library use that network while it is available.
 With "CELLULAR" mobile data stays connected while Wi-Fi is the default network.
-In iOS it only selects the network returned by NETWORKHANDLE.
+In iOS, it only selects the network returned by NETWORKHANDLE.
 Sockets created with direct system calls, and all sockets in iOS, must be bound to NETWORKHANDLE.
 The application must declare `ACCESS_NETWORK_STATE` and `CHANGE_NETWORK_STATE` in the Android manifest.
 
 ### NETWORKHANDLE [Android and iOS Only] (read-only)
 
 Identifier of the network selected with NETWORK while it is available, NULL otherwise.
-In Android it is the net_handle_t for android_setsocknetwork. In iOS it is the interface index for the IP_BOUND_IF and IPV6_BOUND_IF socket options.
+In Android, it is the net_handle_t for android_setsocknetwork. In iOS, it is the interface index for the IP_BOUND_IF and IPV6_BOUND_IF socket options.
 
 ### KEEPAWAKE
 
 When "YES" the screen saver and display sleep are inhibited. Possible values: "YES" or "NO". Default: "NO".
 An IupVideo playing a video also inhibits them, independently of KEEPAWAKE.
-In Linux and FreeBSD this requires the org.freedesktop.ScreenSaver D-Bus service or an X11 session.
+In Linux and FreeBSD, this requires the org.freedesktop.ScreenSaver D-Bus service or an X11 session.
 
 ### HAPTIC [Android and iOS Only] (write-only)
 
 Plays a haptic feedback. Can be "LIGHT", "MEDIUM", "HEAVY" or "SELECTION".
-In Android nothing is played when the system touch feedback is off.
+In Android, nothing is played when the system touch feedback is off.
 The application must declare `VIBRATE` in the Android manifest.
 
 ## System Mouse and Keyboard
@@ -241,8 +236,8 @@ The application must declare `VIBRATE` in the Android manifest.
 Controls and returns the cursor position in absolute coordinates relative to the origin of the main screen.
 The origin of the main screen is the top-left corner of its work area, the area not covered by task bars, docks, panels and the macOS menu bar.
 Accept values in the format "X**x**Y" (in C "%dx%d), example "200x200".
-In GTK and Motif also generates mouse motion messages.
-On Wayland it returns the position relative to the top-left corner of the contents of the dialog under the cursor, below the title bar.
+In GTK and Motif, it also generates mouse motion messages.
+In Wayland, it returns the position relative to the top-left corner of the contents of the dialog under the cursor, below the title bar.
 
 ### MOUSEBUTTON (write-only)
 
@@ -251,9 +246,9 @@ The position is in absolute coordinates relative to the top-left corner of the s
 Accept values in the format "X**x**Y button state" (in C "%dx%d %c %d"), example "200x200 1 1".
 **button** can be one of the IUP_BUTTON1, ... definitions.
 **state** can be 2=double click, 1=pressed, 0=released, or -1=motion. The cursor position is always updated.
-In Windows button can be 'W' and state=delta, so a wheel button scroll is simulated.
+In Windows, button can be 'W' and state=delta, so a wheel button scroll is simulated.
 
-**IMPORTANT**: **not fully working**. In Windows and GTK, menu items are not activated.
+Not fully working. In Windows and GTK, menu items are not activated.
 Although submenus open, menu items even in the menu bar are not activated.
 In Windows, inside the **IupFileDlg** dialog, clicks in the folder navigation list are not correctly interpreted.
 
@@ -288,7 +283,7 @@ See the [Keyboard Codes](iup_keyboard_codes.md) table for a list of the possible
 ### AUTOREPEAT [Motif, FLTK and EFL Only]
 
 Turns on/off ("YES" or "NO") the auto-repeat of keyboard keys in the whole system.
-It May be used as an optimization in high performance applications.
+It may be used as an optimization in high performance applications.
 
 ### SHORTCUTKEY [Haiku Only] (read-only)
 
@@ -297,14 +292,15 @@ Primary shortcut modifier from the active Haiku keymap: "CTRL" (Windows-style) o
 ### INPUTCALLBACKS
 
 Turn on/off ("YES" or "NO") the global callbacks used to intercept global mouse and keyboard events.
-The callbacks must be set using the [IupSetFunction](../func/iup_setfunction.md) function using the following names: **GLOBAL**[**KEYPRESS_CB**](../call/iup_keypress_cb.md), **GLOBAL**[**MOTION_CB**](../call/iup_motion_cb.md), **GLOBAL**[**BUTTON_CB**](../call/iup_button_cb.md) and **GLOBAL**[**WHEEL_CB**](../call/iup_wheel_cb.md) (Windows Only).
+The callbacks must be set using the [IupSetFunction](../func/iup_setfunction.md) function using the following names: **GLOBAL**[**KEYPRESS_CB**](../call/iup_keypress_cb.md), **GLOBAL**[**MOTION_CB**](../call/iup_motion_cb.md), **GLOBAL**[**BUTTON_CB**](../call/iup_button_cb.md) and **GLOBAL**[**WHEEL_CB**](../call/iup_wheel_cb.md) (not supported in GTK, Motif and Android).
 Their parameters are the same as the standard callbacks, but without the **Ihandle*** parameter.
+Not supported in GNUstep, iOS and WebAssembly.
 
 ## System Information
 
 ### SYSTEM (read-only)
 
-Informs the current operating system. On UNIX, it is equivalent to the command "uname -s" (sysname). Some known names:
+Informs the current operating system. In UNIX, it is equivalent to the command "uname -s" (sysname). Some known names:
 
 > - "macOS"
 > - "iOS"
@@ -329,21 +325,21 @@ Informs the current operating system. On UNIX, it is equivalent to the command "
 
 Informs the current operating system version number.
 
-On UNIX, it is the kernel release, the same as the command "uname -r".
-On Windows, it is the system version number, e.g. "10.0.26200", followed by the service pack when there is one.
-On macOS and iOS, it is the system version, e.g. "26.1".
-On Android, it is the Android release, e.g. "15".
+In UNIX, it is the kernel release, the same as the command "uname -r".
+In Windows, it is the system version number, e.g. "10.0.26200", followed by the service pack when there is one.
+In macOS and iOS, it is the system version, e.g. "26.1".
+In Android, it is the Android release, e.g. "15".
 In WebAssembly, it is the browser name and version.
 
 ### SYSTEMLANGUAGE (read-only)
 
 Returns the user's preferred user interface language as a BCP 47 tag, like "en-US", "pt-BR" or "sr-Latn-RS".
 Returns NULL when the system has no language, like the "C" locale on Unix.
-On Linux and BSD it is taken from the LANGUAGE, LC_ALL, LC_MESSAGES or LANG environment variables, the first one that is set.
+In Linux and BSD, it is taken from the LANGUAGE, LC_ALL, LC_MESSAGES or LANG environment variables, the first one that is set.
 
 ### SYSTEMLOCALE (read-only)
 
-Returns the character encoding used by the C runtime, like "UTF-8". On Windows it is the ANSI code page, like "CP1252", or "UTF-8" when that is the code page.
+Returns the character encoding used by the C runtime, like "UTF-8". In Windows, it is the ANSI code page, like "CP1252", or "UTF-8" when that is the code page.
 
 ### FONTLIST (read-only)
 
@@ -359,7 +355,7 @@ Drivers whose toolkit does not expose that information compare the advance of "W
 
 Returns the width of the vertical scrollbar (the same as the height of the horizontal scrollbar).
 
-### COMCTL32VER6 (read-only) [Windows Only]
+### COMCTL32VER6 [Windows Only] (read-only)
 
 Returns YES or NO if the Windows common controls are using Visual Styles or not.
 
@@ -374,7 +370,7 @@ Can be: "SYSTEM" (follow the system setting), "LIGHT" or "DARK". Default: "SYSTE
 
 Re-seeds the global palette (DLGBGCOLOR, TXTBGCOLOR, MENUBGCOLOR and their foregrounds), applies the appearance to the native controls and re-applies the palette to every element that did not set its own BGCOLOR or FGCOLOR. Can be set before or after IupOpen. Set it before creating dialogs for a fully consistent result, some native controls pick their theme when they are created.
 
-In Win32 the native file, font and month-calendar dialogs are not affected. In Qt it needs Qt 6.8 or newer for the platform theme, older versions only get the palette. In Qt a style with a "-dark" variant, such as Adwaita, switches to the variant that matches. In GTK and GTK 4 it selects the dark variant of the current theme, so a theme without one keeps its colors. In EFL and GNUstep only the IUP palette follows it, the widgets keep the toolkit theme. In Haiku the controls and menus of the IUP dialogs draw with the palette; the native dialogs, tooltips and the window frame keep the system colors.
+In Win32, the native file, font and month-calendar dialogs are not affected. In Qt, it needs Qt 6.8 or newer for the platform theme, older versions only get the palette. In Qt, a style with a "-dark" variant, such as Adwaita, switches to the variant that matches. In GTK and GTK 4, it selects the dark variant of the current theme, so a theme without one keeps its colors. In EFL and GNUstep, only the IUP palette follows it, the widgets keep the toolkit theme. In Haiku, the controls and menus of the IUP dialogs draw with the palette; the native dialogs, tooltips and the window frame keep the system colors.
 In GTK 3, Motif, FLTK, EFL and GNUstep on Linux and BSD, SYSTEM follows the color-scheme setting of the XDG Desktop Portal when the portal reports one.
 
 The [dialog](../dlg/iup_dialog.md) APPEARANCECHANGED_CB is called when the appearance changes, whether from a live system switch or from this attribute.
@@ -392,7 +388,7 @@ Not available in WebAssembly.
 ### TOUCHREADY (read-only)
 
 Informs if a touch input device is available. Always returns YES or NO.
-On Windows and WinUI it reflects the presence of a touch digitizer; on Android and iOS it is always YES.
+In Windows and WinUI, it reflects the presence of a touch digitizer; in Android and iOS, it is always YES.
 The other drivers do not detect touch and report NO.
 
 ### USERNAME (read-only)
@@ -404,7 +400,7 @@ Not available in WebAssembly.
 
 Returns the filename of the executable with full path.
 Depending on how the program is executed the argv[0] not always has the full executable path.
-On Android it is the APK path, on iOS the bundle executable. Not available in WebAssembly.
+In Android, it is the APK path, in iOS the bundle executable. Not available in WebAssembly.
 
 ### ARGV0 (read-only)
 
@@ -439,7 +435,7 @@ CACHEDIR is clearable storage; DATADIR is persistent; CONFIGDIR holds settings; 
 | Haiku                        | `B_USER_CACHE_DIRECTORY` | `B_USER_DATA_DIRECTORY`         | `B_USER_SETTINGS_DIRECTORY` | `B_SYSTEM_TEMP_DIRECTORY` |
 | WebAssembly                  | `$HOME/.cache`           | `$HOME/.local/share`            | `$HOME/.config`             | `/tmp`                    |
 
-In WebAssembly the home directory is backed by IndexedDB, so CACHEDIR, DATADIR and CONFIGDIR survive a page reload. TMPDIR is in memory and does not.
+In WebAssembly, the home directory is backed by IndexedDB, so CACHEDIR, DATADIR and CONFIGDIR survive a page reload. TMPDIR is in memory and does not.
 
 ### RESOURCEDIR (read-only)
 
@@ -508,7 +504,7 @@ Returns the version of the run time Motif.
 
 ### MOTIFNUMBER (read-only) [Motif Only]
 
-Returns the number of the Motif Version if full form, e.x: 2.2.3 = "2203".
+Returns the number of the Motif Version if full form, for example 2.2.3 = "2203".
 
 ### QTVERSION (read-only) [Qt and QML Only]
 
@@ -529,7 +525,7 @@ Sets the Qt widget style. Can be set before or after creating dialogs.
 Value is any key from `QStyleFactory::keys()`, e.g. `"Fusion"` or an
 installed style plugin. Unknown values are ignored.
 Can also be set via the environment variable `QT_STYLE_OVERRIDE`.
-In QML the value is a Qt Quick Controls style name, default `"Fusion"`, set only before the first control is created.
+In QML, the value is a Qt Quick Controls style name, default `"Fusion"`, set only before the first control is created.
 
 When read, returns the name of the active style.
 
@@ -586,7 +582,7 @@ When read, returns the current acceleration preference string.
 ### EFLENGINE (read-only) [EFL Only]
 
 Returns the name of the actual EFL rendering engine in use (e.g. `"opengl_x11"`, `"software_x11"`, `"wayland_egl"`, `"wayland_shm"`).
-Only available after a dialog has been created, since the engine is selected at window creation time.
+Only available after a dialog has been created.
 
 ### GNUSTEPTHEME [GNUstep Only]
 
@@ -617,8 +613,8 @@ String in the "*width*x*height*" format.
 ### SCREENSIZE (read-only)
 
 Returns the screen size in pixels available for dialogs, i.e., not including menu bars, task bars, etc.
-In X11 it is the `_NET_WORKAREA` of the window manager, or the same as FULLSIZE when the window manager does not set it.
-On Wayland it is the same as FULLSIZE.
+In X11, it is the `_NET_WORKAREA` of the window manager, or the same as FULLSIZE when the window manager does not set it.
+In Wayland, it is the same as FULLSIZE.
 The main screen size does not include additional monitors.
 
 String in the "*width*x*height*" format.
@@ -635,7 +631,7 @@ Returns a real value with the screen resolution in pixels per inch (same as dots
 
 Returns a real value with the number of screen pixels in a logical unit of the main screen: 1 at 100% scaling, 2 at 200%.
 An image created with this number of pixels per logical unit and [SCALE](../elem/iup_image.md) set to it is shown without resampling.
-In Motif it is always 1.
+In Motif, it is always 1.
 
 ### TRUECOLORCANVAS (read-only)
 
@@ -644,7 +640,7 @@ Returns "YES" or "NO". Useful in Motif.
 
 ### DWM_COMPOSITION (read-only) [Windows Only]
 
-Returns the Desktop Window Manager Composition flag. Returns "YES" or "NO". Windows only.
+Returns the Desktop Window Manager Composition flag. Returns "YES" or "NO".
 Returns NULL if not supported.
 
 ### VIRTUALSCREEN (read-only)
@@ -736,21 +732,19 @@ But it can be used for drawing selected areas in custom controls.
 
 ### LINKFGCOLOR
 
-The default foreground color for linked text. In GTK and Motif is "0 0 238".
+The default foreground color for linked text. In GTK and Motif, it is "0 0 238".
 
 ### ACCENTCOLOR
 
-The accent color. Defaults to the system accent color, the user-selected theme accent color
-used for primary buttons, toggles, progress bars, focus indicators, and similar
-UI elements. Unlike TXTHLCOLOR (which is the text selection background), this
-reflects the toolkit's notion of the platform accent.
+The accent color, used for primary buttons, toggles, progress bars, focus indicators, and similar UI elements.
+Default: the system accent color, the user-selected theme accent color. It is not the text selection background (TXTHLCOLOR).
 Setting it colors the fill of IupProgressBar elements without FGCOLOR and the track of IupToggle with SWITCH=YES, including existing elements.
-In Android and WebAssembly setting it replaces the theme accent.
-In Motif, FLTK, EFL and GNUstep on Linux and BSD the default is the accent-color setting of the XDG Desktop Portal when the portal reports one.
+In Android and WebAssembly, setting it replaces the theme accent.
+In Motif, FLTK, EFL and GNUstep on Linux and BSD, the default is the accent-color setting of the XDG Desktop Portal when the portal reports one.
 Setting it is not supported in macOS, iOS, Motif, FLTK, EFL and Haiku.
-In GTK 2 setting it colors only the switch track.
+In GTK 2, setting it colors only the switch track.
 
-On some platforms the default value is the same as TXTHLCOLOR.
+In some platforms, the default value is the same as TXTHLCOLOR.
 
 ### DEFAULTFONT
 
@@ -773,7 +767,7 @@ It retrieves the style from DEFAULTFONT. When changed will actually change the D
 
 ### DEFAULTBUTTONPADDING
 
-Default button padding used in pre-defined dialogs. Default: 12x4".
+Default button padding used in pre-defined dialogs. Default: "12x4".
 
 ### DEFAULTTHEME
 

@@ -10,7 +10,7 @@ Also known as Notebook in native systems.
     Ihandle* IupTabsV(Ihandle* child, va_list arglist);
     Ihandle* IupTabsv(Ihandle** children);
 
-**child, ...** : List of the elements that will be placed in the box.
+**child, ...**: List of the elements that will be placed in the box.
 NULL must be used to define the end of the list in C.
 It can be empty, but in C must have at least the NULL terminator.
 
@@ -18,7 +18,7 @@ It can be empty, but in C must have at least the NULL terminator.
 
 ### Attributes
 
-[BGCOLOR](../attrib/iup_bgcolor.md): In Win32 the tab buttons background is always defined by the system and cannot be changed; its default also differs from the dialog background.
+[BGCOLOR](../attrib/iup_bgcolor.md): In Win32, the tab buttons background is always defined by the system and cannot be changed; its default also differs from the dialog background.
 Default: the global attribute DLGBGCOLOR.
 
 **CHILDOFFSET**: Allow specifying a position offset for the child. Available for native containers only.
@@ -36,7 +36,7 @@ Same value returned by **IupGetChildCount**.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Tabs title color.
 Not supported in EFL.
-In Win32 it is applied only when SHOWCLOSE=YES or in dark mode; in FLTK only the selected tab title is colored.
+In Win32, it is applied only when SHOWCLOSE=YES or in dark mode; in FLTK, only the selected tab title is colored.
 Default: the global attribute DLGFGCOLOR.
 
 **ALLOWREORDER** (non-inheritable): enables the user to reorder tabs by dragging them.
@@ -45,11 +45,11 @@ Not supported in Motif.
 
 **MULTILINE** [Win32 and Qt Only] (non-inheritable): Enable multiple lines of tab buttons.
 This will hide the tab scroll and fits to make all tab buttons visible. Can be "YES" or "NO".
-Default "NO". It is always enabled when TABTYPE=LEFT or TABTYPE=RIGHT.
+Default: "NO". It is always enabled when TABTYPE=LEFT or TABTYPE=RIGHT.
 
 **SHOWCLOSE** (non-inheritable): enables the close button on each tab.
-Default value: "NO". In Windows the close button implies the classic visual for the control.
-In macOS the close button is at the left side of the tab.
+Default value: "NO". In Windows, the close button implies the classic visual for the control.
+In macOS, the close button is at the left side of the tab.
 By default, when closed the tab is hidden.
 To change that behavior, use the TABCLOSE_CB callback.
 
@@ -64,43 +64,43 @@ All child elements are considered even invisible ones.
 When the Tabs is smaller than that (dialog SHRINK=YES), the tab bar scrolls and keeps the current tab visible.
 
 **TABORIENTATION** (non-inheritable): Indicates the orientation of tab text, which can be "HORIZONTAL" or "VERTICAL".
-Default is "HORIZONTAL". VERTICAL can be set in GTK, GTK 4, Qt, macOS and WebAssembly.
-In Win32 and Haiku VERTICAL is also available but is not set directly: it follows the TABTYPE attribute, with TABTYPE=LEFT or TABTYPE=RIGHT giving VERTICAL and TABTYPE=TOP or TABTYPE=BOTTOM giving HORIZONTAL.
+Default: "HORIZONTAL". VERTICAL can be set in GTK, GTK 4, Qt, macOS and WebAssembly.
+In Win32 and Haiku, VERTICAL is also available but is not set directly: it follows the TABTYPE attribute, with TABTYPE=LEFT or TABTYPE=RIGHT giving VERTICAL and TABTYPE=TOP or TABTYPE=BOTTOM giving HORIZONTAL.
 
 **TABPADDING** (non-inheritable): internal margin of the tab title.
 Works just like the MARGIN attribute of the IupHbox and IupVbox containers, but uses a different name to avoid inheritance problems.
 Default value: "0x0".
 
 **TABTYPE** (non-inheritable): Indicates the type of tab, which can be "TOP", "BOTTOM", "LEFT" or "RIGHT".
-Default is "TOP".
-LEFT and RIGHT are supported in Win32, GTK, GTK 4, Motif, Qt, QML, macOS and Haiku. In iOS, FLTK and Android only TOP and BOTTOM are supported. In EFL and WinUI only TOP is supported.
-It can be changed after map in GTK, GTK 4, Motif, macOS, iOS, Android and WebAssembly; in Win32, Qt, QML, FLTK and Haiku it is set only before mapping.
+Default: "TOP".
+LEFT and RIGHT are supported in Win32, GTK, GTK 4, Motif, Qt, QML, macOS and Haiku. In iOS, FLTK and Android, only TOP and BOTTOM are supported. In EFL and WinUI, only TOP is supported.
+It can be changed after map in GTK, GTK 4, Motif, macOS, iOS, Android and WebAssembly; in Win32, Qt, QML, FLTK and Haiku, it is set only before mapping.
 In Win32, TABTYPE=LEFT or TABTYPE=RIGHT also sets MULTILINE=YES and TABORIENTATION=VERTICAL, and TABTYPE=TOP or TABTYPE=BOTTOM sets TABORIENTATION=HORIZONTAL.
 In Win32, when not TOP the visual style is removed from the tabs.
 
 #### Tab Attributes
 
-**TABIMAGEn** (non-inheritable): image name to be used in the respective tab.
-Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name. n starts at 0.
-See also [IupImage](iup_image.md). In Motif, the image is shown only if **TABTITLEn** is NULL.
-In Windows and Motif set the BGCOLOR attribute before setting the image.
+**TABIMAGEid** (non-inheritable): image name to be used in the respective tab.
+Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name. id starts at 0.
+See also [IupImage](iup_image.md). In Motif, the image is shown only if **TABTITLEid** is NULL.
+In Windows and Motif, set the BGCOLOR attribute before setting the image.
 When set after map will update the TABIMAGE attribute on the respective child.
 
 **TABIMAGESIZE** (non-inheritable): target size for tab icons, as "WxH",
-"N" (NxN), or "NATIVE" to keep the source size. Default is font-derived.
+"N" (NxN), or "NATIVE" to keep the source size. Default: font-derived.
 Images larger than the box are downscaled with aspect preserved.
 
-**TABVISIBLEn** (non-inheritable): Allows to hide a tab. n starts at 0.
+**TABVISIBLEid** (non-inheritable): Allows to hide a tab. id starts at 0.
 When a tab is hidden the tabs indices are not changed. Can be YES or NO. Default: YES.
 
-**TABTITLEn** (non-inheritable): Contains the text to be shown in the respective tab title. n starts at 0.
+**TABTITLEid** (non-inheritable): Contains the text to be shown in the respective tab title. id starts at 0.
 If this value is NULL, it will remain empty.
 The "&" character can be used to define a mnemonic, the next character will be used as a key.
 Use "&&" to show the "&" character instead of defining a mnemonic.
 The tab can be selected from any control in the dialog using the "Alt+key" combination.
 When set after map it will update the TABTITLE attribute on the respective child.
 
-**TABTIPn** (non-inheritable): tooltip text shown when the cursor hovers over the respective tab. n starts at 0.
+**TABTIPid** (non-inheritable): tooltip text shown when the cursor hovers over the respective tab. id starts at 0.
 
 #### Current Tab
 
@@ -127,10 +127,10 @@ In GTK, inside the callback the returned value is still the previous one.
 [FLOATING](../attrib/iup_floating.md) (non-inheritable) **(at children only)**: If a child has FLOATING=YES then its size and position will be ignored by the layout processing.
 Default: "NO".
 
-**TABTITLE** (non-inheritable) **(at children only)**: Same as **TABTITLEn** but set in each child.
+**TABTITLE** (non-inheritable) **(at children only)**: Same as **TABTITLEid** but set in each child.
 Works only if set before the child is added to the tabs.
 
-**TABIMAGE** (non-inheritable) **(at children only)**: Same as **TABIMAGEn** but set in each child.
+**TABIMAGE** (non-inheritable) **(at children only)**: Same as **TABIMAGEid** but set in each child.
 Works only if set before the child is added to the tabs.
 
 ### Callbacks
@@ -138,7 +138,7 @@ Works only if set before the child is added to the tabs.
 **TABCHANGE_CB**: Callback called when the user changes the current tab.
 It is not called when the current tab is programmatically changed or removed.
 
-int function(Ihandle* ih, Ihandle* new_tab, Ihandle* old_tab);
+    int function(Ihandle* ih, Ihandle* new_tab, Ihandle* old_tab);
 
 **ih**: identifier of the element that activated the event.\
 **new_tab**: the new tab selected by the user\
@@ -147,7 +147,7 @@ int function(Ihandle* ih, Ihandle* new_tab, Ihandle* old_tab);
 **TABCHANGEPOS_CB**: Callback called when the user changes the current tab.
 Called only when TABCHANGE_CB is not defined.
 
-int function(Ihandle* ih, int new_pos, int old_pos);
+    int function(Ihandle* ih, int new_pos, int old_pos);
 
 **ih**: identifier of the element that activated the event.\
 **new_pos**: the new tab position selected by the user\
@@ -156,12 +156,12 @@ int function(Ihandle* ih, int new_pos, int old_pos);
 **TABCLOSE_CB**: Callback called when the user clicks on the close button.
 Called only when SHOWCLOSE=YES.
 
-int function(Ihandle* ih, int pos);
+    int function(Ihandle* ih, int pos);
 
 **ih**: identifier of the element that activated the event.\
 **pos**: the tab position
 
-**Returns**: the tab will be hidden if the callback returns IUP_DEFAULT or if it does not exists.
+**Returns**: the tab will be hidden if the callback returns IUP_DEFAULT or if it does not exist.
 If IUP_CONTINUE is returned the tab is removed and its children are destroyed.
 If IUP_IGNORE is returned does nothing.
 
@@ -171,12 +171,12 @@ It is called only if PROPAGATEFOCUS is defined in the child.
     int function(Ihandle *ih, int focus);
 
 **ih**: identifier of the element that activated the event.\
-**focus**: is non-zero if the canvas is getting the focus, is zero if it is losing the focus.
+**focus**: is non-zero if the child is getting the focus, is zero if it is losing the focus.
 
 **RIGHTCLICK_CB**: Callback called when the user clicks on some tab using the right mouse button.
 Not supported in Android and iOS.
 
-int function(Ihandle* ih, int pos);
+    int function(Ihandle* ih, int pos);
 
 **ih**: identifier of the element that activated the event.\
 **pos**: the tab position
@@ -184,7 +184,7 @@ int function(Ihandle* ih, int pos);
 **REORDER_CB**: Callback called when the user reorders a tab by dragging it to a new position.
 Called only when ALLOWREORDER=YES. Not supported in Motif.
 
-int function(Ihandle* ih, int old_pos, int new_pos);
+    int function(Ihandle* ih, int old_pos, int new_pos);
 
 **ih**: identifier of the element that activated the event.\
 **old_pos**: the original tab position before the reorder (0-based, as in VALUEPOS).\
@@ -200,24 +200,23 @@ int function(Ihandle* ih, int old_pos, int new_pos);
 
 ### Notes
 
-The Tabs can be created with no children and be dynamic filled using [IupAppend](../func/iup_append.md).
+The Tabs can be created with no children and be dynamically filled using [IupAppend](../func/iup_append.md).
 
 The ENTERWINDOW_CB and LEAVEWINDOW_CB callbacks are called only when the mouse enters or leaves the tabs buttons area.
 
 Its children automatically receive a name when the child is appended or inserted into the tabs.
 
-Differently from **IupZbox**, **IupTabs** does NOT depends on the VISIBLE attribute.
+Differently from **IupZbox**, **IupTabs** does NOT depend on the VISIBLE attribute.
 
 When the current tab is removed or hidden, the nearest visible tab to its right becomes the current tab, or the nearest visible tab to its left when there is none to the right.
 
 In GTK, when the tabs buttons are scrolled, the current tab is also changed.
 
-When you change the current tab, the focus is usually not changed.
-If you want to control the focus behavior, call **IupSetFocus** in the TABCHANGE_CB callback.
-Unfortunately, this does not work in GTK and in Motif, because in both systems the focus will be set by the system after the callback is called.
+Changing the current tab usually does not change the focus.
+To control the focus, call **IupSetFocus** in the TABCHANGE_CB callback.
+This does not work in GTK and Motif, where the system sets the focus after the callback is called.
 
-Notice that there is no attribute to disable a single tab.
-This is a design decision of all native toolkits, not an IUP decision.
+There is no attribute to disable a single tab.
 
 ### Utility Functions
 
@@ -227,7 +226,7 @@ These functions can be used to set and get attributes from the element:
     char* IupGetAttributeId(Ihandle *ih, const char* name, int id);
     int   IupGetIntId(Ihandle *ih, const char* name, int id);
     float IupGetFloatId(Ihandle *ih, const char* name, int id);
-    void  IupSetfAttributeId(Ihandle ih, const char* name, int id, const char* format, ...);
+    void  IupSetfAttributeId(Ihandle *ih, const char* name, int id, const char* format, ...);
     void  IupSetIntId(Ihandle* ih, const char* name, int id, int value);
     void  IupSetFloatId(Ihandle* ih, const char* name, int id, float value);
 
@@ -242,9 +241,6 @@ But these functions are faster than the traditional functions because they do no
 
 [Browse for Example Files](../../examples/)
 
-In Windows, the Visual Styles work only when TABTYPE is TOP.
-GTK is the only one that supports vertical text in the TOP configuration, but does not support multiple lines of tab buttons.
-Motif does not support vertical text.
 
 |                                 |                               |                                |                                |
 |---------------------------------|-------------------------------|--------------------------------|--------------------------------|

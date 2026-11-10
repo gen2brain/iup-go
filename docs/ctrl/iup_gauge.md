@@ -20,7 +20,7 @@ The program must be linked to the controls library (iupctrl).
 **BACKCOLOR** (non-inheritable): color of the background inside the borders. Can be NULL.
 When NULL it follows the parent background color tinted towards FGCOLOR.
 
-**CANFOCUS:** enables the focus traversal of the control. Default: NO. (different from IupCanvas)
+**CANFOCUS**: enables the focus traversal of the control. Default: NO. (different from IupCanvas)
 
 **INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
 
@@ -32,7 +32,7 @@ When set before mapping to a control that is not square, RASTERSIZE is changed t
 **CORNERRADIUS** (non-inheritable): radius of the rounded corners for the border, background and filled area.
 Default: "0" (no rounding).
 
-**DASHED**: Changes the style of the gauge for a dashed pattern. Default is "NO".
+**DASHED**: Changes the style of the gauge for a dashed pattern. Default: "NO".
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Controls the gauge and text color.
 Default: "0 120 220".
@@ -40,11 +40,11 @@ Default: "0 120 220".
 **FLAT**: use a 1 pixel flat border instead of a 3-pixel sunken border.
 Can be YES or NO. Default: YES.
 
-**FLATCOLOR:** color of the border when FLAT=YES. Default: "160 160 160".
+**FLATCOLOR**: color of the border when FLAT=YES. Default: "160 160 160".
 
-**MAX** (non-inheritable): Contains the maximum value. Default is "1".
+**MAX** (non-inheritable): Contains the maximum value. Default: "1".
 
-**MIN** (non-inheritable): Contains the minimum value. Default is "0".
+**MIN** (non-inheritable): Contains the minimum value. Default: "0".
 
 **ORIENTATION** (creation-only): can be "VERTICAL" or "HORIZONTAL". Default: "HORIZONTAL".
 Horizontal goes from left to right, and vertical from bottom to top.
@@ -80,7 +80,7 @@ When ORIENTATION=VERTICAL text is drawn in 90º.
 
 ### Notes
 
-To replace a **IupProgressBar** by a **IupGauge**, you should set RASTERSIZE=200x30 and SHOWTEXT=NO.
+To replace an **IupProgressBar** by an **IupGauge**, set RASTERSIZE=200x30 and SHOWTEXT=NO.
 
 ### Examples
 

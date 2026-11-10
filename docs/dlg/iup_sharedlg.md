@@ -24,11 +24,11 @@ Supported in Win32 and WinUI.
 
 ### Notes
 
-To show the dialog, use function **IupPopup**. It returns after the user picks a target or closes the share sheet.
+**IupPopup** returns after the user picks a target or closes the share sheet.
 
 The dialog is mapped only inside **IupPopup**, **IupMap** does nothing.
 
-In Win32 and WinUI uses DataTransferManager, in macOS uses NSSharingServicePicker, in Android uses the ACTION_SEND chooser, and in iOS uses UIActivityViewController.
+In Win32 and WinUI, it uses DataTransferManager, in macOS NSSharingServicePicker, in Android the ACTION_SEND chooser, and in iOS UIActivityViewController.
 
 Supported in Win32, WinUI, macOS, Android and iOS.
 

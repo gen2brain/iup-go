@@ -35,9 +35,9 @@ See also [IupImage](../elem/iup_image.md).
 **BACKIMAGEZOOM** (non-inheritable): if set the back image will be zoomed to occupy the full background.
 Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
 
-**BORDER** (creation-only): the default value is "NO". This is the **IupCanvas** border.
+**BORDER** (creation-only): the **IupCanvas** border. Default: "NO".
 
-**BORDERCOLOR**: color used for borders. Default: "50 150 255". This is for the drawn border.
+**BORDERCOLOR**: color used for borders. Default: "50 150 255". This is for the **IupFlatVal** drawn border.
 
 **BORDERPSCOLOR**: color used for borders when pressed or selected. Default uses BORDERCOLOR.
 
@@ -49,9 +49,9 @@ Any borders can be hidden by simply setting this value to 0.
 This is for the **IupFlatVal** drawn border.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
-In Windows the control will still get the focus when clicked. Default: YES.
+In Windows, the control will still get the focus when clicked. Default: YES.
 
-**PROPAGATEFOCUS**(non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
+**PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
 **FITTOBACKIMAGE** (non-inheritable): enable the natural size to be computed from the BACKIMAGE.
@@ -67,7 +67,7 @@ If NULL, FGCOLOR will be used instead.
 
 **HANDLERSIZE** (non-inheritable): handler size in the same direction of the ORIENTATION.
 Default: 0. When 0 it will be calculated with half of the dimension opposite to the ORIENTATION.
-If IMAGE is used, it will be ignored. When IMAGE is not used is the handler size in the opposite direction is the size of the element.
+If IMAGE is used, it will be ignored. When IMAGE is not used, the handler size in the opposite direction is the size of the element.
 
 **IMAGE** (non-inheritable): Image name for the handler.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
@@ -82,14 +82,14 @@ If it is not defined then the IMAGE is used and its colors will be replaced by a
 **IMAGEPRESS** (non-inheritable): Image name of the element in pressed state.
 If it is not defined then the IMAGE is used.
 
-**MAX**: Contains the maximum valuator value. Default is "1".
+**MAX**: Contains the maximum valuator value. Default: "1".
 When changed the display will not be updated until VALUE is set.
 
-**MIN**: Contains the minimum valuator value. Default is "0".
+**MIN**: Contains the minimum valuator value. Default: "0".
 When changed the display will not be updated until VALUE is set.
 
 **PAGESTEP**: Controls the increment for PgDn and PgUp keys. It is not the size of the increment.
-The increment size is "pagestep*(max-min)", so it must be 0<pagestep<1. Default is "0.1".
+The increment size is "pagestep*(max-min)", so it must be 0<pagestep<1. Default: "0.1".
 
 [SIZE](../attrib/iup_size.md) (non-inheritable): The natural size is the height of one character in one direction and the width of 15 characters in the other.
 
@@ -107,11 +107,11 @@ Default: 5. Ignored when BACKIMAGE is used.
 **CORNERRADIUS** (non-inheritable): radius of the rounded corners for the handler. When set, the slider ends are also rounded.
 Default: "0" (no rounding).
 
-**STEP** (non-inheritable**)**: Controls the increment for keyboard control and the mouse wheel.
+**STEP** (non-inheritable): Controls the increment for keyboard control and the mouse wheel.
 It is not the size of the increment. The increment size is "step*(max-min)", so it must be 0<step<1.
-Default is "0.01".
+Default: "0.01".
 
-**ORIENTATION** (creation-only) (non-inheritable):  Informs whether the valuator is "VERTICAL" or "HORIZONTAL".
+**ORIENTATION** (creation-only) (non-inheritable): Informs whether the valuator is "VERTICAL" or "HORIZONTAL".
 Vertical valuators are bottom to up, and horizontal valuators are left to right variations of min to max.
 Default: "HORIZONTAL".
 

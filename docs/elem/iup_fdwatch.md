@@ -1,7 +1,7 @@
 ## IupFdWatch
 
 Creates a file descriptor watch, which invokes a callback when the descriptor has data or can accept data.
-The main loop waits on the descriptor, so the application does not need a timer to poll it.
+The main loop waits on the descriptor.
 Each watch should be destroyed using [IupDestroy](../func/iup_destroy.md).
 
 ### Creation
@@ -12,7 +12,7 @@ Each watch should be destroyed using [IupDestroy](../func/iup_destroy.md).
 
 ### Attributes
 
-**FD**: The file descriptor to watch. In Windows it must be a socket, other handles are not supported.
+**FD**: The file descriptor to watch. In Windows, it must be a socket, other handles are not supported.
 Must be set before the watch is started.
 
 **MODE**: When the callback is called. Possible values: "READ" (default), "WRITE" or "READWRITE".
@@ -28,15 +28,13 @@ In "WRITE" mode the callback is called while the descriptor accepts data, so sto
 
     int function(Ihandle *ih);
 
-> **ih**: identifier of the element that activated the event.
->
-> **Returns**: IUP_CLOSE will be processed.
+**ih**: identifier of the element that activated the event.
+
+**Returns**: IUP_CLOSE will be processed.
 
 ### Notes
 
-In Windows, WinUI, Haiku and GNUstep the main loop cannot wait on a descriptor.
-There a single internal thread waits on it, and the callback is called on the main thread like in the other drivers.
-Those drivers use POSTMESSAGE_CB of the element for that, so do not set it on a watch.
+In Windows, WinUI, Haiku and GNUstep, an internal thread waits on the descriptor and the callback is called on the main thread through the POSTMESSAGE_CB of the element, so POSTMESSAGE_CB must not be set on a watch.
 
 ### Examples
 

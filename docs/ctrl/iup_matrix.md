@@ -19,7 +19,7 @@ The program must be linked to the controls library (iupctrl).
 
     Ihandle* IupMatrix(void);
 
-Returns the identifier of the created matrix, or NULL if an error occurs.
+**Returns:** the identifier of the created element, or NULL if an error occurs.
 
 ### Attributes
 
@@ -29,41 +29,41 @@ Returns the identifier of the created matrix, or NULL if an error occurs.
 
 #### Interaction
 
-[ACTION_CB](iup_matrix_cb.md) - Action generated when a keyboard event occurs.[\
-CLICK_CB](iup_matrix_cb.md) - Action generated when any mouse button is pressed over a cell.\
- [COLRESIZE_CB](iup_matrix_cb.md): Action generated when a column is interactively resized. [\
-](iup_matrix_cb.md)[RELEASE_CB](iup_matrix_cb.md) - Action generated when any mouse button is released over a cell.\
- [RESIZEMATRIX_CB](iup_matrix_cb.md): Action generated after the element size has been updated but before the cells have been actually refreshed. \
- [TOGGLEVALUE_CB](iup_matrix_cb.md): Action generated when a toggle button is pressed.\
- [VALUECHANGED_CB](iup_matrix_cb.md): Called after the value was interactively changed by the user or after a group of values where programmatically changed in a single operation.[\
-](iup_matrix_cb.md)[MOUSEMOVE_CB](iup_matrix_cb.md) - Action generated to notify the application that the mouse has moved over the matrix.\
-[ENTERITEM_CB](iup_matrix_cb.md) - Action generated when a matrix cell is selected, becoming the current cell.[\
-LEAVEITEM_CB](iup_matrix_cb.md) - Action generated when a cell is no longer the current cell.\
-[SCROLLTOP_CB](iup_matrix_cb.md) - Action generated when the matrix is scrolled with the scrollbars or with the keyboard.
+[ACTION_CB](iup_matrix_cb.md): Action generated when a keyboard event occurs.\
+[CLICK_CB](iup_matrix_cb.md): Action generated when any mouse button is pressed over a cell.\
+[COLRESIZE_CB](iup_matrix_cb.md): Action generated when a column is interactively resized.\
+[RELEASE_CB](iup_matrix_cb.md): Action generated when any mouse button is released over a cell.\
+[RESIZEMATRIX_CB](iup_matrix_cb.md): Action generated after the element size has been updated but before the cells have been actually refreshed.\
+[TOGGLEVALUE_CB](iup_matrix_cb.md): Action generated when a toggle button is pressed.\
+[VALUECHANGED_CB](iup_matrix_cb.md): Called after the value was interactively changed by the user or after a group of values were programmatically changed in a single operation.\
+[MOUSEMOVE_CB](iup_matrix_cb.md): Action generated to notify the application that the mouse has moved over the matrix.\
+[ENTERITEM_CB](iup_matrix_cb.md): Action generated when a matrix cell is selected, becoming the current cell.\
+[LEAVEITEM_CB](iup_matrix_cb.md): Action generated when a cell is no longer the current cell.\
+[SCROLLTOP_CB](iup_matrix_cb.md): Action generated when the matrix is scrolled with the scrollbars or with the keyboard.
 
 #### Drawing
 
-[BGCOLOR_CB](iup_matrix_cb.md) - Action generated to retrieve the background color of a cell when it needs to be redrawn.\
-[FGCOLOR_CB](iup_matrix_cb.md) - Action generated to retrieve the foreground color of a cell when it needs to be redrawn.\
-[FONT_CB](iup_matrix_cb.md) - Action generated to retrieve the font of a cell when it needs to be redrawn.\
- [TYPE_CB](iup_matrix_cb.md): Action generated to retrieve the type of cell value. \
-[DRAW_CB](iup_matrix_cb.md) - Action generated before the cell is drawn. Allow a custom cell draw.\
-[DROPCHECK_CB](iup_matrix_cb.md) - Action generated to determine if dropdown feedback should be shown.\
+[BGCOLOR_CB](iup_matrix_cb.md): Action generated to retrieve the background color of a cell when it needs to be redrawn.\
+[FGCOLOR_CB](iup_matrix_cb.md): Action generated to retrieve the foreground color of a cell when it needs to be redrawn.\
+[FONT_CB](iup_matrix_cb.md): Action generated to retrieve the font of a cell when it needs to be redrawn.\
+[TYPE_CB](iup_matrix_cb.md): Action generated to retrieve the type of cell value.\
+[DRAW_CB](iup_matrix_cb.md): Action generated before the cell is drawn. Allow a custom cell draw.\
+[DROPCHECK_CB](iup_matrix_cb.md): Action generated to determine if dropdown feedback should be shown.\
 [TRANSLATEVALUE_CB](iup_matrix_cb.md): Action generated to translate the value of a cell during display and size computation.
 
 #### Editing
 
-[DROP_CB](iup_matrix_cb.md) - Action generated to determine if a text field or a dropdown will be shown.\
-[MENUDROP_CB](iup_matrix_cb.md) - Action generated to determine if a popup menu will be shown. \
-[DROPSELECT_CB](iup_matrix_cb.md) - Action generated when an element in the dropdown list is selected.[\
-EDITION_CB](iup_matrix_cb.md) - Action generated when the current cell enters or leaves the edition mode.
+[DROP_CB](iup_matrix_cb.md): Action generated to determine if a text field or a dropdown will be shown.\
+[MENUDROP_CB](iup_matrix_cb.md): Action generated to determine if a popup menu will be shown.\
+[DROPSELECT_CB](iup_matrix_cb.md): Action generated when an element in the dropdown list is selected.\
+[EDITION_CB](iup_matrix_cb.md): Action generated when the current cell enters or leaves the edition mode.
 
 #### Callback Mode
 
-[VALUE_CB](iup_matrix_cb.md) - Action generated to verify the value of a cell.\
-[VALUE_EDIT_CB](iup_matrix_cb.md) - Action generated to notify the application that the value of a cell was edited.\
-[MARK_CB](iup_matrix_cb.md) - Action generated to verify the selection state of a cell. [\
-MARKEDIT_CB](iup_matrix_cb.md) - Action generated to notify the application that the selection state of a cell was changed.
+[VALUE_CB](iup_matrix_cb.md): Action generated to verify the value of a cell.\
+[VALUE_EDIT_CB](iup_matrix_cb.md): Action generated to notify the application that the value of a cell was edited.\
+[MARK_CB](iup_matrix_cb.md): Action generated to verify the selection state of a cell.\
+[MARKEDIT_CB](iup_matrix_cb.md): Action generated to notify the application that the selection state of a cell was changed.
 
 ### Utility Functions
 
@@ -113,20 +113,20 @@ They will be retrieved one by one by the callback.\
 3 - If the matrix can be edited, set the VALUE_EDIT_CB callback.\
 4 - When the matrix display must be updated, use the REDRAW attribute to force a matrix redraw.
 
-A negative aspect is that, when VALUE_CB is defined, after it is mapped the matrix never verifies attributes of type L:C again.
+When VALUE_CB is defined, after map the matrix never checks attributes of type lin:col again.
 
 If VALUE_CB is defined and VALUE_EDIT_CB is not defined when the matrix is mapped then READONLY will be set to YES.
 
 #### Number of Cells
 
-If you do not plan to use ADDLIN nor ADDCOL, and plan to set sparse cell values, then you must set NUMLIN and NUMCOL before mapping.
+When ADDLIN and ADDCOL are not used and cell values are sparse, NUMLIN and NUMCOL must be set before mapping.
 
 #### Titles
 
 A matrix might have titles for lines and columns.
 Titles are always non scrollable, non editable and presented with a different default background color.
-A matrix will have a line of titles if an attribute of the "*L*:0" type is defined, where L is a line number, or if the HEIGHT0 attribute is defined.
-It will have a column of titles if an attribute of the "0:*C*" type is defined, where C is a column number, or if the WIDTH0 attribute is defined.
+A matrix will have a line of titles if an attribute of the "lin:0" type is defined, where lin is a line number, or if the HEIGHT0 attribute is defined.
+It will have a column of titles if an attribute of the "0:col" type is defined, where col is a column number, or if the WIDTH0 attribute is defined.
 
 When allowed, the width of a column can be changed by holding and dragging its title right border, see RESIZEMATRIX.
 
@@ -136,15 +136,15 @@ The contents of ordinary cells (not a title) do not affect the cell size.
 
 #### Natural Size
 
-The Natural size is calculated using only the title cells size plus the size of NUMCOL_VISIBLE and NUMLIN_VISIBLE cells, but it is also affected if SCROLBAR is enabled.
+The Natural size is calculated using only the title cells size plus the size of NUMCOL_VISIBLE and NUMLIN_VISIBLE cells, but it is also affected if SCROLLBAR is enabled.
 The natural height is the sum of the line heights from line 0 to NUMLIN_VISIBLE (inclusive).
 The natural width is the sum of the column width from column 0 to NUMCOL_VISIBLE (inclusive).
-Notice that since NUMCOL_VISIBLE and NUMLIN_VISIBLE do not include the titles then NUMCOL_VISIBLE+1 columns and NUMLIN_VISIBLE+1 lines are included in the sum.
+NUMCOL_VISIBLE and NUMLIN_VISIBLE do not include the titles, so NUMCOL_VISIBLE+1 columns and NUMLIN_VISIBLE+1 lines are included in the sum.
 
-The height of a line L depends on several attributes, first it checks the HEIGHT*L* attribute, then checks RASTERHEIGHT*L*, then when USETITLESIZE=YES or not in callback mode the height of the title text for the line or if L=0 it searches for the highest column title, if still could not define a height then if L!=0 it will use HEIGHTDEF, if L=0 then height will be 0.
+The height of a line id depends on several attributes, first it checks the HEIGHTid attribute, then checks RASTERHEIGHTid, then when USETITLESIZE=YES or not in callback mode the height of the title text for the line or if id=0 it searches for the highest column title, if still could not define a height then if id!=0 it will use HEIGHTDEF, if id=0 then height will be 0.
 
 A similar approach is valid for the column width.
-The width of a column C first checks the WIDTH*C* attribute, then checks RASTERWIDTH*C*, then when USETITLESIZE=YES or not in callback mode the width of the title text for the column or if C=0 it searches for the widest line title, if still could not define a width then if C!=0 it will use WIDTHDEF, if C=0 then height will be 0.
+The width of a column id first checks the WIDTHid attribute, then checks RASTERWIDTHid, then when USETITLESIZE=YES or not in callback mode the width of the title text for the column or if id=0 it searches for the widest line title, if still could not define a width then if id!=0 it will use WIDTHDEF, if id=0 then width will be 0.
 
 #### Virtual Size
 
@@ -161,9 +161,9 @@ The RESIZEMATRIX_CB callback can be used to dynamically change columns or lines 
 
 When READONLY=NO and there is no EDITION_CB callback or the callback return is IUP_DEFAULT, the matrix cell values can be edited. 
 
- Editing starts automatically when the user press a character key when the focus is at a cell, then the old cell value is replaced by the new one being typed.
+Editing starts automatically when the user presses a character key when the focus is at a cell, then the old cell value is replaced by the new one being typed.
 If **F2, Enter** or **Space** is pressed, the current cell enters the edition mode with the current text of the cell.
-And double-clicking a cell enters the edition mode (in Motif the user must click again to the edit control get the focus).
+And double-clicking a cell enters the edition mode (in Motif, the user must click again to the edit control get the focus).
 
 The new value will be accepted if the user press **Enter** during edition mode.
 Pressing **Esc** will cancel the editing and the old value remains.
@@ -176,7 +176,7 @@ Keyboard navigation through the matrix cells outside the edition mode is done by
 
 - **Arrows**: Moves the focus to the next cell, according to the arrows direction.
 - **Page Up** and **Page Down**: Moves a visible page up or down.
-- **Home**: Moves the focus to the fist column in the line.
+- **Home**: Moves the focus to the first column in the line.
 - **Home Home**: Moves the focus to the top-left corner of the visible page.
 - **Home Home Home**: Moves the focus to the top-left corner of the first page of the matrix.
 - **End**: Moves the focus to the last column in the line.
@@ -215,7 +215,7 @@ When there are cells marked, pressing the **Del** key removes the selected cells
 
 #### IupMatrixEx
 
-For more features, like Import/Export, Clipboard, Undo/Redo, Search, Sort, Column Visibility, Numeric Columns, Numeric, Context Menu and others, see the [IupMatrixEx](iup_matrixex.md) extension library.
+For more features, like Import/Export, Clipboard, Undo/Redo, Search, Sort, Column Visibility, Numeric Columns, Context Menu and others, see the [IupMatrixEx](iup_matrixex.md) extension library.
 
 ### Examples
 

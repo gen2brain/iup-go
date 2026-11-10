@@ -2,22 +2,22 @@
 
 Creates a date editing interface element, which can displays a calendar for selecting a date.
 
-In Windows, Qt, Android, iOS and WebAssembly it is a native element. In GTK, GTK 4, WinUI, macOS, EFL, FLTK, Motif, Haiku and QML it is a custom element built with IUP controls.
+In Windows, Qt, Android, iOS and WebAssembly, it is a native element. In GTK, GTK 4, WinUI, macOS, EFL, FLTK, Motif, Haiku and QML, it is a custom element built with IUP controls.
 
 ### Creation
 
-    Ihandle* IupDatePick();
+    Ihandle* IupDatePick(void);
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 
 ### Attributes
 
-**CALENDARWEEKNUMBERS**: Shows the number of the week along the year in the calendar. Default: NO.
+**CALENDARWEEKNUMBERS**: Shows the number of the week along the year in the calendar. Default: "NO".
 Not supported in macOS, WinUI, EFL, Android, iOS and WebAssembly.
 
 **FORMAT** [Windows, Qt and Android Only]: Flexible format for the date.
 In Windows, for more information see "About Date and Time Picker Control" in the Windows SDK.
-The control was configured to display date only without any time options.
+In Windows, the control displays the date only, without time options.
 In Qt, uses QDateEdit display format.
 Android uses the same pattern letters as Windows/Qt.
 Default: "d'/'M'/'yyyy". See Notes below.
@@ -28,7 +28,7 @@ Default: "d'/'M'/'yyyy". See Notes below.
 A date outside MINDATE and MAXDATE, set in VALUE, typed or current when they are set, is changed to the nearest of them.
 
 **MONTHSHORTNAMES** [Windows, Qt and Android Only]: Month display will use a short name instead of numbers.
-Must be set before ORDER. Default: NO. Names will be in the language of the system.
+Must be set before ORDER. Default: "NO". Names will be in the language of the system.
 
 **ORDER**: Day, month and year order. Can be any combination of "D", "M" and "Y" without repetition, and with all three letters.
 It will set the FORMAT attribute in Windows. It will NOT affect the VALUE attribute order.
@@ -49,7 +49,7 @@ Not supported in Qt and iOS.
 Can be set to "TODAY". Default value is the today date.
 
 **ZEROPRECED**: Day and month numbers will be preceded by a zero. Must be set before ORDER in Windows.
-Default: NO.
+Default: "NO".
 Not supported in iOS and WebAssembly.
 
 ### Callbacks
@@ -68,8 +68,7 @@ Not supported in iOS and WebAssembly.
 
 ### Notes
 
-In GTK, GTK 4, WinUI, macOS, EFL, FLTK, Motif, Haiku and QML it is a custom control built with IUP elements.
-In the custom control the Up and Down keys, + and -, and the mouse wheel over the day, month or year change it by one.
+In the custom control, the Up and Down keys, + and -, and the mouse wheel over the day, month or year change it by one.
 
 In iOS, the label uses the system locale's date format; ORDER, SEPARATOR, ZEROPRECED, MONTHSHORTNAMES and FORMAT are not supported.
 
@@ -101,4 +100,4 @@ In Windows and Qt, FORMAT can have the following values, but other text in the f
 
 ### See Also
 
-[IupCalendar](iup_calendar.md).
+[IupCalendar](iup_calendar.md)

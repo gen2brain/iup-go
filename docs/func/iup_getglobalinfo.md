@@ -30,7 +30,7 @@ Returns the registered metadata of a global attribute: flag bits and the set of 
 | IUPDRV_GTK        | 4     | GTK                     |
 | IUPDRV_COCOA      | 8     | Cocoa (macOS / GNUstep) |
 | IUPDRV_QT         | 16    | Qt                      |
-| IUPDRV_GTK4       | 32    | GTK4                    |
+| IUPDRV_GTK4       | 32    | GTK 4                   |
 | IUPDRV_EFL        | 64    | EFL                     |
 | IUPDRV_WINUI      | 128   | WinUI 3                 |
 | IUPDRV_FLTK       | 256   | FLTK                    |

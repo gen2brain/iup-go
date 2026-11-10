@@ -8,20 +8,20 @@ Set to NO to change many nodes without updating the display. Default: "YES".
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of the tree.
 Default: the global attribute TXTBGCOLOR.
 
-[EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "YES".
+[EXPAND](../attrib/iup_expand.md) (non-inheritable): Default: "YES".
 
 **FGCOLOR**: default text foreground color.
 Once each node is created it will not change its color when FGCOLOR is changed.
 Default: the global attribute TXTFGCOLOR.
 
 **HLCOLOR** (non-inheritable): the background color of the selected node.
-Default: TXTHLCOLOR global attribute.
+Default: the global attribute TXTHLCOLOR.
 
 **INDENTATION**: sets the indentation level in pixels.
 When never set, returns the indentation currently in effect.
 The visual effect of changing the indentation is highly system-dependent.
-In GTK it acts as an additional indent value, and the lines do not follow the extra indent.
-In Win32 it is limited to a minimum of 5 pixels.
+In GTK, it acts as an additional indent value, and the lines do not follow the extra indent.
+In Win32, it is limited to a minimum of 5 pixels.
 Not supported in EFL.
 
 **INFOTIP** [Win32, Qt and macOS Only]: the TIP is shown every time a node is highlighted.
@@ -41,7 +41,7 @@ Can be: YES (both), VERTICAL, HORIZONTAL, NO.
 Supported in Windows, WinUI, Qt, QML, macOS and WebAssembly.
 
 **SPACING**: vertical internal padding for each node.
-Notice that the distance between each node will be actually 2x the spacing.
+The distance between nodes is 2x the spacing.
 Not supported in EFL.
 
 **CSPACING**: same as SPACING but using the units of the vertical part of the **SIZE** attribute.
@@ -56,7 +56,7 @@ If any parent node is collapsed then they are automatically expanded.
 
 [ACTIVE](../attrib/iup_active.md), [EXPAND](../attrib/iup_expand.md), [FONT](../attrib/iup_font.md), [SCREENPOSITION](../attrib/iup_screenposition.md), [POSITION](../attrib/iup_position.md), [MINSIZE](../attrib/iup_minsize.md), [MAXSIZE](../attrib/iup_maxsize.md), [WID](../attrib/iup_wid.md), [TIP](../attrib/iup_tip.md), [SIZE](../attrib/iup_size.md), [RASTERSIZE](../attrib/iup_rastersize.md), [ZORDER](../attrib/iup_zorder.md), [VISIBLE](../attrib/iup_visible.md), [THEME](../attrib/iup_theme.md): also accepted. 
 
-### Expanders  (non-inheritable)
+### Expanders (non-inheritable)
 
 **HIDEBUTTONS** (creation-only): hide the expand and collapse buttons.
 In GTK, branches will be only expanded programmatically.
@@ -65,17 +65,17 @@ Not supported in EFL, macOS, iOS and WebAssembly.
 **HIDELINES** (creation-only): hide the lines that connect the nodes in the hierarchy.
 Supported in GTK, Motif, Win32, Qt and FLTK.
 
-### Nodes  (non-inheritable)
+### Nodes (non-inheritable)
 
 For these attributes, "id" is the specified node identifier.
 If "id" is empty or invalid, then the focus node is used as the specified node.
 
 **COUNT** (read-only) (non-inheritable): returns the total number of nodes in the tree.
 
-**CHILDCOUNT*id*** (read-only): returns the immediate children count of the specified branch.
+**CHILDCOUNTid** (read-only): returns the immediate children count of the specified branch.
 It does not count children of child that are branches.
 
-**TOTALCHILDCOUNT*id*** (read-only): returns the total children count of the specified branch.
+**TOTALCHILDCOUNTid** (read-only): returns the total children count of the specified branch.
 It counts all grandchildren too.
 
 **ROOTCOUNT** (read-only): returns the number of root nodes.
@@ -91,17 +91,17 @@ The first node has depth=0, its immediate children have depth=1, their children 
 > - "LEAF": The node is a leaf
 > - "BRANCH": The node is a branch
 
-**PARENT*id*** (read-only): returns the parent of the specified node.
+**PARENTid** (read-only): returns the parent of the specified node.
 
-**NEXT*id*** (read-only): returns the next brother (same depth) of the specified node.
-Returns NULLs if at last child node of the parent (at the same depth).
+**NEXTid** (read-only): returns the next brother (same depth) of the specified node.
+Returns NULL if at last child node of the parent (at the same depth).
 
-**PREVIOUS*id*** (read-only): returns the previous brother (same depth) of the specified node.
-Returns NULLs if at first child node of the parent (at the same depth). 
+**PREVIOUSid** (read-only): returns the previous brother (same depth) of the specified node.
+Returns NULL if at first child node of the parent (at the same depth). 
 
-**LAST*id*** (read-only): returns the last brother (same depth) of the specified node.
+**LASTid** (read-only): returns the last brother (same depth) of the specified node.
 
-**FIRST*id*** (read-only): returns the first brother (same depth) of the specified node.
+**FIRSTid** (read-only): returns the first brother (same depth) of the specified node.
 This is the same as getting the first child of the parent of the given node.
 If the specified node is the first child returns the specified node. 
 
@@ -132,12 +132,12 @@ Actually changes the **TITLEFONTid** attribute.
 Can be "YES", "3STATE" or "NO". Default: "NO".
 Not supported in Motif and FLTK.
 
-**EMPTYAS3STATE** (non-inheritable) [Win32, Qt and QML Only]: when SHOWTOGGLE=YES, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with the image of the 3state toggle.
+**EMPTYAS3STATE** [Win32, Qt and QML Only] (non-inheritable): when SHOWTOGGLE=YES, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with the image of the 3state toggle.
 Can be YES or NO. Default: NO.
 
 **TOGGLEVALUEid** (non-inheritable): defines the toggle state. Values can be "ON" or "OFF".
 If SHOWTOGGLE=3STATE then can also be "NOTDEF". Default: "OFF".
-In EFL the NOTDEF state is displayed as OFF.
+In EFL, the NOTDEF state is displayed as OFF.
 
 **TOGGLEVISIBLEid** (non-inheritable): defines the toggle visible state. Values can be "YES" or "NO".
 Default: "YES".
@@ -147,8 +147,8 @@ Default: "YES".
 **IMAGEid** (write-only): image name to be used in the specified node, where id is the specified node identifier.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](iup_image.md).
-If node is a branch it is used when collapsed. In Windows all images must have the same size.
-In other systems only expanded and collapsed images must have the same size.
+If node is a branch it is used when collapsed. In Windows, all images must have the same size.
+In other systems, only expanded and collapsed images must have the same size.
 
 **IMAGEEXPANDEDid** (write-only): same as the IMAGE attribute but used for expanded branches.
 
@@ -168,21 +168,21 @@ Default: "IMGEXPANDED" (an open folder). If BGCOLOR is set the image is automati
 **VALUE** (non-inheritable): The focus node identifier.
 When retrieved but there isn't a node with focus it returns 0 if there are any nodes, and returns -1 if there are no nodes.
 When changed and MARKMODE=SINGLE the node is also selected. The tree is always scrolled so the node becomes visible.
-In Motif the tree will also receive the focus.
+In Motif, the tree will also receive the focus.
 Additionally, accepts the values:
 
-> **"ROOT" or "FIRST": the first node (which is always expanded)**\
+> "ROOT" or "FIRST": the first node (which is always expanded)\
 > "LAST": the last **expanded** node\
 > "NEXT": the next **expanded** node, one node after the focus node. If at the last does nothing\
 > "PREVIOUS": the previous **expanded** node, one node before the focus node. If at the first does nothing\
-> "PGDN": the next **expanded** node, ten nodes node after the focus node. If at the last does nothing\
+> "PGDN": the next **expanded** node, ten nodes after the focus node. If at the last does nothing\
 > "PGUP": the previous **expanded** node, ten nodes before the focus node. If at the first does nothing\
 > "CLEAR": clears the selection of the focus node.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
-In Windows the control will still get the focus when clicked. Default: YES.
+In Windows, the control will still get the focus when clicked. Default: YES.
 
-**PROPAGATEFOCUS**(non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
+**PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
 ### Marks
@@ -190,7 +190,7 @@ Default: NO.
 **MARK** (write-only) (non-inheritable): Selects a range of nodes in the format "start-end" (%d-%d).
 Allowed only when MARKMODE=MULTIPLE. Also accepts the values:
 
-> **"INVERTid": Inverts the specified node selected state, where id is the specified node identifier. If id is empty or invalid, then the focus node is used as reference node. **\
+> "INVERTid": Inverts the specified node selected state, where id is the specified node identifier. If id is empty or invalid, then the focus node is used as reference node.\
 > "BLOCK": Selects all nodes between the focus node and the initial block-marking node defined by MARKSTART\
 > "CLEARALL": Clear the selection of all nodes\
 > "MARKALL": Selects all nodes\
@@ -201,7 +201,7 @@ If id is empty or invalid, then the focus node is used as reference node. Can be
 Default: NO
 
 **MARKEDNODES** (non-inheritable): The selection state of all nodes.
-It is/accepts a sequence of '+' and '-' symbols indicating the state of each node ('+'=selected, '-'=unselected.
+A sequence of '+' and '-' symbols indicating the state of each node ('+'=selected, '-'=unselected).
 When setting this value, if the number of specified symbols is smaller than the total count, then the remaining nodes will not be changed.
 Can be set only when MARKMODE=MULTIPLE, can also be get when MARKMODE=SINGLE.
 
@@ -214,9 +214,9 @@ The value must be the node identifier. Default: 0 (first node).
 Works only if the node has a toggle. Default: NO.
 
 **RUBBERBAND** (non-inheritable): allows selecting several nodes with a rubber band when MARKMODE=MULTIPLE. Can be YES or NO. Default: YES.
-Supported in GTK, GTK 4, Qt and QML. In GTK it works only when SHOWDRAGDROP=NO.
+Supported in GTK, GTK 4, Qt and QML. In GTK, it works only when SHOWDRAGDROP=NO.
 
-### Hierarchy  (non-inheritable)
+### Hierarchy (non-inheritable)
 
 For these attributes "id" is the specified node identifier.
 If "id" is empty or invalid, then the focus node is used as the specified node.
@@ -236,7 +236,7 @@ The id of the new node will be the id of the reference node + 1. The attribute *
 The reference node is marked and all others unmarked. The reference node position remains the same.
 If the reference node does not exist, nothing happens.
 If the reference node is a branch, then the depth of the new node is one depth increment from the depth of the reference node, if the reference node is a leaf then the new node has the same depth.
-If you need to add a node after a specified node but at a different depth use **INSERTLEAF**.
+To add a node after a specified node but at a different depth, use **INSERTLEAF**.
 Ignored if set before map.
 
 **ADDBRANCHid** (write-only): Same as **ADDLEAF** for branches.
@@ -253,12 +253,12 @@ Ignored if set before map.
 **DELNODEid** (write-only): Removes a node and/or its children, where id is the specified node identifier.
 Ignored if set before map. Possible values:
 
-> - "ALL": deletes all nodes, id is ignored. Notice that this will also deletes the root node.
+> - "ALL": deletes all nodes, id is ignored. The root node is also deleted.
 > - "SELECTED": deletes the specified node and its children
 > - "CHILDREN": deletes only the children of the specified node
 > - "MARKED": deletes all the selected nodes (and all their children), id is ignored
 
-**EXPANDALL** (write-only): expand or contracts all nodes.
+**EXPANDALL** (write-only): expands or contracts all nodes.
 Can be YES (expand all), or NO (contract all).
 
 **INSERTLEAFid**, **INSERTBRANCHid** (write-only): Same as **ADDLEAF** and **ADDBRANCH** but the depth of the new node is always the same of the reference node.
@@ -276,15 +276,15 @@ Ignored if set before map.
 
 **RENAME** (write-only): Forces a rename action to take place. Valid only when SHOWRENAME=YES.
 
-RENAMECARET (write-only): the caret’s position of the text box when in-place renaming.
+**RENAMECARET** (write-only): the caret’s position of the text box when in-place renaming.
 Same as the CARET attribute for [IupText](iup_text.md), but here is used only once after SHOWRENAME_CB is called and before the text box is shown.
 
-RENAMESELECTION (write-only): the selection interval of the text box when in-place renaming.
+**RENAMESELECTION** (write-only): the selection interval of the text box when in-place renaming.
 Same as the SELECTION attribute for [IupText](iup_text.md), but here is used only once after SHOWRENAME_CB is called and before the text box is shown.
 
 **SHOWRENAME** (creation in Windows) (non-inheritable): Allows the in place rename of a node.
 Default: "NO". F2 and clicking twice only starts to rename a node if SHOWRENAME=YES.
-In Windows must be set to YES before map, but can be changed later.
+In Windows, it must be set to YES before map, but can be changed later.
 
 ### Drag&Drop
 

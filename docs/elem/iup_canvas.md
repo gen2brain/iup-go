@@ -1,6 +1,6 @@
 ## IupCanvas
 
-Creates an interface element that is a canvas - a drawing area for your application.
+Creates an interface element that is a canvas - a drawing area.
 
 ### Creation
 
@@ -10,21 +10,21 @@ Creates an interface element that is a canvas - a drawing area for your applicat
 
 ### Attributes
 
-**BACKINGSTORE** [Motif Only]: Controls the canvas backing store flag. The default value is "YES".
+**BACKINGSTORE** [Motif Only]: Controls the canvas backing store flag. Default: "YES".
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color.
 The background is painted only if the ACTION callback is not defined.
 If the callback is defined the application must draw all the canvas contents.
-In GTK or Motif if you set the ACTION callback after map then you should also set BGCOLOR to any value just after setting the callback or the first redraw will be lost.
+In GTK and Motif, when ACTION is set after map, BGCOLOR must also be set to any value right after it, or the first redraw is lost.
 Default: same as [DLGBGCOLOR](../attrib/iup_globals.md#dlgbgcolor) (system dialog background, follows the active theme including dark mode).
 
 **BORDER** (creation-only): Shows a border around the canvas. Default: "YES".
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
-In Windows the canvas will respect CANFOCUS differently to some other controls.
+In Windows, the canvas will respect CANFOCUS differently to some other controls.
 Default: YES.
 
-**PROPAGATEFOCUS**(non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
+**PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
 **CAIRO_CR** (non-inheritable): Contains the "cairo_t*" of the internal drawing callback. Valid only during the ACTION callback.
@@ -33,17 +33,16 @@ Available in GTK 3, GTK 4 and FLTK (FLTK only when built with Cairo).
 **CLIPRECT** (only during ACTION): Specifies a rectangle that has its region invalidated for painting, it could be used for clipping.
 The application may repaint only this rectangle; pixels outside it are preserved.
 Format: "%d %d %d %d"="x1 y1 x2 y2".
-Not supported in WASM.
-In QML it is always the whole canvas.
+Not supported in WebAssembly.
+In QML, it is always the whole canvas.
 
 **UPDATERECT** (write-only): Requests a redraw limited to a rectangle of the canvas, received in the ACTION callback as CLIPRECT.
 The driver can expand the rectangle; successive values set before the redraw happens are combined into their bounding rectangle.
 Format: "%d %d %d %d"="x1 y1 x2 y2".
 An invalid value or a driver without support redraws the whole canvas.
-Not supported in iOS, Android, WASM and QML.
+Not supported in iOS, Android, WebAssembly and QML.
 
 [CURSOR](../attrib/iup_cursor.md) (non-inheritable): Defines a cursor for the canvas.
-The Windows SDK recommends that cursors and icons should be implemented as resources rather than created at run time.
 
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
@@ -51,7 +50,7 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 **DRAWSIZE** (non-inheritable): The size of the drawing area in pixels.
 This size is also used in the RESIZE_CB callback.
 
-Notice that the drawing area size is not the same as RASTERSIZE.
+The drawing area size is not the same as RASTERSIZE.
 The SCROLLBAR and BORDER attributes affect the size of the drawing area.
 
 **DRAWDRIVER** (read-only): returns the name of the draw driver in use by the IupDraw API.
@@ -61,16 +60,16 @@ Can be: D2D, GDI+ (Windows), CAIRO (GTK), COCOA (macOS), COCOATOUCH (iOS), QT, E
 Must be used between IupDrawBegin and IupDrawEnd.
 The image is cached and automatically destroyed on the next query.
 
-**DRAWABLE** (non-inheritable, read-only): Returns the native drawing surface handle.
+**DRAWABLE** (non-inheritable) (read-only): Returns the native drawing surface handle.
 Available in GTK 3, Qt, Cocoa, iOS, EFL, FLTK and Motif.
 
-[EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "YES".
+[EXPAND](../attrib/iup_expand.md) (non-inheritable): Default: "YES".
 The natural size is the size of 1 character.
 
 **HDC_WMPAINT** [Win32 Only] (non-inheritable): Contains the HDC created with the BeginPaint inside the WM_PAINT message.
 Valid only during the ACTION callback.
 
-**HWND** [Windows Only] (non-inheritable, read-only): Returns the Windows Window handle.
+**HWND** [Windows Only] (non-inheritable) (read-only): Returns the Windows Window handle.
 Available in any driver when running on Windows (Win32, GTK, GTK 4, Qt, FLTK and EFL).
 
 [SCROLLBAR](../attrib/iup_scrollbar.md) (creation-only): Associates a horizontal and/or vertical scrollbar to the canvas.
@@ -106,24 +105,24 @@ Accepts only the NO value.
 
 **WHEELDROPFOCUS** (non-inheritable): when the wheel is used the focus control receives a SHOWDROPDOWN=NO.
 
-**CGCONTEXT** [macOS and iOS Only] (non-inheritable, read-only): Returns the CoreGraphics context (CGContextRef).
+**CGCONTEXT** [macOS and iOS Only] (non-inheritable) (read-only): Returns the CoreGraphics context (CGContextRef).
 
-**NSVIEW** [macOS Only] (non-inheritable, read-only): Returns the NSView handle.
+**NSVIEW** [macOS Only] (non-inheritable) (read-only): Returns the NSView handle.
 
-**UIVIEW** [iOS Only] (non-inheritable, read-only): Returns the UIView handle.
+**UIVIEW** [iOS Only] (non-inheritable) (read-only): Returns the UIView handle.
 
 **NATIVEFOCUSRING** [macOS Only] (non-inheritable): Controls whether the canvas uses the native macOS focus ring (blue glow) instead of a cross-platform dotted rectangle for focus indication.
 Can be "YES" or "NO". Default: "NO".
 
-**XDISPLAY** [Unix Only] (non-inheritable, read-only): Returns the X-Windows Display.
+**XDISPLAY** [Unix Only] (non-inheritable) (read-only): Returns the X-Windows Display.
 Available in Motif, GTK and FLTK on X11.
 
-**XWINDOW** [Unix Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
+**XWINDOW** [Unix Only] (non-inheritable) (read-only): Returns the X-Windows Window (Drawable).
 Available in Motif, GTK, GTK 4, Qt, EFL and FLTK on X11.
 
-**XSCREEN** [Motif Only] (non-inheritable, read-only): Returns the X-Windows Screen.
+**XSCREEN** [Motif Only] (non-inheritable) (read-only): Returns the X-Windows Screen.
 
-**WL_SURFACE** [Unix Only] (non-inheritable, read-only): Returns the Wayland surface handle.
+**WL_SURFACE** [Unix Only] (non-inheritable) (read-only): Returns the Wayland surface handle.
 Available in GTK, GTK 4, Qt, EFL and FLTK on Wayland.
 
 > 
@@ -142,14 +141,14 @@ Available in GTK, GTK 4, Qt, EFL and FLTK on Wayland.
 
 **ih**: identifier of the element that activated the event.
 
-Use the [POSX](../attrib/iup_posx.md) and [POSY](../attrib/iup_posy.md) attributes to read the current scroll thumb position from inside the callback. Earlier IUP versions passed `posx`/`posy` as `float` parameters; that signature was removed in IUP 3.24 in favor of the native redraw flow.
+Use the [POSX](../attrib/iup_posx.md) and [POSY](../attrib/iup_posy.md) attributes to read the current scroll thumb position from inside the callback.
 
 [BUTTON_CB](../call/iup_button_cb.md): Action generated when any mouse button is pressed or released.
 
 [DROPFILES_CB](../call/iup_dropfiles_cb.md): Action generated when one or more files are dropped in the element.
 
 **FOCUS_CB**: Called when the canvas gets or loses the focus.
-It is called after the common callbacks GETFOCUS_CB and KILL_FOCUS_CB.
+It is called after the common callbacks GETFOCUS_CB and KILLFOCUS_CB.
 
     int function(Ihandle *ih, int focus);
 
@@ -161,11 +160,11 @@ It is called after the common callbacks GETFOCUS_CB and KILL_FOCUS_CB.
 [KEYPRESS_CB](../call/iup_keypress_cb.md): Action generated when a key is pressed or released.
 It is called after the common callback K_ANY.
 
+When the canvas has the focus, pressing the arrow keys may change the focus to another control in some systems.
+If the callback processes the arrow keys, return IUP_IGNORE so the canvas keeps the focus.
+
 [TEXTINPUT_CB](../call/iup_textinput_cb.md): Action generated when the user commits text input
 (plain characters, dead-key composition, IME).
-
-When the canvas has the focus, pressing the arrow keys may change the focus to another control in some systems.
-If your callback process the arrow keys, we recommend you to return IUP_IGNORE so it will not lose its focus.
 
 [RESIZE_CB](../call/iup_resize_cb.md): Action generated when the canvas size is changed.
 
@@ -173,42 +172,42 @@ If your callback process the arrow keys, we recommend you to return IUP_IGNORE s
 
 **TOUCH_CB** [Win32, GTK, GTK 4, Qt, QML, WebAssembly, iOS and Android Only]: Action generated when a touch event occurred.
 Multiple touch events will trigger several calls.
-In Win32 must set TOUCH=YES to receive this event. In GTK, GTK 4, Qt, QML, iOS and Android, touch events are always enabled.
+In Win32, TOUCH=YES must be set to receive this event. In GTK, GTK 4, Qt, QML, iOS and Android, touch events are always enabled.
 
     int function(Ihandle* ih, int id, int x, int y, char* state);
 
-**ih**: identifies the element that activated the event.\
-**id**: identifies the touchpoint. **\
-x**, **y**: position in pixels, relative to the top-left corner of the canvas.\
+**ih**: identifier of the element that activated the event.\
+**id**: identifies the touchpoint.\
+**x**, **y**: position in pixels, relative to the top-left corner of the canvas.\
 **state**: the touchpoint state. Can be: DOWN, MOVE or UP.
 If the point is a "primary" point, then "-PRIMARY" is appended to the string.
 
 **Returns**: IUP_CLOSE will be processed.
 
 **MULTITOUCH_CB** [Win32, GTK, GTK 4, Qt, QML, WebAssembly, iOS and Android Only]: Action generated when multiple touch events occurred.
-In Win32 must set TOUCH=YES to receive this event; in GTK, GTK 4, Qt, QML, iOS and Android touch events are always enabled.
+In Win32, TOUCH=YES must be set to receive this event; in GTK, GTK 4, Qt, QML, iOS and Android, touch events are always enabled.
 
-    int function(Ihandle *ih, int count, int* pid, int* px, int* py, int* pstate)
+    int function(Ihandle *ih, int count, int* pid, int* px, int* py, int* pstate);
 
 **ih**: identifier of the element that activated the event.\
 **count**: Number of touch points in the array.\
 **pid**: Array of touch point ids.\
 **px**: Array of touch point x coordinates in pixels, relative to the top-left corner of the canvas.\
 **py**: Array of touch point y coordinates in pixels, relative to the top-left corner of the canvas.\
-**pstate**: Array of touch point states. Can be 'D' (DOWN), 'U' (UP) or 'M' (MOVE).\
+**pstate**: Array of touch point states. Can be 'D' (DOWN), 'U' (UP) or 'M' (MOVE).
 
 **Returns**: IUP_CLOSE will be processed.
 
 **GESTURE_CB**: Action generated when a touch gesture is recognized.
 Not supported in Motif, FLTK and Haiku.
-On Win32 only PINCH, ROTATE and PAN are reported, and only when TOUCH is not set.
-On Cocoa only PINCH, ROTATE and SWIPE are reported.
-In QML SWIPE is not reported.
+In Win32, only PINCH, ROTATE and PAN are reported, and only when TOUCH is not set.
+In macOS, only PINCH, ROTATE and SWIPE are reported.
+In QML, SWIPE is not reported.
 From a mouse, GTK, GTK 4 and EFL report SWIPE, TAP and LONGPRESS, Qt reports LONGPRESS and WinUI reports TAP; the other gestures need a touch screen or a trackpad.
 
     int function(Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2);
 
-**ih**: identifies the element that activated the event.\
+**ih**: identifier of the element that activated the event.\
 **gesture**: the gesture type: IUP_GESTURE_PINCH, IUP_GESTURE_ROTATE, IUP_GESTURE_PAN, IUP_GESTURE_SWIPE, IUP_GESTURE_TAP or IUP_GESTURE_LONGPRESS.\
 **state**: for the continuous gestures (PINCH, ROTATE, PAN) one of IUP_GESTURE_BEGIN, IUP_GESTURE_CHANGED, IUP_GESTURE_END or IUP_GESTURE_CANCEL; the discrete gestures (SWIPE, TAP, LONGPRESS) report IUP_GESTURE_END.\
 **x**, **y**: gesture center position in pixels, relative to the top-left corner of the canvas.\
@@ -244,8 +243,8 @@ A single touch interaction can trigger several gestures at once (for example PIN
 
 ### Notes
 
-Note that some keys might remove the focus from the canvas.
-To avoid this, return IGNORE in the [K_ANY](../call/iup_k_any.md) callback.
+Some keys might remove the focus from the canvas.
+To avoid this, return IUP_IGNORE in the [K_ANY](../call/iup_k_any.md) callback.
 
 The mouse cursor position can be programmatically controlled using the global attribute [CURSORPOS](../attrib/iup_globals.md#cursorpos).
 
@@ -258,7 +257,7 @@ When the canvas is displayed for the first time, the callback call order is alwa
 When the canvas is resized, the ACTION callback is always called after the RESIZE_CB callback.
 
 The [IupDraw](../func/iup_draw.md) API can be used to draw in the canvas.
-But the ACTION callback function cannot be called manually from inside the application, it must be invoked by the system, so if you need to redraw then call [IupRedraw](../func/iup_redraw.md) or [IupUpdate](../func/iup_update.md).
+The ACTION callback cannot be called by the application; to redraw, call [IupRedraw](../func/iup_redraw.md) or [IupUpdate](../func/iup_update.md).
 
 ### Examples
 

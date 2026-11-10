@@ -7,7 +7,6 @@ In Linux, the implementation uses [WebKitGTK](http://webkitgtk.org/), a GTK port
 When using GTK 2, it uses the WebKit1 API.
 When using GTK 3, it uses the WebKit2 API.
 When using GTK 4, it uses the WebKit6 API.
-The WebKit library is loaded dynamically at runtime.
 
 In Windows, the implementation uses [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/), the Chromium-based web control from Microsoft Edge.
 The WebView2 runtime is detected and loaded automatically.
@@ -35,7 +34,7 @@ Content loaded with HTML is not sandboxed and uses the origin of the application
 The `javascript:` and `vbscript:` schemes are rejected in VALUE.
 NAVIGATE_CB and NEWWINDOW_CB are not called for navigations started inside a page loaded with VALUE.
 
-Not supported: BACKCOUNT, FORWARDCOUNT, CANGOBACK, CANGOFORWARD, ITEMHISTORY, OPENFILE, SAVEFILE and PRINTPREVIEW.
+Not supported in WebAssembly: BACKCOUNT, FORWARDCOUNT, CANGOBACK, CANGOFORWARD, ITEMHISTORY, OPENFILE, SAVEFILE and PRINTPREVIEW.
 
 ### Initialization and Usage
 
@@ -126,8 +125,6 @@ Not supported in Haiku and QML.
 
 **PASTE** (write-only): pastes the clipboard to the selection or caret.
 
-**SELECTALL** (write-only): selects all the contents.
-
 **FIND** (write-only): shows a dialog for finding a text.
 
 **EXECCOMMAND** (write-only): executes an editing command.
@@ -158,7 +155,7 @@ The command name must be stored on the attribute COMMAND.
 **FONTNAME**: font face name.
 
 **FONTSIZE**: font relative size.
-Can be a number form "1" to "7", meaning 1: x-small, 2: small, 3: medium, 4: large, 5: x-large, 6: xx-large, 7: xxx-large.
+Can be a number from "1" to "7", meaning 1: x-small, 2: small, 3: medium, 4: large, 5: x-large, 6: xx-large, 7: xxx-large.
 
 **FORMATBLOCK**: The block format.
 It can be: "Heading 1", "Heading 2", "Heading 3", "Heading 4", "Heading 5", "Heading 6", "Paragraph", "Preformatted" and "Block Quote".
@@ -175,7 +172,7 @@ It can be: "Heading 1", "Heading 2", "Heading 3", "Heading 4", "Heading 5", "Hea
 
 ### Callbacks
 
-**COMPLETED_CB**`:` action generated when a page successfully completed.
+**COMPLETED_CB**: action generated when a page successfully completed.
 Can be called multiple times when a frame set loads its frames, or when a page loads also other pages.
 
     int function(Ihandle* ih, char* url);
@@ -183,14 +180,14 @@ Can be called multiple times when a frame set loads its frames, or when a page l
 **ih**: identifier of the element that activated the event.\
 **url**: the URL address that completed.
 
-**ERROR_CB**`:` action generated when page load fail.
+**ERROR_CB**: action generated when a page load fails.
 
     int function(Ihandle* ih, char* url);
 
 **ih**: identifier of the element that activated the event.\
 **url**: the URL address that caused the error.
 
-**NAVIGATE_CB**`:` action generated when the browser requests a navigation to another page.
+**NAVIGATE_CB**: action generated when the browser requests a navigation to another page.
 It is called before navigation occurs.
 Can be called multiple times when a frame set loads its frames, or when a page loads also other pages.
 
@@ -201,7 +198,7 @@ Can be called multiple times when a frame set loads its frames, or when a page l
 
 **Returns**: IUP_IGNORE will abort navigation.
 
-**NEWWINDOW_CB**`:` action generated when the browser requests a new window.
+**NEWWINDOW_CB**: action generated when the browser requests a new window.
 
     int function(Ihandle* ih, char* url);
 

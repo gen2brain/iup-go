@@ -15,13 +15,9 @@ Creates an image to be shown on a label, button, toggle, or as a cursor.
 **width**: Image width in pixels.\
 **height**: Image height in pixels.\
 **pixels**: Vector containing the value of each pixel.
-**IupImage** uses 1 value per pixel, **IupImageRGB** uses 3 values and  **IupImageRGBA** uses 4 values per pixel.
+**IupImage** uses 1 value per pixel, **IupImageRGB** uses 3 values and **IupImageRGBA** uses 4 values per pixel, one for each color channel (r0, g0, b0, r1, g1, b1, ...).
 Each value is always 8 bit. Origin is at the top-left corner, and data is oriented top to bottom, and left to right.
-The pixels array is duplicated internally so you can discard it after the call.\
-**pixel0**, **pixel1**, **pixel2**, ...: Value of the pixels.
-But for **IupImageRGB** and **IupImageRGBA** in fact will be one value for each color channel (pixel_r_0, pixel_g_0, pixel_b_0, pixel_r_1, pixel_g_1, pixel_b_1, pixel_r_2, pixel_g_2, pixel_b_2, ...).\
-**line0**, **line1**: unnamed tables, one for each line containing pixels values. See Notes below.\
-**colors**: table named colors containing the colors indices.
+The pixels array is duplicated internally and can be discarded after the call.
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 
@@ -58,7 +54,7 @@ Images created with **IupImage** returns 1, with **IupImageRGB** returns 3 and w
 **DPI**: resolution expected for display. Used when AUTOSCALE=DPI.
 If not defined the global attribute [IMAGESDPI](../attrib/iup_globals.md#imagesdpi) will be used.
 
-**FLAT_ALPHA**: when set to YES, the alpha channel of an RGBA image is flattened against BGCOLOR when the native image is created, instead of relying on system composition. Default: NO.
+**FLAT_ALPHA**: when set to YES, the alpha channel of an RGBA image is flattened against BGCOLOR when the native image is created, instead of relying on system composition. Default: "NO".
 Honored in Win32, Qt, QML, FLTK and macOS. The Win32 IupMenuItem, IupSubmenu, IupTabs, IupTree and IupToggle controls set it to YES by default on their images.
 
 **HEIGHT** (read-only): Image height in pixels.
@@ -75,10 +71,10 @@ Image contents is ignored and it will contain trash after the reshape.
 
 **RESIZE** (write-only): given a new size if format "*width*x*height*", changes WIDTH and HEIGHT attributes, and resizes the image contents using bilinear interpolation for RGB and RGBA images and nearest neighborhood for 8 bits.
 
-**SCALE**: number of image pixels in a logical unit of the screen.
+**SCALE** (non-inheritable): number of image pixels in a logical unit of the screen.
 When defined, the image occupies WIDTH/SCALE x HEIGHT/SCALE logical units, and the first time the image is used its pixels are resampled to the screen scale ([SCREENSCALE](../attrib/iup_globals.md#screenscale-read-only)), so an image with SCALE equal to SCREENSCALE is shown with all its pixels.
 RGB and RGBA images are resampled with a smoothing filter, images created with **IupImage** with nearest neighbor.
-When defined, AUTOSCALE and IMAGEAUTOSCALE are ignored. Changing it after the image is used has no effect. (non-inheritable)
+When defined, AUTOSCALE and IMAGEAUTOSCALE are ignored. Changing it after the image is used has no effect.
 Not supported for cursors and dialog icons.
 
 **SCALED** (read-only): returns YES if the image has been resized.
@@ -100,7 +96,7 @@ The images should be destroyed when they are no longer necessary, by means of th
 To destroy an image, it cannot be in use, i.e., the controls where it is used should be destroyed first.
 Images that were associated with controls by names are automatically destroyed in **IupClose**.
 
-Please observe the rules for creating cursor images: [CURSOR](../attrib/iup_cursor.md).
+The rules for creating cursor images are in [CURSOR](../attrib/iup_cursor.md).
 
 The underlying native image type per driver:
 
@@ -121,7 +117,7 @@ The underlying native image type per driver:
 #### Usage
 
 Images are used in elements such as buttons and labels by attributes that points to names registered with [IupSetHandle](../func/iup_sethandle.md).
-You can also use **IupSetAttributeHandle** to shortcut the set of an image as an attribute.
+**IupSetAttributeHandle** sets an image as an attribute directly.
 For example:
 
     Ihandle* image = IupImage(width, height, pixels);
@@ -131,7 +127,7 @@ For example:
     or
     IupSetAttributeHandle(label, "IMAGE", image); // an automatic name will be created internally
 
-In all drivers, a path to a file name, or a system-specific stock / named image, can also be used as the attribute value. See [IupImageGetHandle](../func/iup_imagegethandle.md) for the per-driver list of accepted file formats and named lookups. In WebAssembly only image files in [RESOURCEDIR](../attrib/iup_globals.md#resourcedir-read-only) load.
+In all drivers, a path to a file name, or a system-specific stock / named image, can also be used as the attribute value. See [IupImageGetHandle](../func/iup_imagegethandle.md) for the per-driver list of accepted file formats and named lookups. In WebAssembly, only image files in [RESOURCEDIR](../attrib/iup_globals.md#resourcedir-read-only) load.
 
     IupSetAttribute(label, "IMAGE", "TECGRAF_BITMAP");      // a resource in the linked "etc/iup.rc" file (Win32)
     IupSetAttribute(label, "IMAGE", "gtk-open");            // a GTK Stock Item (GTK 3)
@@ -142,8 +138,7 @@ In all drivers, a path to a file name, or a system-specific stock / named image,
 In Motif, the alpha channel in RGBA images is always composed with the control BGCOLOR by IUP prior to setting the image at the control, because the native image has no alpha channel.
 IupDrawImage in Motif keeps the alpha channel when the X11 RENDER extension is available.
 In all other drivers the alpha channel is composed internally by the system.
-But in Win32 a few controls compose the alpha a priori against BGCOLOR as well, controlled by the **FLAT_ALPHA** attribute (YES by default for them): **IupMenuItem**, **IupSubmenu**, **IupTabs**, **IupTree** and **IupToggle**.
-This implies that if the control background is not uniform, then probably there will be a visible difference where it should be transparent.
+In Win32, the controls with FLAT_ALPHA=YES compose the alpha against BGCOLOR; a non-uniform control background then shows a visible difference where it should be transparent.
 
 For **IupImage**, if a color is not set, then it is used a default color for the 16 first colors.
 The default color table is the same for all drivers:
@@ -154,7 +149,7 @@ The default color table is the same for all drivers:
      3 = 128,128,  0 (dark yellow)
      4 =   0,  0,128 (dark blue)
      5 = 128,  0,128 (dark magenta) 
-     6 =   0,128,128 (dark cian) 
+     6 =   0,128,128 (dark cyan) 
      7 = 192,192,192 (gray)
      8 = 128,128,128 (dark gray)
      9 = 255,  0,  0 (red)     
@@ -162,7 +157,7 @@ The default color table is the same for all drivers:
     11 = 255,255,  0 (yellow)
     12 =   0,  0,255 (blue)
     13 = 255,  0,255 (magenta)
-    14 =   0,255,255 (cian)  
+    14 =   0,255,255 (cyan)  
     15 = 255,255,255 (white)
 
 For images with more than 16 colors, and up to 256 colors, all the color indices must be defined up to the maximum number of colors.

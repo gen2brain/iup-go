@@ -22,9 +22,9 @@ The program must be linked to the GL library (iupgl) and the OpenGL library.
 To link with the OpenGL libraries in Windows, add: opengl32.lib.
 In Linux/Unix with EGL (GTK3, GTK4, Qt, QML, EFL, FLTK), add: -lEGL -lGL.
 In Linux/Unix with GLX (Motif, GTK2), add: -lGL.
-In macOS add: -framework OpenGL.
-On Haiku, add: -lGL.
-On WebAssembly no GL library is linked.
+In macOS, add: -framework OpenGL.
+In Haiku, add: -lGL.
+In WebAssembly, no GL library is linked.
 
 ### Creation
 
@@ -45,21 +45,21 @@ After the mapping, specifying these special attributes has no effect.
 > ------------------------------------------------------------------------
 
 **ACCUM_RED_SIZE**, **ACCUM_GREEN_SIZE**, **ACCUM_BLUE_SIZE** and **ACCUM_ALPHA_SIZE**: Indicate the number of bits for representing the color components in the accumulation buffer.
-Value 0 means the accumulation buffer is not necessary. Default is 0.
+Value 0 means the accumulation buffer is not necessary. Default: "0".
 
 **ALPHA_SIZE**: Indicates the number of bits for representing each colors alpha component (valid only for RGBA and for hardware that store the alpha component).
-Default is "0".
+Default: "0".
 
 **ARBCONTEXT** (non-inheritable): enable the usage of ARB extension contexts.
 If during map the ARB extensions could not be loaded the attribute will be set to NO and the standard context creation will be used.
-Default: NO. On EGL and macOS, setting CONTEXTVERSION, CONTEXTPROFILE, or CONTEXTFLAGS also enables extended context creation.
+Default: "NO". In EGL and macOS, setting CONTEXTVERSION, CONTEXTPROFILE, or CONTEXTFLAGS also enables extended context creation.
 
-**BUFFER**: Indicates if the buffer will be single "SINGLE" or double "DOUBLE". Default is "SINGLE".
+**BUFFER**: Indicates if the buffer will be single "SINGLE" or double "DOUBLE". Default: "SINGLE".
 
 **BUFFER_SIZE**: Indicates the number of bits for representing the color indices (valid only for INDEX).
 The system default is 8 (256-color palette).
 
-**COLOR**: Indicates the color model to be adopted: "INDEX" or "RGBA". Default is "RGBA".
+**COLOR**: Indicates the color model to be adopted: "INDEX" or "RGBA". Default: "RGBA".
 Indexed color mode is not supported on macOS, EGL, and Haiku; RGBA will be used instead.
 
 **COLORMAP** (read-only): Returns the platform colormap handle, if COLOR=INDEX.
@@ -67,13 +67,13 @@ Indexed color mode is not supported on macOS, EGL, and Haiku; RGBA will be used 
 **CONTEXT** (read-only): Returns the platform OpenGL context handle.
 
 **CONTEXTFLAGS** (non-inheritable): Context flags. Can be DEBUG, FORWARDCOMPATIBLE or DEBUGFORWARDCOMPATIBLE.
-On Windows/GLX, used only when ARBCONTEXT=YES. On EGL and macOS, can be used independently.
+In Windows/GLX, used only when ARBCONTEXT=YES. In EGL and macOS, can be used independently.
 
 **CONTEXTPROFILE** (non-inheritable): Context profile mask. Can be CORE, COMPATIBILITY or CORECOMPATIBILITY.
-On Windows/GLX, used only when ARBCONTEXT=YES. On EGL and macOS, can be used independently.
+In Windows/GLX, used only when ARBCONTEXT=YES. In EGL and macOS, can be used independently.
 
 **CONTEXTVERSION** (non-inheritable): Context version number in the format "major.minor".
-On Windows/GLX, used only when ARBCONTEXT=YES. On EGL and macOS, can be used independently.
+In Windows/GLX, used only when ARBCONTEXT=YES. In EGL and macOS, can be used independently.
 
 **DEPTH_SIZE**: Indicates the number of bits for representing the *z* coordinate in the z-buffer.
 Value 0 means the z-buffer is not necessary.
@@ -81,16 +81,16 @@ Value 0 means the z-buffer is not necessary.
 **ERROR** (read-only): If an error is found during **IupMap** and **IupGLMakeCurrent**, returns a string containing a description of the error in English.
 See notes below.
 
-**LASTERROR** (read-only) [Windows Only]: If an error is found, returns a string with the system error description.
+**LASTERROR** [Windows Only] (read-only): If an error is found, returns a string with the system error description.
 
 **RED_SIZE**, **GREEN_SIZE** and **BLUE_SIZE**: Indicate the number of bits for representing each color component (valid only for RGBA).
 The system default is usually 8 for each component (True Color support).
 
-**REFRESHCONTEXT** (write-only) [Windows Only]: action attribute to refresh the internal device context when it is not owned by the window class.
+**REFRESHCONTEXT** [Windows Only] (write-only): action attribute to refresh the internal device context when it is not owned by the window class.
 The **IupCanvas** of the Win32 driver will always create a window with an owned DC, but GTK in Windows will not.
 
 **STENCIL_SIZE**: Indicates the number of bits in the stencil buffer.
-Value 0 means the stencil buffer is not necessary. Default is 0.
+Value 0 means the stencil buffer is not necessary. Default: "0".
 
 **STEREO**: Creates a stereo GL canvas (special glasses are required to visualize it correctly).
 Possible values: "YES" or "NO". Default: "NO".
@@ -102,7 +102,7 @@ That canvas must be mapped before this canvas.
 **VISUAL** (read-only): Returns the platform visual handle.
 
 **VSYNC** [macOS and Haiku Only]: Enable or disable vertical synchronization.
-Can be "YES" or "NO". Default: "YES". On macOS this is creation-only; on Haiku it may be changed at runtime and affects subsequent `IupGLSwapBuffers` calls.
+Can be "YES" or "NO". Default: "YES". In macOS, this is creation-only; in Haiku, it may be changed at runtime and affects subsequent **IupGLSwapBuffers** calls.
 
 ### Callbacks
 
@@ -114,7 +114,7 @@ Additionally:
 
     glViewport(0,0,width,height);
 
-**SWAPBUFFERS_CB**`:` action generated when **IupGLSwapBuffers** is called.
+**SWAPBUFFERS_CB**: action generated when **IupGLSwapBuffers** is called.
 
     int function(Ihandle* ih);
 
@@ -156,12 +156,12 @@ Creates a bitmap display list from the current FONT attribute.
 See the documentation of the wglUseFontBitmaps (Windows) and glXUseXFont (GLX) functions.
 Not available on EGL, macOS or Haiku.
 
-    void IupGLWait(int gl)
+    void IupGLWait(int gl);
 
 If gl is non-zero it will call glFinish or glXWaitGL, else will call GdiFlush or glXWaitX.
-On EGL, calls eglWaitClient or eglWaitNative respectively.
-On macOS, calls glFinish or flushGraphics respectively.
-On Haiku, calls glFinish when gl is non-zero; the else branch is a no-op (no app-server side flush equivalent).
+In EGL, calls eglWaitClient or eglWaitNative respectively.
+In macOS, calls glFinish or flushGraphics respectively.
+In Haiku, calls glFinish when gl is non-zero, else does nothing.
 
 ### Notes
 

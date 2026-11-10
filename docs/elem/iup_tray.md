@@ -4,8 +4,6 @@ Creates a system tray icon (also known as notification area icon or status icon)
 Allows the application to display an icon in the system tray with optional tooltip and context menu.
 Each tray icon should be destroyed using [IupDestroy](../func/iup_destroy.md).
 
-This control replaces the TRAY* attributes that were previously set directly on [IupDialog](../dlg/iup_dialog.md).
-
 ### Creation
 
     Ihandle* IupTray(void);
@@ -26,7 +24,7 @@ See also [IupImage](iup_image.md).
 
 **MENU** (non-inheritable): Context menu displayed on right-click.
 The value is a handle name associated with an [IupMenu](iup_menu.md) element.
-On Linux, MENU support depends on the tray protocol: it is supported when using SNI (StatusNotifierItem) via the dbusmenu protocol, but not supported when using the legacy XEmbed protocol (GTK 3 and Motif built with XEmbed support).
+In Linux, MENU support depends on the tray protocol: it is supported when using SNI (StatusNotifierItem) via the dbusmenu protocol, but not supported when using the legacy XEmbed protocol (GTK 3 and Motif built with XEmbed support).
 When MENU is not supported, use the TRAYCLICK_CB callback to detect right-clicks and call [IupPopup](../func/iup_popup.md) manually to show a context menu.
 
 **TITLE** (non-inheritable): Reserved for future use.
@@ -64,13 +62,13 @@ These attributes are only supported in Windows (Win32 and WinUI).
 
 IupTray does not create a visible IUP element. It is a non-interactive control that interfaces with the operating system's system tray or notification area.
 
-On Linux/Unix, two tray protocols are supported depending on the build configuration and driver:
+In Linux/Unix, two tray protocols are supported depending on the build configuration and driver:
 - **SNI (StatusNotifierItem)**: Used by GTK 4, Qt, QML, FLTK, EFL, and optionally GTK 3 and Motif. Communicates via D-Bus and supports the MENU attribute via the dbusmenu protocol.
 - **XEmbed**: Legacy protocol used by GTK 3 and Motif when built with XEmbed support. Uses GtkStatusIcon (GTK) or X11 XEmbed protocol (Motif). Does not support the MENU attribute.
 
-On Haiku the tray uses a Deskbar replicant. The executable must export its Instantiate symbol; link with `-Wl,-soname,_APP_` so Deskbar can `dlopen` the team and resolve the replicant constructor.
+In Haiku, the tray uses a Deskbar replicant. The executable must export its Instantiate symbol; link with `-Wl,-soname,_APP_` so Deskbar can `dlopen` the team and resolve the replicant constructor.
 
-Not supported on Android, iOS and WebAssembly (no system tray).
+Not supported in Android, iOS and WebAssembly (no system tray).
 
 ### Examples
 
@@ -81,7 +79,7 @@ Not supported on Android, iOS and WebAssembly (no system tray).
 | GTK                             | Win32                          | macOS                          |
 | ![](../images/iuptray_gtk3.png) | ![](../images/iuptray_win.png) | ![](../images/iuptray_mac.png) |
 
-The tray icon with its MENU open. On GTK this uses the SNI protocol.
+The tray icon with its MENU open. In GTK, this uses the SNI protocol.
 
 ### See Also
 

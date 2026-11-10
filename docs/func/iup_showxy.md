@@ -16,8 +16,8 @@ The following definitions can also be used:
 - IUP_MOUSEPOS: Positions the dialog on the mouse position
 - IUP_CENTERPARENT: Horizontally centralizes the dialog relative to its parent
 - IUP_CURRENT: use the current position of the dialog.
-- IUP_LEFTPARENT: Positions the element on the left border of its parent. Not valid for menus.
-- IUP_RIGHTPARENT: Positions the element on the right border of its parent. Not valid for menus.
+- IUP_LEFTPARENT: Positions the dialog on the left border of its parent.
+- IUP_RIGHTPARENT: Positions the dialog on the right border of its parent.
 
 **y**: vertical position of the top-left corner of the window, relative to the origin of the main screen.
 The following definitions can also be used:
@@ -28,11 +28,11 @@ The following definitions can also be used:
 - IUP_MOUSEPOS: Positions the dialog on the mouse position
 - IUP_CENTERPARENT: Vertically centralizes the dialog relative to its parent
 - IUP_CURRENT: use the current position of the dialog.
-- IUP_TOPPARENT: Positions the element on the top border of its parent. Not valid for menus.
-- IUP_BOTTOMPARENT: Positions the element on the bottom border of its parent. Not valid for menus.
+- IUP_TOPPARENT: Positions the dialog on the top border of its parent.
+- IUP_BOTTOMPARENT: Positions the dialog on the bottom border of its parent.
 
 **Returns:** IUP_NOERROR if successful.
-Returns IUP_INVALID if not a dialog.  If there was an error returns IUP_ERROR.
+Returns IUP_INVALID if not a dialog. If there was an error returns IUP_ERROR.
 
 ### Notes
 
@@ -40,7 +40,7 @@ Will call **IupMap** for the element.
 
 **x** and **y** positions are the same as returned by the [SCREENPOSITION](../attrib/iup_screenposition.md) attribute.
 
- IUP_MOUSEPOS position is the same as returned by the [CURSORPOS](../attrib/iup_globals.md#cursorpos) global attribute.
+IUP_MOUSEPOS position is the same as returned by the [CURSORPOS](../attrib/iup_globals.md#cursorpos) global attribute.
 
 See the [PLACEMENT](../dlg/iup_dialog.md) attribute for other position and show options.
 
@@ -55,7 +55,7 @@ If the already visible dialog is not modal, but it was disabled by one (a call t
 
 In EFL on X11, showing a new dialog at 0,0 leaves the placement to the window manager.
 
-On Wayland, Android and iOS the **x** and **y** values are ignored: clients cannot position their own windows on Wayland, Android Activities fill the screen, and iOS dialogs present as system-positioned sheets.
+In Wayland, Android and iOS, the **x** and **y** values are ignored.
 
 ### See Also
 

@@ -27,7 +27,7 @@ Changing it while running restarts the capture on the new camera.
 **DEVICECOUNT** (read-only): Number of cameras found.
 
 **DEVICENAMEid** (read-only): Name of the camera at index "id", or NULL.
-In WebAssembly it is "Camera N" until camera access has been granted.
+In WebAssembly, it is "Camera N" until camera access has been granted.
 
 **RUN** (non-inheritable): Starts the capture when "YES" and stops it when "NO". Default: "NO".
 Starting asks the user for permission if the platform requires it, see PERMISSION_CB.
@@ -45,7 +45,7 @@ Affects the display, FRAME_CB and SNAPSHOT.
 **SNAPSHOT** (write-only): Saves the last frame to the given file name. The format is taken from the file extension, see [IupImageSave](../func/iup_imagesave.md).
 Ignored when no frame was received yet.
 
-**BGCOLOR**: Color of the area around the picture when the canvas aspect ratio differs from the frame. Default: the global attribute DLGBGCOLOR.
+[BGCOLOR](../attrib/iup_bgcolor.md): Color of the area around the picture when the canvas aspect ratio differs from the frame. Default: the global attribute DLGBGCOLOR.
 
 **AVAILABLE** (read-only): Returns "YES" if the platform has camera support, "NO" otherwise.
 
@@ -87,15 +87,15 @@ All three callbacks are called from the main loop.
 
 ### Notes
 
-The application must declare the platform permission, IUP cannot do it:
+The application must declare the platform permission:
 
 - Android: `CAMERA` in the application manifest. The runtime prompt is shown by IUP.
 - iOS and macOS: `NSCameraUsageDescription` in Info.plist. Without it the request fails silently and PERMISSION stays "PROMPT".
 - WebAssembly: the page must be a secure context. The browser shows its own prompt.
 
-On Linux and BSD the cameras are the Video4Linux2 capture devices; a camera that offers only compressed formats other than MJPEG cannot be used.
+In Linux and BSD, the cameras are the Video4Linux2 capture devices; a camera that offers only compressed formats other than MJPEG cannot be used.
 
-On iOS and Android the frames are rotated to the interface orientation in effect when RUN is set.
+In iOS and Android, the frames are rotated to the interface orientation in effect when RUN is set.
 
 ### Examples
 

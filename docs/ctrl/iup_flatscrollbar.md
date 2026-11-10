@@ -38,25 +38,25 @@ Default: 2000.
 **SB_IMAGELEFT, SB_IMAGERIGHT, SB_IMAGETOP, SB_IMAGEBOTTOM** (non-inheritable): Arrow image name (the attribute is relative to where the arrow is pointing).
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](../elem/iup_image.md).
-IMPORTANT = all images must be square with side equals to SCROLLBARSIZE.
+All images must be square with side equal to SCROLLBARSIZE.
 
 **SB_IMAGE*HIGHLIGHT** (non-inheritable): Arrow image name of the element in highlight state.
-If it is not defined then the IMAGE* is used.
+If it is not defined then SB_IMAGE* is used.
 
 **SB_IMAGE*INACTIVE** (non-inheritable): Arrow image name of the element when inactive.
-If it is not defined then the IMAGE* is used and its colors will be replaced by a modified version creating the disabled effect.
+If it is not defined then SB_IMAGE* is used and its colors will be replaced by a modified version creating the disabled effect.
 
 **SB_IMAGE*PRESS** (non-inheritable): Arrow image name of the element in pressed state.
-If it is not defined then the IMAGE* is used.
+If it is not defined then SB_IMAGE* is used.
 
 ### Affects
 
-[IupFlatScrollBox](iup_flatscrollbox.md), [IupMatrix](iup_matrix.md)
+[IupFlatScrollBox](iup_flatscrollbox.md), [IupFlatList](iup_flatlist.md), [IupFlatTree](iup_flattree.md), [IupMatrix](iup_matrix.md)
 
 ### Notes
 
 When SHOWFLOATING=YES, the natural size of the **IupMatrix** is reduced because it will not include the scrollbars area.
-But notice that when vertically scrolling the last column or horizontally scrolling the last line the visibility or the cells are reduced because the scrollbar is show above the cells.
+The scrollbar is shown above the cells, so the last column or line can be partially covered.
 
 The flat scrollbar does not support the XMIN nor YMIN attributes. They are considered to be 0 always.
 The XAUTOHIDE and YAUTOHIDE are considered to be YES always.

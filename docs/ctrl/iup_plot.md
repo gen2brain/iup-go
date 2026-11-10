@@ -5,10 +5,7 @@ Creates a plot of one or more data sets. It inherits from [IupCanvas](../elem/iu
 This is an additional control.
 Uses the [IupDraw](../func/iup_draw.md) API for internal drawing.
 
-It completely replaces the old **IupPPlot** control.
-This control eliminates all the limitations and issues we have with the PPlot library.
-But we reused several [PPlot](http://pplot.sourceforge.net/) source code parts, so we would like to thank the author Pier Philipsen for making it with a very flexible BSD License.
-We also would like to thank Marian Trifon for the first IupPPlot implementation which part was also reused here.
+Parts of the code are based on [PPlot](http://pplot.sourceforge.net/) by Pier Philipsen (BSD License) and on the first IupPPlot implementation by Marian Trifon.
 
 ### Initialization and Usage
 
@@ -23,7 +20,7 @@ Each plot will then have an exclusive plot area inside the control.
 When it is just one plot, this area will occupy the whole control area.
 The plot attributes are set based on the current plot.
 
-Each plot can contain 2 **axis** (X and Y), a **title**, a **legend box**, a **grid**, a **dataset area** and as many **datasets** you want.
+Each plot can contain 2 **axis** (X and Y), a **title**, a **legend box**, a **grid**, a **dataset area** and any number of **datasets**.
 
 Each data set is added using the **Auxiliary Functions**. All other plot parameters are configured by attributes.
 **IupPlot** support plots of **linear** sequential data, as a sequence of 2D samples ([x1,y1],[x2,y2],...) coordinates.
@@ -57,7 +54,7 @@ The same result can be obtained by moving the mouse wheel.
 To zoom in to a region, click with the left mouse button, drag to form a selection rectangle and release the button.
 In all cases the **Ctrl** key must be pressed during the interaction.
 
- Zoom can be reset by double-clicking with the left mouse button or pressing the "." key.
+Zoom can be reset by double-clicking with the left mouse button or pressing the "." key.
 Zoom in and out can also be performed using the "+" and "-" keys respectively.
 
 **Pan** is performed after zoom in, and it does not use the Ctrl key.
@@ -121,7 +118,7 @@ Context menu behavior can be controlled using the respective callbacks.
 
     Ihandle* IupPlot(void);
 
-This function returns the identifier of the created plot, or NULL if an error occurs.
+**Returns:** the identifier of the created element, or NULL if an error occurs.
 
 ### Auxiliary Functions
 
@@ -157,8 +154,8 @@ Strings will be shown only in linear scale, they will not be shown in Logarithm 
 Adds a 2D dataset to the plot and returns the dataset index. The data set can be empty.
 Redraw is NOT done until the REDRAW attribute is set.
 Also it will change the current dataset index to the return value.
-You can only set attributes of a dataset AFTER you added the dataset.  Can only be called if **IupPlotBegin** was called.
-Whenever you create a dataset all its "DS_*" attributes will be set to the default values.
+Dataset attributes can only be set AFTER the dataset is added. Can only be called if **IupPlotBegin** was called.
+When a dataset is created, all its "DS_*" attributes are set to the default values.
 
 ------------------------------------------------------------------------
 
@@ -170,7 +167,7 @@ The text can contains line comments starting with '#'.
 The file can have more than one dataset but the first column will always be the X coordinate of all datasets.
 If **strXdata**=1 then the first column is treated as a string. The first line will define the number of datasets.
 The file must have at least two columns of data. Returns a non-zero value is successful, or a zero value if failed.
-Notice that if it fails during data read, but after the fist line, the datasets were already created and they will not be destroyed when the function returns.
+If it fails during data read after the first line, the datasets already created are not destroyed.
 
 ------------------------------------------------------------------------
 
@@ -285,9 +282,9 @@ Only works when DS_MODE is LINE, MARKLINE, AREA, STEP or ERRORBAR.
 **READONLY**: when NO, the user can remove the selected samples with the Del key; when YES, interactive editing and removal are disabled. Default: YES.
 
 **REDRAW** (write-only): redraw all plots and update the display.
-All other attributes will **NOT** update the display, so you can set many attributes without visual output.
+All other attributes do **NOT** update the display.
 Value can be NULL. If value is "NOFLUSH" rendering is performed internally but display is not updated.
-If value is "CURRENT," only the current plot defined by "PLOT_CURRENT" will be updated, and it will behave as "NOFLUSH".
+If value is "CURRENT", only the current plot defined by "PLOT_CURRENT" will be updated, and it will behave as "NOFLUSH".
 Works only after mapped.
 
 **SYNCVIEW**: when a plot view is changed by interactive zoom or pan, the other plots are zoomed or panned accordingly.
@@ -310,13 +307,13 @@ Can be set to "+" (zoom in), "-" (zoom out), or "0" (reset).
 
 All color attributes accept an extra component for alpha. The default alpha is always 255 (opaque).
 
-**[BGCOLOR](../attrib/iup_bgcolor.md)** (inheritable): the default background color.
+[BGCOLOR](../attrib/iup_bgcolor.md) (inheritable): the default background color.
 Default: "255 255 255". When set BACKCOLOR and LEGENDBOXBACKCOLOR of all plots will be reset to the same value.
 
-**[FGCOLOR](../attrib/iup_fgcolor.md)** (inheritable): the default text and line color.
+[FGCOLOR](../attrib/iup_fgcolor.md) (inheritable): the default text and line color.
 Default: "0 0 0 255". When set, TITLE, AXIS, BOX and LEGENDBOX colors of all plots will be reset to the same value.
 
-**[FONT](../attrib/iup_font.md)** (inheritable): the default font used in all text elements of the plot: title, legend and labels.
+[FONT](../attrib/iup_font.md) (inheritable): the default font used in all text elements of the plot: title, legend and labels.
 Use "Plain" or "" to reset "Bold"/"Italic" styles.
 When set, will not overwrite *FONTSTYLE nor *FONTSIZE attributes.
 
@@ -347,7 +344,7 @@ The maximum number of plots is 20.
 
 All plot attributes and callbacks are dependent on this value.
 
-**IMPORTANT**: When an **IupCanvas** mouse event occurs, such as BUTTON_CB, WHEEL_CB or MOTION_CB, the current plot is set to the plot where the event occurred.
+When an **IupCanvas** mouse event occurs, such as BUTTON_CB, WHEEL_CB or MOTION_CB, the current plot is set to the plot where the event occurred.
 
 **PLOT_INSERT** (write-only): inserts a new plot at the given index. If value is NULL will append after the last plot.
 Value can also be the TITLE of an existing plot.
@@ -361,7 +358,7 @@ If there is not enough plots to fill all columns an empty space will be displaye
 If value is "CURRENT" or NULL the current plot is removed.
 Value can also be the TITLE of an existing plot.
 
-#### IMPORTANT: All the following attributes and callbacks are dependent on the PLOT_CURRENT attribute.
+All the following attributes and callbacks depend on the PLOT_CURRENT attribute.
 
 #### Interaction Configuration
 
@@ -413,7 +410,7 @@ Default: YES.
 
 **TITLEPOSXY**: position of the title in the format "x,y" in pixels inside the plot area relative to the bottom-left corner of the plot, oriented left to right and bottom to top, and anchored at the north-center point of the title bounding box.
 When set, it will also set TITLEPOSAUTO to NO.
-Notice that when this value is used, if the plot is resized the value must also be manually updated to maintain the same appearance.
+When the plot is resized, the value must be updated manually to keep the same appearance.
 
 #### Legend Configuration
 
@@ -428,20 +425,20 @@ The Legend text color uses the DS_COLOR attribute of the respective dataset.
 
 **LEGENDBOXBACKCOLOR**: box background color. Default: BGCOLOR.
 
-**LEGENDBOXLINESTYLE**: line style of the grid. Can be: "CONTINUOUS", "DASHED", "DOTTED", "DASH_DOT", "DASH_DOT_DOT".
-Default is "CONTINUOUS".
+**LEGENDBOXLINESTYLE**: line style of the legend box. Can be: "CONTINUOUS", "DASHED", "DOTTED", "DASH_DOT", "DASH_DOT_DOT".
+Default: "CONTINUOUS".
 
 **LEGENDBOXLINEWIDTH**: line width of the legend box. Default: 1.
 
 **LEGENDFONTSIZE, LEGENDFONTSTYLE**: the legend box text font size and style. Default: FONT.
 
-**LEGENDPOS**: legend box position. Can be: "TOPLEFT", "TOPRIGHT", "BOTTOMLEFT", "BOTTOMRIGHT, "BOTTOMCENTER" or "XY".
+**LEGENDPOS**: legend box position. Can be: "TOPLEFT", "TOPRIGHT", "BOTTOMLEFT", "BOTTOMRIGHT", "BOTTOMCENTER" or "XY".
 Default: "TOPRIGHT". The legend box is positioned inside the dataset area, except for BOTTOMCENTER that is displayed below the dataset area along with the X axis, and for XY that it will be positioned at the LEGENDPOSXY attribute value.
 If value is set to "XY" then the last calculated position is re-used, and it will enable the interactive change of the legend box position.
 
 **LEGENDPOSXY**: legend box position in the format "x,y". When set, it will change LEGENDPOS to "XY".
 Position is in pixels inside the plot area relative to the bottom-left corner of the plot, oriented left to right and bottom to top, and anchored at the bottom-left corner of the legend box.
-Notice that when this value is used, if the plot is resized the values must also be manually updated to maintain the same appearance.
+When the plot is resized, the values must be updated manually to keep the same appearance.
 
 #### Grid Configuration
 
@@ -451,11 +448,11 @@ Can be: YES (both), HORIZONTAL, VERTICAL or NO. Default: NO.
 **GRIDCOLOR**: grid color. Default: "200 200 200".
 
 **GRIDLINESTYLE**: line style of the grid. Can be: "CONTINUOUS", "DASHED", "DOTTED", "DASH_DOT", "DASH_DOT_DOT".
-Default is "CONTINUOUS".
+Default: "CONTINUOUS".
 
-**GRIDLINEWIDTH**: line width of the box. Default: 1.
+**GRIDLINEWIDTH**: line width of the grid. Default: 1.
 
-**GRIDMINOR**, **GRIDMINORCOLOR**, **GRIDLINESTYLE** and **GRIDLINEWIDTH**: are the same attributes for a grid at the minor ticks, but they are visible only if the major ticks grid are visible too.
+**GRIDMINOR**, **GRIDMINORCOLOR**, **GRIDMINORLINESTYLE** and **GRIDMINORLINEWIDTH**: are the same attributes for a grid at the minor ticks, but they are visible only if the major ticks grid are visible too.
 
 #### Box Configuration
 
@@ -463,32 +460,32 @@ Default is "CONTINUOUS".
 
 **BOXCOLOR**: box line color. Default: FGCOLOR.
 
-**BOXLINESTYLE**: line style of the grid. Can be: "CONTINUOUS", "DASHED", "DOTTED", "DASH_DOT", "DASH_DOT_DOT".
-Default is "CONTINUOUS".
+**BOXLINESTYLE**: line style of the box. Can be: "CONTINUOUS", "DASHED", "DOTTED", "DASH_DOT", "DASH_DOT_DOT".
+Default: "CONTINUOUS".
 
 **BOXLINEWIDTH**: line width of the box. Default: 1.
 
 #### Data Set List Management
 
 **REMOVE** (write-only): removes a dataset given its index or its DS_NAME attribute, "CURRENT" or NULL are also accepted to remove the current dataset.
-Notice that after removing a dataset the other datasets indices that are greater than the given index will be updated.
+After removing a dataset, the indices of the datasets after it are updated.
 Out of range indices are ignored.
 
 **CLEAR** (write-only): removes all datasets. Value is ignored.
 
 **COUNT** (read-only): total number of datasets.
 
-**CURRENT**: current dataset index. Default is -1. When a dataset is added it becomes the current dataset.
+**CURRENT**: current dataset index. Default: "-1". When a dataset is added it becomes the current dataset.
 The index starts at 0. All "DS_*" attributes are dependent on this value.
 When set can use also the DS_NAME attribute as value.
 
 #### Data Set Configuration
 
-**DS_NAME**: name of the current dataset. Default is dynamically generated: "plot 0", "plot 1", "plot 2", etc.
+**DS_NAME**: name of the current dataset. Default: dynamically generated, "plot 0", "plot 1", "plot 2", etc.
 DS_LEGEND is also accepted.
 
 **DS_COLOR**: color of the current dataset.
-Default is dynamically set from the list "255 0 0", "0 255 0", "0 0 255", "0 255 255", "255 0 255", "255 255 0", "128 0 0", "0 128 0", "0 0 128", "0 128 128", "128 0 128", "128 128 0".
+Default: dynamically set from the list "255 0 0", "0 255 0", "0 0 255", "0 255 255", "255 0 255", "255 255 0", "128 0 0", "0 128 0", "0 0 128", "0 128 128", "128 0 128", "128 128 0".
 If the color is not already being used in an existent dataset then it is used as the new default.
 If all defaults are in use, then black is used "0 0 0".
 
@@ -509,13 +506,13 @@ And Legend displays the sample colors not the list of datasets.
 Only non-zero, positive values are drawn.
 
 **DS_LINESTYLE**: line style of the current dataset.
-Can be: "CONTINUOUS", "DASHED", "DOTTED", "DASH_DOT", "DASH_DOT_DOT". Default is "CONTINUOUS".
+Can be: "CONTINUOUS", "DASHED", "DOTTED", "DASH_DOT", "DASH_DOT_DOT". Default: "CONTINUOUS".
 
 **DS_LINEWIDTH**: line width of the current dataset. Default: 1.
 
 **DS_MARKSTYLE**: mark style of the current dataset.
 Can be: "PLUS", "STAR", "CIRCLE", "X", "BOX", "DIAMOND", "HOLLOW_CIRCLE", "HOLLOW_BOX", "HOLLOW_DIAMOND".
-Default is "X".
+Default: "X".
 
 **DS_MARKSIZE**: mark size of the current dataset in pixels. Default: 7.
 If a sample "Extra" value is set (see IupPlotSetSampleExtra) then it will ignore this value and use the sample extra value as mark size, except for ERRORBAR mode.
@@ -544,7 +541,7 @@ Can be 0 (fully transparent) to 255 (opaque). Used only for AREA mode.
 When different then 255 a line with dataset line attributes and using the regular dataset color will be drawn as an outline of the area.
 Default: 255.
 
-**DS_PIERADIUS**: radius of the pie. Notice that the pie will be a circle only if the viewport area is a perfect square or if VIEWPORTSQUARE=YES, otherwise it will be an ellipse.
+**DS_PIERADIUS**: radius of the pie. The pie is a circle only if the viewport area is a perfect square or if VIEWPORTSQUARE=YES, otherwise it is an ellipse.
 Used only for PIE mode. Default: 0.95
 
 **DS_PIESTARTANGLE**: The angle where the first sample sector starts in degrees.
@@ -576,7 +573,7 @@ Can be: YES or NO.
 IupPlotSetSampleExtra was called for the dataset. Can be: YES or NO.
 
 **DS_ORDEREDX**: informs if the dataset X values are ordered.
-If so the FindSample and FindSample routines are optimized to be faster (does not affect BAR modes nor PIE mode).
+If so the FindSample and FindSegment routines are optimized to be faster (does not affect BAR modes nor PIE mode).
 Default: NO.
 
 #### Axis Configuration 
@@ -604,7 +601,7 @@ Can be YES or NO. Default: YES. They will be disabled during zoom in and restore
 Default is Y oriented bottom to top, and X oriented from left to right.
 
 **AXS_XCROSSORIGIN, AXS_YCROSSORIGIN**: allow the axis to cross the origin and to be placed inside the dataset area.
-Can be YES or NO. Default: NO. It is a simple interface to AXS_*ORIGINPOS when CROSSORIGIN is used or not.
+Can be YES or NO. Default: NO. It is a simple interface to AXS_*POSITION when CROSSORIGIN is used or not.
 
 **AXS_XPOSITION, AXS_YPOSITION**: position the axis.
 Can be START (left or bottom), CROSSORIGIN (cross the origin), and END (right or top).
@@ -625,7 +622,6 @@ Default: LIN. If a logarithmic scale is set then the other axis position is set 
 See TIPFORMAT attribute. Default: "%.2f".
 
 **AXS_XTIPFORMATPRECISION, AXS_YTIPFORMATPRECISION**: will set the **sprintf** "precision" field in the AXS_*TIPFORMAT attributes string if the format "%.<precision>f".
-It is just a simple form to set and get the precision of the format attribute.
 
 #### Axis Label Configuration 
 
@@ -655,12 +651,12 @@ Default: 5.  Automatically calculated when AUTOTICK=YES. Values less than 1 are 
 AXS_XTICKDIVISION and AXS_YTICKDIVISION are also accepted.
 
 **AXS_XTICKSIZEAUTO, AXS_YTICKSIZEAUTO**: configures the automatic tick size. Can be YES or NO.
-Default: YES. AXS_XAUTOTICKSIZE and AXS_XAUTOTICKSIZE are also accepted.
+Default: YES. AXS_XAUTOTICKSIZE and AXS_YAUTOTICKSIZE are also accepted.
 
 **AXS_XTICKMINORSIZE, AXS_YTICKMINORSIZE**: size of minor ticks in pixels. Default: 5.
 Automatically calculated when AUTOTICKSIZE=YES. AXS_XTICKSIZE and AXS_YTICKSIZE are also accepted.
 
-**AXS_XTICKMAJORSIZE, AXS_YTICKMAJORSIZE**: size of major ticks in pixels. Default is 8.
+**AXS_XTICKMAJORSIZE, AXS_YTICKMAJORSIZE**: size of major ticks in pixels. Default: "8".
 Automatically calculated when AUTOTICKSIZE=YES.
 
 #### Axis Ticks Number Configuration
@@ -682,7 +678,6 @@ Default: "YES".
 Default: "%.0f". The decimal symbol will follow the DEFAULTDECIMALSYMBOL global attribute definition if any.
 
 **AXS_XTICKFORMATPRECISION, AXS_YTICKFORMATPRECISION**: will set the **sprintf** "precision" field in the AXS_*TICKFORMAT attributes string if the format "%.<precision>f".
-It is just a simple form to set and get the precision of the format attribute.
 
 **AXS_XTICKFONTSIZE, AXS_YTICKFONTSIZE, AXS_XTICKFONTSTYLE, AXS_YTICKFONTSTYLE**: axis tick number font size and style.
 
@@ -702,13 +697,13 @@ The sample is searched using IupPlotFindSample.
 
 **ih**: identifier of the element that activated the event.\
 **ds_index**: index of the dataset\
-**sample_index**: index of the sample in the dataset**\
-x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
+**sample_index**: index of the sample in the dataset\
+**x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
 **y**: Y coordinate value of the sample\
 **button**: identifies the activated mouse button\
     IUP_BUTTON1 - left mouse button (button 1)\
     IUP_BUTTON2 - middle mouse button (button 2)\
-    IUP_BUTTON3 - right mouse button (button 3)\
+    IUP_BUTTON3 - right mouse button (button 3)
 
 **CLICKSEGMENT_CB**: Action generated when a segment is clicked.
 The segment is identified by the two samples that connect the segment.
@@ -737,8 +732,8 @@ The segment is searched using IupPlotFindSegment.
 
 **ih**: identifier of the element that activated the event.\
 **ds_index**: index of the dataset\
-**sample_index**: index of the sample in the dataset**\
-x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
+**sample_index**: index of the sample in the dataset\
+**x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
 **y**: Y coordinate value of the sample
 
 **DELETE_CB**: Action generated when the Del key is pressed to remove a sample from a dataset.
@@ -748,11 +743,11 @@ If multiple samples are selected it is called once for each selected sample.
 
 **ih**: identifier of the element that activated the event.\
 **ds_index**: index of the dataset\
-**sample_index**: index of the sample in the dataset**\
-x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
+**sample_index**: index of the sample in the dataset\
+**x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
 **y**: Y coordinate value of the sample
 
-**Returns:** If IUP_IGNORE then the sample is not deleted.
+**Returns**: If IUP_IGNORE then the sample is not deleted.
 
 **DELETEBEGIN_CB, DELETEEND_CB**: Actions generated when a delete operation will begin or end.
 But they are called only if DELETE_CB is also defined.
@@ -761,30 +756,30 @@ But they are called only if DELETE_CB is also defined.
 
 **ih**: identifier of the element that activated the event.
 
-**Returns:** If DELETEBEGIN_CB returns IUP_IGNORE the delete operation for all the selected samples are aborted.
+**Returns**: If DELETEBEGIN_CB returns IUP_IGNORE the delete operation for all the selected samples are aborted.
 
 **DRAWSAMPLE_CB**: Action generated when a sample is drawn.
-When the plot is redraw, it is called for each sample, then it is called again for all selected samples, and this repeats for each data set., and this repeats for each data set.
+When the plot is redrawn, it is called for each sample, then it is called again for all selected samples, and this repeats for each data set.
 
     int function(Ihandle *ih, int ds_index, int sample_index, double x, double y, int selected);
 
 **ih**: identifier of the element that activated the event.\
-**index**: index of the dataset\
-**sample_index**: index of the sample in the dataset**\
-x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
+**ds_index**: index of the dataset\
+**sample_index**: index of the sample in the dataset\
+**x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
 **y**: Y coordinate value of the sample\
-**select**: indicates if the sample is selected.
+**selected**: indicates if the sample is selected.
 
-**Returns:** When called by the second time for a selected sample, if IUP_IGNORE is returned, the selection is not dawn.
+**Returns**: When called by the second time for a selected sample, if IUP_IGNORE is returned, the selection is not drawn.
 
-**MENUCONTEXT_CB**: Action generated after the context menu (right-click) is created but before it is displayed, so the application can add or removed items from the menu.
+**MENUCONTEXT_CB**: Action generated after the context menu (right-click) is created but before it is displayed, so the application can add or remove items from the menu.
 Called when the mouse button is pressed, with no Ctrl nor Shift keys. Only shown if MENUCONTEXT=YES.
 
     int function(Ihandle* ih, Ihandle* menu, int cnv_x, int cnv_y);
 
 **ih**: identifier of the element that activated the event.\
 **menu**: identifier of the menu that will be shown to the user.\
-**cnv_x**, **cnv_y**: canvas coordinates inside the current plot.\
+**cnv_x**, **cnv_y**: canvas coordinates inside the current plot.
 
 **MENUCONTEXTCLOSE_CB**: Same as MENUCONTEXT_CB, but called after the context menu is closed.
 Only shown if MENUCONTEXT=YES.
@@ -805,7 +800,7 @@ Called only once.
 **param_dialog**: internal handle of the [IupGetParam](../dlg/iup_getparam.md) dialog so the application can consult the PARAMid attributes to check their values.\
 **ds_index**: index of the dataset
 
-**Returns:** if IUP_IGNORE is returned, the dialog is not closed.
+**Returns**: if IUP_IGNORE is returned, the dialog is not closed.
 
 **PROPERTIESCHANGED_CB**: Called when the user changed plot attributes using the "Properties..." dialog.
 
@@ -821,7 +816,7 @@ Called only once.
 **name**: name of the attribute\
 **value**: new value for the attribute
 
-**Returns:** if IUP_IGNORE is returned, that attribute is not changed.
+**Returns**: if IUP_IGNORE is returned, that attribute is not changed.
 
 **SELECT_CB**: Action generated when a sample is selected.
 If multiple samples are selected it is called once for each newly selected sample.
@@ -831,12 +826,12 @@ It is called only if the selection state of the sample is about to be changed.
 
 **ih**: identifier of the element that activated the event.\
 **ds_index**: index of the dataset\
-**sample_index**: index of the sample in the dataset**\
-x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
+**sample_index**: index of the sample in the dataset\
+**x**: X coordinate value of the sample. When DS_STRXDATA=YES, contains just the sample_index.\
 **y**: Y coordinate value of the sample\
-**select**: indicates if the sample is to be selected.
+**selected**: indicates if the sample is to be selected.
 
-**Returns:** If IUP_IGNORE then the sample is not selected.
+**Returns**: If IUP_IGNORE then the sample is not selected.
 
 **SELECTBEGIN_CB, SELECTEND_CB**: Actions generated when a selection operation will begin or end.
 But they are called only if SELECT_CB is also defined.
@@ -845,7 +840,7 @@ But they are called only if SELECT_CB is also defined.
 
 **ih**: identifier of the element that activated the event.
 
-**Returns:** If SELECTBEGIN_CB returns IUP_IGNORE the selection operation is aborted.
+**Returns**: If SELECTBEGIN_CB returns IUP_IGNORE the selection operation is aborted.
 
 **PLOTBUTTON_CB**: similar to [BUTTON_CB](../call/iup_button_cb.md) but coordinates are in plot scale with double precision.
 It is called before the internal processing if returns IUP_IGNORE internal processing will not be done.
@@ -861,11 +856,11 @@ If the callback is not defined the internal function is used.
 **ih**: identifier of the element that activated the event.\
 **buffer**: buffer that will receive the string with the formatted number.
 The buffer is limited to 128 characters.\
-**format**: the format string used by the internal function to format the number.**\
-x**: X coordinate value of the tick number.\
+**format**: the format string used by the internal function to format the number.\
+**x**: X coordinate value of the tick number.\
 **decimal_symbol**: the decimal symbol used by the internal function.
 
-**Returns:** If IUP_IGNORE, the number is not plotted. If IUP_CONTINUE the internal function is used.
+**Returns**: If IUP_IGNORE, the number is not plotted. If IUP_CONTINUE the internal function is used.
 
 **YTICKFORMATNUMBER_CB**: allows to modify the displayed string of a tick number in the Y axis.
 If the callback is not defined the internal function is used.
@@ -875,11 +870,11 @@ If the callback is not defined the internal function is used.
 **ih**: identifier of the element that activated the event.\
 **buffer**: buffer that will receive the string with the formatted number.
 The buffer is limited to 128 characters.\
-**format**: the format string used by the internal function to format the number.**\
-y**: Y coordinate value of the tick number.\
+**format**: the format string used by the internal function to format the number.\
+**y**: Y coordinate value of the tick number.\
 **decimal_symbol**: the decimal symbol used by the internal function.
 
-**Returns:** If IUP_IGNORE, the number is not plotted. If IUP_CONTINUE the internal function is used.
+**Returns**: If IUP_IGNORE, the number is not plotted. If IUP_CONTINUE the internal function is used.
 
 **PREDRAW_CB, POSTDRAW_CB**: Actions generated before and after the draw operation.
 Predraw can be used to draw a different background, and Postdraw can be used to draw additional information in the plot.

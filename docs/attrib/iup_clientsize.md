@@ -15,11 +15,11 @@ All elements that are containers except menus.
 
 ### Notes
 
-(*) For **IupDialog** is NOT read-only, and it will re-define RASTERSIZE by adding the decorations to the given Client size.
+For **IupDialog** it is NOT read-only, and it will re-define RASTERSIZE by adding the decorations to the given Client size.
 Before the dialog is mapped the decorations are an estimate, so the given Client size is remembered and RASTERSIZE is re-defined once the real decorations are known.
 Setting SIZE or RASTERSIZE afterwards discards it.
 
-For **IupHbox**, **IupVbox** and **IupGridBox** it consider the MARGIN attribute as a decoration.
+For **IupHbox**, **IupVbox** and **IupGridBox** it considers the MARGIN attribute as a decoration.
 
 For **IupSplit** returns the total area available for the two children.
 

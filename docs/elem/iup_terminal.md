@@ -41,18 +41,18 @@ History lines are not reflowed when the terminal is resized.
 **CURSORSTYLE** (non-inheritable): cursor shape. Can be "BLOCK", "BAR" or "UNDERLINE".
 Also changed by the DECSCUSR escape sequence. Default: "BLOCK".
 
-**CURSORBLINK** (non-inheritable): cursor blinking. Can be YES or NO. Also changed by DEC private mode 12. Default: NO.
+**CURSORBLINK** (non-inheritable): cursor blinking. Can be YES or NO. Also changed by DEC private mode 12. Default: "NO".
 
-**SCROLLONOUTPUT** (non-inheritable): scroll to the bottom when output arrives while the view is in the history. Can be YES or NO. Default: YES.
+**SCROLLONOUTPUT** (non-inheritable): scroll to the bottom when output arrives while the view is in the history. Can be YES or NO. Default: "YES".
 
-**SCROLLONKEY** (non-inheritable): scroll to the bottom on key input while the view is in the history. Can be YES or NO. Default: YES.
+**SCROLLONKEY** (non-inheritable): scroll to the bottom on key input while the view is in the history. Can be YES or NO. Default: "YES".
 
-**OPTIONASMETA** (non-inheritable): send Option as Meta, so Option+X produces ESC followed by X
-instead of the character the keyboard layout composes. Can be YES or NO. Default: NO.
-Only affects macOS; the other drivers already report the key as Alt. While YES, Option no longer composes accented characters or dead keys.
+**OPTIONASMETA** [macOS Only] (non-inheritable): send Option as Meta, so Option+X produces ESC followed by X
+instead of the character the keyboard layout composes. Can be YES or NO. Default: "NO".
+In the other drivers, the key is reported as Alt. While YES, Option no longer composes accented characters or dead keys.
 
 **ALLOWOSC52** (non-inheritable): allow the OSC 52 escape sequence to set the system clipboard.
-Can be YES or NO. Default: NO. The clipboard read form, OSC 52 with "?", is not supported and is ignored.
+Can be YES or NO. Default: "NO". The clipboard read form, OSC 52 with "?", is not supported and is ignored.
 
 **COLOR0** ... **COLOR15** (non-inheritable): the 16 base palette colors, in "R G B" format.
 Defaults are the xterm palette. Also changed by the OSC 4 escape sequence.
@@ -73,7 +73,7 @@ no selection. Lines are separated by "\n"; a line wrapped by the terminal is joi
 **SELECTION** (write-only) (non-inheritable): "ALL" selects the whole buffer, including the history; "NONE" clears the selection.
 
 **AUTOCOPY** (non-inheritable): copy the selection to the clipboard when the mouse button is
-released. Can be YES or NO. Default: NO.
+released. Can be YES or NO. Default: "NO".
 
 **CLIPBOARD** (write-only) (non-inheritable): clipboard operations. "COPY" copies the selection to the clipboard; "PASTE" sends the clipboard text to the application as if it were typed.
 
@@ -89,7 +89,7 @@ Default: "xterm-256color".
 
 **EXEC** (write-only) (non-inheritable): starts a command on a pseudo-terminal and connects it to the terminal.
 The value is the command line, split on spaces, with double quotes grouping an argument that contains spaces.
-When NULL or empty it runs the SHELL environment variable, or "/bin/sh" ("/system/bin/sh" in Android), the COMSPEC environment variable in Windows). Setting it again terminates the previous command.
+When NULL or empty it runs the SHELL environment variable, or "/bin/sh" ("/system/bin/sh" in Android, the COMSPEC environment variable in Windows). Setting it again terminates the previous command.
 The command starts when the control is mapped, so it can be set before the dialog is shown.
 On failure PTYERROR is set. Use KILL to terminate the command.
 Not supported in iOS and WebAssembly.
@@ -102,7 +102,7 @@ Not supported in iOS and WebAssembly.
 **PTYERROR** (read-only) (non-inheritable): description of the last EXEC failure, or NULL.
 
 **AVAILABLE** (read-only) (non-inheritable): "YES" when the platform can run EXEC.
-In Windows it is "NO" before Windows 10 version 1809.
+In Windows, it is "NO" before Windows 10 version 1809.
 
 [EXPAND](../attrib/iup_expand.md): the default is "YES".
 
@@ -141,7 +141,7 @@ The bytes are encoded in xterm keyboard format.
     int function(Ihandle *ih, int columns, int lines);
 
 **ih**: identifier of the element that activated the event.\
-**columns, lines**: new size of the grid in cells.
+**columns**, **lines**: new size of the grid in cells.
 
 **EXECEXIT_CB**: action generated when the EXEC command terminates.
 

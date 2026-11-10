@@ -15,14 +15,14 @@ Creates a month calendar interface element, where the user can select a date.
 
 **MINDATE**: the earliest date that can be selected, in VALUE format. Default: NULL (no limit).
 A date outside MINDATE and MAXDATE, set in VALUE or current when they are set, is changed to the nearest of them.
-In GTK, GTK 4 and Haiku the days outside the range are not grayed, and selecting one selects the nearest allowed date.
+In GTK, GTK 4 and Haiku, the days outside the range are not grayed, and selecting one selects the nearest allowed date.
 
 **TODAY** (read-only): Returns the date corresponding to today in VALUE format.
 
 **VALUE**: the current date always in the format "year/month/day" ("%d/%d/%d" in C).
 Can be set to "TODAY". Default value is the today date.
 
-**WEEKNUMBERS**: Shows the number of the week along the year. Default: NO.
+**WEEKNUMBERS**: Shows the number of the week along the year. Default: "NO".
 Not supported in WinUI, macOS, EFL, Android and iOS.
 
 ### Callbacks
@@ -45,13 +45,13 @@ In GTK 2 and GTK 3, the calendar grid stretches only horizontally; its rows keep
 
 ### Examples
 
+[Browse for Example Files](../../examples/)
+
 |                                     |                                   |                                    |                                    |
 |-------------------------------------|-----------------------------------|------------------------------------|------------------------------------|
 | GTK                                 | Qt                                | Win32                              | macOS                              |
 | ![](../images/iupcalendar_gtk3.png) | ![](../images/iupcalendar_qt.png) | ![](../images/iupcalendar_win.png) | ![](../images/iupcalendar_mac.png) |
 
-[Browse for Example Files](../../examples/)
-
 ### See Also
 
-[IupDatePick](iup_datepick.md).
+[IupDatePick](iup_datepick.md)

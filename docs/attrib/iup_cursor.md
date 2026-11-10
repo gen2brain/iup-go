@@ -37,7 +37,7 @@ It will check first for the following predefined names:
 
 Default: "ARROW"
 
-If it is not a pre-defined name, drivers that map cursors via system-theme names (GTK, GTK4, Qt, Motif) try the platform's cursor theme. EFL on Wayland tries the EFL theme cursors. Win32 tries the application resources. Motif also accepts an X-Windows cursor number from `cursorfont.h` (or an Xcursor file on Motif 2.4.0+).
+If it is not a pre-defined name, drivers that map cursors via system-theme names (GTK, GTK 4, Qt, Motif) try the platform's cursor theme. EFL on Wayland tries the EFL theme cursors. Win32 tries the application resources. Motif also accepts an X-Windows cursor number from `cursorfont.h` (or an Xcursor file on Motif 2.4.0+).
 
 In macOS, the RESIZE and SPLITTER names use the system frame, row and column resize cursors on macOS 15 and later. HELP shows the contextual menu cursor and UPARROW the arrow.
 
@@ -49,7 +49,7 @@ But the image will need an extra attribute and some specific characteristics, se
 
 ### Notes
 
-For an image to represent a cursor, it should have the attribute "**HOTSPOT"** to define the cursor hotspot (place where the mouse click is actually effective).
+For an image to represent a cursor, it should have the attribute **HOTSPOT** to define the cursor hotspot (place where the mouse click is actually effective).
 The default value is "0:0".
 
 Usually only color indices 0, 1 and 2 can be used in a cursor, where 0 will be transparent (must be "BGCOLOR").
@@ -61,12 +61,10 @@ The cursor will only change when the interface system regains control or when Iu
 
 In Win32 and WinUI, the cursor of a dialog or container is also shown over child controls that do not define their own cursor, except over text inputs.
 
-Not supported on Android and iOS (touch UIs have no cursor).
-
-The Windows SDK recommends that cursors and icons should be implemented as resources rather than created at run time.
+Not supported in Android and iOS.
 
 When the cursor image is no longer necessary, it must be destroyed through function [IupDestroy](../func/iup_destroy.md).
-Attention: the cursor cannot be in use when it is destroyed.
+The cursor cannot be in use when it is destroyed.
 
 ### Affects
 

@@ -17,6 +17,7 @@ Saves an **IupImage** to a file using native driver image encoding.
 ### Notes
 
 The image is encoded using the native GUI toolkit, with no external library dependencies. Supported formats are platform-dependent:
+
 - **Windows (Win32)**: PNG, JPEG, BMP via WIC (Windows Imaging Component)
 - **Windows (WinUI)**: PNG, JPEG, BMP via WIC
 - **GTK 3**: PNG, JPEG, BMP via GDK-PixBuf

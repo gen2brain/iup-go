@@ -32,7 +32,7 @@ Valid in the callbacks and after the dialog is closed with STATUS="1".
 This dialog will always be in front of the parent dialog.
 
 **STATUS** (read-only): "1" if the pages were sent to the printer, "0" if the user pressed the Cancel button or PRINTPAGE_CB returned IUP_CLOSE, "-1" if the job failed or printing is not supported.
-In WebAssembly it is "1" when the browser print dialog closes, also when the user canceled it.
+In WebAssembly, it is "1" when the browser print dialog closes, also when the user canceled it.
 
 [TITLE](../attrib/iup_title.md): Dialog title.
 Supported in QML.
@@ -40,18 +40,18 @@ Supported in QML.
 ### Callbacks
 
 **PAGINATE_CB**: called when the page size is known, before the pages are drawn.
-In macOS, Android and iOS it is also called while the dialog is open, to show the preview.
+In macOS, Android and iOS, it is also called while the dialog is open, to show the preview.
 
     int function(Ihandle *ih, int width, int height);
 
 **ih**: identifier of the element that activated the event.\
 **width**, **height**: size of the printable area of the page.
 
-**Returns:** the number of pages. Replaces PAGECOUNT.
+**Returns**: the number of pages. Replaces PAGECOUNT.
 
 **PRINTPAGE_CB**: called for each page to print, in order. Draw the page with the [IupDraw](../func/iup_draw.md) functions, between **IupDrawBegin**(ih) and **IupDrawEnd**(ih), as in a canvas ACTION callback.
 Only the pages in the range selected by the user are printed.
-In macOS, Android and iOS it is also called to draw the preview while the dialog is open.
+In macOS, Android and iOS, it is also called to draw the preview while the dialog is open.
 
     int function(Ihandle *ih, int page, int width, int height);
 
@@ -59,7 +59,7 @@ In macOS, Android and iOS it is also called to draw the preview while the dialog
 **page**: page number, starting at 1.\
 **width**, **height**: size of the printable area of the page, also returned by **IupDrawGetSize**.
 
-**Returns:** IUP_CLOSE cancels the job and sets STATUS to "0".
+**Returns**: IUP_CLOSE cancels the job and sets STATUS to "0".
 
 ### Notes
 
@@ -67,17 +67,17 @@ Page coordinates are in units of 1/96 inch and are scaled to the printer resolut
 Fonts print at their point size.
 
 The **IupPrintDlg** is a native pre-defined dialog not altered by **IupSetLanguage**.
-In QML its labels follow **IupSetLanguage**.
+In QML, its labels follow **IupSetLanguage**.
 
 To show the dialog, use function **IupPopup**. It returns after the job is finished or canceled.
 
 The dialog is mapped only inside **IupPopup**, **IupMap** does nothing.
 
-In Win32 and WinUI uses PrintDlgEx, in GTK 3 and GTK 4 uses GtkPrintOperation, in macOS uses NSPrintOperation, in Qt uses QPrintDialog, in FLTK uses Fl_Printer, in Haiku uses BPrintJob, in Android uses PrintManager, in iOS uses UIPrintInteractionController, in QML uses a custom dialog implemented using IUP controls that prints with QPrinter, and in WebAssembly uses the browser print dialog.
+In Win32 and WinUI, it uses PrintDlgEx; in GTK 3 and GTK 4, GtkPrintOperation; in macOS, NSPrintOperation; in Qt, QPrintDialog; in FLTK, Fl_Printer; in Haiku, BPrintJob; in Android, PrintManager; in iOS, UIPrintInteractionController; in QML, a custom dialog implemented using IUP controls that prints with QPrinter; and in WebAssembly, the browser print dialog.
 
 Not supported in Motif, EFL and GNUstep.
 
-In WebAssembly the pages are drawn before the browser print dialog opens, on A4 or Letter paper as given by the browser language, with ORIENTATION and 0.5 inch margins.
+In WebAssembly, the pages are drawn before the browser print dialog opens, on A4 or Letter paper as given by the browser language, with ORIENTATION and 0.5 inch margins.
 
 ### Examples
 

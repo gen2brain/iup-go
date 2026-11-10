@@ -18,6 +18,7 @@ In this case, the function just returns the existing element.
 Name can also be a file name that will be loaded from disk.
 A relative file name that is not found is also looked up in the [RESOURCEDIR](../attrib/iup_globals.md#resourcedir-read-only) directory.
 The available file formats supported are system-dependent:
+
 - **Windows (Win32)**: BMP via LoadImage, plus BMP, GIF, JPEG, PNG, TIFF and others via WIC (Windows Imaging Component)
 - **Windows (WinUI)**: BMP, GIF, JPEG, PNG, TIFF and others via WIC
 - **GTK 3**: formats supported by GDK-PixBuf, such as BMP, GIF, JPEG, PNG, TIFF and many others
@@ -32,15 +33,13 @@ The available file formats supported are system-dependent:
 - **Haiku**: formats supported by the Translation Kit (BTranslatorRoster / BTranslationUtils), such as BMP, GIF, JPEG, PNG, TGA, TIFF and WebP
 - **WebAssembly**: formats supported by the browser, such as PNG, JPEG, GIF, BMP, WebP, ICO and AVIF, only for files in RESOURCEDIR, decoded when the page starts
 
-In this case, the function returns a new image handle and associates the name with that handle, so in the next call it will return the existing handle.
-
 Name can also be a system-specific stock / named image:
 
 - **Win32**: names of resources in RC files linked with the application.
 - **GTK 3**: names of GTK Stock Items.
 - **GTK 4**: names of icon theme icons.
 - **Qt**: names of Qt standard pixmaps (`QStyle::StandardPixmap`).
-- **Cocoa Touch**: asset-catalog names via `[UIImage imageNamed:]` and SF Symbol names via `[UIImage systemImageNamed:]`.
+- **iOS**: asset-catalog names via `[UIImage imageNamed:]` and SF Symbol names via `[UIImage systemImageNamed:]`.
 - **Motif**: names of bitmaps installed on the system.
 
 In all cases, the function returns a new image handle and associates the name with that handle, so in the next call it will return the existing handle.

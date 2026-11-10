@@ -17,7 +17,7 @@ It can also be displayed as a switch control.
 **ALIGNMENT** (non-inheritable): horizontal and vertical alignment when IMAGE is defined.
 Possible values: "ALEFT", "ACENTER" and "ARIGHT",  combined to "ATOP", "ACENTER" and "ABOTTOM".
 Default: "ACENTER:ACENTER". Partial values are also accepted, like "ARIGHT" or ":ATOP", the other value will be obtained from the default value.
-In Motif, vertical alignment is restricted to "ACENTER". In Windows it is applied only with Visual Styles or when FLAT is set.
+In Motif, vertical alignment is restricted to "ACENTER". In Windows, it is applied only with Visual Styles or when FLAT is set.
 Text is always left aligned.
 Not supported in Qt, QML, Cocoa, EFL and Haiku.
 
@@ -27,9 +27,9 @@ When displaying an image in Windows, the background is ignored and the system co
 Default: the global attribute DLGBGCOLOR.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
-In Windows the control will still get the focus when clicked. Default: YES.
+In Windows, the control will still get the focus when clicked. Default: YES.
 
-**PROPAGATEFOCUS**(non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
+**PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Color of the text shown on the toggle.
@@ -38,8 +38,7 @@ In Windows, when using Visual Styles FGCOLOR is ignored, except in dark mode. De
 **FLAT** (creation-only): Hides the toggle borders until the mouse enter the toggle area when the toggle is not checked.
 If the toggle is checked, then the borders will be shown even if flat is enabled.
 Used only when IMAGE is defined. Can be YES or NO. Default: NO.
-On iOS and Android the border is hidden until the toggle is checked, since touch has no hover.
-In QML the border is hidden until the toggle is checked.
+In iOS, Android and QML, the border is hidden until the toggle is checked.
 Not supported in EFL and Haiku.
 
 **IMAGE** (non-inheritable): Image name. When the IMAGE attribute is defined, the TITLE is not shown.
@@ -73,7 +72,7 @@ Not supported in Motif, FLTK and EFL.
 
 **VALUE** (non-inheritable): Toggle's state. Values can be "ON", "OFF" or "TOGGLE".
 If 3STATE=YES then can also be "NOTDEF". Default: "OFF". The TOGGLE option will invert the current state.
-In GTK if you change the state of a radio, the unchecked toggle will receive an ACTION callback notification.
+In GTK, when the state of a radio changes, the unchecked toggle also receives an ACTION callback.
 Can only be set to ON if the toggle is inside a radio, it will automatically set to OFF the previous toggle that was ON in the radio.
 The first toggle inside an **IupRadio** will have its value set to ON after map.
 
@@ -134,7 +133,7 @@ Toggles are activated using the Space key.
 
 To build a set of mutual exclusive toggles, insert them in an **IupRadio** container.
 They must be inserted before creation, and their behavior cannot be changed.
-If you need to dynamically remove toggles that belong to a radio in Windows, then put the radio inside an **IupFrame** that has a title.
+To remove toggles of a radio dynamically in Windows, put the radio inside an **IupFrame** that has a title.
 
 A toggle that is a child of an **IupRadio** automatically receives a name when it is mapped into the native system.
 

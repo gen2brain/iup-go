@@ -28,19 +28,19 @@ Inherits all attributes and callbacks of the [IupBackgroundBox](../elem/iup_back
 **BGCOLOR**: background color of the child area.
 If not defined it will use the background color of the native parent.
 
-**FRAME** (non-inheritable): enables the frame line. Default: YES.
+**FRAME** (non-inheritable): enables the frame line. Default: "YES".
 If value is CROSSTITLE the frame at top crosses the title, like traditional frames in native systems.
 When CROSSTITLE is used TITLELINE and TITLEALIGNMENT are ignored, the title line is never drawn and alignment is always left.
 
-**FRAMECOLOR** (non-inheritable): frame line color. Default: "160 160 160" (changed in 3.28).
+**FRAMECOLOR** (non-inheritable): frame line color. Default: "160 160 160".
 
 **CORNERRADIUS** (non-inheritable): radius of the rounded corners for the frame line and background.
 Default: "0" (no rounding).
 
-**FRAMEWIDTH** (non-inheritable): frame line width. Default: 1.
+**FRAMEWIDTH** (non-inheritable): frame line width. Default: "1".
 
 **FRAMESPACE** (non-inheritable): spacing between frame line and child area. Used only when FRAME=YES.
-Default: 2.
+Default: "2".
 
 [TITLE](../attrib/iup_title.md) (non-inheritable): Text the user will see at the top of the frame.
 The natural width of the frame is at least the width of the title.
@@ -51,11 +51,11 @@ The natural width of the frame is at least the width of the title.
 If not defined BGCOLOR will be used.
 
 **TITLELINE** (non-inheritable): enables the title line.
-Horizontal line that separates the title area from the child area. Default: YES.
+Horizontal line that separates the title area from the child area. Default: "YES".
 
 **TITLELINECOLOR** (non-inheritable): title line color. Default: the global attribute DLGFGCOLOR.
 
-**TITLELINEWIDTH** (non-inheritable): title line width. Default: 1.
+**TITLELINEWIDTH** (non-inheritable): title line width. Default: "1".
 
 **TITLEIMAGE** (non-inheritable): image name to be used in title.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
@@ -69,24 +69,24 @@ See also [IupImage](../elem/iup_image.md).
 If it is not defined then the TITLEIMAGE is used and its colors will be replaced by a modified version creating the disabled effect.
 
 **TITLEIMAGEPOSITION** (non-inheritable): position of the image relative to the text when both are displayed.
-Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
+Can be: LEFT, RIGHT, TOP, BOTTOM. Default: "LEFT".
 
 **TITLEIMAGESPACING** (non-inheritable): spacing between the image and the text. Default: "2".
 
 **TITLEALIGNMENT** (non-inheritable): horizontal alignment. Possible values: "ALEFT", "ACENTER" and "ARIGHT".
-Default: "ACENTER". Alignment does not includes the padding area.
+Default: "ACENTER". Alignment does not include the padding area.
 
 **TITLETEXTALIGNMENT** (non-inheritable): horizontal text alignment for multiple lines.
-Can be: ALEFT, ARIGHT or ACENTER. Default: ALEFT.
+Can be: ALEFT, ARIGHT or ACENTER. Default: "ALEFT".
 
 **TITLETEXTWRAP** (non-inheritable): For single line texts if the text is larger than its box, the line will be automatically broken in multiple lines.
-Notice that this is done internally by the system, the element natural size will still use only a single line.
+The natural size still uses a single line.
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TITLETEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
-It will be ignored when TEXTWRAP=YES.
+It will be ignored when TITLETEXTWRAP=YES.
 
-  **TITLETEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
+**TITLETEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
 
 **TITLEPADDING** (non-inheritable): title internal margin. Alignment does not include the padding area.
@@ -94,8 +94,8 @@ Default value: "0x0".
 
 ### Notes
 
-To replace a **IupFrame** by a **IupFlatFrame**, you must set TITLELINE=NO, TITLEALIGNMENT=ALEFT and FRAMECOLOR="160 160 160" (or a lighter version of the DLGFGCOLOR).
-But the line cannot be positioned in the middle of the text like in IupFrame. 
+To replace an **IupFrame** with an **IupFlatFrame**, set TITLELINE=NO, TITLEALIGNMENT=ALEFT and FRAMECOLOR="160 160 160" (or a lighter version of the DLGFGCOLOR).
+FRAME=CROSSTITLE positions the line in the middle of the title text like in IupFrame.
 
 ### Examples
 

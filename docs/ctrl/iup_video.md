@@ -65,7 +65,7 @@ Ignored when no source is set and in the "ERROR" state.
 **STATE** (read-only): Returns "EMPTY" (no source), "LOADING", "STOPPED", "PLAYING", "PAUSED", "BUFFERING", "ENDED" or "ERROR".
 While the element is not mapped, a set source is "STOPPED". Unmapping closes the engine; mapping again reloads the source stopped.
 While "PLAYING" or "BUFFERING" a source with video, the screen saver and display sleep are inhibited.
-In Linux and FreeBSD this requires the org.freedesktop.ScreenSaver D-Bus service or an X11 session.
+In Linux and FreeBSD, this requires the org.freedesktop.ScreenSaver D-Bus service or an X11 session.
 
 **POSITION** (non-inheritable): Playback position in seconds, as a floating point number. Setting it seeks asynchronously, as selected by SEEKMODE. Ignored when the source is not seekable.
 
@@ -88,12 +88,12 @@ While "YES" and the source is seekable, PLAYEND_CB is not called.
 
 **AUDIODEVICE** (non-inheritable): Index of the audio output device, from 0. Index 0 is the system default output. Default: "0".
 Changing it during playback moves the audio to the new device.
-Not supported in iOS. In Android it requires Android 9.
+Not supported in iOS. In Android, it requires Android 9.
 
 **AUDIODEVICECOUNT** (read-only): Number of audio output devices of the engine selected by BACKEND, counting the default at index 0. Each query lists the devices again.
 
 **AUDIODEVICENAMEid** (read-only): Name of the audio output device at index "id", or NULL. AUDIODEVICENAME0 is "Default".
-In WebAssembly the devices are listed only after media access has been granted and when the browser can select the output device.
+In WebAssembly, the devices are listed only after media access has been granted and when the browser can select the output device.
 
 **BRIGHTNESS**, **CONTRAST**, **SATURATION**, **GAMMA** (non-inheritable): Picture adjustments from -100 to 100. "0" leaves the picture unchanged. Default: "0".
 Not supported with BACKEND "NATIVE" in Windows and Android.
@@ -140,10 +140,6 @@ In macOS, iOS and Android, applies only to external subtitles.
 
 **SUBTITLEERROR** (read-only): Last subtitle loading or selection error, or NULL. Cleared by a successful load or selection.
 
-With "NATIVE" in Win32, Cocoa, iOS, Android and WebAssembly the engine draws into a native view inside the canvas.
-With "NATIVE" in other Windows drivers it draws into a child window placed over the canvas, above sibling controls.
-Otherwise the decoded frames are drawn on the canvas.
-
 ### Callbacks
 
 Inherits all callbacks of the [IupCanvas](../elem/iup_canvas.md), except ACTION, which is used internally.
@@ -184,6 +180,12 @@ Also called for subtitle errors, which do not change STATE and do not call STATE
 **Returns**: IUP_CLOSE will be processed.
 
 All callbacks are called from the main loop.
+
+### Notes
+
+With "NATIVE" in Win32, Cocoa, iOS, Android and WebAssembly, the engine draws into a native view inside the canvas.
+With "NATIVE" in other Windows drivers, it draws into a child window placed over the canvas, above sibling controls.
+Otherwise the decoded frames are drawn on the canvas.
 
 ### Examples
 

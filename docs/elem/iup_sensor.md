@@ -13,8 +13,7 @@ Supported in Win32, WinUI, Android, iOS and WebAssembly.
 
 ### Attributes
 
-**TYPE** (non-inheritable): Sensor to read. Can be "ACCELEROMETER", "GYROSCOPE", "MAGNETOMETER",
-"GRAVITY", "LINEARACCELERATION", "ORIENTATION" or "COMPASS". Default: "ACCELEROMETER".
+**TYPE** (non-inheritable): Sensor to read. Can be "ACCELEROMETER", "GYROSCOPE", "MAGNETOMETER", "GRAVITY", "LINEARACCELERATION", "ORIENTATION" or "COMPASS". Default: "ACCELEROMETER".
 Can be changed only while RUN=NO.
 GRAVITY and LINEARACCELERATION are not supported in Win32.
 
@@ -36,8 +35,7 @@ Only WebAssembly on iOS asks for permission.
 
 ### Readings
 
-Axes follow the device: X to the right, Y to the top and Z out of the screen, with the device held in its
-natural portrait orientation.
+Axes follow the device: X to the right, Y to the top and Z out of the screen, with the device held in its natural portrait orientation.
 
 | TYPE               | X, Y, Z                                                                     | Unit  |
 |--------------------|-----------------------------------------------------------------------------|-------|
@@ -84,10 +82,9 @@ All three callbacks are called from the main loop on every driver.
 
 Android and iOS need no permission and no manifest or Info.plist entry, COMPASS included.
 
-WebAssembly needs a secure context (HTTPS or localhost). On iOS the browser asks for permission the first
-time RUN is set to YES, and the request is only accepted from a user event such as a button ACTION.
+WebAssembly needs a secure context (HTTPS or localhost). In iOS, the browser asks for permission the first time RUN is set to YES, and the request is only accepted from a user event such as a button ACTION.
 
-Win32 uses the Windows Sensor API, deprecated since Windows 8 but present through Windows 11.
+In Win32, it uses the Windows Sensor API.
 
 ### Examples
 

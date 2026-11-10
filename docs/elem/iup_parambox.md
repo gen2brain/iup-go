@@ -22,17 +22,17 @@ The list of params cannot be changed after the box is created.
 **BUTTON1**, **BUTTON2**, **BUTTON3** (read-only): returns an IUP Ihandle* of the respective button in the button box.
 Returns NULL when the 'x' parameter has NOBUTTONS=YES.
 
-**PARAM*n*** (read-only): returns an IUP Ihandle* representing the n<sup>th</sup> parameter, indexed by the declaration order, not counting separators or button names. n starts at 0.
+**PARAMid** (read-only): returns an IUP Ihandle* representing the id<sup>th</sup> parameter, indexed by the declaration order, not counting separators or button names. id starts at 0.
 
 **PARAMCOUNT** (read-only): returns the number of parameters not counting separators and button names.
 
 **STATUS** (read-only): set to 1 when button1 is activated, and set to 0 when button2 is activated or the IupGetParam dialog close button is clicked.
 
 **LABELALIGN**: controls the alignment of all labels. Can be ALEFT or ARIGHT.
-Default: ALEFT.
+Default: "ALEFT".
 
 **MODIFIABLE**: controls the active state of all controls but when disabled allows the text boxes to be read-only and selectable instead of inactive.
-Default: YES.
+Default: "YES".
 
 **SPINNING**: defined only during the callback to indicate that the spin was activated.
 
@@ -51,7 +51,9 @@ See the documentation of the attribute for EXPAND inheritance.
 
 ### Callbacks
 
-    int PARAM_CB(Ihandle* ih, int param_index, void* user_data);
+**PARAM_CB**: Action generated when a parameter is changed or a button is pressed.
+
+    int function(Ihandle* ih, int param_index, void* user_data);
 
 **ih**: identifier of the element that activated the event.\
 **param_index**: current parameter being changed.
@@ -64,15 +66,13 @@ Can have negative values to indicate specific situations:\
     IUP_GETPARAM_MAP (-6) = before the **IupGetParam** dialog is mapped. Not called when **IupParamBox** is directly used;\
 **user_data**: a user pointer that is passed in the function call.
 
-**Returns:** You can reject the change or the button action by returning 0 in the callback, otherwise you must return 1.
+**Returns**: 0 rejects the change or the button action, 1 accepts it.
 By default, buttons 1 and 2 will return IUP_CLOSE and close any modal dialog.
 To change that behavior return 0 in the callback.
 
-You should not programmatically change the current parameter value during the callback.
-On the other hand, you can freely change the value of other parameters.
+The current parameter value must not be changed programmatically during the callback; other parameters can be changed.
 
-Use the attribute "PARAMn" to get the parameter "Ihandle*", where "n" is the parameter index in the order they are specified starting at 0, but separators and button names are not counted.
-Notice that this is not the actual control, use the parameter attribute "CONTROL" to get the actual control.
+PARAMid returns the parameter, not the actual control; the parameter attribute "CONTROL" returns the control.
 For example:
 
     Ihandle* param2 = (Ihandle*)IupGetAttribute(ih, "PARAM2");
@@ -87,9 +87,9 @@ For example:
       IupSetAttribute(ctrl5, IUP_VALUE, "New Value");
     }
 
-Since parameters are user controls and not real controls, you must update the control value and the parameter value.
+Both the control value and the parameter value must be updated.
 
-Be aware that programmatically changes are not filtered.
+Programmatic changes are not filtered.
 The valuator, when available, can be retrieved using the parameter attribute "AUXCONTROL".
 The valuator is not automatically updated when the text box is changed programmatically.
 The parameter label is also available using the parameter attribute "LABEL".
