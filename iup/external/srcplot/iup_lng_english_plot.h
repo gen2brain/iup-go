@@ -38,7 +38,6 @@ static Ihandle* iup_load_lng_english_plot ()
     "IUP_DOTTED", "Dotted",
     "IUP_END", "End",
     "IUP_ERRORBARS", "Error Bars",
-    "IUP_ERRORINVALIDFORMULA", "Invalid Formula.",
     "IUP_EXPORT", "Export",
     "IUP_FONTSIZE", "Font Size:",
     "IUP_FONTSTYLE", "Font Style:",

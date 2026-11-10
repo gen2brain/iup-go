@@ -38,7 +38,6 @@ static Ihandle* iup_load_lng_french_plot()
     "IUP_DOTTED", "Pointillé",
     "IUP_END", "Fin",
     "IUP_ERRORBARS", "Barres d'erreur",
-    "IUP_ERRORINVALIDFORMULA", "Formule invalide.",
     "IUP_EXPORT", "Exporter",
     "IUP_FONTSIZE", "Taille de police :",
     "IUP_FONTSTYLE", "Style de police :",

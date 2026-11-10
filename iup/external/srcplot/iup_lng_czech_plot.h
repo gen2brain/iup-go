@@ -38,7 +38,6 @@ static Ihandle* iup_load_lng_czech_plot()
     "IUP_DOTTED", "Tečkovaná",
     "IUP_END", "Konec",
     "IUP_ERRORBARS", "Chybové sloupce",
-    "IUP_ERRORINVALIDFORMULA", "Neplatný vzorec.",
     "IUP_EXPORT", "Exportovat",
     "IUP_FONTSIZE", "Velikost písma:",
     "IUP_FONTSTYLE", "Styl písma:",

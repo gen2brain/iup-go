@@ -38,7 +38,6 @@ static Ihandle* iup_load_lng_japanese_plot()
     "IUP_DOTTED", "点線",
     "IUP_END", "終了",
     "IUP_ERRORBARS", "誤差棒",
-    "IUP_ERRORINVALIDFORMULA", "無効な式です。",
     "IUP_EXPORT", "エクスポート",
     "IUP_FONTSIZE", "フォントサイズ:",
     "IUP_FONTSTYLE", "フォントスタイル:",

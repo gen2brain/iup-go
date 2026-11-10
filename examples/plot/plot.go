@@ -120,7 +120,6 @@ func initPlots() {
 	plots[1].SetAttribute("LEGENDSHOW", "YES")
 	plots[1].SetAttribute("AXS_XLABELCENTERED", "YES")
 	plots[1].SetAttribute("AXS_YLABELCENTERED", "YES")
-	plots[1].SetAttribute("GRAPHICSMODE", "IMAGERGB")
 	plots[1].SetAttribute("HIGHLIGHTMODE", "CURVE")
 
 	theFac = 1.0 / (100 * 100 * 100)

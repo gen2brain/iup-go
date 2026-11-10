@@ -38,7 +38,6 @@ static Ihandle* iup_load_lng_russian_plot()
     "IUP_DOTTED", "Точечный",
     "IUP_END", "Конец",
     "IUP_ERRORBARS", "Панель ошибок",
-    "IUP_ERRORINVALIDFORMULA", "Недопустимая формула.",
     "IUP_EXPORT", "Экспорт",
     "IUP_FONTSIZE", "Размер шрифта:",
     "IUP_FONTSTYLE", "Стиль шрифта:",

@@ -1314,19 +1314,6 @@ static char* iPlotGetReadOnlyAttrib(Ihandle* ih)
   return iupStrReturnBoolean(ih->data->read_only);
 }
 
-static int iPlotSetGraphicsModeAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 0;
-}
-
-static char* iPlotGetGraphicsModeAttrib(Ihandle* ih)
-{
-  (void)ih;
-  return const_cast<char*>("NATIVE");
-}
-
 static int iPlotSetDataSetClippingAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrEqualNoCase(value, "AREAOFFSET"))
@@ -1343,20 +1330,6 @@ static char* iPlotGetDataSetClippingAttrib(Ihandle* ih)
 {
   const char* dataset_clipping_str[] = { "NONE", "AREA", "AREAOFFSET" };
   return const_cast<char*>(dataset_clipping_str[ih->data->current_plot->mDataSetClipping]);
-}
-
-static int iPlotSetUseImageRGBAttrib(Ihandle* ih, const char* value)
-{
-  if (iupStrBoolean(value))
-    return iPlotSetGraphicsModeAttrib(ih, "IMAGERGB");
-  return 0;
-}
-
-static int iPlotSetUseContextPlusAttrib(Ihandle* ih, const char* value)
-{
-  if (iupStrBoolean(value))
-    return iPlotSetGraphicsModeAttrib(ih, "NATIVEPLUS");
-  return 0;
 }
 
 static int iPlotSetShowMenuContextAttrib(Ihandle* ih, const char* value)
@@ -3580,9 +3553,6 @@ void iupPlotRegisterAttributes(Iclass* ic)
   iupClassRegisterAttribute(ic, "MERGEVIEW", iPlotGetMergeViewAttrib, iPlotSetMergeViewAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", iPlotGetReadOnlyAttrib, iPlotSetReadOnlyAttrib, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CANVAS", iPlotGetCanvasAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "GRAPHICSMODE", iPlotGetGraphicsModeAttrib, iPlotSetGraphicsModeAttrib, IUPAF_SAMEASSYSTEM, "NATIVEPLUS", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  /*OLD*/iupClassRegisterAttribute(ic, "USE_IMAGERGB", nullptr, iPlotSetUseImageRGBAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  /*OLD*/iupClassRegisterAttribute(ic, "USE_CONTEXTPLUS", nullptr, iPlotSetUseContextPlusAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MENUCONTEXT", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "Yes", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MENUITEMPROPERTIES", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MENUITEMVALUES", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
@@ -3776,7 +3746,4 @@ void iupPlotRegisterAttributes(Iclass* ic)
   iupClassRegisterAttribute(ic, "PLOT_REMOVE", nullptr, iPlotSetPlotRemoveAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PLOT_INSERT", nullptr, iPlotSetPlotInsertAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "FORMULA_MIN", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMULA_MAX", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FORMULA_PARAMETRIC", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "No", IUPAF_NO_INHERIT);
 }

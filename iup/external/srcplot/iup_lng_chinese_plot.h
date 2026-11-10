@@ -38,7 +38,6 @@ static Ihandle* iup_load_lng_chinese_plot()
     "IUP_DOTTED", "点线",
     "IUP_END", "结束",
     "IUP_ERRORBARS", "误差条",
-    "IUP_ERRORINVALIDFORMULA", "无效公式。",
     "IUP_EXPORT", "导出",
     "IUP_FONTSIZE", "字体大小:",
     "IUP_FONTSTYLE", "字体样式:",
