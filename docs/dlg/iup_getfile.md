@@ -12,9 +12,9 @@ Example: "../docs/*.txt". As an output value, it is used to contain the filename
 
 **Returns:** a **status** code, whose values can be:
 
-> "1": New file.\
-> "0": Normal, existing file.\
-> "-1": Operation cancelled.
+1: New file.\
+0: Normal, existing file.\
+-1: Operation cancelled.
 
 ### Notes
 
@@ -22,12 +22,12 @@ The function does not allocate memory space to store the complete filename enter
 Therefore, the filename parameter must be large enough to contain the directory and file names.
 The string is limited to 4096 characters.
 
-The function will reuse the directory from one call to another, so in the next call will open in the directory of the last selected file.
+The function reuses the directory from one call to another, so the next call opens in the directory of the last selected file.
 
 The dialog uses a global attribute called "PARENTDIALOG" as the parent dialog if it is defined.
 It also uses a global attribute called "ICON" as the dialog icon if it is defined.
 
-For a more controlled dialog, use directly the [IupFileDlg](iup_filedlg.md) element.
+For a more controlled dialog, use the [IupFileDlg](iup_filedlg.md) element directly.
 
 ### Examples
 

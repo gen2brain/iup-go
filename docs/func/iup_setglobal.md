@@ -15,9 +15,9 @@ If the driver processes the attribute, then it will not be stored internally.
 
 **IupSetGlobal** can store only constant strings (like "Title", "30", etc.) or application pointers.
 The given value is not duplicated as a string, only a reference is stored.
-Therefore, you can store application custom attributes, such as a context structure to be used in a callback.
+Therefore, application custom attributes can be stored, such as a context structure to be used in a callback.
 
-**IupSetStrGlobal** (old **IupStoreGlobal**) can only store strings.
+**IupSetStrGlobal** (same as **IupStoreGlobal**) can only store strings.
 The given string value will be duplicated internally.
 
 [IupSetAttribute](iup_setattribute.md) functions can also be used to set global attributes, just set the element to NULL.

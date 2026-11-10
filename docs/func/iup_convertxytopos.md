@@ -1,6 +1,6 @@
 ## IupConvertXYToPos
 
-Converts a (x,y) coordinate in an item position.
+Converts a (x,y) coordinate into an item position.
 
 ### Parameters/Return
 
@@ -11,7 +11,7 @@ Converts a (x,y) coordinate in an item position.
 **y**: Y coordinate relative to the top corner of the element.
 
 **Returns:** the position starting at 0 (except for **IupList** that starts at 1).
-If fails returns -1.
+Returns -1 on failure.
 
 ### Notes
 

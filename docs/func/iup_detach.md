@@ -18,8 +18,8 @@ The elements are NOT immediately repositioned.
 Call **IupRefresh** for the container (or any other element in the dialog) to update the dialog layout.
 
 When the element is mapped some attributes are stored only in the native system.
-If the element is **unmaped** those attributes are lost.
-Use the function [IupSaveClassAttributes](iup_saveclassattributes.md) when you want to **unmap** the element and keep its attributes. 
+If the element is **unmapped** those attributes are lost.
+Use the function [IupSaveClassAttributes](iup_saveclassattributes.md) to **unmap** the element and keep its attributes.
 
 ### See Also
 

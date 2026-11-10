@@ -22,40 +22,40 @@ See also [IupImage](../elem/iup_image.md).
 When defined the ACTION callback of the IupCanvas will be defined.
 
 **BACKIMAGEZOOM** (non-inheritable): if set the back image will be zoomed to occupy the full background.
-Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
+Aspect ratio is NOT preserved. Can be YES or NO. Default: "NO".
 
-**BACKCOLOR** (non-inheritable): if defined used to fill the background color when BACKIMAGE is defined.
+**BACKCOLOR** (non-inheritable): if defined, it is used to fill the background when BACKIMAGE is defined.
 If not defined BGCOLOR is used.
 
 [BGCOLOR](../attrib/iup_bgcolor.md): by default, will use the background color of the native parent, but can be set to a custom value.
 
-**BORDER** (creation-only): the default value is "NO".
+**BORDER** (creation-only): Default: "NO".
 
-**CANVASBOX** (non-inheritable): enable the behavior of a canvas box instead of a regular container.
-This will affect the EXPAND attribute, the Natural size computation, and children layout distribution.
-Can be YES or NO. Default: NO.
+**CANVASBOX** (non-inheritable): enables the behavior of a canvas box instead of a regular container.
+This will affect the EXPAND attribute, the natural size computation, and children layout distribution.
+Can be YES or NO. Default: "NO".
 
-**CHILDOFFSET** (non-inheritable): Allow to specify a position offset for the child.
-Available for native containers only. It will not affect the natural size, and allows to position controls outside the client area.
+**CHILDOFFSET** (non-inheritable): Specifies a position offset for the child.
+Available for native containers only. It will not affect the natural size, and allows positioning controls outside the client area.
 Format "*dx*x*dy*", where *dx* and *dy* are integer values corresponding to the horizontal and vertical offsets, respectively, in pixels.
-Default: 0x0.
+Default: "0x0".
 
-**DECORATION** (non-inheritable): Enable a decoration area around the child. Can be YES or NO.
-Default NO.
+**DECORATION** (non-inheritable): Enables a decoration area around the child. Can be YES or NO.
+Default: "NO".
 
-**DECORSIZE** (non-inheritable): total size of the decoration in the format "WidthxHeight" (in C "%dx%d).
+**DECORSIZE** (non-inheritable): total size of the decoration in the format "WidthxHeight" (in C "%dx%d").
 Used only when DECORATION=YES.
 
-**DECOROFFSET** (non-inheritable): decoration offset from a left border and top border in the format "XxY" (in C "%dx%d).
+**DECOROFFSET** (non-inheritable): decoration offset from a left border and top border in the format "XxY" (in C "%dx%d").
 Used only when DECORATION=YES.
 
-[EXPAND](../attrib/iup_expand.md) (non-inheritable):  behaves as a container.
+[EXPAND](../attrib/iup_expand.md) (non-inheritable): behaves as a container.
 See CANVASBOX attribute.
 
-**CANFOCUS** (non-inheritable): the default is changed to NO.
-But it can receive the focus.
+**CANFOCUS** (non-inheritable): Default: "NO".
+It can still receive the focus.
 
-> 
+>
 >
 > ------------------------------------------------------------------------
 
@@ -63,10 +63,10 @@ But it can receive the focus.
 
 ### Notes
 
-The box can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
+The box can be created with no elements and be dynamically filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
 
 The ACTION callback can be defined, and the application can draw below other children inside the BackgroundBox, but only with the [IupDraw](../func/iup_draw.md) API.
-To avoid overlapping the drawing areas, it is recommended that children must be inside native containers.
+To avoid overlapping the drawing areas, children should be inside native containers.
 
 ### Examples
 

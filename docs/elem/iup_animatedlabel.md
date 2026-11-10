@@ -2,7 +2,7 @@
 
 Creates an animated label interface element, which displays an image that is changed periodically.
 
-It uses an animation that is simply an **IupUser** with several **IupImage** as children.
+It uses an animation that is an **IupUser** with several **IupImage** as children.
 
 It inherits from [IupLabel](iup_label.md).
 
@@ -32,13 +32,13 @@ By default, the animation is stopped.
 **STOPWHENHIDDEN**: automatically stops the animation when the label is hidden.
 Default: YES.
 
-**RUNNING** (read-only): return YES if the animation is running.
+**RUNNING** (read-only): returns YES if the animation is running.
 
 **FRAMETIME**: The time between each frame.
 If the **IupUser** element has a FRAMETIME attribute, it will be used to set the **IupAnimatedLabel** FRAMETIME attribute, but it can be overwritten later on.
 
 **FRAMECOUNT** (read-only): number of frames in the animation.
-It is simply **IupGetChildCount** of the given **IupUser** element.
+It is the **IupGetChildCount** of the given **IupUser** element.
 
 **ANIMATION**: the name of the element that contains the list of images.
 The value passed must be the name of an **IupUser** element with several **IupImage** as children.
@@ -52,7 +52,7 @@ All **IupLabel** callbacks. No label callbacks are used internally.
 
 ### Examples
 
-     label = IupAnimatedLabel(NULL);
+    label = IupAnimatedLabel(NULL);
     IupSetAttribute(label, "ANIMATION", "IUP_CircleProgressAnimation");
     IupSetAttribute(label, "START", "YES");
 

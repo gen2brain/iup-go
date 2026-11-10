@@ -7,7 +7,7 @@ Returns a child of the control given its position.
     Ihandle *IupGetChild(Ihandle* ih, int pos);
 
 **ih**: identifier of the interface element.\
-**pos**: position of the desire child starting at 0.\
+**pos**: position of the desired child starting at 0.
 
 **Returns:** the child or NULL if there is none.
 

@@ -7,7 +7,7 @@ Based on [IupColorDlg](iup_colordlg.md).
 
     int IupGetColor(int x, int y, unsigned char *r, unsigned char *g, unsigned char *b);
 
-x, y: x, y values of the **IupPopup** function.\
+**x, y**: x, y values of the **IupPopup** function.\
 **r, g, b**: Pointers to variables that will receive the color selected by the user if the OK button is pressed.
 The value in the variables at the moment the function is called defines the color being selected when the dialog is shown.
 If the OK button is not pressed, the r, g and b values are not changed. These values cannot be NULL.

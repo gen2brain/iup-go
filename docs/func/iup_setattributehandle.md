@@ -1,8 +1,8 @@
 ## IupSetAttributeHandle
 
-Instead of using **IupSetHandle** and **IupSetAttribute** with a new creative name, this function automatically creates a non conflict name and associates the name with the attribute.
+Instead of using **IupSetHandle** and **IupSetAttribute** with a new name, this function automatically creates a non-conflicting name and associates the name with the attribute.
 
-It is very useful for associating images and menus.
+It is useful for associating images and menus.
 
 ### Parameters/Return
 

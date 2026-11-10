@@ -5,9 +5,9 @@ It inherits from [IupLabel](iup_label.md).
 
 ### Creation
 
-    Ihandle* IupLink(const char *url, const char * title);
+    Ihandle* IupLink(const char *url, const char *title);
 
-**url**: the destination address of the link. Can be any text. If **IupHelp** is used should be a valid URL.
+**url**: the destination address of the link. Can be any text. If **IupHelp** is used, it should be a valid URL.
 It can be NULL. It will set the URL attribute.\
 **title**: Text to be shown on the link. It can be NULL. It will set the TITLE attribute.
 
@@ -31,14 +31,12 @@ Inherits all attributes and callbacks of the [IupLabel](iup_label.md), but redef
 **url**: the destination address of the link.
 
 **Returns**: IUP_CLOSE will be processed.
-If returns IUP_DEFAULT or it is not defined, the **IupHelp** function will be called.
+If the callback returns IUP_DEFAULT or is not defined, the **IupHelp** function is called with the given URL.
 
 ### Notes
 
 When the cursor is over the text, it is changed to the HAND cursor.
 Android and iOS have no mouse cursor.
-
-If the callback is not defined, the **IupHelp** function is called with the given URL.
 
 The **IupLabel** callbacks BUTTON_CB, ENTERWINDOW_CB and LEAVEWINDOW_CB are used internally.
 

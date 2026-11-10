@@ -23,9 +23,9 @@ It does not have a native representation.
 ### Notes
 
 When an **IupFill** is inside a **IupVbox** or **IupHbox**, it will affect the expansion of the box because it is always expandable.
-Even when you set its size to a given value, it will still affect the layout, because it is always marked as an expandable element.
+Even when its size is set to a given value, it still affects the layout, because it is always marked as an expandable element.
 
-**IupSpace** will simply occupy a space in the layout. It does not have a natural size, it is 0x0 by default.
+**IupSpace** occupies a space in the layout. It does not have a natural size, it is 0x0 by default.
 It can be expandable or not, EXPAND will work as a regular element.
 The attributes SIZE and RASTERSIZE can be normally set.
 

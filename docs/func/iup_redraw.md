@@ -1,6 +1,6 @@
 ## IupRedraw
 
-Force the element and its children to be redrawn immediately.
+Forces the element and its children to be redrawn immediately.
 
 ### Parameters/Return
 
@@ -11,4 +11,4 @@ Force the element and its children to be redrawn immediately.
 
 ### See Also
 
-[IupUpdate](iup_update.md)  
+[IupUpdate](iup_update.md)

@@ -1,11 +1,11 @@
 ## HELP_CB
 
-Action generated when the user press F1 at a control.
-In Motif is also activated by the Help button in some workstations keyboard.
+Action generated when the user presses F1 at a control.
+In Motif, it is also activated by the Help key in some workstation keyboards.
 
 ### Callback
 
-    void function(Ihandle *ih);
+    int function(Ihandle *ih);
 
 **ih**: identifier of the element that activated the event.
 

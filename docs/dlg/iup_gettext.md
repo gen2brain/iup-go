@@ -6,10 +6,10 @@ Shows a modal dialog to edit a multiline text.
 
     int IupGetText(const char* title, char *text, int maxsize);
 
-**title**: the dialog title.**\
-text**: the initial value of the text and the returned text.\
-**maxsize:** maximum size for the edited string.
-If set to 0 will be the current length of a text, if set to -1 the dialog will be read-only and only the OK button is displayed.
+**title**: the dialog title.\
+**text**: the initial value of the text and the returned text.\
+**maxsize**: maximum size for the edited string.
+If set to 0, the current length of the text is used; if set to -1, the dialog is read-only and only the OK button is displayed.
 
 **Returns:** a non-zero value if successful.
 

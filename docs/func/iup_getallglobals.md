@@ -11,7 +11,9 @@ Returns the union of registered globals and user-set globals not present in the 
 
 **Returns:** number of names written, or the total count if `names` is NULL or `n` is 0/-1.
 
-The registered set comes from a hand-maintained registry covering every well-known global across all drivers. Use [IupGetGlobalInfo](iup_getglobalinfo.md) to query per-name flags and driver support.
+### Notes
+
+The registered set covers every well-known global across all drivers. Use [IupGetGlobalInfo](iup_getglobalinfo.md) to query per-name flags and driver support.
 
 ### See Also
 

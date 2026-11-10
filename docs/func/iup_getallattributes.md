@@ -6,8 +6,8 @@ Returns the names of all attributes of an element that are set in its internal h
 
     int IupGetAllAttributes(Ihandle* ih, char** names, int max_n);
 
-**ih**: identifier of the interface element. **\
-names**: table receiving the names. Only the list of names needs to be allocated.
+**ih**: identifier of the interface element.\
+**names**: table receiving the names. Only the list of names needs to be allocated.
 Each name will point to an internal string.\
 **max_n**: maximum number of names the table can receive.
 

@@ -4,9 +4,8 @@ Associates a name with a string as an auxiliary method for Internationalization 
 
 ### Parameters/Return
 
-    void IupSetLanguageString(const char *name, const char *value); 
+    void IupSetLanguageString(const char *name, const char *value);
     void IupStoreLanguageString(const char *name, const char *value);
-
 
 **name**: name of the string.\
 **value**: string value.
@@ -25,21 +24,21 @@ The application must register again all its strings for the new language.
 If a dialog is created with string names associations and the associations are about to be changed, then the dialog must be destroyed **before** the associations are changed, then created again.
 
 Associations are retrieved using the **IupGetLanguageString** function.
-But to simplify the usage of the string names associations attributes set with regular **IupSetStr*** functions, can use the prefix "_@" to indicate a string name and not the actual string.
-**IupSetAttribute*** functions cannot be used because they simply store a pointer that may not be a string.
+Attributes set with the regular **IupSetStr\*** functions can use the prefix "_@" to indicate a string name and not the actual string.
+**IupSetAttribute\*** functions cannot be used because they simply store a pointer that may not be a string.
 
 ### Examples
 
-    // If Language is Englih 
+    // If Language is English
     IupSetLanguageString("IUP_CANCEL", "Cancel");
       or
     // If Language is Portuguese
     IupSetLanguageString("IUP_CANCEL", "Cancelar");
 
     // Then when setting a button title use:
-    Ihandle* button_cancel = IupButton(IupGetLanguageString("IUP_CANCEL"), NULL);
+    Ihandle* button_cancel = IupButton(IupGetLanguageString("IUP_CANCEL"));
       or
-    Ihandle* button_cancel = IupButton("_@IUP_CANCEL", NULL);
+    Ihandle* button_cancel = IupButton("_@IUP_CANCEL");
       or
     IupSetStrAttribute(button_cancel, "TITLE", "_@IUP_CANCEL");
 

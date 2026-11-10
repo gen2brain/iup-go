@@ -17,11 +17,11 @@ This function also deletes the main names associated to the interface element be
 
 **Menu** bars associated with dialogs are automatically destroyed when the dialog is destroyed.
 
-**Images** associated with controls are NOT automatically destroyed, because images can be reused in several controls the application must destroy them when they are not used anymore.
+**Images** associated with controls are NOT automatically destroyed; images can be reused in several controls, so the application must destroy them when they are not used anymore.
 
 All dialogs and all elements that have names are automatically destroyed in **IupClose**.
 
-In Android and iOS destroying a dialog that is still appearing is completed when it finishes appearing, so [DESTROY_CB](../call/iup_destroy_cb.md) is called later.
+In Android and iOS, destroying a dialog that is still appearing is completed when it finishes appearing, so [DESTROY_CB](../call/iup_destroy_cb.md) is called later.
 
 ### See Also
 

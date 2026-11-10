@@ -12,6 +12,4 @@ Returns the global callback associated to a name by [IupSetFunction](iup_setfunc
 
 ### See Also
 
-[IupSetFunction](iup_setfunction.md),  [IupGetCallback](iup_getcallback.md)
-
- 
+[IupSetFunction](iup_setfunction.md), [IupGetCallback](iup_getcallback.md)

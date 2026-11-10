@@ -7,7 +7,7 @@ The THEME attribute is inheritable and the NTHEME attribute is NOT inheritable.
 
 Name of an **IupUser** element that contains the attributes.
 The name is associated in C using [IupSetHandle](../func/iup_sethandle.md).
-The name association must be done before setting the attribute. 
+The name association must be done before setting the attribute.
 
 ### Notes
 
@@ -19,7 +19,7 @@ Attributes that are registered as not being strings, read-only, write-only or ca
 
 The theme can contain a specialized subtheme for the element class.
 The element class name will be used with a "IUP" prefix to identify the subtheme.
-For instance, if the element is a label, then an attribute called "IUPLABEL" can point to another theme name to be applied at the element additionally to the already applied attributes.
+For instance, if the element is a label, then an attribute called "IUPLABEL" can point to another theme name to be applied at the element in addition to the already applied attributes.
 
 The global attribute [DEFAULTTHEME](iup_globals.md#defaulttheme) can be applied to all elements during creation.
 

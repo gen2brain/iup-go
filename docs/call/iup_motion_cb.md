@@ -14,7 +14,7 @@ The same macros used for [BUTTON_CB](../call/iup_button_cb.md) can be used for t
 ### Notes
 
 Between press and release, all mouse events are redirected only to this control, even if the cursor moves outside the element.
-So the BUTTON_CB callback when released and the MOTION_CB callback can be called with coordinates outside the element rectangle.
+The BUTTON_CB callback when released and the MOTION_CB callback can be called with coordinates outside the element rectangle.
 
 ### Affects
 

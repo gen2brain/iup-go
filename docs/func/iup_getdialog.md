@@ -1,7 +1,7 @@
 ## IupGetDialog
 
-Returns the handle of the dialog that contains that interface element.
-Works also for children of a menu that is associated with a dialog.
+Returns the handle of the dialog that contains the interface element.
+Also works for children of a menu that is associated with a dialog.
 
 ### Parameters/Return
 

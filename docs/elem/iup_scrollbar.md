@@ -24,11 +24,11 @@ Not supported in macOS and WinUI.
 **LINESTEP**: Controls the increment for keyboard arrows and single step clicks.
 It is not the size of the increment.
 The increment size is "linestep*(max-min)", so it must be 0<linestep<1.
-Default is "0.01".
+Default: "0.01".
 
-**MAX**: Contains the maximum scrollbar value. Default is "1".
+**MAX**: Contains the maximum scrollbar value. Default: "1".
 
-**MIN**: Contains the minimum scrollbar value. Default is "0".
+**MIN**: Contains the minimum scrollbar value. Default: "0".
 
 **ORIENTATION** (creation-only) (non-inheritable): Informs whether the scrollbar is "VERTICAL" or "HORIZONTAL".
 Default: "HORIZONTAL".
@@ -36,13 +36,13 @@ Default: "HORIZONTAL".
 **PAGESIZE**: The size of the visible page relative to the total range.
 It defines the size of the thumb indicator.
 The value is in the same units as MIN and MAX.
-Default is "0.1".
+Default: "0.1".
 
 **PAGESTEP**: Controls the increment for PgDn and PgUp keys and page step clicks.
 It is not the size of the increment.
 The increment size is "pagestep*(max-min)", so it must be 0<pagestep<1.
-Default is "0.1".
-In QML a click on the trough moves the handle to the pointer instead of a page step.
+Default: "0.1".
+In QML, a click on the trough moves the handle to the pointer instead of a page step.
 
 [RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): The initial size depends on the orientation.
 For horizontal, the default width is 100 pixels and the height is the system scrollbar size.

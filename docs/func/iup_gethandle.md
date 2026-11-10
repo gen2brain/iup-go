@@ -13,5 +13,3 @@ Returns the identifier of an interface element that has an associated name using
 ### See Also
 
 [IupSetHandle](iup_sethandle.md).
-
- 

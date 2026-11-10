@@ -1,8 +1,6 @@
-IupUpdate\
-IupUpdateChildren
------------------
+## IupUpdate and IupUpdateChildren
 
-Mark the element or its children to be redrawn when the control returns to the system.
+Marks the element or its children to be redrawn when the control returns to the system.
 
 ### Parameters/Return
 
@@ -13,4 +11,4 @@ Mark the element or its children to be redrawn when the control returns to the s
 
 ### See Also
 
-[IupRedraw](iup_redraw.md)  
+[IupRedraw](iup_redraw.md)

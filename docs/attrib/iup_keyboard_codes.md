@@ -1,4 +1,4 @@
-### **Keyboard Codes**
+## Keyboard Codes
 
 The table below shows the IUP codification of common keys in a keyboard.
 Each key is represented by an integer value, defined in the "iupkey.h" file header, which should be included in the application to use the key definitions.
@@ -11,14 +11,14 @@ Check the "iupkey.h" file header for all the definitions.
 IUP provides definitions only for common control keys and ASCii characters.
 Other key combinations are accessed using the macros described below.
 Also, the global attribute "MODKEYSTATE" can be used to detect the combination of two or more modifiers.
-Notice that some key combinations are never available because they are restricted by the system.
-Notice that all of this does not affect the **IupText** and **IupMultiline** text input.
+Some key combinations are never available because they are restricted by the system.
+The key codes do not affect the **IupText** and **IupMultiline** text input.
 
 The **iup_isprint(key)** macro informs if a key can be directly used as a printable character.
 The **iup_isXkey(key)** macro informs if a given key is an extended code.
 The **iup_isKeyPadXkey(key)** macro informs if a given key is a numeric keypad code.
 The **iup_isShiftXkey(key)** macro informs if a given key is an extended code using the Shift modifier, the **iup_isCtrlXkey(key)** macro for the Ctrl modifier, the **iup_isAltXkey(key)** macro for the Alt modifier, and the **iup_isSysXkey(key)** macro for the Sys modifier.
-To obtain a key code for a generic combination you can start with the base key from the table and combine it repeated times using the macros **iup_XkeyShift(key)**, **iup_XkeyCtrl(key)**, **iup_XkeyAlt(key)** and **iup_XkeySys(key)**.
+To obtain a key code for a generic combination, start with the base key from the table and combine it repeated times using the macros **iup_XkeyShift(key)**, **iup_XkeyCtrl(key)**, **iup_XkeyAlt(key)** and **iup_XkeySys(key)**.
 
 |          Key | Code / Callback |
 |-------------:|-----------------|

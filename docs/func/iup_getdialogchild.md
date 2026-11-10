@@ -1,6 +1,6 @@
 ## IupGetDialogChild
 
-Returns the identifier of the child element that has the NAME attribute equals to the given value on the same dialog hierarchy.
+Returns the identifier of the child element that has the NAME attribute equal to the given value on the same dialog hierarchy.
 Works also for children of a menu that is associated with a dialog.
 
 ### Parameters/Return
@@ -8,7 +8,7 @@ Works also for children of a menu that is associated with a dialog.
     Ihandle* IupGetDialogChild(Ihandle *ih, const char* name);
 
 **ih**: Identifier of an interface element that belongs to the hierarchy.\
-**name**: name of the control to be found
+**name**: name of the control to be found.
 
 **Returns:** NULL if not found.
 

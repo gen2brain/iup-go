@@ -2,12 +2,12 @@
 
 Creates (**maps**) the native interface objects corresponding to the given IUP interface elements.
 
-It will also call recursively to create the native element of all the children in the element's tree.
+It also recursively creates the native elements of all the children in the element's tree.
 
 The element must be already **attached** to a mapped container, except the dialog.
 A child can only be mapped if its parent is already mapped.
 
-This function is automatically called before the dialog is shown in **IupShow**, **IupShowXY** or **IupPopup**. 
+This function is automatically called before the dialog is shown in **IupShow**, **IupShowXY** or **IupPopup**.
 
 ### Parameters/Return
 
@@ -16,7 +16,7 @@ This function is automatically called before the dialog is shown in **IupShow**,
 **ih**: Identifier of an interface element.
 
 **Returns:** IUP_NOERROR if successful. If the element was already mapped returns IUP_NOERROR.
-If the native creation failed returns IUP_ERROR.
+If the native creation failed, returns IUP_ERROR.
 
 ### Notes
 
@@ -26,17 +26,17 @@ Calling **IupMap** for an already mapped dialog is the same as only calling **Iu
 
 Calling **IupMap** for an already mapped element that is not a dialog does nothing.
 
-If you add new elements to an already mapped dialog, you must call **IupMap** for those elements.
-And then call **IupRefresh** to update the dialog layout.
+When new elements are added to an already mapped dialog, **IupMap** must be called for those elements.
+Then **IupRefresh** must be called to update the dialog layout.
 
-If the WID attribute of an element is NULL, it means the element was not already mapped.
+If the WID attribute of an element is NULL, the element is not mapped yet.
 Some containers do not have a native element associated, like VBOX and HBOX.
 In this case, their WID is a fake value (void*)(-1).
 
-It is useful for the application to call **IupMap** when the value of the WID attribute must be known, i.e., the native element must exist, before a dialog is made visible.
+Calling **IupMap** is useful when the value of the WID attribute must be known, i.e., the native element must exist, before a dialog is made visible.
 
 The MAP_CB callback is called at the end of the **IupMap** function, after all processing, so it can also be used to create other things that depend on the WID attribute.
-But notice that for non-dialog elements it will be called before the dialog layout has been updated, so the element current size will still be 0x0.
+For non-dialog elements it is called before the dialog layout has been updated, so the element current size will still be 0x0.
 
 ### See Also
 

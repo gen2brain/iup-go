@@ -1,6 +1,6 @@
 ## IupMessage
 
-Shows a modal dialog containing a message. It simply creates and popups a **IupMessageDlg**.
+Shows a modal dialog containing a message. It creates and pops up a **IupMessageDlg**.
 
 ### Creation and Show
 
@@ -14,11 +14,10 @@ Shows a modal dialog containing a message. It simply creates and popups a **IupM
 
 ### Notes
 
-The **IupMessage** function shows a dialog centralized on the screen, showing the message and the “OK” button.
-The ‘\n’ character can be added to the message to indicate line change.
+The **IupMessage** function shows a dialog centered on the screen, showing the message and the "OK" button.
+The '\n' character can be added to the message to indicate line change.
 
 The dialog uses a global attribute called "PARENTDIALOG" as the parent dialog if it is defined.
-It also uses a global attribute called "ICON" as the dialog icon if it is defined (used only in Motif, in Windows MessageBox does not have an icon in the title bar).
 
 ### Examples
 

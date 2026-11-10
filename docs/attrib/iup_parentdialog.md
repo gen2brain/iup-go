@@ -23,9 +23,9 @@ Not supported in WebAssembly, Android and iOS.
 
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate a dialog to a name.
 
-**IMPORTANT**: When the parent is destroyed, the child dialog is also destroyed, BUT the CLOSE_CB callback of the child dialog is NOT called.
+When the parent is destroyed, the child dialog is also destroyed, BUT the CLOSE_CB callback of the child dialog is NOT called.
 The application must take care of destroying the child dialogs before destroying the parent.
-This is usually done when CLOSE_CB of the parent dialog is called.
+This is usually done in the CLOSE_CB of the parent dialog.
 
 ### Affects
 

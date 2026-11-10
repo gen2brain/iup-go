@@ -14,11 +14,11 @@ Returns a child of the given control given its brother.
 ### Notes
 
 This function will return the children of the control in the exact same order in which they were assigned.
-If child in not NULL then it returns exactly the same result as [IupGetBrother](iup_getbrother.md).
+If child is not NULL then it returns exactly the same result as [IupGetBrother](iup_getbrother.md).
 
-### Example
+### Examples
 
-    /* Lists all children of a IupVbox */
+    /* Lists all children of an IupVbox */
 
     #include <stdio.h>
     #include "iup.h"
@@ -29,7 +29,7 @@ If child in not NULL then it returns exactly the same result as [IupGetBrother](
 
       IupOpen(&argc, &argv);
 
-      bt = IupButton("Button", NULL);
+      bt = IupButton("Button");
       lb = IupLabel("Label");
 
       vbox = IupVbox(bt, lb, NULL);

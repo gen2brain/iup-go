@@ -11,10 +11,10 @@ Saves all registered attributes on the internal hash table.
 ### Notes
 
 When the element is mapped, some attributes are stored only in the native system.
-If the element is **unmaped** those attributes are lost.
-So this function is useful when you want to **unmap** the element and keep its attributes.
+If the element is **unmapped** those attributes are lost.
+Use this function to **unmap** the element and keep its attributes.
 
-It will not save id dependent attributes, like those which has a complementary number.
+It does not save id dependent attributes, like those which have a complementary number.
 For example, items in a **IupList**, **IupTree** or **IupMatrix**.
 
 ### See Also

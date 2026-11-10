@@ -229,7 +229,7 @@ Default: "NO".
 
 **FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be YES or NO. Default: "YES".
 
-**HASFOCUS** (read-only): returns the tree state if has focus. Can be YES or NO. 
+**HASFOCUS** (read-only): returns if the element has focus. Can be YES or NO.
 
 ### Marks
 

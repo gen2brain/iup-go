@@ -6,8 +6,8 @@ Initializes the IUP toolkit. Must be called before any other IUP function.
 
     int IupOpen(int *argc, char ***argv);
 
-**argc** and **argv**: are the same as the application "main" function.
-Some parameters processed by the driver can be removed so the address is necessary.
+**argc**, **argv**: the same as the application "main" function arguments.
+Some parameters processed by the driver can be removed, so their addresses are passed.
 They can be NULL.
 
 **Returns:** IUP_OPENED (already opened), IUP_ERROR or IUP_NOERROR.
@@ -24,7 +24,7 @@ Returns IUP_ERROR if the WinUI bootstrap fails.
 In **GTK 3**, gtk_init is called with argc/argv.
 Returns IUP_ERROR if GTK initialization fails (e.g., no display available).
 
-In **GTK 4**, gtk_init is called (without argc/argv, as GTK 4 no longer uses them).
+In **GTK 4**, gtk_init is called without argc/argv.
 
 In **Motif**, XtToolkitInitialize and XtOpenDisplay are called.
 Returns IUP_ERROR if the X display cannot be opened.
@@ -47,21 +47,21 @@ In **iOS**, the UIApplication shared instance is initialized.
 
 In **Haiku**, a BApplication subclass (IupHaikuApp) is created using the APPID as its MIME signature; the executable's BAppFileInfo signature is updated and the MIME entry is registered/promoted as the preferred app for that signature. If an existing BApplication is detected, it is reused.
 
-In all drivers, the C numeric locale is reset to "C" after toolkit initialization to ensure consistent number formatting.
+In GTK, GTK4, Motif, Qt, QML, FLTK, EFL, Haiku and WinUI, the C numeric locale is reset to "C" after toolkit initialization. The other drivers leave the locale unchanged.
 
 #### Environment Variables
 
-The toolkit's initialization depends also on platform-dependent environment variables, see each driver documentation.
+The toolkit's initialization also depends on platform-dependent environment variables, see each driver documentation.
 
-**QUIET**
+**IUP_QUIET**
 
 When this variable is set to NO, IUP will generate a message in the console indicating the driver's version when initializing.
-Default: YES.
+Default: "YES".
 
-**VERSION**
+**IUP_VERSION**
 
 When this variable is set to YES, IUP generates a message dialog indicating the driver's version when initializing.
-Default: NO.
+Default: "NO".
 
 ### See Also
 

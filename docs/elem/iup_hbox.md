@@ -11,7 +11,7 @@ It does not have a native representation.
     Ihandle* IupHboxV(Ihandle* child,va_list arglist);
     Ihandle* IupHboxv(Ihandle **children);
 
-**child**,... : List of identifiers that will be placed in the box.
+**child, ...**: List of identifiers that will be placed in the box.
 NULL must be used to define the end of the list in C.
 It can be empty, but in C must have at least the NULL terminator.
 
@@ -22,7 +22,7 @@ It can be empty, but in C must have at least the NULL terminator.
 **ALIGNMENT** (non-inheritable): Vertically aligns the elements. Possible values: "ATOP", "ACENTER", "ABOTTOM".
 Default: "ATOP".
 
-[EXPAND](../attrib/iup_expand.md) (non-inheritable*): The default value is "YES".
+[EXPAND](../attrib/iup_expand.md) (non-inheritable\*): Default: "YES".
 See the documentation of the attribute for EXPAND inheritance.
 
 **EXPANDCHILDREN** (non-inheritable): forces all children to expand vertically and to fully occupy its space available inside the box.
@@ -35,7 +35,7 @@ Default: "0".
 
 **HOMOGENEOUS** (non-inheritable): forces all children to get equal horizontal space.
 The space width will be based on the largest child. Default: "NO".
-Notice that this does not change the children size, only the available space for each one of them to expand.
+This does not change the children size, only the available space for each one of them to expand.
 
 **MARGIN, CMARGIN**: Defines a margin in pixels, **CMARGIN** is in the same units of the **SIZE** attribute.
 Its value has the format "*width*x*height*", where *width* and *height* are integer values corresponding to the horizontal and vertical margins, respectively.
@@ -44,7 +44,7 @@ Default: "0x0" (no margin).
 **NMARGIN, NCMARGIN** (non-inheritable): Same as **MARGIN** but are non-inheritable.
 
 **NORMALIZESIZE** (non-inheritable): normalizes all children natural size to be the biggest natural size among them.
-All natural width will be set to the biggest width, and all natural height will be set to the biggest height according to is value.
+All natural width will be set to the biggest width, and all natural height will be set to the biggest height according to its value.
 Can be NO, HORIZONTAL, VERTICAL or BOTH. Default: "NO".
 Same as using [IupNormalizer](iup_normalizer.md).
 
@@ -71,12 +71,12 @@ Default: "NO".
 
 ### Notes
 
-The box can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
+The box can be created with no elements and be dynamically filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
 
 The box will NOT expand its children, it will allow its children to expand, according to the space left in the box parent.
 So for the expansion to occur, the children must be expandable with EXPAND!=NO, and there must be room in the box parent.
 
-Also, the **h**box will not reduce its children beyond their **horizontal** natural size even if SHRINK=YES is set to the dialog.
+Also, the hbox will not reduce its children beyond their **horizontal** natural size even if SHRINK=YES is set to the dialog.
 
 ### Examples
 
@@ -86,4 +86,4 @@ Also, the **h**box will not reduce its children beyond their **horizontal** natu
 
 ### See Also
 
-[IupZbox](iup_zbox.md), [IupVBox](iup_vbox.md)
+[IupZbox](iup_zbox.md), [IupVbox](iup_vbox.md)

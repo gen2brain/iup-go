@@ -8,7 +8,7 @@ See the [Layout Guide](../layout.md#layout-guide) for more details on sizes.
 
 "*width*x*height*", where width and height are integer values corresponding to the horizontal and vertical size, respectively, in characters fraction unit (see Notes below).
 
-You can also set only one of the parameters by removing the other one and maintaining the separator "x", but this is the equivalent of setting the other value to 0.
+Only one of the parameters can be set by removing the other one and keeping the separator "x"; this is equivalent to setting the other value to 0.
 For example, "x40" (height only = "0x40") or "40x" (width only = "40x0").
 
 When consulted after the element is mapped, the **Current** size is returned; before mapping, the **User** size is returned.
@@ -21,10 +21,10 @@ The size units observe the following heuristics:
 - Width in 1/4's of the average width of a character for the current **FONT** of each control.
 - Height in 1/8's of the average height of a character for the current **FONT** of each control.
 
-So, a SIZE="4x8" means 1 character width and 1 character height.
+A SIZE="4x8" means 1 character width and 1 character height.
 
-Notice that this is the **average** character size, the space occupied by a specific string is always different from its number of character times its average character size, except when using a monospaced font like Courier.
-Usually for common strings this size is smaller than the actual size, so it is a good practice to leave more room than expected if you use the SIZE attribute.
+This is the **average** character size; the space occupied by a specific string is always different from its number of character times its average character size, except when using a monospaced font like Courier.
+Usually for common strings this size is smaller than the actual size, so it is a good practice to leave more room than expected when using the SIZE attribute.
 For smaller font sizes, this difference is more noticeable than for larger font sizes.
 
 When this attribute is changed, the [RASTERSIZE](iup_rastersize.md) attribute is automatically updated.
@@ -40,15 +40,12 @@ To obtain the **User** size of the element in pixels after it is mapped, use the
 ------------------------------------------------------------------------
 
 A **User** size of "0x0" can be set, it can also be set using NULL.
-If both values are 0 then NULL is returned.
 
-If you wish to use the **User** size only as an initial size, change this attribute to NULL after the control is mapped, the returned size in **IupGetAttribute** will still be the **Current** size.
+To use the **User** size only as an initial size, change this attribute to NULL after the control is mapped; the size returned by **IupGetAttribute** is still the **Current** size.
 
 The element is NOT immediately repositioned. Call **IupRefresh** to update the dialog layout.
 
 **IupMap** also updates the dialog layout even if it is already mapped, so calling it or calling **IupShow**, **IupShowXY** or **IupPopup** (they all call **IupMap**) will also update the dialog layout.
-
-See the [Layout Guide](../layout.md#layout-guide) for mode details on sizes.
 
 ### Affects
 

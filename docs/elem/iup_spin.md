@@ -1,9 +1,9 @@
-## IupSpin and IupSpinBox
+## IupSpin and IupSpinbox
 
-This functions will create a control set with a vertical box containing two buttons, one with an up arrow and the other with a down arrow, to be used to increment and decrement values.
+These functions create a control set with a vertical box containing two buttons, one with an up arrow and the other with a down arrow, to be used to increment and decrement values.
 
 Unlike the SPIN attribute of the **IupText** element, the **IupSpin** element cannot automatically increment the value, and it is NOT inserted inside the **IupText** area.
-But they can be used with any element.
+They can be used with any element.
 
 ### Creation
 
@@ -13,20 +13,20 @@ But they can be used with any element.
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 
-**IupSpinbox** is an horizontal container that already contains a **IupSpin**.
+**IupSpinbox** is a horizontal container that already contains a **IupSpin**.
 
     Ihandle* IupSpinbox(Ihandle* child);
 
-**Returns:** the identifier of the created element, or NULL if an error occurs. 
-
 **child**: Identifier of an interface element which will receive the spinbox around.
+
+**Returns:** the identifier of the created element, or NULL if an error occurs.
 
 ### Callbacks
 
 **SPIN_CB**: Called each time the user clicks in the buttons. It will increment 1 and decrement -1 by default.
 Holding the Shift key will set a factor of 2, holding Ctrl a factor of 10, and both a factor of 100.
 
-int function(Ihandle *ih, int inc);
+    int function(Ihandle *ih, int inc);
 
 ### Notes
 

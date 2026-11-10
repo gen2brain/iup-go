@@ -1,11 +1,11 @@
 ## POSITION (non-inheritable)
 
 The position of the element relative to the origin of the **Client** area of the native parent.
-If you add the CLIENTOFFSET attribute of the native parent, you obtain the coordinates relative to the **Window** area of the native parent.
+Adding the CLIENTOFFSET attribute of the native parent gives the coordinates relative to the **Window** area of the native parent.
 See the [Layout Guide](../layout.md#layout-guide).
 
 It is computed during the layout, so a value set on the element is replaced when the layout is updated.
-The exception is FLOATING=YES: the layout does not position a floating element, so it keeps the value you set.
+The exception is FLOATING=YES: the layout does not position a floating element, so it keeps the value set by the application.
 
 ### Value
 
