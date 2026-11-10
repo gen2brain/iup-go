@@ -439,6 +439,13 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 		else if (node.toggleValue == -1) sym = @"minus.square.fill";
 		[cell.toggle setImage:[UIImage systemImageNamed:sym] forState:UIControlStateNormal];
 		cell.toggle.hidden = NO;
+		cell.toggle.userInteractionEnabled = YES;
+	}
+	else if (_ihandle && _ihandle->data->show_toggle && iupAttribGetBoolean(_ihandle, "EMPTYAS3STATE"))
+	{
+		[cell.toggle setImage:[UIImage systemImageNamed:@"minus.square.fill"] forState:UIControlStateNormal];
+		cell.toggle.hidden = NO;
+		cell.toggle.userInteractionEnabled = NO;
 	}
 	else
 	{

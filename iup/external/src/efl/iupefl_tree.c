@@ -127,13 +127,18 @@ static Evas_Object* eflTreeContentGet(void* data, Evas_Object* obj, const char* 
   }
 
   /* elm_check is 2-state; NOTDEF renders as OFF */
-  if (ih->data->show_toggle && node->toggle_visible)
+  if (ih->data->show_toggle && (node->toggle_visible || iupAttribGetBoolean(ih, "EMPTYAS3STATE")))
   {
     Evas_Object* box = elm_box_add(obj);
     Evas_Object* chk = elm_check_add(obj);
     elm_box_horizontal_set(box, EINA_TRUE);
-    elm_check_state_set(chk, node->toggle_value == 1 ? EINA_TRUE : EINA_FALSE);
-    evas_object_smart_callback_add(chk, "changed", eflTreeToggleChanged, node);
+    if (node->toggle_visible)
+    {
+      elm_check_state_set(chk, node->toggle_value == 1 ? EINA_TRUE : EINA_FALSE);
+      evas_object_smart_callback_add(chk, "changed", eflTreeToggleChanged, node);
+    }
+    else
+      elm_object_disabled_set(chk, EINA_TRUE);
     evas_object_size_hint_weight_set(chk, 0.0, EVAS_HINT_EXPAND);
     evas_object_size_hint_align_set(chk, 0.0, EVAS_HINT_FILL);
     evas_object_show(chk);

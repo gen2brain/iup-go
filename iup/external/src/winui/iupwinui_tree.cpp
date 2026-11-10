@@ -119,13 +119,14 @@ static int winuiTreeGetNodeToggleState(TreeViewNode const& node, bool* hidden)
 static void winuiTreeUpdateToggle(Ihandle* ih, TreeViewNode const& node, int state, bool hidden)
 {
   bool mixed = !hidden && state == -1;
+  bool empty_as_3state = hidden && iupAttribGetBoolean(ih, "EMPTYAS3STATE");
 
   winuiTreeSetNodeProperties(node, {
     { L"ToggleState", box_value(state) },
     { L"ToggleHidden", box_value(hidden) },
     { L"ToggleChecked", box_value(state == 1) },
     { L"ToggleVisible", box_value((hidden || mixed) ? Visibility::Collapsed : Visibility::Visible) },
-    { L"Toggle3Visible", box_value(mixed ? Visibility::Visible : Visibility::Collapsed) },
+    { L"Toggle3Visible", box_value((mixed || empty_as_3state) ? Visibility::Visible : Visibility::Collapsed) },
     { L"Toggle3Click", box_value(mixed) } });
 }
 

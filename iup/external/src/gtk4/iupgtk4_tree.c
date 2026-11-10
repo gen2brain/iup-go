@@ -1126,11 +1126,20 @@ iupgtk4TreeUpdateItemWidgets(Ihandle* ih, IupGtk4TreeItemWidgets* widgets, IupGt
 
   if (widgets->check)
   {
-    gtk_widget_set_visible(widgets->check, node->toggle_visible);
-    gtk_check_button_set_active(GTK_CHECK_BUTTON(widgets->check), node->check);
-
-    if (ih->data->show_toggle == 2)
-      gtk_check_button_set_inconsistent(GTK_CHECK_BUTTON(widgets->check), node->three_state);
+    if (!node->toggle_visible && iupAttribGetBoolean(ih, "EMPTYAS3STATE"))
+    {
+      gtk_widget_set_visible(widgets->check, TRUE);
+      gtk_widget_set_can_target(widgets->check, FALSE);
+      gtk_check_button_set_active(GTK_CHECK_BUTTON(widgets->check), FALSE);
+      gtk_check_button_set_inconsistent(GTK_CHECK_BUTTON(widgets->check), TRUE);
+    }
+    else
+    {
+      gtk_widget_set_visible(widgets->check, node->toggle_visible);
+      gtk_widget_set_can_target(widgets->check, TRUE);
+      gtk_check_button_set_active(GTK_CHECK_BUTTON(widgets->check), node->check);
+      gtk_check_button_set_inconsistent(GTK_CHECK_BUTTON(widgets->check), ih->data->show_toggle == 2 && node->three_state);
+    }
   }
 
   if (iupgtk4TreeFocusRingVisible(ih, node, row))

@@ -50,7 +50,7 @@ public:
     : BListItem(level, true), fKind(kind), fTitle(title ? title : ""),
       fImage(nullptr), fImageExpanded(nullptr),
       fHasFgColor(false), fHasBgColor(false), fHasFont(false), fFont(*be_plain_font),
-      fShowToggle(0), fToggleValue(0), fToggleVisible(true), fFocused(false)
+      fShowToggle(0), fToggleValue(0), fToggleVisible(true), fEmptyAs3State(false), fFocused(false)
   {
     fFgColor = iuphaikuColor(B_LIST_ITEM_TEXT_COLOR);
     fBgColor = iuphaikuColor(B_LIST_BACKGROUND_COLOR);
@@ -82,7 +82,7 @@ public:
   int ShowToggle() const { return fShowToggle; }
   void SetToggleValue(int v) { fToggleValue = v; }
   int ToggleValue() const { return fToggleValue; }
-  void SetToggleVisible(bool v) { fToggleVisible = v; }
+  void SetToggleVisible(bool v, bool empty_as_3state) { fToggleVisible = v; fEmptyAs3State = empty_as_3state; }
   bool ToggleVisible() const { return fToggleVisible; }
   BRect ToggleBox() const { return fToggleBox; }
 
@@ -138,7 +138,15 @@ public:
         be_control_look->DrawCheckBox(owner, drawRect, cb, bg, flags);
       }
       else
+      {
         fToggleBox = BRect();
+        if (fEmptyAs3State)
+        {
+          float by = frame.top + ((frame.Height() - boxSize) / 2);
+          BRect cb(x, by, x + boxSize, by + boxSize);
+          be_control_look->DrawCheckBox(owner, cb, cb, bg, BControlLook::B_PARTIALLY_ACTIVATED);
+        }
+      }
       x += boxSize + 4;
     }
     if (img)
@@ -193,6 +201,7 @@ private:
   int fShowToggle;
   int fToggleValue;
   bool fToggleVisible;
+  bool fEmptyAs3State;
   bool fFocused;
   mutable BRect fToggleBox;
 };
@@ -1135,7 +1144,7 @@ static int haikuTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* valu
   IupHaikuTreeView* tv = haikuTreeGetView(ih);
   IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
   if (!tv || !it) return 0;
-  it->SetToggleVisible(iupStrBoolean(value) ? true : false);
+  it->SetToggleVisible(iupStrBoolean(value) ? true : false, iupAttribGetBoolean(ih, "EMPTYAS3STATE") ? true : false);
   LooperLockGuard guard(tv->Looper());
   tv->InvalidateItem(tv->IndexOf(it));
   return 0;

@@ -1496,8 +1496,7 @@ static int qmlTreeSetToggleValueAttrib(Ihandle* ih, int id, const char* value)
     node->toggle = 1;
   else if (iupStrEqualNoCase(value, "OFF"))
     node->toggle = 0;
-  else if ((iupStrEqualNoCase(value, "NOTDEF") || (iupAttribGetBoolean(ih, "EMPTYAS3STATE") && !value))
-           && ih->data->show_toggle == 2)
+  else if (iupStrEqualNoCase(value, "NOTDEF") && ih->data->show_toggle == 2)
     node->toggle = -1;
 
   data->model->refresh(node);
@@ -2303,6 +2302,7 @@ static const char* qmlTreeViewQml =
   "  property int iupRowHeight: 20\n"
   "  property font iupFont\n"
   "  property bool iupShowToggle: false\n"
+  "  property bool iupEmptyAs3State: false\n"
   "  property bool iupTristate: false\n"
   "  property bool iupHideButtons: false\n"
   "  property bool iupDragDrop: false\n"
@@ -2336,12 +2336,13 @@ static const char* qmlTreeViewQml =
   "      spacing: 4\n"
   "      CheckBox {\n"
   "        id: chk\n"
-  "        visible: view.iupShowToggle && d.model.togglevisible\n"
+  "        visible: view.iupShowToggle && (d.model.togglevisible || view.iupEmptyAs3State)\n"
+  "        enabled: d.model.togglevisible\n"
   "        width: visible ? implicitWidth : 0\n"
   "        tristate: view.iupTristate\n"
   "        padding: 0\n"
   "        anchors.verticalCenter: parent.verticalCenter\n"
-  "        checkState: d.model.toggle === 1 ? Qt.Checked : (d.model.toggle === -1 ? Qt.PartiallyChecked : Qt.Unchecked)\n"
+  "        checkState: !d.model.togglevisible ? Qt.PartiallyChecked : (d.model.toggle === 1 ? Qt.Checked : (d.model.toggle === -1 ? Qt.PartiallyChecked : Qt.Unchecked))\n"
   "        onClicked: { view.iupToggled(d.row, checkState); checkState = Qt.binding(function() { return d.model.toggle === 1 ? Qt.Checked : (d.model.toggle === -1 ? Qt.PartiallyChecked : Qt.Unchecked) }) }\n"
   "      }\n"
   "      Image {\n"
@@ -2536,6 +2537,7 @@ static int qmlTreeMapMethod(Ihandle* ih)
   view->setProperty("model", QVariant::fromValue<QObject*>(data->model));
   view->setProperty("selectionModel", QVariant::fromValue<QItemSelectionModel*>(data->selection));
   view->setProperty("iupShowToggle", ih->data->show_toggle ? true : false);
+  view->setProperty("iupEmptyAs3State", iupAttribGetBoolean(ih, "EMPTYAS3STATE") ? true : false);
   view->setProperty("iupTristate", ih->data->show_toggle == 2);
   view->setProperty("iupHideButtons", iupAttribGetBoolean(ih, "HIDEBUTTONS") ? true : false);
   view->setProperty("iupDragDrop", ih->data->show_dragdrop ? true : false);

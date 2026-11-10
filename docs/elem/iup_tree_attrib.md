@@ -132,8 +132,9 @@ Actually changes the **TITLEFONTid** attribute.
 Can be "YES", "3STATE" or "NO". Default: "NO".
 Not supported in Motif and FLTK.
 
-**EMPTYAS3STATE** [Win32, Qt and QML Only] (non-inheritable): when SHOWTOGGLE=YES, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with the image of the 3state toggle.
-Can be YES or NO. Default: NO.
+**EMPTYAS3STATE** (non-inheritable): when SHOWTOGGLE=YES, the empty space left in nodes that TOGGLEVISIBLEid=NO is filled with the image of the 3state toggle, which can not be clicked.
+Can be YES or NO. Default: NO. Must be set before SHOWTOGGLE.
+In EFL, the image is an unchecked toggle. In GNUstep, it is a checked toggle.
 
 **TOGGLEVALUEid** (non-inheritable): defines the toggle state. Values can be "ON" or "OFF".
 If SHOWTOGGLE=3STATE then can also be "NOTDEF". Default: "OFF".

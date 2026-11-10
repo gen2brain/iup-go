@@ -188,10 +188,10 @@ EM_JS(int, iupwasmJsTreeGetToggleValue, (int rowId), {
   var r = globalThis.__iupTree.nodes[rowId]; if (!r || !r.__iupChk) return 0; if (r.__iupChk.indeterminate) return -1; return r.__iupChk.checked ? 1 : 0;
 })
 
-EM_JS(void, iupwasmJsTreeToggleVisible, (int rowId, int on), { globalThis.__iupApply({ op: 'treetogglevisible', rowId: rowId, on: on }); })
+EM_JS(void, iupwasmJsTreeToggleVisible, (int rowId, int on, int e3), { globalThis.__iupApply({ op: 'treetogglevisible', rowId: rowId, on: on, e3: e3 }); })
 EM_JS(int, iupwasmJsTreeGetToggleVisible, (int rowId), {
   if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'treetogglevisible', rowId: rowId });
-  var r = globalThis.__iupTree.nodes[rowId]; return (r && r.__iupChk && r.__iupChk.style.display !== 'none') ? 1 : 0;
+  var r = globalThis.__iupTree.nodes[rowId]; return (r && r.__iupChk && !r.__iupChk.__iupHidden && r.__iupChk.style.display !== 'none') ? 1 : 0;
 })
 
 EMSCRIPTEN_KEEPALIVE void iupwasmTreeToggle(int treeId, int rowId, int state)
@@ -1153,7 +1153,7 @@ static int wasmTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* value
 {
   int rowId = (int)(intptr_t)iupTreeGetNode(ih, id);
   if (rowId)
-    iupwasmJsTreeToggleVisible(rowId, iupStrBoolean(value));
+    iupwasmJsTreeToggleVisible(rowId, iupStrBoolean(value), iupAttribGetBoolean(ih, "EMPTYAS3STATE"));
   return 0;
 }
 

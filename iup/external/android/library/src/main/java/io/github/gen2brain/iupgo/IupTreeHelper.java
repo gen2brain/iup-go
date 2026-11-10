@@ -115,6 +115,7 @@ public final class IupTreeHelper
         int rowBg;
         int chevronFg;
         boolean showToggle;
+        boolean emptyAs3State;
         boolean toggle3State;
         int markedBg;
 
@@ -325,6 +326,7 @@ public final class IupTreeHelper
 
             if (tree.showToggle && node.toggleVisible)
             {
+                h.toggle.setClickable(true);
                 h.toggle.setVisibility(View.VISIBLE);
                 h.toggle.setCheckedState(toggleState(node.toggleValue));
                 /* a click only flips checked/unchecked, so the ring is driven from the value */
@@ -344,6 +346,13 @@ public final class IupTreeHelper
                     if (tree.ihandlePtr != 0L)
                         dispatchToggleValue(tree.ihandlePtr, idOfNode(tree, nd), nd.toggleValue);
                 });
+            }
+            else if (tree.showToggle && tree.emptyAs3State)
+            {
+                h.toggle.setOnClickListener(null);
+                h.toggle.setVisibility(View.VISIBLE);
+                h.toggle.setCheckedState(MaterialCheckBox.STATE_INDETERMINATE);
+                h.toggle.setClickable(false);
             }
             else
             {
@@ -1014,6 +1023,14 @@ public final class IupTreeHelper
         if (!(v instanceof IupTreeView t)) return;
         t.showToggle = show;
         t.toggle3State = threeState;
+        if (t.adapter != null) t.adapter.notifyDataSetChanged();
+    }
+
+    @Keep
+    public static void setEmptyAs3State(View v, boolean on)
+    {
+        if (!(v instanceof IupTreeView t)) return;
+        t.emptyAs3State = on;
         if (t.adapter != null) t.adapter.notifyDataSetChanged();
     }
 

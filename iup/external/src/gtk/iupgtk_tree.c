@@ -2915,11 +2915,25 @@ static void gtkTreeToggled(GtkCellRendererToggle* cell_renderer, gchar* path, Ih
   (void)cell_renderer;
 }
 
+static void gtkTreeToggleCellDataFunc(GtkCellLayout* layout, GtkCellRenderer* renderer, GtkTreeModel* model, GtkTreeIter* iter, gpointer data)
+{
+  gboolean check, three_state, visible;
+  (void)layout;
+  (void)data;
+
+  gtk_tree_model_get(model, iter, IUPGTK_NODE_CHECK, &check, IUPGTK_NODE_3STATE, &three_state, IUPGTK_NODE_TOGGLEVISIBLE, &visible, -1);
+  if (visible)
+    g_object_set(renderer, "visible", TRUE, "activatable", TRUE, "active", check, "inconsistent", three_state, NULL);
+  else
+    g_object_set(renderer, "visible", TRUE, "activatable", FALSE, "active", FALSE, "inconsistent", TRUE, NULL);
+}
+
 static int gtkTreeToggleUpdate3StateCheck(Ihandle* ih, int x, int y, int keyb)
 {
   GtkTreeStore* store = GTK_TREE_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(ih->handle)));
   GtkTreePath* path;
   GtkTreeIter iterItem;
+  gboolean visible;
   int check;
 
   if(keyb)
@@ -2928,6 +2942,13 @@ static int gtkTreeToggleUpdate3StateCheck(Ihandle* ih, int x, int y, int keyb)
     gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(ih->handle), x, y, &path, NULL, NULL, NULL);
 
   if(!gtk_tree_model_get_iter(GTK_TREE_MODEL(store), &iterItem, path) || ((x == 0) && (y == 0)))
+  {
+    gtk_tree_path_free(path);
+    return FALSE;
+  }
+
+  gtk_tree_model_get(GTK_TREE_MODEL(store), &iterItem, IUPGTK_NODE_TOGGLEVISIBLE, &visible, -1);
+  if (!visible)
   {
     gtk_tree_path_free(path);
     return FALSE;
@@ -3167,12 +3188,16 @@ static int gtkTreeMapMethod(Ihandle* ih)
     GtkCellRenderer* renderer_chk = gtk_cell_renderer_toggle_new();
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(column), renderer_chk, FALSE);
 
+    if (iupAttribGetBoolean(ih, "EMPTYAS3STATE"))
+      gtk_cell_layout_set_cell_data_func(GTK_CELL_LAYOUT(column), renderer_chk, gtkTreeToggleCellDataFunc, NULL, NULL);
+
     if(ih->data->show_toggle==2)
     {
-      gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_chk, "active", IUPGTK_NODE_CHECK,
-                                                                            "inconsistent", IUPGTK_NODE_3STATE,
-                                                                            "visible", IUPGTK_NODE_TOGGLEVISIBLE,
-                                                                            NULL);
+      if (!iupAttribGetBoolean(ih, "EMPTYAS3STATE"))
+        gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_chk, "active", IUPGTK_NODE_CHECK,
+                                                                              "inconsistent", IUPGTK_NODE_3STATE,
+                                                                              "visible", IUPGTK_NODE_TOGGLEVISIBLE,
+                                                                              NULL);
       g_signal_connect(G_OBJECT(ih->handle), "button-press-event",  G_CALLBACK(gtkTreeToggle3StateButtonEvent), ih);
       g_signal_connect(G_OBJECT(ih->handle), "button-release-event",G_CALLBACK(gtkTreeToggle3StateButtonEvent), ih);
       g_signal_connect(G_OBJECT(ih->handle), "key-press-event",  G_CALLBACK(gtkTreeToggle3StateKeyEvent), ih);
@@ -3180,9 +3205,10 @@ static int gtkTreeMapMethod(Ihandle* ih)
     }
     else
     {
-      gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_chk, "active", IUPGTK_NODE_CHECK,
-                                                                            "visible", IUPGTK_NODE_TOGGLEVISIBLE,
-                                                                            NULL);
+      if (!iupAttribGetBoolean(ih, "EMPTYAS3STATE"))
+        gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(column), renderer_chk, "active", IUPGTK_NODE_CHECK,
+                                                                              "visible", IUPGTK_NODE_TOGGLEVISIBLE,
+                                                                              NULL);
       g_signal_connect(G_OBJECT(renderer_chk), "toggled", G_CALLBACK(gtkTreeToggled), ih);
    }
 

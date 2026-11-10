@@ -1360,15 +1360,17 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
     NSButton* check_box = [toggle_cell_view checkBox];
     if (check_box)
     {
-      [check_box setAllowsMixedState:(ih->data->show_toggle == 2)];
-      [check_box setState:[tree_item checkBoxState]];
-      [check_box setHidden:[tree_item isCheckBoxHidden]];
+      bool empty_as_3state = [tree_item isCheckBoxHidden] && iupAttribGetBoolean(ih, "EMPTYAS3STATE");
+
+      [check_box setAllowsMixedState:(ih->data->show_toggle == 2 || empty_as_3state)];
+      [check_box setState:empty_as_3state ? NSControlStateValueMixed : [tree_item checkBoxState]];
+      [check_box setHidden:[tree_item isCheckBoxHidden] && !empty_as_3state];
 
       IupCocoaTreeToggleReceiver* toggle_receiver = [tree_item toggleReceiver];
       [toggle_receiver setIhandle:ih];
       [check_box setTarget:toggle_receiver];
       [check_box setAction:@selector(myToggleClickAction:)];
-      [check_box setEnabled:is_enabled];
+      [check_box setEnabled:is_enabled && !empty_as_3state];
     }
   }
   else
