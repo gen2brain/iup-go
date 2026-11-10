@@ -10,6 +10,7 @@ import (
 
 var (
 	iupOpen          func(argc, argv uintptr) int32
+	iupIsOpened      func() int32
 	iupClose         func()
 	iupMainLoop      func() int32
 	iupExitLoop      func()
@@ -204,6 +205,7 @@ var (
 	iupConfig                       func() uintptr
 	iupConfigLoad                   func(ih uintptr) int32
 	iupConfigSave                   func(ih uintptr) int32
+	iupConfigCopy                   func(ih1, ih2 uintptr, excludePrefix *byte)
 	iupConfigSetVariableStr         func(ih uintptr, group, key string, value *byte)
 	iupConfigSetVariableStrId       func(ih uintptr, group, key string, id int32, value *byte)
 	iupConfigSetVariableInt         func(ih uintptr, group, key string, value int32)
@@ -326,6 +328,7 @@ var (
 	iupClassMatch               func(ih uintptr, className string) int32
 	iupCreate                   func(className string) uintptr
 	iupCopyClassAttributes      func(src, dst uintptr)
+	iupCopyAttributes           func(src, dst uintptr)
 	iupSaveClassAttributes      func(ih uintptr)
 	iupSetClassDefaultAttribute func(className, name, value string)
 
@@ -362,6 +365,7 @@ func ensureBase() {
 		reg := func(fptr any, name string) { purego.RegisterLibFunc(fptr, lib, name) }
 
 		reg(&iupOpen, "IupOpen")
+		reg(&iupIsOpened, "IupIsOpened")
 		reg(&iupClose, "IupClose")
 		reg(&iupMainLoop, "IupMainLoop")
 		reg(&iupExitLoop, "IupExitLoop")
@@ -555,6 +559,7 @@ func ensureBase() {
 		reg(&iupConfig, "IupConfig")
 		reg(&iupConfigLoad, "IupConfigLoad")
 		reg(&iupConfigSave, "IupConfigSave")
+		reg(&iupConfigCopy, "IupConfigCopy")
 		reg(&iupConfigSetVariableStr, "IupConfigSetVariableStr")
 		reg(&iupConfigSetVariableStrId, "IupConfigSetVariableStrId")
 		reg(&iupConfigSetVariableInt, "IupConfigSetVariableInt")
@@ -677,6 +682,7 @@ func ensureBase() {
 		reg(&iupClassMatch, "IupClassMatch")
 		reg(&iupCreate, "IupCreate")
 		reg(&iupCopyClassAttributes, "IupCopyClassAttributes")
+		reg(&iupCopyAttributes, "IupCopyAttributes")
 		reg(&iupSaveClassAttributes, "IupSaveClassAttributes")
 		reg(&iupSetClassDefaultAttribute, "IupSetClassDefaultAttribute")
 

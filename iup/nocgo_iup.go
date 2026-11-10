@@ -46,6 +46,8 @@ func openShared() int {
 	return ret
 }
 
+func IsOpened() bool { return iupIsOpened() != 0 }
+
 func Open() int {
 	return openShared()
 }

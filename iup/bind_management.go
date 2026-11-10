@@ -337,6 +337,14 @@ func CopyClassAttributes(srcIh, dstIh Ihandle) {
 	C.IupCopyClassAttributes(srcIh.ptr(), dstIh.ptr())
 }
 
+// CopyAttributes copies all hash table attributes from one element to another.
+// Internal attributes and non-string attributes are not copied.
+//
+// https://gen2brain.github.io/iup-go/func/iup_copyattributes.html
+func CopyAttributes(srcIh, dstIh Ihandle) {
+	C.IupCopyAttributes(srcIh.ptr(), dstIh.ptr())
+}
+
 // SetClassDefaultAttribute changes the default value of an attribute for a class.
 // It can be any attribute, i.e. registered attributes or user custom attributes.
 //

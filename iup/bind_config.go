@@ -36,6 +36,17 @@ func ConfigSave(ih Ihandle) int {
 	return int(C.IupConfigSave(ih.ptr()))
 }
 
+// ConfigCopy copies all the variables from config ih1 to ih2, excluding the groups that start with excludePrefix.
+// An empty excludePrefix copies all groups.
+//
+// https://gen2brain.github.io/iup-go/func/iup_config.html
+func ConfigCopy(ih1, ih2 Ihandle, excludePrefix string) {
+	cPrefix := cStrOrNull(excludePrefix)
+	defer cStrFree(cPrefix)
+
+	C.IupConfigCopy(ih1.ptr(), ih2.ptr(), cPrefix)
+}
+
 // ConfigSetVariableStr stores a string variable in a group.
 //
 // https://gen2brain.github.io/iup-go/func/iup_config.html

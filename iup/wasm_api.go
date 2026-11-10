@@ -56,6 +56,8 @@ const (
 // Open initializes the IUP toolkit.
 //
 // https://gen2brain.github.io/iup-go/func/iup_open.html
+func IsOpened() bool { return ccall("IupIsOpened", "number", nil, nil).Int() != 0 }
+
 func Open() int {
 	return ccall("IupOpen", "number", []interface{}{"number", "number"}, []interface{}{0, 0}).Int()
 }

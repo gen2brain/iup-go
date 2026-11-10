@@ -16,6 +16,10 @@ func ConfigSave(ih Ihandle) int {
 	return int(iupConfigSave(uintptr(ih)))
 }
 
+func ConfigCopy(ih1, ih2 Ihandle, excludePrefix string) {
+	iupConfigCopy(uintptr(ih1), uintptr(ih2), optCStr(excludePrefix))
+}
+
 func ConfigSetVariableStr(ih Ihandle, group, key string, value string) {
 	iupConfigSetVariableStr(uintptr(ih), group, key, optCStr(value))
 }
