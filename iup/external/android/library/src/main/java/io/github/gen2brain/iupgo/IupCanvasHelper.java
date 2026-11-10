@@ -60,6 +60,12 @@ public final class IupCanvasHelper
     }
 
     @Keep
+    public static void setGestures(IupAndroidCanvas view, boolean enabled)
+    {
+        if (view != null) view.setGesturesEnabled(enabled);
+    }
+
+    @Keep
     public static void setBgColor(View view, int r, int g, int b)
     {
         if (view != null) view.setBackgroundColor(Color.rgb(r, g, b));

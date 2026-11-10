@@ -91,6 +91,7 @@ enum { IUPCOCOATOUCH_TOUCH_IDLE, IUPCOCOATOUCH_TOUCH_PENDING, IUPCOCOATOUCH_TOUC
 @property(nonatomic, retain) NSMutableArray<UIGestureRecognizer*>* pausedAncestorPans;
 @property(nonatomic, assign) int touchState;
 @property(nonatomic, assign) UITouch* trackedTouch;
+@property(nonatomic, assign) BOOL gesturesOff;
 @end
 
 /* observe touches without stealing them, so raw TOUCH/BUTTON/MOTION still fire */
@@ -303,7 +304,8 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 		_touchState = IUPCOCOATOUCH_TOUCH_CONSUMED;
 
 	CGPoint p = [g locationInView:self];
-	cocoaTouchFireGesture(_ihandle, IUP_GESTURE_LONGPRESS, IUP_GESTURE_END, (int)p.x, (int)p.y, 0.0, 0.0);
+	if (!_gesturesOff)
+		cocoaTouchFireGesture(_ihandle, IUP_GESTURE_LONGPRESS, IUP_GESTURE_END, (int)p.x, (int)p.y, 0.0, 0.0);
 
 	Ihandle* ih = _ihandle;
 	iupCocoaTouchRunLater(^{
@@ -838,6 +840,22 @@ static char* cocoaTouchCanvasGetDrawSizeAttrib(Ihandle* ih)
 	return iupStrReturnIntInt((int)s.width, (int)s.height, 'x');
 }
 
+static int cocoaTouchCanvasSetGestureAttrib(Ihandle* ih, const char* value)
+{
+	IupCocoaTouchCanvasView* view = cocoaTouchCanvasGet(ih);
+	if (!view || iupStrBoolean(value)) return 0;
+
+	view.gesturesOff = YES;
+	view.pinchGesture.enabled = NO;
+	view.rotateGesture.enabled = NO;
+	view.panGesture.enabled = NO;
+	view.singleTapGesture.enabled = NO;
+	view.doubleTapGesture.enabled = NO;
+	for (UISwipeGestureRecognizer* sw in view.swipeGestures)
+		sw.enabled = NO;
+	return 0;
+}
+
 static int cocoaTouchCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
 	(void)ih; (void)value;
@@ -979,7 +997,7 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "WHEELDROPFOCUS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "BACKINGSTORE", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "GESTURE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "GESTURE", NULL, cocoaTouchCanvasSetGestureAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "NATIVEFOCUSRING",NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
 	iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");

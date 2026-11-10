@@ -100,8 +100,9 @@ Supported in Win32, WinUI, Qt, QML and macOS.
 **TOUCH** [Win32, GTK, GTK 4, WebAssembly, iOS and Android Only]: enable the touch processing if touch support is available.
 In GTK, GTK 4, Qt, QML, WebAssembly, iOS and Android, touch events are always enabled.
 
-**GESTURE** [Win32 Only]: disable the OS gesture processing so raw touch events are delivered to TOUCH_CB/MULTITOUCH_CB.
+**GESTURE** [Win32, Android and iOS Only]: disable the OS gesture processing so raw touch events are delivered to TOUCH_CB/MULTITOUCH_CB and GESTURE_CB is not called.
 Accepts only the NO value.
+In Android and iOS, a long press still generates the BUTTON3 click.
 
 **WHEELDROPFOCUS** (non-inheritable): when the wheel is used the focus control receives a SHOWDROPDOWN=NO.
 

@@ -84,6 +84,24 @@ static int androidCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int androidCanvasSetGestureAttrib(Ihandle* ih, const char* value)
+{
+  IUPJNI_DECLARE_METHOD_ID_STATIC(IupCanvasHelper_setGestures);
+
+  if (!ih->handle || iupStrBoolean(value))
+    return 0;
+
+  JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
+  jclass java_class = IUPJNI_FindClass(IupCanvasHelper, jni_env, "io/github/gen2brain/iupgo/IupCanvasHelper");
+  jmethodID method_id = IUPJNI_GetStaticMethodID(IupCanvasHelper_setGestures, jni_env, java_class, "setGestures", "(Lio/github/gen2brain/iupgo/IupAndroidCanvas;Z)V");
+
+  (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, JNI_FALSE);
+  iupAndroid_CheckException(jni_env, "IupCanvasHelper.setGestures");
+  (*jni_env)->DeleteLocalRef(jni_env, java_class);
+
+  return 0;
+}
+
 /* No native scrollbars; track DX/DY/POSX/POSY only. */
 static int androidCanvasSetDXAttrib(Ihandle* ih, const char* value)
 {
@@ -246,5 +264,5 @@ IUP_SDK_API void iupdrvCanvasInitClass(Iclass* ic)
   iupClassRegisterCallback(ic, "GESTURE_CB", "iiiidd");
 
   iupClassRegisterAttribute(ic, "TOUCH", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "GESTURE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "GESTURE", NULL, androidCanvasSetGestureAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }
