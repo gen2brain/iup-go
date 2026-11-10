@@ -204,8 +204,7 @@ case "$APP" in
       echo ">>> tinygo build (js/wasm): $APP"
       TGROOT=$(tinygo env TINYGOROOT 2>/dev/null || echo /opt/tinygo)
       [ "$OPT" = 1 ] && TGFLAGS="-no-debug" || TGFLAGS=""
-      # tinygo 0.41 caps at Go 1.26; drop the pin once it accepts the system toolchain
-      (cd "$APP" && GOTOOLCHAIN=${GOTOOLCHAIN:-go1.26.3} tinygo build -target wasm $TGFLAGS -tags "$TAGS" -o "$BUILD/app.wasm" .)
+      (cd "$APP" && tinygo build -target wasm $TGFLAGS -tags "$TAGS" -o "$BUILD/app.wasm" .)
       cp "$TGROOT/targets/wasm_exec.js" "$BUILD/wasm_exec.js"
     else
       echo ">>> go build (js/wasm): $APP"
@@ -242,5 +241,8 @@ if [ "$SHOT" = 1 ] || [ "$LOG" = 1 ] || [ -n "$CLICK" ] || [ -n "$TYPE" ] || [ -
   LOGFILE="/tmp/wasm_console.txt"
   echo ">>> headless Chrome: loading build (screenshot $SHOTFILE)"
   NODE_PATH="$(npm root -g)" node "$HERE/run-browser.js" "$BUILD" "$SHOTFILE" "$LOGFILE" "$CLICK" "$TYPE" "$KEYS"
-  [ "$LOG" = 1 ] && { echo "--- $LOGFILE ---"; cat "$LOGFILE"; }
+  if [ "$LOG" = 1 ]; then
+    echo "--- $LOGFILE ---"
+    cat "$LOGFILE"
+  fi
 fi
