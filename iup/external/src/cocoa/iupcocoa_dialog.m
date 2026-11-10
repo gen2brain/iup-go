@@ -85,6 +85,150 @@ static void cocoaDialogRefreshControlsOnThemeChange(Ihandle* child)
 @interface IupCocoaWindow : NSWindow
 @end
 
+static void cocoaDialogCustomFrameActivate(Ihandle* ih, int active)
+{
+  if (!iupAttribGetBoolean(ih, "CUSTOMFRAME") && !iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW"))
+    return;
+
+  IFni cb = (IFni)IupGetCallback(ih, "CUSTOMFRAMEACTIVATE_CB");
+  if (cb)
+    cb(ih, active);
+
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW"))
+    [[iupcocoaDialogGetWindow(ih) contentView] setNeedsDisplay:YES];
+}
+
+#ifndef GNUSTEP
+@interface IupCocoaCustomFrameView : NSView
+{
+  Ihandle* _ih;
+  BOOL _captionDrag;
+}
+- (instancetype)initWithFrame:(NSRect)frame ihandle:(Ihandle*)ih;
+@end
+
+static bool cocoaDialogIsCustomFrameCaption(Ihandle* ih, NSPoint pt)
+{
+  int border, caption, menu;
+  iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
+
+  if (pt.y < border || pt.y >= border + caption)
+    return false;
+
+  char* value = iupAttribGet(ih, "CUSTOMFRAMECAPTIONLIMITS");
+  int caption_left = 0, caption_right = 0;
+  if (value)
+    iupStrToIntInt(value, &caption_left, &caption_right, ':');
+  else
+  {
+    Ihandle* ih_caption = IupGetDialogChild(ih, "CUSTOMFRAMECAPTION");
+    if (ih_caption)
+      return pt.x >= ih_caption->x && pt.x <= ih_caption->x + ih_caption->currentwidth;
+  }
+
+  return pt.x >= border + caption_left && pt.x <= ih->currentwidth - border - caption_right;
+}
+
+@implementation IupCocoaCustomFrameView
+
+- (instancetype)initWithFrame:(NSRect)frame ihandle:(Ihandle*)ih
+{
+  self = [super initWithFrame:frame];
+  if (self)
+    _ih = ih;
+  return self;
+}
+
+- (BOOL)isFlipped
+{
+  return YES;
+}
+
+- (BOOL)acceptsFirstMouse:(NSEvent*)event
+{
+  return YES;
+}
+
+- (void)drawRect:(NSRect)dirty_rect
+{
+  IFn cb = (IFn)IupGetCallback(_ih, "CUSTOMFRAMEDRAW_CB");
+  NSRect bounds = [self bounds];
+  if (!cb || bounds.size.width <= 0 || bounds.size.height <= 0)
+    return;
+
+  NSRect clip_rect = NSIntersectionRect(dirty_rect, bounds);
+  iupAttribSetStrf(_ih, "CLIPRECT", "%.0f %.0f %.0f %.0f", floor(clip_rect.origin.x), floor(clip_rect.origin.y),
+                   ceil(clip_rect.origin.x + clip_rect.size.width) - 1, ceil(clip_rect.origin.y + clip_rect.size.height) - 1);
+  iupAttribSet(_ih, "CGCONTEXT", (char*)[[NSGraphicsContext currentContext] CGContext]);
+
+  cb(_ih);
+
+  iupAttribSet(_ih, "CGCONTEXT", NULL);
+  iupAttribSet(_ih, "CLIPRECT", NULL);
+
+  NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(_ih, "_IUPCOCOA_CANVAS_BUFFER");
+  if (buffer)
+    iupcocoaCanvasDrawBuffer(buffer, bounds);
+}
+
+- (void)mouseDown:(NSEvent*)event
+{
+  NSPoint pt = [self convertPoint:[event locationInWindow] fromView:nil];
+  _captionDrag = cocoaDialogIsCustomFrameCaption(_ih, pt);
+  if (_captionDrag)
+  {
+    if ([event clickCount] == 2)
+      [[self window] performZoom:nil];
+    else
+      [[self window] performWindowDragWithEvent:event];
+    return;
+  }
+  iupcocoaCommonBaseHandleMouseButtonCallback(_ih, event, self, true);
+}
+
+- (void)mouseUp:(NSEvent*)event
+{
+  if (_captionDrag)
+  {
+    _captionDrag = NO;
+    return;
+  }
+  iupcocoaCommonBaseHandleMouseButtonCallback(_ih, event, self, false);
+}
+
+- (void)rightMouseDown:(NSEvent*)event
+{
+  iupcocoaCommonBaseHandleMouseButtonCallback(_ih, event, self, true);
+}
+
+- (void)rightMouseUp:(NSEvent*)event
+{
+  iupcocoaCommonBaseHandleMouseButtonCallback(_ih, event, self, false);
+}
+
+- (void)otherMouseDown:(NSEvent*)event
+{
+  iupcocoaCommonBaseHandleMouseButtonCallback(_ih, event, self, true);
+}
+
+- (void)otherMouseUp:(NSEvent*)event
+{
+  iupcocoaCommonBaseHandleMouseButtonCallback(_ih, event, self, false);
+}
+
+- (void)mouseMoved:(NSEvent*)event
+{
+  iupcocoaCommonBaseHandleMouseMotionCallback(_ih, event, self);
+}
+
+- (void)mouseDragged:(NSEvent*)event
+{
+  iupcocoaCommonBaseHandleMouseMotionCallback(_ih, event, self);
+}
+
+@end
+#endif
+
 static BOOL cocoaDialogIsMaximized(NSWindow* the_window)
 {
   NSScreen* the_screen;
@@ -307,7 +451,7 @@ static NSWindowStyleMask cocoaDialogGetStyleMask(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "MENUBOX"))
     style_mask |= NSWindowStyleMaskClosable;
 
-  if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW"))
     style_mask |= NSWindowStyleMaskFullSizeContentView;
 
   return style_mask;
@@ -444,6 +588,16 @@ static void cocoaDialogChildDestroyNotification(NSNotification* notification)
     Ihandle* global_menu = (Ihandle*)IupGetGlobal("MENU");
     iupcocoaMenuSetApplicationMenu(global_menu);
   }
+
+  cocoaDialogCustomFrameActivate(ih, 1);
+}
+
+- (void) windowDidResignKey:(NSNotification*)notification
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject([notification object], IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!iupObjectCheck(ih)) return;
+
+  cocoaDialogCustomFrameActivate(ih, 0);
 }
 
 - (NSSize) windowWillResize:(NSWindow*)the_sender toSize:(NSSize)frame_size
@@ -917,6 +1071,10 @@ static void cocoaDialogGetDecoration(Ihandle* ih, int* border, int* caption, int
   {
     style_mask = NSWindowStyleMaskBorderless;
   }
+  else if (iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW"))
+  {
+    style_mask &= ~NSWindowStyleMaskFullSizeContentView;
+  }
 
   NSRect sample_content_rect = NSMakeRect(0, 0, 100, 100);
   NSRect sample_frame_rect = [NSWindow frameRectForContentRect:sample_content_rect styleMask:style_mask];
@@ -936,6 +1094,13 @@ static void cocoaDialogGetDecoration(Ihandle* ih, int* border, int* caption, int
   if (iupAttribGetBoolean(ih, "HIDETITLEBAR"))
   {
     *caption = 0;
+  }
+
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW"))
+  {
+    int caption_height = iupAttribGetInt(ih, "CUSTOMFRAMECAPTIONHEIGHT");
+    if (caption_height > 0)
+      *caption = caption_height;
   }
 }
 
@@ -1534,7 +1699,7 @@ static int cocoaDialogSetCustomFrameAttrib(Ihandle* ih, const char* value)
     [[window standardWindowButton:NSWindowZoomButton] setHidden:YES];
     [window setHasShadow:YES];
   }
-  else
+  else if (!iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW"))
   {
     [window setStyleMask:[window styleMask] & ~NSWindowStyleMaskFullSizeContentView];
     window.titlebarAppearsTransparent = NO;
@@ -1583,6 +1748,15 @@ static char* cocoaDialogGetNSViewAttrib(Ihandle* ih)
  ********************** Class Methods ***************************
  ****************************************************************/
 
+#ifdef GNUSTEP
+static int cocoaDialogSetCustomFrameDrawAttrib(Ihandle* ih, const char* value)
+{
+  (void)ih;
+  (void)value;
+  return 0;
+}
+#endif
+
 static int cocoaDialogMapMethod(Ihandle* ih)
 {
   InativeHandle* parent;
@@ -1595,6 +1769,21 @@ static int cocoaDialogMapMethod(Ihandle* ih)
 
   [the_window setReleasedWhenClosed:NO];
   [the_window setAutorecalculatesKeyViewLoop:YES];
+
+#ifndef GNUSTEP
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW"))
+  {
+    IupCocoaCustomFrameView* frame_view = [[IupCocoaCustomFrameView alloc] initWithFrame:[[the_window contentView] frame] ihandle:ih];
+    [the_window setContentView:frame_view];
+    [frame_view release];
+    [the_window setAcceptsMouseMovedEvents:YES];
+    the_window.titlebarAppearsTransparent = YES;
+    the_window.titleVisibility = NSWindowTitleHidden;
+    [[the_window standardWindowButton:NSWindowCloseButton] setHidden:YES];
+    [[the_window standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
+    [[the_window standardWindowButton:NSWindowZoomButton] setHidden:YES];
+  }
+#endif
 
   [[the_window contentView] setAutoresizesSubviews:NO];
 
@@ -1646,8 +1835,11 @@ static int cocoaDialogMapMethod(Ihandle* ih)
   cocoaTargetDropCreateAssociatedData(ih, content_view, content_view);
 
   {
+    NSTrackingAreaOptions tracking_options = NSTrackingMouseEnteredAndExited | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect;
+    if (iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW"))
+      tracking_options |= NSTrackingMouseMoved;
     NSTrackingArea* tracking_area = [[NSTrackingArea alloc] initWithRect:[content_view bounds]
-                                                                 options:NSTrackingMouseEnteredAndExited | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect
+                                                                 options:tracking_options
                                                                    owner:the_window
                                                                 userInfo:nil];
     [content_view addTrackingArea:tracking_area];
@@ -1715,6 +1907,13 @@ static void cocoaDialogUnMapMethod(Ihandle* ih)
 
   objc_setAssociatedObject(the_window, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
 
+  NSBitmapImageRep* frame_buffer = (NSBitmapImageRep*)iupAttribGet(ih, "_IUPCOCOA_CANVAS_BUFFER");
+  if (frame_buffer)
+  {
+    [frame_buffer release];
+    iupAttribSet(ih, "_IUPCOCOA_CANVAS_BUFFER", NULL);
+  }
+
   BOOL was_key = [the_window isKeyWindow];
   [the_window close];
   if (was_key)
@@ -1776,7 +1975,7 @@ static void cocoaDialogLayoutUpdateMethod(Ihandle* ih)
     }
   }
 
-  if (iupAttribGetBoolean(ih, "CUSTOMFRAME"))
+  if (iupAttribGetBoolean(ih, "CUSTOMFRAME") || iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW"))
   {
     /* with CUSTOMFRAME the content view fills the whole window frame, so IUP's size carries no decoration */
     [the_window setContentMinSize:NSMakeSize(1, 1)];
@@ -2072,6 +2271,15 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TOOLBOX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, cocoaDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+#ifdef GNUSTEP
+  iupClassRegisterAttribute(ic, "CUSTOMFRAMEDRAW", NULL, cocoaDialogSetCustomFrameDrawAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
+#else
+  iupClassRegisterAttribute(ic, "CUSTOMFRAMEDRAW", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
+#endif
+  iupClassRegisterAttribute(ic, "CUSTOMFRAMECAPTIONHEIGHT", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CUSTOMFRAMECAPTIONLIMITS", NULL, NULL, IUPAF_SAMEASSYSTEM, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterCallback(ic, "CUSTOMFRAMEDRAW_CB", "");
+  iupClassRegisterCallback(ic, "CUSTOMFRAMEACTIVATE_CB", "i");
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaDialogSetBgColorAttrib, "DLGBGCOLOR", NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BACKGROUND", NULL, cocoaDialogSetBackgroundAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_NO_INHERIT);
