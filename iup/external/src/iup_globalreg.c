@@ -81,7 +81,7 @@ static const iGlobalRegEntry registry[] = {
   { "FONTLIST",               R,    ALL },
   { "FULLSIZE",               R,    ALL },
   { "GLOBALLAYOUTRESIZEKEY",  0,    ALL },
-  { "GLOBALMENU",             0,    G },
+  { "GLOBALMENU",             R,    G },
   { "GL_RENDERER",            R,    ALL },
   { "GL_VENDOR",              R,    ALL },
   { "GL_VERSION",             R,    ALL },

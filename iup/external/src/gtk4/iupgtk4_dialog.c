@@ -362,7 +362,7 @@ static int gtk4DialogGetMenuSize(Ihandle* ih)
 
 static int gtk4DialogGetMenuBarSize(Ihandle* ih)
 {
-  if (ih->data->menu && !iupStrBoolean(IupGetGlobal("GLOBALMENU")))
+  if (ih->data->menu)
     return iupdrvMenuGetMenuBarSize(ih->data->menu);
   else
     return 0;

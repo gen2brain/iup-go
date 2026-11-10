@@ -21,6 +21,7 @@ IUP_DRV_API gboolean iupgtkButtonEvent(GtkWidget* widget, GdkEventButton* evt, I
 IUP_DRV_API gboolean iupgtkShowHelp(GtkWidget* widget, GtkWidgetHelpType* arg1, Ihandle* ih);
 
 IUP_DRV_API int iupgtkSetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value);
+IUP_DRV_API int iupgtkMenuShellShowsMenubar(void);
 IUP_DRV_API void iupgtkUpdateMnemonic(Ihandle* ih);
 
 IUP_DRV_API void iupgdkColorSetRGB(GdkColor* color, unsigned char r, unsigned char g, unsigned char b);
