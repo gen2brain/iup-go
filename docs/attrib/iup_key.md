@@ -7,14 +7,14 @@ Same as writing "&" before that character in TITLE, see [IupMenuItem](../elem/iu
 Deprecated, use the "&" in TITLE.
 
 Not supported in Cocoa, EFL, Android and iOS.
-In Haiku the underline and the key are active when the system menu preference shows triggers, and Alt+character does not open a menu bar submenu.
+In Haiku, the underline and the key are active when the system menu preference shows triggers, and Alt+character does not open a menu bar submenu.
 
 ### Value
 
 A single character. The first occurrence of it in TITLE is underlined.
 When the character is not in TITLE nothing is underlined.
 
-Default: NULL
+Default: NULL.
 
 ### Notes
 

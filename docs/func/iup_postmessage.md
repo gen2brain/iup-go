@@ -1,6 +1,6 @@
 ## IupPostMessage
 
-Sends data to an element, that will be received by a callback when the main loop regain control.
+Sends data to an element, that will be received by a callback when the main loop regains control.
 
 It is expected to be thread safe.
 
@@ -16,7 +16,7 @@ It is expected to be thread safe.
 
 ### POSTMESSAGE_CB Callback
 
-    int function(Ihandle *ih,  const char* s, int i, double d, void* p);
+    int function(Ihandle *ih, const char* s, int i, double d, void* p);
 
 **ih**: identifier of the element that activated the event.\
 **s**: string.\

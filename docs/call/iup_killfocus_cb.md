@@ -9,13 +9,15 @@ This callback is called before the GETFOCUS_CB of the element that gets the focu
 
 **ih**: identifier of the element that activated the event.
 
+### Notes
+
+In Windows, there are restrictions when using this callback.
+From MSDN on WM_KILLFOCUS: "While processing this message, do not make any function calls that display or activate a window.
+This causes the thread to yield control and can cause the application to stop responding to messages."
+
 ### Affects
 
 All elements with user interaction, except menus.
-
-In Windows, there are restrictions when using this callback.
-From MSDN on WM_KILLFOCUS: "“While processing this message, do not make any function calls that display or activate a window.
-This causes the thread to yield control and can cause the application to stop responding to messages.”
 
 ### See Also
 

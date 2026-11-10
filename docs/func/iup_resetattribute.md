@@ -7,7 +7,7 @@ It is useful to reset the state of inheritable attributes in a tree of elements.
 
     void IupResetAttribute(Ihandle *ih, const char *name);
 
-**ih**: Identifier of the interface element. If NULL will set in the global environment.\
+**ih**: Identifier of the interface element.\
 **name**: name of the attribute.
 
 ### See Also

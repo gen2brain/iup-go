@@ -6,7 +6,7 @@ Maximum value of the horizontal scrollbar, in any unit.
 
 Any floating-point value.
 
-Default: "1.0"
+Default: "1.0".
 
 ### Notes
 

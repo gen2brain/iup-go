@@ -16,13 +16,13 @@ is not generated for the originating key.
 
 ### Notes
 
-In EFL dead keys and IME composition need an Ecore_IMF module, which is selected automatically and
+In EFL, dead keys and IME composition need an Ecore_IMF module, which is selected automatically and
 can be overridden with the ECORE_IMF_MODULE environment variable. Without a module each key commits
 its own character.
-In GNUstep dead keys and IME composition are not composed; each key commits its own character.
-In macOS the Option modifier produces text according to the keyboard layout.
-In WASM IME composition is reported at composition end.
-In Android and iOS the soft keyboard is shown when a control that defines the callback is touched.
+In GNUstep, dead keys and IME composition are not composed; each key commits its own character.
+In macOS, the Option modifier produces text according to the keyboard layout.
+In WebAssembly, IME composition is reported at composition end.
+In Android and iOS, the soft keyboard is shown when a control that defines the callback is touched.
 
 ### Affects
 

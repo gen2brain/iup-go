@@ -1,7 +1,7 @@
 ## IupRadio
 
-Creates a void container for grouping mutual exclusive toggles.
-Only one of its descendent toggles will be active at a time. The toggles can be at any composition.
+Creates a void container for grouping mutually exclusive toggles.
+Only one of its descendant toggles will be active at a time. The toggles can be at any composition.
 
 It does not have a native representation.
 
@@ -16,15 +16,15 @@ Usually it is a vbox or a hbox containing the toggles associated to the radio. I
 
 ### Attributes
 
-[EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "YES".
+[EXPAND](../attrib/iup_expand.md) (non-inheritable): Default: "YES".
 
 **VALUE** (non-inheritable): name identifier of the active toggle.
 The name is set by means of [IupSetHandle](../func/iup_sethandle.md).
-When consulted if the toggles are not mapped into the native system the return value may be NULL or invalid.
+When consulted, if the toggles are not mapped into the native system, the return value may be NULL or invalid.
 
 **VALUE_HANDLE** (non-inheritable): Changes the active toggle.
 The value passed must be the handle of a child contained in the radio.
-When consulted if the toggles are not mapped into the native system the return value may be NULL or invalid.
+When consulted, if the toggles are not mapped into the native system, the return value may be NULL or invalid.
 
 **WID** (read-only): returns -1 if mapped.
 
@@ -36,13 +36,13 @@ When consulted if the toggles are not mapped into the native system the return v
 
 ### Notes
 
-The radio can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md). 
+The radio can be created with no elements and be dynamically filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
 
 A toggle that is a child of an **IupRadio** automatically receives a name when it is mapped into the native system.
 
-Currently, **IupFlatButton** with TOGGLE=YES and **IupToggle** are affected when inside a **IupRadio**.
+**IupFlatButton** with TOGGLE=YES and **IupToggle** are affected when inside a **IupRadio**.
 
-The **IGNORERADIO** can be used in any of these children types to disable this functionally.
+The **IGNORERADIO** attribute can be used in any of these children types to disable this functionality.
 
 ### Examples
 

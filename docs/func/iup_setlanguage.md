@@ -5,8 +5,7 @@ It can also be changed using the global attribute LANGUAGE.
 
 ### Parameters/Return
 
-    void IupSetLanguage(const char *name); 
-
+    void IupSetLanguage(const char *name);
 
 **name**: Language name to be used. Can have one of the following values:
 
@@ -30,46 +29,66 @@ The pre-defined texts will be stored using [IupSetLanguageString](iup_setlanguag
 
 The native dialogs like **IupFileDlg** will always be displayed in the system language.
 
-Even if the language is not supported (meaning its pack of pre-defined strings are not defined) the new language name will be successfully stored so you can set your own strings and return a coherent value, and the current defined string will not be changed.
+When the language is not supported (its pack of pre-defined strings is not defined), the new language name is still stored and the currently defined strings are not changed, so the application can set its own strings.
 
-Here is a list of the pre-defined string names:
+The pre-defined string names are:
 
-    IUP_ERROR
+    IUP_ALLPAGES
+    IUP_APPLY
     IUP_ATTENTION
-    IUP_YES
-    IUP_NO
-    IUP_INVALIDDIR
+    IUP_BLUE
+    IUP_CANCEL
+    IUP_CLOSE
+    IUP_CONTINUE
+    IUP_COPIES
+    IUP_COPY
+    IUP_COPYTOCLIPBOARD
+    IUP_CREATEFOLDER
+    IUP_ERROR
+    IUP_ERRORFILEOPEN
+    IUP_ERRORFILESAVE
+    IUP_EXIT
+    IUP_FALSE
+    IUP_FAMILY
+    IUP_FILE
     IUP_FILEISDIR
     IUP_FILENOTEXIST
     IUP_FILEOVERWRITE
-    IUP_CREATEFOLDER
-    IUP_NAMENEWFOLDER
-    IUP_SAVEAS
-    IUP_OPEN
-    IUP_SELECTDIR
-    IUP_OK
-    IUP_CANCEL
-    IUP_RETRY
-    IUP_APPLY
-    IUP_RESET
+    IUP_FONTDLG
     IUP_GETCOLOR
-    IUP_HELP
-    IUP_RED
     IUP_GREEN
-    IUP_BLUE
+    IUP_HELP
     IUP_HUE
-    IUP_SATURATION
     IUP_INTENSITY
+    IUP_INVALIDDIR
+    IUP_LANDSCAPE
+    IUP_NAMENEWFOLDER
+    IUP_NO
+    IUP_NOTFOUND
+    IUP_OK
     IUP_OPACITY
+    IUP_OPEN
+    IUP_ORIENTATION
+    IUP_PAGERANGE
+    IUP_PAGES
     IUP_PALETTE
-    IUP_TRUE
-    IUP_FALSE
-    IUP_FAMILY
-    IUP_STYLE
-    IUP_SIZE
+    IUP_PAPERSIZE
+    IUP_PORTRAIT
+    IUP_PRINT
+    IUP_PRINTDLG
+    IUP_PRINTER
+    IUP_PRINTTOFILE
+    IUP_RED
+    IUP_RESET
+    IUP_RETRY
     IUP_SAMPLE
-    IUP_ERRORFILEOPEN
-    IUP_ERRORFILESAVE
+    IUP_SATURATION
+    IUP_SAVEAS
+    IUP_SELECTDIR
+    IUP_SIZE
+    IUP_STYLE
+    IUP_TRUE
+    IUP_YES
 
 ### Examples
 
@@ -78,7 +97,7 @@ Here is a list of the pre-defined string names:
     void main(void)
     {
       IupOpen();
-      IupSetLanguage("ENGLISH"); 
+      IupSetLanguage("ENGLISH");
       IupMessage("IUP Language", IupGetLanguage());
       IupClose();
     }

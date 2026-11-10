@@ -1,6 +1,6 @@
 ## IupClassMatch
 
-Checks if the give class name matches the class name of the given interface element.
+Checks if the given class name matches the class name of the given interface element.
 
 ### Parameters/Return
 
@@ -9,7 +9,7 @@ Checks if the give class name matches the class name of the given interface elem
 **ih**: Identifier of the interface element.\
 **classname**: name of the class to match.
 
-**Returns**: true (1) if the given name matches the class name or one of its parent class names, false (0) or else.
+**Returns**: true (1) if the given name matches the class name or one of its parent class names, false (0) otherwise.
 
 ### See Also
 

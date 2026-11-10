@@ -1,7 +1,7 @@
 ## IupGetAttributes
 
 Returns all attributes of a given element that are set in the internal hash table.
-The known attributes that are pointers (not strings) are returned as integers.
+The known attributes that are pointers (not strings) are returned as addresses formatted with "%p".
 
 The internal attributes are not returned (attributes prefixed with "_IUP").
 
@@ -11,11 +11,11 @@ This function should be avoided. Use **IupGetAllAttributes** instead.
 
 ### Parameters/Return
 
-    char* IupGetAttributes (Ihandle *ih);
+    char* IupGetAttributes(Ihandle *ih);
 
 **ih**: Identifier of the interface element.
 
-**Returns:** a string with all attributes in the format: "NAME=VALUE, NAME="VALUE", ...".
+**Returns:** a string with all attributes in the format: "NAME="VALUE",NAME="VALUE",...".
 
 ### See Also
 

@@ -11,5 +11,3 @@ Returns the identifier of the interface element that has the keyboard focus, i.e
 ### See Also
 
 [IupSetFocus](iup_setfocus.md)
-
- 

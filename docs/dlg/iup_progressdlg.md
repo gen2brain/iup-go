@@ -11,20 +11,18 @@ The dialog is meant to be shown with the show functions **IupShow** or **IupShow
 
 ### Attributes
 
-Supports all the [IupDialog](iup_dialog.md) attributes. But some attributes where changed to configure the dialog.
-We recommend changing only the following attributes:
+Supports all the [IupDialog](iup_dialog.md) attributes. Some attributes were changed to configure the dialog.
+Only the following attributes should be changed:
 
 [ICON](../attrib/iup_icon.md): Dialog’s icon.
 
 [TITLE](../attrib/iup_title.md) (non-inheritable): Dialog’s title. Default: NULL.
 If not set the title bar will not be displayed and the dialog will occupy less space on screen.
 
-[VISIBLE](../attrib/iup_visible.md): Simply call **IupShow** or **IupHide** for the dialog.
+[VISIBLE](../attrib/iup_visible.md): Use **IupShow** or **IupHide** for the dialog.
 
 [PARENTDIALOG](../attrib/iup_parentdialog.md) (creation-only): Name of a dialog to be used as parent.
 This dialog will always be in front of the parent dialog.
-
-[TITLE](../attrib/iup_title.md): Dialog title.
 
 Other attributes were set to values different from the default value (but can still be changed):
 
@@ -44,21 +42,19 @@ If set to NULL will increment +1.
 **TOTALCOUNT**: total number of iterations.
 
 **STATE**: describe the state of the iteration. Can be: IDLE, PROCESSING, UNDEFINED or ABORTED.
-Default is IDLE. When INC, COUNT or PERCENT are set the state is changed to PROCESSING.
-If the user pressed the Cancel button, the state is changed to ABORTED, but check the CANCEL_CB callback for other options.
+Default: "IDLE". When INC, COUNT or PERCENT are set the state is changed to PROCESSING.
+If the user pressed the Cancel button, the state is changed to ABORTED, see the CANCEL_CB callback for other options.
 If the state is set to UNDEFINED by the application the progress bar will display an undefined state animation (same as setting MARQUEE=YES in [IupProgressBar](../elem/iup_progressbar.md)), to resume processing set the state attribute to PROCESSING.
 
 **DESCRIPTION**: text description to be shown in the dialog.
 
-**PROGRESSHEIGHT**: height in pixels of the progress bar. Default: 30
+**PROGRESSHEIGHT**: height in pixels of the progress bar. Default: "30"
 
 **MINCLOCK**: minimum time between counts to an actual screen update in milliseconds.
-So if each count increment is too fast this avoids updating the screen too often.
-Must at least have passed the minimum time for a screen update. Default: 250
+Must at least have passed the minimum time for a screen update. Default: "250"
 
 **MINPERCENT**: minimum percent between counts to an actual screen update, when the minimum clock has not reached yet.
-So if each count increment is too fast, but the application would like to update the screen anyway after the percentage of the total progress has passed this minimum value.
-So at least some screen updates will occur. Default: 10
+Default: "10"
 
 ### Callbacks
 
@@ -81,7 +77,7 @@ The returned value will also be returned in the "Cancel" button callback.
 
 The **IupProgressDlg** will display the iteration state using a [IupProgressBar](../elem/iup_progressbar.md) control.
 
-The dialog is **not** automatically closed, the application must do that manually inside the CANCEL_CB callback or inside your processing loop by checking the STATE attribute.
+The dialog is **not** automatically closed, the application must do that manually inside the CANCEL_CB callback or inside the processing loop by checking the STATE attribute.
 
 ### Examples
 
@@ -93,18 +89,18 @@ The dialog is **not** automatically closed, the application must do that manuall
         IupExitLoop();
         return IUP_DEFAULT;
       }
-      
+
       return IUP_CONTINUE;
     }
 
     ...
     Ihandle* dlg = IupProgressDlg();
-      
+
     IupSetAttribute(dlg, "TITLE", "IupProgressDlg Test");
     IupSetAttribute(dlg, "DESCRIPTION", "Description first line\nSecond Line"); // Actually can have any number of lines.
     IupSetCallback(dlg, "CANCEL_CB", cancel_cb);
     IupSetAttribute(dlg, "TOTALCOUNT", "300");
-      
+
     IupShowXY(dlg, IUP_CENTER, IUP_CENTER);
     ...
 
@@ -112,14 +108,14 @@ The dialog is **not** automatically closed, the application must do that manuall
     static int update_progress(Ihandle* ih)
     {
       IupSetAttribute(ih, "INC", NULL);
-      
+
       // This is just an example, the application can control the loop in other ways
       if (IupGetInt(ih, "COUNT")==IupGetInt(ih, "TOTALCOUNT"))
       {
         IupHide(ih);
         return 0;
       }
-        
+
       return 1;
     }
 

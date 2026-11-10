@@ -6,7 +6,7 @@ Size of the thumb in the horizontal scrollbar, in any unit.
 
 Any floating-point value greater than zero and smaller than the difference between [XMAX](iup_xmax.md) and [XMIN](iup_xmin.md).
 
-Default:: "0.1".
+Default: "0.1".
 
 ### Notes
 

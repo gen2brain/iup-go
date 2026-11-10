@@ -10,16 +10,16 @@ The canvas is automatically redrawn only if this callback is NOT defined.
 **ih**: identifier of the element that activated the event.\
 **op**: indicates the operation performed on the scrollbar.
 
-> If the manipulation was made on the vertical scrollbar, it can have the following values:
+If the manipulation was made on the vertical scrollbar, it can have the following values:
 
     IUP_SBUP - line up
     IUP_SBDN - line down
     IUP_SBPGUP - page up
     IUP_SBPGDN - page down
     IUP_SBPOSV - vertical positioning
-    IUP_SBDRAGV - vertical drag 
+    IUP_SBDRAGV - vertical drag
 
-> If it was on the horizontal scrollbar, the following values are valid:
+If it was on the horizontal scrollbar, the following values are valid:
 
     IUP_SBLEFT - column left
     IUP_SBRIGHT - column right

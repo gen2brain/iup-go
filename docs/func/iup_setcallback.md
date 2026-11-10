@@ -6,8 +6,8 @@ Associates a callback to an event.
 
     Icallback IupSetCallback(Ihandle* ih, const char *name, Icallback func);
 
-**ih**: identifier of the interface element. **\
-name**: name of the callback.\
+**ih**: identifier of the interface element.\
+**name**: name of the callback.\
 **func**: address of a C function. If NULL removes the association.
 
 **Returns:** the address of the previous function associated to the action.

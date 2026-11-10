@@ -16,7 +16,7 @@ If **ref_child** is NOT NULL, then it will *insert* **child** before **ref_child
 **ref_child**: Identifier of the element to be used as reference, where the child will be inserted before it.
 Can be NULL.
 
-**Returns:** IUP_NOERROR if successfully, IUP_ERROR if failed.
+**Returns:** IUP_NOERROR if successful, IUP_ERROR if failed.
 
 ### Notes
 
@@ -25,7 +25,7 @@ This function is faster and easier than doing the sequence **unmap**, **detach**
 The elements are NOT immediately repositioned.
 Call **IupRefresh** for the container (or any other element in the dialog) to update the dialog layout.
 
-Motif does not support the re-parent function, but we simulate a re-parent doing a **unmap**/**map** sequence.
+Motif does not support the re-parent function, so it is simulated with an **unmap**/**map** sequence.
 But some attributes may be lost during the operation, mostly attributes that are id dependent.
 
 ### See Also

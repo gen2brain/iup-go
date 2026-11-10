@@ -3,9 +3,9 @@
 Creates an editable field with one or more lines.
 
 **IupText** has support for multiple lines when the MULTILINE attribute is set to YES.
-When a **IupMultiline** element is created, in fact, a **IupText** element with MULTILINE=YES is created.
+**IupMultiLine** creates an element of the "multiline" class, which inherits from **IupText** and starts with MULTILINE=YES and SCROLLBAR=YES.
 
-See [IupText](iup_text.md)
+See [IupText](iup_text.md).
 
 ### Creation
 

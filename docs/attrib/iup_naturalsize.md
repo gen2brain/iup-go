@@ -1,4 +1,4 @@
-## NATURALSIZE (non-inheritable, read-only)
+## NATURALSIZE (read-only) (non-inheritable)
 
 Returns the element last computed **Natural** size in pixels.
 If both values are 0, then NULL is returned.

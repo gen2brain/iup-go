@@ -5,7 +5,7 @@ Returns the same value as the LANGUAGE global attribute.
 
 ### Parameters/Return
 
-    char* IupGetLanguage(void); 
+    char* IupGetLanguage(void);
 
 **Returns:** the language.
 

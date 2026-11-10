@@ -13,20 +13,20 @@ It inherits from [IupUser](iup_user.md).
 
 ### Attributes
 
-**START** (write-only, non-inheritable): starts the thread and calls the callback.
+**START** (write-only) (non-inheritable): starts the thread and calls the callback.
 Can be YES only. The thread exits when the callback is terminated.
 
-**EXIT** (write-only, non-inheritable): exit the current thread. Value contains the exit code.
+**EXIT** (write-only) (non-inheritable): exits the current thread. Value contains the exit code.
 
-**ISCURRENT** (read-only, non-inheritable): returns if the started thread is the current thread.
+**ISCURRENT** (read-only) (non-inheritable): returns whether the started thread is the current thread.
 
-**YIELD** (write-only, non-inheritable): yield execution to another thread. value is ignored.
+**YIELD** (write-only) (non-inheritable): yields execution to another thread. Value is ignored.
 
-**JOIN** (write-only, non-inheritable): Waits until thread finishes. value is ignored.
+**JOIN** (write-only) (non-inheritable): Waits until the thread finishes. Value is ignored.
 
 **LOCK** (non-inheritable): uses a mutex to create a lock to allow access to shared data.
 Can be YES or NO. When set to YES the mutex will be locked, when set to NO the mutex will be unlocked.
-It does not depend on if the thread is started or not.
+It does not depend on whether the thread is started or not.
 
 ### Callbacks
 
@@ -37,4 +37,4 @@ If this callback returns or does not exist, the thread is terminated.
 
 **ih**: identifier of the element that activated the event.
 
-In WebAssembly uses Emscripten POSIX threads; under the Go binding the callback runs as a goroutine.
+In WebAssembly, Emscripten POSIX threads are used; under the Go binding the callback runs as a goroutine.

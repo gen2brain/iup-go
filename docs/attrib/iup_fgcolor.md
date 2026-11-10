@@ -1,19 +1,19 @@
 ## FGCOLOR
 
-Element’s foreground color. Usually it is the color of the associated text.
+Element's foreground color. Usually it is the color of the associated text.
 
 ### Value
 
 The RGB or RGBA components, in the format "R G B A".
 
 Values should be between 0 and 255, separated by a blank space.
-For example, "255 0 128", red=255 blue=0 green=128.
+For example, "255 0 128", red=255 green=0 blue=128.
 
 Alpha is optional and assumed to be 255 if not specified.
 It is used only by the controls drawn with [IupDraw](../func/iup_draw.md), such as IupGauge, IupDial and the IupFlat* controls, with the driver limits listed there.
 
-**Default**: It is the value of the DLGFGCOLOR or TXTFGCOLOR global attribute.
-TXTFGCOLOR is used on IupText, IupList, and IupTree.  Usually is "0 0 0" - black.
+Default: the DLGFGCOLOR or TXTFGCOLOR global attribute.
+TXTFGCOLOR is used on IupText, IupList, and IupTree. Usually "0 0 0" (black).
 
 Hexadecimal notation in the format "#RRGGBB" is also accepted in all color attributes.
 For example, "255 0 128" can also be written as "#FF0080".

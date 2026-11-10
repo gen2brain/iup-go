@@ -2,7 +2,7 @@
 
 Creates a void container that can interactively show or hide its child.
 
-It does not have a native representation, but it contains also several elements to implement the bar handler.
+It does not have a native representation, but it also contains several elements to implement the bar handler.
 
 ### Creation
 
@@ -19,8 +19,8 @@ Default: NO. See Notes below.
 
 **ANIMATION** (non-inheritable): enable animation during open/close.
 Works only for BARPOSITION=TOP and does not work for AUTOSHOW.
-Also the child must be a native container like **IupTabs**, **IupFrame**, **IupBackgroundBox**, or **IupScrollBox,** or it will not work accordantly.
-Values can be SLIDE (child controls slide down), CURTAIN (child controls appears as if a curtain is being pulled) or NO.
+Also the child must be a native container like **IupTabs**, **IupFrame**, **IupBackgroundBox**, or **IupScrollBox**, or it will not work properly.
+Values can be SLIDE (child controls slide down), CURTAIN (child controls appear as if a curtain is being pulled) or NO.
 Default: NO.
 
 The attribute **NUMFRAMES** can be used to control the number of frames used for the animation, the default value is 10 frames.
@@ -41,7 +41,7 @@ Default: the height or width that fits all its internal elements according to BA
 **EXTRABUTTONS** (non-inheritable) (creation-only): sets the number of extra image buttons at right when BARPOSITION=TOP.
 The maximum number of buttons is 3. See the EXTRABUTTON_CB callback. Default: 0.
 
-**IMAGEEXTRAid**: image name used for the button. id can be 1, 2 or 3. 1 is the rightmost button, and count from right to left.\
+**IMAGEEXTRAid**: image name used for the button. id can be 1, 2 or 3. 1 is the rightmost button, counting from right to left.\
 **IMAGEEXTRAPRESSid**: image name used for the button when pressed.\
 **IMAGEEXTRAHIGHLIGHTid**: image name for the button used when mouse is over the button area.
 
@@ -49,10 +49,10 @@ The maximum number of buttons is 3. See the EXTRABUTTON_CB callback. Default: 0.
 Default: the global attribute DLGFGCOLOR.
 
 **OPENCOLOR** (non-inheritable): title text color when STATE=OPEN.
-Defaults to the FORECOLOR if not defined.
+Default: FORECOLOR.
 
 **HIGHCOLOR** (non-inheritable): title text color when highlighted. Works only when TITLEEXPAND=YES.
-Defaults to the FORECOLOR if not defined.
+Default: FORECOLOR.
 
 **FRAME** (non-inheritable): enables the frame line around the bar area. Default: NO.
 
@@ -61,7 +61,7 @@ Default: the global attribute DLGFGCOLOR.
 
 **FRAMEWIDTH** (non-inheritable): frame line width. Default: 1.
 
-**IMAGE** (non-inheritable):  image name to replace the arrow image by a custom image when STATE=CLOSE.
+**IMAGE** (non-inheritable): image name to replace the arrow image by a custom image when STATE=CLOSE.
 Works only when BARPOSITION=TOP. Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](iup_image.md).
 
@@ -89,7 +89,7 @@ Shown only when BARPOSITION=TOP.
 **TITLEIMAGEOPENHIGHLIGHT**: image name used when mouse is over the title image and STATE=OPEN.
 
 **TITLEEXPAND** (non-inheritable): enable the expand/collapse action also at the title.
-Default: NO. On Android and iOS the default is YES.
+Default: NO. In Android and iOS, the default is YES.
 
 **WID** (read-only): returns -1 if mapped.
 
@@ -105,34 +105,34 @@ Default: NO. On Android and iOS the default is YES.
 
     int function(Ihandle* ih);
 
-**ih**: identifier of the element that activated the event. 
+**ih**: identifier of the element that activated the event.
 
 **OPENCLOSE_CB**: Action generated before the expander state is interactively changed.
 
     int function(Ihandle* ih, int state);
 
-**ih**: identifier of the element that activated the event. \
+**ih**: identifier of the element that activated the event.\
 **state**: new state to be applied.
 
-**Returns**: if return IUP_IGNORE the new state is ignored.
+**Returns**: IUP_IGNORE ignores the new state.
 
 **EXTRABUTTON_CB**: Action generated when any mouse button is pressed or released.
 
     int function(Ihandle* ih, int button, int pressed);
 
-> **ih**: identifies the element that activated the event.\
-> **button**: identifies the extra button. can be 1, 2 or 3. (this is not the same as BUTTON_CB)\
-> **pressed**: indicates the state of the button:
->
-> 0 - mouse button was released;\
-> 1 - mouse button was pressed.
+**ih**: identifier of the element that activated the event.\
+**button**: identifies the extra button. Can be 1, 2 or 3 (not the same as BUTTON_CB).\
+**pressed**: indicates the state of the button:
+
+0 - mouse button was released;\
+1 - mouse button was pressed.
 
 ### Notes
 
 The bar handler elements are inside a **IupBackgroundBox** that is always the first child of the expander.
 It can be obtained using **IupGetChild** or **IupGetNextChild**.
 Inside that box there is **IupHbox** or a **IupVbox**, depending on BARPOSITION, that contains the interactive elements.
-All buttons are in fact **IupLabel** to avoid the **IupButton** margins and highlight effects.
+All buttons are **IupLabel** elements, without the **IupButton** margins and highlight effects.
 When BARPOSITION=TOP, the expand/collapse button is followed by a title label, then by a **IupHbox** containing the 3 or less extra buttons.
 
 The container can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
@@ -142,8 +142,8 @@ In all other situations, the expand/collapse button is centered.
 
 When AUTOSHOW=YES the dialog layout is NOT recalculated.
 The child is shown on top of the dialog, so the other children will not move or redraw.
-After the mouse is move away from the child, then it is automatically hidden.
-**IMPORTANT**: this feature will ONLY work if the child is a native container like **IupFrame**, **IupBackgroundBox, IupScrollBox** or **IupTabs**.
+When the mouse moves away from the child, it is automatically hidden.
+This feature works ONLY if the child is a native container like **IupFrame**, **IupBackgroundBox**, **IupScrollBox** or **IupTabs**.
 
 ### Examples
 

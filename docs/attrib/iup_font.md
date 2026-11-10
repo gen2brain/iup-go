@@ -21,7 +21,7 @@ The names must be in the same case described here.
 
 **Font size** is in points (1/72 inch) or in pixels (using negative values).
 
-Returned values will be the same value when changing the attribute, except for the old font names that will be converted to the new common format definition.
+Returns the value as it was set.
 
 #### Windows
 

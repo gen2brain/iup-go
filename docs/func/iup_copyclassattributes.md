@@ -8,7 +8,7 @@ Both elements must be of the same class.
     void IupCopyClassAttributes(Ihandle* src_ih, Ihandle* dst_ih);
 
 **src_ih**: identifier of the source element.\
-**dst_ih**: identifier of the destiny element.
+**dst_ih**: identifier of the destination element.
 
 ### See Also
 

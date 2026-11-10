@@ -10,7 +10,7 @@ Returns the current cascade level of **IupMainLoop**. When no calls were done, r
 
 ### Notes
 
-You can use this function to check if **IupMainLoop** was already called and avoid calling it again.
+Can be used to check if **IupMainLoop** was already called and avoid calling it again.
 
 A call to **IupPopup** will increase one level.
 

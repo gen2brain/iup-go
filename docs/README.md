@@ -266,4 +266,4 @@ API reference for IUP (Portable User Interface).
 
 ### Utilities
 
-[IupExecute](func/iup_execute.md), [IupExecuteWait](func/iup_executewait.md), [IupHelp](func/iup_help.md), [IupLog](func/iup_log.md), [IupMapFont](func/iup_mapfont.md), [IupUnMapFont](func/iup_unmapfont.md), [IupStringCompare](func/iup_stringcompare.md)
+[IupExecute](func/iup_execute.md), [IupExecuteWait](func/iup_executewait.md), [IupHelp](func/iup_help.md), [IupLog](func/iup_log.md), [IupStringCompare](func/iup_stringcompare.md)

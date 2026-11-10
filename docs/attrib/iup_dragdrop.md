@@ -1,6 +1,6 @@
 ## DRAG & DROP
 
-When enabled, allow the use of callbacks for controlling the drag and drop handling.
+When enabled, allows the use of callbacks for controlling the drag and drop handling.
 
 The user starts a drag and drop transfer by pressing the left mouse button over the data, which is referred to as the drag source.
 The data can be dropped in any location that has been registered as a drop target.
@@ -12,16 +12,16 @@ A **copy** operation is enabled with the CTRL key pressed. A **move** operation 
 A move operation will be possible only if the attribute DRAGSOURCEMOVE is YES.
 When no key is pressed, the default operation is **copy** when DRAGSOURCEMOVE=NO and **move** when DRAGSOURCEMOVE=YES.
 The user can cancel a drag at any time by pressing the ESCAPE key.
-In Cocoa the copy modifier is the Option key.
+In Cocoa, the copy modifier is the Option key.
 
 Steps to use the Drag & Drop support in an IUP application:
 
-- **AT SOURCE:**
+- **AT SOURCE**:
   - Enable the element as source using the attribute DRAGSOURCE=YES;
   - Define the data types supported by the element for the drag operation using the DRAGTYPES attribute;
   - Register the required callbacks DRAGBEGIN_CB, DRAGDATASIZE_CB and DRAGDATA_CB for drag handling.
 DRAGEND_CB is the only optional drag callback, all other callbacks and attributes must be set.
-- **AT TARGET:**
+- **AT TARGET**:
   - Enable the element as target using the attribute DROPTARGET=YES;
   - Define the data types supported by the element for the drop using the DROPTYPES attribute;
   - Register the required callback DROPDATA_CB for handling the data received.
@@ -35,14 +35,14 @@ DROPMOTION_CB is the only optional drop callback.
 ### Attributes at Drag Source
 
 **DRAGSOURCE** (non-inheritable): Set up a control as a source for drag operations.
-Default: NO.
-In GNUstep the item must be selected before the drag starts, and IupCanvas is not supported as a source.
+Default: "NO".
+In GNUstep, the item must be selected before the drag starts, and IupCanvas is not supported as a source.
 
 **DRAGTYPES** (non-inheritable): A list of data types that are supported by the source.
 Accepts a string with one or more names separated by commas. See Notes below for a list of known names.
 Must be set.
 
-**DRAGSOURCEMOVE** (non-inheritable): Enables the move action. Default: NO (only copy is enabled).
+**DRAGSOURCEMOVE** (non-inheritable): Enables the move action. Default: "NO" (only copy is enabled).
 
 **DRAGCURSOR** (non-inheritable): name of an image to be used as cursor during drag.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
@@ -55,7 +55,7 @@ Supported in Win32, Motif, Cocoa, Qt, QML and Haiku.
 ### Attributes at Drop Target
 
 **DROPTARGET** (non-inheritable): Set up a control as a destination for drop operations.
-Default: NO.
+Default: "NO".
 
 **DROPTYPES** (non-inheritable): A list of data types that are supported by the target.
 Accepts a string with one or more names separated by commas. See the Notes below for a list of known names.
@@ -66,7 +66,7 @@ Must be set.
 **DRAGBEGIN_CB**: notifies a source that drag started.
 It is called when the mouse starts a drag operation.
 
-    int function(Ihandle* ih, int x, int y)
+    int function(Ihandle* ih, int x, int y);
 
 **ih**: identifier of the element that activated the event.\
 **x, y**: cursor position relative to the top-left corner of the element.
@@ -76,7 +76,7 @@ It is called when the mouse starts a drag operation.
 **DRAGDATASIZE_CB**: request for size of drag data from source.
 It is called when the data is dropped, before the **DRAGDATA_CB** callback.
 
-    int function(Ihandle* ih, char* type)
+    int function(Ihandle* ih, char* type);
 
 **ih**: identifier of the element that activated the event.\
 **type**: type of the data. It is one of the registered types in **DRAGTYPES**.
@@ -86,29 +86,29 @@ It will be used to allocate the buffer size for the data in transfer.
 
 **DRAGDATA_CB**: request for drag data from source. It is called when the data is dropped.
 
-    int function(Ihandle* ih, char* type, void* data, int size)
+    int function(Ihandle* ih, char* type, void* data, int size);
 
 **ih**: identifier of the element that activated the event.\
 **type**: type of the data. It is one of the registered types in **DRAGTYPES**.\
 **data**: buffer to be filled by the application.\
 **size**: buffer size in bytes. The same value returned by **DRAGDATASIZE_CB**.
 
-**DRAGEND_CB**: notifies source that drag is done. The only drag callback that is **optional**.
+**DRAGEND_CB**: notifies source that drag is done.
 It is called after the data has been dropped.
 
-    int function(Ihandle* ih, int action)
+    int function(Ihandle* ih, int action);
 
 **ih**: identifier of the element that activated the event.\
-**action**: action performed by the operation (1 = move, 0 = copy, -1 = drag failed or aborted)
+**action**: action performed by the operation (1 = move, 0 = copy, -1 = drag failed or aborted).
 
 If action is 1, it is the responsibility of the application to remove the data from source.
 
 ### Callbacks at Drop Target (Must be set when DROPTARGET=YES)
 
 **DROPDATA_CB**: source has sent target the requested data. It is called when the data is dropped.
-If both drag and drop were in the same application, it would be called after the **DRAGDATA_CB** callback.
+If both drag and drop are in the same application, it is called after the **DRAGDATA_CB** callback.
 
-    int function(Ihandle* ih, char* type, void* data, int size, int x, int y)
+    int function(Ihandle* ih, char* type, void* data, int size, int x, int y);
 
 **ih**: identifier of the element that activated the event.\
 **type**: type of the data. It is one of the registered types in **DROPTYPES**.\
@@ -116,7 +116,7 @@ If both drag and drop were in the same application, it would be called after the
 **size**: data size in bytes.\
 **x, y**: cursor position relative to the top-left corner of the element.
 
-**DROPMOTION_CB**: notifies destination about drag pointer motion. The only drop callback that is **optional**.
+**DROPMOTION_CB**: notifies destination about drag pointer motion.
 It is called when the mouse moves over any valid drop site.
 
     int function(Ihandle *ih, int x, int y, char *status);
@@ -131,9 +131,9 @@ The same macros used for [BUTTON_CB](../call/iup_button_cb.md) can be used for t
 Drag and Drop support can be set independently.
 A control can have a drop without drag support and vice versa.
 
-On Android and iOS a drag is initiated by a long-press on the source. DRAGCURSOR is honoured on Android only; DRAGCURSORCOPY is unsupported on both, since the system fixes the drag preview at start. Touch drags carry no keyboard modifiers, so DROPMOTION_CB's `status` only reports the pointer position.
+In Android and iOS, a drag is initiated by a long-press on the source. DRAGCURSOR is supported only in Android; DRAGCURSORCOPY is not supported in both. Touch drags carry no keyboard modifiers, so DROPMOTION_CB's `status` only reports the pointer position.
 
-Here are some common Drag&Drop types defined by existing applications:
+Common Drag&Drop types defined by existing applications:
 
 - "TEXT" used for regular text without formatting. Automatically translated to CF_TEXT in Windows.
 - content MIME types, like "text/uri-list", "text/html", "image/png", "image/jpeg", "image/bmp" and "image/gif".

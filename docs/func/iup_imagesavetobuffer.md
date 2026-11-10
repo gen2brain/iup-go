@@ -16,7 +16,7 @@ Encodes an **IupImage** to a memory buffer using native driver image encoding.
 
 ### Notes
 
-Unlike **IupImageSave**, the **format** parameter is required since there is no filename to detect the format from.
+Unlike **IupImageSave**, the **format** parameter is required.
 
 See [IupImageSave](iup_imagesave.md) for the per-driver supported formats, JPEG quality control, and accepted image types.
 

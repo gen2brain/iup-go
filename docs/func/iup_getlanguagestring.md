@@ -4,7 +4,7 @@ Returns a language dependent string. The string must have been associated with t
 
 ### Parameters/Return
 
-    char* IupGetLanguageString(const char* name); 
+    char* IupGetLanguageString(const char* name);
 
 **Returns:** a string associated with the name.
 

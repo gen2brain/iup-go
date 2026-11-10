@@ -24,25 +24,17 @@ The following names are known:
     "colorbrowser"
     "datepick"
     "dial"
-    "dropbutton"
-    "flatbutton"
-    "flatlabel"
-    "flatlist"
-    "separator"
-    "flattoggle"
-    "flattree"
-    "flatval"
-    "gauge"
     "label"
     "link"
     "list"
     "multiline"
     "progressbar"
     "scrollbar"
+    "separator"
     "spin"
     "table"
     "tabs"
-    "flattabs"
+    "terminal"
     "text"
     "toggle"
     "tree"
@@ -56,8 +48,6 @@ The following names are known:
     "dialog"
     "expander"
     "fill"
-    "flatframe"
-    "flatscrollbox"
     "frame"
     "gridbox"
     "hbox"
@@ -75,9 +65,9 @@ The following names are known:
 
 **Menus:**
 
-    "item"
     "menu"
-    "separator"
+    "menuitem"
+    "menuseparator"
     "submenu"
 
 **Images:**
@@ -92,14 +82,20 @@ The following names are known:
     "filedlg"
     "fontdlg"
     "messagedlg"
+    "printdlg"
     "progressdlg"
     "param"
     "parambox"
+    "sharedlg"
 
 **Resources:**
 
     "clipboard"
+    "drawpath"
+    "fdwatch"
+    "location"
     "notify"
+    "sensor"
     "thread"
     "timer"
     "tray"
@@ -108,15 +104,36 @@ The following names are known:
 **Additional Controls** (require [ControlsOpen](iup_open.md)):
 
     "cells"
+    "dropbutton"
+    "flatbutton"
+    "flatframe"
+    "flatlabel"
+    "flatlist"
+    "flatscrollbox"
+    "flattabs"
+    "flattoggle"
+    "flattree"
+    "flatval"
+    "gauge"
     "matrix"
     "matrixex"
     "matrixlist"
-    "plot"
 
 **GL Controls** (require [GLCanvasOpen](iup_open.md)):
 
     "glcanvas"
     "glbackgroundbox"
+
+**Plot** (requires [IupPlotOpen](../ctrl/iup_plot.md)):
+
+    "plot"
+
+**Media** (require [IupMediaOpen](../ctrl/iup_audio.md)):
+
+    "audio"
+    "camera"
+    "microphone"
+    "video"
 
 **Web Controls** (require [WebBrowserOpen](iup_open.md)):
 

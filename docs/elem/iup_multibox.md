@@ -5,15 +5,15 @@ It is a box that arranges the elements it contains from top to bottom and from l
 But its EXPAND attribute does not behave as a regular container; instead it behaves as a regular element expanding into the available space.
 
 The child elements are added to the control just like a vbox and hbox, sequentially.
-Then they are distributed accordingly the ORIENTATION attribute.
+Then they are distributed according to the ORIENTATION attribute.
 When ORIENTATION=HORIZONTAL children are distributed from left to right on the first line until the line does not fit more elements according to the multibox current width, then on the second line, and so on.
 When ORIENTATION=VERTICAL children are distributed from top to bottom on the first column until columns do not fit more elements according to the multibox current height, then on the second column, and so on.
 
 Because of that, its elements can overlap other elements in the dialog, so the ideal combination is to put the **IupMultiBox** inside an [IupScrollBox](iup_scrollbox.md).
 
-IMPORTANT: the actual element distribution in the container is done only after the natural size of the dialog is computed because it needs the current with or height to determine which elements will fit in the current space according to the orientation.
-The first time the multibox natural size is computed, it returns simply the largest width and the highest height among the children.
-The next time it will use the size previously calculated with the line/column breaks, to avoid obtaining an outdated layout call **IupRefresh** or **IupMap** before showing the dialog (when the layout will be updated again).
+The actual element distribution in the container is done only after the natural size of the dialog is computed, because it needs the current width or height to determine which elements fit in the current space according to the orientation.
+The first time the multibox natural size is computed, it returns the largest width and the highest height among the children.
+The next time it uses the size previously calculated with the line/column breaks; to avoid an outdated layout, call **IupRefresh** or **IupMap** before showing the dialog.
 
 It does not have a native representation.
 
@@ -46,7 +46,7 @@ Default: "0".
 **GAPHORIZ, CGAPHORIZ**: Defines a horizontal space in pixels between elements, **CGAPHORIZ** is in the same units of the **SIZE** attribute for the height.
 Default: "0".
 
-**NGAPVERT, NCGAPVERT, NGAPHORIZ, NCGAPHORIZ** (non-inheritable): Same as *GAP* but are non-inheritable.
+**NGAPVERT, NCGAPVERT, NGAPHORIZ, NCGAPHORIZ** (non-inheritable): Same as **GAPVERT**, **CGAPVERT**, **GAPHORIZ** and **CGAPHORIZ**, but non-inheritable.
 
 **MARGIN, CMARGIN**: Defines a margin in pixels, **CMARGIN** is in the same units of the **SIZE** attribute.
 Its value has the format "*width*x*height*", where *width* and *height* are integer values corresponding to the horizontal and vertical margins, respectively.
@@ -73,9 +73,9 @@ Can be: HORIZONTAL or VERTICAL. Default: HORIZONTAL.
 
 ### Attributes (at Children)
 
-**LINEBREAK** (non-inheritable) **(at children only)**: when defined at a child force a line break after the child when ORIENTATION=HORIZONTAL.
+**LINEBREAK** (non-inheritable) **(at children only)**: when defined at a child forces a line break after the child when ORIENTATION=HORIZONTAL.
 
-**COLUMNBREAK** (non-inheritable) **(at children only)**: when defined at a child force a column break after the child when ORIENTATION=VERTICAL.
+**COLUMNBREAK** (non-inheritable) **(at children only)**: when defined at a child forces a column break after the child when ORIENTATION=VERTICAL.
 
 ### Notes
 

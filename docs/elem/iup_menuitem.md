@@ -13,47 +13,47 @@ Creates an item of the menu interface element. When selected, it generates an ac
 ### Attributes
 
 **AUTOTOGGLE** (non-inheritable): enables the automatic toggle of VALUE state when the item is activated.
-Default: NO.
+Default: "NO".
 
 [KEY](../attrib/iup_key.md) (non-inheritable): Underlines a character of the item title.
 It is applied when TITLE is set. Deprecated, use the "&" in TITLE.
 
-**HIDEMARK**: If enabled the item cannot be checked, since the checkbox will not be shown.
+**HIDEMARK**: If enabled, the item cannot be checked, since the checkbox will not be shown.
 If all items in a menu enable it, then no empty space will be shown in front of the items.
-If your item will not be marked you must set HIDEMARK=YES, but if VALUE is defined the default goes back to NO.
-Default: NO.
+An item that will not be marked must set HIDEMARK=YES, but if VALUE is defined the default goes back to NO.
+Default: "NO".
 
 **IMAGE** (non-inheritable): Image name of the check mark image when VALUE=OFF.
 In Windows, an item in a menu bar cannot have a check mark. Ignored if item in a menu bar.
-A recommended size would be 16x16 to fit the image in the menu item.
+The recommended size is 16x16 to fit the image in the menu item.
 In Windows, if larger than the check mark area it will be cropped.
-Not supported in GTK 4, Motif, EFL.
+Not supported in GTK 4, Motif and EFL.
 
 **IMPRESS** (non-inheritable): Image name of the check mark image when VALUE=ON.
-Not supported in GTK 4, Motif, EFL.
+Not supported in GTK 4, Motif and EFL.
 
 [TITLE](../attrib/iup_title.md) (non-inheritable): Item text.
 The "&" character can be used to define a mnemonic, the next character will be used as key.
 Use "&&" to show the "&" character instead on defining a mnemonic.
-When in a menu bar an item that has a mnemonic can be activated from any control in the dialog using the "Alt+key" combination.
+When in a menu bar, an item that has a mnemonic can be activated from any control in the dialog using the "Alt+key" combination.
 
-The text after a '\t' is the shortcut of the item, shown right-aligned, ex: "Save\tCtrl+S".
+The text after a '\t' is the shortcut of the item, shown right-aligned, for example "Save\tCtrl+S".
 When it is a key description and the item is in the menu bar of a dialog, pressing the key in that dialog activates the item like a click, from any control, and the key is not delivered to the K_* callbacks.
 A key description is zero or more of "Ctrl+", "Shift+", "Alt+" and "Sys+" followed by a letter, a digit, a printable character, F1 to F20, Esc, Tab, Space, Enter, Backspace, Del, Ins, Home, End, PgUp, PgDn, Left, Right, Up or Down.
 A letter, digit or printable character without a modifier is not a key description.
-Any other text is only shown. In a popup menu the shortcut is only shown.
-In Qt, QML and FLTK a key the focused text control edits with stays with the text control.
+Any other text is only shown. In a popup menu, the shortcut is only shown.
+In Qt, QML and FLTK, a key the focused text control edits with stays with the text control.
 In Cocoa and Haiku, Ctrl and Sys are shown and bound as the Command key, and text that is not a key description is not shown.
 In Haiku, F1 to F20 are not bound and not shown.
 Not bound in Android and iOS. Not shown in EFL.
 
 **TITLEIMAGE** (non-inheritable): Image name of the title image.
-In Windows, it appears before of the title text and after the check mark area (so both title and title image can be visible).
+In Windows, it appears before the title text and after the check mark area (so both title and title image can be visible).
 In GTK 3, it will appear on the check mark area.
-Not supported in GTK 4, Motif, EFL.
+Not supported in GTK 4, Motif and EFL.
 
 **VALUE** (non-inheritable): Indicates the item's state.
-When the value is ON, a mark will be displayed to the left of the item. Default: OFF.
+When the value is ON, a mark will be displayed to the left of the item. Default: "OFF".
 An item in a menu bar cannot have a check mark. When IMAGE is used, the checkmark is not shown.
 See the item AUTOTOGGLE attribute and the menu [RADIO](iup_menu.md) attribute.
 
@@ -68,7 +68,7 @@ See the item AUTOTOGGLE attribute and the menu [RADIO](iup_menu.md) attribute.
 ### Callbacks
 
 [ACTION](../call/iup_action.md): Action generated when the item is selected. IUP_CLOSE will be processed.
-Even if inside a popup menu when IUP_CLOSE is returned, the current popup dialog or the main loop will be closed.
+When IUP_CLOSE is returned, even inside a popup menu, the current popup dialog or the main loop will be closed.
 
 [HIGHLIGHT_CB](../call/iup_highlight_cb.md): Action generated when the item is highlighted.
 
@@ -82,7 +82,7 @@ Menu items are activated using the Enter key.
 
 In Motif and GTK, the text font will be affected by the dialog font when the menu is mapped.
 
-To have a menu item that can be marked, you must set the VALUE attribute to ON or OFF, or set HIDEMARK=NO, before mapping the control.
+A menu item that can be marked must have the VALUE attribute set to ON or OFF, or HIDEMARK=NO, before mapping the control.
 
 ### Examples
 

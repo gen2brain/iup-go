@@ -372,7 +372,7 @@ Called only when SHOWDRAGDROP=YES.
 
 Column and line indices are 1-based throughout the IupTable API.
 
-In virtual mode the application maintains the data.
+In virtual mode the table calls VALUE_CB, and IMAGE_CB when defined, to retrieve the data; the application maintains the data.
 
 ### Examples
 

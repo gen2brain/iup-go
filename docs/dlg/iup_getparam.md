@@ -9,15 +9,15 @@ The dialog uses the [IupParam](../elem/iup_param.md) and [IupParamBox](../elem/i
     int IupGetParamV(const char* title, Iparamcb action, void* user_data, const char* format, va_list arglist);
     int IupGetParamv(const char* title, Iparamcb action, void* user_data, const char* format, int param_count, int param_extra, void** param_data);
 
-title: dialog title.\
-**action:** user callback to be called whenever a parameter value was changed, and when the user pressed the OK button.
+**title**: dialog title.\
+**action**: user callback to be called whenever a parameter value was changed, and when the user pressed the OK button.
 It can be NULL. It is the same callback defined in [IupParamBox](../elem/iup_parambox.md).\
 **user_data**: user pointer passed to the user callback.\
 **format**: string describing all the parameters.
 It is a sequence of format strings for each parameter, see [IupParam](../elem/iup_param.md).\
 ...: list of variables address with initial values for the parameters.
 The number of lines in the format string (number of '\n') will determine the number of required parameters.
-But separators will not count as parameters. There is no maximum number of parameters.\
+Separators do not count as parameters. There is no maximum number of parameters.\
 **param_count**: number of regular parameters in the array.\
 **param_extra**: number of extra parameters in the array (separator lines and button names).\
 **param_data**: array of variables address with initial values for the parameters.
@@ -36,14 +36,14 @@ It also uses a global attribute called "**ICON**" as the dialog icon if it is de
 
 The function does not allocate memory space to store strings entered by the user.
 Therefore, the string value parameter must be large enough to receive the user input.
-If you want to set a maximum size for the string, you can set the param attribute **MAXSTR**, inside the callback when param_index=IUP_GETPARAM_INIT.
+To set a maximum size for the string, set the param attribute **MAXSTR** inside the callback when param_index=IUP_GETPARAM_INIT.
 
 ### Examples
 
 [Browse for Example Files](../../examples/)
 
-Here is an example showing many of the possible parameters.
-We show only one for each type, but you can have as many parameters of the same type you want.
+The following example shows many of the possible parameters.
+It shows only one for each type, but any number of parameters of the same type can be used.
 
       int pboolean = 1;
       int pinteger = 3456;

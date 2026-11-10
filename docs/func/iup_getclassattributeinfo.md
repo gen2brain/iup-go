@@ -25,8 +25,8 @@ Returns the registered metadata of an attribute on a class: default value, syste
 | IUPAF_NO_STRING | 4 | not a string (RGB, integer, Ihandle*, ...) |
 | IUPAF_NOT_MAPPED | 8 | set/get also called when not mapped |
 | IUPAF_HAS_ID | 16 | one numeric id appended to the name |
-| IUPAF_READONLY | 32 | read only |
-| IUPAF_WRITEONLY | 64 | write only (usually an action) |
+| IUPAF_READONLY | 32 | read-only |
+| IUPAF_WRITEONLY | 64 | write-only (usually an action) |
 | IUPAF_HAS_ID2 | 128 | two numeric ids appended (line, column) |
 | IUPAF_CALLBACK | 256 | entry is a callback, not an attribute |
 | IUPAF_NO_SAVE | 512 | not directly savable by IupSaveClassAttributes |

@@ -1,12 +1,14 @@
 ## FLOATING (non-inheritable)
 
-If an element has FLOATING=YES, then its size and position will be ignored by the layout processing in **IupVbox**, **IupHbox** and **IupZbox**.
-But the element size and position will still be updated in the native system allowing the usage of [SIZE](iup_size.md)/[RASTERSIZE](iup_rastersize.md) and [POSITION](iup_position.md) to manually position and size the element.
-And must ensure that the element will be on top of others using [ZORDER](iup_zorder.md), if there is overlap.
+If an element has FLOATING=YES, then its size and position will be ignored by the layout processing in **IupVbox**, **IupHbox**, **IupZbox**, **IupGridBox** and **IupTabs**.
+The element size and position are still updated in the native system, allowing the usage of [SIZE](iup_size.md)/[RASTERSIZE](iup_rastersize.md) and [POSITION](iup_position.md) to manually position and size the element.
+If there is overlap, the application must ensure that the element is on top of others using [ZORDER](iup_zorder.md).
 
-This is useful when you do not want that an invisible element to be computed in the box size.
+This is useful to keep an invisible element out of the box size computation.
 
-If the value IGNORE is used then it will behave as YES, but also it will not update the size and position in the native system.
+If the value IGNORE is used then it behaves as YES, but it also does not update the size and position in the native system.
+
+**IupMultiBox** supports only IGNORE.
 
 ### Value
 
@@ -20,4 +22,4 @@ All elements, except menus.
 
 ### See Also
 
-[IupZbox](../elem/iup_zbox.md), [IupVBox](../elem/iup_vbox.md), [IupHBox](../elem/iup_hbox.md)
+[IupZbox](../elem/iup_zbox.md), [IupVBox](../elem/iup_vbox.md), [IupHBox](../elem/iup_hbox.md), [IupGridBox](../elem/iup_gridbox.md), [IupMultiBox](../elem/iup_multibox.md), [IupTabs](../elem/iup_tabs.md)

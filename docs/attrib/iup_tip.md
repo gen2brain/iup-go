@@ -13,7 +13,7 @@ Text.
 These attributes affect the TIP display.
 
 **TIPBALLOON** [Win32 Only]: The tip window will have the appearance of a cartoon "balloon" with rounded corners and a stem pointing to the item.
-Default: NO.
+Default: "NO".
 
 **TIPBALLOONTITLE** [Win32 Only]: When using the balloon format, the tip can also have a title in a separate area.
 
@@ -23,21 +23,21 @@ Values can be:
 "0" - No icon (default)\
 "1" - Info icon\
 "2" - Warning icon\
-"3" - Error Icon
+"3" - Error icon
 
 **TIPBGCOLOR**: The tip background color.
 Default: "255 255 225" (Light Yellow).
 Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, QML, EFL, FLTK and macOS.
 
 **TIPDELAY** [Win32, Motif and FLTK Only]: Time the tip will remain visible. Default: "5000".
-In Windows the maximum value is 32767 milliseconds.
+In Windows, the maximum value is 32767 milliseconds.
 
 **TIPFGCOLOR**: The tip text color. Default: "0 0 0" (Black).
 Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, QML, EFL, FLTK and macOS.
 
 **TIPFONT**: The font for the tip text.
-If not defined the font used for the text is the same as the FONT attribute for the element.
-If the value is SYSTEM then, no font is selected and the default system font for the tip will be used.
+If not defined, the font used for the text is the same as the FONT attribute for the element.
+If the value is SYSTEM, no font is selected and the default system font for the tip will be used.
 Supported in Win32, WinUI, GTK, GTK 4, Motif, Qt, QML, EFL, FLTK and macOS.
 
 **TIPICON** [GTK, GTK 4 and EFL Only]: name of an image to be displayed in the TIP.
@@ -61,7 +61,7 @@ Reading the state is not supported in GTK 4.
     int function(Ihandle* ih, int x, int y);
 
 **ih**: identifier of the element that activated the event.\
-**x, y**: cursor position relative to the top-left corner of the element
+**x, y**: cursor position relative to the top-left corner of the element.
 
 Not supported in FLTK, Haiku, Android, iOS and WebAssembly.
 

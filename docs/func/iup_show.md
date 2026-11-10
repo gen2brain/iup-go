@@ -12,10 +12,10 @@ Displays a dialog in the current position, or changes a control VISIBLE attribut
 
 ### Notes
 
-For dialogs, it is equivalent to call **IupShowXY** using IUP_CURRENT.
+For dialogs, it is equivalent to calling **IupShowXY** using IUP_CURRENT.
 See [IupShowXY](iup_showxy.md) for more details.
 
-For other controls, to call **IupShow** is the same as setting VISIBLE=YES.
+For other controls, calling **IupShow** is the same as setting VISIBLE=YES.
 
 ### See Also
 

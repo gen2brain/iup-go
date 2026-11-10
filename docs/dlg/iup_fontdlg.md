@@ -16,13 +16,16 @@ If not defined, the system will provide a default text.
 Supported in GTK 3, Qt, Motif, FLTK, EFL, WinUI, Android, Haiku and WebAssembly.
 
 **COLOR**: The initial color value and the returned selected value if the user pressed the Ok button.
-Must set SHOWCOLOR=YES to enable this option.
-Supported in Windows and macOS.
+Supported in Win32 and macOS.
+In macOS, only the returned value is supported, and only when SHOWCOLOR=YES.
+
+**SHOWCOLOR**: Shows the color selection. Can be "YES" or "NO". Default: "NO".
+Supported in Win32 and macOS.
 
 [PARENTDIALOG](../attrib/iup_parentdialog.md) (creation-only): Name of a dialog to be used as parent.
 This dialog will always be in front of the parent dialog.
 
-**STATUS** (read-only): defined to "1" if the user pressed the Ok button, "0" or NULL if pressed the Cancel button.
+**STATUS** (read-only): defined to "1" if the user pressed the Ok button, "0" or NULL if the user pressed the Cancel button.
 
 [TITLE](../attrib/iup_title.md): Dialog title.
 
@@ -38,13 +41,11 @@ Not supported in GTK 4, iOS and QML.
 
 The **IupFontDlg** is a native pre-defined dialog not altered by **IupSetLanguage**.
 
-To show the dialog, use function **IupPopup**.
-
 The dialog is mapped only inside **IupPopup**, **IupMap** does nothing.
 
 In Windows, the dialog will be modal relative only to its parent or to the active dialog.
 
-In Win32 uses ChooseFont, in GTK 3 uses GtkFontChooser, in GTK 4 uses GtkFontDialog, in macOS uses NSFontPanel, in Qt uses QFontDialog, in QML uses FontDialog, in iOS uses UIFontPickerViewController, and in WinUI, Motif, FLTK, EFL, Android, Haiku and WebAssembly uses a custom dialog implemented using IUP controls.
+Win32 uses ChooseFont, GTK 3 uses GtkFontChooser, GTK 4 uses GtkFontDialog, macOS uses NSFontPanel, Qt uses QFontDialog, QML uses FontDialog, iOS uses UIFontPickerViewController, and WinUI, Motif, FLTK, EFL, Android, Haiku and WebAssembly use a custom dialog implemented using IUP controls.
 
 ### Examples
 

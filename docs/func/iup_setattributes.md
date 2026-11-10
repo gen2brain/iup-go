@@ -13,7 +13,7 @@ Sets several attributes of an interface element.
 
 ### Examples
 
-This function returns the same Ihandle it receives. This way, it is a lot easier to create dialogs in C.
+Since the function returns the same Ihandle it receives, calls can be nested to create dialogs in C.
 See also [IupSetCallbacks](iup_setcallbacks.md).
 
     dialog = IupSetAttributes(IupDialog(

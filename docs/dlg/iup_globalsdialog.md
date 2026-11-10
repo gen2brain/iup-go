@@ -1,13 +1,13 @@
 ## IupGlobalsDialog
 
-Creates a Globals Dialog. It is a predefined dialog to check and edit global attributes, functions (read-only) and names (read-only) in run time.
+Creates a Globals Dialog. It is a predefined dialog to check and edit global attributes, functions (read-only) and names (read-only) at run time.
 It is a standard **IupDialog** constructed with other IUP elements.
 The dialog can be shown with any of the show functions **IupShow**, **IupShowXY** or **IupPopup**.
 
-This is a dialog intended for developers, so they can see and inspect their globals in other ways.
+This dialog is intended for developers, to see and inspect their globals.
 
 It contains 4 Tab sections: one for the registered global attributes, one for custom global attributes set by the application, one for the global functions and one for the global names.
-The function and names are just for inspection, and custom attributes should be handled carefully because they may be not strings.
+The functions and names are just for inspection, and custom attributes should be handled carefully because they may be not strings.
 
 ### Creation
 
@@ -17,16 +17,15 @@ The function and names are just for inspection, and custom attributes should be 
 
 ### Attributes
 
-Check the [IupDialog](iup_dialog.md) attributes.
+Supports all the [IupDialog](iup_dialog.md) attributes.
 
 ### Callbacks
 
-Check the [IupDialog](iup_dialog.md) callbacks.
+Supports all the [IupDialog](iup_dialog.md) callbacks.
 
 ### Examples
 
-    IupShow(IupGlobalsDialog());  
-
+    IupShow(IupGlobalsDialog());
 
 The dialog is displayed next.
 

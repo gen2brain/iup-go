@@ -1,11 +1,11 @@
 ## IupCbox
 
-Creates a void container for position elements in absolute coordinates.
+Creates a void container for positioning elements in absolute coordinates.
 It is a **concrete** layout container.
 
 It does not have a native representation.
 
-The **IupCbox** is equivalent of a **IupVbox** or **IupHbox** where all the children have the [FLOATING](../attrib/iup_floating.md) attribute set to YES, but children must use CX and CY attributes instead of the POSITION attribute.
+The **IupCbox** is equivalent to a **IupVbox** or **IupHbox** where all the children have the [FLOATING](../attrib/iup_floating.md) attribute set to YES, but children must use CX and CY attributes instead of the POSITION attribute.
 
 ### Creation
 

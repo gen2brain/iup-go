@@ -1,22 +1,23 @@
 ## IupMessageAlarm
 
 Shows a modal dialog containing a question message, similar to **IupAlarm**.
-It simply creates and popup a **IupMessageDlg** with DIALOGTYPE=QUESTION.
+It creates and pops up an **IupMessageDlg** with DIALOGTYPE=QUESTION.
 
 ### Creation and Show
 
-    void IupMessageAlarm(Ihandle* parent, const char *title, const char *message, const char* buttons);
+    int IupMessageAlarm(Ihandle* parent, const char *title, const char *message, const char* buttons);
 
 **parent**: parent dialog, can be NULL.\
-**title**: dialog’s title, can be NULL.  It can be a language pre-defined string without the "_@" prefix.**\
-message**: text message contents.  It can be a language pre-defined string without the "_@" prefix.\
+**title**: dialog’s title, can be NULL. It can be a language pre-defined string without the "_@" prefix.\
+**message**: text message contents. It can be a language pre-defined string without the "_@" prefix.\
 **buttons**: list of buttons. Can have values: "OK", "OKCANCEL", "RETRYCANCEL", "YESNO", or "YESNOCANCEL".
 
 **Returns:** the number of the **button** selected by the user (1, 2 or 3).
 
 ### Notes
 
-If parent is NULL, the title defaults to "Attention!" and tries the global attribute "PARENTDIALOG" as the parent dialog.
+If title is NULL, it defaults to "Attention!".
+If parent is NULL, the global attribute "PARENTDIALOG" is used as the parent dialog.
 
 The dialog is shown centered relative to its parent.
 

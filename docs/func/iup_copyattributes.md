@@ -2,14 +2,14 @@
 
 Copies all hash table attributes from one element to another.
 
-Internal attributes or non string attributes are not copied.
+Internal attributes or non-string attributes are not copied.
 
 ### Parameters/Return
 
     void IupCopyAttributes(Ihandle* src_ih, Ihandle* dst_ih);
 
 **src_ih**: identifier of the source element.\
-**dst_ih**: identifier of the destiny element.
+**dst_ih**: identifier of the destination element.
 
 ### See Also
 

@@ -15,7 +15,7 @@ Records all mouse and keyboard inputs in a file for later reproduction.
 
 Any existing file will be replaced.
 
-Must stop recording before exiting the application.
+Recording must be stopped before exiting the application.
 
 It uses the global callbacks enabled by the INPUTCALLBACKS global attribute.
 
@@ -27,7 +27,7 @@ Mouse position is relative to the top left corner of the screen, and it is indep
 
 Implemented on every driver. Playback support is more restricted, see [IupPlayInput](iup_playinput.md).
 
-**[macOS]** Must run as a `.app` bundle. Requires Privacy & Security > **Input Monitoring** permission, prompted on first record.
+In macOS, the application must run as a `.app` bundle and requires the Privacy & Security > **Input Monitoring** permission, prompted on first record.
 
 ### See Also
 

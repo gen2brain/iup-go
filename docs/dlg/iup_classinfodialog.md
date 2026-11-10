@@ -1,17 +1,17 @@
 ## IupClassInfoDialog
 
-Creates an Iup Class Information dialog.
+Creates an IUP Class Information dialog.
 It is a predefined dialog to show all registered classes, each class attributes and callbacks.
 It is a standard **IupDialog** constructed with other IUP elements.
 The dialog can be shown with any of the show functions **IupShow**, **IupShowXY** or **IupPopup**.
 
-This is a dialog intended for developers, so they can see attributes and callbacks information of a class.
+This dialog is intended for developers, to see the attributes and callbacks information of a class.
 
 ### Creation
 
     Ihandle* IupClassInfoDialog(Ihandle* parent);
 
-**parent:** dialog to be used as parent for the classinfo dialog. Can be NULL.
+**parent**: dialog to be used as parent for the classinfo dialog. Can be NULL.
 
 **Returns:** the identifier of the created dialog, or NULL if an error occurs.
 
@@ -25,7 +25,7 @@ Check the [IupDialog](iup_dialog.md) callbacks.
 
 ### Examples
 
-    IupShow(IupClassInfoDialog());  
+    IupShow(IupClassInfoDialog(NULL));
 
 The dialog is displayed next. The Help button opens the class documentation page in the iup-go GitHub repository.
 

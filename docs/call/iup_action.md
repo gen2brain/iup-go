@@ -9,7 +9,7 @@ Action generated when the element is activated. Affects each element differently
 **ih**: identifier of the element that activated the event.
 
 In some elements, this callback may receive more parameters, apart from **ih**.
-Please refer to each element's documentation.
+See each element's documentation.
 
 ### Affects
 

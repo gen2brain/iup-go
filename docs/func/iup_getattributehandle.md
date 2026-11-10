@@ -13,7 +13,7 @@ Instead of using IupGetAttribute and IupGetHandle, this function directly return
 **id, lin, col**: used when the attribute has additional ids.
 
 **Returns:** the element with the associated name.
-The function will not check for inheritance since all the attributes that associate handles are not inheritable.
+The function will not check for inheritance, all the attributes that associate handles are not inheritable.
 
 ### See Also
 

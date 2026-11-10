@@ -2,7 +2,7 @@
 
 Returns a name of an interface element if the element has an associated name using **IupSetHandle**.
 
-Notice that a handle can have many names. **IupGetName** will return the last name set.
+A handle can have many names. **IupGetName** will return the last name set.
 
 ### Parameters/Return
 

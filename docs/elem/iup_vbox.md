@@ -22,7 +22,7 @@ It can be empty, but in C must have at least the NULL terminator.
 **ALIGNMENT** (non-inheritable): Horizontally aligns the elements. Possible values: "ALEFT", "ACENTER", "ARIGHT".
 Default: "ALEFT".
 
-[EXPAND](../attrib/iup_expand.md) (non-inheritable*): The default value is "YES".
+[EXPAND](../attrib/iup_expand.md) (non-inheritable*): Default: "YES".
 See the documentation of the attribute for EXPAND inheritance.
 
 **EXPANDCHILDREN** (non-inheritable): forces all children to expand horizontally and to fully occupy its space available inside the box.
@@ -34,8 +34,8 @@ Default: "0".
 **NGAP, NCGAP** (non-inheritable): Same as **GAP** but are non-inheritable.
 
 **HOMOGENEOUS** (non-inheritable): forces all children to get equal vertical space.
-The space height will be  based on the highest child. Default: "NO".
-Notice that this does not change the children size, only the available space for each one of them to expand.
+The space height will be based on the highest child. Default: "NO".
+This does not change the children size, only the available space for each one of them to expand.
 
 **MARGIN, CMARGIN**: Defines a margin in pixels, **CMARGIN** is in the same units of the **SIZE** attribute.
 Its value has the format "*width*x*height*", where *width* and *height* are integer values corresponding to the horizontal and vertical margins, respectively.
@@ -44,14 +44,14 @@ Default: "0x0" (no margin).
 **NMARGIN, NCMARGIN** (non-inheritable): Same as **MARGIN** but are non-inheritable.
 
 **NORMALIZESIZE** (non-inheritable): normalizes all children natural size to be the biggest natural size among them.
-All natural width will be set to the biggest width, and all natural height will be set to the biggest height according to is value.
+All natural width will be set to the biggest width, and all natural height will be set to the biggest height according to its value.
 Can be NO, HORIZONTAL, VERTICAL or BOTH. Default: "NO".
 Same as using [IupNormalizer](iup_normalizer.md).
 
 **ORIENTATION** (read-only) (non-inheritable): Returns "VERTICAL".
 
 [SIZE](../attrib/iup_size.md) / [RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): Defines the height of the box.
-When consulted behaves as the standard SIZE/RASTERSIZE attributes.
+When consulted, behaves as the standard SIZE/RASTERSIZE attributes.
 The standard format "wxh" can also be used, but width will be ignored.
 
 **WID** (read-only): returns -1 if mapped.
@@ -71,12 +71,12 @@ Default: "NO".
 
 ### Notes
 
-The box can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
+The box can be created with no elements and be dynamically filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
 
 The box will NOT expand its children, it will allow its children to expand according to the space left in the box parent.
 So for the expansion to occur, the children must be expandable with EXPAND!=NO, and there must be room in the box parent.
 
-Also the **v**box will not reduce its children beyond their **vertical** natural size even if SHRINK=YES at the dialog.
+The **v**box will not reduce its children beyond their **vertical** natural size even if SHRINK=YES at the dialog.
 
 ### Examples
 

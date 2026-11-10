@@ -1,6 +1,6 @@
 ## IupGetAttribute
 
-Returns the name of an interface element attribute.
+Returns the value of an interface element attribute.
 See also the [Attributes Guide](../attrib.md) section.
 
 ### Parameters/Return
@@ -13,7 +13,7 @@ See also the [Attributes Guide](../attrib.md) section.
 **name**: name of the attribute.\
 **id, lin, col**: used when the attribute has additional ids.
 
-**Returns:** the attribute value or NULL if the attribute is not set or does not exist.\
+**Returns:** the attribute value or NULL if the attribute is not set or does not exist.
 
 ### Utility Functions
 
@@ -27,7 +27,7 @@ These functions can also be used to get attributes from the element:
     void   IupGetRGB   (Ihandle *ih, const char* name, unsigned char *r, unsigned char *g, unsigned char *b);
     void   IupGetRGBA  (Ihandle *ih, const char* name, unsigned char *r, unsigned char *g, unsigned char *b, unsigned char *a);
 
-    int    IupGetIntId   (Ihandle* ih, const char* name, int id);          
+    int    IupGetIntId   (Ihandle* ih, const char* name, int id);
     float  IupGetFloatId (Ihandle* ih, const char* name, int id);
     double IupGetDoubleId(Ihandle* ih, const char* name, int id);
     void   IupGetRGBId   (Ihandle *ih, const char* name, int id, unsigned char *r, unsigned char *g, unsigned char *b);
@@ -47,9 +47,8 @@ See the [Attributes Guide](../attrib.md) for more details.
 The returned value is not necessarily the same pointer used by the application to define the attribute value.
 The pointers of internal IUP attributes returned by **IupGetAttribute** should **never** be freed or changed, except when it is a custom application pointer that was stored using **IupSetAttribute** and allocated by the application.
 
- The returned pointer can be used safely even if **IupGetGlobal** or **IupGetAttribute** are called several times.
-But not too many times, because it is an internal buffer and after IUP may reuse it after around 50 calls.
-
+The returned pointer can be used safely even if **IupGetGlobal** or **IupGetAttribute** are called several times.
+But not too many times, because it is an internal buffer and IUP may reuse it after around 50 calls.
 
 ### Examples
 
