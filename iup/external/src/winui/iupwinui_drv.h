@@ -462,6 +462,7 @@ struct IupWinUITreeAux
   winrt::event_token lostFocusToken{};
   winrt::event_token layoutUpdatedToken{};
   winrt::event_token containerContentChangingToken{};
+  winrt::Windows::Foundation::IInspectable toggleTappedHandler{nullptr};
   bool namesDirty;
 
   IupWinUITreeAux() : expandingToken{}, collapsedToken{},

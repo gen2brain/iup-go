@@ -92,6 +92,88 @@ static IVector<TreeViewNode> winuiTreeGetSiblings(Ihandle* ih, TreeViewNode cons
 
 static void winuiTreeSetFocus(Ihandle* ih, int id);
 
+static void winuiTreeSetNodeProperties(TreeViewNode const& node, std::initializer_list<std::pair<hstring, IInspectable>> values)
+{
+  auto oldPs = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
+  if (!oldPs)
+    return;
+
+  Windows::Foundation::Collections::PropertySet newPs;
+  for (auto const& pair : oldPs)
+    newPs.Insert(pair.Key(), pair.Value());
+  for (auto const& v : values)
+    newPs.Insert(v.first, v.second);
+  node.Content(newPs);
+}
+
+static int winuiTreeGetNodeToggleState(TreeViewNode const& node, bool* hidden)
+{
+  auto ps = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
+  if (hidden)
+    *hidden = ps && ps.HasKey(L"ToggleHidden") && unbox_value<bool>(ps.Lookup(L"ToggleHidden"));
+  if (!ps || !ps.HasKey(L"ToggleState"))
+    return 0;
+  return unbox_value<int>(ps.Lookup(L"ToggleState"));
+}
+
+static void winuiTreeUpdateToggle(Ihandle* ih, TreeViewNode const& node, int state, bool hidden)
+{
+  bool mixed = !hidden && state == -1;
+
+  winuiTreeSetNodeProperties(node, {
+    { L"ToggleState", box_value(state) },
+    { L"ToggleHidden", box_value(hidden) },
+    { L"ToggleChecked", box_value(state == 1) },
+    { L"ToggleVisible", box_value((hidden || mixed) ? Visibility::Collapsed : Visibility::Visible) },
+    { L"Toggle3Visible", box_value(mixed ? Visibility::Visible : Visibility::Collapsed) },
+    { L"Toggle3Click", box_value(mixed) } });
+}
+
+static void winuiTreeToggleTapped(Ihandle* ih, IInspectable const& original_source)
+{
+  DependencyObject current = original_source.try_as<DependencyObject>();
+  CheckBox check{ nullptr };
+  while (current)
+  {
+    if (!check)
+      check = current.try_as<CheckBox>();
+
+    TreeViewItem tvi = current.try_as<TreeViewItem>();
+    if (tvi)
+    {
+      if (!check || !check.IsHitTestVisible())
+        return;
+
+      TreeView tv = winuiTreeGetTreeView(ih);
+      TreeViewNode node = tv ? tv.NodeFromContainer(tvi) : nullptr;
+      if (!node)
+        return;
+
+      bool hidden;
+      int state = winuiTreeGetNodeToggleState(node, &hidden);
+      if (hidden)
+        return;
+
+      if (ih->data->show_toggle == 2)
+        state = (state == 1) ? -1 : (state == -1 ? 0 : 1);
+      else
+        state = (state == 1) ? 0 : 1;
+      winuiTreeUpdateToggle(ih, node, state, hidden);
+
+      int id = winuiTreeFindNodeId(ih, node);
+      IFnii cb = (IFnii)IupGetCallback(ih, "TOGGLEVALUE_CB");
+      if (cb && cb(ih, id, state) == IUP_CLOSE)
+        IupExitLoop();
+
+      if (iupAttribGetBoolean(ih, "MARKWHENTOGGLE"))
+        IupSetAttributeId(ih, "MARKED", id, state > 0 ? "Yes" : "No");
+      return;
+    }
+
+    current = Media::VisualTreeHelper::GetParent(current);
+  }
+}
+
 static void winuiTreeSetNodeProperty(TreeViewNode const& node, hstring const& key, IInspectable const& value)
 {
   auto oldPs = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
@@ -131,8 +213,12 @@ static IInspectable winuiTreeCreateNodeContent(Ihandle* ih, const char* title, v
 
   if (ih->data->show_toggle)
   {
+    ps.Insert(L"ToggleState", box_value(0));
+    ps.Insert(L"ToggleHidden", box_value(false));
     ps.Insert(L"ToggleChecked", box_value(false));
     ps.Insert(L"ToggleVisible", box_value(Visibility::Visible));
+    ps.Insert(L"Toggle3Visible", box_value(Visibility::Collapsed));
+    ps.Insert(L"Toggle3Click", box_value(false));
   }
 
   return ps;
@@ -182,9 +268,11 @@ static void winuiTreeApplyItemTemplate(Ihandle* ih, TreeView const& treeView)
     xaml += L"<CheckBox IsChecked='{Binding Content[ToggleChecked]}'"
             L" Visibility='{Binding Content[ToggleVisible], FallbackValue=Visible}'"
             L" MinWidth='0' Padding='0' VerticalAlignment='Center'";
-    if (ih->data->show_toggle == 2)
-      xaml += L" IsThreeState='True'";
     xaml += L"/>";
+    xaml += L"<CheckBox IsChecked='{x:Null}' IsThreeState='True' IsTabStop='False'"
+            L" IsHitTestVisible='{Binding Content[Toggle3Click], FallbackValue=False}'"
+            L" Visibility='{Binding Content[Toggle3Visible], FallbackValue=Collapsed}'"
+            L" MinWidth='0' Padding='0' VerticalAlignment='Center'/>";
   }
 
   xaml += L"<Image Source='{Binding Content[ImageSource]}' Width='{Binding Content[ImageWidth]}' Height='{Binding Content[ImageHeight]}' Stretch='Fill' VerticalAlignment='Center'/>"
@@ -1872,17 +1960,14 @@ static int winuiTreeSetToggleValueAttrib(Ihandle* ih, int id, const char* value)
   if (!node)
     return 0;
 
-  if (ih->data->show_toggle == 2 && iupStrEqualNoCase(value, "NOTDEF"))
-  {
-    auto ref = winrt::Windows::Foundation::IReference<bool>(nullptr);
-    winuiTreeSetNodeProperty(node, L"ToggleChecked", ref);
-  }
-  else
-  {
-    bool checked = iupStrEqualNoCase(value, "ON") ? true : false;
-    winuiTreeSetNodeProperty(node, L"ToggleChecked", box_value(checked));
-  }
+  bool hidden;
+  winuiTreeGetNodeToggleState(node, &hidden);
 
+  int state = iupStrEqualNoCase(value, "ON") ? 1 : 0;
+  if (ih->data->show_toggle == 2 && iupStrEqualNoCase(value, "NOTDEF"))
+    state = -1;
+
+  winuiTreeUpdateToggle(ih, node, state, hidden);
   return 0;
 }
 
@@ -1895,19 +1980,10 @@ static char* winuiTreeGetToggleValueAttrib(Ihandle* ih, int id)
   if (!node)
     return nullptr;
 
-  auto ps = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
-  if (!ps || !ps.HasKey(L"ToggleChecked"))
-    return nullptr;
-
-  auto val = ps.Lookup(L"ToggleChecked");
-  if (!val)
-    return iupStrReturnChecked(-1);
-
-  auto ref = val.try_as<Windows::Foundation::IReference<bool>>();
-  if (!ref)
-    return iupStrReturnChecked(-1);
-
-  return iupStrReturnChecked(ref.Value() ? 1 : 0);
+  int state = winuiTreeGetNodeToggleState(node, nullptr);
+  if (state == -1 && ih->data->show_toggle != 2)
+    state = 0;
+  return iupStrReturnChecked(state);
 }
 
 static int winuiTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* value)
@@ -1919,8 +1995,8 @@ static int winuiTreeSetToggleVisibleAttrib(Ihandle* ih, int id, const char* valu
   if (!node)
     return 0;
 
-  Visibility vis = iupStrBoolean(value) ? Visibility::Visible : Visibility::Collapsed;
-  winuiTreeSetNodeProperty(node, L"ToggleVisible", box_value(vis));
+  int state = winuiTreeGetNodeToggleState(node, nullptr);
+  winuiTreeUpdateToggle(ih, node, state, iupStrBoolean(value) ? false : true);
 
   return 0;
 }
@@ -1934,16 +2010,9 @@ static char* winuiTreeGetToggleVisibleAttrib(Ihandle* ih, int id)
   if (!node)
     return nullptr;
 
-  auto ps = node.Content().try_as<Windows::Foundation::Collections::PropertySet>();
-  if (!ps || !ps.HasKey(L"ToggleVisible"))
-    return const_cast<char*>("YES");
-
-  auto val = ps.Lookup(L"ToggleVisible");
-  auto ref = val.try_as<Windows::Foundation::IReference<Visibility>>();
-  if (ref && ref.Value() == Visibility::Collapsed)
-    return const_cast<char*>("NO");
-
-  return const_cast<char*>("YES");
+  bool hidden;
+  winuiTreeGetNodeToggleState(node, &hidden);
+  return iupStrReturnBoolean(!hidden);
 }
 
 /****************************************************************************
@@ -2427,6 +2496,15 @@ static int winuiTreeMapMethod(Ihandle* ih)
     }
   });
 
+  if (ih->data->show_toggle)
+  {
+    TappedEventHandler toggle_handler([ih](IInspectable const&, TappedRoutedEventArgs const& args) {
+      winuiTreeToggleTapped(ih, args.OriginalSource());
+    });
+    aux->toggleTappedHandler = box_value(toggle_handler);
+    treeView.AddHandler(UIElement::TappedEvent(), aux->toggleTappedHandler, true);
+  }
+
   Canvas parentCanvas = iupwinuiGetParentCanvas(ih);
   if (parentCanvas)
     parentCanvas.Children().Append(treeView);
@@ -2521,6 +2599,8 @@ static void winuiTreeUnMapMethod(Ihandle* ih)
         treeView.KeyDown(aux->keyDownToken);
       if (aux->doubleTappedToken)
         treeView.DoubleTapped(aux->doubleTappedToken);
+      if (aux->toggleTappedHandler)
+        treeView.RemoveHandler(UIElement::TappedEvent(), aux->toggleTappedHandler);
       if (aux->gotFocusToken)
         treeView.GotFocus(aux->gotFocusToken);
       if (aux->lostFocusToken)
