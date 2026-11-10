@@ -1,4 +1,4 @@
-//go:build media
+//go:build media && !js
 
 package iup
 

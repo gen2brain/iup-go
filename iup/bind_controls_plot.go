@@ -1,4 +1,4 @@
-//go:build plot
+//go:build plot && !js
 
 package iup
 

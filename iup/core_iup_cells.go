@@ -1,4 +1,4 @@
-//go:build ctrl
+//go:build ctrl && !js
 
 package iup
 
