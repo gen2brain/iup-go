@@ -46,6 +46,7 @@ public final class IupAndroidCanvas extends IupAndroidFixed
     private float panDx, panDy;
     private boolean rotateActive;
     private float rotateLast, rotateAngle;
+    private boolean gesturesEnabled = true;
     private static final int TOUCH_IDLE = 0, TOUCH_PENDING = 1, TOUCH_SCROLL = 2, TOUCH_DIRECT = 3, TOUCH_CONSUMED = 4;
     private int touchState = TOUCH_IDLE;
     private final IupCanvasHelper.DoubleTap doubleTap = new IupCanvasHelper.DoubleTap();
@@ -191,6 +192,11 @@ public final class IupAndroidCanvas extends IupAndroidFixed
         initGestureDetectors(ctx);
     }
 
+    void setGesturesEnabled(boolean enabled)
+    {
+        gesturesEnabled = enabled;
+    }
+
     private void initGestureDetectors(Context ctx)
     {
         ViewConfiguration vc = ViewConfiguration.get(ctx);
@@ -207,7 +213,8 @@ public final class IupAndroidCanvas extends IupAndroidFixed
                     if (touchState == TOUCH_PENDING) touchState = TOUCH_CONSUMED;
                     int x = (int) e.getX();
                     int y = (int) e.getY();
-                    IupCanvasHelper.dispatchGesture(ihandlePtr, GESTURE_LONGPRESS, GESTURE_END, x, y, 0, 0);
+                    if (gesturesEnabled)
+                        IupCanvasHelper.dispatchGesture(ihandlePtr, GESTURE_LONGPRESS, GESTURE_END, x, y, 0, 0);
                     /* onTouchEvent never reaches View, so the DRAGSOURCE listener needs this */
                     if (performLongClick()) return;
                     IupCanvasHelper.dispatchButton(ihandlePtr, 3, 1, x, y, e.getMetaState(), false);
@@ -217,7 +224,7 @@ public final class IupAndroidCanvas extends IupAndroidFixed
                 /* two-finger drag is a pan; one finger stays BUTTON_CB+MOTION_CB */
                 @Override public boolean onScroll(MotionEvent e1, @NonNull MotionEvent e2, float dX, float dY)
                 {
-                    if (ihandlePtr == 0 || e2.getPointerCount() < 2) return false;
+                    if (ihandlePtr == 0 || !gesturesEnabled || e2.getPointerCount() < 2) return false;
                     int x = (int) e2.getX(), y = (int) e2.getY();
                     if (!panActive)
                     {
@@ -231,7 +238,7 @@ public final class IupAndroidCanvas extends IupAndroidFixed
 
                 @Override public boolean onFling(MotionEvent e1, @NonNull MotionEvent e2, float vX, float vY)
                 {
-                    if (ihandlePtr == 0) return false;
+                    if (ihandlePtr == 0 || !gesturesEnabled) return false;
                     int dir;
                     if (Math.abs(vX) > Math.abs(vY)) dir = vX > 0 ? SWIPE_RIGHT : SWIPE_LEFT;
                     else                             dir = vY > 0 ? SWIPE_DOWN : SWIPE_UP;
@@ -241,14 +248,14 @@ public final class IupAndroidCanvas extends IupAndroidFixed
 
                 @Override public boolean onSingleTapConfirmed(@NonNull MotionEvent e)
                 {
-                    if (ihandlePtr == 0) return false;
+                    if (ihandlePtr == 0 || !gesturesEnabled) return false;
                     IupCanvasHelper.dispatchGesture(ihandlePtr, GESTURE_TAP, GESTURE_END, (int) e.getX(), (int) e.getY(), 1, 0);
                     return true;
                 }
 
                 @Override public boolean onDoubleTap(@NonNull MotionEvent e)
                 {
-                    if (ihandlePtr == 0) return false;
+                    if (ihandlePtr == 0 || !gesturesEnabled) return false;
                     IupCanvasHelper.dispatchGesture(ihandlePtr, GESTURE_TAP, GESTURE_END, (int) e.getX(), (int) e.getY(), 2, 0);
                     return true;
                 }
@@ -463,8 +470,11 @@ public final class IupAndroidCanvas extends IupAndroidFixed
         if (ihandlePtr == 0 || !isEnabled()) return false;
 
         gestureDetector.onTouchEvent(ev);
-        scaleDetector.onTouchEvent(ev);
-        handleRotation(ev);
+        if (gesturesEnabled)
+        {
+            scaleDetector.onTouchEvent(ev);
+            handleRotation(ev);
+        }
         trackVelocity(ev);
 
         if (ev.getActionMasked() == MotionEvent.ACTION_DOWN && onCheckIsTextEditor())
