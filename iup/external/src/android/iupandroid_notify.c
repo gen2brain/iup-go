@@ -69,7 +69,7 @@ IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
   {
     notify_id = (int)(*jni_env)->CallStaticIntMethod(jni_env, java_class, next_id_m);
     iupAttribSetInt(ih, "_IUPANDROID_NOTIFY_ID", notify_id);
-    IupSetInt(ih, "ID", notify_id);
+    iupAttribSetInt(ih, "ID", notify_id);
   }
 
   const char* icon = IupGetAttribute(ih, "ICON");

@@ -50,11 +50,11 @@ All content attributes (TITLE, BODY, ICON, etc.) should be set before showing.
 
 **CLOSE** (write-only) (non-inheritable): Set to "YES" to close the notification.
 
-**ID** (read-only) (non-inheritable): Returns the notification identifier assigned by the system after a successful SHOW.
+**ID** [Unix, Android, Haiku and WebAssembly Only] (read-only) (non-inheritable): Returns the notification identifier assigned by the system after a successful SHOW.
 
 #### Platform-Specific
 
-**URGENCY** [Unix and Android Only] (non-inheritable): Notification urgency level.
+**URGENCY** [Unix, Android and Haiku Only] (non-inheritable): Notification urgency level.
 Can be "LOW", "NORMAL" or "HIGH". Default: "NORMAL".
 
 **APPICON** [Unix, Android and WebAssembly Only] (non-inheritable): Application icon name used as a fallback when ICON is not set.
@@ -67,13 +67,14 @@ Can be "GRANTED", "DENIED" or "PROMPT" (not asked yet).
 **REQUESTPERMISSION** [macOS and iOS Only] (write-only) (non-inheritable): Set to "YES" to request notification permission from the user.
 Apps should request it once at startup; until granted, SHOW fires ERROR_CB.
 
-**THREADID** [macOS and iOS Only] (non-inheritable): Notification thread identifier used to group related notifications together.
+**THREADID** [macOS, iOS and Haiku Only] (non-inheritable): Notification thread identifier used to group related notifications together.
 
 **STYLE** [Android and iOS Only] (non-inheritable): Selects the delivery channel. Values: "NOTIFICATION" (default) or "TOAST" (transient in-app overlay).
 TOAST does not require notification permission. TITLE, BODY, ICON, and TIMEOUT are honored; ACTION1-4, SUBTITLE, and other notification-only attributes are ignored.
 
-**PROGRESS** [Android Only] (non-inheritable): Adds a progress bar.
+**PROGRESS** [Android and Haiku Only] (non-inheritable): Adds a progress bar.
 An integer from 0 to 100 shows a determinate bar; "INDETERMINATE" shows a continuous animation. Re-issuing SHOW with the same Ihandle updates the bar in place.
+In Haiku, "INDETERMINATE" is not supported.
 
 **CHANNELID** [Android Only] (non-inheritable): Notification channel id, overriding the default channel chosen from URGENCY.
 If the channel does not yet exist it is created with IMPORTANCE; existing channels are reused unchanged.
@@ -118,7 +119,7 @@ The underlying native service per driver:
 
 - **Win32**: Shell Notification balloon (no action buttons).
 - **WinUI**: AppNotificationManager.
-- **Linux/Unix** (GTK, GTK 4, Qt, QML, FLTK, EFL, Motif): `org.freedesktop.Notifications` over D-Bus; supported features depend on the running notification daemon.
+- **Unix** (GTK, GTK 4, Qt, QML, FLTK, EFL, Motif): `org.freedesktop.Notifications` over D-Bus; supported features depend on the running notification daemon.
 - **Cocoa**, **Cocoa Touch**: UNUserNotificationCenter (requires permission and a valid bundle identifier).
 - **Android**: NotificationManager (requires `android.permission.POST_NOTIFICATIONS` on API 33+ for STYLE=NOTIFICATION).
 - **Haiku**: BNotification.
