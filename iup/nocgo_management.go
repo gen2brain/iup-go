@@ -161,6 +161,10 @@ func CopyClassAttributes(srcIh, dstIh Ihandle) {
 	iupCopyClassAttributes(uintptr(srcIh), uintptr(dstIh))
 }
 
+func CopyAttributes(srcIh, dstIh Ihandle) {
+	iupCopyAttributes(uintptr(srcIh), uintptr(dstIh))
+}
+
 func SaveClassAttributes(ih Ihandle) { iupSaveClassAttributes(uintptr(ih)) }
 
 func SetClassDefaultAttribute(className, name, value string) {

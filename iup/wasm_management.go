@@ -14,6 +14,10 @@ func CopyClassAttributes(srcIh, dstIh Ihandle) {
 	ccall("IupCopyClassAttributes", "", []interface{}{"number", "number"}, []interface{}{int(srcIh), int(dstIh)})
 }
 
+func CopyAttributes(srcIh, dstIh Ihandle) {
+	ccall("IupCopyAttributes", "", []interface{}{"number", "number"}, []interface{}{int(srcIh), int(dstIh)})
+}
+
 func Create(className string) Ihandle {
 	return ccallHandle("IupCreate", []interface{}{"string"}, []interface{}{className})
 }

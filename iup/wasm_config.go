@@ -77,6 +77,14 @@ func ConfigRecentUpdate(ih Ihandle, filename string) {
 	ccall("IupConfigRecentUpdate", "", []interface{}{"number", "string"}, []interface{}{int(ih), filename})
 }
 
+func ConfigCopy(ih1, ih2 Ihandle, excludePrefix string) {
+	if excludePrefix == "" {
+		ccall("IupConfigCopy", "", []interface{}{"number", "number", "number"}, []interface{}{int(ih1), int(ih2), 0})
+		return
+	}
+	ccall("IupConfigCopy", "", []interface{}{"number", "number", "string"}, []interface{}{int(ih1), int(ih2), excludePrefix})
+}
+
 func ConfigSave(ih Ihandle) int {
 	return ccall("IupConfigSave", "number", []interface{}{"number"}, []interface{}{int(ih)}).Int()
 }

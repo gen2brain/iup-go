@@ -59,6 +59,13 @@ func bool2int(v bool) int {
 	return 0
 }
 
+// IsOpened returns true when Open was already called.
+//
+// https://gen2brain.github.io/iup-go/func/iup_isopened.html
+func IsOpened() bool {
+	return C.IupIsOpened() != 0
+}
+
 func cStrOrNull(s string) *C.char {
 	if len(s) == 0 {
 		return nil

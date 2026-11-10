@@ -13,7 +13,7 @@ API reference for IUP (Portable User Interface).
 
 ## System
 
-[IupOpen](func/iup_open.md), [IupClose](func/iup_close.md), [IupVersion](func/iup_version.md)
+[IupOpen](func/iup_open.md), [IupClose](func/iup_close.md), [IupIsOpened](func/iup_isopened.md), [IupVersion](func/iup_version.md)
 
 ---
 

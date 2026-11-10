@@ -13,7 +13,7 @@ import (
 */
 import "C"
 
-// ControlsOpen initializes the additional controls library (Cells, Matrix, MatrixList, MatrixEx).
+// ControlsOpen initializes the additional controls library: Cells, Matrix, MatrixList, MatrixEx, DropButton, Gauge and the Flat controls.
 // Must be called after IupOpen.
 //
 // Returns NOERROR on success, OPENED if already opened, ERROR on failure.
