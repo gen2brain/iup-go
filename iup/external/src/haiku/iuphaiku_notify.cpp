@@ -30,26 +30,27 @@ static int haikuNotifyStubMap(Ihandle* ih)
   return IUP_NOERROR;
 }
 
-static notification_type haikuNotifyType(const char* style)
-{
-  if (!style) return B_INFORMATION_NOTIFICATION;
-  if (iupStrEqualNoCase(style, "ERROR"))    return B_ERROR_NOTIFICATION;
-  if (iupStrEqualNoCase(style, "WARNING"))  return B_IMPORTANT_NOTIFICATION;
-  if (iupStrEqualNoCase(style, "INFO"))     return B_INFORMATION_NOTIFICATION;
-  if (iupStrEqualNoCase(style, "PROGRESS")) return B_PROGRESS_NOTIFICATION;
-  return B_INFORMATION_NOTIFICATION;
-}
+static int haiku_notify_last_id = 0;
 
 extern "C" IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
 {
-  const char* style = iupAttribGet(ih, "STYLE");
-  BNotification n(haikuNotifyType(style));
+  const char* progv = iupAttribGet(ih, "PROGRESS");
+  int progress = -1;
+  if (progv && !iupStrToInt(progv, &progress))
+    progress = -1;
+
+  notification_type type = B_INFORMATION_NOTIFICATION;
+  if (progress >= 0)
+    type = B_PROGRESS_NOTIFICATION;
+  else if (iupStrEqualNoCase(iupAttribGet(ih, "URGENCY"), "HIGH"))
+    type = B_IMPORTANT_NOTIFICATION;
+
+  BNotification n(type);
 
   const char* title = iupAttribGet(ih, "TITLE");
   if (title) n.SetTitle(title);
 
   const char* body = iupAttribGet(ih, "BODY");
-  if (!body) body = iupAttribGet(ih, "MESSAGE");
   if (body) n.SetContent(body);
 
   const char* image = iupAttribGet(ih, "IMAGE");
@@ -61,25 +62,29 @@ extern "C" IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
   }
   if (bm) n.SetIcon(bm);
 
-  /* GROUP / ID let Haiku coalesce or replace prior notifications. */
-  const char* group = iupAttribGet(ih, "GROUP");
-  if (group) n.SetGroup(group);
+  const char* thread_id = iupAttribGet(ih, "THREADID");
+  if (thread_id) n.SetGroup(thread_id);
 
-  const char* msg_id = iupAttribGet(ih, "MESSAGEID");
-  if (!msg_id) msg_id = iupAttribGet(ih, "ID");
-  if (msg_id) n.SetMessageID(msg_id);
-
-  /* PROGRESS only meaningful with STYLE=PROGRESS - 0.0..1.0. */
-  if (style && iupStrEqualNoCase(style, "PROGRESS"))
+  int id = iupAttribGetInt(ih, "_IUPHAIKU_NOTIFY_ID");
+  if (id == 0)
   {
-    double prog = 0.0;
-    char* progv = iupAttribGet(ih, "PROGRESS");
-    if (progv && iupStrToDouble(progv, &prog)) n.SetProgress(static_cast<float>(prog));
+    id = ++haiku_notify_last_id;
+    iupAttribSetInt(ih, "_IUPHAIKU_NOTIFY_ID", id);
   }
+  BString message_id;
+  message_id.SetToFormat("iup-notify-%d", id);
+  n.SetMessageID(message_id.String());
+
+  if (progress >= 0)
+    n.SetProgress(static_cast<float>(progress > 100 ? 100 : progress) / 100.0f);
 
   int timeout_ms = iupAttribGetInt(ih, "TIMEOUT");
   bigtime_t timeout_us = (timeout_ms > 0) ? static_cast<bigtime_t>(timeout_ms) * 1000 : -1;
-  return (n.Send(timeout_us) == B_OK) ? 1 : 0;
+  if (n.Send(timeout_us) != B_OK)
+    return 0;
+
+  iupAttribSetInt(ih, "ID", id);
+  return 1;
 }
 
 extern "C" IUP_SDK_API int iupdrvNotifyClose(Ihandle* /*ih*/)

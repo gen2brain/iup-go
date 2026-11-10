@@ -573,7 +573,7 @@ static int unixNotifySend(IupUnixNotify* notify)
     if (dbus_message_get_args(reply, NULL, DBUS_TYPE_UINT32, &id, DBUS_TYPE_INVALID))
     {
       notify->notification_id = id;
-      IupSetInt(ih, "ID", (int)id);
+      iupAttribSetInt(ih, "ID", (int)id);
     }
     dbus_message_unref(reply);
   }
