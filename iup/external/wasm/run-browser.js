@@ -12,7 +12,7 @@ const { chromium } = require('playwright-core');
 
 function browserLaunchOptions() {
   const opts = { headless: false, args: ['--headless=new'] };
-  // IUP_MEDIA: a fake camera stream, no permission prompt, and audio playback without a user gesture
+  // IUP_MEDIA: fake camera, microphone and audio outputs, no permission prompt, and audio playback without a user gesture
   if (process.env.IUP_MEDIA) opts.args.push('--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required');
   if (process.env.IUP_BROWSER) { opts.executablePath = process.env.IUP_BROWSER; return opts; }
   for (const bin of ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser']) {
@@ -71,7 +71,7 @@ function serve(dir) {
     hasTouch: wantTouch,
   });
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:' + port }).catch(() => {});
-  if (process.env.IUP_MEDIA) await page.context().grantPermissions(['camera'], { origin: 'http://localhost:' + port }).catch(() => {});
+  if (process.env.IUP_MEDIA) await page.context().grantPermissions(['camera', 'microphone'], { origin: 'http://localhost:' + port }).catch(() => {});
   if (process.env.IUP_GEO) {
     const g = process.env.IUP_GEO.split(',');
     await page.context().grantPermissions(['geolocation'], { origin: 'http://localhost:' + port }).catch(() => {});

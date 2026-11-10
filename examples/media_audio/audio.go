@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/gen2brain/iup-go/iup"
 )
@@ -99,6 +100,18 @@ func main() {
 		return iup.DEFAULT
 	}))
 
+	output := iup.List().SetAttributes("DROPDOWN=YES, EXPAND=HORIZONTAL, VISIBLECOLUMNS=10")
+	for index := 0; index < audio.GetInt("AUDIODEVICECOUNT"); index++ {
+		output.SetAttribute(strconv.Itoa(index+1), audio.GetAttribute("AUDIODEVICENAME"+strconv.Itoa(index)))
+	}
+	output.SetAttribute("VALUE", 1)
+	output.SetCallback("ACTION", iup.ListActionFunc(func(_ iup.Ihandle, _ string, index, selected int) int {
+		if selected != 0 {
+			audio.SetAttribute("AUDIODEVICE", index-1)
+		}
+		return iup.DEFAULT
+	}))
+
 	timer := iup.Timer().SetAttributes("TIME=250, RUN=YES")
 	timer.SetCallback("ACTION_CB", iup.TimerActionFunc(func(ih iup.Ihandle) int {
 		duration := audio.GetDouble("DURATION")
@@ -130,6 +143,7 @@ func main() {
 				iup.Label("Volume"), volume,
 				iup.Label("Pan"), pan,
 				iup.Label("Pitch"), pitch,
+				iup.Label("Output"), output,
 			).SetAttributes(`NUMDIV=2, SIZELIN=-1, SIZECOL=-1, GAPLIN=5, GAPCOL=10, ALIGNMENTLIN=ACENTER`),
 			status,
 		).SetAttributes(`GAP=5, MARGIN=10x10`),

@@ -23,6 +23,8 @@ extern "C" {
 
 ma_device* iupdrvAudioDeviceInit(ma_engine* engine);
 void iupdrvAudioDeviceRelease(void);
+ma_context* iupdrvAudioContext(void);
+int iupdrvAudioDeviceList(ma_device_info** devices);
 
 #ifdef __cplusplus
 }
