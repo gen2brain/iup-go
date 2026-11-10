@@ -87,7 +87,7 @@ static void cocoaCanvasComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int
 
 @end
 
-static void cocoaCanvasDrawBuffer(NSBitmapImageRep* buffer, NSRect bounds)
+IUP_DRV_API void iupcocoaCanvasDrawBuffer(NSBitmapImageRep* buffer, NSRect bounds)
 {
   NSGraphicsContext* context = [NSGraphicsContext currentContext];
   [context saveGraphicsState];
@@ -286,7 +286,7 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
       if ((NSInteger)[buffer size].width == (NSInteger)bounds.size.width &&
           (NSInteger)[buffer size].height == (NSInteger)bounds.size.height)
       {
-        cocoaCanvasDrawBuffer(buffer, bounds);
+        iupcocoaCanvasDrawBuffer(buffer, bounds);
         iupAttribSet(_ih, "_IUPCOCOA_BUFFER_PENDING", NULL);
         return;
       }
@@ -327,7 +327,7 @@ static void cocoaCanvasFireGesture(Ihandle* ih, int gesture, int state, int x, i
     {
       NSBitmapImageRep* buffer = (NSBitmapImageRep*)iupAttribGet(_ih, "_IUPCOCOA_CANVAS_BUFFER");
       if (buffer)
-        cocoaCanvasDrawBuffer(buffer, bounds);
+        iupcocoaCanvasDrawBuffer(buffer, bounds);
     }
   }
   else

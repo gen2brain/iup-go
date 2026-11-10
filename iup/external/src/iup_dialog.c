@@ -411,7 +411,7 @@ static void iDialogSetChildrenPositionMethod(Ihandle* ih, int x, int y)
 
     if (offset) iupStrToIntInt(offset, &x, &y, 'x');
 
-    if (iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW"))  /* Windows Only */
+    if (iupAttribGetBoolean(ih, "CUSTOMFRAMEDRAW"))
     {
       int border, caption, menu;
       iupdrvDialogGetDecoration(ih, &border, &caption, &menu);
