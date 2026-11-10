@@ -1,4 +1,4 @@
-//go:build web && !(motif && darwin) && !(efl && (windows || darwin))
+//go:build web && !js && !(motif && darwin) && !(efl && (windows || darwin))
 
 package iup
 

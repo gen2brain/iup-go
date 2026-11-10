@@ -1,4 +1,4 @@
-//go:build plot
+//go:build plot && !js
 
 #include "external/srcplot/iupPlot.cpp"
 #include "external/srcplot/iupPlotAxis.cpp"

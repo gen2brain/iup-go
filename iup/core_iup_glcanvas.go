@@ -1,4 +1,4 @@
-//go:build gl
+//go:build gl && !js
 
 package iup
 
