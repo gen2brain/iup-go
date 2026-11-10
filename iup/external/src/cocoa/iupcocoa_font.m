@@ -65,9 +65,7 @@ static IupCocoaFont* cocoaCreateIupCocoaFontFromNSFont(NSFont* ns_font)
   [the_font setCharHeight:char_height];
 
   /* average char width is the advance of 'x', closer than the font bounding box */
-  NSGlyph x_glyph = [ns_font glyphWithName:@"x"];
-  NSSize x_size = [ns_font advancementForGlyph:x_glyph];
-  int char_width = iupROUND(x_size.width);
+  int char_width = iupROUND([@"x" sizeWithAttributes:attribute_dict].width);
   [the_font setCharWidth:char_width];
 
   int max_width = iupROUND([ns_font maximumAdvancement].width);
