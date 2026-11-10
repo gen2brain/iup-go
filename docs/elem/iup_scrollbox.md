@@ -32,7 +32,7 @@ Default: 0x0.
 
 [EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "YES".
 
-**LAYOUTDRAG** (non-inheritable) [Windows and Motif Only]: When the scrollbar is moved automatically update the children layout.
+**LAYOUTDRAG** [Windows and Motif Only] (non-inheritable): When the scrollbar is moved automatically update the children layout.
 Default: YES. If set to NO then the layout will be updated only when the mouse drag is released.
 
 [SCROLLBAR](../attrib/iup_scrollbar.md) (creation-only): the default value is "YES".
@@ -46,7 +46,7 @@ The child must be contained in the Scrollbox hierarchy.
 
 **SCROLLTOCHILD_HANDLE** (write-only): same as SCROLLTOCHILD but directly using the child handle.
 
-**WHEELDROPFOCUS:** set to YES.
+**WHEELDROPFOCUS**: set to YES.
 
 > 
 >
@@ -67,12 +67,12 @@ The natural size of the child (and its children) defines the virtual space size.
 So the **IupScrollBox** does not depend on its child's size or expansion, and its natural size is always 0x0, except for the first time when it expands to the child natural size.
 
 The user can move the box contents by dragging the background.
-In Android and iOS a drag that starts on a child also moves them.
+In Android and iOS, a drag that starts on a child also moves them.
 Also, the mouse wheel scrolls the contents vertically.
 
-The box can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
+The box can be created with no elements and be dynamically filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md).
 
-Notice that it is possible to use the **IupScrollBox** to overcome the internal scrollbars of another control like **IupMatrix** by making all cells visible, but this will force all cells to be drawn all the time even when not visible at the scroll box, which is much slower than the internal **IupMatrix** optimization.
+An **IupMatrix** with all cells visible inside an **IupScrollBox** draws all cells all the time, which is much slower than its internal scrollbars.
 
 ### Examples
 

@@ -38,7 +38,7 @@ Updates are stopped when the element is destroyed.
 **TIMESTAMP** (read-only): Time of the last fix in milliseconds since 1970-01-01 UTC.
 
 **AVAILABLE** (read-only): Returns "YES" if the platform has a location service, "NO" otherwise.
-On Linux and BSD it needs the GeoClue2 service on the system bus.
+In Linux and BSD, it needs the GeoClue2 service on the system bus.
 
 **PERMISSION** (read-only): Returns "GRANTED", "DENIED", "PROMPT" (not asked yet) or "UNAVAILABLE".
 
@@ -75,14 +75,14 @@ All three callbacks are called from the main loop on every driver.
 
 ### Notes
 
-The application must declare the platform permission, IUP cannot do it:
+The application must declare the platform permission:
 
 - Android: `ACCESS_COARSE_LOCATION` and, for ACCURACY=FINE, `ACCESS_FINE_LOCATION` in the application manifest. The runtime prompt is shown by IUP.
 - iOS and macOS: `NSLocationWhenInUseUsageDescription` in Info.plist. Without it the request fails silently and PERMISSION stays "PROMPT".
 - WebAssembly: the page must be served from a secure context (HTTPS or localhost).
 - Linux and BSD: GeoClue2 identifies the application by its desktop file, the [APPID](../attrib/iup_globals.md#appid) global is used as the desktop id and an authorization agent must be running.
 
-Win32 uses the Windows Location API, deprecated since Windows 8 but present through Windows 11.
+In Win32, it uses the Windows Location API.
 
 ### Examples
 

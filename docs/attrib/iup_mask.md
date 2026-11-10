@@ -14,7 +14,7 @@ The value is checked at every change while the user types, and when VALUEMASKED 
 The whole value must match the mask; a value that is the beginning of a matching value is also accepted, any other value is refused.
 MASKFAIL_CB is called when a change is refused.
 
-If you set the VALUE attribute, any text can be used.
+Setting VALUE accepts any text.
 To set a value that is validated by the current MASK, use VALUEMASKED.
 
 ### Pre-Defined Masks
@@ -74,7 +74,7 @@ Not called by IupMatrix.
 
 - The whole value is matched, from its first character to its last.
 - "Function" codes (such as /l, /D, /w) cannot be used inside a class ([...]).
-- If the character following a / does not mean a special case (such as /w or /n), it is matched without the / - that means that /q will match only q, and not /q. If you want to match /q, use //q.
+- If the character following a / does not mean a special case (such as /w or /n), it is matched without the / - that means that /q will match only q, and not /q. To match /q, use //q.
 - The caret (^) at the start of a class means negation. Elsewhere in a class, ^ and $ match themselves.
 - The boundary function (/b) anchors the pattern to a word boundary - it does not match anything. A word boundary is a point between a /w and a /W character.
 - Concatenation has precedence over the alternation (|) operator - that is, fa|fe|fi will match fa OR fe OR fi.

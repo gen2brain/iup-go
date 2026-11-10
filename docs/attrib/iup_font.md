@@ -31,7 +31,7 @@ The native handle can be obtained using the "**HFONT**" attribute.
 
 #### WinUI
 
-The DEFAULTFONT is retrieved from the Windows System Settings, "Segoe UI, 9" is assumed otherwise.
+The DEFAULTFONT is retrieved from the System Settings, "Segoe UI, 9" assumed otherwise.
 
 #### Motif
 
@@ -43,10 +43,10 @@ The X-Windows Logical Font Description format (XLFD) is also supported.
 The native handle can be obtained using the "**XMFONTLIST**", "**XFONTSTRUCT**" and "**XFONTID**" attributes.
 The selected X Logical Font Description string can be obtained from the attribute "**XLFD**".
 
-You can use the **xfontsel** program to obtain a string in the X-Windows Logical Font Description format (XLFD).
-Noticed that the first size entry of the X-Windows font string format (**pxlsz**) is in **pixels** and the next one (**ptSz**) is in deci-points (multiply the value in points by 10).
+The **xfontsel** program can be used to obtain a string in the X-Windows Logical Font Description format (XLFD).
+The first size entry of the X-Windows font string format (**pxlsz**) is in **pixels** and the next one (**ptSz**) is in deci-points (the value in points multiplied by 10).
 
-Be aware that the resource files ".Xdefaults" and "Iup" in the user home folder can affect the default font and many other visual appearance features in Motif.
+The resource files ".Xdefaults" and "Iup" in the user home folder can affect the default font and many other visual appearance features in Motif.
 
 #### GTK
 
@@ -129,11 +129,7 @@ All elements, since the SIZE attribute depends on the FONT attribute, except for
 
 When the FONT is changed and [SIZE](iup_size.md) is set, then [RASTERSIZE](iup_rastersize.md) is also updated.
 
-Since font face names are not a standard across platforms, a few names are specially handled to improve application portability.
-If you want to use names that work for all systems, we recommend using: Courier, Times and Helvetica.
-Those names always have a native system name equivalent.
-If you use those names, IUP will automatically map to the native system equivalent.
-See the table below:
+The names Courier, Times and Helvetica are mapped to a native equivalent in every system:
 
 | Recommended/Motif | Windows         | GTK       | macOS, iOS      | Android    | Description                     |
 |-------------------|-----------------|-----------|-----------------|------------|---------------------------------|
@@ -147,14 +143,13 @@ The GTK names are also used by Qt, QML, EFL, FLTK and Haiku.
 
 They will change the FONT attribute, and depend on it.
 They are used only to set partial FONT parameters of style and size.
-To do that, the FONT attribute is parsed, changed and updated to the new value in the common format definition.
-This means that if the attribute was set in X-Windows format or in the old Windows and IUP formats, the previous value will be replaced by a new value in the common format definition.
+A FONT set in X-Windows format or in the old Windows and IUP formats is replaced by a value in the common format definition.
 Pango additional styles will also be removed.
 
 #### FONTSTYLE (non-inheritable)
 
 Replaces or returns the style of the current FONT attribute.
-Since font styles are case-sensitive, this attribute is also case-sensitive.
+Case-sensitive.
 
 #### FONTSIZE (non-inheritable)
 
@@ -181,8 +176,6 @@ For example, in ASCII encoding, the letter A has code 65, but codes above 128 ca
 Encoding is defined by a charset.
 
 IUP uses the default locale in ANSI-C. This means that it does not adopt a specific charset, and so the results can be different if the developer charset is different from the run time charset where the user is running the application.
-For example, if the developer is using a charset, and its user is also using the same encoding, then everything will work fine without the need of text encoding conversions.
-The advantage is that any charset can be used, and localization is usually done in that way.
 
 IUP supports UTF-8 (ISO10646-1) encoding in all drivers.
 To specify a string in UTF-8 encoding set the global attribute "[UTF8MODE](iup_globals.md#utf8mode)" to "YES".
@@ -195,7 +188,7 @@ The Latin-1 charset (ISO8859-1) defines an encoding for all the characters used 
 It is the most common encoding, besides UTF-8.
 
 The first half of Latin-1 is standard ASCII (128 characters), while the second half (with the highest bit set) contains accented characters needed for Western languages other than English.
-In Windows, the ISO8859-1 charset was changed, and some control characters were replaced to include more display characters, this new charset is named Windows-1252 (these characters are marked in the table below with thick borders).
+In Windows, the ISO8859-1 charset was changed, and some control characters were replaced to include more display characters, this new charset is named Windows-1252.
 
 |             |             |             |             |             |             |             |             |             |             |             |             |              |             |             |             |
 |-------------|-------------|-------------|-------------|-------------|-------------|-------------|-------------|-------------|-------------|-------------|-------------|--------------|-------------|-------------|-------------|
@@ -214,25 +207,16 @@ In Windows, the ISO8859-1 charset was changed, and some control characters were 
 | à ***224*** | á ***225*** | â ***226*** | ã ***227*** | ä ***228*** | å ***229*** | æ ***230*** | ç ***231*** | è ***232*** | é ***233*** | ê ***234*** | ë ***235*** | ì ***236***  | í ***237*** | î ***238*** | ï ***239*** |
 | ð ***240*** | ñ ***241*** | ò ***242*** | ó ***243*** | ô ***244*** | õ ***245*** | ö ***246*** | ÷ ***247*** | ø ***248*** | ù ***249*** | ú ***250*** | û ***251*** | ü ***252***  | ý ***253*** | þ ***254*** | ÿ ***255*** |
 
-\
-
-|     |                           |
-|-----|---------------------------|
-|     |   Punctuation and Symbols |
-|     |  Numbers                  |
-|     |  Letters                  |
-|     |  Accented                 |
-
 Adapted from [http://en.wikipedia.org/wiki/Windows-1252](http://en.wikipedia.org/wiki/Windows-1252).
 
 #### UTF-8
 
-"Universal character set Transformation Format - 8 bits" is part of the Unicode standard that is used in most modern Web applications, and it is becoming widely used in desktop applications too.
+"Universal character set Transformation Format - 8 bits" is part of the Unicode standard.
 
 It allows the application to use a regular "char*" for strings, but it is a variable width encoding, meaning that a single character may have up to four bytes in sequence.
 And the code "\0" is still used as a string terminator (NULL).
 So all the regular **strstr**, **strcmp**, **strlen**, **strcpy** and **strcat** functions will work normally, except **strchr** because it will search only for 1 byte characters.
-Notice that **strlen** will return the number of bytes, not the number of multibyte characters.
+**strlen** returns the number of bytes, not the number of multibyte characters.
 And **strcmp** will compare byte encodings.
 
 The first 128 characters of Unicode, which correspond one-to-one with [ASCII](http://en.wikipedia.org/wiki/ASCII), are encoded using a single octet with the same binary value as ASCII, making valid ASCII text valid UTF-8-encoded Unicode as well.
@@ -241,7 +225,7 @@ The number of bytes following is determined by the number of bits set to 1 after
 
 The next 1920 characters need two bytes to encode.
 This covers the remainder of almost all [Latin-derived alphabets](http://en.wikipedia.org/wiki/Latin-derived_alphabet), and also [Greek](http://en.wikipedia.org/wiki/Greek_alphabet), [Cyrillic](http://en.wikipedia.org/wiki/Cyrillic_script), [Coptic](http://en.wikipedia.org/wiki/Coptic_alphabet), [Armenian](http://en.wikipedia.org/wiki/Armenian_alphabet), [Hebrew](http://en.wikipedia.org/wiki/Hebrew_alphabet), [Arabic](http://en.wikipedia.org/wiki/Arabic_alphabet), [Syriac](http://en.wikipedia.org/wiki/Syriac_alphabet) and [Tāna](http://en.wikipedia.org/wiki/Tāna) alphabets, as well as [Combining Diacritical Marks](http://en.wikipedia.org/wiki/Combining_Diacritical_Marks).
-Three bytes are needed for characters in the rest of the [Basic Multilingual Plane](http://en.wikipedia.org/wiki/Mapping_of_Unicode_character_planes) (which contains virtually all characters in common use[[11]](http://en.wikipedia.org/wiki/UTF-8#cite_note-unicode-ch02-bmp-11)).
+Three bytes are needed for characters in the rest of the [Basic Multilingual Plane](http://en.wikipedia.org/wiki/Mapping_of_Unicode_character_planes) (which contains virtually all characters in common use).
 Four bytes are needed for characters in the [other planes of Unicode](http://en.wikipedia.org/wiki/Mapping_of_Unicode_characters), which include less common [CJK characters](http://en.wikipedia.org/wiki/CJK_characters) and various historic scripts and mathematical symbols.
 
 The bytes 0xFE and 0xFF do not appear, so a valid UTF-8 string cannot be confused with a UTF-16 sequence.

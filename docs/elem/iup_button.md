@@ -26,16 +26,16 @@ Not supported in QML with the Imagine style.
 Default: NULL.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
-In Windows the button will respect CANFOCUS differently to some other controls.
+In Windows, the button will respect CANFOCUS differently to some other controls.
 Default: YES.
 
-**PROPAGATEFOCUS**(non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
+**PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
 **FLAT** (creation-only): Hides the button borders until the mouse cursor enters the button area.
 The border space is always there. Can be YES or NO. Default: NO.
 In QML, a FLAT button with BGCOLOR is drawn as a regular button.
-On Android an image-only flat button keeps the 48dp touch target.
+In Android, an image-only flat button keeps the 48dp touch target.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute DLGFGCOLOR.
 
@@ -51,7 +51,7 @@ GTK will also change the inactive image to look like other inactive objects.
 **IMPRESS** (non-inheritable): Image name of the pressed button.
 If IMPRESS and IMAGE are defined, the button borders are not shown and not computed in natural size.
 When the button is clicked the pressed image does not offset.
-In Motif the button will lose its focus feedback also.
+In Motif, the button will lose its focus feedback also.
 
 **IMPRESSBORDER** (non-inheritable): if enabled, the button borders will be shown and computed even if IMPRESS is defined.
 Can be "YES" or "NO". Default: "NO".
@@ -59,7 +59,7 @@ Can be "YES" or "NO". Default: "NO".
 **IMAGEPOSITION** (creation-only) (non-inheritable): Position of the image relative to the text when both are displayed.
 Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
 Not supported in Motif and EFL.
-On Android BOTTOM is displayed as TOP.
+In Android, BOTTOM is displayed as TOP.
 
 **MARKUP**: allows the title string to contain markup commands.
 Supports a Pango-like subset: `<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, and `<span>` with `foreground`, `background`, `font_family`, `font_size`, `font_weight`, `font_style` attributes.
@@ -79,8 +79,8 @@ Default: "2".
 It will actually set the SPACING attribute.
 
 **SHOWASDEFAULT** (non-inheritable): draws the button with the platform's native "default button" emphasis. Can be "YES" or "NO". Default: "NO".
-Normally set automatically when the button is assigned to the parent dialog's [DEFAULTENTER](../dlg/iup_dialog.md) attribute, no manual action required. Can also be set directly for visual-only emphasis without wiring to DEFAULTENTER.
-Not supported in EFL (the attribute is accepted but has no visual effect).
+Set automatically when the button is the parent dialog's [DEFAULTENTER](../dlg/iup_dialog.md); can also be set directly.
+Not supported in EFL.
 
 **BUTTONSTYLE** [Android and iOS Only] (non-inheritable): button visual style.
 Values: "FILLED", "TONAL", "OUTLINED", "ELEVATED", "TEXT". Default: "FILLED" in Android, "TONAL" in iOS.
@@ -133,7 +133,7 @@ Buttons are not activated if the user clicks inside the button but moves the cur
 Also in Windows, the highlight feedback when that happens is different if the button has CANFOCUS enabled or not.
 
 Buttons always have borders, except when IMAGE and IMPRESS are both defined and IMPRESSBORDER=NO.
-In this case in Windows TITLE can also be defined.
+In this case in Windows, TITLE can also be defined.
 
 Usually toolbar buttons have FLAT=YES and CANFOCUS=NO.
 

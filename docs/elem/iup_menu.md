@@ -36,7 +36,7 @@ The menu acts like a **IupRadio** for its children. Submenus and their children 
 
 ------------------------------------------------------------------------
 
-[MAP_CB](../call/iup_map_cb.md), [UNMAP_CB](../call/iup_unmap_cb.md), [DESTROY_CB](../call/iup_destroy_cb.md) : common callbacks are supported.
+[MAP_CB](../call/iup_map_cb.md), [UNMAP_CB](../call/iup_unmap_cb.md), [DESTROY_CB](../call/iup_destroy_cb.md): common callbacks are supported.
 
 ### Notes
 
@@ -46,19 +46,18 @@ A popup menu is displayed for the user using the **IupPopup** function (usually 
 
 **IupDestroy** should be called only for popup menus.
 Menu bars associated with dialogs are automatically destroyed when the dialog is destroyed.
-But if you change the menu of a dialog for another menu, the previous one should be destroyed using **IupDestroy**.
-If you replace a menu bar of a dialog, the previous menu is unmapped.
+When the menu bar of a dialog is replaced, the previous menu is unmapped and should be destroyed using **IupDestroy**.
 
 Any item inside a menu bar can retrieve attributes from the dialog using **IupGetAttribute**.
 It is not necessary to call **IupGetDialog**.
 
-The menu can be created with no elements and be dynamic filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md). 
+The menu can be created with no elements and be dynamically filled using [IupAppend](../func/iup_append.md) or [IupInsert](../func/iup_insert.md). 
 
-On Android and iOS, the menu bar of a dialog is shown as an overflow menu button in the title bar.
+In Android and iOS, the menu bar of a dialog is shown as an overflow menu button in the title bar.
 An item directly in the menu bar that has an image (TITLEIMAGE, IMAGE or IMPRESS) is shown as an icon button in the title bar instead, dimmed when inactive.
 In Android, icons that do not fit in the title bar stay in the overflow menu.
 
-On Android and iOS, an optional navigation drawer can be attached alongside the menu via the [DRAWER](../dlg/iup_dialog.md#exclusive-android-and-ios) attribute on IupDialog. Independent of MENU; a dialog may set either, both, or neither.
+In Android and iOS, an optional navigation drawer can be attached alongside the menu via the [DRAWER](../dlg/iup_dialog.md#exclusive-android-and-ios) attribute on IupDialog. Independent of MENU; a dialog may set either, both, or neither.
 
 ### Examples
 

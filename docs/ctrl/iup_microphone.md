@@ -27,7 +27,7 @@ Changing it while running restarts the capture on the new microphone.
 **DEVICECOUNT** (read-only): Number of microphones found.
 
 **DEVICENAMEid** (read-only): Name of the microphone at index "id", or NULL.
-In WebAssembly it is "Microphone N" until microphone access has been granted.
+In WebAssembly, it is "Microphone N" until microphone access has been granted.
 
 **RUN** (non-inheritable): Starts the capture when "YES" and stops it when "NO". Default: "NO".
 Starting asks the user for permission if the platform requires it, see PERMISSION_CB.

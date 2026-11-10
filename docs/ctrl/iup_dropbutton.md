@@ -18,7 +18,7 @@ The program must be linked to the controls library (iupctrl).
 
     Ihandle* IupDropButton(Ihandle* dropchild);
 
-**child**: Identifier of an interface element to be displayed when the dropdown is activated.
+**dropchild**: Identifier of an interface element to be displayed when the dropdown is activated.
 It can be NULL. It is not a regular child of the dropbutton.
 It will be displayed inside a dialog with no decorations.
 
@@ -37,12 +37,12 @@ Alignment does not include the padding area.
 If there is no drop child, the arrow will be automatically disabled.
 
 **ARROWALIGN** (non-inheritable): vertical arrow alignment. Can be: TOP, CENTER or BOTTOM.
-Default: CENTER.
+Default: "CENTER".
 
 **ARROWCOLOR**: color used for the arrow. Default uses FGCOLOR.
 
 **ARROWIMAGES** (non-inheritable): replace the drawn arrows by the following images.
-Make sure their sizes are equal or smaller than ARROWSIZE. Default: NO.
+Make sure their sizes are equal or smaller than ARROWSIZE. Default: "NO".
 
 **ARROWIMAGE** (non-inheritable): Arrow image name.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
@@ -58,10 +58,10 @@ If it is not defined then the ARROWIMAGE is used and its colors will be replaced
 If it is not defined then the ARROWIMAGE is used.
 
 **ARROWPADDING** (non-inheritable): internal margin for the arrow. It is inside ARROWSIZE.
-Default: 4.
+Default: "4".
 
 **ARROWSIZE** (non-inheritable): size of the area occupied by the arrow, even when using images.
-Default: 24
+Default: "24".
 
 **BACKIMAGE** (non-inheritable): image name to be used as a background.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
@@ -77,7 +77,7 @@ If it is not defined then the BACKIMAGE is used and its colors will be replaced 
 If it is not defined then the BACKIMAGE is used.
 
 **BACKIMAGEZOOM** (non-inheritable): if set, the back image will be zoomed to occupy the full background.
-Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
+Aspect ratio is NOT preserved. Can be YES or NO. Default: "NO".
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color.
 If text and image are not defined, the button is configured to simply show a color, in this case set the button size because the natural size will be very small.
@@ -111,14 +111,14 @@ Default: "0" (no rounding).
 When SHOWBORDER=YES and BGCOLOR is not defined, the actual BGCOLOR will be a darker version of the background color of the native parent.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
-In Windows the button will respect CANFOCUS in opposite to the other controls. Default: YES.
+In Windows, the button will respect CANFOCUS differently to some other controls. Default: "YES".
 
 **FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be YES or NO.
-Default: YES.
+Default: "YES".
 
 **DROPCHILD**: the name of the element that will be displayed when dropped.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate a child to a name.
-The drop dialog, were the drop child is inserted, is available right after setting the attribute using **IupGetDialog** on the drop child handle.
+The drop dialog, where the drop child is inserted, is available right after setting the attribute using **IupGetDialog** on the drop child handle.
 See the Notes below for more information.
 
 **DROPCHILD_HANDLE**: same as DROPCHILD but directly using the Ihandle* of the element.
@@ -127,14 +127,14 @@ See the Notes below for more information.
 Clicking on the remaining of the button will call FLAT_ACTION.
 There will be two separates areas in the button, one for the drop arrow and one for the regular button.
 When disabled there will be only one area, and the drop child will be shown anywhere the button is clicked, the callback FLAT_ACTION will not be called.
-Default: YES.
+Default: "YES".
 
 **DROPPOSITION** (non-inheritable): the drop child can be shown in four different positions relative to the drop button: BOTTOMLEFT, TOPLEFT, BOTTOMRIGHT, TOPRIGHT.
 BOTTOMLEFT the top-left corner of the drop child is aligned with the bottom-left corner of the drop button, BOTTOMRIGHT the top-right corner of the drop child is aligned with the bottom-right corner of the drop button, TOPLEFT the bottom-left corner of the drop child is aligned with the top-left corner of the drop button, TOPRIGHT the bottom-right corner of the drop child is aligned with the top-right corner of the drop button.
-Default: BOTTOMLEFT.
+Default: "BOTTOMLEFT".
 
 **PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
-Default: NO.
+Default: "NO".
 
 [EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "NO". 
 
@@ -147,7 +147,7 @@ If not defined FGCOLOR will be used instead.
 If not defined FGCOLOR will be used instead.
 
 **FITTOBACKIMAGE** (non-inheritable): enable the natural size to be computed from the BACKIMAGE.
-If BACKIMAGE is not defined will be ignored. Can be YES or NO. Default: NO.
+If BACKIMAGE is not defined will be ignored. Can be YES or NO. Default: "NO".
 
 **FRONTIMAGE** (non-inheritable): image name to be used as foreground.
 The foreground image is drawn in the same position as the background, but it is drawn at last.
@@ -185,10 +185,10 @@ If it is not defined then the IMAGE is used.
 **IMAGETINT** (non-inheritable): color "R G B" used to draw the image recolored, keeping its alpha channel. "YES" uses the current text color; "NO" draws the image unchanged. Default: "NO".
 
 **IMAGEPOSITION** (non-inheritable): Position of the image relative to the text when both are displayed.
-Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
+Can be: LEFT, RIGHT, TOP, BOTTOM. Default: "LEFT".
 
 **PADDING**: internal margin. Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
-Alignment does not include the padding area. Default value: "3x3".
+Alignment does not include the padding area. Default: "3x3".
 Value can be DEFAULTBUTTONPADDING, so the global attribute of this name will be used instead.
 
 **CPADDING**: same as PADDING but using the units of the **SIZE** attribute.
@@ -204,20 +204,20 @@ Ignored if set before map.
 **CSPACING**: same as SPACING but using the units of the vertical part of the **SIZE** attribute.
 It will actually set the SPACING attribute.
 
-[TITLE](../attrib/iup_title.md) (non-inheritable): Label's text.
+[TITLE](../attrib/iup_title.md) (non-inheritable): Button's text.
 The '\n' character is accepted for line change.
 
 **TEXTALIGNMENT** (non-inheritable): Horizontal text alignment for multiple lines.
-Can be: ALEFT, ARIGHT or ACENTER. Default: ALEFT.
+Can be: ALEFT, ARIGHT or ACENTER. Default: "ALEFT".
 
 **TEXTWRAP** (non-inheritable): For single line texts if the text is larger than its box the line will be automatically broken in multiple lines.
-Notice that this is done internally by the system, the element natural size will still use only a single line.
+The element natural size still uses only a single line.
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
 It will be ignored when TEXTWRAP=YES.
 
-  **TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
+**TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
 
 **VISIBLECOLUMNS**: Defines the number of visible columns for the **Natural Size**, this means that will act also as minimum number of visible columns.
@@ -250,7 +250,7 @@ Called only when DROPONARROW=YES.
 **DROPDOWN_CB**: Action generated right before the drop child is shown or hidden.
 This callback is also called when SHOWDROPDOWN is set.
 
-    int function (Ihandle *ih, int state);
+    int function(Ihandle *ih, int state);
 
 **ih**: identifier of the element that activated the event.\
 **state**: the new state of the drop child 1=to be shown, 0=to be hidden.
@@ -258,7 +258,7 @@ This callback is also called when SHOWDROPDOWN is set.
 **DROPSHOW_CB**: Action generated right after the drop child is shown or hidden.
 This callback is also called when SHOWDROPDOWN is set.
 
-    int function (Ihandle *ih, int state);
+    int function(Ihandle *ih, int state);
 
 **ih**: identifier of the element that activated the event.\
 **state**: the current state of the drop child 1=shown, 0=hidden.
@@ -274,7 +274,7 @@ The natural size will be a combination of the size of the image and the title, i
 The drop dialog is configured with no decorations, and it is not resizable, only the FOCUS_CB and K_ESC callbacks are set.
 But this can be changed by the application. It is a regular [IupDialog](../dlg/iup_dialog.md).
 To obtain the drop button handle from the handle of the dialog, get the "DROPBUTTON" attribute handle from the dialog, using [IupGetAttributeHandle](../func/iup_getattributehandle.md).
-After performing some operation on the drop child, use SHOWDROPDOWN=NO on the drop button, you may also update its TITLE, just like a regular **IupList** with DROPDOWN=YES, but this will not be performed automatically by the drop button.
+After an operation on the drop child, set SHOWDROPDOWN=NO on the drop button and optionally update its TITLE, just like a regular **IupList** with DROPDOWN=YES; the drop button does not do this automatically.
 For example, set the ACTION callback on the IupList used as drop child:
 
     static int list_cb(Ihandle* list, char *text, int item, int state)
@@ -289,7 +289,7 @@ For example, set the ACTION callback on the IupList used as drop child:
     }
 
 Additionally, to mimic a **IupList** with DROPDOWN=YES set SHOWBORDER=YES and DROPONARROW=NO on the drop button.
-But notice that the natural size will not use the largest item in the drop child list, so you can use EXPAND=HORIZONTAL or set VISIBLECOLUMNS, both on the drop button.
+The natural size does not use the largest item in the drop child list; set EXPAND=HORIZONTAL or VISIBLECOLUMNS on the drop button.
 
 ### Examples
 

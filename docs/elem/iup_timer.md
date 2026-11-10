@@ -11,14 +11,14 @@ Each timer should be destroyed using [IupDestroy](../func/iup_destroy.md).
 
 ### Attributes
 
-**TIME**: The time interval in milliseconds. In Windows the minimum value is 10ms.
+**TIME**: The time interval in milliseconds. In Windows, the minimum value is 10ms.
 
-**TOLERANCE** [Win32, macOS and iOS Only]: How late, in milliseconds, the system may fire the timer, so it can group the timer with other wakeups and save energy.
+**TOLERANCE** [Win32, macOS and iOS Only]: How late, in milliseconds, the system may fire the timer.
 Used when the timer is started with RUN=YES. Default: 0 (no tolerance).
-In Win32 it needs Windows 8 or newer.
+In Win32, it needs Windows 8 or newer.
 
 **RUN**: Starts and stops the timer. Possible values: "YES" or "NO". Returns the current timer state.
-If you have multiple threads start the timer in the main thread.
+With multiple threads, start the timer in the main thread.
 
 **ELAPSEDTIME** (read-only): Returns the time elapsed since the timer was started, in milliseconds.
 Returns NULL if not running.
@@ -29,13 +29,13 @@ A timer is mapped only when it is running.
 ### Callbacks
 
 **ACTION_CB**: Called every time the defined time interval is reached.
-To stop the callback from being called simply stop de timer with RUN=NO.
+To stop the callback, set RUN=NO.
 
     int function(Ihandle *ih);
 
-> **ih**: identifier of the element that activated the event.
->
-> **Returns**: IUP_CLOSE will be processed.
+**ih**: identifier of the element that activated the event.
+
+**Returns**: IUP_CLOSE will be processed.
 
 ### Examples
 

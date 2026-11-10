@@ -6,7 +6,7 @@ Action generated when a mouse button is pressed or released.
 
     int function(Ihandle* ih, int button, int pressed, int x, int y, char* status);
 
-**ih**: identifies the element that activated the event.\
+**ih**: identifier of the element that activated the event.\
 **button**: identifies the activated mouse button:
 
 > IUP_BUTTON1 - left mouse button (button 1);\
@@ -27,11 +27,11 @@ The following macros must be used for verification:
 > iup_isbutton1(**status**)\
 > iup_isbutton2(**status**)\
 > iup_isbutton3(**status**)\
-> iup_isbutton4(status)\
-> iup_isbutton5(status)\
+> iup_isbutton4(**status**)\
+> iup_isbutton5(**status**)\
 > iup_isdouble(**status**)\
-> iup_isalt(status)\
-> iup_issys(status)
+> iup_isalt(**status**)\
+> iup_issys(**status**)
 >
 > They return 1 if the respective key or button is pressed, and 0 otherwise.
 
@@ -47,7 +47,7 @@ For a single click, the callback is called twice, one for pressed=1 and one for 
 Only after both calls, the ACTION callback is called.
 In Windows, if a dialog is shown or popup in any situation, there could be unpredictable results because the native system still has processing to be done even after the callback is called.
 
-A double click is preceded by two single clicks, one for pressed=1 and one for pressed=0, and followed by a press=0, all three without the double click flag set.
+A double click is preceded by two single clicks, one for pressed=1 and one for pressed=0, and followed by a pressed=0, all three without the double click flag set.
 In GTK, it is preceded by an additional two single clicks sequence.
 For example, for one double click all the following calls are made:
 
@@ -61,7 +61,7 @@ For example, for one double click all the following calls are made:
 Between press and release all mouse events are redirected only to this control, even if the cursor moves outside the element.
 So the BUTTON_CB callback when released and the MOTION_CB callback can be called with coordinates outside the element rectangle.
 
-In iOS and Android a touch is IUP_BUTTON1, and a long press on an IupCanvas also reports IUP_BUTTON3, pressed then released, with the button 3 flag in **status**, before the touch is released.
+In iOS and Android, a touch is IUP_BUTTON1, and a long press on an IupCanvas also reports IUP_BUTTON3, pressed then released, with the button 3 flag in **status**, before the touch is released.
 On an IupCanvas that can scroll, a one-finger drag scrolls it without calling BUTTON_CB, and a tap reports IUP_BUTTON1 pressed and released when the touch ends.
 A one-finger drag that starts on a child of an IupCanvas or IupScrollBox that can scroll also scrolls it, and the child reports the release at x=-1 and y=-1.
 

@@ -48,7 +48,7 @@ Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/
 See also [IupImage](../elem/iup_image.md).
 
 **BACKIMAGEZOOM** (non-inheritable): if set, the back image will be zoomed to occupy the full background.
-Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
+Aspect ratio is NOT preserved. Can be YES or NO. Default: "NO".
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of the text.
 Default: "255 255 255".
@@ -57,7 +57,6 @@ Default: "255 255 255".
 It is displayed around the scrollbars.
 
 **BORDERCOLOR**: color used for the internal border. Default: "50 150 255".
-This is for the internal border.
 
 **BORDERWIDTH**: line width used for the internal border. Default: "0".
 The internal borders are hidden by simply setting this value to 0.
@@ -67,22 +66,22 @@ It is drawn inside the canvas, so inside the scrollbars.
 
 **DRAGDROPLIST** (non-inheritable): prepare the [Drag & Drop](../attrib/iup_dragdrop.md) callbacks to support drag and drop of items between lists (IupList or IupFlatList), in the same IUP application.
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes still need to be set in order to activate the drag & drop support, so the application can control if this list is a source and/or target.
-Default: NO.
+Default: "NO".
 
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
-Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
+Default: "NO", but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: "0 0 0".
 
-**FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be YES or NO. Default: YES.
+**FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be YES or NO. Default: "YES".
 
 **PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
-Default: NO.
+Default: "NO".
 
 **FITTOBACKIMAGE** (non-inheritable): enable the natural size to be computed from the BACKIMAGE.
-If BACKIMAGE is not defined will be ignored. Can be YES or NO. Default: NO.
+If BACKIMAGE is not defined will be ignored. Can be YES or NO. Default: "NO".
 
-**HASFOCUS** (read-only): returns the button state if has focus. Can be YES or NO.
+**HASFOCUS** (read-only): returns if the element has focus. Can be YES or NO.
 
 **IMAGEid** (non-inheritable): image name to be used in the specified item, where id is the specified item starting at 1.
 The item must already exist. Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
@@ -93,7 +92,7 @@ See also [IupImage](../elem/iup_image.md). Images don't need to have the same si
 **IMAGETINT** (non-inheritable): color "R G B" used to draw the image recolored, keeping its alpha channel. "YES" uses the current text color; "NO" draws the image unchanged. Default: "NO".
 
 **IMAGEPOSITION** (non-inheritable): Position of the image relative to the text when both are displayed.
-Can be: LEFT, RIGHT, TOP, BOTTOM. Default: LEFT.
+Can be: LEFT, RIGHT, TOP, BOTTOM. Default: "LEFT".
 
 **PADDING**: internal margin of each item.
 Works just like the MARGIN attribute of the **IupHbox** and **IupVbox** containers, but uses a different name to avoid inheritance problems.
@@ -102,20 +101,20 @@ Alignment does not include the padding area. Default value: "2x2".
 **CPADDING**: same as PADDING but using the units of the **SIZE** attribute.
 It will actually set the PADDING attribute.
 
-**ITEMFGCOLOR*****id***: foreground color of the item at the given id. id starts at 1.
+**ITEMFGCOLORid**: foreground color of the item at the given id. id starts at 1.
 If not defined FGCOLOR is used.
 
-**ITEMBGCOLOR*****id***: background color of the item at the given id. id starts at 1.
+**ITEMBGCOLORid**: background color of the item at the given id. id starts at 1.
 If not defined BGCOLOR is used.
 
-**ITEMTIP*****id***: tip of the item at the given id.
+**ITEMTIPid**: tip of the item at the given id.
 If defined will be shown instead of the TIP attribute.
 
-**ITEMFONT*****id***: text font of the tab. If not defined FONT is used.
+**ITEMFONTid**: text font of the item. If not defined FONT is used.
 
-**ITEMFONTSTYLE*****id***: text font style. When changed will actually set ITEMFONTid.
+**ITEMFONTSTYLEid**: text font style. When changed will actually set ITEMFONTid.
 
-**ITEMFONTSIZE*****id***: text font size. When changed will actually set ITEMFONTid.
+**ITEMFONTSIZEid**: text font size. When changed will actually set ITEMFONTid.
 
 **ITEMCORNERRADIUS** (non-inheritable): radius of the rounded corners for the item background, selection and focus feedback.
 Default: "0" (no rounding).
@@ -124,14 +123,14 @@ Default: "0" (no rounding).
 
 **HLCOLOR**: color of a filled box drawn over the selected item. Default: "TXTHLCOLOR".
 
-**HLCOLORALPHA**: the transparency used to draw the selection. Default: 128.
+**HLCOLORALPHA**: the transparency used to draw the selection. Default: "128".
 If set to 0 the selection box is not drawn.
 
 **PSCOLOR**: background color of a selected item.
-If not defined BACKCOLORid will be used.
+If not defined ITEMBGCOLORid will be used.
 
 **TEXTPSCOLOR**: foreground color of a selected item.
-If not defined FORECOLORid will be used.
+If not defined ITEMFGCOLORid will be used.
 
 **INSERTITEMid** (write-only): inserts an item before the given id position. id starts at 1.
 If id=COUNT+1 then it will append after the last item. Ignored if out of bounds.
@@ -142,12 +141,12 @@ Default: "NO".
 
 **REMOVEITEM** (write-only): removes the given value. value starts at 1.
 If value is NULL or "ALL" removes all the items. Different from IupList, can be set before map.
-[SCROLLBAR](../attrib/iup_scrollbar.md): Default: YES. When FLATSCROLLBAR is enabled it is automatically set to NO, hiding the native scrollbars.
-[SCROLLBAR](../attrib/iup_scrollbar.md) (read-only): is always "NO". So the IupCanvas native scrollbars are hidden.
+
+[SCROLLBAR](../attrib/iup_scrollbar.md): Default: "YES". When FLATSCROLLBAR is enabled it is automatically set to NO, hiding the native scrollbars.
 See the FLATSCROLLBAR attribute below. YAUTOHIDE and XAUTOHIDE will always be YES.
 
 [FLATSCROLLBAR](iup_flatscrollbar.md): Can be YES, Vertical or Horizontal.
-Can be set only before map. Default: NO.
+Can be set only before map. Default: "NO".
 
 **SHOWDRAGDROP** (creation-only) (non-inheritable): enables the internal drag and drop of items in the same list, and enables the **DRAGDROP_CB** callback.
 Default: "NO". Works only if MULTIPLE=NO.
@@ -158,7 +157,7 @@ The **Natural Size** is defined by the number of elements in the list and the wi
 The **Natural Size** ignores the list contents if VISIBLECOLUMNS or VISIBLELINES attributes are defined.
 
 **SPACING**: internal space between each item. Different from IupList, it does not affect the internal margin.
-Not drawn with any item background color. Default: 0
+Not drawn with any item background color. Default: "0".
 
 **CSPACING**: same as SPACING but using the units of the vertical part of the **SIZE** attribute.
 It will actually set the SPACING attribute.
@@ -166,10 +165,10 @@ It will actually set the SPACING attribute.
 **TOPITEM** (write-only): position the given item at the top of the list or near to make it visible.
 
 **TEXTALIGNMENT** (non-inheritable): Horizontal text alignment for multiple lines.
-Can be: ALEFT, ARIGHT or ACENTER. Default: ALEFT.
+Can be: ALEFT, ARIGHT or ACENTER. Default: "ALEFT".
 
 **TEXTWRAP** (non-inheritable): For single line texts if the text is larger than its box, the line will be automatically broken in multiple lines.
-Notice that this is done internally by the system, the element natural size will still use only a single line.
+The natural size still uses a single line.
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
@@ -206,7 +205,7 @@ They are all called before the internal callbacks, and if they return IUP_IGNORE
 **item**: Number of the changed item starting at 1.\
 **state**: Equal to 1 if the option was selected or to 0 if the option was deselected.
 
-**DBLCLICK_CB**: Action generated when the user double-click an item.
+**DBLCLICK_CB**: Action generated when the user double-clicks an item.
 
     int function (Ihandle *ih, int item, char *text);
 
@@ -225,7 +224,7 @@ Only active if **SHOWDRAGDROP=YES.**
 **isshift**: flag indicating the shift key state.\
 **iscontrol**: flag indicating the control key state.
 
-Returns: if returns IUP_CONTINUE, or if the callback is not defined and **SHOWDRAGDROP=YES**, then the item is moved to the new position.
+**Returns**: if returns IUP_CONTINUE, or if the callback is not defined and **SHOWDRAGDROP=YES**, then the item is moved to the new position.
 If Ctrl is pressed, then the item is copied instead of moved.
 
 **MULTISELECT_CB**: Action generated when the state of an item in the multiple selection list is interactively changed.
@@ -241,7 +240,7 @@ This callback is called only when MULTIPLE=YES.
 If this callback is defined, the **ACTION** callback will not be called.
 
 The non changed items marked with 'x' are simulated internally by IUP in all systems.
-If you add or remove items to/from the list, and you count on the 'x' values, then after adding/removing items set the VALUE attribute to ensure proper 'x' values.
+After items are added or removed, set VALUE so that the 'x' values stay valid.
 
 **VALUECHANGED_CB**: Called after the selection was interactively changed.
 
@@ -258,11 +257,8 @@ Pressing PgDn or PgUp the list is scrolled but the selection is not changed.
 
 When adding or removing items, the selection can be changed depending on the operation, but the selection callbacks will not be called.
 
-**Clicking and dragging a item**: if SHOWDRAGDROP=YES starts a drag.
+**Clicking and dragging an item**: if SHOWDRAGDROP=YES starts a drag with the left mouse button.
 When mouse is released, the DRAGDROP_CB callback is called.
-If the callback does not exist or if it returns IUP_CONTINUE then the item is moved to the new position.
-If Ctrl is pressed then the node is copied instead of moved.
-Drag is performed with the left mouse button.
 
 All list items occupy the same vertical size, which is the largest height computed from the combination of text and image for each item individually.
 

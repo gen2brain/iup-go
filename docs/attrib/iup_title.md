@@ -17,11 +17,11 @@ The "&" character can be used to define a MNEMONIC, use "&&" to show the "&" cha
 If a mnemonic is defined, the character relative to it is underlined and Alt+key activates the control.
 Mnemonics of hidden or inactive controls, including controls in a tab that is not the current one, are ignored.
 Supported in Win32, WinUI, GTK, GTK 4, Qt, QML, FLTK, EFL and Motif.
-In QML the character is underlined only while the Alt key is held.
-In Haiku the shortcut is activated with Command+key (the physical Alt key on the default keymap), but the character is not underlined.
-On macOS, iOS, Android and WebAssembly the "&" is stripped from the displayed text and no shortcut is registered.
+In QML, the character is underlined only while the Alt key is held.
+In Haiku, the shortcut is activated with Command+key (the physical Alt key on the default keymap), but the character is not underlined.
+In macOS, iOS, Android and WebAssembly, the "&" is stripped from the displayed text and no shortcut is registered.
 
-In GTK, if you define a mnemonic using "&" and the string has an underscore, then make sure that the mnemonic comes before the underscore.
+In GTK, when the string has an underscore, the "&" mnemonic must come before it.
 
 If the MARKUP attribute is defined, then the title string can contain markup commands using a Pango-like subset (`<b>`, `<i>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<big>`, `<small>`, `<span>`).
 Works only if a mnemonic is NOT defined in the title. Not valid for menus. Not supported in Win32, FLTK, Motif and Haiku (markup tags are stripped and plain text is displayed).

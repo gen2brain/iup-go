@@ -13,7 +13,7 @@ Creates a label interface element, which displays a separator, a text or an imag
 ### Attributes
 
 **ACTIVE**: The only difference between an active label and an inactive one is its visual feedback.
-Possible values: "YES, "NO". Default: "YES".
+Possible values: "YES", "NO". Default: "YES".
 
 **ALIGNMENT** (non-inheritable): horizontal and vertical alignment.
 Possible values: "ALEFT", "ACENTER" and "ARIGHT", combined to "ATOP", "ACENTER" and "ABOTTOM".
@@ -62,9 +62,9 @@ The '\n' character is accepted for line change.
 The "&" character can be used to define a mnemonic, the next character will be used as key.
 Use "&&" to show the "&" character instead of defining a mnemonic.
 The next control from the label will be activated from any control in the dialog using the "Alt+key" combination.
-The "&" is always consumed (so "&&" shows "&" in all drivers), but the "Alt+key" activation of the next control is not available in macOS, iOS, Android and WebAssembly.
+The "&" is always consumed, but the "Alt+key" activation of the next control is not available in macOS, iOS, Android and WebAssembly.
 
-**WORDWRAP**: enables or disable the wrapping of lines that does not fit in the label.
+**WORDWRAP**: enables or disables the wrapping of lines that do not fit in the label.
 Can be "YES" or "NO". Default: "NO". Can only set WORDWRAP=YES if ALIGNMENT=ALEFT.
 When the width is set by SIZE or RASTERSIZE, the natural height includes the wrapped lines.
 Not supported in Motif.

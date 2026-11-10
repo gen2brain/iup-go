@@ -14,12 +14,12 @@ Supports all the [IupDialog](iup_dialog.md) attributes and the following additio
 
 **ALPHA**: if defined, it will enable an alpha selection additional controls with its initial value.
 If the user pressed the Ok button contains the returned value.
-Default: no defined, or 255 if SHOWALPHA=YES.
+Default: not defined, or 255 if SHOWALPHA=YES.
 
 **COLORTABLE**: list of colors separated by ";". If a color is not specified then the default color is used.
-You can skip colors using ";;". The maximum number of colors is 20.
+Colors can be skipped using ";;". The maximum number of colors is 20.
 
-**COMPACT**: if enabled hides the HSI (Hue/Saturation/Intensity) column, leaving the wheel + preview + RGB + OK/Cancel. Intended for narrow dialogs (mobile screens).
+**COMPACT**: if enabled hides the HSI (Hue/Saturation/Intensity) column, leaving the wheel, preview, RGB and OK/Cancel.
 
 [PARENTDIALOG](../attrib/iup_parentdialog.md) (creation-only): Name of a dialog to be used as parent.
 This dialog will always be in front of the parent dialog.

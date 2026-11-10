@@ -15,7 +15,7 @@ Possible values: "ALEFT", "ARIGHT", "ACENTER". Default: "ALEFT".
 Not supported in Motif and FLTK.
 
 **APPEND** (write-only): Inserts a text at the end of the current text.
-In the Multiline, if APPENDNEWLINE=YES, a "\n" character is automatically inserted before the appended text if the current text is not empty(APPENDNEWLINE default is YES).
+In the Multiline, if APPENDNEWLINE=YES, a "\n" character is automatically inserted before the appended text if the current text is not empty (APPENDNEWLINE default is YES).
 If APPENDSCROLL=YES, after the insert the view scrolls so the appended text is visible (APPENDSCROLL default is YES).
 With FORMATTING=YES the appended text has the default formatting.
 Ignored if set before map.
@@ -32,9 +32,9 @@ Ignored in GTK when MULTILINE=NO.
 In QML, BORDER=NO also removes the padding around the text.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
-In Windows the control will still get the focus when clicked. Default: YES.
+In Windows, the control will still get the focus when clicked. Default: YES.
 
-**PROPAGATEFOCUS**(non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
+**PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
 **CARET** (non-inheritable): **Character** position of the insertion point. Its format depends in MULTILINE=YES.
@@ -65,7 +65,7 @@ Does not depend on current locale.
 
 **CLIPBOARD** (write-only): clear, cut, copy or paste the selection to or from the clipboard.
 Values: "CLEAR", "CUT", "COPY", "PASTE", "UNDO", "REDO", "CLEARUNDO".
-UNDO and REDO are not supported in GTK 2, GTK 3, Motif, EFL and WebAssembly. In Win32 REDO requires FORMATTING=YES.
+UNDO and REDO are not supported in GTK 2, GTK 3, Motif, EFL and WebAssembly. In Win32, REDO requires FORMATTING=YES.
 CLEARUNDO empties the undo and redo history; only in Win32, WinUI, GTK 4, Qt, QML, macOS and iOS.
 WinUI CLEARUNDO requires FORMATTING=YES. Qt and QML CLEARUNDO requires MULTILINE=YES.
 
@@ -75,7 +75,7 @@ WinUI CLEARUNDO requires FORMATTING=YES. Qt and QML CLEARUNDO requires MULTILINE
 It works as a textual cue, or tip to prompt the user for input.
 Valid only for MULTILINE=NO. In Windows, works only when Visual Styles are enabled.
 Not supported in Motif.
-In QML it has no effect when SPIN=YES.
+In QML, it has no effect when SPIN=YES.
 
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
 Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
@@ -83,11 +83,11 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute TXTFGCOLOR.
 
 **FILTER** (non-inheritable): allows a custom filter to process the characters: Can be LOWERCASE, UPPERCASE or NUMBER (only numbers allowed).
-Supported on all drivers. In Haiku, single-line filtering is keyboard-only (paste is not filtered).
+In Haiku, single-line filtering is keyboard-only (paste is not filtered).
 In WinUI with FORMATTING=YES, NUMBER is not enforced.
 
 [FORMATTING](../attrib/iup_formatting.md) (non-inheritable): When enabled allows the use of text formatting attributes.
-In GTK is always enabled, but only when MULTILINE=YES. Default: NO.
+In GTK, it is always enabled, but only when MULTILINE=YES. Default: NO.
 Not supported in Motif.
 
 **INSERT** (write-only): Inserts a text in the caret's position, also replaces the current selection if any.
@@ -99,11 +99,11 @@ When MULTILINE=NO returns always "1".
 **LINEVALUE** (read-only): returns the text of the line where the caret is. It does not include the "\n" character.
 When MULTILINE=NO returns the same as VALUE.
 
-**LOADRTF** (write-only) [Win32 and WinUI Only]: loads formatted text from a Rich Text Format file given its filename.
+**LOADRTF** [Win32 and WinUI Only] (write-only): loads formatted text from a Rich Text Format file given its filename.
 The attribute LOADRTFSTATUS is set to OK or FAILED after the file is loaded.
 Requires FORMATTING=YES.
 
-**SAVERTF** (write-only) [Win32 and WinUI Only]: saves formatted text to a Rich Text Format file given its filename.
+**SAVERTF** [Win32 and WinUI Only] (write-only): saves formatted text to a Rich Text Format file given its filename.
 The attribute SAVERTFSTATUS is set to OK or FAILED after the file is saved.
 Requires FORMATTING=YES.
 
@@ -169,7 +169,7 @@ Not supported in Motif.
 **READONLY**: Allows the user only to read the contents, without changing it.
 Restricts keyboard input only, text value can still be changed using attributes.
 Navigation keys are still available. Possible values: "YES", "NO". Default: NO.
-In iOS a single-line read-only text cannot be selected.
+In iOS, a single-line read-only text cannot be selected.
 
 **SCROLLBAR** (creation-only): Valid only when MULTILINE=YES.
 Associates an automatic horizontal and/or vertical scrollbar to the multiline.
@@ -177,13 +177,13 @@ Can be: "VERTICAL", "HORIZONTAL", "YES" (both) or "NO" (none). Default: "YES".
 For all systems, when SCROLLBAR!=NO the natural size will always include its size even if the native system hides the scrollbar.
 If **AUTOHIDE**=YES scrollbars are visible only if they are necessary, by default AUTOHIDE=YES.
 Not supported in Motif, Haiku, FLTK, and iOS.
-In Windows not supported when FORMATTING=NO.
+In Windows, not supported when FORMATTING=NO.
 
-**SCROLLTO** (non-inheritable, write-only): Scroll the text to make the given **character** position visible.
+**SCROLLTO** (non-inheritable) (write-only): Scroll the text to make the given **character** position visible.
 It uses the same format and reference of the CARET attribute ("lin,col" or "col" starting at 1).
 In Windows, when FORMATTING=YES "col" is ignored.
 
-**SCROLLTOPOS** (non-inheritable, write-only): Scroll the text to make the given **character** position visible.
+**SCROLLTOPOS** (non-inheritable) (write-only): Scroll the text to make the given **character** position visible.
 It uses the same format and reference of the CARETPOS attribute ("pos" starting at 0).
 
 **SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
@@ -216,7 +216,7 @@ See the Notes below if using UTF-8 strings in GTK.
 [SIZE](../attrib/iup_size.md) (non-inheritable): Since the contents can be changed by the user, the **Natural Size** is not affected by the text contents.
 Use VISIBLECOLUMNS and VISIBLELINES to control the **Natural Size**.
 
-**SPIN** (non-inheritable, creation-only): enables a spin control attached to the element.
+**SPIN** (non-inheritable) (creation-only): enables a spin control attached to the element.
 Default: NO. The spin increments and decrements an integer number.
 The editing in the element is still available.
 
@@ -226,7 +226,7 @@ The value is limited to the minimum and maximum values.\
 **SPINMIN** (non-inheritable): the minimum value. Default: 0.\
 **SPININC** (non-inheritable): the increment value. Default: 1.\
 **SPINALIGN** (creation-only): the position of the spin. Can be LEFT or RIGHT. Default: RIGHT.
-In GTK and WinUI is always RIGHT.\
+In GTK and WinUI, it is always RIGHT.\
 **SPINWRAP** (creation-only): if the position reaches a limit, it continues from the opposite limit.
 Default: NO.\
 **SPINAUTO** (creation-only): enables the automatic update of the text contents.
@@ -248,10 +248,10 @@ If not, does nothing.
 
 **VISIBLECOLUMNS**: Defines the number of visible columns for the **Natural Size**, this means that will act also as minimum number of visible columns.
 A column is the width of the digit "0" in the element font.
-As for SIZE you can set to NULL after map to use it as an initial value. Default: 5
+As for SIZE, it can be set to NULL after map to use it as an initial value. Default: 5
 
 **VISIBLELINES**: When MULTILINE=YES defines the number of visible lines for the **Natural Size**, this means that will act also as minimum number of visible lines.
-As for SIZE you can set to NULL after map to use it as an initial value. Default: 1
+As for SIZE, it can be set to NULL after map to use it as an initial value. Default: 1
 
 **WORDWRAP** (creation-only): Valid only when MULTILINE=YES.
 If enabled will force a word wrap of lines that are greater than the width of the control, and the horizontal scrollbar will be removed.
@@ -359,14 +359,14 @@ For single line controls, **lin** is always 1, and **col** is always "**pos**+1"
 When MULTILINE=YES, the Enter key will add a new line, and the Tab key will insert a Tab.
 So the "DEFAULTENTER" button will not be processed when the element has the keyboard focus, also to change focus to the next element press <Ctrl>+<Tab>.
 
-In Windows, if you press a Ctrl+key combination that is not supported by the control, then a beep is sound.
+In Windows, a Ctrl+key combination not supported by the control sounds a beep.
 
-When using UTF-8 strings in GTK, be aware that all attributes are indexed by characters, NOT by byte index, because some characters in UTF-8 can use more than one byte.
+When using UTF-8 strings in GTK, all attributes are indexed by characters, NOT by bytes.
 This also applies to Windows if FORMATTING=YES depending on the Windows codepage (for example, East Asian codepage where some characters take two bytes).
 
 Internal Drag&Drop support is enabled by default.
-But in Windows the internal Drag&Drop is enabled only if FORMATTING=YES.
-In GTK the internal Drag&Drop cannot be disabled, so it will conflict with the [Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks.
+But in Windows, the internal Drag&Drop is enabled only if FORMATTING=YES.
+In GTK, the internal Drag&Drop cannot be disabled, so it will conflict with the [Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks.
 
 #### Navigation, Selection and Clipboard Keys
 
@@ -401,7 +401,7 @@ Here is a list of the common keys for all drivers. Other keys are available depe
 | GTK                             | Qt                            | Win32                          | macOS                          |
 | ![](../images/iuptext_gtk3.png) | ![](../images/iuptext_qt.png) | ![](../images/iuptext_win.png) | ![](../images/iuptext_mac.png) |
 
-When FORMATTING=YES in Windows or GTK (formatting attributes are set to a formatag object that it is a **IupUser**):
+When FORMATTING=YES in Windows or GTK (formatting attributes are set to a format tag object that is an **IupUser**):
 
 ```
 "ALIGNMENT"   = "CENTER"

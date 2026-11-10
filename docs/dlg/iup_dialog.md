@@ -11,10 +11,6 @@ For any interface element to be shown, it must be encapsulated in a dialog.
 
 **Returns:** the identifier of the created element, or NULL if an error occurs.
 
-In WebAssembly the dialog is a region of the browser page. The first dialog has no title bar and its TITLE becomes the document title.
-A dialog with a PARENTDIALOG gets a simulated title bar when TITLE is set or MENUBOX=YES; it can be dragged to move the dialog and carries a close button when MENUBOX=YES.
-MAXBOX, MINBOX, CUSTOMFRAME, HIDETASKBAR and TOPMOST have no effect.
-
 ### Attributes
 
 #### Common
@@ -33,7 +29,7 @@ Default: "YES". BORDER=NO is useful only when RESIZE=NO, MAXBOX=NO, MINBOX=NO, M
 **CHILDOFFSET**: Allow to specify a position offset for the child. Available for native containers only.
 It will not affect the natural size, and allows to position controls outside the client area.
 Format "*dx*x*dy*", where *dx* and *dy* are integer values corresponding to the horizontal and vertical offsets, respectively, in pixels.
-Default: 0x0.
+Default: "0x0".
 
 [CURSOR](../attrib/iup_cursor.md) (non-inheritable): Defines a cursor for the dialog.
 
@@ -50,26 +46,26 @@ Additionally, the following values can also be defined for width and/or height:
 - "QUARTER": Defines the dialog’s width (or height) equal to 1/4 of the screen's width (or height)
 - "EIGHTH": Defines the dialog’s width (or height) equal to 1/8 of the screen's width (or height)
 
-In Android and iOS the dialog fills the screen, SIZE and RASTERSIZE do not change it.
+In Android and iOS, the dialog fills the screen, SIZE and RASTERSIZE do not change it.
 
 The dialog **Natural** size is only considered when the **User** size is not defined or when it is bigger than the **Current** size.
 This behavior is different from a control that goes inside the dialog.
-Because of that, when SIZE or RASTERSIZE are set (changing the **User** size), the **Current** size is internally reset to 0x0, so the **Natural** size can be considered when re-computing the **Current** size of the dialog.
+When SIZE or RASTERSIZE are set (changing the **User** size), the **Current** size is reset to 0x0, so the **Natural** size is considered when re-computing the **Current** size of the dialog.
 
 Values set at SIZE or RASTERSIZE attributes of a dialog are always accepted, regardless of the minimum size required by its children.
 For a dialog to have the minimum necessary size to fit all elements contained in it, simply define SIZE or RASTERSIZE to NULL.
-Also, if you set SIZE or RASTERSIZE to be used as the initial size of the dialog, its contents will be limited to this size as the minimum size, if you do not want that, then after showing the dialog reset this size to NULL so the dialog can be resized to smaller values.
-But notice that its contents will still be limited by the **Natural** size, to also remove that limitation set SHRINK=YES.
+When SIZE or RASTERSIZE is used as the initial size of the dialog, it also limits the minimum size of its contents; reset it to NULL after showing the dialog so the dialog can be resized to smaller values.
+The contents are still limited by the **Natural** size; set SHRINK=YES to remove that limitation.
 To only change the **User** size in pixels, without resetting the **Current** size, set the USERSIZE attribute.
 
-Notice that the dialog size includes its decoration (it is the **Window** size), the area available for controls are returned by the dialog [CLIENTSIZE](../attrib/iup_clientsize.md).
+The dialog size includes its decoration (it is the **Window** size), the area available for controls are returned by the dialog [CLIENTSIZE](../attrib/iup_clientsize.md).
 For more information see [Layout Guide](../layout.md#layout-guide).
 
 **SIMULATEMODAL** (write-only): disable all other visible dialogs, just like when the dialog is made modal.
 
 [TITLE](../attrib/iup_title.md) (non-inheritable): Dialog’s title. Default: NULL.
-If you want to remove the title bar, you must also set MENUBOX=NO, MAXBOX=NO and MINBOX=NO, before map.
-But in Motif and GTK it will hide it only if RESIZE=NO also.
+To remove the title bar, also set MENUBOX=NO, MAXBOX=NO and MINBOX=NO before map.
+In Motif and GTK, it will hide it only if RESIZE=NO also.
 
 [VISIBLE](../attrib/iup_visible.md): Simply call **IupShow** or **IupHide** for the dialog.
 
@@ -78,14 +74,14 @@ But in Motif and GTK it will hide it only if RESIZE=NO also.
 > ------------------------------------------------------------------------
 
 [ACTIVE](../attrib/iup_active.md), [BGCOLOR](../attrib/iup_bgcolor.md), [FONT](../attrib/iup_font.md), [EXPAND](../attrib/iup_expand.md), [SCREENPOSITION](../attrib/iup_screenposition.md), [WID](../attrib/iup_wid.md), [TIP](../attrib/iup_tip.md), [CLIENTOFFSET](../attrib/iup_clientoffset.md), [CLIENTSIZE](../attrib/iup_clientsize.md), [RASTERSIZE](../attrib/iup_rastersize.md), [ZORDER](../attrib/iup_zorder.md): also accepted.
-Note that ACTIVE, BGCOLOR and FONT will also affect all the controls inside the dialog.
+ACTIVE, BGCOLOR and FONT also affect all the controls inside the dialog.
 
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks are supported. 
 
 #### Exclusive
 
 **CUSTOMFRAMESIMULATE**: allows the application to customize the dialog frame elements (the title and its buttons) by using IUP controls for its elements like caption, minimize button, maximize button, and close buttons.
-The custom frame support is entirely simulated by IUP, no native support for custom frame is used (this seems to have fewer drawbacks on the application behavior).
+The custom frame support is entirely simulated by IUP, no native support for custom frame is used.
 The application is responsible for leaving space for the borders. One drawback is that menu bars will not work.
 For the dialog to be able to be moved an **IupLabel**, or a **IupFlatLabel** or an **IupCanvas** must be at the top of the dialog and must have the NAME attribute set to CUSTOMFRAMECAPTION.
 See the Custom Frame notes below.
@@ -105,9 +101,9 @@ The BUTTON_CB and MOTION_CB callbacks of the dialog will be set too, so the dial
 The BUTTON_CB and MOTION_CB callbacks of the element with NAME=CUSTOMFRAMECAPTION  will also be changed so the dialog can be moved and maximized with double click.
 It is application responsibility to implement the minimize, maximize and close buttons.
 
-**DEFAULTENTER**:  Name of the button activated when the user press Enter when focus is in another control of the dialog.
+**DEFAULTENTER**: Name of the button activated when the user presses Enter when focus is in another control of the dialog.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate a button to a name.
-The referenced button automatically receives the [SHOWASDEFAULT](../elem/iup_button.md#attributes) visual emphasis so the user can identify which button responds to Enter.
+The referenced button automatically receives the [SHOWASDEFAULT](../elem/iup_button.md#attributes) visual emphasis.
 
 **DEFAULTESC**: Name of the button activated when the user presses Esc when focus is in another control of the dialog.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate a button to a name.
@@ -118,40 +114,40 @@ In Windows, if the PARENTDIALOG is defined then the MENUBOX is also removed, but
 [ICON](../attrib/iup_icon.md): Dialog’s icon.
 The Windows SDK recommends that cursors and icons should be implemented as resources rather than created at run time.
 
-**FULLSCREEN:** Makes the dialog occupy the whole screen over any system bars in the main monitor.
+**FULLSCREEN**: Makes the dialog occupy the whole screen over any system bars in the main monitor.
 All dialog details, such as title bar, borders, maximize button, etc., are removed.
-Possible values: YES, NO. In Motif, you may have to click in the dialog to set its focus.
-In Motif if set to YES when the dialog is hidden, then it cannot be changed after it is visible.
+Possible values: YES, NO. In Motif, a click in the dialog may be needed to set its focus.
+In Motif, if set to YES when the dialog is hidden, then it cannot be changed after it is visible.
 
 **MAXBOX** (creation-only): Requires a maximize button from the window manager.
-If RESIZE=NO then MAXBOX will be set to NO. Default: YES.
-In Motif the decorations are controlled by the Window Manager and may not be possible to be changed from IUP.
-In Windows MAXBOX is hidden only if MINBOX is hidden as well, or else it will be just disabled.
+If RESIZE=NO then MAXBOX will be set to NO. Default: "YES".
+In Motif, the decorations are controlled by the Window Manager and may not be possible to be changed from IUP.
+In Windows, MAXBOX is hidden only if MINBOX is hidden as well, or else it will be just disabled.
 
 **MAXSIZE**: Maximum size for the dialog in raster units (pixels).
 The windowing system will not be able to change the size beyond this limit.
-Default: 65535x65535.
-In GTK 4 it requires X11.
+Default: "65535x65535".
+In GTK 4, it requires X11.
 
 **MENU**: Name of a menu. Associates a menu to the dialog as a menu bar. The previous menu, if any, is unmapped.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate a menu to a name.
 See also [IupMenu](../elem/iup_menu.md).
 
-**MENUBARKEY** (non-inheritable): whether F10 opens the menu bar. Default: YES.
+**MENUBARKEY** (non-inheritable): whether F10 opens the menu bar. Default: "YES".
 Set to NO so the application receives F10 in K_ANY.
-Supported in GTK and GTK 4; in GTK 3 it affects every dialog of the application, in GTK 4 only this dialog.
+Supported in GTK and GTK 4; in GTK 3, it affects every dialog of the application, in GTK 4, only this dialog.
 
 **MENUBOX** (creation-only): Requires a system menu box from the window manager.
-If hidden will also remove the Close button. Default: YES.
-In Motif the decorations are controlled by the Window Manager and may not be possible to be changed from IUP.
-In Windows if hidden will hide also MAXBOX and MINBOX.
+If hidden will also remove the Close button. Default: "YES".
+In Motif, the decorations are controlled by the Window Manager and may not be possible to be changed from IUP.
+In Windows, if hidden will hide also MAXBOX and MINBOX.
 
 **MINBOX** (creation-only): Requires a minimize button from the window manager.
-Default: YES. In Motif the decorations are controlled by the Window Manager and may not be possible to be changed from IUP.
-In Windows MINBOX is hidden only if MAXBOX is hidden as well, or else it will be just disabled.
+Default: "YES". In Motif, the decorations are controlled by the Window Manager and may not be possible to be changed from IUP.
+In Windows, MINBOX is hidden only if MAXBOX is hidden as well, or else it will be just disabled.
 
 **MINSIZE**: Minimum size for the dialog in raster units (pixels).
-The windowing system will not be able to change the size beyond this limit. Default: 1x1.
+The windowing system will not be able to change the size beyond this limit. Default: "1x1".
 Some systems define a very minimum size greater than this, for instance in Windows the horizontal minimum size includes the window decoration buttons.
 
 **MODAL** (read-only): Returns the popup state. It is "YES" if the dialog was shown using **IupPopup**.
@@ -164,28 +160,28 @@ Used only if PARENTDIALOG is not defined.
 [PARENTDIALOG](../attrib/iup_parentdialog.md) (creation-only): Name of a dialog to be used as parent.
 
 **PLACEMENT**: Changes how the dialog will be shown. Values: "FULL", "MAXIMIZED", "MINIMIZED" and "NORMAL".
-Default: NORMAL. After **IupShow**/**IupPopup** the attribute is set back to "NORMAL".
+Default: "NORMAL". After **IupShow**/**IupPopup** the attribute is set back to "NORMAL".
 FULL is similar to FULLSCREEN, but only the dialog client area covers the screen area, menu and decorations will be there but out of the screen.
-In UNIX there is a chance that the placement won't work correctly, that depends on the Window Manager.
-In WebAssembly FULL and MAXIMIZED both fill the browser viewport, and MINIMIZED has no effect.
-On Wayland a minimized dialog is restored only by the user.
-In macOS FULL fills the screen below the menu bar and the title bar stays visible.
+In UNIX, there is a chance that the placement won't work correctly, that depends on the Window Manager.
+In WebAssembly, FULL and MAXIMIZED both fill the browser viewport, and MINIMIZED has no effect.
+In Wayland, a minimized dialog is restored only by the user.
+In macOS, FULL fills the screen below the menu bar and the title bar stays visible.
 The SHOWNOACTIVATE attribute can be set to YES to prevent the window from being activated [Win32, WinUI, Qt, QML and Cocoa].
 With SHOWNOACTIVATE=YES no control receives the focus after the dialog is shown.
 The SHOWMINIMIZENEXT attribute can be set to YES to activate the next top-level window in the Z order when minimizing [Win32 and WinUI].
 
-**RESIZE** (creation-only): Allows interactively changing the dialog’s size. Default: YES.
+**RESIZE** (creation-only): Allows interactively changing the dialog’s size. Default: "YES".
 If RESIZE=NO then MAXBOX will be set to NO.
-In Motif the decorations are controlled by the Window Manager and may not be possible to be changed from IUP.
+In Motif, the decorations are controlled by the Window Manager and may not be possible to be changed from IUP.
 
 **RESIZEINC**: Size step for the interactive resize, in raster units (pixels). The dialog size changes in multiples of these values, counted from MINSIZE. Default: NULL.
 Not supported in EFL, Haiku, Android, iOS and WebAssembly.
-In GTK 4, Qt, QML and FLTK it requires X11.
-In macOS the steps are counted from the current size.
-Since the step grid starts at MINSIZE, set MINSIZE and the dialog size so that their difference is a multiple of the step, or the window manager will round the size down to the grid.
+In GTK 4, Qt, QML and FLTK, it requires X11.
+In macOS, the steps are counted from the current size.
+The difference between the dialog size and MINSIZE should be a multiple of the step, or the window manager rounds the size down to the grid.
 
 [SHRINK](../attrib/iup_shrink.md): Allows changing the elements’ distribution when the dialog is smaller than the minimum size.
-Default: NO. Android and iOS default to YES.
+Default: "NO". Android and iOS default to YES.
 
 **STARTFOCUS**: Name of the element that must receive the focus right after the dialog is shown using **IupShow** or **IupPopup**.
 If not defined then the first control than can receive the focus is selected (same effect of calling [IupNextField](../func/iup_nextfield.md) for the dialog).
@@ -193,7 +189,7 @@ Updated after SHOW_CB is called and only if the focus was not changed during the
 Ignored when SHOWNOFOCUS or SHOWNOACTIVATE is YES.
 
 **SHOWNOFOCUS**: do not set focus after show.
-On Android and iOS defaults to YES; touch UIs don't autofocus controls on launch.
+In Android and iOS, the default is YES.
 
 **ACTIVEWINDOW** (read-only): informs if the dialog is the active window (the window with focus).
 Can be YES or NO.
@@ -210,13 +206,13 @@ See the Custom Frame notes below.
 Not supported in Motif.
 
 **DIALOGHINT** (creation-only): if enabled, set the window type hint to a dialog hint.
-Supported in GTK, GTK 4, Qt, QML, macOS, and EFL.
+Supported in GTK, GTK 4, Qt, QML, macOS and EFL.
 
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
-Default: NO, but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
+Default: "NO", but if DROPFILES_CB is defined when the element is mapped then it will be automatically enabled.
 
 **HIDETITLEBAR** (non-inheritable): hides the title bar with all its elements.
-In Motif the result depends on the window manager honoring `_MOTIF_WM_HINTS` (most modern WMs do).
+In Motif, the result depends on the window manager honoring `_MOTIF_WM_HINTS`.
 
 **MAXIMIZED** (read-only): indicates if the dialog is maximized.
 Can be YES or NO.
@@ -228,63 +224,62 @@ Not supported in Android, iOS and WebAssembly, and on Wayland.
 
 **OPACITY**: sets the dialog transparency alpha value.
 Valid values range from 0 (completely transparent) to 255 (opaque).
-In Windows (Win32) must be set before map so the native window would be properly initialized when mapped.
-In Motif requires a running compositor.
-In EFL requires X11 and a running compositor.
+In Win32, it must be set before map.
+In Motif, it requires a running compositor.
+In EFL, it requires X11 and a running compositor.
 Not supported in FLTK and Haiku.
 
 **OPACITYIMAGE**: sets an RGBA image as the dialog background so it is possible to create a non rectangle window with transparency, but it can not have children.
-Used usually for splash screens. It must be set before map so the native window would be properly initialized when mapped.
-In GTK, Qt and QML requires a running compositor.
-Not supported in GTK4, Motif, WinUI, FLTK, iOS, Android, Haiku and WebAssembly.
+Used usually for splash screens. It must be set before map.
+In GTK, Qt and QML, it requires a running compositor.
+Not supported in GTK 4, Motif, WinUI, FLTK, iOS, Android, Haiku and WebAssembly.
 
 **SHAPEIMAGE**: sets an RGBA image as the dialog shape, so it is possible to create a non rectangle window with children.
 Only the fully transparent pixels will be transparent.
 The pixels colors will be ignored, only the alpha channel is used.
-Not supported in GTK4, Motif, iOS, Android, Haiku and WebAssembly.
+Not supported in GTK 4, Motif, iOS, Android, Haiku and WebAssembly.
 
-**TOOLBOX** (creation-only): makes the dialog look like a toolbox with a smaller title bar. Default: NO.
+**TOOLBOX** (creation-only): makes the dialog look like a toolbox with a smaller title bar. Default: "NO".
 Supported in Win32, WinUI, Qt, QML and Haiku.
-In Win32 and WinUI it is only valid if the PARENTDIALOG or NATIVEPARENT attribute is also defined.
+In Win32 and WinUI, it is only valid if the PARENTDIALOG or NATIVEPARENT attribute is also defined.
 
 **TOPMOST**: puts the dialog always in front of all other dialogs in all applications.
-Default: NO.
-In Motif and EFL depends on the window manager honoring `_NET_WM_STATE_ABOVE`.
-Not supported in GTK4, FLTK, iOS, and Android.
+Default: "NO".
+In Motif and EFL, it depends on the window manager honoring `_NET_WM_STATE_ABOVE`.
+Not supported in GTK 4, FLTK, iOS and Android.
 
 #### Exclusive [System Dependent]
 
-**HWND** [Windows Only] (non-inheritable, read-only): Returns the Windows Window handle.
+**HWND** [Windows Only] (non-inheritable) (read-only): Returns the Windows Window handle.
 Available in Win32, WinUI, or in the GTK, GTK 4, Qt and FLTK drivers on Windows.
 
 **SAVEUNDER** [Win32 and Motif Only] (creation-only): When this attribute is true (YES), the dialog requests the window system to store the original image of the desktop region it occupies, so closing or moving the dialog does not trigger a redraw of the windows beneath it.
 Its default value is YES if the dialog has a parent dialog.
-Largely a no-op on modern composited window systems (DWM on Windows, KWin/Mutter on Linux); other drivers do not expose an equivalent primitive.
+Has little effect on composited window systems.
 
-**XWINDOW** [Unix Only] (non-inheritable, read-only): Returns the X-Windows Window (Drawable).
+**XWINDOW** [Unix Only] (non-inheritable) (read-only): Returns the X-Windows Window (Drawable).
 Available in Motif, GTK, GTK 4, Qt, QML, FLTK and EFL on X11.
 
-**WL_SURFACE** [Unix Only] (non-inheritable, read-only): Returns the Wayland surface handle.
+**WL_SURFACE** [Unix Only] (non-inheritable) (read-only): Returns the Wayland surface handle.
 Available in GTK, GTK 4, Qt, QML, FLTK and EFL on Wayland.
 
-**NSVIEW** [macOS Only] (non-inheritable, read-only): Returns the Cocoa NSView handle.
+**NSVIEW** [macOS Only] (non-inheritable) (read-only): Returns the Cocoa NSView handle.
 Available in the Cocoa, GTK, GTK 4, Qt and FLTK drivers on macOS.
 
-**BWINDOW** [Haiku Only] (non-inheritable, read-only): Returns the Haiku BWindow handle.
+**BWINDOW** [Haiku Only] (non-inheritable) (read-only): Returns the Haiku BWindow handle.
 
 #### Exclusive [Windows Only]
 
 **BACKDROP** [WinUI Only] (non-inheritable): system backdrop of the dialog. Can be "MICA", "MICAALT" or "ACRYLIC". Default: NULL.
 
 **COMPOSITED** [Win32 Only] (creation-only): controls if the window will have an automatic double buffer for all children.
-Default is "NO".
-It is NOT compatible with IupCanvas, and all derived IUP controls such as IupFlat*, IupGL*, IupPlot and IupMatrix, because IupCanvas uses CS_OWNDC in the window class.
-Largely obsolete since Windows Vista, as the DWM compositor already prevents window flicker.
+Default: "NO".
+It is NOT compatible with IupCanvas, and all derived IUP controls such as IupFlat*, IupGL*, IupPlot and IupMatrix.
 
 **CUSTOMFRAMEDRAW** [Win32 Only] (non-inheritable): allows the application to customize the dialog frame elements (the title and its buttons) by drawing them with the CUSTOMFRAMEDRAW_CB callback.
 Can be YES or NO. The Window client area is expanded to include the whole window.
-Notice that the dialog attributes like BORDER, RESIZE, MAXBOX, MINBOX and TITLE must still be defined.
-But maximize, minimize and close buttons must be manually implemented in the BUTTON_CB callback.
+The dialog attributes like BORDER, RESIZE, MAXBOX, MINBOX and TITLE must still be defined.
+The maximize, minimize and close buttons must be implemented in the BUTTON_CB callback.
 One drawback is that menu bars will not work.
 Not available in WinUI, use CUSTOMFRAME instead.
 
@@ -300,7 +295,7 @@ If not defined but CUSTOMFRAMECAPTION is defined, then it will use the caption e
 **HELPBUTTON** [Win32 Only] (creation-only): Inserts a help button in the same place of the maximize button.
 It can only be used for dialogs without the minimize and maximize buttons, and with the menu box.
 For the next interaction of the user with a control in the dialog, the callback  [HELP_CB](../call/iup_help_cb.md) will be called instead of the control defined ACTION callback.
-Possible values: YES, NO. Default: NO.
+Possible values: YES, NO. Default: "NO".
 
 **MAXIMIZEATPARENT** [Win32 Only]: when using multiple monitors, maximize the dialog in the same monitor that the parent dialog is.
 
@@ -309,30 +304,30 @@ Possible values: YES, NO. Default: NO.
 **HIDETASKBAR** (write-only): Action attribute that when set to "YES", hides the dialog, but does not decrement the visible dialog count, does not call SHOW_CB and does not mark the dialog as hidden inside IUP.
 It is usually used to hide the dialog and keep the tray icon working without closing the main loop.
 It has the same effect as setting LOCKLOOP=YES and normally hiding the dialog.
-IMPORTANT: when you hide using HIDETASKBAR, you must show using HIDETASKBAR also.
+A dialog hidden with HIDETASKBAR must be shown with HIDETASKBAR.
 Possible values: YES, NO.
 Not supported in Android and iOS.
 
 **TASKBARPROGRESS** [Win32, WinUI and macOS Only] (write-only): enables a progress bar drawn on the application's taskbar/Dock button.
-Default: NO.
+Default: "NO".
 
 **TASKBARPROGRESSSTATE** [Win32, WinUI and macOS Only] (write-only): sets the type and state of the progress indicator.
-Possible values: NORMAL, PAUSED, ERROR, INDETERMINATE, NOPROGRESS. Default: NORMAL.
+Possible values: NORMAL, PAUSED, ERROR, INDETERMINATE, NOPROGRESS. Default: "NORMAL".
 
 **TASKBARPROGRESSVALUE** [Win32, WinUI and macOS Only] (write-only): updates the progress bar to the given percentage. The value must be between 0 and 100.
 
 **TASKBARBUTTON**: If set to SHOW force the application button to be shown on the taskbar even if the dialog does not have decorations.
 If set to HIDE force the application button to be hidden from the taskbar.
-In Win32 and WinUI HIDE also hides the system menu, the maximize and minimize buttons.
-In GTK, GTK 4, Qt, QML, Motif, EFL and FLTK it requires X11; in Qt it needs Qt 6.2 or newer.
+In Win32 and WinUI, HIDE also hides the system menu, the maximize and minimize buttons.
+In GTK, GTK 4, Qt, QML, Motif, EFL and FLTK, it requires X11; in Qt, it needs Qt 6.2 or newer.
 Not supported in macOS, Haiku, Android, iOS and WebAssembly.
 
 #### Exclusive [Haiku Only]
 
 **WORKSPACES** (non-inheritable): which Haiku workspace(s) the dialog appears in. Values:
-- `"ALL"`: visible on every workspace (`B_ALL_WORKSPACES`).
-- `"CURRENT"`: pinned to the workspace the dialog is currently on.
-- Comma-separated 0-based indices (e.g. `"0,2,5"`): a custom workspace mask.
+- "ALL": visible on every workspace (`B_ALL_WORKSPACES`).
+- "CURRENT": pinned to the workspace the dialog is currently on.
+- Comma-separated 0-based indices (e.g. "0,2,5"): a custom workspace mask.
 
 #### Exclusive [Android and iOS Only]
 
@@ -340,7 +335,7 @@ Not supported in macOS, Haiku, Android, iOS and WebAssembly.
 
 **DRAWER** (non-inheritable): name of a [IupMenu](../elem/iup_menu.md) to render as a navigation drawer. Independent of MENU; a hamburger button toggles it.
 
-**TITLECENTERED** [Android Only] (non-inheritable): "YES" centers the toolbar title. Default: "NO". On iOS the title is always centered.
+**TITLECENTERED** [Android Only] (non-inheritable): "YES" centers the toolbar title. Default: "NO". In iOS, the title is always centered.
 
 **TITLEBARSTYLE** (non-inheritable): toolbar tonal style. Values: "FLAT" (default), "LIFTED", "PRIMARY".
 
@@ -355,7 +350,7 @@ Not supported: MAXBOX, MINBOX, MENUBOX, RESIZE, RESIZEINC, BORDER, DIALOGFRAME, 
 **ih**: identifier of the element that activated the event.\
 **dark_mode**: is non-zero if the appearance is now dark, zero if light.
 
-In Motif and FLTK only an APPEARANCE change calls it, there is no system theme notification.
+In Motif and FLTK, only an APPEARANCE change calls it, there is no system theme notification.
 
 [CLOSE_CB](../call/iup_close_cb.md): Called right before the dialog is closed.
 
@@ -371,7 +366,7 @@ Not supported in Android and iOS.
 
 [DROPFILES_CB](../call/iup_dropfiles_cb.md): Action generated when one or more files are dropped in the dialog.
 
-**CUSTOMFRAMEDRAW_CB** [Windows Only]: Called when the dialog must be redrawn.
+**CUSTOMFRAMEDRAW_CB** [Win32 Only]: Called when the dialog must be redrawn.
 Although it is designed for drawing the frame elements, all the dialog must be painted.
 Works only when CUSTOMFRAME or CUSTOMFRAMEDRAW is defined.
 The dialog can be used just like an IupCanvas to draw its elements, the **HDC_WMPAINT** and **CLIPRECT** attributes are defined during the callback.
@@ -379,9 +374,9 @@ For mouse callbacks use the same callbacks as **IupCanvas**, such as [BUTTON_CB]
 
     int function(Ihandle *ih);
 
-> **ih**: identifier of the element that activated the event.
+**ih**: identifier of the element that activated the event.
 
-**CUSTOMFRAMEACTIVATE_CB** [Windows Only]: Called when the dialog active state is changed (for instance, the user Alt+Tab to another application, or clicked in another window).
+**CUSTOMFRAMEACTIVATE_CB** [Win32 Only]: Called when the dialog active state is changed (for instance, the user Alt+Tab to another application, or clicked in another window).
 Works only when CUSTOMFRAME or CUSTOMFRAMEDRAW is defined.
 
     int function(Ihandle *ih, int active);
@@ -390,7 +385,7 @@ Works only when CUSTOMFRAME or CUSTOMFRAMEDRAW is defined.
 **active**: is non-zero if the dialog is active or zero if it is inactive.
 
 **FOCUS_CB**: Called when the dialog or any of its children gets the focus, or when another dialog or any control in another dialog gets the focus.
-It is called after the common callbacks GETFOCUS_CB and KILL_FOCUS_CB.
+It is called after the common callbacks GETFOCUS_CB and KILLFOCUS_CB.
 
     int function(Ihandle *ih, int focus);
 
@@ -400,7 +395,7 @@ It is called after the common callbacks GETFOCUS_CB and KILL_FOCUS_CB.
 **MOVE_CB**: Called after the dialog was moved on screen.
 The coordinates are the same as the [SCREENPOSITION](../attrib/iup_screenposition.md) attribute.
 Not supported in Android and iOS.
-On X11 it may be called several times during a move, depending on the window manager.
+In X11, it may be called several times during a move, depending on the window manager.
 Not called on Wayland.
 
     int function(Ihandle *ih, int x, int y);
@@ -422,6 +417,10 @@ If returns IUP_IGNORE the dialog layout is NOT recalculated.
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks are supported. 
 
 ### Notes
+
+In WebAssembly, the dialog is a region of the browser page. The first dialog has no title bar and its TITLE becomes the document title.
+A dialog with a PARENTDIALOG gets a simulated title bar when TITLE is set or MENUBOX=YES; it can be dragged to move the dialog and carries a close button when MENUBOX=YES.
+MAXBOX, MINBOX, CUSTOMFRAME, HIDETASKBAR and TOPMOST have no effect.
 
 Do not associate an **IupDialog** with the native "dialog" nomenclature in Windows, GTK or Motif.
 **IupDialog** use native standard windows in all drivers.
@@ -461,7 +460,7 @@ In both cases place an IupLabel, IupFlatLabel or IupCanvas at the top with NAME=
 
 Exact behavior depends on the window manager: a borderless window does not always get a taskbar button, and some managers ignore maximize or minimize requests on undecorated windows.
 
-[Windows note] CUSTOMFRAME has no dedicated Win32 API and is implemented through WindowProc message handling, so a few artifacts remain: the "Not Responding" title bar may be drawn over a captionless window, and dialog redraw can flicker more than usual. CUSTOMFRAMESIMULATE avoids the double-buffer side effect.
+**[Windows note]** CUSTOMFRAME has no dedicated Win32 API and is implemented through WindowProc message handling, so a few artifacts remain: the "Not Responding" title bar may be drawn over a captionless window, and dialog redraw can flicker more than usual. CUSTOMFRAMESIMULATE avoids the double-buffer side effect.
 
 ### Examples
 

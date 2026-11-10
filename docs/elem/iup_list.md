@@ -1,7 +1,7 @@
 ## IupList
 
 Creates an interface element that displays a list of items. The list can be visible or can be dropped down.
-It also can have an edit box for text input. So it is a 4 in 1 element.
+It also can have an edit box for text input.
 In native systems, the dropped-down case is called Combo Box.
 
 ### Creation
@@ -34,16 +34,16 @@ Ignored if set before map.
 **AUTOHIDE**: scrollbars are shown only if they are necessary. Default: "YES".
 Not supported in Android and iOS.
 
-**AUTOREDRAW** [Windows Only] (non-inheritable): automatically redraws the list when something has change.
+**AUTOREDRAW** [Windows Only] (non-inheritable): automatically redraws the list when something has changed.
 Set to NO to add many items to the list without updating the display. Default: "YES".
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color of the text. Default: the global attribute TXTBGCOLOR.
-In GTK when DROPDOWN=YES it does not reach the dropdown popup menu.
+In GTK, when DROPDOWN=YES, it does not reach the dropdown popup menu.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
-In Windows the control will still get the focus when clicked. Default: YES.
+In Windows, the control will still get the focus when clicked. Default: YES.
 
-**PROPAGATEFOCUS**(non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
+**PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
 **CONTEXTMENU** [macOS Only] (non-inheritable): Sets a custom context (right-click) menu for the control. The value is an IUP menu handle.
@@ -55,7 +55,7 @@ The menu is destroyed when the control is unmapped or destroyed, so a menu canno
 Before mapping, it counts the number of non-NULL items before the first NULL item.
 
 **DRAGDROPLIST** (non-inheritable): prepare the [Drag & Drop](../attrib/iup_dragdrop.md) callbacks to support drag and drop of items between lists (IupList or IupFlatList), in the same IUP application.
-[Drag & Drop](../attrib/iup_dragdrop.md) attributes still need to be set in order to activate the drag & drop support, so the application can control if this list is a source and/or target.
+[Drag & Drop](../attrib/iup_dragdrop.md) attributes must still be set to activate drag and drop and to define if this list is a source and/or target.
 Default: NO.
 
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
@@ -63,12 +63,12 @@ Default: NO, but if DROPFILES_CB is defined when the element is mapped then it w
 
 **DROPDOWN** (creation-only): Changes the appearance of the list for the user: only the selected item is shown beside a button with the image of an arrow pointing down.
 To select another option, the user must press this button, which displays all items in the list.
-Can be "YES" or "NO". Default "NO".
+Can be "YES" or "NO". Default: "NO".
 
 **DROPEXPAND** [Win32, macOS, GTK, Qt and WebAssembly Only]: When DROPDOWN=YES, the size of the dropped list will expand to include the largest text.
 Can be "YES" or "NO". Default: "YES".
 
-**EDITBOX** (creation-only): Adds an edit box to the list. Can be "YES" or "NO". Default "NO".
+**EDITBOX** (creation-only): Adds an edit box to the list. Can be "YES" or "NO". Default: "NO".
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute TXTFGCOLOR.
 
@@ -123,18 +123,18 @@ Can be "YES" or "NO". Ignored if set after map.
 Not supported in Motif.
 
 [SIZE](../attrib/iup_size.md): Size of the list.
-The **Natural Size** is defined by the number of elements in the list and the with of the largest item, the default has room for 5 characters in 1 item.
-In IUP 3, the **Natural Size** ignores the list contents if VISIBLECOLUMNS or VISIBLELINES attributes are defined.
+The **Natural Size** is defined by the number of elements in the list and the width of the largest item, the default has room for 5 characters in 1 item.
+The **Natural Size** ignores the list contents if VISIBLECOLUMNS or VISIBLELINES attributes are defined.
 The text in the edit box is ignored when considering the list contents.
 
 **SORT** (creation-only): force the list to be alphabetically sorted.
-When using INSERTITEMn or APPENDITEM, the position will be ignored.
+When using INSERTITEMid or APPENDITEM, the position will be ignored.
 
 **TOPITEM** (write-only): position the given item at the top of the list or near to make it visible.
 Valid only when DROPDOWN=NO.
 
 **SPACING**: internal padding for each item.
-Notice that vertically the distance between each item will be actually 2x the spacing.
+Vertically the distance between items is 2x the spacing.
 It also affects the horizontal margin of the item. In Windows, the text is aligned at the top left of the item always.
 Valid only when DROPDOWN=NO.
 
@@ -145,8 +145,8 @@ It will actually set the SPACING attribute.
 
 - EDITBOX=YES: Text entered by the user.
 - MULTIPLE=YES: Sequence of '+' and '-' symbols indicating the state of each item. When setting this value, the user must provide the same amount of '+' and '-' symbols as the amount of items in the list, otherwise the specified items will be deselected.
-- Others: Integer number representing the selected item in the list (begins at 1). It can be zero if there is no selected item. (In Motif and GTK 4 when DROPDOWN=YES there is always an item selected, except when the list is empty).
-- Should return a non-NULL value, even when the list is empty or the text box is empty. It can be NULL when no item is selected.
+- Others: Integer number representing the selected item in the list (begins at 1). When no item is selected it is "0" with DROPDOWN=YES and can be NULL with DROPDOWN=NO. (In Motif and GTK 4, when DROPDOWN=YES, there is always an item selected, except when the list is empty).
+- With EDITBOX=YES or MULTIPLE=YES it is not NULL, even when the list or the text box is empty.
 
 **VALUESTRING** (non-inheritable): changes or retrieves the value attribute using a string of an item.
 Works only when EDITBOX=NO and DROPDOWN=YES, or DROPDOWN=NO and MULTIPLE=NO.
@@ -187,7 +187,7 @@ SELECTIONPOS, CARETPOS and SCROLLTOPOS are not supported in Qt, QML, FLTK and Ha
 
 [ACTIVE](../attrib/iup_active.md), [FONT](../attrib/iup_font.md), [EXPAND](../attrib/iup_expand.md), [SCREENPOSITION](../attrib/iup_screenposition.md), [POSITION](../attrib/iup_position.md), [MINSIZE](../attrib/iup_minsize.md), [MAXSIZE](../attrib/iup_maxsize.md), [WID](../attrib/iup_wid.md), [TIP](../attrib/iup_tip.md), [RASTERSIZE](../attrib/iup_rastersize.md), [ZORDER](../attrib/iup_zorder.md), [VISIBLE](../attrib/iup_visible.md), [THEME](../attrib/iup_theme.md): also accepted.
 
-[Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks are supported.
+[Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks are supported, but SHOWDRAGDROP must be set to NO.
 
 ### Callbacks
 
@@ -202,7 +202,7 @@ Also provides information on the changed item:
 **state**: Equal to 1 if the option was selected or to 0 if the option was deselected.
 
 The state=0 is simulated internally by IUP in all systems.
-If you add or remove items to/from the list, and you count on the state=0 value, then after adding/removing items set the VALUE attribute to ensure proper state=0 value.
+After adding or removing items, set the VALUE attribute to keep the state=0 values correct.
 
 [BUTTON_CB](../call/iup_button_cb.md): Action generated when any mouse button is pressed or released inside the list.
 Called only when DROPDOWN=NO. If the list has an editbox, the message is called when cursor is at the listbox only (ignored at the editbox).
@@ -240,12 +240,12 @@ Only active if **SHOWDRAGDROP=YES.**
 **isshift**: flag indicating the shift key state.\
 **iscontrol**: flag indicating the control key state.
 
-Returns: if returns IUP_CONTINUE, or if the callback is not defined and **SHOWDRAGDROP=YES**, then the item is moved to the new position.
+**Returns**: if IUP_CONTINUE is returned, or if the callback is not defined and **SHOWDRAGDROP=YES**, then the item is moved to the new position.
 If Ctrl is pressed, then the item is copied instead of moved.
 
 **DROPDOWN_CB**: Action generated when the list of a dropdown is shown or hidden.
 Called only when DROPDOWN=YES.
-Not supported in Android and iOS. In Haiku only when EDITBOX=YES.
+Not supported in Android and iOS. In Haiku, only when EDITBOX=YES.
 
     int function (Ihandle *ih, int state);
 
@@ -287,7 +287,7 @@ This callback is called only when MULTIPLE=YES.
 If this callback is defined, the **ACTION** callback will not be called.
 
 The non changed items marked with 'x' are simulated internally by IUP in all systems.
-If you add or remove items to/from the list, and you count on the 'x' values, then after adding/removing items set the VALUE attribute to ensure proper 'x' values.
+After adding or removing items, set the VALUE attribute to keep the 'x' values correct.
 
 **VALUE_CB**: Called to retrieve the text for each item when VIRTUALMODE=YES.
 
@@ -318,8 +318,6 @@ Called when the selection is changed or when the text is edited.
 
 [MAP_CB](../call/iup_map_cb.md), [UNMAP_CB](../call/iup_unmap_cb.md), [DESTROY_CB](../call/iup_destroy_cb.md), [GETFOCUS_CB](../call/iup_getfocus_cb.md), [KILLFOCUS_CB](../call/iup_killfocus_cb.md), [ENTERWINDOW_CB](../call/iup_enterwindow_cb.md), [LEAVEWINDOW_CB](../call/iup_leavewindow_cb.md), [K_ANY](../call/iup_k_any.md), [HELP_CB](../call/iup_help_cb.md): All common callbacks are supported.
 
-[Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks are supported, but SHOWDRAGDROP must be set to NO. 
-
 ### Notes
 
 Text is always left aligned.
@@ -333,15 +331,13 @@ The [GETFOCUS_CB](../call/iup_getfocus_cb.md) and [KILLFOCUS_CB](../call/iup_kil
 
 > - If DROPDOWN=NO and EDITBOX=YES, then the list never gets the focus, the callbacks are called only when the edit box is clicked.
 > - In Motif if DROPDOWN=YES, then when the dropdown button is clicked, the list loses its focus, and when the dropped list is closed the list regains the focus, also when that happen if the list loses its focus to another control the kill focus callback is not called.
-> - In GTK, if DROPDOWN=YES and EDITBOX=NO, both callbacks are called only when navigating with the keyboard (tip: if you need those callbacks with mouse navigation set EDITBOX=YES and READONLY=YES). Also in GTK, if DROPDOWN=YES and EDITBOX=YES, then when the dropdown button is clicked, the list loses its focus, and it gets it back only if the edit box is clicked.
+> - In GTK, if DROPDOWN=YES and EDITBOX=NO, both callbacks are called only when navigating with the keyboard (with EDITBOX=YES and READONLY=YES they are also called with mouse navigation). Also in GTK, if DROPDOWN=YES and EDITBOX=YES, then when the dropdown button is clicked, the list loses its focus, and it gets it back only if the edit box is clicked.
 
 In Windows, if EDITBOX=YES, then the tooltips are shown only when the cursor is near the control border or at the dropdown arrow.
-Also, the selection and caret attributes are not preserved if the list loses its focus, or in other words, these attributes are only useful in Windows if the list has the focus.
+Also, the selection and caret attributes are not preserved if the list loses its focus.
 
-**IMPORTANT:** In Windows when DROPDOWN=YES, the vertical size is controlled by the system, and has the height just right to include the borders and the text.
+In Windows, when DROPDOWN=YES, the vertical size is controlled by the system, and has the height just right to include the borders and the text.
 So the **User** height from RASTERSIZE or SIZE will always be ignored.
-
-In Windows, list items are limited to 255 pixels height.
 
 Clicking and dragging an item with the left mouse button starts an internal drag when SHOWDRAGDROP=YES; see the [DRAGDROP_CB](#callbacks) callback for the move/copy behavior.
 

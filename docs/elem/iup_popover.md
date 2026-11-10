@@ -19,11 +19,11 @@ Use [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate the 
 
 **ARROW** (non-inheritable): Shows an arrow pointing to the anchor element.
 Can be "YES" or "NO". Default: "YES".
-Only supported in GTK 3, GTK 4 and WebAssembly. In macOS the arrow is always shown. In other systems the popover is displayed without an arrow.
+Only supported in GTK 3, GTK 4 and WebAssembly. In macOS, the arrow is always shown. In other systems, the popover is displayed without an arrow.
 
 **AUTOHIDE** (non-inheritable): When enabled, the popover is automatically hidden when the user clicks outside of it, when focus leaves, or when the Esc key is pressed.
 A click on the anchor element does not trigger auto-hide, so the anchor callback decides whether to hide the popover.
-In GTK 3, Qt and Motif the click hides the popover and is consumed, so it does not reach the anchor.
+In GTK 3, Qt and Motif, the click hides the popover and is consumed, so it does not reach the anchor.
 Can be "YES" or "NO". Default: "YES".
 
 **PLACEMENT** (non-inheritable): The position of the popover relative to the anchor element.
@@ -31,17 +31,17 @@ Can be "BOTTOM", "TOP", "LEFT", "RIGHT", "BOTTOMLEFT", "BOTTOMRIGHT", "TOPLEFT",
 
 The basic values (BOTTOM, TOP, LEFT, RIGHT) center the popover along the anchor edge. The compound values specify both the edge and the alignment: the first word is the edge where the popover appears, the second word is the alignment along that edge. For example, "BOTTOMLEFT" places the popover below the anchor with left edges aligned, and "RIGHTTOP" places it to the right with top edges aligned.
 
-In WinUI all positions map directly to native FlyoutPlacementMode, in GTK 4 to the native popover alignment. In GTK 3 the edge-aligned positions are approximated using the native popover positioning with offsets. In other systems the positions are calculated manually.
+In WinUI, all positions map directly to native FlyoutPlacementMode, in GTK 4 to the native popover alignment. In GTK 3, the edge-aligned positions are approximated using the native popover positioning with offsets. In other systems, the positions are calculated manually.
 
 **OFFSETX** (non-inheritable): Horizontal pixel offset added to the computed popover position. Can be positive or negative. Default: "0".
-In macOS the offset is applied only while the resulting position stays inside the dialog.
+In macOS, the offset is applied only while the resulting position stays inside the dialog.
 
 **OFFSETY** (non-inheritable): Vertical pixel offset added to the computed popover position. Can be positive or negative. Default: "0".
-In macOS the offset is applied only while the resulting position stays inside the dialog.
+In macOS, the offset is applied only while the resulting position stays inside the dialog.
 
 **AUTOFLIP** (non-inheritable): When enabled, the popover automatically flips to the opposite side if it would extend beyond the screen boundaries. The alignment is preserved when flipping (e.g. BOTTOMLEFT flips to TOPLEFT).
 Can be "YES" or "NO". Default: "YES".
-Only affects Win32, Qt, QML, FLTK, EFL, Motif, Android and Haiku. In GTK 3 the native popover flips at window boundaries. In GTK 4, WinUI and macOS the native popover flips at screen boundaries. In all native cases auto-flip is always enabled and this attribute has no effect.
+Only affects Win32, Qt, QML, FLTK, EFL, Motif, Android and Haiku. In GTK 3, the native popover flips at window boundaries. In GTK 4, WinUI and macOS, the native popover flips at screen boundaries. In all native cases, auto-flip is always enabled and this attribute has no effect.
 
 [VISIBLE](../attrib/iup_visible.md) (non-inheritable): Shows or hides the popover.
 The popover is mapped on the first time VISIBLE is set to "YES".
@@ -72,12 +72,7 @@ The ANCHOR element must be set and mapped before showing the popover.
 
 The popover uses the child's natural size to determine its own size.
 It does not expand and accepts exactly one child element.
-In GTK 3 a popover larger than the dialog is clipped to it.
-
-The ANCHOR attribute must be set before mapping, and the anchor element must already be mapped when the popover is first shown.
-
-When AUTOHIDE=YES, the popover behaves like a modal popup that closes on outside interaction.
-When AUTOHIDE=NO, the popover remains visible until explicitly hidden via VISIBLE=NO.
+In GTK 3, a popover larger than the dialog is clipped to it.
 
 ### Examples
 

@@ -4,7 +4,7 @@ Creates an interface element that is a button, but it does not have native decor
 When selected, this element activates a function in the application.
 Its visual presentation can contain a text and/or an image.
 
-It behaves just like an [IupButton](../elem/iup_button.md), but since it is not a native control, it has more flexibility for additional options.
+It behaves just like an [IupButton](../elem/iup_button.md), with additional options.
 It can also behave like an [IupToggle](../elem/iup_toggle.md) (without the checkmark).
 
 It inherits from [IupCanvas](../elem/iup_canvas.md).
@@ -49,13 +49,13 @@ If it is not defined then the BACKIMAGE is used.
 Aspect ratio is NOT preserved. Can be YES or NO. Default: NO.
 
 [BGCOLOR](../attrib/iup_bgcolor.md): Background color.
-If text and image are not defined, the button is configured to simply show a color, in this case set the button size because the natural size will be very small.
+If text and image are not defined, the button shows only the FGCOLOR color, in this case set the button size because the natural size will be very small.
 If not defined it will use the background color of the native parent.
 
-**HLCOLOR**: background color used to indicate a highlight state. Pre-defined to "200 225 245".
+**HLCOLOR**: background color used to indicate a highlight state. Default: "200 225 245".
 Can be set to NULL. If NULL, BGCOLOR will be used instead.
 
-**PSCOLOR**: background color used to indicate a press state. Pre-defined to "150 200 235".
+**PSCOLOR**: background color used to indicate a press state. Default: "150 200 235".
 Can be set to NULL. If NULL, BGCOLOR will be used instead.
 
 **GRADIENT** (non-inheritable): gradient background colors, a list of colors separated by ":"
@@ -67,8 +67,7 @@ to the background color.
 Can be set to NULL to disable.
 
 **GRADIENTHL** (non-inheritable): gradient colors used for the highlight (hover) state.
-If not defined, GRADIENT is used automatically lightened, so gradient buttons get a hover effect
-without extra configuration (mirroring the HLCOLOR default for solid buttons).
+If not defined, GRADIENT is used automatically lightened.
 
 **GRADIENTPS** (non-inheritable): gradient colors used for the pressed state.
 If not defined, GRADIENT is used automatically darkened.
@@ -84,9 +83,9 @@ Default: "270" (top to bottom).
 This is for the **IupFlatButton** drawn border.
 
 **BORDERPSCOLOR**: color used for borders when pressed or selected.
-Default use BORDERCOLOR.
+Default: BORDERCOLOR.
 
-**BORDERHLCOLOR**: color used for borders when highlighted. Default uses BORDERCOLOR.
+**BORDERHLCOLOR**: color used for borders when highlighted. Default: BORDERCOLOR.
 
 **BORDERWIDTH**: line width used for borders. Default: "1".
 Any borders can be hidden by simply setting this value to 0.
@@ -95,7 +94,7 @@ This is for the **IupFlatButton** drawn border.
 **CORNERRADIUS** (non-inheritable): radius of the rounded corners for the button background, border and focus feedback.
 Default: "0" (no rounding).
 
-**SHOWBORDER**: by default borders are drawn only when the button is highlighted, if SHOWBORDER=YES borders are always show.
+**SHOWBORDER**: by default borders are drawn only when the button is highlighted, if SHOWBORDER=YES borders are always shown.
 When SHOWBORDER=YES and BGCOLOR is not defined, the actual BGCOLOR will be a darker version of the background color of the native parent.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
@@ -183,16 +182,16 @@ Valid only after the element is mapped and TOGGLE=YES, before returns NULL.
 **CSPACING**: same as SPACING but using the units of the vertical part of the **SIZE** attribute.
 It will actually set the SPACING attribute.
 
-[TITLE](../attrib/iup_title.md) (non-inheritable): Label's text.
+[TITLE](../attrib/iup_title.md) (non-inheritable): Button's text.
 The '\n' character is accepted for line change.
 
-**TOGGLE**: enabled the toggle behavior. Default: NO.
+**TOGGLE**: enables the toggle behavior. Default: NO.
 
 **TEXTALIGNMENT** (non-inheritable): Horizontal text alignment for multiple lines.
 Can be: ALEFT, ARIGHT or ACENTER. Default: ALEFT.
 
 **TEXTWRAP** (non-inheritable): For single line texts if the text is larger than its box the line will be automatically broken in multiple lines.
-Notice that this is done internally by the system, the element natural size will still use only a single line.
+The element natural size still uses a single line.
 For the remaining lines to be visible, the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
@@ -220,7 +219,7 @@ Directly sets the selected state but does not depend on a TOGGLE behavior.
 
 Inherits all callbacks of the [IupCanvas](../elem/iup_canvas.md), but redefines a few of them.
 Including ACTION, BUTTON_CB, MOTION_CB, FOCUS_CB, LEAVEWINDOW_CB, and ENTERWINDOW_CB.
-To allow the application to use those callbacks, the same callbacks are exported with the "FLAT_" prefix using the same parameters, except the FLAT_ACTION callback that now mimics the **IupButton** ACTION.
+To allow the application to use those callbacks, the same callbacks are exported with the "FLAT_" prefix using the same parameters, except FLAT_ACTION, which mimics the **IupButton** ACTION.
 They are all called before the internal callbacks, and if they return IUP_IGNORE the internal callbacks are not processed.
 
 **FLAT_ACTION**: Action generated when the button 1 (usually left) is selected.
@@ -256,15 +255,15 @@ Buttons are activated using Enter or Space keys.
 When TOGGLE=YES, to build a set of mutual exclusive toggles, insert them in a **IupRadio** container.
 Only the **IupFlatButton** controls inside the radio will be part of the exclusive group.
 
-When TOGGLE=YES, the button that is a child of an **IupRadio** automatically receives a name when its is mapped into the native system.
+When TOGGLE=YES, the button that is a child of an **IupRadio** automatically receives a name when it is mapped into the native system.
 
-To replace a **IupButton** by a **IupFlatButton**, you must change the function call (**IupFlatButton** does not include the action callback in the constructor) and change the ACTION callback name to FLAT_ACTION.
+To replace an **IupButton** by an **IupFlatButton**, change the function call (**IupFlatButton** does not include the action callback in the constructor) and rename the ACTION callback to FLAT_ACTION.
 
-To replace a **IupToggle** by a **IupFlatButton**, you must do the same, and set TOGGLE=YES.
-But notice that there will be no check box nor radio button.
+To replace an **IupToggle** by an **IupFlatButton**, do the same and set TOGGLE=YES.
+There is no check box nor radio button.
 
-Finally, notice that the name of the secondary image attributes are different (for instance, IMINACTIVE is IMAGEINACTIVE, IMPRESS is IMAGEPRESS, and so on).
-To define a button that only shows a color, do the same as in **IupButton** and don't define TITLE nor IMAGE, but instead of BGCOLOR use FGCOLOR to set the color of the button.
+The secondary image attributes have different names (IMINACTIVE is IMAGEINACTIVE, IMPRESS is IMAGEPRESS, and so on).
+To define a button that only shows a color, do not define TITLE nor IMAGE, and use FGCOLOR instead of BGCOLOR to set the color.
 
 When the **IupFlatButton** displays only a text it will look like a label, use SHOWBORDER=YES to force the display of the borders all the time.
 

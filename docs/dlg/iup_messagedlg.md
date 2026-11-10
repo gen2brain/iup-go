@@ -18,14 +18,14 @@ Not supported in QML.
 
 **BUTTONRESPONSE**: Number of the pressed button. Can be "1", "2" or "3". Default: "1".
 When the dialog is closed without pressing a button, with Esc or with the window close button, it returns the cancel button: "3" for YESNOCANCEL, "2" for OKCANCEL, RETRYCANCEL and YESNO, and "1" for OK.
-In Haiku and Android it can only be closed with a button. In macOS and iOS Esc closes it only when the buttons include a Cancel.
+In Haiku and Android, it can only be closed with a button. In macOS and iOS, Esc closes it only when the buttons include a Cancel.
 
 **BUTTONS**: Buttons configuration. Can have values: "OK", "OKCANCEL", "RETRYCANCEL", "YESNO", or "YESNOCANCEL".
 Default: "OK". Additionally, the "Help" button is displayed if the HELP_CB callback is defined.
 
 **BUTTONSTYLE** [Android and iOS Only]: visual style applied to all buttons. Same values as [IupButton](../elem/iup_button.md)'s BUTTONSTYLE ("FILLED", "TONAL", "OUTLINED", "ELEVATED", "TEXT"). When unset, the default action gets a filled look and the rest a gray look (matching the platform's native alert).
 
-**CORNERSTYLE** [Android and iOS Only]: corner shape applied to all buttons. Same values as [IupButton](../elem/iup_button.md)'s CORNERSTYLE ("SMALL", "MEDIUM", "LARGE", "CAPSULE"). When unset, the platform's stock default is used (capsule on modern Material 3 / iOS 26 Liquid Glass).
+**CORNERSTYLE** [Android and iOS Only]: corner shape applied to all buttons. Same values as [IupButton](../elem/iup_button.md)'s CORNERSTYLE ("SMALL", "MEDIUM", "LARGE", "CAPSULE"). When unset, the platform's stock default is used (capsule on Material 3 and iOS 26 Liquid Glass).
 
 **DIALOGTYPE**: Type of dialog defines which icon will be displayed beside the message text.
 Can have values: "MESSAGE" (No Icon), "ERROR" (Stop-sign), "WARNING" (Exclamation-point), "QUESTION" (Question-mark) or "INFORMATION" (Letter "i").
@@ -34,7 +34,7 @@ The icon is not displayed in GTK 4 and QML.
 
 [PARENTDIALOG](../attrib/iup_parentdialog.md) (creation-only): Name of a dialog to be used as parent.
 This dialog will always be in front of the parent dialog.
-If not defined in Motif the dialog could not be modal.
+In Motif, if not defined, the dialog is not modal.
 
 [TITLE](../attrib/iup_title.md): Dialog title.
 
@@ -48,8 +48,6 @@ Not supported in WinUI, GTK 4, FLTK, Haiku and WebAssembly.
 ### Notes
 
 The **IupMessageDlg** is a native pre-defined dialog not altered by **IupSetLanguage**.
-
-To show the dialog, use function **IupPopup**.
 
 The dialog is mapped only inside **IupPopup**, **IupMap** does nothing.
 

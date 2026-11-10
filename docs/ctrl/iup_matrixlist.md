@@ -3,7 +3,7 @@
 Creates an interface element that displays a list of items, just like **IupList**, but internally uses a **IupMatrix**.
 
 It uses the matrix columns to display labels, color boxes and check boxes in a way that is not possible using **IupList**.
-But the control mimics the **IupList** attributes, callbacks and interaction, so the usage by the programmer and by the user should be very similar.
+The control mimics the **IupList** attributes, callbacks and interaction.
 
 Based on MTXLIB, developed at Tecgraf/PUC-Rio by Renata Trautmann and Andre Derraik.
 
@@ -17,7 +17,7 @@ The program must be linked to the controls library (iupctrl).
 
     Ihandle* IupMatrixList(void);
 
-Returns the identifier of the created matrix, or NULL if an error occurs.
+**Returns:** the identifier of the created element, or NULL if an error occurs.
 
 ### Attributes
 
@@ -29,8 +29,8 @@ Returns the identifier of the created matrix, or NULL if an error occurs.
 
 (non-inheritable) Item value. It can be any text.
 Differently from the **IupList** control, the item must exist so its label can be changed.
-So **APPENDITEM, INSERTITEM*id* , ADDLIN** or **COUNT** attributes must be used to reserve space for the list items.
-Notice that lines and items in the list are the same thing.
+So **APPENDITEM**, **INSERTITEMid**, **ADDLIN** or **COUNT** attributes must be used to reserve space for the list items.
+Lines and items in the list are the same thing.
 
 **ADDLIN** (write-only): adds a new line to the list after the specified line.
 To insert a line at the top, value 0 must be used.
@@ -41,8 +41,8 @@ Ignored if set before map.
 
 **COLORCOL** (read-only): returns the number of color column. If not exists, returns 0.
 
-**COLOR*id*** : the color displayed at the color column.
-If not defined the color box is not diplayed.
+**COLORid**: the color displayed at the color column.
+If not defined the color box is not displayed.
 
 **COLUMNORDER**: defines or retrieves the display order of the columns.
 Possible values is a combination of: "LABEL", "COLOR" and "IMAGE".
@@ -68,12 +68,12 @@ If not defined uses the ITEMFGCOLORid.
 
 **FOCUSITEM**: defines the current focus item. Default: "1".
 
-**IMAGE*id*** (write-only): name of the image to be used in the specified item (id).
+**IMAGEid** (write-only): name of the image to be used in the specified item (id).
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](../elem/iup_image.md). Image column must be available.
 
-**IMAGEACTIVE*id***: controls the interaction with the image of an item. It can be YES or NO.
-Default: YES. Image column must be available.
+**IMAGEACTIVEid**: controls the interaction with the image of an item. It can be YES or NO.
+Default: "YES". Image column must be available.
 
 **IMAGEADD** (write-only): name of the image that will be shown when the IupMatrixList is editable.
 Default: "MTXLIST_IMG_ADD". Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
@@ -93,18 +93,18 @@ See also [IupImage](../elem/iup_image.md). Image column must be available.
 Default: "MTXLIST_IMG_UNCHECK". Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](../elem/iup_image.md). Image column must be available.
 
-**IMAGEVALUE*id***: selects the CHECK or the UNCHECK image to display for an item (id).
-It can be YES or NO. Default: NO.
+**IMAGEVALUEid**: selects the CHECK or the UNCHECK image to display for an item (id).
+It can be YES or NO. Default: "NO".
 
-**INSERTITEM*id*** (write-only): inserts an item before the given id position (id starts at 1).
+**INSERTITEMid** (write-only): inserts an item before the given id position (id starts at 1).
 If id=COUNT+1 then it will append after the last item. Ignored if out of bounds.
 Ignored if set before map.
 
-**ITEMACTIVE*id***: controls the interaction with an item (id). It can be YES or NO. Default: "YES".
+**ITEMACTIVEid**: controls the interaction with an item (id). It can be YES or NO. Default: "YES".
 
-**ITEMFGCOLOR*id***: text color of an item (id). If not defined FGCOLOR is used.
+**ITEMFGCOLORid**: text color of an item (id). If not defined FGCOLOR is used.
 
-**ITEMBGCOLOR*id***: background color of an item (id). If not defined BGCOLOR is used.
+**ITEMBGCOLORid**: background color of an item (id). If not defined BGCOLOR is used.
 
 **LABELCOL** (read-only): returns the number of label column. If not exists, returns 0.
 
@@ -123,8 +123,8 @@ Default: "3".
 
 ### Other Attributes
 
-Since the **IupMatrixList** inherits its implementation from the **IupMatrix**, and that one from **IupCanvas**, those controls attributes and callbacks can be used.
-But notice that **IupMatrixList** uses several of them internally for its own purpose, and reusing them may affect the control behavior and appearance.
+**IupMatrixList** inherits from **IupMatrix**, which inherits from **IupCanvas**, so their attributes and callbacks can be used.
+**IupMatrixList** uses several of them internally; reusing them may affect the control behavior and appearance.
 
 Some attribute defaults were changed:
 
@@ -150,7 +150,7 @@ Some attribute defaults were changed:
 
 **IMAGEVALUECHANGED_CB**: called after the image value was interactively changed by the user (mark/unmark).
 
-    int function (Ihandle *ih, int lin, int imagevalue);
+    int function(Ihandle *ih, int lin, int imagevalue);
 
 **ih**: identifier of the element that activated the event.\
 **lin**: item line.\
@@ -158,15 +158,15 @@ Some attribute defaults were changed:
 
 **ACTION_CB**: Action generated when an item gets or loses the focus.
 
-    int function (Ihandle *ih, int item, int state);
+    int function(Ihandle *ih, int item, int state);
 
 **ih**: identifier of the element that activated the event.\
 **item**: Number of the changed item starting at 1.\
 **state**: Equal to 1 if the item is in focus or to 0 if the item loses its focus.
 
-**LISTCLICK_CB**: Action generated when any mouse button is pressed over a item.
+**LISTCLICK_CB**: Action generated when any mouse button is pressed over an item.
 
-    int function (Ihandle *ih, int lin, int col, char *status);
+    int function(Ihandle *ih, int lin, int col, char *status);
 
 **ih**: identifier of the element that activated the event.\
 **lin**: item line.\
@@ -174,12 +174,12 @@ Some attribute defaults were changed:
 **status**: Status of the mouse buttons and some keyboard keys at the moment the event is generated.
 The same macros used for [BUTTON_CB](../call/iup_button_cb.md) can be used for this status.
 
-**Returns:** IUP_IGNORE continues with the default processing, IUP_DEFAULT draws nothing more.
+**Returns**: To avoid the default processing return IUP_IGNORE.
 
 **LISTDRAW_CB**: Action generated when an item needs to be redrawn.
 It is called before the default processing.
 
-    int function (Ihandle *ih, int lin, int col, int x1, int x2, int y1, int y2);
+    int function(Ihandle *ih, int lin, int col, int x1, int x2, int y1, int y2);
 
 **ih**: identifier of the element that activated the event.\
 **lin**: item line.\
@@ -188,12 +188,12 @@ It is called before the default processing.
 
 Use [IupDraw](../func/iup_draw.md) functions to draw the item contents.
 
-**Returns:** If IUP_IGNORE the normal drawing will take place.
+**Returns**: If IUP_IGNORE the normal drawing will take place.
 
 **LISTEDITION_CB**: Action generated when the current cell of an item enters or leaves the edition mode.
 Called before the default processing.
 
-    int function (Ihandle *ih, int lin, int col, int mode, int update);
+    int function(Ihandle *ih, int lin, int col, int mode, int update);
 
 **ih**: identifier of the element that activated the event.\
 **lin**: item line.\
@@ -203,14 +203,14 @@ Called before the default processing.
 
 **LISTINSERT_CB**: Action generated when a new item is inserted into the list.
 
-    int function (Ihandle *ih, int lin);
+    int function(Ihandle *ih, int lin);
 
 **ih**: identifier of the element that activated the event.\
-**lin**:  position of the new item.
+**lin**: position of the new item.
 
-**LISTRELEASE_CB**: Action generated when any mouse button is released over a item.
+**LISTRELEASE_CB**: Action generated when any mouse button is released over an item.
 
-    int function (Ihandle *ih, int lin, int col, char *status);
+    int function(Ihandle *ih, int lin, int col, char *status);
 
 **ih**: identifier of the element that activated the event.\
 **lin**: item line.\
@@ -218,14 +218,14 @@ Called before the default processing.
 **status**: Status of the mouse buttons and some keyboard keys at the moment the event is generated.
 The same macros used for [BUTTON_CB](../call/iup_button_cb.md) can be used for this status.
 
-**Returns:** To avoid the default processing return IUP_IGNORE.
+**Returns**: To avoid the default processing return IUP_IGNORE.
 
 **LISTREMOVE_CB**: Action generated when an item is removed of the list.
 
-    int function (Ihandle *ih, int lin);
+    int function(Ihandle *ih, int lin);
 
 **ih**: identifier of the element that activated the event.\
-**lin**:  position of the removed item.
+**lin**: position of the removed item.
 
 ### Examples
 

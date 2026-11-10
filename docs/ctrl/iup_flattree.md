@@ -80,36 +80,33 @@ Including BUTTON_CB, LEAVEWINDOW_CB, FOCUS_CB, and MOTION_CB.
 To allow the application to use those callbacks, the same callbacks are exported with the "FLAT_" prefix using the same parameters.
 They are all called before the internal callbacks, and if they return IUP_IGNORE the internal callbacks are not processed.
 
-**SELECTION_CB**: Action generated when an node is selected or deselected.\
+**SELECTION_CB**: Action generated when a node is selected or deselected.\
 **MULTISELECTION_CB**: Action generated when multiple nodes are selected with the mouse and the shift key pressed.\
 **MULTIUNSELECTION_CB**: Action generated before multiple nodes are unselected in one single operation.\
 **BRANCHOPEN_CB**: Action generated when a branch is expanded.\
 **BRANCHCLOSE_CB**: Action generated when a branch is collapsed.\
-**EXECUTELEAF_CB:** Action generated when a leaf is executed. **\
-EXECUTEBRANCH_CB:** Action generated when a branch is executed.**\
-SHOWRENAME_CB**: Action generated before a node is renamed.\
+**EXECUTELEAF_CB**: Action generated when a leaf is executed.\
+**EXECUTEBRANCH_CB**: Action generated when a branch is executed.\
+**SHOWRENAME_CB**: Action generated before a node is renamed.\
 **RENAME_CB**: Action generated after a node is renamed.\
 **DRAGDROP_CB**: Action generated when an internal drag & drop is executed.\
 **NODEREMOVED_CB**: Action generated when a node is about to be removed.\
 **RIGHTCLICK_CB**: Action generated when the right mouse button is pressed over a node.\
 **TOGGLEVALUE_CB**: Action generated when the toggle's state was changed.
-The callback also receives the new toggle's state.\
+The callback also receives the new toggle's state.
 
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes and callbacks are supported, but SHOWDRAGDROP must be set to NO.
 
 ### Notes
 
-**IupFlatTree** is almost identical to the **IupTree** with some additional attributes, but it has a major difference: **all the attributes work before map**.
-So you can add and remove nodes before the element is mapped to the native system.
+**IupFlatTree** is almost identical to the **IupTree** with some additional attributes, but **all the attributes work before map**, so nodes can be added and removed before the element is mapped.
 
-Another important difference is that there is no ADDROOT attribute.
+There is no ADDROOT attribute.
 **IupFlatTree** behaves as ADDROOT=NO always, so there is never an initial root branch.
 
 The SPACING attribute is simply the vertical space between each node, different from the IupTree.
 
 The EMPTYTOGGLE attribute replaces EMPTYAS3STATE, and it works in all systems.
-
-Finally all features behave the same in all systems.
 
 #### Hierarchy
 
@@ -120,7 +117,7 @@ The following picture illustrates the numbering of the nodes in a tree.
 ![](../images/iuptree.png)\
 **Tree nodes and Ids**
 
-Since you have to add each node, the creation of this tree can be done in several ways because the action attributes ADD* and INSERT* use an existent node to position the new node.
+The action attributes ADD* and INSERT* use an existing node to position the new node, so the tree can be created in several ways.
 The following pseudocode initializes the tree from top to bottom sequentially:
 
     TITLE0 = "Figures"
@@ -150,7 +147,7 @@ The following pseudo code initializes the tree from bottom to top sequentially (
     ADDLEAF1 = "equilateral"
     ADDLEAF = "Other"
 
-Notice that in both cases, the initialization of the tree is highly dependent on the order of the operations.
+In both cases the initialization of the tree depends on the order of the operations.
 
 Scrollbars are automatically displayed if the tree is greater than its display area.
 
@@ -161,14 +158,14 @@ The first node added to an empty tree will always be the focus node.
 Node insertion or removal is done by means of attributes.
 It is allowed to remove nodes and branches inside callbacks associated to opening or closing branches.
 
-This means that the user may insert nodes and branches only when necessary when the parent branch is opened, allowing the use of a larger IupFlatTree without too much overhead.
+Nodes and branches can be inserted when the parent branch is opened.
 Then when the parent branch is closed, the subtree can be removed.
 But the subtree must have at least 1 node, so the branch can be opened and closed, empty branches cannot be opened.
 
 #### User Data
 
 The node id does not always correspond to the same node as the tree is modified.
-For example, an id=2 will always refer to the third node in the tree, so if you add a node before the third node, the node with id=2 will now refer to the new node, and the old node will now have id=3.
+For example, an id=2 will always refer to the third node in the tree, so if a node is added before the third node, the node with id=2 will now refer to the new node, and the old node will now have id=3.
 For that reason, each node can store an user data pointer uniquely identifying the node.
 To set or retrieve the user data of a node use the **USERDATAid** attribute, or the **Extra Functions** below to associate a user data to a node and to find a node given its user data.
 
@@ -187,7 +184,7 @@ By default:
 
     "IMGBLANK" and "IMGPAPER" are designed for use as "IMAGELEAF"
 
-The default images are 16x16 pixels on standard resolution and 24x24 pixels on high resolution (4k displays), but you can force the use of the high resolution images by defining the global attribute "TREEIMAGE24" to "YES".
+The default images are 16x16 pixels on standard resolution and 24x24 pixels on high resolution (4k displays). The global attribute TREEIMAGE24=YES forces the high resolution images.
 
 All images do NOT need to have the same size, but it is recommended that a pair of branch open and branch collapsed to have the same size.
 
@@ -222,7 +219,7 @@ The split handler can be controlled by the user and directly sets the EXTRATEXTW
 
 Using the keyboard:
 
-- **Arrow Up/Down**: Moves the focus node to the neighbor node, according to the arrow direction. If **Shift** is pressed and MARKMODE=MULTIPLE a continuous range of cells is selected.
+- **Arrow Up/Down**: Moves the focus node to the neighbor node, according to the arrow direction. If **Shift** is pressed and MARKMODE=MULTIPLE a continuous range of nodes is selected.
 - **Home/End**: Moves the focus node to the first/last node.
 - **Page Up/Page Down**: Moves the focus node to the node one visible page above/below the focus node.
 - **Enter**: If the focus node is an expanded branch, it is collapsed; if it is a collapsed branch, it is expanded; if it is a leaf, it is executed.
@@ -241,7 +238,7 @@ Using the left mouse button:
 
 #### Removing a Node with "Del"
 
-By default the Del key is not processed, but you can implement it using a simple K_ANY callback:
+By default the Del key is not processed. It can be implemented with a K_ANY callback:
 
     int k_any(Ihandle* ih, int c)
     {
@@ -253,7 +250,7 @@ By default the Del key is not processed, but you can implement it using a simple
 ### Extra Functions
 
 **IupFlatTree** has functions that allow associating a pointer (or a user defined id) to a node.
-In order to do that, you provide the id of the node and the pointer (userid); even if the node's id changes later on, the userid will still be associated with the given node.
+The userid stays associated with the node even if the node id changes later.
 
 **IupFlatTree** shares the same functions with **IupTree**.
 
@@ -264,7 +261,7 @@ In order to do that, you provide the id of the node and the pointer (userid); ev
 **ih**: Identifier of the interface element.\
 **id**: Node identifier.\
 **userid**: User pointer to be associated with the node.
-Use NULL (nil) value to remove the association.
+Use NULL to remove the association.
 
 Returns a non-zero value if the node was found.
 
@@ -276,15 +273,15 @@ Associates a userid with a given id. If the id of the node is changed, the useri
 **id**: Node identifier.
 
 Returns the pointer associated to the node or NULL if none was associated.
-**SetUserId** must have been called for the node with the given id.
+**IupTreeSetUserId** must have been called for the node with the given id.
 
     int IupTreeGetId(Ihandle *ih, void *userid); 
 
 **ih**: Identifier of the interface element.\
 **userid**: Pointer associated to the node.
 
-Returns the id of the node that has the userid on success or -1 (nil) if not found.
-**SetUserId** must have been called with the same userid.
+Returns the id of the node that has the userid on success or -1 if not found.
+**IupTreeSetUserId** must have been called with the same userid.
 
 ------------------------------------------------------------------------
 

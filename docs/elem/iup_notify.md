@@ -20,12 +20,12 @@ Each notification should be destroyed using [IupDestroy](../func/iup_destroy.md)
 **ICON** (non-inheritable): Image name for the small notification icon shown next to the title.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](iup_image.md).
-On iOS, ICON is honored only with STYLE=TOAST.
+In iOS, ICON is honored only with STYLE=TOAST.
 
 **IMAGE** [macOS, Android, iOS and Haiku Only] (non-inheritable): Image name shown as the expanded content/preview image.
 Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
-On Android, TITLE and BODY are reused as the expanded title and summary.
-On macOS it becomes the notification attachment, and ICON is used instead when IMAGE is not set.
+In Android, TITLE and BODY are reused as the expanded title and summary.
+In macOS, it becomes the notification attachment, and ICON is used instead when IMAGE is not set.
 
 **SUBTITLE** [macOS and iOS Only] (non-inheritable): The notification subtitle, displayed below the title.
 
@@ -39,7 +39,7 @@ Not supported in Win32 and Haiku.
 **TIMEOUT** (non-inheritable): Auto-dismiss timeout in milliseconds.
 Default: "-1" (use the system default).
 Not supported in Win32, WinUI and macOS.
-On iOS only honored with STYLE=TOAST.
+In iOS, only honored with STYLE=TOAST.
 
 **SILENT** (non-inheritable): Suppress the notification sound.
 
@@ -73,7 +73,7 @@ Apps should request it once at startup; until granted, SHOW fires ERROR_CB.
 TOAST does not require notification permission. TITLE, BODY, ICON, and TIMEOUT are honored; ACTION1-4, SUBTITLE, and other notification-only attributes are ignored.
 
 **PROGRESS** [Android Only] (non-inheritable): Adds a progress bar.
-Integer `0` to `100` shows a determinate bar; `"INDETERMINATE"` shows a continuous animation. Re-issuing SHOW with the same Ihandle updates the bar in place.
+An integer from 0 to 100 shows a determinate bar; "INDETERMINATE" shows a continuous animation. Re-issuing SHOW with the same Ihandle updates the bar in place.
 
 **CHANNELID** [Android Only] (non-inheritable): Notification channel id, overriding the default channel chosen from URGENCY.
 If the channel does not yet exist it is created with IMPORTANCE; existing channels are reused unchanged.
@@ -112,7 +112,6 @@ Values: "NONE", "MIN", "LOW", "DEFAULT", "HIGH", "MAX". Default: "DEFAULT".
 
 IupNotify does not create a visible IUP element. It is a non-interactive control that interfaces with the operating system's native notification service.
 
-All content attributes should be set before calling SHOW.
 The notification is displayed asynchronously and callbacks are dispatched through the IUP event loop.
 
 The underlying native service per driver:
@@ -123,10 +122,6 @@ The underlying native service per driver:
 - **Cocoa**, **Cocoa Touch**: UNUserNotificationCenter (requires permission and a valid bundle identifier).
 - **Android**: NotificationManager (requires `android.permission.POST_NOTIFICATIONS` on API 33+ for STYLE=NOTIFICATION).
 - **Haiku**: BNotification.
-
-On macOS and iOS, use REQUESTPERMISSION to prompt and PERMISSION to check the notification permission state.
-
-On Android, STYLE="TOAST" needs no permission.
 
 ### Examples
 

@@ -15,30 +15,30 @@ Also does not have support for text inside the bar.
 
 [BGCOLOR](../attrib/iup_bgcolor.md): controls the background color.
 Default: the global attribute DLGBGCOLOR.
-In Android the platform theme background is used.
+In Android, the platform theme background is used.
 
 **CIRCULAR** (creation-only): when "YES", displays a circular spinner instead of a linear bar. Default: "NO".
 VALUE is displayed in Android, macOS and WinUI when MARQUEE is "NO"; in the other drivers the spinner is always animated.
 DASHED and ORIENTATION are ignored.
 Not supported in Win32, Qt, FLTK, Motif, Haiku and WebAssembly.
 
-**DASHED** (creation-only in Windows): Changes the style of the progress bar for a dashed pattern.
-Default is "NO". In Windows, it is not supported when using Visual Styles.
+**DASHED**: Changes the style of the progress bar for a dashed pattern.
+Default: "NO". In Windows, it is creation-only and not supported when using Visual Styles.
 Supported in Win32 (without Visual Styles), GTK 2, GTK 3, GTK 4, Qt, QML, WebAssembly and iOS.
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Controls the bar color.
 By default the native/system bar color is used.
 Not supported in macOS and EFL.
-In QML the Basic style ignores it.
+In QML, the Basic style ignores it.
 
-**MARQUEE** (creation): displays an undefined state. Default: NO.
-You can set the attribute after map but only to start or stop the animation.
+**MARQUEE** (creation-only): displays an undefined state. Default: "NO".
+After map it can only start or stop the animation.
 In Windows, it will work only if using Visual Styles.
 
-**MAX** (non-inheritable): Contains the maximum value. Default is "1".
+**MAX** (non-inheritable): Contains the maximum value. Default: "1".
 The control display is not updated, must set VALUE attribute to update.
 
-**MIN** (non-inheritable): Contains the minimum value. Default is "0".
+**MIN** (non-inheritable): Contains the minimum value. Default: "0".
 The control display is not updated, must set VALUE attribute to update.
 
 **ORIENTATION** (creation-only): can be "VERTICAL" or "HORIZONTAL". Default: "HORIZONTAL".

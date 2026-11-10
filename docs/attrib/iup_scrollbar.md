@@ -8,8 +8,6 @@ Associates a horizontal and/or vertical scrollbar to the element.
 
 Default: "NO"
 
-In Android and iOS the canvas has no scrollbars: POSX/POSY/DX/DY are still tracked and SCROLL_CB is still called, but no scrollbar is drawn, so the contents are scrolled by dragging or by the wheel.
-
 ### Configuration Attributes (non-inheritable)
 
 [DX](../attrib/iup_dx.md): Size of the thumb in the horizontal scrollbar. Also the horizontal page size.
@@ -54,42 +52,43 @@ The supported drivers are listed on each element page.
 
 ### Notes
 
-The scrollbar allows you to create a virtual space associated to the element.
+In Android and iOS, the canvas has no scrollbars: POSX/POSY/DX/DY are still tracked and SCROLL_CB is still called, but no scrollbar is drawn, so the contents are scrolled by dragging or by the wheel.
+
+The scrollbar defines a virtual space associated to the element.
 In the image below, such space is marked in **red**, as well as the attributes that affect the composition of this space.
-In **green** you can see how these attributes are reflected on the scrollbar.
+In **green**, the image shows how these attributes are reflected on the scrollbar.
 
 ![](../images/scrollbar.gif)
 
-Hence, you can clearly deduce that POSX is limited to XMIN and XMAX-DX, or  **XMIN<=POSX<=XMAX-DX**.
+POSX is limited to XMIN and XMAX-DX, or **XMIN<=POSX<=XMAX-DX**.
 
 Usually applications configure XMIN and XMAX to a region in World coordinates, and set DX to the canvas visible area in World coordinates.
-Since the canvas can have scrollbars and borders, its visible area in pixel coordinates can be easily obtained using the **DRAWSIZE** attribute.
+The canvas visible area in pixels, excluding scrollbars and borders, is returned by the **DRAWSIZE** attribute.
 
-**IMPORTANT:** the LINEX, XMAX and XMIN attributes are only updated in the scrollbar when the DX attribute is updated.
+The LINEX, XMAX and XMIN attributes are only updated in the scrollbar when the DX attribute is updated.
 
-**IMPORTANT:** when working with a virtual space with integer coordinates, set XMAX to the integer size of the virtual space, NOT to "width-1", or the last pixel of the virtual space will never be visible.
-If you decide to let XMAX with the default value of 1.0 and to control only DX, then use the formula DX=visible_width/width.
+When working with a virtual space with integer coordinates, set XMAX to the integer size of the virtual space, NOT to "width-1", or the last pixel of the virtual space will never be visible.
+When XMAX keeps the default value of 1.0 and only DX is controlled, use DX=visible_width/width.
 
-**IMPORTANT:** When the virtual space has the same size as the canvas, i.e., when **DX >= XMAX-XMIN**, the scrollbar is automatically hidden if **XAUTOHIDE**=YES.
+When the virtual space has the same size as the canvas, i.e., when **DX >= XMAX-XMIN**, the scrollbar is automatically hidden if **XAUTOHIDE**=YES.
 The width of the vertical scrollbar (the same as the height of the horizontal scrollbar) can be obtained using the SCROLLBARSIZE global attribute.
 
-The same is valid for YMIN, YMAX, DY and POSY. But remember that the Y axis is oriented from top to bottom in IUP.
-So if you want to consider YMIN and YMAX as bottom-up oriented, then the actual YPOS must be obtained using **YMAX-DY-POSY**.
+The same is valid for YMIN, YMAX, DY and POSY. The Y axis is oriented from top to bottom in IUP.
+For bottom-up YMIN and YMAX, the actual YPOS is **YMAX-DY-POSY**.
 
-**IMPORTANT:** Changes in the scrollbar parameters do NOT generate ACTION nor SCROLL_CB callback events.
-If you need to update the canvas contents call your own action callback or call **IupUpdate**.
+Changes in the scrollbar parameters do NOT generate ACTION nor SCROLL_CB callback events.
+To update the canvas contents, call the application action callback or **IupUpdate**.
 But a change in the DX attribute may generate a RESIZE_CB callback event if XAUTOHIDE=YES.
 
-If you have to change the properties of the scrollbar (XMIN, XMAX and DX) but you want to keep the thumb still (if possible) in the same relative position, then you have to also recalculate its position (POSX) using the old position as reference to the new one.
-For example, you can convert it to a 0-1 interval and then scale to the new limits:
+To keep the thumb in the same relative position when XMIN, XMAX and DX change, recalculate POSX from the old position.
+For example, convert it to a 0-1 interval and then scale it to the new limits:
 
     old_posx_relative = (old_posx - old_xmin)/(old_xmax - old_xmin)
     posx = (xmax - xmin)*old_posx_relative + xmin
 
 **IupList**, **IupTree**, and **IupText/IupMultiline** scrollbars are automatically managed and do NOT have the POS*, *MIN, *MAX and D* attributes.
 
-When updating the virtual space size, or when the canvas is resized, if **XAUTOHIDE**=YES then calculating the actual DX size can be very tricky.
-Here is a helpful algorithm:
+When updating the virtual space size, or when the canvas is resized, with **XAUTOHIDE**=YES the actual DX can be computed with:
 
     void scrollbar_update(Ihandle* ih, int view_width, int view_height)  /* view_width and view_height is the virtual space size */
     {
@@ -155,7 +154,7 @@ Inside the canvas ACTION callback, the (x,y) offset for drawing is calculated as
     else
       y = (canvas_height - view_height) / 2;  /* no scrollbar, for example, center the view */
 
-Call **scrollbar_update** from the RESIZE_CB callback and when you change the zoom factor that affects **view_width** or **view_height**.
+Call **scrollbar_update** from the RESIZE_CB callback and when the zoom factor that affects **view_width** or **view_height** changes.
 
 ### Affects
 

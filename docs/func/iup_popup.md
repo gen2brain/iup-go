@@ -5,11 +5,11 @@ It is the equivalent of creating a Modal dialog is some toolkits.
 
 If another dialog is shown after **IupPopup** using **IupShow**, then its interaction will not be inhibited.
 Every **IupPopup** call creates a new popup level that inhibits all previous dialogs interactions, but does not disable new ones (even if they were disabled by the Popup, calling **IupShow** will re-enable the dialog because it will change its popup level).
-IMPORTANT: The popup levels must be closed in the reverse order they were created or unpredictable results will occur.
+The popup levels must be closed in the reverse order they were created or unpredictable results will occur.
 
 For a dialog, this function will only return the control to the application after a callback returns IUP_CLOSE, **IupExitLoop** is called, or when the popup dialog is hidden, for example using **IupHide**.
 For a menu it returns automatically after a menu item is selected.
-IMPORTANT: If a menu item callback returns IUP_CLOSE, it will also end the current popup level dialog.
+If a menu item callback returns IUP_CLOSE, it also ends the current popup level dialog.
 
 ### Parameters/Return
 
@@ -49,7 +49,7 @@ It will call **IupMap** for the element.
 
 The **x** and **y** values are the same as returned by the [SCREENPOSITION](../attrib/iup_screenposition.md) attribute.
 
- IUP_MOUSEPOS position is the same as returned by the [CURSORPOS](../attrib/iup_globals.md#cursorpos) global attribute.
+IUP_MOUSEPOS position is the same as returned by the [CURSORPOS](../attrib/iup_globals.md#cursorpos) global attribute.
 
 See the [PLACEMENT](../dlg/iup_dialog.md) attribute for other position and show options.
 
@@ -60,7 +60,7 @@ When IUP_CURRENT is used at the first time the dialog is shown, then it will be 
 The main screen area does not include additional monitors.
 
 **IupPopup** works just like **IupShowXY**, but it inhibits interaction with other dialogs that are visible and interrupts the processing until IUP_CLOSE is returned in a callback, **IupExitLoop** is called, or the popup dialog is hidden.
-This is now a modal dialog. Although it interrupts the processing, it does not destroy the dialog when it ends.
+The dialog is modal. It is not destroyed when the popup ends.
 To destroy the dialog, **IupDestroy** must be called.
 
 The MODAL attribute of the dialog will be changed internally to return YES.
@@ -71,13 +71,12 @@ The global callbacks GLOBALENTERMODAL_CB and GLOBALLEAVEMODAL_CB, set with [IupS
 
 **popup_level**: the popup level before the change, 1 when no dialog is modal.
 
-In GTK and Motif the inactive dialogs will still be moveable, resizable and changeable their Z-order.
+In GTK and Motif, the inactive dialogs will still be moveable, resizable and changeable their Z-order.
 Although their contents will be inactive, the keyboard will be disabled, and they cannot be closed from the close box.
 
 When called for an already visible dialog (modal or not) it will update its position and [PLACEMENT](../dlg/iup_dialog.md).
 If the already visible dialog is not modal, then it will become modal and processing will be interrupted as a regular **IupPopup**.
 If the already visible dialog is modal, then the function returns, and it will NOT interrupt processing, the dialog still will remain MODAL.
-In other words, calling **IupPopup** a second time will just update the dialog position, and it will not interrupt processing, and calling **IupPopup** for a dialog shown with **IupShowXY** will turn it a modal dialog.
 
 ### See Also
 

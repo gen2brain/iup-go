@@ -57,7 +57,7 @@ Can be set to NULL. If NULL, BGCOLOR will be used instead.
 **PSCOLOR**: background color used to indicate a press state. Pre-defined to "150 200 235".
 Can be set to NULL. If NULL, BGCOLOR will be used instead.
 
-**BORDER** (creation-only): the default value is "NO". This is the **IupCanvas** border.
+**BORDER** (creation-only): the **IupCanvas** border. Default: "NO".
 
 **BORDERCOLOR**: color used for borders. Default: "50 150 255".
 This is for the **IupFlatToggle** drawn border.
@@ -68,16 +68,15 @@ This is for the **IupFlatToggle** drawn border.
 
 **BORDERWIDTH**: line width used for borders. Default: "1".
 Any borders can be hidden by simply setting this value to 0. This is for the **IupFlatToggle** drawn border.
-When the checkbox is shown the borders are not shown, and the background is not highlighted.
 
 **CORNERRADIUS** (non-inheritable): radius of the rounded corners for the button background, border and focus feedback.
 Default: "0" (no rounding).
 
-**SHOWBORDER**: by default borders are drawn only when the button is highlighted, if SHOWBORDER=YES borders are always show.
+**SHOWBORDER**: by default borders are drawn only when the button is highlighted, if SHOWBORDER=YES borders are always shown.
 When SHOWBORDER=YES and BGCOLOR is not defined, the actual BGCOLOR will be a darker version of the background color of the native parent.
 
 **CANFOCUS** (creation-only) (non-inheritable): enables the focus traversal of the control.
-In Windows the button will respect CANFOCUS in opposite to the other controls. Default: YES.
+In Windows, the button will respect CANFOCUS differently to some other controls. Default: "YES".
 
 **FOCUSFEEDBACK** (non-inheritable): draw the focus feedback. Can be YES or NO.
 Default: YES.
@@ -122,14 +121,14 @@ If it is not defined then the CHECKIMAGE is used and its colors will be replaced
 **CHECKIMAGEPRESS** (non-inheritable): check box image name of the element in pressed state when VALUE=OFF.
 If it is not defined then the CHECKIMAGE is used.
 
-**CHECKIMAGEON*** (non-inheritable): image names to be used as check box when VALUE=ON. (HIGHLIGHT, INACTIVE and PRESS included)
+**CHECKIMAGEON\*** (non-inheritable): image names to be used as check box when VALUE=ON. (HIGHLIGHT, INACTIVE and PRESS included)
 
-**CHECKIMAGENOTDEF*** (non-inheritable): image names to be used as check box when VALUE=NOTDEF. (HIGHLIGHT, INACTIVE and PRESS included)
+**CHECKIMAGENOTDEF\*** (non-inheritable): image names to be used as check box when VALUE=NOTDEF. (HIGHLIGHT, INACTIVE and PRESS included)
 
 **PROPAGATEFOCUS** (non-inheritable): enables the focus callback forwarding to the next native parent with FOCUS_CB defined.
 Default: NO.
 
-[EXPAND](../attrib/iup_expand.md) (non-inheritable): The default value is "NO". 
+[EXPAND](../attrib/iup_expand.md) (non-inheritable): Default: "NO".
 
 [FGCOLOR](../attrib/iup_fgcolor.md): Text color. Default: the global attribute DLGFGCOLOR.
 
@@ -207,13 +206,13 @@ The '\n' character is accepted for line change.
 Can be: ALEFT, ARIGHT or ACENTER. Default: ALEFT.
 
 **TEXTWRAP** (non-inheritable): For single line texts if the text is larger than its box, the line will be automatically broken in multiple lines.
-Notice that this is done internally by the system, the element natural size will still use only a single line.
+The natural size still uses a single line.
 For the remaining lines to be visible the element should use EXPAND=VERTICAL or set a SIZE/RASTERSIZE with enough height for the wrapped lines.
 
 **TEXTELLIPSIS** (non-inheritable): If the text is larger than its box, an ellipsis ("...") will be placed near the last visible part of the text and replace the invisible part.
 It will be ignored when TEXTWRAP=YES.
 
-  **TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
+**TEXTORIENTATION** (non-inheritable): text angle in degrees and counterclockwise.
 The text size will adapt to include the rotated space.
 
 **VALUE** (non-inheritable): Toggle's state. Values can be "ON", "OFF" or "TOGGLE".
@@ -221,7 +220,7 @@ If 3STATE=YES then can also be "NOTDEF". Default: "OFF". The TOGGLE option will 
 Can only be set to ON if the toggle is inside a radio, it will automatically set to OFF the previous toggle that was ON in the radio.
 
 **3STATE** (creation-only): Enable a three state toggle.
-Valid for toggles with text only and that do not belong to a radio. Can be "YES" or NO".
+Valid for toggles with text only and that do not belong to a radio. Can be "YES" or "NO".
 Default: "NO". Incompatible with SWITCH=YES.
 
 **SWITCH** (creation-only) (non-inheritable): displays the toggle as a switch control instead of a checkbox.
@@ -229,7 +228,7 @@ Can be "YES" or "NO". Default: "NO". Incompatible with 3STATE.
 When SWITCH=YES, the check area draws a track with a sliding thumb instead of a checkbox or radio dot.
 The attributes CHECKSIZE, CHECKSPACING, CHECKRIGHT, CHECKALIGN, CHECKIMAGE and CHECKIMAGEON are reused for the switch.
 When SWITCH=YES and CHECKSIZE is not explicitly set, a fixed default size of 26 is used, instead of the checkbox defaults.
-The thumb grows slightly on mouse hover to provide visual feedback.
+The thumb grows slightly on mouse hover.
 
 **SWITCHTRACKWIDTH** (non-inheritable): width of the switch track in pixels.
 Default: effective CHECKSIZE * 2 (52). The track height is controlled by CHECKSIZE.
@@ -298,12 +297,12 @@ This callback is called only after the mouse is released and when it is released
     int function(Ihandle* ih, int state);
 
 **ih**: identifier of the element that activated the event.\
-**state**: 1 if the toggle's state was shifted to on; 0 if it was shifted to off.
+**state**: 1 if the toggle's state was shifted to on; 0 if it was shifted to off. For a 3-state toggle, -1 when shifted to NOTDEF.
 
 **Returns**: IUP_CLOSE will be processed.
 
 **VALUECHANGED_CB**: Called after the value was interactively changed by the user.
-Called after the ACTION callback but under the same context.
+Called after the FLAT_ACTION callback but under the same context.
 
     int function(Ihandle *ih);
 
@@ -329,9 +328,9 @@ Only the **IupFlatToggle** controls inside the radio will be part of the exclusi
 
 The toggle that is a child of an **IupRadio** automatically receives a name when it is mapped into the native system.
 
-To replace a **IupToggle** by a **IupFlatToggle**, you must change the function call (**IupFlatToggle** does not include the action callback in the constructor) and change the ACTION callback name to FLAT_ACTION.
+To replace an **IupToggle** by an **IupFlatToggle**, change the function call (**IupFlatToggle** does not include the action callback in the constructor) and rename the ACTION callback to FLAT_ACTION.
 
-Finally notice that the name of the secondary image attributes are different (for instance, IMINACTIVE is IMAGEINACTIVE, IMPRESS is IMAGEPRESS, and so on).
+The secondary image attribute names differ (for instance, IMINACTIVE is IMAGEINACTIVE, IMPRESS is IMAGEPRESS, and so on).
 
 When the **IupFlatToggle** displays only a text it will look like a label, use SHOWBORDER=YES to force the display of the borders all the time.
 
