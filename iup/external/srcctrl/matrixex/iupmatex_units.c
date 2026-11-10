@@ -79,9 +79,9 @@ static ImatExUnit IMATEX_MASS_UNITS [IMATEX_UNIT_MAXCOUNT] = {
 #define IMATEX_TEMPERATURE_COUNT 4
 static ImatExUnit IMATEX_TEMPERATURE_UNITS [IMATEX_UNIT_MAXCOUNT] = {
   {"Kelvin"           ,"K"  , 1, NULL},
-  {"degree Celsius"   ,"\xB0""C" , 1,     "\xC2\xBA""C"},   /* °C" */
-  {"degree Fahrenheit","\xB0""F" , 5./9., "\xC2\xBA""F"},   /* °F" */
-  {"degree Rankine"   ,"\xB0""Ra", 5./9., "\xC2\xBA""Ra"}}; /* °Ra */
+  {"degree Celsius"   ,"\xB0""C" , 1,     "\xC2\xB0""C"},   /* °C" */
+  {"degree Fahrenheit","\xB0""F" , 5./9., "\xC2\xB0""F"},   /* °F" */
+  {"degree Rankine"   ,"\xB0""Ra", 5./9., "\xC2\xB0""Ra"}}; /* °Ra */
 
 #define IMATEX_AREA_COUNT 13
 static ImatExUnit IMATEX_AREA_UNITS [IMATEX_UNIT_MAXCOUNT] = {
@@ -173,16 +173,16 @@ static ImatExUnit IMATEX_MOMENT_UNITS [IMATEX_UNIT_MAXCOUNT] = {
   {"Newton metre"             , "N\xB7""m"   , 1,                "N\xC2\xB7m"},       /* N·m    */
   {"kilogram-force metre"     , "kgf\xB7""m" , GRAVITY,          "kgf\xC2\xB7m"},     /* kgf·m  */
   {"ton-force metre"          , "tnf\xB7""m" , GRAVITY*1000,     "tnf\xC2\xB7m"},     /* tnf·m  */
-  {"Newton centimetre"        , "N\xB7""cm"  , 100,              "N\xC2\xB7m"},       /* N·cm   */
-  {"kilogram-force centimetre", "kgf\xB7""cm", GRAVITY*100,      "kgf\xC2\xB7""cm"},  /* kgf·cm */
-  {"ton-force centimetre"     , "tnf\xB7""cm", GRAVITY*1000*100, "tnf\xC2\xB7""cm"},  /* tnf·cm */
+  {"Newton centimetre"        , "N\xB7""cm"  , 0.01,             "N\xC2\xB7""cm"},    /* N·cm   */
+  {"kilogram-force centimetre", "kgf\xB7""cm", GRAVITY*0.01,     "kgf\xC2\xB7""cm"},  /* kgf·cm */
+  {"ton-force centimetre"     , "tnf\xB7""cm", GRAVITY*1000*0.01,"tnf\xC2\xB7""cm"},  /* tnf·cm */
   {"Kilonewton-metre"         , "kN\xB7""m"  , 1000,             "kN\xC2\xB7m"},      /* kN·m   */
   {"metre kilogram"           , "m\xB7""kg"  , 1.0/GRAVITY,      "m\xC2\xB7kg"}};     /* m·kg   */
 
 #define IMATEX_ANGLE_COUNT 3
 static ImatExUnit IMATEX_ANGLE_UNITS [IMATEX_UNIT_MAXCOUNT] = {
   {"radian", "rad", 1,            NULL},
-  {"degree", "\xB0", M_PI/180.0,     "\xC2\xBA"}, /* ° */
+  {"degree", "\xB0", M_PI/180.0,     "\xC2\xB0"}, /* ° */
   {"gradian", "grad", M_PI/200.0, NULL}};
 
 #define IMATEX_SPECIFIC_MASS_COUNT 7
@@ -201,7 +201,7 @@ static ImatExUnit IMATEX_SPECIFIC_WEIGHT_UNITS [IMATEX_UNIT_MAXCOUNT] = {
   {"Kilonewton per cubic metre"    ,"kN/m\xB3" , 1000,               "kN/m\xC2\xB3"},                         /* kN/m³   */
   {"kilogram-force per cubic metre","kgf/m\xB3", GRAVITY,            "kgf/m\xC2\xB3"},                        /* kgf/m³  */
   {"ton-force per cubic metre"     ,"tnf/m\xB3", GRAVITY * 1000,     "tnf/m\xC2\xB3"},                        /* tnf/m³  */
-  {"pound-force per cubic foot"    ,"lbf/ft\xB3", (GRAVITY * 0.45359237) / 0.028316846592, "lbf/m\xC2\xB3"},  /* lbf/ft³ */
+  {"pound-force per cubic foot"    ,"lbf/ft\xB3", (GRAVITY * 0.45359237) / 0.028316846592, "lbf/ft\xC2\xB3"},  /* lbf/ft³ */
   {"kilogram-force per litre"      ,"kgf/L" , GRAVITY * 0.001,                          NULL}};
 
 #define IMATEX_ENERGY_COUNT   7
@@ -243,7 +243,7 @@ static ImatExUnit IMATEX_DYNAMIC_VISCOSITY_UNITS [IMATEX_UNIT_MAXCOUNT] = {
 
 #define IMATEX_FLOW_COUNT 3
 static ImatExUnit IMATEX_FLOW_UNITS [IMATEX_UNIT_MAXCOUNT] = {
-  {"cubic metre per second", "m\xB3""/s",  0.1,            "m\xC2\xB3/s"},   /* m³/s  */
+  {"cubic metre per second", "m\xB3""/s",  1,              "m\xC2\xB3/s"},   /* m³/s  */
   {"cubic inch per second",  "in\xB3""/s", 16.387064e-6,   "in\xC2\xB3/s"},  /* in³/s */  /* 0.0254^3  */
   {"cubic foot per second",  "ft\xB3""/s", 0.028316846592, "ft\xC2\xB3/s"}}; /* ft³/s */  /* 0.3048^3  */
 
@@ -333,9 +333,9 @@ static double iMatrixConvertFunc(double number, int quantity, int unit_from, int
     {
       number = number / units[unit_to].factor;
 
-      if (unit_from==IMATEX_CELSIUS)
+      if (unit_to==IMATEX_CELSIUS)
         number = number - 273.15;
-      else if (unit_from==IMATEX_FAHRENHEIT)
+      else if (unit_to==IMATEX_FAHRENHEIT)
         number = number - 459.67;
     }
   }
