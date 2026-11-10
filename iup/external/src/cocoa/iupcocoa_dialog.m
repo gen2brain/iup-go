@@ -1583,24 +1583,6 @@ static char* cocoaDialogGetNSViewAttrib(Ihandle* ih)
  ********************** Class Methods ***************************
  ****************************************************************/
 
-static void cocoaDialogSetChildrenPositionMethod(Ihandle* ih, int x, int y)
-{
-  (void)x;
-  (void)y;
-
-  if (ih->firstchild)
-  {
-    char* offset = iupAttribGet(ih, "CHILDOFFSET");
-    int offset_x = 0;
-    int offset_y = 0;
-
-    if (offset)
-      iupStrToIntInt(offset, &offset_x, &offset_y, 'x');
-
-    iupBaseSetPosition(ih->firstchild, ih->firstchild->x + offset_x, ih->firstchild->y + offset_y);
-  }
-}
-
 static int cocoaDialogMapMethod(Ihandle* ih)
 {
   InativeHandle* parent;
@@ -2070,7 +2052,6 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   ic->Map = cocoaDialogMapMethod;
   ic->UnMap = cocoaDialogUnMapMethod;
   ic->LayoutUpdate = cocoaDialogLayoutUpdateMethod;
-  ic->SetChildrenPosition = cocoaDialogSetChildrenPositionMethod;
 
   iupClassRegisterAttribute(ic, "CLIENTSIZE", cocoaDialogGetClientSizeAttrib, iupDialogSetClientSizeAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLIENTOFFSET", cocoaDialogGetClientOffsetAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_DEFAULTVALUE | IUPAF_READONLY | IUPAF_NO_INHERIT);
