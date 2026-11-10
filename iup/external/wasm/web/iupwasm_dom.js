@@ -2690,16 +2690,17 @@
         break;
       }
       case 'audiostart': {
-        var A = globalThis.__iupAudio;
+        var A = globalThis.__iupAudio && globalThis.__iupAudio[c.slot];
         if (!A || !A.ctx) break;
         var ahdr = new Int32Array(c.sab, 0, 8);
         if (!A.module) A.module = A.ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([globalThis.__iupAudioWorklet], { type: 'text/javascript' })));
         A.module.then(function () {
+          if (globalThis.__iupAudio[c.slot] !== A) return;
           if (A.node) { A.node.disconnect(); A.node = null; }
           A.node = new AudioWorkletNode(A.ctx, 'iup-audio', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [ahdr[3]], processorOptions: { sab: c.sab } });
-          A.node.port.onmessage = function () { D('iupwasmAudioFill'); };
+          A.node.port.onmessage = function () { D('iupwasmAudioFill', c.slot); };
           A.node.connect(A.ctx.destination);
-          D('iupwasmAudioFill');
+          D('iupwasmAudioFill', c.slot);
         });
         // autoplay policy: a context created outside a user gesture stays suspended until one
         var aresume = function () {
@@ -2713,8 +2714,15 @@
         aresume();
       } break;
       case 'audiostop': {
-        var A2 = globalThis.__iupAudio;
+        var A2 = globalThis.__iupAudio && globalThis.__iupAudio[c.slot];
         if (A2 && A2.node) { A2.node.disconnect(); A2.node = null; }
+      } break;
+      case 'audioclose': {
+        var A3 = globalThis.__iupAudio && globalThis.__iupAudio[c.slot];
+        if (!A3) break;
+        if (A3.node) { A3.node.disconnect(); A3.node = null; }
+        if (A3.ctx) A3.ctx.close().catch(function () {});
+        delete globalThis.__iupAudio[c.slot];
       } break;
       case 'vidopen': {
         if (!globalThis.__iupVid) globalThis.__iupVid = {};
@@ -3435,14 +3443,29 @@ globalThis.__iupPrintPages = function (req) {
   return 0;
 };
 
-globalThis.__iupAudioOpen = function () {
-  var A = globalThis.__iupAudio = globalThis.__iupAudio || {};
-  if (A.ctx) return A.ctx.sampleRate | 0;
+globalThis.__iupAudioOpen = function (slot, sink) {
+  var all = globalThis.__iupAudio = globalThis.__iupAudio || {};
+  var A = all[slot];
+  if (A && A.ctx) return A.ctx.sampleRate | 0;
   var AC = globalThis.AudioContext || globalThis.webkitAudioContext;
   if (!AC || typeof AudioWorkletNode === 'undefined' || typeof SharedArrayBuffer === 'undefined') return 0;
-  try { A.ctx = new AC(); } catch (e) { return 0; }
-  if (!A.ctx.audioWorklet) { A.ctx.close(); A.ctx = null; return 0; }
+  A = all[slot] = {};
+  try { A.ctx = new AC(); } catch (e) { delete all[slot]; return 0; }
+  if (!A.ctx.audioWorklet) { A.ctx.close(); delete all[slot]; return 0; }
+  if (sink && A.ctx.setSinkId) A.ctx.setSinkId(sink).catch(function () {});
   return A.ctx.sampleRate | 0;
+};
+
+// "id<TAB>label" lines of the audio outputs a page can select, or null
+globalThis.__iupAudioOutputs = function () {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return null;
+  return navigator.mediaDevices.enumerateDevices().then(function (list) {
+    var lines = [], n = 0;
+    for (var i = 0; i < list.length; i++)
+      if (list[i].kind === 'audiooutput' && list[i].deviceId && list[i].deviceId !== 'default' && list[i].deviceId !== 'communications')
+        lines.push(list[i].deviceId + '\t' + (list[i].label || ('Audio output ' + (++n))));
+    return lines.length ? lines.join('\n') : null;
+  }).catch(function () { return null; });
 };
 
 // runs inside the AudioWorklet: drains the shared ring, asks the app for more when half empty
@@ -3619,7 +3642,12 @@ globalThis.__iupMediaPick = function (kind, index) {
         return globalThis.__iupSensorAvailable(req.type);
       } break;
       case 'audioopen': {
-        return globalThis.__iupAudioOpen();
+        return globalThis.__iupAudioOpen(req.slot, req.sink);
+      } break;
+      case 'auddevices': {
+        var AC2 = globalThis.AudioContext || globalThis.webkitAudioContext;
+        if (!AC2 || !AC2.prototype.setSinkId) return null;
+        return globalThis.__iupAudioOutputs();
       } break;
       case 'camavailable': {
         return globalThis.__iupCameraAvailable();
@@ -3638,14 +3666,8 @@ globalThis.__iupMediaPick = function (kind, index) {
         return globalThis.__iupMicrophoneOpen(req.ihptr, req.rate);
       } break;
       case 'viddevices': {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices || !HTMLMediaElement.prototype.setSinkId) return null;
-        return navigator.mediaDevices.enumerateDevices().then(function (list) {
-          var lines = [], n = 0;
-          for (var i = 0; i < list.length; i++)
-            if (list[i].kind === 'audiooutput' && list[i].deviceId && list[i].deviceId !== 'default' && list[i].deviceId !== 'communications')
-              lines.push(list[i].deviceId + '\t' + (list[i].label || ('Audio output ' + (++n))));
-          return lines.length ? lines.join('\n') : null;
-        }).catch(function () { return null; });
+        if (!HTMLMediaElement.prototype.setSinkId) return null;
+        return globalThis.__iupAudioOutputs();
       } break;
       case 'micdevices': {
         if (!globalThis.__iupMicrophoneAvailable()) return null;

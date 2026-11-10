@@ -18,45 +18,142 @@
 
 enum { IAUDIO_MSG_END, IAUDIO_MSG_ERROR };
 
+typedef struct _IaudioEngine
+{
+  ma_engine engine;
+  ma_device_id id;
+  int refs;
+  struct _IaudioEngine* next;
+} IaudioEngine;
+
 struct _IcontrolData
 {
+  IaudioEngine* engine;
   ma_decoder decoder;
   ma_sound sound;
   int loaded;
   int paused;
 };
 
-static ma_engine iaudio_engine;
-static int iaudio_engine_ready = 0;
+static IaudioEngine iaudio_default_engine;
+static int iaudio_default_ready = 0;
+static IaudioEngine* iaudio_engines = NULL;
+static ma_device_info* iaudio_devices = NULL;
+static int iaudio_device_count = 0;
 
-static int iAudioEngineInit(void)
+static int iAudioDefaultEngineInit(void)
 {
   ma_engine_config config;
 
-  if (iaudio_engine_ready)
+  if (iaudio_default_ready)
     return 1;
 
   config = ma_engine_config_init();
-  config.pDevice = iupdrvAudioDeviceInit(&iaudio_engine);
-  if (ma_engine_init(&config, &iaudio_engine) != MA_SUCCESS)
+  config.pDevice = iupdrvAudioDeviceInit(&iaudio_default_engine.engine);
+  if (ma_engine_init(&config, &iaudio_default_engine.engine) != MA_SUCCESS)
   {
     iupdrvAudioDeviceRelease();
     return 0;
   }
 
-  iaudio_engine_ready = 1;
+  iaudio_default_ready = 1;
   return 1;
 }
 
 static void iAudioEngineRelease(Iclass* ic)
 {
   (void)ic;
-  if (iaudio_engine_ready)
+
+  while (iaudio_engines)
   {
-    ma_engine_uninit(&iaudio_engine);
-    iupdrvAudioDeviceRelease();
-    iaudio_engine_ready = 0;
+    IaudioEngine* engine = iaudio_engines;
+    iaudio_engines = engine->next;
+    ma_engine_uninit(&engine->engine);
+    free(engine);
   }
+
+  free(iaudio_devices);
+  iaudio_devices = NULL;
+  iaudio_device_count = 0;
+
+  if (iaudio_default_ready)
+  {
+    ma_engine_uninit(&iaudio_default_engine.engine);
+    iupdrvAudioDeviceRelease();
+    iaudio_default_ready = 0;
+  }
+}
+
+static void iAudioListDevices(void)
+{
+  free(iaudio_devices);
+  iaudio_device_count = iupdrvAudioDeviceList(&iaudio_devices);
+}
+
+static IaudioEngine* iAudioEngineAcquire(int device)
+{
+  ma_engine_config config;
+  ma_device_id* id;
+  IaudioEngine* engine;
+
+  if (device > 0 && !iaudio_devices)
+    iAudioListDevices();
+
+  if (device <= 0 || device > iaudio_device_count)
+  {
+    iaudio_default_engine.refs++;
+    return &iaudio_default_engine;
+  }
+
+  id = &iaudio_devices[device - 1].id;
+  for (engine = iaudio_engines; engine; engine = engine->next)
+  {
+    if (ma_device_id_equal(&engine->id, id))
+    {
+      engine->refs++;
+      return engine;
+    }
+  }
+
+  engine = (IaudioEngine*)calloc(1, sizeof(IaudioEngine));
+  if (!engine)
+    return NULL;
+  engine->id = *id;
+
+  config = ma_engine_config_init();
+  config.pContext = iupdrvAudioContext();
+  config.pPlaybackDeviceID = &engine->id;
+  if (ma_engine_init(&config, &engine->engine) != MA_SUCCESS)
+  {
+    free(engine);
+    return NULL;
+  }
+
+  engine->refs = 1;
+  engine->next = iaudio_engines;
+  iaudio_engines = engine;
+  return engine;
+}
+
+static void iAudioEngineUnref(IaudioEngine* engine)
+{
+  IaudioEngine** link;
+
+  engine->refs--;
+  if (engine == &iaudio_default_engine || engine->refs > 0)
+    return;
+
+  for (link = &iaudio_engines; *link; link = &(*link)->next)
+  {
+    if (*link == engine)
+    {
+      *link = engine->next;
+      break;
+    }
+  }
+
+  ma_engine_uninit(&engine->engine);
+  free(engine);
 }
 
 static void iAudioEndCallback(void* user_data, ma_sound* sound)
@@ -112,6 +209,17 @@ static void iAudioApplySettings(Ihandle* ih)
   ma_sound_set_looping(sound, iupAttribGetBoolean(ih, "LOOP"));
 }
 
+static ma_result iAudioSoundInit(Ihandle* ih)
+{
+  ma_result result = ma_sound_init_from_data_source(&ih->data->engine->engine, &ih->data->decoder, MA_SOUND_FLAG_NO_SPATIALIZATION, NULL, &ih->data->sound);
+  if (result != MA_SUCCESS)
+    return result;
+
+  ma_sound_set_end_callback(&ih->data->sound, iAudioEndCallback, ih);
+  iAudioApplySettings(ih);
+  return MA_SUCCESS;
+}
+
 static int iAudioSetFileAttrib(Ihandle* ih, const char* value)
 {
   ma_result result;
@@ -124,7 +232,7 @@ static int iAudioSetFileAttrib(Ihandle* ih, const char* value)
   result = ma_decoder_init_file(value, NULL, &ih->data->decoder);
   if (result == MA_SUCCESS)
   {
-    result = ma_sound_init_from_data_source(&iaudio_engine, &ih->data->decoder, MA_SOUND_FLAG_NO_SPATIALIZATION, NULL, &ih->data->sound);
+    result = iAudioSoundInit(ih);
     if (result != MA_SUCCESS)
       ma_decoder_uninit(&ih->data->decoder);
   }
@@ -136,8 +244,6 @@ static int iAudioSetFileAttrib(Ihandle* ih, const char* value)
   }
 
   ih->data->loaded = 1;
-  ma_sound_set_end_callback(&ih->data->sound, iAudioEndCallback, ih);
-  iAudioApplySettings(ih);
 
   {
     ma_uint64 length;
@@ -145,6 +251,78 @@ static int iAudioSetFileAttrib(Ihandle* ih, const char* value)
   }
 
   return 1;
+}
+
+static int iAudioSetAudioDeviceAttrib(Ihandle* ih, const char* value)
+{
+  IaudioEngine* engine;
+  ma_uint64 cursor = 0;
+  int playing = 0;
+  int device = 0;
+
+  if (value && (!iupStrToInt(value, &device) || device < 0))
+    return 0;
+
+  engine = iAudioEngineAcquire(device);
+  if (!engine)
+  {
+    IupPostMessage(ih, "Audio device not available", IAUDIO_MSG_ERROR, 0, NULL);
+    return 0;
+  }
+
+  if (engine == ih->data->engine)
+  {
+    iAudioEngineUnref(engine);
+    return 1;
+  }
+
+  if (ih->data->loaded)
+  {
+    ma_sound_get_cursor_in_pcm_frames(&ih->data->sound, &cursor);
+    playing = ma_sound_is_playing(&ih->data->sound);
+    ma_sound_uninit(&ih->data->sound);
+  }
+
+  iAudioEngineUnref(ih->data->engine);
+  ih->data->engine = engine;
+
+  if (ih->data->loaded)
+  {
+    ma_result result = iAudioSoundInit(ih);
+    if (result != MA_SUCCESS)
+    {
+      ma_decoder_uninit(&ih->data->decoder);
+      ih->data->loaded = 0;
+      ih->data->paused = 0;
+      IupPostMessage(ih, ma_result_description(result), IAUDIO_MSG_ERROR, 0, NULL);
+      return 1;
+    }
+
+    ma_sound_seek_to_pcm_frame(&ih->data->sound, cursor);
+    if (playing)
+      ma_sound_start(&ih->data->sound);
+  }
+
+  return 1;
+}
+
+static char* iAudioGetAudioDeviceCountAttrib(Ihandle* ih)
+{
+  (void)ih;
+  iAudioListDevices();
+  return iupStrReturnInt(iaudio_device_count + 1);
+}
+
+static char* iAudioGetAudioDeviceNameAttrib(Ihandle* ih, int id)
+{
+  (void)ih;
+  if (id == 0)
+    return "Default";
+  if (!iaudio_devices)
+    iAudioListDevices();
+  if (id < 0 || id > iaudio_device_count)
+    return NULL;
+  return iupStrReturnStr(iaudio_devices[id - 1].name);
 }
 
 static int iAudioSetPlayAttrib(Ihandle* ih, const char* value)
@@ -276,10 +454,11 @@ static int iAudioCreateMethod(Ihandle* ih, void** params)
 {
   (void)params;
 
-  if (!iAudioEngineInit())
+  if (!iAudioDefaultEngineInit())
     return IUP_ERROR;
 
   ih->data = iupALLOCCTRLDATA();
+  ih->data->engine = iAudioEngineAcquire(0);
   IupSetCallback(ih, "POSTMESSAGE_CB", (Icallback)iAudioPostMessage);
   return IUP_NOERROR;
 }
@@ -287,6 +466,7 @@ static int iAudioCreateMethod(Ihandle* ih, void** params)
 static void iAudioDestroyMethod(Ihandle* ih)
 {
   iAudioUnload(ih);
+  iAudioEngineUnref(ih->data->engine);
 }
 
 Iclass* iupAudioNewClass(void)
@@ -299,6 +479,7 @@ Iclass* iupAudioNewClass(void)
   ic->nativetype = IUP_TYPEOTHER;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 0;
+  ic->has_attrib_id = 1;
 
   ic->New = iupAudioNewClass;
   ic->Release = iAudioEngineRelease;
@@ -321,6 +502,9 @@ Iclass* iupAudioNewClass(void)
   iupClassRegisterAttribute(ic, "DURATION", iAudioGetDurationAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CHANNELS", iAudioGetChannelsAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SAMPLERATE", iAudioGetSampleRateAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AUDIODEVICE", NULL, iAudioSetAudioDeviceAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AUDIODEVICECOUNT", iAudioGetAudioDeviceCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "AUDIODEVICENAME", iAudioGetAudioDeviceNameAttrib, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   return ic;
 }

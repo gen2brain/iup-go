@@ -1,4 +1,4 @@
-//go:build media && !haiku && !js
+//go:build media && !haiku && !android && !js
 
 package iup
 

@@ -9,10 +9,10 @@ set(_MEDIA_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_microphone.c"
 )
 if(NOT IUP_BACKEND STREQUAL "haiku" AND NOT EMSCRIPTEN)
-  list(APPEND _MEDIA_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_audio_device.c"
-    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_microphone_device.c"
-  )
+  if(NOT IUP_BACKEND STREQUAL "android")
+    list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_audio_device.c")
+  endif()
+  list(APPEND _MEDIA_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iup_microphone_device.c")
 endif()
 set(_MEDIA_LIBS "")
 set(_MEDIA_DEFS "")
@@ -80,6 +80,7 @@ elseif(APPLE)
 elseif(IUP_BACKEND STREQUAL "android")
   list(APPEND _MEDIA_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupandroid_media.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupandroid_audio.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupandroid_camera.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/srcmedia/iupandroid_microphone.c"
   )

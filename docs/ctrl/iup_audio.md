@@ -1,11 +1,11 @@
 ## IupAudio
 
-Creates an audio player. Plays one sound file through the default output device; several elements play at the same time and are mixed.
+Creates an audio player. Plays one sound file through the default output device or the one selected by AUDIODEVICE; several elements play at the same time and are mixed.
 It is not a visual element. Each element should be destroyed using [IupDestroy](../func/iup_destroy.md).
 
 Decodes WAV, FLAC, MP3 and Ogg Vorbis files.
 
-In WebAssembly the page must be a secure context, and output is silent until the first click or key press when the page was not opened from a user gesture.
+In WebAssembly, the page must be a secure context, and output is silent until the first click or key press when the page was not opened from a user gesture.
 
 ### Initialization and Usage
 
@@ -40,6 +40,15 @@ NULL unloads the file.
 **VOLUME** (non-inheritable): Playback volume from 0 (silent) to 100. Default: "100".
 
 **PAN** (non-inheritable): Stereo balance from -100 (left) to 100 (right). Default: "0".
+
+**AUDIODEVICE** (non-inheritable): Index of the audio output device, from 0. Index 0 is the system default output. Default: "0".
+Changing it during playback moves the audio to the new device.
+
+**AUDIODEVICECOUNT** (read-only): Number of audio output devices, counting the default at index 0. Each query lists the devices again.
+
+**AUDIODEVICENAMEid** (read-only): Name of the audio output device at index "id", or NULL. AUDIODEVICENAME0 is "Default".
+In iOS, the devices are the outputs of the current route, which the system chooses.
+In WebAssembly, the devices are listed only after media access has been granted and when the browser can select the output device.
 
 **PITCH** (non-inheritable): Playback speed factor, greater than 0. Changes both speed and pitch. Default: "1.0".
 
