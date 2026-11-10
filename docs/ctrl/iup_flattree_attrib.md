@@ -13,7 +13,7 @@ Default: "255 255 255".
 **BORDERCOLOR**: color used for the internal border. Default: "50 150 255".
 
 **BORDERWIDTH**: line width used for the internal border. Default: "0".
-The internal borders are hidden by simply setting this value to 0.
+The internal borders are hidden by setting this value to 0.
 It is drawn inside the canvas, so inside the scrollbars.
 
 **EXTRATEXTWIDTH**: width of the extra text area at right.

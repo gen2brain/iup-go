@@ -65,7 +65,7 @@ Default: "YES".
 **NOOVERWRITEPROMPT**: do not prompt to overwrite an existent file when in "SAVE" dialog.
 Default: "NO".
 
-**NOPLACESBAR** [Windows Only]: do not show the places bar.
+**NOPLACESBAR** [Win32 Only]: do not show the places bar.
 
 [PARENTDIALOG](../attrib/iup_parentdialog.md): Makes the dialog be treated as a child of the specified dialog.
 
@@ -75,7 +75,7 @@ If the portal is not available, falls back to the native dialog.
 Supported in GTK 3, FLTK, Motif, EFL and QML.
 In GTK 4, the native GtkFileDialog already uses portals when appropriate.
 
-**SHOWEDITBOX** [Windows Only]: Show an edit box in the directory selection dialog (DIALOGTYPE=DIR).
+**SHOWEDITBOX** [Win32 Only]: Show an edit box in the directory selection dialog (DIALOGTYPE=DIR).
 
 **SHOWHIDDEN**: Show hidden files. Default: NO.
 Not supported in Haiku, Android, iOS, WebAssembly and QML.
@@ -159,7 +159,7 @@ The **IupFileDlg** is a native pre-defined dialog that is not altered by [IupSet
 
 The dialog is mapped only inside **IupPopup**, **IupMap** does nothing.
 
-The [IupGetFile](iup_getfile.md) function simply creates and popup a **IupFileDlg**.
+The [IupGetFile](iup_getfile.md) function creates and shows an **IupFileDlg**.
 
 In Windows, the FILE and the DIRECTORY attributes also accept strings containing "/" as path separators, but the VALUE attribute will always return strings using the "\\" character.
 
@@ -176,7 +176,7 @@ To add an extension inside FILE_CB with status=OK, the application must check wh
 
 #### XDG Desktop Portals
 
-In Linux/Unix, the file dialog can use the XDG Desktop Portal (org.freedesktop.portal.FileChooser) via D-Bus instead of the native toolkit dialog, see PORTAL.
+In Unix, the file dialog can use the XDG Desktop Portal (org.freedesktop.portal.FileChooser) via D-Bus instead of the native toolkit dialog, see PORTAL.
 
 Portal support is available in GTK 3, FLTK, Motif, EFL and QML.
 In GTK 4, the native GtkFileDialog already integrates with portals when running in a sandboxed environment.

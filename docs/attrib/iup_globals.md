@@ -200,7 +200,7 @@ The first dialog that has a COPYDATA_CB callback will receive the command line o
 When consulted returns NULL if inside the second instance.
 So usually in the application initialization after **IupOpen**, set SINGLEINSTANCE and then consult its value, if NULL abort the second instance by calling **IupClose** and returning from *main*.
 
-In Windows (Win32 and WinUI), it uses a named mutex for detection and WM_COPYDATA for communication. In Linux/Unix (GTK, GTK4, Qt, QML, Motif, FLTK, EFL), it uses D-Bus session bus name ownership. In macOS, it uses CFMessagePort. In Haiku, it uses a named-port rendezvous.
+In Windows (Win32 and WinUI), it uses a named mutex for detection and WM_COPYDATA for communication. In Unix (GTK, GTK4, Qt, QML, Motif, FLTK, EFL), it uses D-Bus session bus name ownership. In macOS, it uses CFMessagePort. In Haiku, it uses a named-port rendezvous.
 In Android, single instance is enforced by the Activity launchMode in the manifest, so the SINGLEINSTANCE attribute and COPYDATA_CB are not implemented. Not supported in iOS and WebAssembly.
 
 ### NETWORK [Android and iOS Only]
@@ -300,7 +300,7 @@ Not supported in GNUstep, iOS and WebAssembly.
 
 ### SYSTEM (read-only)
 
-Informs the current operating system. In UNIX, it is equivalent to the command "uname -s" (sysname). Some known names:
+Informs the current operating system. In Unix, it is equivalent to the command "uname -s" (sysname). Some known names:
 
 > - "macOS"
 > - "iOS"
@@ -325,7 +325,7 @@ Informs the current operating system. In UNIX, it is equivalent to the command "
 
 Informs the current operating system version number.
 
-In UNIX, it is the kernel release, the same as the command "uname -r".
+In Unix, it is the kernel release, the same as the command "uname -r".
 In Windows, it is the system version number, e.g. "10.0.26200", followed by the service pack when there is one.
 In macOS and iOS, it is the system version, e.g. "26.1".
 In Android, it is the Android release, e.g. "15".

@@ -53,7 +53,7 @@ This behavior is different from a control that goes inside the dialog.
 When SIZE or RASTERSIZE are set (changing the **User** size), the **Current** size is reset to 0x0, so the **Natural** size is considered when re-computing the **Current** size of the dialog.
 
 Values set at SIZE or RASTERSIZE attributes of a dialog are always accepted, regardless of the minimum size required by its children.
-For a dialog to have the minimum necessary size to fit all elements contained in it, simply define SIZE or RASTERSIZE to NULL.
+For a dialog to have the minimum necessary size to fit all elements contained in it, set SIZE or RASTERSIZE to NULL.
 When SIZE or RASTERSIZE is used as the initial size of the dialog, it also limits the minimum size of its contents; reset it to NULL after showing the dialog so the dialog can be resized to smaller values.
 The contents are still limited by the **Natural** size; set SHRINK=YES to remove that limitation.
 To only change the **User** size in pixels, without resetting the **Current** size, set the USERSIZE attribute.
@@ -148,7 +148,7 @@ In Windows, MINBOX is hidden only if MAXBOX is hidden as well, or else it will b
 
 **MINSIZE**: Minimum size for the dialog in raster units (pixels).
 The windowing system will not be able to change the size beyond this limit. Default: "1x1".
-Some systems define a very minimum size greater than this, for instance in Windows the horizontal minimum size includes the window decoration buttons.
+Some systems define a minimum size greater than this, for instance in Windows the horizontal minimum size includes the window decoration buttons.
 
 **MODAL** (read-only): Returns the popup state. It is "YES" if the dialog was shown using **IupPopup**.
 It is "NO" if **IupShow** was used, or it is not visible.
@@ -162,7 +162,7 @@ Used only if PARENTDIALOG is not defined.
 **PLACEMENT**: Changes how the dialog will be shown. Values: "FULL", "MAXIMIZED", "MINIMIZED" and "NORMAL".
 Default: "NORMAL". After **IupShow**/**IupPopup** the attribute is set back to "NORMAL".
 FULL is similar to FULLSCREEN, but only the dialog client area covers the screen area, menu and decorations will be there but out of the screen.
-In UNIX, there is a chance that the placement won't work correctly, that depends on the Window Manager.
+In Unix, there is a chance that the placement won't work correctly, that depends on the Window Manager.
 In WebAssembly, FULL and MAXIMIZED both fill the browser viewport, and MINIMIZED has no effect.
 In Wayland, a minimized dialog is restored only by the user.
 In macOS, FULL fills the screen below the menu bar and the title bar stays visible.

@@ -12,7 +12,7 @@ This also defines a point at the diagonal used to define **I**.
 **I** can also be seen as the projection of the color vector onto the diagonal.
 But **I** is not linear, see Notes below.
 
-For a dialog that simply returns the selected color, use [IupGetColor](../dlg/iup_getcolor.md) or [IupColorDlg](../dlg/iup_colordlg.md).
+For a dialog that returns the selected color, use [IupGetColor](../dlg/iup_getcolor.md) or [IupColorDlg](../dlg/iup_colordlg.md).
 
 ### Creation
 

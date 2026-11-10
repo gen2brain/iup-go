@@ -48,14 +48,14 @@ The file name creation will depend on the system and on its usage.
 There are two defined usages. The default is the **User Configuration File** stored under the per-user system folder.
 The alternative is the **Application Configuration File** stored next to the executable, used when loading a configuration shipped by the installer.
 
-The **User Configuration File** is the most common usage. By default the filename is "<CONFIGDIR>/<APP_NAME>/config" on UNIX, macOS and Android, or "<CONFIGDIR>\\<APP_NAME>\\config.cfg" on Windows, where <CONFIGDIR> is the platform per-user configuration root: see [CONFIGDIR](../attrib/iup_globals.md#cachedir-datadir-configdir-tmpdir-read-only).
+The **User Configuration File** is the most common usage. By default the filename is "<CONFIGDIR>/<APP_NAME>/config" on Unix, macOS and Android, or "<CONFIGDIR>\\<APP_NAME>\\config.cfg" on Windows, where <CONFIGDIR> is the platform per-user configuration root: see [CONFIGDIR](../attrib/iup_globals.md#cachedir-datadir-configdir-tmpdir-read-only).
 
 If APP_SYSTEMPATH is set to NO, a legacy home-folder path is used instead:
-"<HOME>/.<APP_NAME>" on UNIX and macOS, "<HOMEDRIVE><HOMEPATH>\\<APP_NAME>.cfg" on Windows.
+"<HOME>/.<APP_NAME>" on Unix and macOS, "<HOMEDRIVE><HOMEPATH>\\<APP_NAME>.cfg" on Windows.
 In iOS, the value is ignored and the system path is always used.
 
 The **Application Configuration File** is defined by setting APP_CONFIG to YES (default NO).
-APP_PATH must also be set, with a trailing folder separator. The filename will be "<APP_PATH>.<APP_NAME>" on UNIX, "<APP_PATH><APP_NAME>.cfg" on Windows, macOS and Android.
+APP_PATH must also be set, with a trailing folder separator. The filename will be "<APP_PATH>.<APP_NAME>" on Unix, "<APP_PATH><APP_NAME>.cfg" on Windows, macOS and Android.
 
 After the functions are called the attribute FILENAME is set reflecting the constructed filename.
 
@@ -98,7 +98,7 @@ So usually at startup, an application will do:
 **Returns:** the variable value or NULL (or 0 for integer and double) if the variable is not set or does not exist.
 The functions with **def** return the default value when the variable does not exist.
 
-These functions are very similar to the **IupSetAttribute** and **IupGetAttribute** functions.
+These functions are similar to the **IupSetAttribute** and **IupGetAttribute** functions.
 The variables are stored as attributes named "<GROUP>.<KEY>", so group and key names cannot have periods ".".
 
     void IupConfigCopy(Ihandle* ih1, Ihandle* ih2, const char* exclude_prefix);

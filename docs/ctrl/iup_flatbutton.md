@@ -88,7 +88,7 @@ Default: BORDERCOLOR.
 **BORDERHLCOLOR**: color used for borders when highlighted. Default: BORDERCOLOR.
 
 **BORDERWIDTH**: line width used for borders. Default: "1".
-Any borders can be hidden by simply setting this value to 0.
+Any borders can be hidden by setting this value to 0.
 This is for the **IupFlatButton** drawn border.
 
 **CORNERRADIUS** (non-inheritable): radius of the rounded corners for the button background, border and focus feedback.

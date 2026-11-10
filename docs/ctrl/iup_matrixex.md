@@ -196,7 +196,7 @@ BUSY will be set to YES during the operation.  Only visible cells will receive d
 #### Numeric Columns
 
 Numeric columns are enabled when the NUMERICQUANTITYid attribute is set.
-To define a numeric column without using units, simply set NUMERICQUANTITYid to "None".
+To define a numeric column without units, set NUMERICQUANTITYid to "None".
 
 **NUMERICDECIMALSYMBOL**: symbol used for decimal separator in numeric values. Can be "." or "," only.
 If not defined will try the [DEFAULTDECIMALSYMBOL](../attrib/iup_globals.md#defaultdecimalsymbol) global attribute.
@@ -270,7 +270,7 @@ The default "INTERNATIONAL" uses the International Bureau of Weights and Measure
 Set to "AMERICAN" To use the American spelling: "meter" and "liter".
 
 **NUMERICADDQUANTITY**: adds a new quantity given its name. Can have up to 25 **new** names.
-If the name exists, simply prepare to add new units to that quantity.
+If the name exists, the new units are added to that quantity.
 
 **NUMERICADDUNIT**: adds a new unit given its name for the last quantity added.
 Can have up to 25 total names. The first unit added will be the reference unit, and its factor will be automatically set to 1.

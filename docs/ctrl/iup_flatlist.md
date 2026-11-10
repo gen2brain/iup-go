@@ -59,7 +59,7 @@ It is displayed around the scrollbars.
 **BORDERCOLOR**: color used for the internal border. Default: "50 150 255".
 
 **BORDERWIDTH**: line width used for the internal border. Default: "0".
-The internal borders are hidden by simply setting this value to 0.
+The internal borders are hidden by setting this value to 0.
 It is drawn inside the canvas, so inside the scrollbars.
 
 **COUNT** (read-only) (non-inheritable): returns the number of items.
@@ -86,6 +86,8 @@ If BACKIMAGE is not defined will be ignored. Can be YES or NO. Default: "NO".
 **IMAGEid** (non-inheritable): image name to be used in the specified item, where id is the specified item starting at 1.
 The item must already exist. Use [IupSetHandle](../func/iup_sethandle.md) or [IupSetAttributeHandle](../func/iup_setattributehandle.md) to associate an image to a name.
 See also [IupImage](../elem/iup_image.md). Images don't need to have the same size.
+
+**IMAGENATIVEHANDLEid** (non-inheritable) (read-only): returns the native image handle of the image of the specified item, where id is the specified item starting at 1, or NULL when the item has no image.
 
 **INACTIVEOPACITY**: when set to a value between 1 and 254, an inactive control is drawn with its active colors and that opacity (0-255) over the parent background, instead of the inactive colors. Default: NULL.
 
