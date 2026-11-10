@@ -47,12 +47,6 @@ static char* iButtonGetImagePositionAttrib(Ihandle* ih)
   return iupStrReturnStr(img_pos2str[ih->data->img_position]);
 }
 
-static int iButtonSetFocusOnClickAttrib(Ihandle* ih, const char* value)
-{
-  iupAttribSet(ih, "CANFOCUS", value);
-  return 1;
-}
-
 static int iButtonSetSpacingAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle)  /* set only before map */
@@ -215,7 +209,6 @@ Iclass* iupButtonNewClass(void)
   iupClassRegisterAttribute(ic, "IMAGEPOSITION", iButtonGetImagePositionAttrib, iButtonSetImagePositionAttrib, IUPAF_SAMEASSYSTEM, "LEFT", IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "IMPRESSBORDER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FLAT", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "FOCUSONCLICK", NULL, iButtonSetFocusOnClickAttrib, "YES", NULL, IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CPADDING", iupBaseGetCPaddingAttrib, iupBaseSetCPaddingAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 
   iupdrvButtonInitClass(ic);

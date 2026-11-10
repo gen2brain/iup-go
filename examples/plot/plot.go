@@ -46,7 +46,7 @@ func initPlots() {
 	// PLOT 0 - AutoScale
 	plots[0].SetAttribute("TITLE", "AutoScale")
 	plots[0].SetAttribute("FONT", "Helvetica, 10")
-	plots[0].SetAttribute("LEGENDSHOW", "YES")
+	plots[0].SetAttribute("LEGEND", "YES")
 	plots[0].SetAttribute("AXS_XLABEL", "gnu (Foo)")
 	plots[0].SetAttribute("AXS_YLABEL", "Space (m^3)")
 	plots[0].SetAttribute("AXS_XCROSSORIGIN", "YES")
@@ -64,7 +64,7 @@ func initPlots() {
 	}
 	iup.PlotEnd(plots[0])
 	plots[0].SetAttribute("DS_LINEWIDTH", "3")
-	plots[0].SetAttribute("DS_LEGEND", "Line")
+	plots[0].SetAttribute("DS_NAME", "Line")
 	plots[0].SetAttribute("DS_MODE", "LINE")
 	plots[0].SetAttribute("DS_SELECTED", "YES")
 
@@ -85,7 +85,7 @@ func initPlots() {
 	}
 	iup.PlotInsertSamples(plots[0], index, 100, px, py)
 
-	plots[0].SetAttribute("DS_LEGEND", "Curve 1")
+	plots[0].SetAttribute("DS_NAME", "Curve 1")
 
 	iup.PlotBegin(plots[0], 0)
 	for i := -100; i <= 100; i++ {
@@ -94,7 +94,7 @@ func initPlots() {
 		iup.PlotAdd(plots[0], x, y)
 	}
 	iup.PlotEnd(plots[0])
-	plots[0].SetAttribute("DS_LEGEND", "Curve 2")
+	plots[0].SetAttribute("DS_NAME", "Curve 2")
 	plots[0].SetAttribute("DS_ORDEREDX", "NO")
 
 	// PLOT 1 - No Autoscale+No CrossOrigin
@@ -117,7 +117,7 @@ func initPlots() {
 	plots[1].SetAttribute("GRIDCOLOR", "128 255 128")
 	plots[1].SetAttribute("GRIDLINESTYLE", "DOTTED")
 	plots[1].SetAttribute("GRID", "YES")
-	plots[1].SetAttribute("LEGENDSHOW", "YES")
+	plots[1].SetAttribute("LEGEND", "YES")
 	plots[1].SetAttribute("AXS_XLABELCENTERED", "YES")
 	plots[1].SetAttribute("AXS_YLABELCENTERED", "YES")
 	plots[1].SetAttribute("HIGHLIGHTMODE", "CURVE")
@@ -192,7 +192,7 @@ func initPlots() {
 	plots[4].SetAttribute("AXS_YMIN", "0")
 	plots[4].SetAttribute("AXS_YMAX", "0.22")
 	plots[4].SetAttribute("AXS_XTICKFORMAT", "%1.3f")
-	plots[4].SetAttribute("LEGENDSHOW", "YES")
+	plots[4].SetAttribute("LEGEND", "YES")
 	plots[4].SetAttribute("LEGENDPOS", "BOTTOMRIGHT")
 
 	theFac = 100.0 / (100 * 100 * 100)
@@ -276,7 +276,7 @@ func initPlots() {
 	iup.PlotEnd(plots[6])
 	plots[6].SetAttribute("TITLE", "Step Merge curve")
 	plots[6].SetAttribute("DS_LINEWIDTH", "3")
-	plots[6].SetAttribute("DS_LEGEND", "Line")
+	plots[6].SetAttribute("DS_NAME", "Line")
 	plots[6].SetAttribute("DS_MODE", "STEP")
 	plots[6].SetAttribute("HIGHLIGHTMODE", "SAMPLE")
 	plots[6].SetAttribute("DATASETCLIPPING", "NONE")
@@ -293,7 +293,7 @@ func initPlots() {
 	iup.PlotEnd(plots[6])
 
 	plots[6].SetAttribute("DS_LINEWIDTH", "3")
-	plots[6].SetAttribute("DS_LEGEND", "Merged")
+	plots[6].SetAttribute("DS_NAME", "Merged")
 	plots[6].SetAttribute("DS_COLOR", "180 180 250")
 	plots[6].SetAttribute("HIGHLIGHTMODE", "CURVE")
 	plots[6].SetAttribute("AXS_X", "NO")
@@ -309,7 +309,7 @@ func initPlots() {
 	plots[7].SetAttribute("AXS_YMIN", "0")
 	plots[7].SetAttribute("AXS_YMAX", "0.22")
 	plots[7].SetAttribute("AXS_XTICKFORMAT", "%1.3f")
-	plots[7].SetAttribute("LEGENDSHOW", "YES")
+	plots[7].SetAttribute("LEGEND", "YES")
 	plots[7].SetAttribute("LEGENDPOS", "BOTTOMRIGHT")
 
 	iup.PlotBegin(plots[7], 0)
@@ -397,7 +397,7 @@ func initPlots() {
 		count++
 	}
 	plots[9].SetAttribute("TITLE", "Error Bar")
-	plots[9].SetAttribute("DS_LEGEND", "Error Bar")
+	plots[9].SetAttribute("DS_NAME", "Error Bar")
 	plots[9].SetAttribute("DS_MODE", "ERRORBAR")
 	plots[9].SetAttribute("HIGHLIGHTMODE", "BOTH")
 	plots[9].SetAttribute("DATASETCLIPPING", "AREAOFFSET")
@@ -430,7 +430,7 @@ func initPlots() {
 	plots[9].SetAttribute("PLOT_CURRENT", "3")
 	plots[9].SetAttribute("TITLE", "Area")
 	plots[9].SetAttribute("FONT", "Helvetica, 10")
-	plots[9].SetAttribute("LEGENDSHOW", "YES")
+	plots[9].SetAttribute("LEGEND", "YES")
 	plots[9].SetAttribute("AXS_XLABEL", "Year")
 	plots[9].SetAttribute("AXS_YLABEL", "Company Performance")
 	plots[9].SetAttribute("AXS_XMIN", "2013")
@@ -505,7 +505,7 @@ func initTicksPlot(plot iup.Ihandle) {
 	plot.SetAttribute("GRIDMINORCOLOR", "220 220 220")
 	plot.SetAttribute("GRIDMINORLINESTYLE", "DOTTED")
 	plot.SetAttribute("GRIDMINORLINEWIDTH", "1")
-	plot.SetAttribute("LEGENDSHOW", "YES")
+	plot.SetAttribute("LEGEND", "YES")
 	plot.SetAttribute("LEGENDBOX", "YES")
 	plot.SetAttribute("LEGENDBOXCOLOR", "128 0 0")
 	plot.SetAttribute("LEGENDBOXBACKCOLOR", "255 255 220")
@@ -551,7 +551,7 @@ func initInteractionPlot(plot iup.Ihandle) {
 	plot.SetAttribute("MENUITEMVALUES", "YES")
 	plot.SetAttribute("SCREENTOLERANCE", "10")
 	plot.SetAttribute("HIGHLIGHTMODE", "SAMPLE")
-	plot.SetAttribute("LEGENDSHOW", "YES")
+	plot.SetAttribute("LEGEND", "YES")
 
 	iup.PlotBegin(plot, 0)
 	for i := 0; i <= 20; i++ {
@@ -681,7 +681,7 @@ func tabsTabChangeCB(self iup.Ihandle, newTab, oldTab iup.Ihandle) int {
 		}
 	}
 
-	if iup.GetInt(plots[ii], "LEGENDSHOW") != 0 {
+	if iup.GetInt(plots[ii], "LEGEND") != 0 {
 		tgg5.SetAttribute("VALUE", "ON")
 	} else {
 		tgg5.SetAttribute("VALUE", "OFF")
@@ -782,9 +782,9 @@ func main() {
 	iup.SetCallback(tgg5, "ACTION", iup.ToggleActionFunc(func(ih iup.Ihandle, state int) int {
 		ii := tabsGetIndex()
 		if state != 0 {
-			plots[ii].SetAttribute("LEGENDSHOW", "YES")
+			plots[ii].SetAttribute("LEGEND", "YES")
 		} else {
-			plots[ii].SetAttribute("LEGENDSHOW", "NO")
+			plots[ii].SetAttribute("LEGEND", "NO")
 		}
 		plots[ii].SetAttribute("REDRAW", "")
 		return iup.DEFAULT

@@ -1573,7 +1573,6 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ROOTCOUNT", haikuTreeGetRootCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARK", nullptr, haikuTreeSetMarkAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKSTART", nullptr, haikuTreeSetMarkStartAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STARTING", nullptr, haikuTreeSetMarkStartAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKEDNODES", haikuTreeGetMarkedNodesAttrib, haikuTreeSetMarkedNodesAttrib, nullptr, nullptr, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TOGGLEVALUE", haikuTreeGetToggleValueAttrib, haikuTreeSetToggleValueAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", haikuTreeGetToggleVisibleAttrib, haikuTreeSetToggleVisibleAttrib, IUPAF_NO_INHERIT);

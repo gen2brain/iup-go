@@ -1253,7 +1253,6 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 
   iupClassRegisterAttributeId(ic, "MARKED", wasmTreeGetMarkedAttrib, wasmTreeSetMarkedAttrib, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARK", NULL, wasmTreeSetMarkAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STARTING", NULL, wasmTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKSTART", NULL, wasmTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKEDNODES", wasmTreeGetMarkedNodesAttrib, wasmTreeSetMarkedNodesAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
 

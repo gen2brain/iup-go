@@ -59,7 +59,7 @@ func main() {
 
 	btnBig := iup.Button("Big useless button").SetAttribute("SIZE", "EIGHTHxEIGHTH")
 	btnExit := iup.Button("Exit").SetAttribute("SHOWASDEFAULT", "YES")
-	btnOnOff := iup.Button("on/off").SetAttribute("FOCUSONCLICK", "NO")
+	btnOnOff := iup.Button("on/off").SetAttribute("CANFOCUS", "NO")
 
 	dlg := iup.Dialog(
 		iup.Vbox(

@@ -2762,7 +2762,6 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 
   iupClassRegisterAttributeId(ic, "MARKED", qmlTreeGetMarkedAttrib, qmlTreeSetMarkedAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARK", nullptr, qmlTreeSetMarkAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STARTING", nullptr, qmlTreeSetMarkStartAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKSTART", nullptr, qmlTreeSetMarkStartAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKEDNODES", qmlTreeGetMarkedNodesAttrib, qmlTreeSetMarkedNodesAttrib, nullptr, nullptr, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", qmlTreeGetValueAttrib, qmlTreeSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);

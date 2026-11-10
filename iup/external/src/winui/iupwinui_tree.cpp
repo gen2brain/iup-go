@@ -3123,7 +3123,6 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TOPITEM", nullptr, winuiTreeSetTopItemAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "MARK", nullptr, winuiTreeSetMarkAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "STARTING", nullptr, winuiTreeSetMarkStartAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKSTART", nullptr, winuiTreeSetMarkStartAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKEDNODES", winuiTreeGetMarkedNodesAttrib, winuiTreeSetMarkedNodesAttrib, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MARKWHENTOGGLE", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);

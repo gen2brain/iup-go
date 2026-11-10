@@ -415,7 +415,6 @@ When the plot is resized, the value must be updated manually to keep the same ap
 #### Legend Configuration
 
 **LEGEND**: shows or hides the legend box. Can be YES or NO. Default: NO.
-LEGENDSHOW is also accepted.
 
 The Legend text color uses the DS_COLOR attribute of the respective dataset.
 
@@ -482,7 +481,6 @@ When set can use also the DS_NAME attribute as value.
 #### Data Set Configuration
 
 **DS_NAME**: name of the current dataset. Default: dynamically generated, "plot 0", "plot 1", "plot 2", etc.
-DS_LEGEND is also accepted.
 
 **DS_COLOR**: color of the current dataset.
 Default: dynamically set from the list "255 0 0", "0 255 0", "0 0 255", "0 255 255", "255 0 255", "255 255 0", "128 0 0", "0 128 0", "0 0 128", "0 128 128", "128 0 128", "128 128 0".
@@ -641,23 +639,22 @@ Default: AUTO.
 **AXS_XTICK, AXS_YTICK**: enable or disable the axis tick display. Can be YES or NO. Default: YES.
 
 **AXS_XTICKAUTO**, **AXS_YTICKAUTO:** configures the automatic tick spacing. Can be YES or NO.
-Default: YES. AXS_XAUTOTICK and AXS_YAUTOTICK are also accepted.
+Default: YES.
 
 **AXS_XTICKMAJORSPAN**, **AXS_YTICKMAJORSPAN**: The spacing between major ticks in plot units.
-Default: 1. Automatically calculated when AUTOTICK=YES. Values less than or equal to 0 are ignored.
+Default: 1. Automatically calculated when AXS_XTICKAUTO or AXS_YTICKAUTO is YES. Values less than or equal to 0 are ignored.
 
 **AXS_XTICKMINORDIVISION**, **AXS_YTICKMINORDIVISION**: number of minor ticks intervals between each major tick.
-Default: 5.  Automatically calculated when AUTOTICK=YES. Values less than 1 are ignored.
-AXS_XTICKDIVISION and AXS_YTICKDIVISION are also accepted.
+Default: "5". Automatically calculated when AXS_XTICKAUTO or AXS_YTICKAUTO is YES. Values less than 1 are ignored.
 
 **AXS_XTICKSIZEAUTO, AXS_YTICKSIZEAUTO**: configures the automatic tick size. Can be YES or NO.
-Default: YES. AXS_XAUTOTICKSIZE and AXS_YAUTOTICKSIZE are also accepted.
+Default: YES.
 
 **AXS_XTICKMINORSIZE, AXS_YTICKMINORSIZE**: size of minor ticks in pixels. Default: 5.
-Automatically calculated when AUTOTICKSIZE=YES. AXS_XTICKSIZE and AXS_YTICKSIZE are also accepted.
+Automatically calculated when AXS_XTICKSIZEAUTO or AXS_YTICKSIZEAUTO is YES.
 
 **AXS_XTICKMAJORSIZE, AXS_YTICKMAJORSIZE**: size of major ticks in pixels. Default: "8".
-Automatically calculated when AUTOTICKSIZE=YES.
+Automatically calculated when AXS_XTICKSIZEAUTO or AXS_YTICKSIZEAUTO is YES.
 
 #### Axis Ticks Number Configuration
 

@@ -66,7 +66,7 @@ For all formats use:\
 Copied lines will follow the sort order.
 
 **PASTE** (write-only): paste (import) data from the clipboard. Data is obtained from the clipboard in TEXT format.
-Value is the insert position, it can be "FOCUS" to use the [FOCUS_CELL](iup_matrix_attrib.md) attribute, can be "MARKED" to use the start of the selected groups of cells (top-left selected cell), or can be a cell address "L:C".
+Value is the insert position, it can be "FOCUS" to use the [FOCUSCELL](iup_matrix_attrib.md) attribute, can be "MARKED" to use the start of the selected groups of cells (top-left selected cell), or can be a cell address "L:C".
 
 Data must be in plain text format. Lines can be separated in DOS, UNIX or MAC format.
 Columns can be separated with a tab ('\t'), or with a semicolon (';'), or with a space (' ') or with a custom value defined by the **TEXTSEPARATOR** attribute.
@@ -80,7 +80,7 @@ If defined, the [EDITION_CB](iup_matrix_cb.md) callback will be called before th
 Pasted lines will follow the sort order.
 
 **PASTEDATA** (write-only): paste (import) data from a memory buffer. Value is the data.
-Insert position is obtained from the [FOCUS_CELL](iup_matrix_attrib.md) attribute.
+Insert position is obtained from the [FOCUSCELL](iup_matrix_attrib.md) attribute.
 See PASTE for more details.
 
 **PASTEFILE** (write-only): paste (import) data from a file. Value is the file name to be loaded.
@@ -91,7 +91,7 @@ The PASTEFILEAT attribute controls the insert position, can be "FOCUS" or a cell
 #### Find
 
 **FIND**: searches for the given text in the matrix cells.
-The search will start at the FOCUS_CELL cell, if found the FOCUS_CELL will be changed to the cell where the text was found and the cell will also be marked.
+The search will start at the FOCUSCELL cell, if found the FOCUSCELL will be changed to the cell where the text was found and the cell will also be marked.
 If not visible the cell is scrolled to the visible area. Returns the last text searched.
 
 **FINDCOL**: restricts the search for a given column number.
@@ -143,7 +143,7 @@ The internal comparison will work only for Latin-1 characters, even if UTF8MODE 
 Uses the [IupStringCompare](../func/iup_stringcompare.md) function.\
 Sorting is reset if lines are added or removed.\
 The sort does not affect the original data, only how it is displayed and how it is updated to the original data.
-The line and cell attributes of the sorted lines do not follow the sort order: sizes, colors, fonts and cell addresses in FOCUS_CELL, MARKED, ORIGIN, SHOW, HEIGHTn (which implies VISIBLELINn) and others are relative to the display position.
+The line and cell attributes of the sorted lines do not follow the sort order: sizes, colors, fonts and cell addresses in FOCUSCELL, MARKED, ORIGIN, SHOW, HEIGHTn (which implies VISIBLELINn) and others are relative to the display position.
 VALUE_CB, EDITION_CB and VALUE_EDIT_CB are called with the line index following the sort order; the other callbacks are not.
 
 **SORTCOLUMNORDER**: defines if the number or text comparison is in ASCENDING or DESCENDING order.
@@ -163,7 +163,7 @@ To be used inside other callbacks.
 #### Line and Column Visibility
 
 **FREEZE:** freezes the scroll of columns and lines up to the given cell.
-Can be: "YES" - uses the value of the FOCUS_CELL attribute, "*L*:*C*" where L and C are the line and column, or "NO" clear the freeze state.
+Can be: "YES" - uses the value of the FOCUSCELL attribute, "*L*:*C*" where L and C are the line and column, or "NO" clear the freeze state.
 Sets NUMLIN_NOSCROLL and NUMCOL_NOSCROLL, and changes the FRAMEHORIZCOLOR of the line and the FRAMEVERTCOLOR of the column to FREEZECOLOR.
 
 **FREEZECOLOR**: color used for the freeze lines. Default: "0 0 255".

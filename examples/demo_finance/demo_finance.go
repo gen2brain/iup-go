@@ -219,7 +219,7 @@ func (app *dashboard) build() {
 	}
 	var chartPanel iup.Ihandle
 	if phone() {
-		app.monthlyPlot.SetAttribute("LEGENDSHOW", "NO")
+		app.monthlyPlot.SetAttribute("LEGEND", "NO")
 		chartPanel = iup.Vbox(iup.Label("Income: green   Expenses: blue"), app.categoryPlot, app.monthlyPlot).SetAttributes("EXPAND=YES, NGAP=6")
 	} else {
 		chartPanel = iup.Vbox(app.categoryPlot, app.monthlyPlot).SetAttributes("EXPAND=YES, NGAP=6")
@@ -307,7 +307,7 @@ func (app *dashboard) budgetPanel() iup.Ihandle {
 
 func financePlot(title string) iup.Ihandle {
 	return iup.Plot().SetAttributes(map[string]string{
-		"TITLE": title, "EXPAND": "YES", "GRID": "YES", "AXS_YAUTOMIN": "NO", "AXS_YMIN": "0", "LEGENDSHOW": "NO",
+		"TITLE": title, "EXPAND": "YES", "GRID": "YES", "AXS_YAUTOMIN": "NO", "AXS_YMIN": "0", "LEGEND": "NO",
 	})
 }
 
@@ -529,10 +529,10 @@ func (app *dashboard) refreshPlots() {
 			iup.PlotAddStr(app.monthlyPlot, month[5:], monthly[month][series])
 		}
 		iup.PlotEnd(app.monthlyPlot)
-		app.monthlyPlot.SetAttributes(map[string]string{"DS_MODE": "MULTIBAR", "DS_LEGEND": title})
+		app.monthlyPlot.SetAttributes(map[string]string{"DS_MODE": "MULTIBAR", "DS_NAME": title})
 	}
 	if !phone() {
-		app.monthlyPlot.SetAttribute("LEGENDSHOW", "YES")
+		app.monthlyPlot.SetAttribute("LEGEND", "YES")
 	}
 	app.themePlots()
 }

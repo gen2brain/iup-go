@@ -1799,7 +1799,6 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 
 	iupClassRegisterAttributeId(ic, "MARKED", cocoaTouchTreeGetMarkedIdAttrib, cocoaTouchTreeSetMarkedIdAttrib, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MARK", NULL, cocoaTouchTreeSetMarkAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "STARTING", NULL, cocoaTouchTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MARKSTART", NULL, cocoaTouchTreeSetMarkStartAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttributeId(ic, "TOGGLEVALUE", cocoaTouchTreeGetToggleValueAttrib, cocoaTouchTreeSetToggleValueAttrib, IUPAF_NO_INHERIT);
 	iupClassRegisterAttributeId(ic, "TOGGLEVISIBLE", cocoaTouchTreeGetToggleVisibleAttrib, cocoaTouchTreeSetToggleVisibleAttrib, IUPAF_NO_INHERIT);
