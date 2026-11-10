@@ -292,6 +292,7 @@ Iclass* iupMenuSeparatorNewClass(void)
   Iclass* ic = iupClassNew(NULL);
 
   ic->name = "menuseparator";
+  ic->cons = "MenuSeparator";
   ic->format = NULL;  /* no parameters */
   ic->nativetype = IUP_TYPEMENU;
   ic->childtype = IUP_CHILDNONE;
@@ -313,6 +314,7 @@ Iclass* iupMenuItemNewClass(void)
   Iclass* ic = iupClassNew(NULL);
 
   ic->name = "menuitem";
+  ic->cons = "MenuItem";
   ic->format = "s";  /* one string */
   ic->format_attr = "TITLE";
   ic->nativetype = IUP_TYPEMENU;

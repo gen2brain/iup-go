@@ -4248,6 +4248,7 @@ Iclass* iupFlatTreeNewClass(void)
   Iclass* ic = iupClassNew(iupRegisterFindClass("canvas"));
 
   ic->name = "flattree";
+  ic->cons = "FlatTree";
   ic->format = NULL;  /* no parameters */
   ic->nativetype = IUP_TYPECANVAS;
   ic->childtype = IUP_CHILDNONE;
