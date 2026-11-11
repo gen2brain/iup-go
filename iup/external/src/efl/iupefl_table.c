@@ -887,10 +887,10 @@ static void eflTableMoveColumn(Ihandle* ih, int from_col, int to_col, int attrib
   {
     int step = (from_col < to_col) ? 1 : -1;
     int c;
-    char* title = iupStrDup(iupAttribGetId(ih, "COLTITLE", from_col));
+    char* title = iupStrDup(iupAttribGetId(ih, "_IUPEFL_COLTITLE", from_col));
     for (c = from_col; c != to_col; c += step)
-      iupAttribSetStrId(ih, "COLTITLE", c, iupAttribGetId(ih, "COLTITLE", c + step));
-    iupAttribSetStrId(ih, "COLTITLE", to_col, title);
+      iupAttribSetStrId(ih, "_IUPEFL_COLTITLE", c, iupAttribGetId(ih, "_IUPEFL_COLTITLE", c + step));
+    iupAttribSetStrId(ih, "_IUPEFL_COLTITLE", to_col, title);
     if (title)
       free(title);
   }
@@ -2739,7 +2739,7 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
     int col, lin;
     for (col = num_col + 1; col <= old_num_col; col++)
     {
-      iupAttribSetId(ih, "COLTITLE", col, NULL);
+      iupAttribSetId(ih, "_IUPEFL_COLTITLE", col, NULL);
       for (lin = 1; lin <= ih->data->num_lin; lin++)
         eflTableClearCell(ih, lin, col);
     }

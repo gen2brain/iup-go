@@ -82,7 +82,7 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
 {
   GdkWindow* window;
 
-  window = (GdkWindow*)iupAttribGet(ih, "GDKWINDOW");
+  window = (GdkWindow*)iupAttribGet(ih, "_IUPGL_GDKWINDOW");
 
   if (!window && ih->handle && GTK_IS_WIDGET(ih->handle))
   {
@@ -96,28 +96,7 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
     window = gtk_widget_get_window(widget);
 
     if (window)
-    {
-      iupAttribSet(ih, "GDKWINDOW", (char*)window);
-
-#ifdef GDK_WINDOWING_WAYLAND
-      if (GDK_IS_WAYLAND_DISPLAY(gdk_window_get_display(window)))
-      {
-        GdkWindowType win_type = gdk_window_get_window_type(window);
-        GdkWindow* parent = gdk_window_get_parent(window);
-        GdkWindow* toplevel = gdk_window_get_toplevel(window);
-        (void)win_type; (void)parent; (void)toplevel;
-      }
-#endif
-    }
-  }
-
-  if (!window)
-  {
-    char* window_ptr = IupGetAttribute(ih, "GDKWINDOW");
-    if (window_ptr)
-    {
-      window = (GdkWindow*)window_ptr;
-    }
+      iupAttribSet(ih, "_IUPGL_GDKWINDOW", (char*)window);
   }
 
   if (!window || !GDK_IS_WINDOW(window))

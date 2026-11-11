@@ -105,7 +105,7 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
 {
   GdkSurface* gdk_surface;
 
-  gdk_surface = (GdkSurface*)iupAttribGet(ih, "GDKSURFACE");
+  gdk_surface = (GdkSurface*)iupAttribGet(ih, "_IUPGL_GDKSURFACE");
 
   if (!gdk_surface && ih->handle && GTK_IS_WIDGET(ih->handle))
   {
@@ -126,13 +126,13 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
 
     if (gdk_surface)
     {
-      iupAttribSet(ih, "GDKSURFACE", (char*)gdk_surface);
+      iupAttribSet(ih, "_IUPGL_GDKSURFACE", (char*)gdk_surface);
     }
   }
 
   if (!gdk_surface)
   {
-    char* surface_ptr = IupGetAttribute(ih, "GDKSURFACE");
+    char* surface_ptr = IupGetAttribute(ih, "_IUPGL_GDKSURFACE");
     if (surface_ptr)
     {
       gdk_surface = (GdkSurface*)surface_ptr;

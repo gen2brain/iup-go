@@ -1467,7 +1467,7 @@ static void eflListDragPointerDownCb(void* data, const Efl_Event* ev)
   if (idDrag > 0)
   {
     item_text = IupGetAttributeId(ih, "", idDrag);
-    iupAttribSetStr(ih, "DRAGTEXT", item_text);
+    iupAttribSetStr(ih, "_IUPEFL_DRAGTEXT", item_text);
 
     efl_list_drag_source = ih;
     efl_list_drag_source_pos = idDrag;

@@ -679,7 +679,7 @@ static void eflStartDrag(Ihandle* ih, int x, int y)
       if (drag_win)
       {
         char* cursor_name = iupAttribGet(ih, "DRAGCURSOR");
-        char* drag_text = iupAttribGet(ih, "DRAGTEXT");
+        char* drag_text = iupAttribGet(ih, "_IUPEFL_DRAGTEXT");
         Eo* drag_content = NULL;
         int w = 32, h = 32;
 
