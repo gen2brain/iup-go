@@ -2892,13 +2892,6 @@ IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
   gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(gtk_data->tree_view), show ? GTK_TREE_VIEW_GRID_LINES_BOTH : GTK_TREE_VIEW_GRID_LINES_NONE);
 }
 
-IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
-{
-  (void)ih;
-  /* GtkScrolledWindow doesn't add extra border width */
-  return 0;
-}
-
 static int gtk3_table_row_height_nogrid = -1;
 static int gtk3_table_row_height_grid = -1;
 static int gtk3_table_header_height = -1;

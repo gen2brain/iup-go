@@ -3211,13 +3211,6 @@ IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 #endif
 }
 
-IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
-{
-  (void)ih;
-  /* NSScrollView with NSBezelBorder has 1px border on each side */
-  return 2;
-}
-
 static int cocoa_table_row_height = -1;
 static int cocoa_table_header_height = -1;
 

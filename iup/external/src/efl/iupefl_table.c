@@ -3273,12 +3273,6 @@ IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
     elm_table_padding_set(data->table, 0, 0);
 }
 
-IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
-{
-  (void)ih;
-  return 1;
-}
-
 IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);

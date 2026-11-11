@@ -2203,7 +2203,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
   }
 }
 
-extern "C" IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
+static int fltkTableGetBorderWidth(Ihandle* ih)
 {
   IupFltkTable* table = fltkTableGetWidget(ih);
   if (table)
@@ -2245,7 +2245,7 @@ extern "C" IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 extern "C" IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   int sb_size = iupdrvGetScrollbarSize();
-  int border = iupdrvTableGetBorderWidth(ih);
+  int border = fltkTableGetBorderWidth(ih);
 
   *w += sb_size + 2 * border;
   *h += 2 * border;

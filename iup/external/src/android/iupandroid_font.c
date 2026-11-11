@@ -123,13 +123,6 @@ static void androidFontApply(JNIEnv* jni_env, jobject widget, const char* typefa
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 }
 
-int iupdrvSetStandardFontAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 1;
-}
-
 IUP_SDK_API void iupdrvFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h)
 {
   IUPJNI_DECLARE_METHOD_ID_STATIC(IupFontHelper_getMultiLineStringSize);

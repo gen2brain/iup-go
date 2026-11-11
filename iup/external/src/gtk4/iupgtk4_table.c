@@ -3246,13 +3246,6 @@ IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
   gtk_column_view_set_show_row_separators(GTK_COLUMN_VIEW(gtk_data->column_view), show);
 }
 
-IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
-{
-  (void)ih;
-  /* GtkScrolledWindow doesn't add extra border width */
-  return 0;
-}
-
 static int gtk4_table_row_height = -1;
 static int gtk4_table_header_height = -1;
 

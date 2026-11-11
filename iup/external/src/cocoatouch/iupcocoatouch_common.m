@@ -429,27 +429,6 @@ static void cocoaTouchDisplayUpdate(Ihandle* ih)
 	}
 }
 
-IUP_SDK_API void iupdrvDisplayUpdate(Ihandle* ih)
-{
-	@autoreleasepool
-	{
-		cocoaTouchDisplayUpdate(ih);
-	}
-}
-
-static void cocoaTouchDisplayRedraw(Ihandle* ih)
-{
-	iupdrvDisplayUpdate(ih);
-}
-
-IUP_SDK_API void iupdrvDisplayRedraw(Ihandle* ih)
-{
-	@autoreleasepool
-	{
-		cocoaTouchDisplayRedraw(ih);
-	}
-}
-
 static UIView* cocoaTouchCommonGetView(Ihandle* ih)
 {
 	if (!ih || !ih->handle) return nil;
@@ -569,18 +548,6 @@ IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
 	}
 }
 
-IUP_SDK_API char* iupdrvBaseGetXAttrib(Ihandle* ih)
-{
-	(void)ih;
-	return NULL;
-}
-
-IUP_SDK_API char* iupdrvBaseGetYAttrib(Ihandle* ih)
-{
-	(void)ih;
-	return NULL;
-}
-
 IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* value)
 {
 	return iupCocoaTouchSetBgColorAttrib(ih, value);
@@ -649,7 +616,7 @@ IUP_SDK_API void iupdrvBaseRegisterVisualAttrib(Iclass* ic)
 
 static void cocoaTouchPostRedraw(Ihandle* ih)
 {
-	iupdrvDisplayUpdate(ih);
+	cocoaTouchDisplayUpdate(ih);
 }
 
 IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
@@ -662,7 +629,7 @@ IUP_SDK_API void iupdrvPostRedraw(Ihandle* ih)
 
 static void cocoaTouchRedrawNow(Ihandle* ih)
 {
-	iupdrvDisplayUpdate(ih);
+	cocoaTouchDisplayUpdate(ih);
 }
 
 IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)

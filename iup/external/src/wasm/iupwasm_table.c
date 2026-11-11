@@ -857,12 +857,6 @@ IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
     iupwasmJsTableSetGrid(id, show);
 }
 
-IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
-{
-  (void)ih;
-  return 1;
-}
-
 /* must match the rendered cell box: charheight + 4px padding + 1px border */
 IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
