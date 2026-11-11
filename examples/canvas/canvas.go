@@ -45,9 +45,6 @@ func actionCb(ih iup.Ihandle) int {
 	iup.DrawBegin(ih)
 	defer iup.DrawEnd(ih)
 
-	// Enable anti-aliasing for smoother shapes
-	ih.SetAttribute("ANTIALIAS", "YES")
-
 	w, h := iup.DrawGetSize(ih)
 
 	// Draw a light blue background
