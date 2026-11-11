@@ -246,12 +246,6 @@ static int cocoaOpen(void)
   [NSApplication sharedApplication];
 
 #ifdef GNUSTEP
-  {
-    const char* theme_env = getenv("IUP_GNUSTEPTHEME");
-    if (theme_env && theme_env[0])
-      iupcocoaGnustepSetTheme(theme_env);
-  }
-
   /* fontWithName:size: is silent on a miss, so verify the seeds once the backend is up */
   {
     NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];

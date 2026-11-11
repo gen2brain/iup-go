@@ -6,6 +6,9 @@ They represent and affect the global behavior of the toolkit.
 To access global attributes, use the [IupGetGlobal](../func/iup_getglobal.md) and [IupSetGlobal](../func/iup_setglobal.md) functions.
 In C, the functions [IupGetAttribute](../func/iup_getattribute.md) and [IupSetAttribute](../func/iup_setattribute.md) can also be used with a NULL element handle.
 
+The environment variable IUP_*name* sets the global attribute *name* when [IupOpen](../func/iup_open.md) is called, and it takes precedence over IupSetGlobal.
+Available for APPEARANCE, EFLACCEL, EFLTHEME, FLTKTHEME, GNUSTEPTHEME and HELPAPP.
+
 ------------------------------------------------------------------------
 
 ## General 
@@ -367,6 +370,7 @@ Returns "YES" when the application is in dark mode, "NO" otherwise. Follows the 
 
 Forces the appearance of the application only, it never changes the system setting.
 Can be: "SYSTEM" (follow the system setting), "LIGHT" or "DARK". Default: "SYSTEM".
+Can also be set via the environment variable `IUP_APPEARANCE`.
 
 Re-seeds the global palette (DLGBGCOLOR, TXTBGCOLOR, MENUBGCOLOR and their foregrounds), applies the appearance to the native controls and re-applies the palette to every element that did not set its own BGCOLOR or FGCOLOR. Can be set before or after IupOpen. Set it before creating dialogs for a fully consistent result, some native controls pick their theme when they are created.
 
@@ -409,7 +413,8 @@ Supported in GTK, GTK 4, Qt, QML, Motif, EFL, FLTK, WinUI and Haiku.
 
 ### HELPAPP
 
-The browser used by [IupHelp](../func/iup_help.md). The IUP_HELPAPP environment variable takes precedence.
+The browser used by [IupHelp](../func/iup_help.md).
+Can also be set via the environment variable `IUP_HELPAPP`.
 Supported in GTK, GTK 4, Motif, EFL, FLTK, GNUstep and Haiku.
 
 ### SANDBOX (read-only)
@@ -567,7 +572,8 @@ Sets the byte length of the embedded theme data buffer. Must be set before EFLTH
 
 ### EFLACCEL [EFL Only]
 
-Sets the acceleration preference for new EFL windows. Must be set before creating any dialogs, or via the environment variable `IUP_EFLACCEL`.
+Sets the acceleration preference for new EFL windows. Must be set before creating any dialogs.
+Can also be set via the environment variable `IUP_EFLACCEL`.
 
 Accepted values:
 - `"gl"`, `"opengl"` - use OpenGL acceleration

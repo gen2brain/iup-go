@@ -36,6 +36,37 @@ static int iglobal_palette_forced = 0;
 static int iglobal_appearance_native = 0;
 static char iglobal_theme_state[256] = "";
 
+static const char* iglobal_env_names[] = { "APPEARANCE", "EFLACCEL", "EFLTHEME", "FLTKTHEME", "GNUSTEPTHEME", "HELPAPP", NULL };
+
+static const char* iGlobalGetEnv(const char* name)
+{
+  int i;
+  for (i = 0; iglobal_env_names[i]; i++)
+  {
+    if (iupStrEqual(name, iglobal_env_names[i]))
+    {
+      char env_name[64];
+      const char* value;
+      snprintf(env_name, sizeof(env_name), "IUP_%s", name);
+      value = getenv(env_name);
+      return (value && value[0]) ? value : NULL;
+    }
+  }
+  return NULL;
+}
+
+void iupGlobalSetFromEnv(int opened)
+{
+  int i;
+  for (i = 0; iglobal_env_names[i]; i++)
+  {
+    const char* value = iGlobalGetEnv(iglobal_env_names[i]);
+    int before_open = iupStrEqual(iglobal_env_names[i], "APPEARANCE");
+    if (value && before_open != opened)
+      IupStoreGlobal(iglobal_env_names[i], value);
+  }
+}
+
 void iupGlobalAttribInit(void)
 {
   iglobal_table = iupTableCreate(IUPTABLE_STRINGINDEXED);
@@ -232,8 +263,14 @@ static void iGlobalTableSet(const char* name, const char* value, int store)
 
 static void iGlobalSet(const char* name, const char* value, int store)
 {
+  const char* env;
+
   iupASSERT(name!=NULL);
   if (!name) return;
+
+  env = iGlobalGetEnv(name);
+  if (env && (!value || !iupStrEqual(value, env)))
+    return;
 
   if (iupStrEqual(name, "DEFAULTFONTSIZE"))
   {

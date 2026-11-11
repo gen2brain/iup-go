@@ -14,6 +14,7 @@ extern "C" {
 
 /* called only in IupOpen and IupClose */
 void iupGlobalAttribInit(void);
+void iupGlobalSetFromEnv(int opened);
 void iupGlobalAttribFinish(void);
 
 IUP_SDK_API int iupGlobalIsPointer(const char* name);
