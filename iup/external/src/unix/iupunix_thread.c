@@ -8,18 +8,40 @@
 
 #include <pthread.h>
 #include <sched.h>
+#if defined(__linux__)
+#include <sys/prctl.h>
+#elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+#include <pthread_np.h>
+#endif
 #include <stdint.h>
 #include <stdlib.h>
 
 #include "iup.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_thread.h"
+
+static void iupunixThreadSetName(const char* name)
+{
+  if (!name || !name[0])
+    return;
+#if defined(__linux__)
+  prctl(PR_SET_NAME, name, 0, 0, 0);
+#elif defined(__APPLE__)
+  pthread_setname_np(name);
+#elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+  pthread_set_name_np(pthread_self(), name);
+#elif defined(__NetBSD__)
+  pthread_setname_np(pthread_self(), "%s", (void*)name);
+#endif
+}
 
 static void* iupunix_ThreadFunc(void* obj)
 {
   Ihandle* ih = (Ihandle*)obj;
   Icallback cb = IupGetCallback(ih, "THREAD_CB");
+  iupunixThreadSetName(iupAttribGet(ih, "THREADNAME"));
   if (cb)
     cb(ih);
   return NULL;

@@ -8,10 +8,12 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <sched.h>
+#include <sys/prctl.h>
 
 #include "iup.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_thread.h"
 
 #include "iupandroid_drv.h"
@@ -21,9 +23,13 @@ static void* androidThreadFunc(void* obj)
 {
   Ihandle* ih = obj;
   Icallback cb = IupGetCallback(ih, "THREAD_CB");
+  char* name = iupAttribGet(ih, "THREADNAME");
 
   /* Attach the worker up front so THREAD_CB can call JNI. */
   iupAndroid_GetEnvThreadSafe();
+
+  if (name && name[0])
+    prctl(PR_SET_NAME, name, 0, 0, 0);
 
   if (cb)
     cb(ih);

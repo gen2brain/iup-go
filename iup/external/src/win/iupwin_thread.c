@@ -10,12 +10,29 @@
 #include "iup.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_thread.h"
+
+typedef HRESULT (WINAPI *winSetThreadDescriptionFunc)(HANDLE, PCWSTR);
+
+static void winThreadSetName(const char* name)
+{
+  winSetThreadDescriptionFunc set_description;
+  WCHAR wname[256];
+
+  if (!name || !name[0])
+    return;
+
+  set_description = (winSetThreadDescriptionFunc)(void*)GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "SetThreadDescription");
+  if (set_description && MultiByteToWideChar(CP_UTF8, 0, name, -1, wname, 256))
+    set_description(GetCurrentThread(), wname);
+}
 
 static DWORD WINAPI iupwin_ThreadFunc(LPVOID obj)
 {
   Ihandle* ih = (Ihandle*)obj;
   Icallback cb = IupGetCallback(ih, "THREAD_CB");
+  winThreadSetName(iupAttribGet(ih, "THREADNAME"));
   if (cb)
     cb(ih);
   return 0;

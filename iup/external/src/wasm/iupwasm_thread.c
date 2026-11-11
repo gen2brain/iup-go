@@ -10,6 +10,7 @@
 #include "iup.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_thread.h"
 
 
@@ -17,11 +18,15 @@
 
 #include <pthread.h>
 #include <sched.h>
+#include <emscripten/threading.h>
 
 static void* iupwasm_ThreadFunc(void* obj)
 {
   Ihandle* ih = (Ihandle*)obj;
   Icallback cb = IupGetCallback(ih, "THREAD_CB");
+  char* name = iupAttribGet(ih, "THREADNAME");
+  if (name && name[0])
+    emscripten_set_thread_name(pthread_self(), name);
   if (cb)
     cb(ih);
   return NULL;

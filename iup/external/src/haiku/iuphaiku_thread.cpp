@@ -9,10 +9,12 @@
 #include <cstdint>
 #include <pthread.h>
 #include <sched.h>
+#include <OS.h>
 
 extern "C" {
 #include "iup.h"
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_thread.h"
 }
 
@@ -21,6 +23,8 @@ static void* haikuThreadFunc(void* obj)
 {
   auto* ih = static_cast<Ihandle*>(obj);
   Icallback cb = IupGetCallback(ih, "THREAD_CB");
+  const char* name = iupAttribGet(ih, "THREADNAME");
+  if (name && name[0]) rename_thread(find_thread(nullptr), name);
   if (cb) cb(ih);
   return nullptr;
 }
