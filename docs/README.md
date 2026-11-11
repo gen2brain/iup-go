@@ -7,7 +7,7 @@ API reference for IUP (Portable User Interface).
 - [Attributes](attrib.md) - attribute concept, inheritance, replay rules
 - [Events and Callbacks](call.md) - callback dispatch model and main loop
 - [Layout](layout.md) - abstract layout, natural size, EXPAND
-- [Keyboard](keyboard.md) - focus traversal, mnemonics, accelerators
+- [Keyboard](keyboard.md) - focus traversal, mnemonics, shortcuts, key callbacks
 
 ---
 

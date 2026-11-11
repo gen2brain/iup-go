@@ -1,12 +1,6 @@
 # Layout Composition
 
-### Abstract Layout
-
-Most interface toolkits employ the concrete layout model; that is, control positioning in the dialog is absolute in coordinates relative to the top-left corner of the dialog's client area.
-This makes it easy to position the controls on it by using an interactive tool usually provided with the system.
-It is also easy to dimension them. This positioning intrinsically depends on the graphics system's resolution.
-Moreover, when the dialog size is altered, the elements remain in the same place, thus generating an empty area below and to the right of the elements.
-Besides, if the graphics system's resolution changes, the dialog inevitably will look larger or smaller according to the resolution increase or decrease.
+## Abstract Layout
 
 IUP implements an abstract layout concept, in which the positioning of controls is done relatively instead of absolutely.
 For such, composition elements are necessary for composing the interface elements.
@@ -15,6 +9,9 @@ When the dialog size changes, these containers expand or retract to adjust the p
 
 The composition elements include vertical boxes (**vbox**), horizontal boxes (**hbox**) and filling (**fill**).
 There is also a depth box (**zbox**) in which layers of elements can be created for the same dialog, and the elements in each layer are only visible when that given layer is active.
+Other containers, such as **IupGridBox**, **IupMultiBox**, **IupSplit** and **IupScrollBox**, are listed in [Containers](README.md#containers).
+
+The space around and between the children of a box is set by MARGIN and GAP in pixels, or by CMARGIN and CGAP in character units, see [IupVbox](elem/iup_vbox.md) and [IupHbox](elem/iup_hbox.md).
 
 ## Layout Guide
 
@@ -44,25 +41,27 @@ is a density-independent pixel (dp), and in macOS and iOS it is a point.
 
 IUP does not require that the application specifies the size of any element.
 The sizes are automatically calculated so the contents of each element are fully displayed.
-This size is called **Natural** size. The **Natural** size is calculated just before the element is mapped to the native system and every time **IupMap** is called, even if the element is already mapped.
+This size is called **Natural** size. The **Natural** size is calculated when the dialog is mapped, after its elements are mapped to the native system, when **IupMap** is called again for a mapped dialog, and by **IupRefresh**.
 
 The **Natural** size of a container is the size that allows all the elements inside the container to be fully displayed.
 Then the **Natural** size is calculated from the inner element to the outer element (the dialog).
-Even if the element is invisible, its size is included in the size of its containers, except when FLOATING=YES.
+Even if the element is invisible, its size is included in the size of its containers, except when FLOATING is YES or IGNORE, see [FLOATING](attrib/iup_floating.md).
 
 In the following example, each button size is large enough to display its text.
 If the dialog size is increased or reduced by the size handlers in the dialog borders, the buttons do not move or change their sizes.
+
+![](images/naturalsize.gif)
 
 Some controls do not have contents that can provide a **Natural** size.
 In this case, they usually have SIZE or RASTERSIZE pre-set.
 
 To obtain the last computed **Natural** size of the control in pixels, use the read-only attribute [NATURALSIZE](attrib/iup_naturalsize.md).
 
-![](images/naturalsize.gif)
+The MINSIZE and MAXSIZE attributes limit both the **Natural** and the **Current** size of an element.
 
 #### User Size
 
-When the application defines the [SIZE](attrib/iup_size.md) or [RASTERSIZE](attrib/iup_rastersize.md) attributes, it changes the **User** size in IUP.
+When the application defines the [SIZE](attrib/iup_size.md) (in character units) or [RASTERSIZE](attrib/iup_rastersize.md) (in pixels) attributes, it changes the **User** size in IUP.
 The initial internal value is "0x0". When set to NULL, the **User** size is internally set to "0x0".
 If the element is **not mapped** then the returned value by SIZE or RASTERSIZE is the **User** size, if the element is mapped then the returned value is the **Current** size.
 To obtain the **User** size after the element is mapped use the USERSIZE attribute.
@@ -106,6 +105,7 @@ To adjust sizes in the dialog, do it after the layout size and positioning are d
 
 Another way to increase the size of elements is to use the EXPAND attribute.
 When there is room in the container to expand an element, the container layout will expand the elements that have the EXPAND attribute set to YES, HORIZONTAL or VERTICAL accordingly, even if they have the **User** size defined.
+HORIZONTALFREE and VERTICALFREE also expand the element, but are not propagated to its container, see [EXPAND](attrib/iup_expand.md).
 
 The default is EXPAND=NO, but for containers is EXPAND=YES.
 
@@ -113,7 +113,7 @@ The default is EXPAND=NO, but for containers is EXPAND=YES.
 
 For elements that are NOT containers, when EXPAND is enabled the **Natural** size and the **User** size are ignored.
 
-For containers, the default behavior is to always expand or if expand is disabled, they are limited to the **Natural** size.
+A container expands in a direction only if its EXPAND allows it and at least one of its children expands in that direction; otherwise it is limited to the **Natural** size.
 As a consequence (if the **User** size is not defined in all the elements) the dialog contents can only expand and its minimum size is the **Natural** size, even if EXPAND is enabled for its elements.
 The actual dialog size can be smaller, but its contents stop following the resize and are clipped at right and bottom.
 
@@ -128,7 +128,6 @@ To reduce the size of the dialog and its containers to a size smaller than the *
 If set to YES, all the containers of the dialog will be able to reduce its size.
 Elements may overlap and the layout result can be visually bad if the dialog size is smaller than its **Natural** size.
 
-The picture shown was captured after manually resizing the dialog.
 When using SHRINK, the dialog initial size usually also needs to be set.
 
 ![](images/shrink.gif)

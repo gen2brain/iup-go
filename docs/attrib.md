@@ -20,7 +20,7 @@ They are used by the application to communicate with the user interface system, 
 There are several functions to access attributes, see the documentation of the [IupSetAttribute](func/iup_setattribute.md) and [IupGetAttribute](func/iup_getattribute.md) for more options.
 
 When an attribute is modified (**Set**) it is stored internally at the hash table of the control only if the control class allows it.
-If the value is NULL, the attribute will also be removed from the hash table and the default value will be used if there is one defined.
+If the value is NULL, the attribute will also be removed from the hash table and the value inherited from the parent, or else the default value, will be used.
 Finally, the attribute is updated for the children of the control if they do not have the attribute defined in their own hash table.
 Here is a pseudocode:
 
@@ -33,7 +33,7 @@ Here is a pseudocode:
       if (ih.IsInheritable(name))
         -- NotifyChildren
         for each child of ih do
-           if not child.GetHashTableAttribute(name) then
+           if not child.GetHashTableAttribute(name) and child.IsInheritable(name) then
             child.SetClassAttribute(name, value)
             child.NotifyChildren(name, value)
            endif
@@ -69,9 +69,9 @@ And finally, if still not defined then a default value is returned (the default 
 
 The parent recursion is done only at the parent hash table; the parent control class is not consulted.
 
-The control class can update or retrieve a value even if the control is not mapped.
-When the control is not mapped and its implementation cannot process the attribute, then the attribute is stored in the hash table.
-After the element is mapped, its attributes are re-processed to be updated in the native system, and they can be removed from the hash table at that time.
+Some attributes are processed by the control class even when the control is not mapped.
+The others are only stored in the hash table while the control is not mapped.
+Right after the element is mapped, its stored attributes are processed by the control class to be updated in the native system, and they can be removed from the hash table at that time.
 
 If the attribute is checked before the control is mapped and just after, its value can be completely different.
 Depending on how the attribute is stored, its inheritance can be completely ignored.
@@ -92,7 +92,9 @@ Cell specification is always "lin:col".
 Color values are in the "R G B A" format. Each component from 0 to 255.
 Alpha is optional and assumed to be 255 if not specified.
 It is used only by the controls drawn with [IupDraw](func/iup_draw.md), such as IupGauge, IupDial and the IupFlat* controls, with the driver limits listed there.
-Color values can also be specified in hexadecimal notation in the format "#RRGGBBAA".
+Color values can also be specified in hexadecimal notation in the format "#RRGGBB" or "#RRGGBBAA".
+
+**IupSetAttribute** stores only the pointer of the value, so the string must stay valid while the attribute is used; **IupSetStrAttribute** stores a copy, see [IupSetAttribute](func/iup_setattribute.md).
 
 **IupSetAttribute** can also store application pointers that can be strings or not.
 For example, by storing a C pointer of an application defined structure, the application can retrieve this pointer inside the callback through function **IupGetAttribute**.
@@ -101,6 +103,9 @@ Even if the callbacks are global functions, the same callback can be used for se
 Some controls, like **IupList**, **IupTree**, **IupTabs** and **IupMatrix**, have ids associated with some attributes, so its value will affect only the respective id item in the control.
 For example, "TITLE3" will set the TITLE attribute for item 3.
 To set that kind of attribute **IupSetAttribute** can be used, but **IupSetAttributeId** can also be used especially if the id is a variable.
+
+Global attributes are set and retrieved with **IupSetGlobal** and **IupGetGlobal**, or with a NULL element in **IupSetAttribute** and **IupGetAttribute**.
+Some of them can also be set by IUP_<name> environment variables, see [Global Attributes](attrib/iup_globals.md).
 
 There are attributes common to all the elements.
 In some cases, common attributes behave differently in different elements, but in such cases, there are comments in the documentation of the element explaining the different behavior.
@@ -123,7 +128,7 @@ As general rules, the following attributes are **NON**-inheritable always:
 - Internal attributes that starts with "_IUP"
 
 Inheritable attributes are stored in the hash table, so the IupGet/SetAttribute logic can work, even if the control class stores it internally.
-When an attribute is changed to NULL, its value is removed from the hash table and the default value if any is passed to the native system.
+When an attribute is changed to NULL, its value is removed from the hash table and the value inherited from the parent, or else the default value, is passed to the native system.
 
 When changed, the attribute change is propagated to all children except for those where the attribute is already defined in the hash table.
 
