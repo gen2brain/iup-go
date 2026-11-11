@@ -2057,8 +2057,6 @@ static int gtkTreeSetFgColorAttrib(Ihandle* ih, const char* value)
     GdkColor color;
     iupgdkColorSetRGB(&color, r, g, b);
     g_object_set(G_OBJECT(renderer_txt), "foreground-gdk", &color, NULL);
-    g_object_get(G_OBJECT(renderer_txt), "foreground-gdk", &color, NULL);
-    color.blue = 0;
 #endif
   }
 

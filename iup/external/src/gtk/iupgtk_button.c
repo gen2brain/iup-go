@@ -327,6 +327,8 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
     gtk_widget_size_request(child, &child_size);
   }
 
+  g_object_ref_sink(temp_button);
+
   /* Force allocation to see what GTK2 actually gives to the child */
   GtkAllocation alloc = {0, 0, button_size.width, button_size.height};
   gtk_widget_size_allocate(temp_button, &alloc);
@@ -363,6 +365,7 @@ IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
   (*y) += border_y;
 
   gtk_widget_destroy(temp_button);
+  g_object_unref(temp_button);
 #endif
 }
 
