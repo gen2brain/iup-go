@@ -2847,7 +2847,7 @@ IUPCONTROLS_API Ihandle* IupFlatTabsv(Ihandle** params)
   return IupCreatev("flattabs", (void**)params);
 }
 
-IUP_API Ihandle* IupFlatTabsV(Ihandle* child, va_list arglist)
+IUPCONTROLS_API Ihandle* IupFlatTabsV(Ihandle* child, va_list arglist)
 {
   return IupCreateV("flattabs", child, arglist);
 }
