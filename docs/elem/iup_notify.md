@@ -52,6 +52,12 @@ All content attributes (TITLE, BODY, ICON, etc.) should be set before showing.
 
 **ID** [Unix, Android, Haiku and WebAssembly Only] (read-only) (non-inheritable): Returns the notification identifier assigned by the system after a successful SHOW.
 
+**AVAILABLE** (read-only) (non-inheritable): Returns "YES" if the system can show notifications, "NO" otherwise.
+In Unix, it is "YES" when a notification server is running or can be started on the session bus.
+In Android, it is "NO" when the notifications of the application are disabled or not permitted.
+In WebAssembly, it is "YES" when the browser has the Notification API.
+In macOS and iOS, the permission is reported by PERMISSION.
+
 #### Platform-Specific
 
 **URGENCY** [Unix, Android and Haiku Only] (non-inheritable): Notification urgency level.

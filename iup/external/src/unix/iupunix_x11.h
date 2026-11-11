@@ -223,6 +223,7 @@ static int (*iupx11_XMoveResizeWindow)(Display*, Window, int, int, unsigned int,
 static int (*iupx11_XMapWindow)(Display*, Window) = NULL;
 static int (*iupx11_XUnmapWindow)(Display*, Window) = NULL;
 static int (*iupx11_XDestroyWindow)(Display*, Window) = NULL;
+static Window (*iupx11_XGetSelectionOwner)(Display*, Atom) = NULL;
 
 #define XCreateGC iupx11_XCreateGC
 #define XFreeGC iupx11_XFreeGC
@@ -256,6 +257,7 @@ static int (*iupx11_XDestroyWindow)(Display*, Window) = NULL;
 #define XMapWindow iupx11_XMapWindow
 #define XUnmapWindow iupx11_XUnmapWindow
 #define XDestroyWindow iupx11_XDestroyWindow
+#define XGetSelectionOwner iupx11_XGetSelectionOwner
 
 static int iupX11Open(void)
 {
@@ -301,6 +303,7 @@ static int iupX11Open(void)
   iupx11_XMapWindow = (int (*)(Display*, Window))dlsym(iupx11_handle, "XMapWindow");
   iupx11_XUnmapWindow = (int (*)(Display*, Window))dlsym(iupx11_handle, "XUnmapWindow");
   iupx11_XDestroyWindow = (int (*)(Display*, Window))dlsym(iupx11_handle, "XDestroyWindow");
+  iupx11_XGetSelectionOwner = (Window (*)(Display*, Atom))dlsym(iupx11_handle, "XGetSelectionOwner");
 
   if (!iupx11_XDefaultScreen || !iupx11_XServerVendor || !iupx11_XVendorRelease)
   {

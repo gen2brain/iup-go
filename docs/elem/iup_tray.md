@@ -29,6 +29,11 @@ When MENU is not supported, use the TRAYCLICK_CB callback to detect right-clicks
 
 **TITLE** (non-inheritable): Reserved for future use.
 
+**AVAILABLE** (read-only) (non-inheritable): Returns "YES" if the system has a notification area that can show the icon, "NO" otherwise.
+In Linux, it is "YES" when a StatusNotifierItem host is registered, or with the XEmbed tray when a system tray manager is running.
+In Haiku, it is "YES" when the Deskbar is running.
+Always "NO" in Android, iOS and WebAssembly.
+
 #### Balloon Tooltip Attributes
 
 These attributes are only supported in Windows (Win32 and WinUI).

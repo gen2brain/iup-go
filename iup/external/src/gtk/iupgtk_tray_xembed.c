@@ -8,6 +8,13 @@
 #include <gtk/gtk.h>
 
 #include <stdlib.h>
+#include <stdio.h>
+
+#ifdef IUPX11_USE_DLOPEN
+#include "iupunix_x11.h"
+#else
+#include <X11/Xlib.h>
+#endif
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -17,6 +24,7 @@
 #include "iup_image.h"
 #include "iup_class.h"
 #include "iup_tray.h"
+#include "iup_drvinfo.h"
 
 
 static int gtkTrayDoubleClick(int button)
@@ -172,7 +180,19 @@ IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih)
 
 IUP_SDK_API int iupdrvTrayIsAvailable(void)
 {
-  return 1;
+  Display* xdisplay = (Display*)iupdrvGetDisplay();
+  char name[64];
+
+  if (!xdisplay)
+    return 0;
+
+#ifdef IUPX11_USE_DLOPEN
+  if (!iupX11Open() || !XGetSelectionOwner)
+    return 0;
+#endif
+
+  snprintf(name, sizeof(name), "_NET_SYSTEM_TRAY_S%d", XDefaultScreen(xdisplay));
+  return XGetSelectionOwner(xdisplay, XInternAtom(xdisplay, name, 0)) != None;
 }
 
 IUP_SDK_API void iupdrvTrayInitClass(Iclass* ic)

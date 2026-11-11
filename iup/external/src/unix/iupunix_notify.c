@@ -661,6 +661,52 @@ IUP_SDK_API void iupdrvNotifyDestroy(Ihandle* ih)
   }
 }
 
+static int unixNotifyIsActivatable(DBusConnection* connection)
+{
+  DBusMessage* msg;
+  DBusMessage* reply;
+  DBusMessageIter iter, array_iter;
+  DBusError error;
+  int found = 0;
+
+  msg = dbus_message_new_method_call("org.freedesktop.DBus", "/org/freedesktop/DBus",
+                                     "org.freedesktop.DBus", "ListActivatableNames");
+  if (!msg)
+    return 0;
+
+  dbus_error_init(&error);
+  reply = dbus_connection_send_with_reply_and_block(connection, msg, 1000, &error);
+  dbus_message_unref(msg);
+
+  if (dbus_error_is_set(&error))
+  {
+    dbus_error_free(&error);
+    return 0;
+  }
+  if (!reply)
+    return 0;
+
+  if (dbus_message_iter_init(reply, &iter) &&
+      dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_ARRAY)
+  {
+    dbus_message_iter_recurse(&iter, &array_iter);
+    while (dbus_message_iter_get_arg_type(&array_iter) == DBUS_TYPE_STRING)
+    {
+      const char* name = NULL;
+      dbus_message_iter_get_basic(&array_iter, &name);
+      if (iupStrEqual(name, NOTIFY_BUS_NAME))
+      {
+        found = 1;
+        break;
+      }
+      dbus_message_iter_next(&array_iter);
+    }
+  }
+
+  dbus_message_unref(reply);
+  return found;
+}
+
 IUP_SDK_API int iupdrvNotifyIsAvailable(void)
 {
   DBusConnection* connection;
@@ -674,16 +720,27 @@ IUP_SDK_API int iupdrvNotifyIsAvailable(void)
 
   dbus_error_init(&error);
   connection = dbus_bus_get(DBUS_BUS_SESSION, &error);
-
-  if (connection && !dbus_error_is_set(&error))
+  if (dbus_error_is_set(&error))
   {
-    available = 1;
-    dbus_connection_unref(connection);
+    dbus_error_free(&error);
+    if (connection)
+      dbus_connection_unref(connection);
+    return 0;
+  }
+  if (!connection)
+    return 0;
+
+  available = dbus_bus_name_has_owner(connection, NOTIFY_BUS_NAME, &error);
+  if (dbus_error_is_set(&error))
+  {
+    dbus_error_free(&error);
+    available = 0;
   }
 
-  if (dbus_error_is_set(&error))
-    dbus_error_free(&error);
+  if (!available)
+    available = unixNotifyIsActivatable(connection);
 
+  dbus_connection_unref(connection);
   return available;
 }
 
