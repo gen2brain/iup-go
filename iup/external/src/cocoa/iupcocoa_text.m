@@ -912,6 +912,9 @@ IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
   *w += spin_arrow_width;
 }
 
+#define IUPCOCOA_TEXTVIEW_INSET_W 4
+#define IUPCOCOA_TEXTVIEW_INSET_H 2
+
 IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
 {
   static int cocoa_textfield_border_ws[4] = {-1, -1, -1, -1};
@@ -989,6 +992,12 @@ IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* x, int* y)
 
           int total_spacing = line_spacing * visiblelines;
           *y += total_spacing;
+        }
+
+        if (!ih->data->horiz_padding && !ih->data->vert_padding)
+        {
+          *x += 2 * IUPCOCOA_TEXTVIEW_INSET_W;
+          *y += 2 * IUPCOCOA_TEXTVIEW_INSET_H;
         }
 
         *y += cocoa_scrollview_border_h;
@@ -5418,8 +5427,8 @@ static int cocoaTextMapMethod(Ihandle* ih)
     [text_view setAllowsUndo:YES];
     [text_view setUsesRuler:NO];
 
-    /* the inset width is left+right and the height top+bottom */
-    [text_view setTextContainerInset:NSMakeSize(4.0, 2.0)];
+    /* the inset applies to each side */
+    [text_view setTextContainerInset:NSMakeSize(IUPCOCOA_TEXTVIEW_INSET_W, IUPCOCOA_TEXTVIEW_INSET_H)];
 
     NSTextContainer* text_container = [text_view textContainer];
 
