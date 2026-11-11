@@ -287,6 +287,10 @@ public final class IupTextHelper
         }
         sv.setTag(tv);
         tv.setBackground(null);
+        /* vertical padding on the viewport, on the content it scrolls away and shows part of another line */
+        int padV = tv.getPaddingTop() + tv.getPaddingBottom();
+        tv.setPadding(tv.getPaddingLeft(), 0, tv.getPaddingRight(), 0);
+        sv.setPadding(0, padV / 2, 0, padV - padV / 2);
         sThemableBoxes.put(sv, Boolean.TRUE);
         applyBoxPalette(sv);
         installCallbacks(tv);
@@ -729,7 +733,13 @@ public final class IupTextHelper
     {
         IupEditText tv = resolve(v);
         if (tv == null) return;
-        tv.setPadding(h, vp, h, vp);
+        if (v instanceof NestedScrollView)
+        {
+            tv.setPadding(h, 0, h, 0);
+            v.setPadding(0, vp, 0, vp);
+        }
+        else
+            tv.setPadding(h, vp, h, vp);
     }
 
     @Keep
