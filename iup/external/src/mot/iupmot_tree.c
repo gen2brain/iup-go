@@ -2546,20 +2546,17 @@ static void motTreeDragDropFinishCallback(Widget drop_context, XtPointer client_
 static void motTreeDragMotionCallback(Widget drop_context, Widget wItemDrag, XmDragMotionCallbackStruct* drag_motion)
 {
   Ihandle* ih = NULL;
+  Widget wItem;
+  int x = drag_motion->x;
+  int y = drag_motion->y;
   XtVaGetValues(XtParent(wItemDrag), XmNuserData, &ih, NULL);
-  if (!iupAttribGet(ih, "NODRAGFEEDBACK"))
+  iupdrvScreenToClient(ih, &x, &y);
+  wItem = XmObjectAtPoint(ih->handle, (Position)x, (Position)y);
+  if (wItem)
   {
-    Widget wItem;
-    int x = drag_motion->x;
-    int y = drag_motion->y;
-    iupdrvScreenToClient(ih, &x, &y);
-    wItem = XmObjectAtPoint(ih->handle, (Position)x, (Position)y);
-    if (wItem)
-    {
-      XtVaSetValues(ih->handle, XmNselectedObjects,  NULL, NULL);
-      XtVaSetValues(ih->handle, XmNselectedObjectCount, 0, NULL);
-      XtVaSetValues(wItem, XmNvisualEmphasis, XmSELECTED, NULL);
-    }
+    XtVaSetValues(ih->handle, XmNselectedObjects,  NULL, NULL);
+    XtVaSetValues(ih->handle, XmNselectedObjectCount, 0, NULL);
+    XtVaSetValues(wItem, XmNvisualEmphasis, XmSELECTED, NULL);
   }
   (void)drop_context;
 }
