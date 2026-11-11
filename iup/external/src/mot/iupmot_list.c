@@ -1097,33 +1097,30 @@ static void motListDragDropFinishCallback(Widget drop_context, XtPointer client_
 
 static void motListDragMotionCallback(Widget drop_context, Ihandle* ih, XmDragMotionCallbackStruct* drag_motion)
 {
+  int idDrop;
+  int x = drag_motion->x;
+  int y = drag_motion->y;
   (void)drop_context;
-  if (!iupAttribGet(ih, "NODRAGFEEDBACK"))
+  iupdrvScreenToClient(ih, &x, &y);
+
+  idDrop = motListConvertXYToPos(ih, x, y);  /* starts at 1 */
+
+  /* Lower half of the hit row means insert AFTER it. */
+  if (idDrop > 0)
   {
-    int idDrop;
-    int x = drag_motion->x;
-    int y = drag_motion->y;
-    iupdrvScreenToClient(ih, &x, &y);
-
-    idDrop = motListConvertXYToPos(ih, x, y);  /* starts at 1 */
-
-    /* Lower half of the hit row means insert AFTER it. */
-    if (idDrop > 0)
+    Position rx, ry;
+    Dimension rw, rh;
+    if (XmListPosToBounds(ih->handle, idDrop, &rx, &ry, &rw, &rh) && rh > 0)
     {
-      Position rx, ry;
-      Dimension rw, rh;
-      if (XmListPosToBounds(ih->handle, idDrop, &rx, &ry, &rw, &rh) && rh > 0)
-      {
-        if (y > ry + (int)rh / 2)
-          idDrop++;
-      }
+      if (y > ry + (int)rh / 2)
+        idDrop++;
     }
-
-    iupAttribSetInt(ih, "_IUPLIST_DROPITEM", idDrop);  /* starts at 1 */
-
-    if (idDrop > 0 && idDrop <= iupdrvListGetCount(ih))
-      XmListSelectPos(ih->handle, idDrop, FALSE);  /* starts at 1 */
   }
+
+  iupAttribSetInt(ih, "_IUPLIST_DROPITEM", idDrop);  /* starts at 1 */
+
+  if (idDrop > 0 && idDrop <= iupdrvListGetCount(ih))
+    XmListSelectPos(ih->handle, idDrop, FALSE);  /* starts at 1 */
 }
 
 static Boolean motListConvertProc(Widget drop_context, Atom* selection, Atom* target, Atom* type_return,
