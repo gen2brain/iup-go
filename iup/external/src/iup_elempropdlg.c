@@ -189,7 +189,7 @@ static void iLayoutPropertiesAttribValueChanged(Ihandle* ih, const char* name)
   if (iupLayoutAttributeHasChanged(elem, name, value, def_value, flags))
     IupSetAttribute(txt1, "FGCOLOR", "255 0 0");
   else
-    IupSetAttribute(txt1, "FGCOLOR", "0 0 0");
+    IupSetStrAttribute(txt1, "FGCOLOR", IupGetGlobal("TXTFGCOLOR"));
 
   if (!(flags&IUPAF_READONLY) &&
       !(flags&IUPAF_NO_STRING))
