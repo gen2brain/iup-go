@@ -129,6 +129,7 @@ Iclass* iupThreadNewClass(void)
   iupClassRegisterAttribute(ic, "ISCURRENT", iThreadGetIsCurrentAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT | IUPAF_NO_DEFAULTVALUE);
   iupClassRegisterAttribute(ic, "YIELD", NULL, iThreadSetYieldAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT | IUPAF_NO_DEFAULTVALUE);
   iupClassRegisterAttribute(ic, "JOIN", NULL, iThreadSetJoinAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT | IUPAF_NO_DEFAULTVALUE);
+  iupClassRegisterAttribute(ic, "THREADNAME", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT | IUPAF_NO_DEFAULTVALUE);
 
   return ic;
 }

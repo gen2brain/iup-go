@@ -24,6 +24,9 @@ Can be YES only. The thread exits when the callback is terminated.
 
 **JOIN** (write-only) (non-inheritable): Waits until the thread finishes. Value is ignored.
 
+**THREADNAME** (non-inheritable): name of the native thread, shown by debuggers and system tools. Must be set before START.
+In Linux and Android, only the first 15 bytes are used.
+
 **LOCK** (non-inheritable): uses a mutex to create a lock to allow access to shared data.
 Can be YES or NO. When set to YES the mutex will be locked, when set to NO the mutex will be unlocked.
 It does not depend on whether the thread is started or not.
