@@ -189,20 +189,16 @@ extern "C" IUP_SDK_API char* iupdrvGetComputerName(void)
 extern "C" IUP_SDK_API char* iupdrvGetUserName(void)
 {
 #ifdef _WIN32
+  wchar_t name[257];
+  DWORD size = 257;
+  if (GetUserNameW(name, &size))
+    return iupStrReturnStr(QString::fromWCharArray(name).toUtf8().constData());
+
   QString username = qgetenv("USERNAME");
-  if (username.isEmpty())
-    username = qgetenv("USER");
-
-  return iupStrReturnStr(username.toUtf8().constData());
+  return iupStrReturnStr(username.isEmpty() ? "unknown" : username.toUtf8().constData());
 #else
-  const char* username = getenv("USER");
-
-  if (!username)
-  {
-    struct passwd* pwd = getpwuid(getuid());
-    if (pwd)
-      username = pwd->pw_name;
-  }
+  struct passwd* pwd = getpwuid(getuid());
+  const char* username = (pwd && pwd->pw_name && pwd->pw_name[0]) ? pwd->pw_name : getenv("USER");
 
   if (username)
     return iupStrReturnStr(username);
