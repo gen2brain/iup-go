@@ -74,9 +74,11 @@ public:
   bool needs_action;
   bool action_queued;
   bool buffer_dirty;
+  bool mapped;
+  bool resize_pending;
   QImage image;
 
-  IupQmlCanvas(Ihandle* handle) : QQuickItem(), ih(handle), texture_dirty(true), needs_action(true), action_queued(false), buffer_dirty(false)
+  IupQmlCanvas(Ihandle* handle) : QQuickItem(), ih(handle), texture_dirty(true), needs_action(true), action_queued(false), buffer_dirty(false), mapped(false), resize_pending(false)
   {
     setFlag(ItemHasContents, true);
     setAcceptedMouseButtons(Qt::AllButtons);
@@ -91,6 +93,19 @@ public:
     if (change == ItemDevicePixelRatioHasChanged)
       requestRedraw();
     QQuickItem::itemChange(change, value);
+  }
+
+  void callResize()
+  {
+    resize_pending = false;
+
+    auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RESIZE_CB"));
+    if (cb && !ih->data->inside_resize)
+    {
+      ih->data->inside_resize = 1;
+      cb(ih, static_cast<int>(width()), static_cast<int>(height()));
+      ih->data->inside_resize = 0;
+    }
   }
 
   void requestRedraw()
@@ -238,14 +253,13 @@ protected:
     if (width() <= 0 || height() <= 0)
       return;
 
-    auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "RESIZE_CB"));
-    if (cb && !ih->data->inside_resize)
+    if (!mapped)
     {
-      ih->data->inside_resize = 1;
-      cb(ih, static_cast<int>(width()), static_cast<int>(height()));
-      ih->data->inside_resize = 0;
+      resize_pending = true;
+      return;
     }
 
+    callResize();
     requestRedraw();
   }
 
@@ -974,8 +988,18 @@ static void qmlCanvasUnMapMethod(Ihandle* ih)
 
 static void qmlCanvasLayoutUpdateMethod(Ihandle* ih)
 {
+  auto* canvas = reinterpret_cast<IupQmlCanvas*>(ih->handle);
+
   iupdrvBaseLayoutUpdateMethod(ih);
+
+  canvas->mapped = true;
   qmlCanvasLayoutContainer(ih);
+
+  if (canvas->resize_pending && canvas->width() > 0 && canvas->height() > 0)
+  {
+    canvas->callResize();
+    canvas->requestRedraw();
+  }
 }
 
 /****************************************************************************
