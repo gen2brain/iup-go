@@ -376,12 +376,8 @@ IUP_DRV_API void iupgtkPushVisualAndColormap(void* visual, void* colormap)
   GdkColormap* gdk_colormap;
   GdkVisual* gdk_visual;
 
-#if GTK_CHECK_VERSION(2, 24, 0)
   GdkScreen* screen = gdk_screen_get_default();
   gdk_visual = gdk_x11_screen_lookup_visual(screen, x11_visual_id_from_visual((Visual*)visual));
-#else
-  gdk_visual = gdkx_visual_get(x11_visual_id_from_visual((Visual*)visual));
-#endif
   if (colormap)
     gdk_colormap = gdk_x11_colormap_foreign_new(gdk_visual, (Colormap)colormap);
   else

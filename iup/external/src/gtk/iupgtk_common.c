@@ -105,7 +105,6 @@ IUP_DRV_API GtkWidget* iupgtkNativeContainerNew(int has_window)
   widget = gtk_fixed_new();
 #endif
 
-#if GTK_CHECK_VERSION(2, 18, 0)
   /* a Wayland GL canvas gets a manual subsurface, not a GdkWindow */
 #ifdef GDK_WINDOWING_WAYLAND
   {
@@ -117,9 +116,6 @@ IUP_DRV_API GtkWidget* iupgtkNativeContainerNew(int has_window)
   }
 #endif
   gtk_widget_set_has_window(widget, has_window);
-#else
-  gtk_fixed_set_has_window(GTK_FIXED(widget), has_window);
-#endif
 
   return widget;
 }
@@ -292,11 +288,7 @@ IUP_SDK_API void iupdrvRedrawNow(Ihandle* ih)
 
 static GtkWidget* gtkGetWindowedParent(GtkWidget* widget)
 {
-#if GTK_CHECK_VERSION(2, 18, 0)
   while (widget && !gtk_widget_get_has_window(widget))
-#else
-  while (widget && GTK_WIDGET_NO_WINDOW(widget))
-#endif
     widget = gtk_widget_get_parent(widget);
   return widget;
 }
@@ -394,13 +386,11 @@ IUP_DRV_API int iupgtkSetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char*
   if (str != source)
   {
     gtk_label_set_text_with_mnemonic(label, iupgtkStrConvertToSystem(str));
-#if GTK_CHECK_VERSION(2, 20, 0)
     {
       GtkWidget* toplevel = gtk_widget_get_toplevel((GtkWidget*)label);
       if (GTK_IS_WINDOW(toplevel) && !gtk_window_get_mnemonics_visible((GtkWindow*)toplevel))
         gtk_label_set_text_with_mnemonic(label, iupgtkStrConvertToSystem(str));
     }
-#endif
     free(str);
     free(escaped);
     return 1;
@@ -450,11 +440,7 @@ IUP_SDK_API void iupdrvSetVisible(Ihandle* ih, int enable)
 
 IUP_DRV_API int iupgtkIsVisible(GtkWidget* widget)
 {
-#if GTK_CHECK_VERSION(2, 18, 0)
   return gtk_widget_get_visible(widget);
-#else
-  return GTK_WIDGET_VISIBLE(widget);
-#endif
 }
 
 IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
@@ -482,11 +468,7 @@ IUP_SDK_API int iupdrvIsVisible(Ihandle* ih)
 
 IUP_SDK_API int iupdrvIsActive(Ihandle* ih)
 {
-#if GTK_CHECK_VERSION(2, 18, 0)
   return gtk_widget_is_sensitive(ih->handle);
-#else
-  return GTK_WIDGET_IS_SENSITIVE(ih->handle);
-#endif
 }
 
 IUP_SDK_API void iupdrvSetActive(Ihandle* ih, int enable)
@@ -572,16 +554,6 @@ static char* gtkGetSelectedColorStr(void)
   return gdk_rgba_to_string(&rgba);
 }
 #else
-#if GTK_CHECK_VERSION(3, 0, 0)
-static GdkRGBA gtkGetSelectedColorRGBA(void)
-{
-  GdkRGBA rgba;
-  unsigned char r, g, b;
-  iupStrToRGB(IupGetGlobal("TXTHLCOLOR"), &r, &g, &b);
-  iupgdkRGBASet(&rgba, r, g, b);
-  return rgba;
-}
-#endif
 #endif
 
 IUP_DRV_API void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsigned char g, unsigned char b)
@@ -600,7 +572,6 @@ IUP_DRV_API void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsign
   dark_rgba = gtkDarkerRGBA(&rgba);
   light_rgba = gtkLighterRGBA(&rgba);
 
-#if GTK_CHECK_VERSION(3, 16, 0)
   {
     char* bg, *bg_light, *bg_dark;
     char* css;
@@ -640,20 +611,6 @@ IUP_DRV_API void iupgtkSetBgColor(InativeHandle* handle, unsigned char r, unsign
     g_free(css);
     g_object_unref(provider);
   }
-#else /* GTK < 3.16 */
-  gtk_widget_override_background_color(handle, GTK_STATE_FLAG_NORMAL, &rgba);
-  gtk_widget_override_background_color(handle, GTK_STATE_FLAG_ACTIVE, &dark_rgba);  /* active */
-  gtk_widget_override_background_color(handle, GTK_STATE_FLAG_PRELIGHT, &light_rgba);  /* hover */
-
-  if (is_txt)
-  {
-    GdkRGBA selected_rgba = gtkGetSelectedColorRGBA();
-    gtk_widget_override_background_color(handle, GTK_STATE_FLAG_INSENSITIVE, &light_rgba);  /* disabled */
-    gtk_widget_override_background_color(handle, GTK_STATE_FLAG_SELECTED, &selected_rgba);
-  }
-  else
-    gtk_widget_override_background_color(handle, GTK_STATE_FLAG_INSENSITIVE, &rgba);  /* disabled */
-#endif
 #else  /* GTK 2.x */
   GtkRcStyle* rc_style;
   GdkColor color;
@@ -737,30 +694,8 @@ IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* value)
 
 static GdkCursor* gtkEmptyCursor(Ihandle* ih)
 {
-#if GTK_CHECK_VERSION(2, 16, 0)
   (void)ih;
   return gdk_cursor_new_for_display(gdk_display_get_default(), GDK_BLANK_CURSOR);
-#else
-  /* creates an empty cursor */
-  GdkColor cursor_color = {0L,0,0,0};
-  char bitsnull[1] = {0x00};
-
-  GdkWindow* window = iupgtkGetWindow(ih->handle);
-  GdkPixmap* pixmapnull = gdk_bitmap_create_from_data(
-    (GdkDrawable*)window,
-    bitsnull,
-    1,1);
-  GdkCursor* cur = gdk_cursor_new_from_pixmap(
-    pixmapnull,
-    pixmapnull,
-    &cursor_color,
-    &cursor_color,
-    0,0);
-
-  g_object_unref(pixmapnull);
-
-  return cur;
-#endif
 }
 
 static GdkCursor* gtkGetCursor(Ihandle* ih, const char* name)
@@ -1179,10 +1114,6 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
     GtkWidget* grab_widget;
     gint origin_x, origin_y;
 
-#if GTK_CHECK_VERSION(3, 0, 0)
-    GdkDeviceManager* device_manager = gdk_display_get_device_manager(gdk_display_get_default());
-    GdkDevice* device = gdk_device_manager_get_client_pointer(device_manager);
-#endif
 
     GdkEventButton evt;
     memset(&evt, 0, sizeof(GdkEventButton));
@@ -1191,22 +1122,14 @@ IUP_SDK_API void iupdrvSendMouse(int x, int y, int bt, int status)
     evt.x_root = x;
     evt.y_root = y;
     evt.type = (status==0)? GDK_BUTTON_RELEASE: ((status==2)? GDK_2BUTTON_PRESS: GDK_BUTTON_PRESS);
-#if GTK_CHECK_VERSION(3, 0, 0)
-    evt.device = device;
-#else
     evt.device = gdk_device_get_core_pointer();
-#endif
 
     grab_widget = gtk_grab_get_current();
     if (grab_widget)
       evt.window = iupgtkGetWindow(grab_widget);
     else
     {
-#if GTK_CHECK_VERSION(3, 0, 0)
-      evt.window = gdk_device_get_window_at_position(device, NULL, NULL);
-#else
       evt.window = gdk_window_at_pointer(NULL, NULL);
-#endif
     }
 
     switch(bt)
@@ -1256,11 +1179,7 @@ IUP_SDK_API unsigned int iupdrvGetTickCount(void)
 
 IUP_DRV_API GdkWindow* iupgtkGetWindow(GtkWidget* widget)
 {
-#if GTK_CHECK_VERSION(2, 14, 0)
   return gtk_widget_get_window(widget);
-#else
-  return widget->window;
-#endif
 }
 
 IUP_DRV_API void iupgtkWindowGetPointer(GdkWindow* window, int* x, int* y, GdkModifierType* mask)
@@ -1315,14 +1234,10 @@ IUP_SDK_API int iupdrvIsSystemDarkMode(void)
   temp_window = gtk_offscreen_window_new();
   style = gtk_widget_get_style_context(temp_window);
 
-#if GTK_CHECK_VERSION(3, 16, 0)
   if (!gtk_style_context_lookup_color(style, "theme_bg_color", &bg))
   {
     bg.red = 1.0; bg.green = 1.0; bg.blue = 1.0; bg.alpha = 1.0;
   }
-#else
-  gtk_style_context_get_background_color(style, GTK_STATE_FLAG_NORMAL, &bg);
-#endif
   gtk_style_context_get_color(style, GTK_STATE_FLAG_NORMAL, &fg);
 
   /* ITU-R BT.709 luminance */

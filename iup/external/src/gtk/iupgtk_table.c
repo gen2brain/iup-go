@@ -1404,15 +1404,11 @@ static gboolean gtkTableDrawFocusRect(GtkWidget* widget, GdkEventExpose* event, 
 #if GTK_CHECK_VERSION(3, 0, 0)
   GtkStyleContext* context = gtk_widget_get_style_context(widget);
   GdkRGBA color;
-#if GTK_CHECK_VERSION(3, 16, 0)
   if (!gtk_style_context_lookup_color(context, "borders", &color) &&
       !gtk_style_context_lookup_color(context, "theme_unfocused_border_color", &color))
   {
     color.red = 0.5; color.green = 0.5; color.blue = 0.5; color.alpha = 1.0;
   }
-#else
-  gtk_style_context_get_border_color(context, gtk_widget_get_state_flags(widget), &color);
-#endif
 
   cairo_set_source_rgba(cr, color.red, color.green, color.blue, 0.5);
   cairo_set_line_width(cr, 1.0);
@@ -1576,11 +1572,7 @@ static gboolean gtkTableDragMotion(GtkWidget* widget, GdkDragContext* context, g
   {
     gtk_tree_view_set_drag_dest_row(GTK_TREE_VIEW(widget), path, pos);
     gtk_tree_path_free(path);
-#if GTK_CHECK_VERSION(2, 22, 0)
     gdk_drag_status(context, gdk_drag_context_get_suggested_action(context), time);
-#else
-    gdk_drag_status(context, context->suggested_action, time);
-#endif
     return TRUE;
   }
   return FALSE;

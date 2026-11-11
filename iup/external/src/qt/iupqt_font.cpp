@@ -99,11 +99,7 @@ static IqtFont* qtFindFont(const char* font)
     int dpi = 96; /* default */
     if (widget)
     {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
       dpi = static_cast<int>(widget->screen()->logicalDotsPerInch());
-#else
-      dpi = widget->logicalDpiY();
-#endif
     }
 
     point_size = (-size * 72) / dpi;
@@ -129,11 +125,7 @@ static IqtFont* qtFindFont(const char* font)
 
   fonts[i].charheight = metrics.height();
   /* averageCharWidth() is too wide for SIZE, which counts 1/4 char units */
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
   fonts[i].charwidth = metrics.horizontalAdvance('x');
-#else
-  fonts[i].charwidth = metrics.width('x');
-#endif
   fonts[i].max_width = metrics.maxWidth();
   fonts[i].ascent = metrics.ascent();
   fonts[i].descent = metrics.descent();
@@ -341,11 +333,7 @@ static void qtFontGetTextSize(Ihandle* ih, IqtFont* qtfont, const char* str, int
         if (l_len)
         {
           QString line = QString::fromUtf8(curstr, l_len);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
           int line_w = metrics.horizontalAdvance(line);
-#else
-          int line_w = metrics.width(line);
-#endif
           max_w = iupMAX(max_w, line_w);
         }
 
@@ -426,11 +414,7 @@ extern "C" IUP_SDK_API int iupdrvFontGetStringWidth(Ihandle* ih, const char* str
   {
     QFontMetrics metrics(*qtfont->qfont);
     QString text = QString::fromUtf8(str, len);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     result = metrics.horizontalAdvance(text);
-#else
-    result = metrics.width(text);
-#endif
   }
 
   return result;

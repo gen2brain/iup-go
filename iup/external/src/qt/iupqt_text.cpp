@@ -65,13 +65,8 @@ static bool qtTextWheelEvent(Ihandle* ih, QWheelEvent* event)
   if (!cb || event->angleDelta().y() == 0)
     return false;
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
   int x = static_cast<int>(event->position().x());
   int y = static_cast<int>(event->position().y());
-#else
-  int x = event->x();
-  int y = event->y();
-#endif
 
   char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
   iupqtButtonKeySetStatus(event->modifiers(), event->buttons(), 0, status, 0);

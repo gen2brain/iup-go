@@ -958,20 +958,14 @@ static void gtkTreeCallMultiSelectionCb(Ihandle* ih)
 
 static char* gtkTreeGetIndentationAttrib(Ihandle* ih)
 {
-#if GTK_CHECK_VERSION(2, 12, 0)
   return iupStrReturnInt(gtk_tree_view_get_level_indentation(GTK_TREE_VIEW(ih->handle)));
-#else
-  return NULL;
-#endif
 }
 
 static int gtkTreeSetIndentationAttrib(Ihandle* ih, const char* value)
 {
-#if GTK_CHECK_VERSION(2, 12, 0)
   int indent;
   if (iupStrToInt(value, &indent))
     gtk_tree_view_set_level_indentation(GTK_TREE_VIEW(ih->handle), indent);
-#endif
   return 0;
 }
 
@@ -1016,13 +1010,11 @@ static int gtkTreeSetSpacingAttrib(Ihandle* ih, const char* value)
     if (renderer_chk) g_object_set(G_OBJECT(renderer_chk), "ypad", ih->data->spacing, NULL);
     g_object_set(G_OBJECT(renderer_img), "ypad", ih->data->spacing, NULL);
     g_object_set(G_OBJECT(renderer_txt), "ypad", ih->data->spacing, NULL);
-#if GTK_CHECK_VERSION(2, 8, 0)
     {
       /* renderer properties alone do not invalidate the cached row heights */
       GtkTreeViewColumn* column = (GtkTreeViewColumn*)iupAttribGet(ih, "_IUPGTK_COLUMN");
       if (column) gtk_tree_view_column_queue_resize(column);
     }
-#endif
     return 0;
   }
   else
@@ -2010,13 +2002,11 @@ static int gtkTreeSetBgColorAttrib(Ihandle* ih, const char* value)
 
       iupgtkSetBgColor((GtkWidget*)scrolled_window, r, g, b);
 
-#if GTK_CHECK_VERSION(2, 8, 0)
       sb = gtk_scrolled_window_get_hscrollbar(scrolled_window);
       if (sb) iupgtkSetBgColor(sb, r, g, b);
 
       sb = gtk_scrolled_window_get_vscrollbar(scrolled_window);
       if (sb) iupgtkSetBgColor(sb, r, g, b);
-#endif
     }
   }
 
@@ -2098,10 +2088,8 @@ IUP_SDK_API void iupdrvTreeUpdateMarkMode(Ihandle* ih)
 
   if (ih->data->mark_mode==ITREE_MARK_MULTIPLE && !ih->data->show_dragdrop)
   {
-#if GTK_CHECK_VERSION(2, 10, 0)
     if (iupAttribGetInt(ih, "RUBBERBAND"))
       gtk_tree_view_set_rubber_banding(GTK_TREE_VIEW(ih->handle), TRUE);
-#endif
   }
 }
 
@@ -2448,11 +2436,7 @@ static gboolean gtkTreeDragMotion(GtkWidget* widget, GdkDragContext* context, gi
     gtk_tree_view_set_drag_dest_row(GTK_TREE_VIEW(widget), path, pos);
     gtk_tree_path_free(path);
 
-#if GTK_CHECK_VERSION(2, 22, 0)
     gdk_drag_status(context, gdk_drag_context_get_suggested_action(context), time);
-#else
-    gdk_drag_status(context, context->suggested_action, time);
-#endif
     return TRUE;
   }
 
@@ -3247,19 +3231,15 @@ static int gtkTreeMapMethod(Ihandle* ih)
   gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(ih->handle), FALSE);
   gtk_tree_view_set_enable_search(GTK_TREE_VIEW(ih->handle), FALSE);
 
-#if GTK_CHECK_VERSION(2, 10, 0)
   if (iupAttribGetBoolean(ih, "HIDELINES"))
     gtk_tree_view_set_enable_tree_lines(GTK_TREE_VIEW(ih->handle), FALSE);
   else
     gtk_tree_view_set_enable_tree_lines(GTK_TREE_VIEW(ih->handle), TRUE);
-#endif
 
-#if GTK_CHECK_VERSION(2, 12, 0)
   if (iupAttribGetBoolean(ih, "HIDEBUTTONS"))
     gtk_tree_view_set_show_expanders(GTK_TREE_VIEW(ih->handle), FALSE);
   else
     gtk_tree_view_set_show_expanders(GTK_TREE_VIEW(ih->handle), TRUE);
-#endif
 
   gtk_container_add((GtkContainer*)scrolled_window, ih->handle);
   gtk_widget_show((GtkWidget*)scrolled_window);

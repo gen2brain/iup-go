@@ -97,9 +97,7 @@ IUP_SDK_API IdrawCanvas* iupdrvDrawCreateCanvas(Ihandle* ih)
   if (!buffer)
   {
     buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, dc->w * scale, dc->h * scale);
-#if GTK_CHECK_VERSION(3, 10, 0)
     cairo_surface_set_device_scale(buffer, scale, scale);
-#endif
     iupAttribSet(ih, "_IUPGTK3_CANVAS_BUFFER", (char*)buffer);
   }
 #endif
@@ -164,11 +162,7 @@ static void gdkDrawFocusRect(Ihandle* ih, int x, int y, int w, int h)
 {
   GdkWindow* window = iupgtkGetWindow(ih->handle);
   GtkStyle* style = gtk_widget_get_style(ih->handle);
-#if GTK_CHECK_VERSION(2, 18, 0)
   GtkStateType state = gtk_widget_get_state(ih->handle);
-#else
-  GtkStateType state = GTK_WIDGET_STATE(ih->handle);
-#endif
   gtk_paint_focus(style, window, state, NULL, ih->handle, NULL, x, y, w, h);
 }
 #endif
@@ -682,18 +676,14 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   {
     pango_layout_set_width(fontlayout, iupGTK_PIXELS2PANGOUNITS(layout_w));
 #ifdef PANGO_VERSION_CHECK
-#if PANGO_VERSION_CHECK(1,2,0)
     pango_layout_set_height(fontlayout, iupGTK_PIXELS2PANGOUNITS(layout_h));
-#endif
 #endif
   }
   else if (flags & IUP_DRAW_ELLIPSIS)
   {
     pango_layout_set_width(fontlayout, iupGTK_PIXELS2PANGOUNITS(layout_w));
 #ifdef PANGO_VERSION_CHECK
-#if PANGO_VERSION_CHECK(1,2,0)
     pango_layout_set_height(fontlayout, iupGTK_PIXELS2PANGOUNITS(layout_h));
-#endif
 #endif
     pango_layout_set_ellipsize(fontlayout, PANGO_ELLIPSIZE_END);
   }
@@ -759,9 +749,7 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
   {
     pango_layout_set_width(fontlayout, -1);
 #ifdef PANGO_VERSION_CHECK
-#if PANGO_VERSION_CHECK(1,2,0)
     pango_layout_set_height(fontlayout, -1);
-#endif
 #endif
   }
   if (flags & IUP_DRAW_ELLIPSIS)

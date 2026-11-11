@@ -112,13 +112,7 @@ static IgtkFont* gtkFindFont(const char* font)
       char new_font[1536];
       if (size<0)
       {
-#if GTK_CHECK_VERSION(2, 10, 0)
         double res = gdk_screen_get_resolution(gdk_screen_get_default()); /* dpi */
-#else
-        double res = ((double)gdk_screen_get_width(gdk_screen_get_default()) /
-                      (double)gdk_screen_get_width_mm(gdk_screen_get_default())); /* pixels/mm */
-        res *= 25.4; /* dpi */
-#endif
         /* The default value is 96, meaning that a 10 point font will be 13 pixels high.
            (10 * 96 / 72 = 13.3) */
         /* 1 point = 1/72 inch  */
@@ -269,11 +263,7 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
     GtkStyleContext* context = gtk_widget_get_style_context(widget);
     if (context)
     {
-#if GTK_CHECK_VERSION(3, 8, 0)
       gtk_style_context_get(context, GTK_STATE_FLAG_NORMAL, "font", &font_desc, NULL);
-#else
-      font_desc = gtk_style_context_get_font(context, GTK_STATE_FLAG_NORMAL);
-#endif
     }
   }
 #else

@@ -18,7 +18,6 @@
 #include "iup_class.h"
 #include "iup_tray.h"
 
-#if GTK_CHECK_VERSION(2, 10, 0)
 
 static int gtkTrayDoubleClick(int button)
 {
@@ -119,7 +118,6 @@ IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value)
 {
   GtkStatusIcon* status_icon = gtkGetStatusIcon(ih);
 
-#if GTK_CHECK_VERSION(2, 16, 0)
   if (value)
   {
     gtk_status_icon_set_has_tooltip(status_icon, TRUE);
@@ -130,9 +128,6 @@ IUP_SDK_API int iupdrvTraySetTip(Ihandle* ih, const char* value)
   }
   else
     gtk_status_icon_set_has_tooltip(status_icon, FALSE);
-#else
-  gtk_status_icon_set_tooltip(status_icon, value);
-#endif
 
   return 1;
 }
@@ -191,4 +186,3 @@ IUP_SDK_API void iupdrvTrayInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TIPDELAY", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 }
 
-#endif

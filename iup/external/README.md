@@ -38,21 +38,21 @@ Available presets:
 | Preset            | Backend                         | Notes                |
 |-------------------|---------------------------------|----------------------|
 | `default`         | Platform native                 | GTK3 / Win32 / Cocoa |
-| `gtk3`            | GTK3                            |                      |
+| `gtk3`            | GTK3                            | GTK 3.22+            |
 | `gtk4`            | GTK4                            |                      |
-| `gtk2`            | GTK2                            | Legacy               |
+| `gtk2`            | GTK2                            | Legacy, GTK 2.24     |
 | `win32`           | Win32                           | Windows native       |
 | `winui`           | WinUI / XAML Islands            |                      |
-| `cocoa`           | Cocoa / AppKit                  | macOS native         |
-| `cocoatouch`      | Cocoa Touch / UIKit             | iOS                  |
+| `cocoa`           | Cocoa / AppKit                  | macOS 11+            |
+| `cocoatouch`      | Cocoa Touch / UIKit             | iOS 15+              |
 | `motif`           | Motif / X11                     |                      |
 | `qt6`             | Qt6                             |                      |
-| `qt5`             | Qt5                             |                      |
+| `qt5`             | Qt5                             | Qt 5.15+             |
 | `qml`             | Qt Quick (QML)                  | Qt 6.8+              |
-| `fltk`            | FLTK                            |                      |
+| `fltk`            | FLTK                            | FLTK 1.4+            |
 | `efl`             | EFL / Elementary                |                      |
-| `android`         | Android (arm64-v8a)             | Requires NDK         |
-| `haiku`           | Haiku / Be API                  |                      |
+| `android`         | Android (arm64-v8a)             | API 24+, NDK         |
+| `haiku`           | Haiku / Be API                  | Haiku beta6+         |
 | `gtk3-full`       | GTK3 + all optional libs        |                      |
 | `gtk4-full`       | GTK4 + all optional libs        |                      |
 | `gtk2-full`       | GTK2 + all optional libs        |                      |

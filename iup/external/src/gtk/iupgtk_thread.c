@@ -14,9 +14,6 @@
 #include "iup_attrib.h"
 #include "iup_thread.h"
 
-#if !GLIB_CHECK_VERSION(2, 32, 0)
-#define OLD_GLIB
-#endif
 
 static void* iupgtk_ThreadFunc(void* obj)
 {

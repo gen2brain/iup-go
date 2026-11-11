@@ -931,11 +931,7 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
     QStringList lines = qtext.split(QLatin1Char('\n'));
     for (QString& line : lines)
     {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
       if (fm.horizontalAdvance(line) > w)
-#else
-      if (fm.width(line) > w)
-#endif
         line = fm.elidedText(line, Qt::ElideRight, w);
     }
     qtext = lines.join(QLatin1Char('\n'));

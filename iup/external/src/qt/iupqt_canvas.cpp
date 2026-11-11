@@ -275,13 +275,8 @@ protected:
     auto cb = reinterpret_cast<IFnfiis>(IupGetCallback(ih, "WHEEL_CB"));
     if (cb)
     {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
       int x = event->position().x();
       int y = event->position().y();
-#else
-      int x = event->x();
-      int y = event->y();
-#endif
 
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
       iupqtButtonKeySetStatus(event->modifiers(), Qt::NoButton, 0, status, 0);
@@ -726,13 +721,8 @@ protected:
       return;
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
     QPointF pos = canvas->mapFrom(this, event->position().toPoint());
     QPointF global = event->globalPosition();
-#else
-    QPointF pos = canvas->mapFrom(this, event->pos());
-    QPointF global = event->globalPosF();
-#endif
     QWheelEvent forwarded(pos, global, event->pixelDelta(), event->angleDelta(), event->buttons(),
                           event->modifiers(), event->phase(), event->inverted());
     QCoreApplication::sendEvent(canvas, &forwarded);

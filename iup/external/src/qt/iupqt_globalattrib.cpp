@@ -128,11 +128,7 @@ public:
           QPoint angle_delta = wheel_evt->angleDelta();
           float delta = angle_delta.y() / 120.0f;  /* Normalize to notches (120 units per notch) */
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
           QPoint global_pos = wheel_evt->globalPosition().toPoint();
-#else
-          QPoint global_pos = wheel_evt->globalPos();
-#endif
 
           int x = global_pos.x();
           int y = global_pos.y();

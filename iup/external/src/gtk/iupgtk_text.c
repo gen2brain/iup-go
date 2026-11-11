@@ -1125,11 +1125,7 @@ static char* gtkTextGetCountAttrib(Ihandle* ih)
   }
   else
   {
-#if GTK_CHECK_VERSION(2, 14, 0)
     count = gtk_entry_get_text_length(GTK_ENTRY(ih->handle));
-#else
-    count = strlen(gtk_entry_get_text(GTK_ENTRY(ih->handle)));
-#endif
   }
   return iupStrReturnInt(count);
 }
@@ -1502,11 +1498,7 @@ static int gtkTextSetAppendAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-#if GTK_CHECK_VERSION(2, 14, 0)
     pos = gtk_entry_get_text_length(GTK_ENTRY(ih->handle))+1;
-#else
-    pos = strlen(gtk_entry_get_text(GTK_ENTRY(ih->handle)))+1;
-#endif
     gtk_editable_insert_text(GTK_EDITABLE(ih->handle), iupgtkStrConvertToSystem(value), -1, &pos);
   }
   ih->data->disable_callbacks = 0;
@@ -1558,12 +1550,10 @@ static int gtkTextSetPaddingAttrib(Ihandle* ih, const char* value)
 #if GTK_CHECK_VERSION(3, 4, 0)
       iupgtkSetMargin(ih->handle, ih->data->horiz_padding, ih->data->vert_padding, 1);
 #else
-#if GTK_CHECK_VERSION(2, 10, 0)
       GtkBorder border;
       border.bottom = border.top = (gint16)ih->data->vert_padding;
       border.left = border.right = (gint16)ih->data->horiz_padding;
       gtk_entry_set_inner_border(GTK_ENTRY(ih->handle), &border);
-#endif
 #endif
     }
     return 0;
@@ -1742,13 +1732,11 @@ static int gtkTextSetBgColorAttrib(Ihandle* ih, const char* value)
 
       iupgtkSetBgColor((GtkWidget*)scrolled_window, r, g, b);
 
-#if GTK_CHECK_VERSION(2, 8, 0)
       sb = gtk_scrolled_window_get_hscrollbar(scrolled_window);
       if (sb) iupgtkSetBgColor(sb, r, g, b);
 
       sb = gtk_scrolled_window_get_vscrollbar(scrolled_window);
       if (sb) iupgtkSetBgColor(sb, r, g, b);
-#endif
     }
   }
 

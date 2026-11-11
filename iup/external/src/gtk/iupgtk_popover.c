@@ -416,15 +416,9 @@ static int gtkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
       gtk_popover_set_modal(popover, autohide);
     }
 
-#if GTK_CHECK_VERSION(3, 20, 0)
     gtk_popover_set_constrain_to(popover, GTK_POPOVER_CONSTRAINT_NONE);
-#endif
 
-#if GTK_CHECK_VERSION(3, 22, 0)
     gtk_popover_popup(popover);
-#else
-    gtk_widget_show(GTK_WIDGET(popover));
-#endif
 
     iupAttribSetInt(ih, "_IUPGTK_POPOVER_SHOWN", 1);
 
@@ -438,11 +432,7 @@ static int gtkPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
   {
     if (ih->handle)
     {
-#if GTK_CHECK_VERSION(3, 22, 0)
       gtk_popover_popdown((GtkPopover*)ih->handle);
-#else
-      gtk_widget_hide(ih->handle);
-#endif
     }
   }
 

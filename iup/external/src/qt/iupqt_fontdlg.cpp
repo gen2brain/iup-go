@@ -72,11 +72,7 @@ static int qtFontDlgPopup(Ihandle* ih, int x, int y)
         int dpi = 96; /* default */
         if (parent)
         {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
           dpi = static_cast<int>(parent->screen()->logicalDotsPerInch());
-#else
-          dpi = parent->logicalDpiY();
-#endif
         }
         point_size = (-size * 72) / dpi;
       }
