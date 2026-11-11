@@ -49,6 +49,7 @@ IUP_API int IupOpen(int* argc, char*** argv)
   iupNamesInit();
   iupFuncInit();
   iupStrMessageInit();
+  iupGlobalSetFromEnv(0);
   iupGlobalAttribInit();
   iupRegisterInit();
   iupKeyInit();
@@ -63,6 +64,8 @@ IUP_API int IupOpen(int* argc, char*** argv)
     char* value;
 
     iupdrvFontInit();
+
+    iupGlobalSetFromEnv(1);
 
     if (iupGlobalGetAppearance() != IUP_APPEARANCE_SYSTEM)
       iupdrvSetAppearance(iupGlobalGetAppearance());

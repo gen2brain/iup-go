@@ -332,12 +332,6 @@ extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
     IupSetGlobal("WL_DISPLAY", reinterpret_cast<char*>(fl_wl_display()));
 #endif
 
-  {
-    const char* scheme = getenv("IUP_FLTKTHEME");
-    if (scheme && scheme[0])
-      Fl::scheme(scheme);
-  }
-
   Fl::get_color(FL_BACKGROUND_COLOR, fltk_system_bg[0], fltk_system_bg[1], fltk_system_bg[2]);
   Fl::get_color(FL_FOREGROUND_COLOR, fltk_system_fg[0], fltk_system_fg[1], fltk_system_fg[2]);
   Fl::get_color(FL_BACKGROUND2_COLOR, fltk_system_bg2[0], fltk_system_bg2[1], fltk_system_bg2[2]);

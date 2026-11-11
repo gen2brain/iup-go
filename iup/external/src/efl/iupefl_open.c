@@ -408,8 +408,6 @@ static Eina_Bool eflPortalSettingsHandler(void* data, Ecore_Fd_Handler* handler)
 
 IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
-  char* value;
-
   if (efl_open_count > 0)
   {
     efl_open_count++;
@@ -430,14 +428,6 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 #endif
 
   iupeflDetectBackend();
-
-  value = getenv("IUP_EFLTHEME");
-  if (value && value[0])
-    elm_theme_set(NULL, value);
-
-  value = getenv("IUP_EFLACCEL");
-  if (value && value[0])
-    elm_config_accel_preference_set(value);
 
   IupSetGlobal("DRIVER", "EFL");
 

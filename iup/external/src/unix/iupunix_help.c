@@ -180,9 +180,7 @@ IUP_API int IupHelp(const char* url)
   if (iupUnixPortalHelp(url) == 1)
     return 1;
 
-  browser = getenv("IUP_HELPAPP");
-  if (!browser)
-    browser = IupGetGlobal("HELPAPP");
+  browser = IupGetGlobal("HELPAPP");
 
   if (!browser)
   {
