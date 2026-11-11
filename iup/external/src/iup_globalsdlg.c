@@ -40,6 +40,56 @@ static int iGlobalsCurrentDriverBit(void)
   return 0;
 }
 
+static void iGlobalsUpdateInfo(Ihandle* info, const char* name)
+{
+  static const struct { int bit; const char* name; } drivers[] = {
+    { IUPDRV_WIN, "Win32" }, { IUPDRV_WINUI, "WinUI" }, { IUPDRV_GTK, "GTK" }, { IUPDRV_GTK4, "GTK4" },
+    { IUPDRV_QT, "Qt" }, { IUPDRV_QML, "QML" }, { IUPDRV_MOTIF, "Motif" }, { IUPDRV_FLTK, "FLTK" },
+    { IUPDRV_EFL, "EFL" }, { IUPDRV_COCOA, "Cocoa" }, { IUPDRV_COCOATOUCH, "CocoaTouch" },
+    { IUPDRV_ANDROID, "Android" }, { IUPDRV_HAIKU, "Haiku" }, { IUPDRV_WASM, "WASM" } };
+  char str[512];
+  size_t len;
+  int flags, driver_bits, i, count = 0;
+
+  if (IupGetGlobalInfo(name, &flags, &driver_bits) != 1)
+  {
+    IupSetAttribute(info, "VALUE", "");
+    return;
+  }
+
+  snprintf(str, sizeof(str), "%s%s\nDrivers: ",
+           flags & IUPGF_READONLY ? "Read-only" : (flags & IUPGF_WRITEONLY ? "Write-only" : "Read and write"),
+           flags & IUPGF_POINTER ? ", pointer" : "");
+  len = strlen(str);
+  for (i = 0; i < (int)(sizeof(drivers) / sizeof(drivers[0])); i++)
+  {
+    if (driver_bits & drivers[i].bit)
+      count++;
+  }
+
+  if (count == (int)(sizeof(drivers) / sizeof(drivers[0])))
+    snprintf(str + len, sizeof(str) - len, "all");
+  else
+  {
+    count = 0;
+    for (i = 0; i < (int)(sizeof(drivers) / sizeof(drivers[0])); i++)
+    {
+      if (driver_bits & drivers[i].bit)
+      {
+        snprintf(str + len, sizeof(str) - len, "%s%s", count ? ", " : "", drivers[i].name);
+        len = strlen(str);
+        count++;
+      }
+    }
+  }
+  len = strlen(str);
+
+  if (iupGlobalIsEnvName(name))
+    snprintf(str + len, sizeof(str) - len, "\nEnvironment: IUP_%s", name);
+
+  IupStoreAttribute(info, "VALUE", str);
+}
+
 static int iGlobalsCompareNames(const void* i1, const void* i2)
 {
   char* name1 = *((char**)i1);
@@ -102,6 +152,7 @@ static void iGlobalsUpdate(Ihandle* dlg)
   IupSetAttribute(setbut1, "VALUE", "");
   IupSetAttribute(colorbut1, "ACTIVE", "No");
   IupSetAttribute(fontbut1, "VISIBLE", "No");
+  IupSetAttribute((Ihandle*)iupAttribGetInherit(list1, "_IUP_ATTINFO"), "VALUE", "");
   IupSetAttribute(list2, "REMOVEITEM", NULL);
   IupSetAttribute(txt2, "VALUE", "");
   IupSetAttribute(setbut2, "VALUE", "");
@@ -175,6 +226,10 @@ static int iGlobalsList_CB(Ihandle* list1, char* name, int item, int state)
     Ihandle* setbut = (Ihandle*)iupAttribGetInherit(list1, "_IUP_SETBUTTON");
     Ihandle* colorbut = (Ihandle*)iupAttribGetInherit(list1, "_IUP_COLORBUTTON");
     Ihandle* fontbut = (Ihandle*)iupAttribGetInherit(list1, "_IUP_FONTBUTTON");
+    Ihandle* info = (Ihandle*)iupAttribGetInherit(list1, "_IUP_ATTINFO");
+
+    if (info)
+      iGlobalsUpdateInfo(info, name);
 
     if (value)
     {
@@ -484,7 +539,7 @@ static int iGlobalsClose_CB(Ihandle* ih)
 static Ihandle* iGlobalsCreateDialog(void)
 {
   Ihandle* list1, *list2, *list3, *list4, *close, *dlg, *dlg_box, *button_box, *colorbut1, *fontbut1, *colorbut2, *fontbut2,
-    *tabs, *box1, *box11, *box12, *box13, *box14, *box2, *box3, *box4, *set1, *set2, *value1, *value2, *value3, *value4;
+    *tabs, *box1, *box11, *box12, *box13, *box14, *box2, *box3, *box4, *set1, *set2, *value1, *value2, *value3, *value4, *info1;
 
   close = IupButton("_@IUP_CLOSE");
   IupSetStrAttribute(close, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
@@ -572,9 +627,19 @@ static Ihandle* iGlobalsCreateDialog(void)
   IupSetAttribute(value4, "EXPAND", "HORIZONTAL");
   IupSetAttribute(value4, "READONLY", "Yes");
 
+  info1 = IupText();
+  IupSetAttribute(info1, "MULTILINE", "Yes");
+  IupSetAttribute(info1, "READONLY", "Yes");
+  IupSetAttribute(info1, "VISIBLELINES", "4");
+  IupSetAttribute(info1, "SCROLLBAR", "NO");
+  IupSetAttribute(info1, "WORDWRAP", "Yes");
+  IupSetAttribute(info1, "EXPAND", "HORIZONTAL");
+
   box11 = IupVbox(
     IupLabel("Value:"),
     IupSetAttributes(IupHbox(value1, IupSetAttributes(IupVbox(set1, colorbut1, fontbut1, NULL), "GAP=3"), NULL), "GAP=10"),
+    IupLabel("Info:"),
+    info1,
     NULL);
   IupSetAttribute(box11, "MARGIN", "0x0");
   IupSetAttribute(box11, "GAP", "0");
@@ -613,6 +678,7 @@ static Ihandle* iGlobalsCreateDialog(void)
   iupAttribSet(box1, "_IUP_SETBUTTON", (char*)set1);
   iupAttribSet(box1, "_IUP_COLORBUTTON", (char*)colorbut1);
   iupAttribSet(box1, "_IUP_FONTBUTTON", (char*)fontbut1);
+  iupAttribSet(box1, "_IUP_ATTINFO", (char*)info1);
 
   box2 = IupHbox(IupSetAttributes(IupVbox(IupLabel("Name:"), list2, NULL), "MARGIN=0x0, GAP=0"), box12, NULL);
   iupAttribSet(box2, "_IUP_PROPLIST", (char*)list2);

@@ -457,17 +457,13 @@ static int iLayoutPropertiesList1_CB(Ihandle* list1, char* name, int item, int s
     else
       IupSetAttribute(txt1, "VALUE", "NULL");
 
+    def_value = iupClassInfoGetAttribDefault(elem->iclass, name);
     if (def_value)
       IupStoreAttribute(lbl2, "TITLE", def_value);
     else
       IupSetAttribute(lbl2, "TITLE", "NULL");
 
-    IupSetfAttribute(lbl3, "TITLE", "%s\n%s%s%s%s%s", flags&(IUPAF_NO_INHERIT | IUPAF_NO_STRING) ? "NON Inheritable" : "Inheritable",
-                     flags&IUPAF_NO_STRING ? "NOT a String\n" : "",
-                     flags&IUPAF_HAS_ID ? "Has ID\n" : "",
-                     flags&IUPAF_READONLY ? "Read-Only\n" : (flags&IUPAF_WRITEONLY ? "Write-Only\n" : ""),
-                     flags&IUPAF_IHANDLENAME ? "Ihandle* name\n" : "",
-                     flags&IUPAF_NOT_SUPPORTED ? "NOT SUPPORTED in this driver" : "");
+    IupStoreAttribute(lbl3, "TITLE", iupClassInfoGetAttribFlags(flags, ""));
 
     if (!(flags&IUPAF_READONLY) &&
         !(flags&IUPAF_NO_STRING))
@@ -496,7 +492,7 @@ static int iLayoutPropertiesList1_CB(Ihandle* list1, char* name, int item, int s
       IupSetAttribute(fontbut, "VISIBLE", "No");
     }
 
-    if (flags&IUPAF_HAS_ID)
+    if (flags & (IUPAF_HAS_ID | IUPAF_HAS_ID2))
     {
       IupSetAttribute(id_text, "ACTIVE", "Yes");
       IupSetAttribute(id_label, "ACTIVE", "Yes");

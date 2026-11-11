@@ -448,6 +448,8 @@ int iupClassIsGlobalDefault(const char* name, int colors);
 
 IUP_SDK_API void iupClassInfoGetDesc(Iclass* ic, Ihandle* ih, const char* attrib_name);
 IUP_SDK_API void iupClassInfoShowHelp(const char* className);
+IUP_SDK_API char* iupClassInfoGetAttribFlags(int flags, const char* prefix);
+IUP_SDK_API char* iupClassInfoGetAttribDefault(Iclass* ic, const char* name);
 
 /* Other functions declared in <iup.h> and implemented here. 
 IupGetClassType

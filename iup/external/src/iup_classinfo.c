@@ -147,6 +147,60 @@ static char* getCallbackParameters(const char* format)
   return str;
 }
 
+static void iClassInfoAppendFlag(char* str, size_t size, const char* prefix, const char* text)
+{
+  size_t len = strlen(str);
+  snprintf(str + len, size - len, "%s%s%s", len ? "\n" : "", prefix, text);
+}
+
+IUP_SDK_API char* iupClassInfoGetAttribFlags(int flags, const char* prefix)
+{
+  static char str[400];
+  str[0] = 0;
+
+  iClassInfoAppendFlag(str, sizeof(str), prefix, flags & (IUPAF_NO_INHERIT | IUPAF_NO_STRING) ? "Non inheritable" : "Inheritable");
+  if (flags & IUPAF_NO_STRING)
+    iClassInfoAppendFlag(str, sizeof(str), prefix, "Not a string");
+  if (flags & IUPAF_HAS_ID2)
+    iClassInfoAppendFlag(str, sizeof(str), prefix, "Has two ids (lin:col)");
+  else if (flags & IUPAF_HAS_ID)
+    iClassInfoAppendFlag(str, sizeof(str), prefix, "Has id");
+  if (flags & IUPAF_READONLY)
+    iClassInfoAppendFlag(str, sizeof(str), prefix, "Read-only");
+  else if (flags & IUPAF_WRITEONLY)
+    iClassInfoAppendFlag(str, sizeof(str), prefix, "Write-only");
+  if (flags & IUPAF_NOT_MAPPED)
+    iClassInfoAppendFlag(str, sizeof(str), prefix, "Processed before map");
+  if (flags & IUPAF_NO_DEFAULTVALUE)
+    iClassInfoAppendFlag(str, sizeof(str), prefix, "No default value");
+  if (flags & IUPAF_NO_SAVE)
+    iClassInfoAppendFlag(str, sizeof(str), prefix, "Not saved");
+  if (flags & IUPAF_IHANDLENAME)
+    iClassInfoAppendFlag(str, sizeof(str), prefix, "Ihandle* name");
+  if (flags & IUPAF_IHANDLE)
+    iClassInfoAppendFlag(str, sizeof(str), prefix, "Ihandle*");
+  if (flags & IUPAF_NOT_SUPPORTED)
+    iClassInfoAppendFlag(str, sizeof(str), prefix, "NOT SUPPORTED in this driver");
+
+  return str;
+}
+
+IUP_SDK_API char* iupClassInfoGetAttribDefault(Iclass* ic, const char* name)
+{
+  char* def_value = NULL;
+  IupGetClassAttributeInfo(ic->name, name, &def_value, NULL, NULL);
+  if (!def_value)
+    return NULL;
+
+  if (iupClassIsGlobalDefault(def_value, 0))
+  {
+    char* global_value = IupGetGlobal(def_value);
+    return iupStrReturnStrf("%s = %s", def_value, global_value ? global_value : "NULL");
+  }
+
+  return def_value;
+}
+
 /* Update callback labels */
 static int callbacksList_ActionCB (Ihandle* ih, char* callName, int pos, int state)
 {
@@ -183,24 +237,15 @@ static int attributesList_ActionCB (Ihandle* ih, char* attribName, int pos, int 
       char* def_value;
       int flags;
       iupClassGetAttribNameInfo(ic, attribName, &def_value, &flags);
+      def_value = iupClassInfoGetAttribDefault(ic, attribName);
 
       IupSetfAttribute(txtInfo, "VALUE", "Attribute Name: %s\n"
                                          "Default Value: %s\n"
                                          "Flags:\n"
-                                         "%s"
-                                         "%s"
-                                         "%s"
-                                         "%s"
-                                         "%s"
                                          "%s",
                                          attribName,
-                                         def_value==NULL? "NULL": def_value,
-                                         flags&(IUPAF_NO_INHERIT|IUPAF_NO_STRING)? "  NON Inheritable\n": "  Is Inheritable\n",
-                                         flags&IUPAF_NO_STRING? "  NOT a String\n": "",
-                                         flags&IUPAF_HAS_ID? "  Has ID\n": "",
-                                         flags&IUPAF_READONLY? "  Read-Only\n": (flags&IUPAF_WRITEONLY? "  Write-Only\n": ""),
-                                         flags&IUPAF_IHANDLENAME? "  Ihandle* name\n": "",
-                                         flags&IUPAF_NOT_SUPPORTED? "  NOT SUPPORTED in this driver\n": "");
+                                         def_value ? def_value : "NULL",
+                                         iupClassInfoGetAttribFlags(flags, "  "));
     }
     else
       IupSetAttribute(txtInfo, "VALUE", "Custom Attribute");
@@ -245,6 +290,7 @@ IUP_SDK_API void iupClassInfoGetDesc(Iclass* ic, Ihandle* ih, const char* attrib
 
   IupSetfAttribute(ih, attrib_name, "Ihandle* Iup%s(%s);\n"
                    "Class Name: %s\n"
+                   "Parent Class: %s\n"
                    "Native Type: %s\n"
                    "Container Type: %s\n"
                    "Flags:\n"
@@ -253,10 +299,11 @@ IUP_SDK_API void iupClassInfoGetDesc(Iclass* ic, Ihandle* ih, const char* attrib
                    constructor,
                    getClassParameters(ic->format, ic->format_attr),
                    ic->name,
+                   ic->parent ? ic->parent->name : "none",
                    getNativeType(ic->nativetype),
                    getChildType(ic->childtype),
                    ic->is_interactive ? "  Is Keyboard Interactive\n" : "  NOT Keyboard Interactive\n",
-                   ic->has_attrib_id ? "  Has Id Attributes\n" : "");
+                   ic->has_attrib_id == 2 ? "  Has Id and Lin:Col Attributes\n" : (ic->has_attrib_id ? "  Has Id Attributes\n" : ""));
 }
 
 static int classesList_ActionCB (Ihandle* ih, char* className, int pos, int state)

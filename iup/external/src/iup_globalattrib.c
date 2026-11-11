@@ -55,6 +55,17 @@ static const char* iGlobalGetEnv(const char* name)
   return NULL;
 }
 
+int iupGlobalIsEnvName(const char* name)
+{
+  int i;
+  for (i = 0; iglobal_env_names[i]; i++)
+  {
+    if (iupStrEqual(name, iglobal_env_names[i]))
+      return 1;
+  }
+  return 0;
+}
+
 void iupGlobalSetFromEnv(int opened)
 {
   int i;
