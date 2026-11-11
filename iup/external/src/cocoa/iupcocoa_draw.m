@@ -1039,6 +1039,61 @@ IUP_SDK_API void iupdrvDrawResetClip(IdrawCanvas* dc)
   dc->clip_y2 = 0;
 }
 
+#ifdef GNUSTEP
+static CGFloat cocoaDrawGnustepTextWidth(CGContextRef cg_context, const char* text, int len)
+{
+  CGPoint pos;
+  if (len <= 0)
+    return 0;
+  CGContextSaveGState(cg_context);
+  CGContextClipToRect(cg_context, CGRectZero);
+  CGContextSetTextPosition(cg_context, 0, 0);
+  CGContextShowText(cg_context, text, len);
+  pos = CGContextGetTextPosition(cg_context);
+  CGContextRestoreGState(cg_context);
+  return pos.x;
+}
+
+static int cocoaDrawGnustepUtf8Back(const char* text, int n)
+{
+  n--;
+  while (n > 0 && ((unsigned char)text[n] & 0xC0) == 0x80)
+    n--;
+  return n;
+}
+
+static int cocoaDrawGnustepFitWidth(CGContextRef cg_context, const char* text, int len, CGFloat width, int wrap)
+{
+  int n = len;
+  if (cocoaDrawGnustepTextWidth(cg_context, text, len) <= width)
+    return len;
+
+  while (n > 0)
+  {
+    n = cocoaDrawGnustepUtf8Back(text, n);
+    if (cocoaDrawGnustepTextWidth(cg_context, text, n) <= width)
+      break;
+  }
+
+  if (wrap)
+  {
+    int k = n;
+    while (k > 0 && text[k] != ' ')
+      k--;
+    if (k > 0)
+      n = k;
+  }
+
+  if (n == 0)
+  {
+    n = 1;
+    while (n < len && ((unsigned char)text[n] & 0xC0) == 0x80)
+      n++;
+  }
+  return n;
+}
+#endif
+
 IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
   if (!text || (len == 0 && text[0] == '\0'))
@@ -1148,25 +1203,10 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
         draw_y = y + (h - layout_h) / 2.0;
       }
 
-      CGFloat textWidth = 0;
-      if ([ns_string length] > 0)
-      {
-        NSTextFieldCell* measureCell = [[NSTextFieldCell alloc] initTextCell:ns_string];
-        [measureCell setFont:[iupFont nativeFont]];
-        textWidth = [measureCell cellSize].width;
-        [measureCell release];
-      }
-
-      if (!(flags & IUP_DRAW_WRAP))
-      {
-        if (flags & IUP_DRAW_RIGHT)
-          draw_x = draw_x + (layout_w - textWidth);
-        else if (flags & IUP_DRAW_CENTER)
-          draw_x = draw_x + (layout_w - textWidth) / 2.0;
-      }
-
       CGFloat ascent = (CGFloat)[iupFont ascent];
       if (ascent <= 0) ascent = (CGFloat)[iupFont fontSize] * 0.8;
+      CGFloat line_height = (CGFloat)[iupFont charHeight];
+      if (line_height <= 0) line_height = (CGFloat)[iupFont fontSize] * 1.2;
 
       NSString* face = [iupFont typeFace];
       CGFloat size = (CGFloat)[iupFont fontSize];
@@ -1176,6 +1216,10 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
       const char* cstr = [ns_string UTF8String];
       if (cstr)
       {
+        const char* p = cstr;
+        const char* end = cstr + strlen(cstr);
+        CGFloat baseline_y = (CGFloat)dc->h - (draw_y + ascent);
+
         CGContextSaveGState(cg_context);
         /* Undo Y-down CTM; place the baseline in Y-up space. */
         CGContextScaleCTM(cg_context, 1.0, -1.0);
@@ -1185,8 +1229,49 @@ IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int 
         CGContextSetRGBFillColor(cg_context, r/255.0, g/255.0, b/255.0, a/255.0);
         CGContextSetTextDrawingMode(cg_context, kCGTextFill);
 
-        CGFloat baseline_y = (CGFloat)dc->h - (draw_y + ascent);
-        CGContextShowTextAtPoint(cg_context, draw_x, baseline_y, cstr, strlen(cstr));
+        while (p <= end)
+        {
+          const char* q = (const char*)memchr(p, '\n', end - p);
+          const char* line_end = q ? q : end;
+          const char* seg = p;
+
+          do
+          {
+            int seg_len = (int)(line_end - seg);
+            int take = seg_len;
+            int dots = 0;
+
+            if ((flags & IUP_DRAW_WRAP) && layout_w > 0)
+              take = cocoaDrawGnustepFitWidth(cg_context, seg, seg_len, layout_w, 1);
+            else if ((flags & IUP_DRAW_ELLIPSIS) && layout_w > 0 && cocoaDrawGnustepTextWidth(cg_context, seg, seg_len) > layout_w)
+            {
+              take = cocoaDrawGnustepFitWidth(cg_context, seg, seg_len, layout_w - cocoaDrawGnustepTextWidth(cg_context, "...", 3), 0);
+              dots = 1;
+            }
+
+            CGFloat line_w = cocoaDrawGnustepTextWidth(cg_context, seg, take) + (dots ? cocoaDrawGnustepTextWidth(cg_context, "...", 3) : 0);
+            CGFloat line_x = draw_x;
+            if (flags & IUP_DRAW_RIGHT)
+              line_x = draw_x + (layout_w - line_w);
+            else if (flags & IUP_DRAW_CENTER)
+              line_x = draw_x + (layout_w - line_w) / 2.0;
+
+            CGContextShowTextAtPoint(cg_context, line_x, baseline_y, seg, take);
+            if (dots)
+              CGContextShowText(cg_context, "...", 3);
+            baseline_y -= line_height;
+
+            if (dots)
+              break;
+            seg += take;
+            while (seg < line_end && *seg == ' ')
+              seg++;
+          } while (seg < line_end);
+
+          if (!q)
+            break;
+          p = q + 1;
+        }
 
         CGContextRestoreGState(cg_context);
       }
