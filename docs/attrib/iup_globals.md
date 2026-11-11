@@ -145,7 +145,7 @@ This affects **IupCanvas**, **IupList**, **IupText** and **IupTree**.
 ### SHOWMENUIMAGES
 
 Force the display of images in menus. Default: YES.
-Supported in GTK, GTK 4, Qt, QML, EFL and WinUI.
+Supported in GTK, GTK 4, Qt, QML, EFL, WinUI, FLTK and Haiku.
 
 ### OVERLAYSCROLLBAR [GTK and GTK 4 Only]
 

@@ -183,7 +183,7 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
   }
 
   if (iupStrEqual(name, "SHOWMENUIMAGES"))
-    return const_cast<char*>("NO");
+    return iupStrReturnBoolean(1);
 
   if (iupStrEqual(name, "TRUECOLORCANVAS"))
     return iupStrReturnBoolean(1);

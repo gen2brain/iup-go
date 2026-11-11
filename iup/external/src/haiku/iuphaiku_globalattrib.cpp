@@ -143,7 +143,7 @@ extern "C" IUP_SDK_API char* iupdrvGetGlobal(const char* name)
     return iupStrReturnBoolean(0);
 
   if (iupStrEqual(name, "SHOWMENUIMAGES"))
-    return const_cast<char*>("NO");
+    return iupStrReturnBoolean(1);
 
   return nullptr;
 }
