@@ -236,6 +236,7 @@ static void xGLCanvasGetVisual(Ihandle* ih, IGlControlData* gldata)
   int erb, evb, number;
   int n = 0;
   int alist[40];
+  int samples_index = -1;
 
   if (!gldata->display)
     gldata->display = (Display*)IupGetGlobal("XDISPLAY");  /* works for Motif and GTK, can be called before mapped */
@@ -340,6 +341,16 @@ static void xGLCanvasGetVisual(Ihandle* ih, IGlControlData* gldata)
     alist[n++] = GLX_STEREO;
   }
 
+  number = iupAttribGetInt(ih, "SAMPLES");
+  if (number > 0)
+  {
+    samples_index = n;
+    alist[n++] = GLX_SAMPLE_BUFFERS;
+    alist[n++] = 1;
+    alist[n++] = GLX_SAMPLES;
+    alist[n++] = number;
+  }
+
   /* TERMINATOR */
   alist[n++] = None;
 
@@ -352,6 +363,12 @@ static void xGLCanvasGetVisual(Ihandle* ih, IGlControlData* gldata)
 
   /* choose visual */
   gldata->vinfo = glXChooseVisual(gldata->display, DefaultScreen(gldata->display), alist);
+  if (!gldata->vinfo && samples_index >= 0)
+  {
+    alist[samples_index] = None;
+    n = samples_index + 1;
+    gldata->vinfo = glXChooseVisual(gldata->display, DefaultScreen(gldata->display), alist);
+  }
   if (!gldata->vinfo)
   {
     if (iupAttribGetBoolean(ih,"STEREO"))

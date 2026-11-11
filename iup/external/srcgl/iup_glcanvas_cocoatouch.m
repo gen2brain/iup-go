@@ -89,9 +89,31 @@ typedef struct _IGlControlData
 	GLuint framebuffer;
 	GLuint color_renderbuffer;
 	GLuint depth_renderbuffer;     /* depth or packed depth+stencil */
+	GLuint msaa_framebuffer;
+	GLuint msaa_color_renderbuffer;
 	int    has_stencil;
 	int    backing_w, backing_h;
 } IGlControlData;
+
+typedef void (*cocoaTouchGLStorageMultisampleFunc)(GLenum, GLsizei, GLenum, GLsizei, GLsizei);
+typedef void (*cocoaTouchGLResolveFunc)(void);
+
+static int cocoaTouchGLIsES3(IGlControlData* gldata)
+{
+	return gldata->context.API >= kEAGLRenderingAPIOpenGLES3;
+}
+
+static void cocoaTouchGLStorageMultisample(IGlControlData* gldata, GLsizei samples, GLenum format, GLsizei w, GLsizei h)
+{
+	if (cocoaTouchGLIsES3(gldata))
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, format, w, h);
+	else
+	{
+		cocoaTouchGLStorageMultisampleFunc storage = (cocoaTouchGLStorageMultisampleFunc)dlsym(RTLD_DEFAULT, "glRenderbufferStorageMultisampleAPPLE");
+		if (storage)
+			storage(GL_RENDERBUFFER, samples, format, w, h);
+	}
+}
 
 
 static int cocoaTouchGLCanvasDefaultResize_CB(Ihandle* ih, int width, int height)
@@ -139,6 +161,8 @@ static void cocoaTouchGLConfigureLayer(IupGLView* view)
 static void cocoaTouchGLDeleteFramebuffer(IGlControlData* gldata)
 {
 	if (gldata->framebuffer)        { glDeleteFramebuffers(1, &gldata->framebuffer);        gldata->framebuffer = 0; }
+	if (gldata->msaa_framebuffer)   { glDeleteFramebuffers(1, &gldata->msaa_framebuffer);   gldata->msaa_framebuffer = 0; }
+	if (gldata->msaa_color_renderbuffer) { glDeleteRenderbuffers(1, &gldata->msaa_color_renderbuffer); gldata->msaa_color_renderbuffer = 0; }
 	if (gldata->color_renderbuffer) { glDeleteRenderbuffers(1, &gldata->color_renderbuffer); gldata->color_renderbuffer = 0; }
 	if (gldata->depth_renderbuffer) { glDeleteRenderbuffers(1, &gldata->depth_renderbuffer); gldata->depth_renderbuffer = 0; }
 	gldata->backing_w = gldata->backing_h = 0;
@@ -157,7 +181,7 @@ static void cocoaTouchGLEnsureFramebuffer(Ihandle* ih, IGlControlData* gldata)
 
 	if (gldata->framebuffer && gldata->backing_w == w && gldata->backing_h == h)
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, gldata->framebuffer);
+		glBindFramebuffer(GL_FRAMEBUFFER, gldata->msaa_framebuffer ? gldata->msaa_framebuffer : gldata->framebuffer);
 		return;
 	}
 
@@ -180,6 +204,26 @@ static void cocoaTouchGLEnsureFramebuffer(Ihandle* ih, IGlControlData* gldata)
 	glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH,  &backing_w);
 	glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &backing_h);
 
+	GLint samples = iupAttribGetInt(ih, "SAMPLES");
+	if (samples > 0)
+	{
+		GLint max_samples = 0;
+		glGetIntegerv(GL_MAX_SAMPLES, &max_samples);
+		if (samples > max_samples)
+			samples = 0;
+	}
+
+	if (samples > 0)
+	{
+		glGenFramebuffers(1, &gldata->msaa_framebuffer);
+		glBindFramebuffer(GL_FRAMEBUFFER, gldata->msaa_framebuffer);
+
+		glGenRenderbuffers(1, &gldata->msaa_color_renderbuffer);
+		glBindRenderbuffer(GL_RENDERBUFFER, gldata->msaa_color_renderbuffer);
+		cocoaTouchGLStorageMultisample(gldata, samples, GL_RGBA8, backing_w, backing_h);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, gldata->msaa_color_renderbuffer);
+	}
+
 	int depth_bits   = iupAttribGetInt(ih, "DEPTH_SIZE");
 	int stencil_bits = iupAttribGetInt(ih, "STENCIL_SIZE");
 	if (depth_bits == 0 && stencil_bits == 0) depth_bits = 16;
@@ -200,7 +244,10 @@ static void cocoaTouchGLEnsureFramebuffer(Ihandle* ih, IGlControlData* gldata)
 
 		glGenRenderbuffers(1, &gldata->depth_renderbuffer);
 		glBindRenderbuffer(GL_RENDERBUFFER, gldata->depth_renderbuffer);
-		glRenderbufferStorage(GL_RENDERBUFFER, format, backing_w, backing_h);
+		if (gldata->msaa_framebuffer)
+			cocoaTouchGLStorageMultisample(gldata, samples, format, backing_w, backing_h);
+		else
+			glRenderbufferStorage(GL_RENDERBUFFER, format, backing_w, backing_h);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, gldata->depth_renderbuffer);
 		if (gldata->has_stencil)
 			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gldata->depth_renderbuffer);
@@ -211,6 +258,18 @@ static void cocoaTouchGLEnsureFramebuffer(Ihandle* ih, IGlControlData* gldata)
 		iupAttribSet(ih, "ERROR", "OpenGL ES framebuffer is incomplete.");
 		cocoaTouchGLDeleteFramebuffer(gldata);
 		return;
+	}
+
+	if (gldata->msaa_framebuffer)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, gldata->framebuffer);
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			iupAttribSet(ih, "ERROR", "OpenGL ES framebuffer is incomplete.");
+			cocoaTouchGLDeleteFramebuffer(gldata);
+			return;
+		}
+		glBindFramebuffer(GL_FRAMEBUFFER, gldata->msaa_framebuffer);
 	}
 
 	gldata->backing_w = backing_w;
@@ -325,7 +384,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 	cocoaTouchGLEnsureFramebuffer(ih, gldata);
 	if (gldata->framebuffer)
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, gldata->framebuffer);
+		glBindFramebuffer(GL_FRAMEBUFFER, gldata->msaa_framebuffer ? gldata->msaa_framebuffer : gldata->framebuffer);
 		glViewport(0, 0, gldata->backing_w, gldata->backing_h);
 	}
 
@@ -354,8 +413,25 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
 	Icallback cb = IupGetCallback(ih, "SWAPBUFFERS_CB");
 	if (cb) cb(ih);
 
+	if (gldata->msaa_framebuffer)
+	{
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, gldata->msaa_framebuffer);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, gldata->framebuffer);
+		if (cocoaTouchGLIsES3(gldata))
+			glBlitFramebuffer(0, 0, gldata->backing_w, gldata->backing_h, 0, 0, gldata->backing_w, gldata->backing_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		else
+		{
+			cocoaTouchGLResolveFunc resolve = (cocoaTouchGLResolveFunc)dlsym(RTLD_DEFAULT, "glResolveMultisampleFramebufferAPPLE");
+			if (resolve)
+				resolve();
+		}
+	}
+
 	glBindRenderbuffer(GL_RENDERBUFFER, gldata->color_renderbuffer);
 	[gldata->context presentRenderbuffer:GL_RENDERBUFFER];
+
+	if (gldata->msaa_framebuffer)
+		glBindFramebuffer(GL_FRAMEBUFFER, gldata->msaa_framebuffer);
 }
 
 IUPGL_API void* IupGLGetProcAddress(const char* name)

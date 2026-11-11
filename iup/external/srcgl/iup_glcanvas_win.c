@@ -55,6 +55,26 @@ typedef HGLRC (WINAPI* wglCreateContextAttribsARB_PROC) (HDC hDC, HGLRC hShareCo
 #define ERROR_INVALID_PROFILE_ARB   0x2096
 #endif
 
+typedef BOOL (WINAPI* wglChoosePixelFormatARB_PROC) (HDC hdc, const int* piAttribIList, const FLOAT* pfAttribFList, UINT nMaxFormats, int* piFormats, UINT* nNumFormats);
+
+#ifndef WGL_DRAW_TO_WINDOW_ARB
+#define WGL_DRAW_TO_WINDOW_ARB  0x2001
+#define WGL_SUPPORT_OPENGL_ARB  0x2010
+#define WGL_DOUBLE_BUFFER_ARB   0x2011
+#define WGL_STEREO_ARB          0x2012
+#define WGL_PIXEL_TYPE_ARB      0x2013
+#define WGL_COLOR_BITS_ARB      0x2014
+#define WGL_ALPHA_BITS_ARB      0x201B
+#define WGL_DEPTH_BITS_ARB      0x2022
+#define WGL_STENCIL_BITS_ARB    0x2023
+#define WGL_TYPE_RGBA_ARB       0x202B
+#endif
+
+#ifndef WGL_SAMPLE_BUFFERS_ARB
+#define WGL_SAMPLE_BUFFERS_ARB  0x2041
+#define WGL_SAMPLES_ARB         0x2042
+#endif
+
 /* Do NOT use _IcontrolData to make inheritance easy
    when parent class is glcanvas */
 typedef struct _IGlControlData
@@ -238,6 +258,61 @@ static int wGLCanvasCreateMethod(Ihandle* ih, void** params)
   return IUP_NOERROR;
 }
 
+static int wGLChooseMultisampleFormat(HDC device, const PIXELFORMATDESCRIPTOR* pfd, int samples)
+{
+  HGLRC old_context = wglGetCurrentContext();
+  HDC old_device = wglGetCurrentDC();
+  HWND window;
+  HDC temp_device;
+  HGLRC temp_context;
+  int format = 0;
+  int temp_format;
+
+  window = CreateWindowExA(0, "STATIC", "", WS_POPUP, 0, 0, 1, 1, NULL, NULL, GetModuleHandle(NULL), NULL);
+  if (!window)
+    return 0;
+
+  temp_device = GetDC(window);
+  temp_format = ChoosePixelFormat(temp_device, pfd);
+  if (temp_format && SetPixelFormat(temp_device, temp_format, pfd))
+  {
+    temp_context = wglCreateContext(temp_device);
+    if (temp_context)
+    {
+      if (wglMakeCurrent(temp_device, temp_context))
+      {
+        wglChoosePixelFormatARB_PROC ChoosePixelFormatARB = (wglChoosePixelFormatARB_PROC)wglGetProcAddress("wglChoosePixelFormatARB");
+        if (ChoosePixelFormatARB)
+        {
+          int attribs[] = {
+            WGL_DRAW_TO_WINDOW_ARB, TRUE,
+            WGL_SUPPORT_OPENGL_ARB, TRUE,
+            WGL_DOUBLE_BUFFER_ARB, (pfd->dwFlags & PFD_DOUBLEBUFFER) ? TRUE : FALSE,
+            WGL_STEREO_ARB, (pfd->dwFlags & PFD_STEREO) ? TRUE : FALSE,
+            WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+            WGL_COLOR_BITS_ARB, pfd->cColorBits,
+            WGL_ALPHA_BITS_ARB, pfd->cAlphaBits,
+            WGL_DEPTH_BITS_ARB, pfd->cDepthBits,
+            WGL_STENCIL_BITS_ARB, pfd->cStencilBits,
+            WGL_SAMPLE_BUFFERS_ARB, TRUE,
+            WGL_SAMPLES_ARB, samples,
+            0
+          };
+          UINT count = 0;
+          if (!ChoosePixelFormatARB(device, attribs, NULL, 1, &format, &count) || count == 0)
+            format = 0;
+        }
+      }
+      wglMakeCurrent(old_device, old_context);
+      wglDeleteContext(temp_context);
+    }
+  }
+
+  ReleaseDC(window, temp_device);
+  DestroyWindow(window);
+  return format;
+}
+
 static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata)
 {
   Ihandle* ih_shared;
@@ -336,7 +411,12 @@ static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata)
   iupAttribSet(ih, "VISUAL", (char*)gldata->device);
 
   /* choose pixel format */
-  pixelFormat = ChoosePixelFormat(gldata->device, &pfd);
+  pixelFormat = 0;
+  number = iupAttribGetInt(ih, "SAMPLES");
+  if (number > 0 && !isIndex)
+    pixelFormat = wGLChooseMultisampleFormat(gldata->device, &pfd, number);
+  if (pixelFormat == 0)
+    pixelFormat = ChoosePixelFormat(gldata->device, &pfd);
   if (pixelFormat == 0)
   {
     iupAttribSet(ih, "ERROR", "No appropriate pixel format.");

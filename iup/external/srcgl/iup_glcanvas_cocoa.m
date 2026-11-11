@@ -267,6 +267,7 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
   NSOpenGLPixelFormatAttribute attrs[50];
   int n = 0;
   int number;
+  int samples_index = -1;
 
   char* profile_attr = iupAttribGetStr(ih, "CONTEXTPROFILE");
   char* version_attr = iupAttribGetStr(ih, "CONTEXTVERSION");
@@ -384,23 +385,27 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
     attrs[n++] = accum;
   }
 
-  number = iupAttribGetInt(ih, "SAMPLE_BUFFERS");
+  number = iupAttribGetInt(ih, "SAMPLES");
   if (number > 0)
   {
+    samples_index = n;
     attrs[n++] = NSOpenGLPFASampleBuffers;
+    attrs[n++] = 1;
+    attrs[n++] = NSOpenGLPFASamples;
     attrs[n++] = number;
-
-    number = iupAttribGetInt(ih, "SAMPLES");
-    if (number > 0)
-    {
-      attrs[n++] = NSOpenGLPFASamples;
-      attrs[n++] = number;
-    }
+    attrs[n++] = NSOpenGLPFAMultisample;
   }
 
   attrs[n] = 0;
 
   NSOpenGLPixelFormat* pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+
+  if (!pixelFormat && samples_index >= 0)
+  {
+    n = samples_index;
+    attrs[n] = 0;
+    pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+  }
 
   if (!pixelFormat && iupAttribGetBoolean(ih, "STEREO"))
   {
