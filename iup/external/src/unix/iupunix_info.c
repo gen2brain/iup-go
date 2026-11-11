@@ -14,6 +14,7 @@
 
 #include <sys/utsname.h>
 #include <unistd.h>
+#include <pwd.h>
 #include <errno.h>
 #include <langinfo.h>
 #include <syslog.h>
@@ -178,9 +179,8 @@ IUP_SDK_API char* iupdrvGetComputerName(void)
 
 IUP_SDK_API char* iupdrvGetUserName(void)
 {
-  const char* username = getenv("USER");
-  if (!username)
-    username = getenv("USERNAME");
+  struct passwd* pwd = getpwuid(getuid());
+  const char* username = (pwd && pwd->pw_name && pwd->pw_name[0]) ? pwd->pw_name : getenv("USER");
   return iupStrReturnStr(username ? username : "unknown");
 }
 
