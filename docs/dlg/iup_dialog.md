@@ -188,6 +188,9 @@ If not defined then the first control than can receive the focus is selected (sa
 Updated after SHOW_CB is called and only if the focus was not changed during the callback.
 Ignored when SHOWNOFOCUS or SHOWNOACTIVATE is YES.
 
+**IGNORELASTFOCUS** (non-inheritable): When the dialog is activated again, the focus does not return to the element that had it last. Default: NO.
+Supported in Win32, WinUI, macOS, GNUstep, Qt and QML.
+
 **SHOWNOFOCUS**: do not set focus after show.
 In Android and iOS, the default is YES.
 
@@ -276,17 +279,17 @@ Available in the Cocoa, GTK, GTK 4, Qt and FLTK drivers on macOS.
 Default: "NO".
 It is NOT compatible with IupCanvas, and all derived IUP controls such as IupFlat*, IupGL*, IupPlot and IupMatrix.
 
-**CUSTOMFRAMEDRAW** [Win32 Only] (non-inheritable): allows the application to customize the dialog frame elements (the title and its buttons) by drawing them with the CUSTOMFRAMEDRAW_CB callback.
+**CUSTOMFRAMEDRAW** [Win32 and macOS Only] (non-inheritable): allows the application to customize the dialog frame elements (the title and its buttons) by drawing them with the CUSTOMFRAMEDRAW_CB callback.
 Can be YES or NO. The Window client area is expanded to include the whole window.
 The dialog attributes like BORDER, RESIZE, MAXBOX, MINBOX and TITLE must still be defined.
 The maximize, minimize and close buttons must be implemented in the BUTTON_CB callback.
-One drawback is that menu bars will not work.
+In Win32, menu bars will not work.
 Not available in WinUI, use CUSTOMFRAME instead.
 
-**CUSTOMFRAMECAPTIONHEIGHT** [Win32 and WinUI Only] (non-inheritable): height of the caption area.
+**CUSTOMFRAMECAPTIONHEIGHT** [Win32, WinUI and macOS Only] (non-inheritable): height of the caption area.
 If not defined it will use the system size.
 
-**CUSTOMFRAMECAPTIONLIMITS** [Win32 Only] (non-inheritable): limits of the caption area at left and at right.
+**CUSTOMFRAMECAPTIONLIMITS** [Win32 and macOS Only] (non-inheritable): limits of the caption area at left and at right.
 The caption area is always expanded inside the limits when the dialog is resized.
 Format is "left:right" or in C "%d:%d". Default: "0:0".
 This will allow the dialog to be moved by the system when the user clicks and drags the caption area.
@@ -366,17 +369,17 @@ Not supported in Android and iOS.
 
 [DROPFILES_CB](../call/iup_dropfiles_cb.md): Action generated when one or more files are dropped in the dialog.
 
-**CUSTOMFRAMEDRAW_CB** [Win32 Only]: Called when the dialog must be redrawn.
+**CUSTOMFRAMEDRAW_CB** [Win32 and macOS Only]: Called when the dialog must be redrawn.
 Although it is designed for drawing the frame elements, all the dialog must be painted.
 Works only when CUSTOMFRAME or CUSTOMFRAMEDRAW is defined.
-The dialog can be used just like an IupCanvas to draw its elements, the **HDC_WMPAINT** and **CLIPRECT** attributes are defined during the callback.
+The dialog can be used just like an IupCanvas to draw its elements, the **CLIPRECT** attribute is defined during the callback, and **HDC_WMPAINT** in Win32.
 For mouse callbacks use the same callbacks as **IupCanvas**, such as [BUTTON_CB](../call/iup_button_cb.md) and [MOTION_CB](../call/iup_motion_cb.md).
 
     int function(Ihandle *ih);
 
 **ih**: identifier of the element that activated the event.
 
-**CUSTOMFRAMEACTIVATE_CB** [Win32 Only]: Called when the dialog active state is changed (for instance, the user Alt+Tab to another application, or clicked in another window).
+**CUSTOMFRAMEACTIVATE_CB** [Win32 and macOS Only]: Called when the dialog active state is changed (for instance, the user Alt+Tab to another application, or clicked in another window).
 Works only when CUSTOMFRAME or CUSTOMFRAMEDRAW is defined.
 
     int function(Ihandle *ih, int active);

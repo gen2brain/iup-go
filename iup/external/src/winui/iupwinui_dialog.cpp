@@ -1749,6 +1749,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "CUSTOMFRAME", nullptr, nullptr, IUPAF_SAMEASSYSTEM, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", nullptr, winuiDialogSetHideTitleBarAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IGNORELASTFOCUS", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUSTOMFRAMECAPTIONHEIGHT", nullptr, nullptr, IUPAF_SAMEASSYSTEM, nullptr, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "FULLSCREEN", nullptr, winuiDialogSetFullScreenAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
