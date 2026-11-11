@@ -1414,6 +1414,7 @@ extern "C" IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SHAPEIMAGE", nullptr, qmlDialogSetShapeImageAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BRINGFRONT", nullptr, qmlDialogSetBringFrontAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", nullptr, qmlDialogSetHideTitleBarAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IGNORELASTFOCUS", nullptr, nullptr, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MAXIMIZED", qmlDialogGetMaximizedAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MINIMIZED", qmlDialogGetMinimizedAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 

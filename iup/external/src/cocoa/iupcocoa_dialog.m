@@ -2271,6 +2271,7 @@ IUP_SDK_API void iupdrvDialogInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "TOOLBOX", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TASKBARBUTTON", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "HIDETITLEBAR", NULL, cocoaDialogSetHideTitleBarAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "IGNORELASTFOCUS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 #ifdef GNUSTEP
   iupClassRegisterAttribute(ic, "CUSTOMFRAMEDRAW", NULL, cocoaDialogSetCustomFrameDrawAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);
 #else
