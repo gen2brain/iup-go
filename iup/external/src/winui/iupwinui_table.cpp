@@ -2255,7 +2255,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
  * Sizing
  ****************************************************************************/
 
-extern "C" IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
+static int winuiTableGetBorderWidth(Ihandle* ih)
 {
   return static_cast<int>(ceil(2 * iupwinuiGetScale(ih)));
 }
@@ -2298,7 +2298,7 @@ extern "C" IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 extern "C" IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   int sb_size = iupdrvGetScrollbarSize();
-  int border = iupdrvTableGetBorderWidth(ih);
+  int border = winuiTableGetBorderWidth(ih);
 
   *w += sb_size + border;
   *h += border;

@@ -356,12 +356,6 @@ IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
   (*env)->DeleteLocalRef(env, cls);
 }
 
-IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
-{
-  (void)ih;
-  return 0;
-}
-
 IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   if (ih->handle)

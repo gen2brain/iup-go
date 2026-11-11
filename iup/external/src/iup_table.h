@@ -116,7 +116,6 @@ IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col);  /* 
 IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show);
 
 /* Sizing */
-IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih);
 IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih);
 IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih);
 IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h);

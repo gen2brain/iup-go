@@ -2289,11 +2289,6 @@ extern "C" IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
   iupdrvTableRedraw(ih);
 }
 
-extern "C" IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* /*ih*/)
-{
-  return 1;
-}
-
 extern "C" IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
   IupHaikuTableView* tv = haikuTableGetView(ih);

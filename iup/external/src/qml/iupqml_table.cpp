@@ -2114,7 +2114,7 @@ static int qmlTableSetFocusRectAttrib(Ihandle* ih, const char* value)
 
 extern "C" {
 
-IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
+static int qmlTableGetBorderWidth(Ihandle* ih)
 {
   (void)ih;
   return 1;
@@ -2149,7 +2149,7 @@ IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 
 IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
-  int frame_width = iupdrvTableGetBorderWidth(ih);
+  int frame_width = qmlTableGetBorderWidth(ih);
   int sb_size = iupdrvGetScrollbarSize();
 
   *w += sb_size + 2 * frame_width;

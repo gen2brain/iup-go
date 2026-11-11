@@ -2104,12 +2104,6 @@ static int qtTableSetUserResizeAttrib(Ihandle* ih, const char* value)
 
 extern "C" {
 
-IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
-{
-  (void)ih;
-  return 0;
-}
-
 static int qt_table_row_height = -1;
 static int qt_table_header_height = -1;
 

@@ -2965,7 +2965,7 @@ IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
   motTableRedraw(ih);
 }
 
-IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
+static int motTableGetBorderWidth(Ihandle* ih)
 {
   ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
   Dimension border = 0;
@@ -3000,7 +3000,7 @@ IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
   int sb_size = iupdrvGetScrollbarSize();
-  int border = iupdrvTableGetBorderWidth(ih);
+  int border = motTableGetBorderWidth(ih);
 
   /* motTableSetSize always reserves horizontal scrollbar space */
   *w += sb_size + border;

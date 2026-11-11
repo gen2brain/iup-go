@@ -1256,12 +1256,6 @@ IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 	[view reloadData];
 }
 
-IUP_SDK_API int iupdrvTableGetBorderWidth(Ihandle* ih)
-{
-	(void)ih;
-	return 0;
-}
-
 IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)
 {
 	(void)ih;
