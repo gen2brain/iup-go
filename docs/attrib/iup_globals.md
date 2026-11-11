@@ -79,7 +79,7 @@ Disable the **IupExitLoop** function when **IupMainLoopLevel** is 0 or 1.
 Used when the application runs secondary dialogs that behave as full applications but sharing the same IUP environment.
 Possible values: "YES" or "NO". Default: "YES".
 
-### CUSTOMQUITMESSAGE [Windows Only]
+### CUSTOMQUITMESSAGE [Win32 Only]
 
 Enable a custom quit message instead of using WM_QUIT.
 
@@ -188,7 +188,7 @@ The minimum resulted size when automatically resized is 24 pixels height.
 
 Forces the 24x24 default images in [IupFlatTree](../ctrl/iup_flattree.md). Default: NO.
 
-### PROCESSWINDOWSGHOSTING [Windows Only]
+### PROCESSWINDOWSGHOSTING [Win32 Only]
 
 If set to NO will disable the window ghosting feature for the duration of the process, cannot be enabled again.
 When disabled, the application dialogs cannot be moved or resized while the application is not responding, and "Not Responding" is not shown in the title bar.
@@ -355,7 +355,7 @@ Drivers whose toolkit does not expose that information compare the advance of "W
 
 Returns the width of the vertical scrollbar (the same as the height of the horizontal scrollbar).
 
-### COMCTL32VER6 [Windows Only] (read-only)
+### COMCTL32VER6 [Win32 Only] (read-only)
 
 Returns YES or NO if the Windows common controls are using Visual Styles or not.
 
@@ -410,7 +410,7 @@ Supported in GTK, GTK 4, Qt, QML, Motif, EFL, FLTK, WinUI and Haiku.
 ### HELPAPP
 
 The browser used by [IupHelp](../func/iup_help.md). The IUP_HELPAPP environment variable takes precedence.
-Supported in GTK, GTK 4, Motif, EFL, FLTK and Haiku.
+Supported in GTK, GTK 4, Motif, EFL, FLTK, GNUstep and Haiku.
 
 ### SANDBOX (read-only)
 
@@ -638,7 +638,7 @@ In Motif, it is always 1.
 Indicates if the display allows creating TrueColor (> 8bpp) **IupCanvas** controls, even if PseudoColor is the default, i.e., even if SCREENDEPTH<=8.
 Returns "YES" or "NO". Useful in Motif.
 
-### DWM_COMPOSITION (read-only) [Windows Only]
+### DWM_COMPOSITION (read-only) [Win32 Only]
 
 Returns the Desktop Window Manager Composition flag. Returns "YES" or "NO".
 Returns NULL if not supported.
@@ -666,18 +666,17 @@ String in the "*x y width height*\n*x y width height*\n..." format.
 
 ## System Data 
 
-### HINSTANCE (read-only) [Windows Only]
+### HINSTANCE (read-only) [Win32 Only]
 
 Returns a handle (HINSTANCE) that identifies the application in the native system.
 
-### DLL_HINSTANCE [Windows Only]
+### DLL_HINSTANCE [Win32 Only]
 
 Changes and returns a handle (HINSTANCE) that identifies the DLL where resources are stored.
 
 ### APPSHELL (read-only) [Motif Only]
 
 Returns the shell Widget created by XtOpenApplication.
-Also available in GTK and GTK 4.
 
 ### XDISPLAY (read-only) [X11 Only]
 
