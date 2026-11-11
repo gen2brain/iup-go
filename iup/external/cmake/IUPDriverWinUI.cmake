@@ -68,7 +68,7 @@ set(_WINUI_COMMON_LIBS windowsapp runtimeobject d2d1 dwrite uuid oleaut32 ole32 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(IUP_DRIVER_LINK_LIBRARIES ${_WINUI_COMMON_LIBS} -l:libc++.a -l:libc++abi.a)
   set(IUP_DRIVER_LINK_OPTIONS -fuse-ld=lld)
-  set(IUP_PC_LIBS_PRIVATE "-lwindowsapp -lruntimeobject -ld2d1 -ldwrite -luuid -loleaut32 -lole32 -luser32 -lshell32 -lgdi32 -ladvapi32 -l:libc++.a -l:libc++abi.a")
+  set(IUP_PC_LIBS_PRIVATE "-lwindowsapp -lruntimeobject -ld2d1 -ldwrite -luuid -loleaut32 -lole32 -luser32 -lshell32 -lgdi32 -ladvapi32 -Wl,-Bstatic -lc++ -lc++abi -Wl,-Bdynamic")
 else()
   set(IUP_DRIVER_LINK_LIBRARIES ${_WINUI_COMMON_LIBS})
   set(IUP_DRIVER_LINK_OPTIONS "")
