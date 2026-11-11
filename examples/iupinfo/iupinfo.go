@@ -85,6 +85,9 @@ var driverName = []struct {
 	{iup.DRV_FLTK, "FLTK"},
 	{iup.DRV_ANDROID, "Android"},
 	{iup.DRV_COCOATOUCH, "CocoaTouch"},
+	{iup.DRV_HAIKU, "Haiku"},
+	{iup.DRV_WASM, "WASM"},
+	{iup.DRV_QML, "QML"},
 }
 
 var ctorChar = map[byte]string{
