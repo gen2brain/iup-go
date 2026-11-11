@@ -205,9 +205,6 @@ IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
   /* enable alternative DnD icons as default */
   XtVaSetValues(XmGetXmDisplay(iupmot_display), XmNenableDragIcon, True, NULL);
 
-  if (getenv("IUP_DEBUG"))
-    XSynchronize(iupmot_display, 1);
-
   iupmotLoopPostMessageInit();
 
   return IUP_NOERROR;
