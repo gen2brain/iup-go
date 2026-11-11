@@ -170,6 +170,7 @@ This is the factor used by the SIZE attribute to convert its units to pixels.
 
 Allows selecting a foundry for the FONT being selected.
 Must be set before setting the FONT attribute.
+TIPFOUNDRY does the same for [TIPFONT](iup_tip.md) and TITLEFOUNDRYid for the [IupTree](../elem/iup_tree.md) TITLEFONTid.
 
 ### Encoding
 
