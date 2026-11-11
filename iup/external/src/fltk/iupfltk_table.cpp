@@ -265,7 +265,8 @@ public:
   int is_virtual;
   int has_dummy_col;
   int auto_widths_done;
-  int auto_widths_rows;
+  int auto_widths_pending;
+  int resize_col;
   int sort_column;
   int sort_ascending;
   int drag_source_col;
@@ -284,7 +285,7 @@ public:
   IupFltkTable(int X, int Y, int W, int H, Ihandle* ih)
     : Fl_Table_Row(X, Y, W, H), iup_handle(ih),
       focus_lin(0), focus_col(0), show_grid(1), is_virtual(0), has_dummy_col(0), auto_widths_done(0),
-      auto_widths_rows(0),
+      auto_widths_pending(0), resize_col(-1),
       sort_column(0), sort_ascending(1),
       drag_source_col(-1), drag_target_col(-1), drag_start_x(0), drag_start_y(0), dragging(0),
       drag_source_row(-1), drag_target_row(-1), row_dragging(0), click_ignored(0), fit_pending(0), font_h(0),
@@ -622,6 +623,21 @@ protected:
 
   int handle(int event) override
   {
+    if (event == FL_PUSH)
+    {
+      int R, C;
+      ResizeFlag resizeflag;
+      cursor2rowcol(R, C, resizeflag);
+      if (resizeflag & RESIZE_COL_LEFT)
+        resize_col = C - 1;
+      else if (resizeflag & RESIZE_COL_RIGHT)
+        resize_col = C;
+      else
+        resize_col = -1;
+    }
+    else if (event == FL_DRAG && is_interactive_resize() && resize_col >= 0 && resize_col < iup_handle->data->num_col)
+      iupAttribSetId(iup_handle, "_IUPFLTK_EXPLICITWIDTH", resize_col + 1, "1");
+
     switch (event)
     {
       case FL_DND_ENTER: case FL_DND_DRAG: case FL_DND_LEAVE: case FL_DND_RELEASE: case FL_PASTE:
@@ -1077,9 +1093,19 @@ static void fltkTableDeferredAutoWidths(void* data)
   IupFltkTable* table = fltkTableGetWidget(ih);
   if (!table) return;
 
+  table->auto_widths_pending = 0;
   table->auto_widths_done = 0;
   fltkTableLayoutUpdateMethod(ih);
   table->redraw();
+}
+
+static void fltkTableQueueAutoWidths(Ihandle* ih, IupFltkTable* table)
+{
+  if (table->auto_widths_done && !table->auto_widths_pending)
+  {
+    table->auto_widths_pending = 1;
+    Fl::add_timeout(0.01, fltkTableDeferredAutoWidths, reinterpret_cast<void*>(ih));
+  }
 }
 
 static void fltkTableSortRows(Ihandle* ih, int col, int ascending)
@@ -1666,6 +1692,10 @@ static void fltkTableUnMapMethod(Ihandle* ih)
   if (table)
     table->iup_handle = nullptr;
 
+  Fl::remove_timeout(fltkTableDeferredAutoWidths, reinterpret_cast<void*>(ih));
+  Fl::remove_timeout(fltkTableDeferredEdit, reinterpret_cast<void*>(ih));
+  Fl::remove_timeout(IupFltkTable::deferredFitRows, reinterpret_cast<void*>(ih));
+
   iupdrvBaseUnMapMethod(ih);
 }
 
@@ -1770,12 +1800,8 @@ extern "C" IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
     fltkTableFollowLins(table, num_lin, num_lin, 0);
     table->redraw();
 
-    /* the cells are filled after this returns, so measure the columns later */
-    if (num_lin > 0 && table->auto_widths_done && !table->auto_widths_rows)
-    {
-      table->auto_widths_rows = 1;
-      Fl::add_timeout(0.01, fltkTableDeferredAutoWidths, reinterpret_cast<void*>(ih));
-    }
+    if (num_lin > 0)
+      fltkTableQueueAutoWidths(ih, table);
   }
 }
 
@@ -1904,6 +1930,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int co
     return;
 
   table->cells[r][c] = value ? value : "";
+  fltkTableQueueAutoWidths(ih, table);
   table->redraw();
 }
 
@@ -1951,6 +1978,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int co
   if (image && !ih->data->fit_image && lin >= 1 && lin <= table->rows())
     table->fitRowToImages(lin - 1);
 
+  fltkTableQueueAutoWidths(ih, table);
   table->redraw();
 }
 
@@ -1965,6 +1993,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const c
     return;
 
   table->col_titles[c] = title ? title : "";
+  fltkTableQueueAutoWidths(ih, table);
   table->redraw();
 }
 
