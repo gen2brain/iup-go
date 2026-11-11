@@ -101,7 +101,9 @@ public:
   IupQtScrollBar(Qt::Orientation orientation, Ihandle* ih)
     : QScrollBar(orientation), iup_handle(ih)
   {
-    setStyle(new IupQtScrollBarStyle());
+    IupQtScrollBarStyle* sb_style = new IupQtScrollBarStyle();
+    sb_style->setParent(this);
+    setStyle(sb_style);
     setRange(0, ISCROLLBAR_RANGE);
     setTracking(true);
 
