@@ -296,64 +296,6 @@ IUP_SDK_API char* iupKeyCodeToName(int code)
   return (char*)base_name;
 }
 
-static void iKeyCallFunc(void (*func)(const char* name, int code, void* user_data), void* user_data, const char* name, int code, unsigned char mod)
-{
-  char mod_name[30];
-
-  func(name, code, user_data);
-
-  if (mod==0)
-  {
-    iKeyMakeXName(mod_name, "K_s", name);
-    func(mod_name, iup_XkeyShift(code), user_data);
-  }
-
-  if (mod!=1)
-  {
-    iKeyMakeXName(mod_name, "K_c", name);
-    func(mod_name, iup_XkeyCtrl(code), user_data);
-
-    iKeyMakeXName(mod_name, "K_m", name);
-    func(mod_name, iup_XkeyAlt(code), user_data);
-
-    iKeyMakeXName(mod_name, "K_y", name);
-    func(mod_name, iup_XkeySys(code), user_data);
-  }
-}
-
-IUP_SDK_API void iupKeyForEach(void(*func)(const char* name, int code, void* user_data), void* user_data)
-{
-  /* Used only by the IupLua binding. */
-  int code, map;
-
-  iKeyCallFunc(func, user_data, "K_BS", K_BS, 0);
-  iKeyCallFunc(func, user_data, "K_TAB", K_TAB, 0);
-  iKeyCallFunc(func, user_data, "K_CR", K_CR, 0);
-
-  for (code=32; code <= 126; code++)
-    iKeyCallFunc(func, user_data, ikey_map_ascii[code-32].name, code, ikey_map_ascii[code-32].mod);
-
-  for (map=0; map < 256; map++)
-  {
-    if (ikey_map_ext[map])
-    {
-      unsigned char mod = 0;
-
-      if (((0xFF00|map) >= K_LSHIFT && (0xFF00|map) <= K_RALT) ||
-           (0xFF00|map) == K_NUM || (0xFF00|map) == K_SCROLL)
-        mod=1;  /* NO shift,ctrl,alt,sys */
-
-      iKeyCallFunc(func, user_data, ikey_map_ext[map], 0xFF00|map, mod);
-    }
-  }
-
-  iKeyCallFunc(func, user_data, "K_ccedilla", K_ccedilla, 1);  /* NO modifiers */
-  iKeyCallFunc(func, user_data, "K_Ccedilla", K_Ccedilla, 2);  /* NO shift */
-
-  iKeyCallFunc(func, user_data, "K_acute", K_acute, 1);
-  iKeyCallFunc(func, user_data, "K_diaeresis", K_diaeresis, 1);
-}
-
 IUP_SDK_API int iupKeyCallKeyCb(Ihandle* ih, int code)
 {
   char* name = iupKeyCodeToName(code);

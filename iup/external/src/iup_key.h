@@ -22,11 +22,6 @@ extern "C" {
  * \ingroup key */
 IUP_SDK_API char* iupKeyCodeToName(int code);
 
-/** Calls a function for each defined key. \n
- * Used only by the IupLua binding.
- * \ingroup key */
-IUP_SDK_API void iupKeyForEach(void(*func)(const char* name, int code, void* user_data), void* user_data);
-
 /** Calls the K_ANY or K_* callbacks. Should be called when a keyboard event occurred.
  * \ingroup key */
 IUP_SDK_API int iupKeyCallKeyCb(Ihandle* ih, int c);

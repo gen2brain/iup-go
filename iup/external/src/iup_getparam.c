@@ -1456,19 +1456,6 @@ static const char* iParamStrGetType(const char* format)
   return type;
 }
 
-/* Used in IupLua */
-IUP_SDK_API char iupGetParamType(const char* format, int* line_size)
-{
-  const char* type = iParamStrGetType(format);
-  const char* line_end = strchr(format, '\n');
-  if (line_end)
-    *line_size = (int)(line_end-format) + 1;  /* include line separator */
-  if (type)
-    return *(type+1);  /* skip separator */
-  else
-    return 0;
-}
-
 static char* iParamStrGetTitle(char* line_ptr, int count)
 {
   int i, n;
@@ -1651,8 +1638,7 @@ static int iParamCreateMethod(Ihandle* param, void** params)
   return IUP_NOERROR;
 }
 
-/* Used in IupLua also */
-IUP_SDK_API int iupGetParamCount(const char* format, int* param_extra)
+static int iParamGetCount(const char* format, int* param_extra)
 {
   int param_count = 0, extra = 0;
   const char* s = format;
@@ -1833,7 +1819,7 @@ IUP_API int IupGetParamV(const char* title, Iparamcb action, void* user_data, co
   int param_count, param_extra, i, ret;
   void** param_data;
 
-  param_count = iupGetParamCount(format, &param_extra);
+  param_count = iParamGetCount(format, &param_extra);
 
   param_data = malloc(param_count*sizeof(void*));
   if (!param_data) return 0;
