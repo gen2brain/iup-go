@@ -195,7 +195,7 @@ static int attributesList_ActionCB (Ihandle* ih, char* attribName, int pos, int 
                                          "%s",
                                          attribName,
                                          def_value==NULL? "NULL": def_value,
-                                         flags&(IUPAF_NO_INHERIT|IUPAF_NO_STRING)? "  Is Inheritable\n": "  NON Inheritable\n",
+                                         flags&(IUPAF_NO_INHERIT|IUPAF_NO_STRING)? "  NON Inheritable\n": "  Is Inheritable\n",
                                          flags&IUPAF_NO_STRING? "  NOT a String\n": "",
                                          flags&IUPAF_HAS_ID? "  Has ID\n": "",
                                          flags&IUPAF_READONLY? "  Read-Only\n": (flags&IUPAF_WRITEONLY? "  Write-Only\n": ""),
