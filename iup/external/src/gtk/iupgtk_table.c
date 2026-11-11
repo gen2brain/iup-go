@@ -1386,7 +1386,11 @@ static gboolean gtkTableDrawFocusRect(GtkWidget* widget, GdkEventExpose* event, 
   gtk_tree_view_get_cursor(GTK_TREE_VIEW(gtk_data->tree_view), &path, &column);
 
   if (!path || !column)
+  {
+    if (path)
+      gtk_tree_path_free(path);
     return FALSE;
+  }
 
   GtkTreeViewColumn* dummy_column = (GtkTreeViewColumn*)iupAttribGet(ih, "_IUPGTK_DUMMY_COLUMN");
   if (dummy_column && column == dummy_column)
