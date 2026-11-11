@@ -981,6 +981,33 @@ extern "C" IUP_SDK_API void iupdrvDrawSetClipPath(IdrawCanvas* dc, const IupPath
   delete shape;
 }
 
+static int haikuDrawFitWidth(BView* view, const char* text, int len, float width)
+{
+  int n = len;
+  while (n > 0)
+  {
+    n--;
+    while (n > 0 && (static_cast<unsigned char>(text[n]) & 0xC0) == 0x80)
+      n--;
+    if (view->StringWidth(text, n) <= width)
+      break;
+  }
+
+  int k = n;
+  while (k > 0 && text[k] != ' ')
+    k--;
+  if (k > 0)
+    n = k;
+
+  if (n == 0)
+  {
+    n = 1;
+    while (n < len && (static_cast<unsigned char>(text[n]) & 0xC0) == 0x80)
+      n++;
+  }
+  return n;
+}
+
 extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, int len, int x, int y, int w, int h, long color, const char* font, int flags, double text_orientation)
 {
   if (!dc || !dc->view || !text) return;
@@ -1028,6 +1055,13 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
     while (nl < end && *nl != '\n') ++nl;
     int line_len = static_cast<int>(nl - line);
 
+    if ((flags & IUP_DRAW_WRAP) && w > 0 && line_len > 0 && dc->view->StringWidth(line, line_len) > static_cast<float>(w))
+    {
+      int take = haikuDrawFitWidth(dc->view, line, line_len, static_cast<float>(w));
+      nl = line + take;
+      line_len = take;
+    }
+
     const char* draw_text = line;
     int draw_len = line_len;
     BString truncated;
@@ -1053,7 +1087,13 @@ extern "C" IUP_SDK_API void iupdrvDrawText(IdrawCanvas* dc, const char* text, in
     dc->view->DrawString(draw_text, draw_len, BPoint(static_cast<float>(line_x), static_cast<float>(line_y) + fh.ascent));
 
     if (nl >= end) break;
-    line = nl + 1;
+    if (*nl == '\n')
+      line = nl + 1;
+    else
+    {
+      line = nl;
+      while (line < end && *line == ' ') ++line;
+    }
     line_y += line_h;
   }
 
