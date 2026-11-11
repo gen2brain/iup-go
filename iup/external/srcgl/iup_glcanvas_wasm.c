@@ -130,7 +130,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     attrs.alpha = (iupAttribGetInt(ih, "ALPHA_SIZE") > 0) ? EM_TRUE : EM_FALSE;
     attrs.depth = (iupAttribGetInt(ih, "DEPTH_SIZE") != 0) ? EM_TRUE : EM_FALSE;
     attrs.stencil = (iupAttribGetInt(ih, "STENCIL_SIZE") > 0) ? EM_TRUE : EM_FALSE;
-    attrs.antialias = iupAttribGetBoolean(ih, "ANTIALIAS") ? EM_TRUE : EM_FALSE;
+    attrs.antialias = (iupAttribGetInt(ih, "SAMPLES") > 0) ? EM_TRUE : EM_FALSE;
     attrs.preserveDrawingBuffer = iupStrEqualNoCase(iupAttribGetStr(ih, "BUFFER"), "SINGLE") ? EM_TRUE : EM_FALSE;
     attrs.majorVersion = 2;
     attrs.minorVersion = 0;

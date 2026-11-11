@@ -89,6 +89,11 @@ The system default is usually 8 for each component (True Color support).
 **REFRESHCONTEXT** [Windows Only] (write-only): action attribute to refresh the internal device context when it is not owned by the window class.
 The **IupCanvas** of the Win32 driver will always create a window with an owned DC, but GTK in Windows will not.
 
+**SAMPLES**: Number of samples per pixel for multisample antialiasing. Default: 0 (no multisampling).
+If the requested number is not available, the canvas is created without multisampling.
+In WebAssembly, any value greater than 0 enables the browser antialiasing.
+Not supported in Haiku.
+
 **STENCIL_SIZE**: Indicates the number of bits in the stencil buffer.
 Value 0 means the stencil buffer is not necessary. Default: "0".
 

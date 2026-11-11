@@ -569,6 +569,15 @@ static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata, int visual
     iupAttribSet(ih, "STEREO", "NO");
   }
 
+  number = iupAttribGetInt(ih, "SAMPLES");
+  if (number > 0)
+  {
+    alist[n++] = EGL_SAMPLE_BUFFERS;
+    alist[n++] = 1;
+    alist[n++] = EGL_SAMPLES;
+    alist[n++] = number;
+  }
+
   alist[n++] = EGL_NONE;
 
   if (!eglChooseConfig(gldata->display, alist, &gldata->config, 1, &num_config) || num_config == 0)
