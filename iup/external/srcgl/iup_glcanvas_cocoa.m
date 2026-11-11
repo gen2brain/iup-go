@@ -267,7 +267,6 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
   NSOpenGLPixelFormatAttribute attrs[50];
   int n = 0;
   int number;
-  BOOL force_software = NO;
 
   char* profile_attr = iupAttribGetStr(ih, "CONTEXTPROFILE");
   char* version_attr = iupAttribGetStr(ih, "CONTEXTVERSION");
@@ -299,16 +298,6 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
   else if (major > 3 || (major == 3 && minor >= 2))
   {
     request_core = YES;
-  }
-
-
-  const char* env_force_software = getenv("IUP_GL_FORCE_SOFTWARE");
-  if (env_force_software && (env_force_software[0] == '1' || iupStrEqualNoCase(env_force_software, "YES") || iupStrEqualNoCase(env_force_software, "TRUE"))) {
-    force_software = YES;
-  }
-
-  if (force_software) {
-    return cocoaGLCreatePixelFormatSoftware(ih);
   }
 
   attrs[n++] = NSOpenGLPFAOpenGLProfile;
