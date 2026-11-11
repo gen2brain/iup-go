@@ -24,6 +24,7 @@
 #include "iup_dlglist.h"
 #include "iup_assert.h"
 #include "iup_strmessage.h"
+#include "iup_singleinstance.h"
 
 
 static int iup_opened = 0;
@@ -112,6 +113,7 @@ IUP_API void IupClose(void)
 
   iupdrvSetIdleFunction(NULL);  /* stop any idle */
   IupSetGlobal("KEEPAWAKE", "NO");
+  iupdrvSingleInstanceClose();
 
   iupDlgListDestroyAll();    /* destroy all dialogs and their children */
   iupNamesDestroyHandles();  /* destroy everything that do not belong to a dialog */
