@@ -422,12 +422,26 @@ extern "C" IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, 
 
     if (dw > 0 || dh > 0)
     {
-      iupAttribSetInt(ih, "_IUPFLTK_DECOR_BORDER", dw / 2);
-      iupAttribSetInt(ih, "_IUPFLTK_DECOR_CAPTION", dh - dw > 0 ? dh - dw : 0);
+      int new_border = dw / 2;
+      int new_caption = dh - dw > 0 ? dh - dw : 0;
+      int old_border = iupAttribGet(ih, "_IUPFLTK_DECOR_BORDER") ? iupAttribGetInt(ih, "_IUPFLTK_DECOR_BORDER") : est_border;
+      int old_caption = iupAttribGet(ih, "_IUPFLTK_DECOR_CAPTION") ? iupAttribGetInt(ih, "_IUPFLTK_DECOR_CAPTION") : est_caption;
+
+      /* keep the client size when the measured frame replaces the one the current size was computed with */
+      if (ih->currentwidth > 0 && ih->currentheight > 0)
+      {
+        int border_delta = has_border ? new_border - old_border : 0;
+        int caption_delta = has_titlebar ? new_caption - old_caption : 0;
+        ih->currentwidth += 2 * border_delta;
+        ih->currentheight += 2 * border_delta + caption_delta;
+      }
+
+      iupAttribSetInt(ih, "_IUPFLTK_DECOR_BORDER", new_border);
+      iupAttribSetInt(ih, "_IUPFLTK_DECOR_CAPTION", new_caption);
       if (has_border && has_titlebar && !dialog->maximize_active())
       {
-        fltk_last_border = dw / 2;
-        fltk_last_caption = dh - dw > 0 ? dh - dw : 0;
+        fltk_last_border = new_border;
+        fltk_last_caption = new_caption;
       }
     }
   }
