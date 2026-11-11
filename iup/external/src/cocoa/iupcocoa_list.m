@@ -37,6 +37,24 @@ static const CGFloat kIupCocoaDefaultHeightNSPopUpButton = 26.0;
 static const CGFloat kIupCocoaDefaultWidthNSComboBox = 100.0;
 static const CGFloat kIupCocoaDefaultHeightNSComboBox = 26.0;
 static const CGFloat kIupCocoaMinColumnWidth = 50.0;
+#define IUPCOCOA_LIST_EDITBOX_SPACING 3
+
+static CGFloat cocoaListGetRowHeight(Ihandle* ih)
+{
+  int char_height, item_space = 0;
+  CGFloat row_height;
+
+  iupdrvFontGetCharSize(ih, NULL, &char_height);
+  row_height = (CGFloat)char_height;
+
+  iupdrvListAddItemSpace(ih, &item_space);
+  row_height += (CGFloat)item_space;
+
+  if (ih->data && ih->data->spacing > 0)
+    row_height += (CGFloat)(ih->data->spacing * 2);
+
+  return row_height;
+}
 static const CGFloat kIupCocoaListDefaultPadding = 0.0;
 
 static const void* IUP_COCOA_LIST_POPUPBUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_LIST_POPUPBUTTON_RECEIVER_OBJ_KEY";
@@ -380,6 +398,21 @@ static void cocoaListUpdateColumnWidth(Ihandle* ih)
 
     [column setWidth:required_width];
     [table_view sizeToFit];
+
+#ifdef GNUSTEP
+    if (!ih->data->is_virtual)
+    {
+      /* GNUstep ignores tableView:heightOfRow:, all rows use rowHeight */
+      CGFloat row_height = cocoaListGetRowHeight(ih);
+      if (ih->data->show_image && ih->data->maximg_h > 0)
+      {
+        CGFloat image_height = (CGFloat)ih->data->maximg_h + ((ih->data->spacing > 0) ? (CGFloat)(ih->data->spacing * 2) : 0);
+        if (image_height > row_height)
+          row_height = image_height;
+      }
+      [table_view setRowHeight:row_height];
+    }
+#endif
     [table_view setNeedsDisplay:YES];
   }
 }
@@ -1587,22 +1620,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(table_view, IHANDLE_ASSOCIATED_OBJ_KEY);
 
-  CGFloat row_height;
-
-  int char_width, char_height;
-  if (ih)
-    iupdrvFontGetCharSize(ih, &char_width, &char_height);
-  else
-    char_height = 16;
-
-  row_height = (CGFloat)char_height;
-
-  int item_space = 0;
-  iupdrvListAddItemSpace(ih, &item_space);
-  row_height += (CGFloat)item_space;
-
-  if (ih && ih->data && ih->data->spacing > 0)
-    row_height += (CGFloat)(ih->data->spacing * 2);
+  CGFloat row_height = ih ? cocoaListGetRowHeight(ih) : 18;
 
   if (ih && ih->data && ih->data->show_image)
   {
@@ -2360,7 +2378,11 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* x, int* y)
             *y += text_height;
           }
 
-          *y += 2*3;
+#ifdef GNUSTEP
+          *y += IUPCOCOA_LIST_EDITBOX_SPACING;
+#else
+          *y += 2 * IUPCOCOA_LIST_EDITBOX_SPACING;
+#endif
         }
 
         break;
@@ -3917,12 +3939,12 @@ static int cocoaListMapMethod(Ihandle* ih)
       {
 #ifdef GNUSTEP
         IupCocoaListEditBoxContainer* stack_view = [[IupCocoaListEditBoxContainer alloc] initWithFrame:NSZeroRect];
-        [stack_view setStackSpacing:3];
+        [stack_view setStackSpacing:IUPCOCOA_LIST_EDITBOX_SPACING];
 #else
         NSStackView* stack_view = [[NSStackView alloc] initWithFrame:NSZeroRect];
         [stack_view setOrientation:NSUserInterfaceLayoutOrientationVertical];
         [stack_view setAlignment:NSLayoutAttributeLeading];
-        [stack_view setSpacing:3];
+        [stack_view setSpacing:IUPCOCOA_LIST_EDITBOX_SPACING];
         [stack_view setDistribution:NSStackViewDistributionFill];
 #endif
 
@@ -3947,10 +3969,13 @@ static int cocoaListMapMethod(Ihandle* ih)
 
         [table_view setHeaderView:nil];
         [table_view setAllowsMultipleSelection:NO];
+        [table_view setIntercellSpacing:NSMakeSize(0, 0)];
 #ifdef GNUSTEP
         iupcocoaGnustepConfigureTableView(table_view);
 #endif
         [table_view setColumnAutoresizingStyle:NSTableViewUniformColumnAutoresizingStyle];
+        [table_view setAutoresizesSubviews:YES];
+        [table_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
         IupCocoaListTableViewReceiver* list_receiver = [[IupCocoaListTableViewReceiver alloc] init];
         objc_setAssociatedObject(table_view, IUP_COCOA_LIST_TABLEVIEW_RECEIVER_OBJ_KEY, (id)list_receiver, OBJC_ASSOCIATION_RETAIN);
@@ -3963,6 +3988,8 @@ static int cocoaListMapMethod(Ihandle* ih)
 
         [scroll_view setDocumentView:table_view];
         [table_view release];
+        [scroll_view setAutoresizesSubviews:YES];
+        [[scroll_view contentView] setAutoresizesSubviews:YES];
 
         BOOL autohide = iupAttribGetBoolean(ih, "AUTOHIDE");
         if (ih->data->sb)
