@@ -548,12 +548,8 @@ IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
       gtk_widget_destroy(temp_window);
 
       temp_window = gtk_offscreen_window_new();
-#if GTK_CHECK_VERSION(2, 24, 0)
       GtkWidget* temp_combo_entry = gtk_combo_box_new_with_model_and_entry(GTK_TREE_MODEL(temp_store));
       gtk_combo_box_set_entry_text_column((GtkComboBox*)temp_combo_entry, 0);
-#else
-      GtkWidget* temp_combo_entry = gtk_combo_box_entry_new_with_model(GTK_TREE_MODEL(temp_store), 0);
-#endif
 
       {
         GtkWidget* temp_entry = gtk_bin_get_child(GTK_BIN(temp_combo_entry));
@@ -832,13 +828,11 @@ static int gtkListSetBgColorAttrib(Ihandle* ih, const char* value)
 
       iupgtkSetBgColor((GtkWidget*)scrolled_window, r, g, b);
 
-#if GTK_CHECK_VERSION(2, 8, 0)
       sb = gtk_scrolled_window_get_hscrollbar(scrolled_window);
       if (sb) iupgtkSetBgColor(sb, r, g, b);
 
       sb = gtk_scrolled_window_get_vscrollbar(scrolled_window);
       if (sb) iupgtkSetBgColor(sb, r, g, b);
-#endif
     }
   }
 
@@ -1123,12 +1117,10 @@ static int gtkListSetPaddingAttrib(Ihandle* ih, const char* value)
 #if GTK_CHECK_VERSION(3, 4, 0)
     iupgtkSetMargin(GTK_WIDGET(entry), ih->data->horiz_padding, ih->data->vert_padding, 0);
 #else
-#if GTK_CHECK_VERSION(2, 10, 0)
     GtkBorder border;
     border.bottom = border.top = (gint16)ih->data->vert_padding;
     border.left = border.right = (gint16)ih->data->horiz_padding;
     gtk_entry_set_inner_border(entry, &border);
-#endif
 #endif
     return 0;
   }
@@ -1659,11 +1651,7 @@ static gboolean gtkListDragMotion(GtkWidget* widget, GdkDragContext* context, gi
     gtk_tree_view_set_drag_dest_row(GTK_TREE_VIEW(widget), path, pos);
     gtk_tree_path_free(path);
 
-#if GTK_CHECK_VERSION(2, 22, 0)
     gdk_drag_status(context, gdk_drag_context_get_suggested_action(context), time);
-#else
-    gdk_drag_status(context, context->suggested_action, time);
-#endif
     return TRUE;
   }
 
@@ -2098,12 +2086,8 @@ static int gtkListMapMethod(Ihandle* ih)
   {
     if (ih->data->has_editbox)
     {
-#if GTK_CHECK_VERSION(2, 24, 0)
       ih->handle = gtk_combo_box_new_with_model_and_entry(GTK_TREE_MODEL(store));
       gtk_combo_box_set_entry_text_column ((GtkComboBox*)ih->handle, IUPGTK_LIST_TEXT);
-#else
-      ih->handle = gtk_combo_box_entry_new_with_model(GTK_TREE_MODEL(store), IUPGTK_LIST_TEXT);
-#endif
     }
     else
       ih->handle = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
@@ -2126,11 +2110,9 @@ static int gtkListMapMethod(Ihandle* ih)
     if (ih->data->has_editbox)
     {
       GtkWidget* entry;
-#if GTK_CHECK_VERSION(2, 12, 0)
       GList* list = gtk_cell_layout_get_cells(GTK_CELL_LAYOUT(ih->handle));
       renderer = list->data;
       g_list_free(list);
-#endif
       entry = gtk_bin_get_child(GTK_BIN(ih->handle));
       gtk_entry_set_width_chars(GTK_ENTRY(entry), 1);
       iupAttribSet(ih, "_IUPGTK_ENTRY", (char*)entry);
@@ -2223,12 +2205,7 @@ static int gtkListMapMethod(Ihandle* ih)
 
     if (renderer)
     {
-#if GTK_CHECK_VERSION(2, 18, 0)
       gtk_cell_renderer_set_padding(renderer, 0, 0);
-#else
-      renderer->xpad = 0;
-      renderer->ypad = 0;
-#endif
       iupAttribSet(ih, "_IUPGTK_RENDERER", (char*)renderer);
     }
   }
@@ -2413,9 +2390,7 @@ static int gtkListMapMethod(Ihandle* ih)
     if (!ih->data->has_editbox && ih->data->is_multiple)
     {
       gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
-  #if GTK_CHECK_VERSION(2, 10, 0)
       gtk_tree_view_set_rubber_banding(GTK_TREE_VIEW(ih->handle), TRUE);
-  #endif
     }
     else
       gtk_tree_selection_set_mode(selection, GTK_SELECTION_BROWSE);

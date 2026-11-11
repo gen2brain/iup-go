@@ -278,11 +278,7 @@ static void gtkMenuItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
     g_object_ref(child);
     gtk_container_remove(GTK_CONTAINER(ih->handle), child);
 
-#if GTK_CHECK_VERSION(3, 0, 0)
     box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
-#else
-    box = gtk_hbox_new(FALSE, 6);
-#endif
     image = iupgtkImageNewFromPixbuf(pixbuf);
 
     gtk_box_pack_start(GTK_BOX(box), image, FALSE, FALSE, 0);
@@ -297,19 +293,11 @@ static void gtkMenuItemSetImageWidget(Ihandle* ih, GdkPixbuf* pixbuf)
 static GtkWidget* gtkMenuItemNewWithImageBox(void)
 {
   GtkWidget* menu_item = gtk_menu_item_new();
-#if GTK_CHECK_VERSION(3, 0, 0)
   GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
-#else
-  GtkWidget* box = gtk_hbox_new(FALSE, 6);
-#endif
   GtkWidget* label = gtk_label_new("");
 
   gtk_label_set_use_underline(GTK_LABEL(label), TRUE);
-#if GTK_CHECK_VERSION(3, 16, 0)
   gtk_label_set_xalign(GTK_LABEL(label), 0.0);
-#else
-  gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
-#endif
 
   gtk_box_pack_end(GTK_BOX(box), label, TRUE, TRUE, 0);
   gtk_container_add(GTK_CONTAINER(menu_item), box);
@@ -807,14 +795,12 @@ static int gtkMenuItemMapMethod(Ihandle* ih)
     else
     {
       char* hidemark = iupAttribGetStr(ih, "HIDEMARK");
-#if GTK_CHECK_VERSION(2, 14, 0)
       if (!hidemark)
       {
         /* change HIDEMARK default if VALUE is not defined, after GTK 2.14 */
         if (!iupAttribGet(ih, "VALUE"))
           hidemark = "YES";
       }
-#endif
 
       if (iupStrBoolean(hidemark))
         ih->handle = gtk_menu_item_new_with_label("");

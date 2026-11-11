@@ -136,9 +136,7 @@ static gboolean gtkGetFilenameCharset(const gchar** filename_charset)
   const gchar** charsets = NULL;
   gboolean is_utf8 = FALSE;
 
-#if GTK_CHECK_VERSION(2, 6, 0)
   is_utf8 = g_get_filename_charsets(&charsets);
-#endif
 
   if (filename_charset && charsets)
     *filename_charset = charsets[0];

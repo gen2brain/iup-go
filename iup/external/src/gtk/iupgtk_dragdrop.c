@@ -35,23 +35,12 @@ static void gtkDragDataReceived(GtkWidget* widget, GdkDragContext* drag_context,
   int size, format;
   GdkDragAction action;
 
-#if GTK_CHECK_VERSION(2, 22, 0)
   action = gdk_drag_context_get_selected_action(drag_context);
-#else
-  action = drag_context->action;
-#endif
 
-#if GTK_CHECK_VERSION(2, 14, 0)
   type = gdk_atom_name(gtk_selection_data_get_target(seldata));
   targetData = (void*)gtk_selection_data_get_data(seldata);
   size = gtk_selection_data_get_length(seldata);
   format = gtk_selection_data_get_format(seldata);
-#else
-  type = gdk_atom_name(seldata->type);
-  targetData = (void*)seldata->data;
-  size = seldata->length;
-  format = seldata->format;
-#endif
 
   if(size <= 0 || format != 8 ||
     (action != GDK_ACTION_MOVE && action != GDK_ACTION_COPY))
@@ -83,17 +72,9 @@ static void gtkDragDataGet(GtkWidget* widget, GdkDragContext* drag_context, GtkS
     int size;
     GdkDragAction action;
 
-#if GTK_CHECK_VERSION(2, 22, 0)
     action = gdk_drag_context_get_selected_action(drag_context);
-#else
-    action = drag_context->action;
-#endif
 
-#if GTK_CHECK_VERSION(2, 14, 0)
     type = gdk_atom_name(gtk_selection_data_get_target(seldata));
-#else
-    type = seldata->type;
-#endif
     if (action != GDK_ACTION_MOVE && action != GDK_ACTION_COPY)
     {
       g_free(type);
@@ -149,13 +130,8 @@ static gboolean gtkDragMotion(GtkWidget* widget, GdkDragContext* drag_context, g
       cbDropMotion(ih, x, y, status);
     }
 
-#if GTK_CHECK_VERSION(2, 22, 0)
     action = gdk_drag_context_get_suggested_action(drag_context);
     actions = gdk_drag_context_get_actions(drag_context);
-#else
-    action = drag_context->suggested_action;
-    actions = drag_context->actions;
-#endif
 
     if (gtk_drag_source_move && !(mask & GDK_CONTROL_MASK) && (actions & GDK_ACTION_MOVE))
       action = GDK_ACTION_MOVE;
@@ -182,11 +158,7 @@ static void gtkDragEnd(GtkWidget* widget, GdkDragContext* drag_context, Ihandle*
     GdkDragAction action;
     int remove = -1;
 
-#if GTK_CHECK_VERSION(2, 22, 0)
     action = gdk_drag_context_get_selected_action(drag_context);
-#else
-    action = drag_context->action;
-#endif
 
     if (action == GDK_ACTION_MOVE)
       remove = 1;
@@ -418,14 +390,8 @@ static void gtkDropFileDragDataReceived(GtkWidget* w, GdkDragContext* context, i
   }
   if (!cb) return;
 
-#if GTK_CHECK_VERSION(2, 6, 0)
-#if GTK_CHECK_VERSION(2, 14, 0)
   data = (char*)gtk_selection_data_get_data(seldata);
-#else
-  data = (char*)seldata->data;
-#endif
   uris = g_uri_list_extract_uris(data);
-#endif
 
   if (!uris)
     return;

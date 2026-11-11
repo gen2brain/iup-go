@@ -428,11 +428,7 @@ public:
   QSize sizeHint() const override
   {
     QFontMetrics fm(font());
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     int charWidth = fm.horizontalAdvance('X');
-#else
-    int charWidth = fm.width('X');
-#endif
     int charHeight = fm.height();
 
     int w = charWidth * 10;
@@ -444,11 +440,7 @@ public:
   QSize minimumSizeHint() const override
   {
     QFontMetrics fm(font());
-#if QT_VERSION >= QT_VERSION_CHECK(5, 11, 0)
     int charWidth = fm.horizontalAdvance('X');
-#else
-    int charWidth = fm.width('X');
-#endif
     int charHeight = fm.height();
 
     return {charWidth * 5, charHeight * 2};

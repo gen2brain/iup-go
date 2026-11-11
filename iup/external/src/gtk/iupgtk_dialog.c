@@ -1033,10 +1033,8 @@ static void gtkDialogUnMapMethod(Ihandle* ih)
       g_signal_handler_disconnect(G_OBJECT(settings), handler_id);
   }
 
-#if GLIB_CHECK_VERSION(2, 32, 0)
   /* disconnect signal handlers */
   g_signal_handlers_disconnect_by_data(G_OBJECT(ih->handle), ih);
-#endif
   parent = iupDialogGetNativeParent(ih);
   if (parent)
     g_signal_handlers_disconnect_by_func(G_OBJECT(parent), gtkDialogChildDestroyEvent, ih);
@@ -1352,7 +1350,6 @@ static int gtkDialogSetTaskBarButtonAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-#if GTK_CHECK_VERSION(2, 12, 0)
 static int gtkDialogSetOpacityAttrib(Ihandle* ih, const char* value)
 {
   int opacity;
@@ -1443,18 +1440,7 @@ static int gtkDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
     {
       cairo_region_t* shape;
 
-#if GTK_CHECK_VERSION(3, 10, 0)
       cairo_surface_t* surface = gdk_cairo_surface_create_from_pixbuf(pixbuf, 0, window);
-#else
-      int width = gdk_pixbuf_get_width(pixbuf);
-      int height = gdk_pixbuf_get_height(pixbuf);
-      cairo_surface_t* surface = gdk_window_create_similar_surface(window, CAIRO_CONTENT_COLOR_ALPHA, width, height);
-      cairo_t* cr = cairo_create(surface);
-      gdk_cairo_set_source_pixbuf(cr, pixbuf, 0, 0);
-      cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-      cairo_paint(cr);
-      cairo_destroy(cr);
-#endif
 
       shape = gdk_cairo_region_create_from_surface(surface);
       cairo_surface_destroy(surface);
@@ -1475,7 +1461,6 @@ static int gtkDialogSetShapeImageAttrib(Ihandle* ih, const char* value)
   }
   return 0;
 }
-#endif
 
 static int gtkDialogSetIconAttrib(Ihandle* ih, const char* value)
 {

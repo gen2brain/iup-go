@@ -164,13 +164,11 @@ static int gtkLabelSetEllipsisAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->type == IUP_LABEL_TEXT)
   {
-#if GTK_CHECK_VERSION(2, 6, 0)
     GtkLabel* label = (GtkLabel*)ih->handle;
     if (iupStrBoolean(value))
       gtk_label_set_ellipsize(label, PANGO_ELLIPSIZE_END);
     else
       gtk_label_set_ellipsize(label, PANGO_ELLIPSIZE_NONE);
-#endif
     return 1;
   }
   return 0;
@@ -301,9 +299,7 @@ static void gtkLabelSetPixbuf(Ihandle* ih, const char* name, int make_inactive)
   }
 
   /* if not defined */
-#if GTK_CHECK_VERSION(2, 8, 0)
   gtk_image_clear(image_label);
-#endif
 }
 
 static int gtkLabelSetImageAttrib(Ihandle* ih, const char* value)

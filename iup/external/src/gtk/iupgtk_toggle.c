@@ -29,15 +29,6 @@
 #include "iupgtk_drv.h"
 
 
-#if !GTK_CHECK_VERSION(2, 6, 0)
-static void gtk_button_set_image(GtkButton* button, GtkWidget* image)
-{
-}
-static GtkWidget* gtk_button_get_image(GtkButton* button)
-{
-  return NULL;
-}
-#endif
 
 #if GTK_CHECK_VERSION(3, 0, 0)
 #define IUP_TOGGLE_BOX 18
@@ -461,9 +452,7 @@ static void gtkToggleSetPixbuf(Ihandle* ih, const char* name, int make_inactive)
   }
 
   /* if not defined */
-#if GTK_CHECK_VERSION(2, 8, 0)
   gtk_image_clear(image);
-#endif
 }
 
 static void gtkToggleUpdateImage(Ihandle* ih, int active, int check)

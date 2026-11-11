@@ -20,24 +20,15 @@
 
 #include "iupgtk_drv.h"
 
-#if GTK_CHECK_VERSION(2, 12, 0)
-#else
-static GtkTooltips* gtk_tips = NULL;    /* old TIPS */
-#endif
 
 static void gtkTooltipSetTitle(Ihandle* ih, GtkWidget* widget, const char* value)
 {
-#if GTK_CHECK_VERSION(2, 12, 0)
   if (iupAttribGetBoolean(ih, "TIPMARKUP"))
     gtk_widget_set_tooltip_markup(widget, iupgtkStrConvertToSystem(value));
   else
     gtk_widget_set_tooltip_text(widget, iupgtkStrConvertToSystem(value));
-#else
-  gtk_tooltips_set_tip(gtk_tips, widget, iupgtkStrConvertToSystem(value), NULL);
-#endif
 }
 
-#if GTK_CHECK_VERSION(2, 12, 0)
 static gboolean gtkQueryTooltip(GtkWidget* widget, gint _x, gint _y, gboolean keyboard_mode, GtkTooltip* tooltip, Ihandle* ih)
 {
   char* value;
@@ -138,7 +129,6 @@ static gboolean gtkQueryTooltip(GtkWidget* widget, gint _x, gint _y, gboolean ke
   (void)widget;
   return FALSE;
 }
-#endif
 
 static GtkWidget* gtkTipGetWidget(Ihandle* ih)
 {
@@ -152,16 +142,11 @@ IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
 {
   GtkWidget* widget = gtkTipGetWidget(ih);
 
-#if GTK_CHECK_VERSION(2, 12, 0)
   if (!iupAttribGet(ih, "_IUPGTK_TIP_CONNECTED"))
   {
     g_signal_connect(widget, "query-tooltip", G_CALLBACK(gtkQueryTooltip), ih);
     iupAttribSet(ih, "_IUPGTK_TIP_CONNECTED", "1");
   }
-#else
-  if (gtk_tips == NULL)
-    gtk_tips = gtk_tooltips_new();
-#endif
 
   gtkTooltipSetTitle(ih, widget, value);
 
@@ -171,7 +156,6 @@ IUP_SDK_API int iupdrvBaseSetTipAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-#if GTK_CHECK_VERSION(2, 12, 0)
 static GtkWidget* gtkTipDefaultWindow(void)
 {
   GtkWidget* found = NULL;
@@ -205,11 +189,9 @@ static int gtkTipPointerInside(Ihandle* ih)
 
   return x >= 0 && y >= 0 && x < ih->currentwidth && y < ih->currentheight;
 }
-#endif
 
 IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
 {
-#if GTK_CHECK_VERSION(2, 12, 0)
   GtkWidget* widget = gtkTipGetWidget(ih);
 
   if (!gtk_widget_get_has_tooltip(widget))
@@ -224,14 +206,12 @@ IUP_SDK_API int iupdrvBaseSetTipVisibleAttrib(Ihandle* ih, const char* value)
     gtk_widget_trigger_tooltip_query(widget);
     gtk_widget_set_has_tooltip(widget, TRUE);
   }
-#endif
 
   return 0;
 }
 
 IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
 {
-#if GTK_CHECK_VERSION(2, 12, 0)
   GtkWindow* tip_window;
   GtkWidget* widget = gtkTipGetWidget(ih);
 
@@ -243,7 +223,4 @@ IUP_SDK_API char* iupdrvBaseGetTipVisibleAttrib(Ihandle* ih)
     return iupStrReturnBoolean(iupgtkIsVisible((GtkWidget*)tip_window));
 
   return iupStrReturnBoolean(gtkTipDefaultWindow() != NULL && gtkTipPointerInside(ih));
-#else
-  return NULL;
-#endif
 }

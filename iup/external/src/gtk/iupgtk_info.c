@@ -22,7 +22,6 @@ IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 #if GTK_CHECK_VERSION(3, 4, 0)
   GdkRectangle geometry, workarea;
   int dx, dy;
-#if GTK_CHECK_VERSION(3, 22, 0)
   GdkDisplay* display = gdk_display_get_default();
   GdkMonitor* monitor = display ? gdk_display_get_primary_monitor(display) : NULL;
 
@@ -33,16 +32,6 @@ IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 
   gdk_monitor_get_geometry(monitor, &geometry);
   gdk_monitor_get_workarea(monitor, &workarea);
-#else
-  GdkScreen* screen = gdk_screen_get_default();
-  gint monitor = gdk_screen_get_primary_monitor(screen);
-
-  if (add == 0)
-    return;
-
-  gdk_screen_get_monitor_geometry(screen, monitor, &geometry);
-  gdk_screen_get_monitor_workarea(screen, monitor, &workarea);
-#endif
   dx = workarea.x - geometry.x;
   dy = workarea.y - geometry.y;
   if (add < 0)
@@ -81,11 +70,7 @@ IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 #else
   GdkScreen* screen = gdk_screen_get_default();
   GdkRectangle rect;
-#if GTK_CHECK_VERSION(2, 20, 0)
   gint monitor = gdk_screen_get_primary_monitor(screen);
-#else
-  gint monitor = gdk_screen_get_monitor_at_point(screen, 0, 0);
-#endif
   gdk_screen_get_monitor_geometry(screen, monitor, &rect);
   *width = rect.width;
   *height = rect.height;
@@ -103,11 +88,7 @@ IUP_SDK_API void iupdrvGetFullSize(int* width, int* height)
   gdk_monitor_get_geometry(monitor, &rect);
 #else
   GdkScreen* screen = gdk_screen_get_default();
-#if GTK_CHECK_VERSION(2, 20, 0)
   gint monitor = gdk_screen_get_primary_monitor(screen);
-#else
-  gint monitor = gdk_screen_get_monitor_at_point(screen, 0, 0);
-#endif
   gdk_screen_get_monitor_geometry(screen, monitor, &rect);
 #endif
   *width = rect.width;
@@ -121,11 +102,7 @@ IUP_SDK_API int iupdrvGetScreenDepth(void)
 #else
   GdkVisual* visual = gdk_visual_get_system();
 #endif
-#if GTK_CHECK_VERSION(2, 22, 0)
   return gdk_visual_get_depth(visual);
-#else
-  return visual->depth;
-#endif
 }
 
 IUP_SDK_API double iupdrvGetScreenDpi(void)

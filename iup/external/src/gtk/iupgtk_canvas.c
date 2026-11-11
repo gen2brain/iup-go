@@ -398,9 +398,7 @@ static gboolean gtkCanvasExposeEvent(GtkWidget* widget, GdkEventExpose* evt, Iha
       double scale_x = 1, scale_y = 1;
       int buf_w, buf_h;
 
-#if GTK_CHECK_VERSION(3, 10, 0)
       cairo_surface_get_device_scale(buffer, &scale_x, &scale_y);
-#endif
       buf_w = iupRound(cairo_image_surface_get_width(buffer) / scale_x);
       buf_h = iupRound(cairo_image_surface_get_height(buffer) / scale_y);
 
@@ -514,11 +512,7 @@ static gboolean gtkCanvasBorderExposeEvent(GtkWidget* widget, GdkEventExpose* ev
   GdkWindow* window = iupgtkGetWindow(widget);
   GtkStyle* style = gtk_widget_get_style(widget);
   GtkAllocation allocation;
-#if GTK_CHECK_VERSION(2, 18, 0)
   gtk_widget_get_allocation(widget, &allocation);
-#else
-  allocation = widget->allocation;
-#endif
   gtk_paint_shadow(style, window, GTK_STATE_NORMAL, GTK_SHADOW_IN,
 	                  &evt->area, widget, "scrolled_window",
 	                  allocation.x, allocation.y, allocation.width, allocation.height);
@@ -650,24 +644,12 @@ static int gtkCanvasSetDXAttrib(Ihandle* ih, const char* value)
       }
       gtk_widget_set_sensitive(sb_horiz, TRUE);
 
-#if GTK_CHECK_VERSION(2, 14, 0)
     {
       double page_size = dx;
       double dvalue = gtk_adjustment_get_value(sb_horiz_adjust);
       value_changed = gtkCanvasCheckScroll(xmin, xmax, &page_size, &dvalue);
       gtk_adjustment_configure(sb_horiz_adjust, dvalue, xmin, xmax, linex, page_size, dx);
     }
-#else
-      sb_horiz_adjust->lower = xmin;
-      sb_horiz_adjust->upper = xmax;
-      sb_horiz_adjust->step_increment = linex;
-      sb_horiz_adjust->page_size = dx;
-
-      value_changed = gtkCanvasCheckScroll(xmin, xmax, &sb_horiz_adjust->page_size, &sb_horiz_adjust->value);
-      sb_horiz_adjust->page_increment = sb_horiz_adjust->page_size;
-
-      gtk_adjustment_changed(sb_horiz_adjust);
-#endif
       iupAttribSet(ih, "XHIDDEN", "NO");
 
       if (value_changed)
@@ -744,24 +726,12 @@ static int gtkCanvasSetDYAttrib(Ihandle* ih, const char* value)
       }
       gtk_widget_set_sensitive(sb_vert, TRUE);
 
-#if GTK_CHECK_VERSION(2, 14, 0)
     {
       double page_size = dy;
       double dvalue = gtk_adjustment_get_value(sb_vert_adjust);
       value_changed = gtkCanvasCheckScroll(ymin, ymax, &page_size, &dvalue);
       gtk_adjustment_configure(sb_vert_adjust, dvalue, ymin, ymax, liney, page_size, dy);
     }
-#else
-      sb_vert_adjust->lower = ymin;
-      sb_vert_adjust->upper = ymax;
-      sb_vert_adjust->step_increment = liney;
-      sb_vert_adjust->page_size = dy;
-
-      value_changed = gtkCanvasCheckScroll(ymin, ymax, &sb_vert_adjust->page_size, &sb_vert_adjust->value);
-      sb_vert_adjust->page_increment = sb_vert_adjust->page_size;
-
-      gtk_adjustment_changed(sb_vert_adjust);
-#endif
       iupAttribSet(ih, "YHIDDEN", "NO");
 
       if (value_changed)
@@ -879,9 +849,7 @@ static int gtkCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
       gtk_widget_set_double_buffered(ih->handle, FALSE);
       gtk_widget_set_double_buffered(sb_win, FALSE);
 
-#if !GTK_CHECK_VERSION(3, 0, 0)
       gdk_window_set_back_pixmap(iupgtkGetWindow(ih->handle), NULL, FALSE);
-#endif
     }
 #endif
 
@@ -896,14 +864,8 @@ static char* gtkCanvasGetDrawSizeAttrib(Ihandle* ih)
   if (window)
   {
     int w, h;
-#if GTK_CHECK_VERSION(2, 24, 0)
     w = gdk_window_get_width(window);
     h = gdk_window_get_height(window);
-#elif !defined(GDK_DISABLE_DEPRECATED)
-    gdk_drawable_get_size(window, &w, &h);
-#else
-    gdk_window_get_geometry(window, NULL, NULL, &w, &h, NULL);
-#endif
     return iupStrReturnIntInt(w, h, 'x');
   }
   else

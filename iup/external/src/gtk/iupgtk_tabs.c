@@ -187,10 +187,8 @@ static int gtkTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
         unsigned char r, g, b;
 
         tab_label = gtk_label_new(NULL);
-#if GTK_CHECK_VERSION(2, 6, 0)
         if (ih->data->orientation == ITABS_VERTICAL)
           gtk_label_set_angle((GtkLabel*)tab_label, 90);
-#endif
         gtk_box_pack_start((GtkBox*)box, tab_label, FALSE, FALSE, 0);
         gtk_box_reorder_child((GtkBox*)box, tab_label, iupAttribGet(child, "_IUPGTK_TABIMAGE") ? 1 : 0);
 
@@ -534,10 +532,8 @@ static void gtkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
       tab_label = gtk_label_new(NULL);
       iupgtkSetMnemonicTitle(ih, (GtkLabel*)tab_label, tabtitle);
 
-#if GTK_CHECK_VERSION(2, 6, 0)
       if (ih->data->orientation == ITABS_VERTICAL)
         gtk_label_set_angle((GtkLabel*)tab_label, 90);
-#endif
     }
 
     if (tabimage)
