@@ -277,8 +277,6 @@ Only works when DS_MODE is LINE, MARKLINE, AREA, STEP or ERRORBAR.
 
 ### Attributes (All non-inheritable, except when noted)
 
-**ANTIALIAS**: Deprecated and ignored. Anti-aliasing is handled by the IupDraw API.
-
 **READONLY**: when NO, the user can remove the selected samples with the Del key; when YES, interactive editing and removal are disabled. Default: YES.
 
 **REDRAW** (write-only): redraw all plots and update the display.

@@ -226,19 +226,6 @@ static char* iPlotGetShowCrossHairAttrib(Ihandle* ih)
   return const_cast<char*>(cross_hair_str[ih->data->show_cross_hair]);
 }
 
-static int iPlotSetAntialiasAttrib(Ihandle* ih, const char* value)
-{
-  (void)ih;
-  (void)value;
-  return 0;
-}
-
-static char* iPlotGetAntialiasAttrib(Ihandle* ih)
-{
-  (void)ih;
-  return nullptr;
-}
-
 static int iPlotSetRedrawAttrib(Ihandle* ih, const char* value)
 {
   // when REDRAW is set, the default is
@@ -3547,7 +3534,6 @@ void iupPlotRegisterAttributes(Iclass* ic)
 
   /* IupPlot only */
 
-  iupClassRegisterAttribute(ic, "ANTIALIAS", iPlotGetAntialiasAttrib, iPlotSetAntialiasAttrib, IUPAF_SAMEASSYSTEM, "No", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "REDRAW", nullptr, iPlotSetRedrawAttrib, nullptr, nullptr, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SYNCVIEW", iPlotGetSyncViewAttrib, iPlotSetSyncViewAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MERGEVIEW", iPlotGetMergeViewAttrib, iPlotSetMergeViewAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
