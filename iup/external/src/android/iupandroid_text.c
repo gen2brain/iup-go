@@ -336,8 +336,7 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
 
   char* selection = iupAttribGet(formattag, "SELECTION");
   char* selectionpos = iupAttribGet(formattag, "SELECTIONPOS");
-  char* fontFamily = iupAttribGet(formattag, "FONTFAMILY");
-  if (!fontFamily) fontFamily = iupAttribGet(formattag, "FONTFACE");
+  char* fontFamily = iupAttribGet(formattag, "FONTFACE");
   if (fontFamily)
   {
     const char* mapped = iupFontGetAndroidName(fontFamily);
