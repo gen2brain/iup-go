@@ -12,6 +12,7 @@ This dialog is intended for developers, to see and inspect their elements.
 It contains 3 Tab sections: one for the registered attributes of the element, one for custom attributes set by the application, and one for the callbacks.
 The callbacks are just for inspection, and custom attributes should be handled carefully because they may be not strings.
 Registered attributes values are shown in red when they were changed by the application.
+A default value that follows a global attribute, such as DLGFGCOLOR, is shown with the current value of that global.
 
 ### Creation
 
