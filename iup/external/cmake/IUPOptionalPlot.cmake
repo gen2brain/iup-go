@@ -36,6 +36,7 @@ get_target_property(_iupplot_type iupplot TYPE)
 if(_iupplot_type STREQUAL "SHARED_LIBRARY")
   set_target_properties(iupplot PROPERTIES
     CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
   )
 endif()
 

@@ -107,6 +107,7 @@ if(_iupgl_type STREQUAL "SHARED_LIBRARY")
   set_target_properties(iupgl PROPERTIES
     C_VISIBILITY_PRESET hidden
     CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
   )
 endif()
 
