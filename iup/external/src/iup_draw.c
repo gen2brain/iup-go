@@ -3616,7 +3616,7 @@ IUP_SDK_API void iupFlatDrawIcon(Ihandle* ih, IdrawCanvas* dc, int icon_x, int i
 
   iupdrvDrawSetClipRect(dc, clip_x1, clip_y1, clip_x2, clip_y2);
 
-  if (title && !iupAttribGet(ih, "ACCESSIBLETITLE") && !iupAttribGet(ih, "SECONDARYTITLE"))
+  if (title && !iupAttribGet(ih, "ACCESSIBLETITLE") && !iupAttribGet(ih, "_IUP_SECONDARYTITLE"))
     iupdrvSetAccessibleTitle(ih, title);  /* for accessibility */
 }
 
@@ -3834,8 +3834,8 @@ IUP_SDK_API char* iupFlatGetDarkerBgColor(Ihandle* ih)
   r = (r * 90) / 100;
   g = (g * 90) / 100;
   b = (b * 90) / 100;
-  iupAttribSetStrf(ih, "DARK_DLGBGCOLOR", "%d %d %d", r, g, b);
-  return iupAttribGet(ih, "DARK_DLGBGCOLOR");
+  iupAttribSetStrf(ih, "_IUPDRAW_DARK_DLGBGCOLOR", "%d %d %d", r, g, b);
+  return iupAttribGet(ih, "_IUPDRAW_DARK_DLGBGCOLOR");
 }
 
 IUP_SDK_API int iupFlatSetActiveAttrib(Ihandle* ih, const char* value)

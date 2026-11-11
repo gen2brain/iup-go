@@ -371,7 +371,7 @@ static int iFlatScrollBarAction_CB(Ihandle* sb_ih)
   if (!bgcolor)
     bgcolor = iupBaseNativeParentGetBgColorAttrib(sb_ih);
 
-  if (iupAttribGet(sb_ih, "SB_VERT"))
+  if (iupAttribGet(sb_ih, "_IUP_SB_VERT"))
     is_vert_scrollbar = 1;
 
   if (xmax > dx)  /* has horizontal scrollbar */
@@ -416,7 +416,7 @@ static int iFlatScrollBarGetHandler(Ihandle* sb_ih, int x, int y)
   int is_vert_scrollbar = 0;
   int pos1, pos2;
 
-  if (iupAttribGet(sb_ih, "SB_VERT"))
+  if (iupAttribGet(sb_ih, "_IUP_SB_VERT"))
     is_vert_scrollbar = 1;
 
   if (show_transparent)
@@ -1196,7 +1196,7 @@ IUP_SDK_API int iupFlatScrollBarCreate(Ihandle* ih)
 {
   Ihandle* sb_vert, *sb_horiz;
 
-  if (ih->firstchild && iupAttribGet(ih->firstchild, "SB_VERT"))
+  if (ih->firstchild && iupAttribGet(ih->firstchild, "_IUP_SB_VERT"))
     return 0;
 
   sb_horiz = IupCanvas();
@@ -1220,7 +1220,7 @@ IUP_SDK_API int iupFlatScrollBarCreate(Ihandle* ih)
   sb_vert = IupCanvas();
   IupSetAttribute(sb_vert, "BORDER", "NO");
   IupSetAttribute(sb_vert, "ZORDER", "TOP");
-  iupAttribSet(sb_vert, "SB_VERT", "YES");
+  iupAttribSet(sb_vert, "_IUP_SB_VERT", "YES");
   IupSetAttribute(sb_vert, "CANFOCUS", "NO");
   IupSetAttribute(sb_vert, "VISIBLE", "NO");
   IupSetCallback(sb_vert, "ACTION", (Icallback)iFlatScrollBarAction_CB);

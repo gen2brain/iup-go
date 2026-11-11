@@ -1539,7 +1539,7 @@ static int iFlatTreeRenameNode(Ihandle* ih, int x)
       int extra_w;
       char* font = IupGetAttribute(ih, "FONT");
 
-      if (iupAttribGet(ih->firstchild, "SB_VERT"))
+      if (iupAttribGet(ih->firstchild, "_IUP_SB_VERT"))
       {
         /* ih->firstchild is vertical scrollbar */
         /* ih->firstchild->brother is horizontal scrollbar */
@@ -2416,7 +2416,7 @@ static int iFlatTreeScroll_CB(Ihandle* ih, int action, float posx, float posy)
 {
   Ihandle* text = ih->firstchild;
 
-  if (iupAttribGet(ih->firstchild, "SB_VERT"))
+  if (iupAttribGet(ih->firstchild, "_IUP_SB_VERT"))
   {
     /* ih->firstchild is vertical scrollbar */
     /* ih->firstchild->brother is horizontal scrollbar */

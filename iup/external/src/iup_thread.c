@@ -55,7 +55,7 @@ static int iThreadSetExitAttrib(Ihandle* ih, const char* value)
 
 static int iThreadSetLockAttrib(Ihandle* ih, const char* value)
 {
-  void* mutex = iupAttribGet(ih, "MUTEX");
+  void* mutex = iupAttribGet(ih, "_IUP_MUTEX");
   if (mutex)
   {
     if (iupStrBoolean(value))
@@ -87,7 +87,7 @@ static int iThreadSetStartAttrib(Ihandle* ih, const char* value)
 static int iThreadCreateMethod(Ihandle* ih, void** params)
 {
   void* mutex = iupdrvMutexCreate();
-  iupAttribSet(ih, "MUTEX", (char*)mutex);
+  iupAttribSet(ih, "_IUP_MUTEX", (char*)mutex);
 
   (void)params;
   return IUP_NOERROR;
@@ -95,7 +95,7 @@ static int iThreadCreateMethod(Ihandle* ih, void** params)
 
 static void iThreadDestroyMethod(Ihandle* ih)
 {
-  void* mutex = iupAttribGet(ih, "MUTEX");
+  void* mutex = iupAttribGet(ih, "_IUP_MUTEX");
   void* thread = iupAttribGet(ih, "THREAD");
 
   if (mutex)

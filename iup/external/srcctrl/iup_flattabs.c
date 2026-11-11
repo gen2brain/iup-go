@@ -785,11 +785,11 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
         background_color = bgcolor;
         foreground_color = forecolor;
 
-        iupAttribSet(ih, "SECONDARYTITLE", NULL);
+        iupAttribSet(ih, "_IUP_SECONDARYTITLE", NULL);
       }
       else
       {
-        iupAttribSet(ih, "SECONDARYTITLE", "1");
+        iupAttribSet(ih, "_IUP_SECONDARYTITLE", "1");
 
         /* other tabs are drawn with these colors */
         if (tab_backcolor)
@@ -1066,7 +1066,7 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
     int extra_horiz_alignment, extra_vert_alignment;
     int xmin, ymin, xmax, ymax;
 
-    iupAttribSet(ih, "SECONDARYTITLE", "1");
+    iupAttribSet(ih, "_IUP_SECONDARYTITLE", "1");
 
     for (i = 1; i <= extra_buttons; i++)
     {
@@ -1162,7 +1162,7 @@ static int iFlatTabsRedraw_CB(Ihandle* ih)
     }
   }
 
-  iupAttribSet(ih, "SECONDARYTITLE", NULL);
+  iupAttribSet(ih, "_IUP_SECONDARYTITLE", NULL);
 
   /* lines around children */
   if (show_lines)

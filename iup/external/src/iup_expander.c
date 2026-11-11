@@ -426,7 +426,7 @@ static int iExpanderAnimateTimer_CB(Ihandle* animate_timer)
 
   if (last_frame)
   {
-    iupAttribSetStr(child, "MAXSIZE", iupAttribGet(child, "OLD_MAXSIZE"));
+    iupAttribSetStr(child, "MAXSIZE", iupAttribGet(child, "_IUP_OLD_MAXSIZE"));
     IupSetAttribute(child, "CHILDOFFSET", NULL);
 
     if (closing)
@@ -473,7 +473,7 @@ static void iExpanderAnimateChild(Ihandle* ih, Ihandle* child)
   final_height = child->currentheight;
   width = child->currentwidth;
 
-  iupAttribSetStr(child, "OLD_MAXSIZE", iupAttribGet(child, "MAXSIZE"));
+  iupAttribSetStr(child, "_IUP_OLD_MAXSIZE", iupAttribGet(child, "MAXSIZE"));
 
   if (!ih->data->animate_timer)
   {
@@ -601,7 +601,7 @@ static void iExpanderUpdateTitle(Ihandle* ih)
 
 static void iExpanderUpdateExtraButtonImage(Ihandle* ih, Ihandle* extra_button, int pressed)
 {
-  int button = iupAttribGetInt(extra_button, "EXTRABUTTON_NUMBER");
+  int button = iupAttribGetInt(extra_button, "_IUP_EXTRABUTTON_NUMBER");
   char* image = iupAttribGetId(ih, "IMAGEEXTRA", button);
   if (!image)
     return;
@@ -627,7 +627,7 @@ static int iExpanderExtraButtonLeaveWindow_cb(Ihandle* extra_button);
 static void iExpanderAddExtraButton(Ihandle* ih, Ihandle* extra_box, int number)
 {
   Ihandle* extra_button = IupLabel(NULL);
-  IupSetInt(extra_button, "EXTRABUTTON_NUMBER", number);
+  IupSetInt(extra_button, "_IUP_EXTRABUTTON_NUMBER", number);
   IupSetCallback(extra_button, "BUTTON_CB", (Icallback)iExpanderExtraButtonButton_CB);
   IupSetCallback(extra_button, "ENTERWINDOW_CB", (Icallback)iExpanderExtraButtonEnterWindow_cb);
   IupSetCallback(extra_button, "LEAVEWINDOW_CB", (Icallback)iExpanderExtraButtonLeaveWindow_cb);
@@ -996,7 +996,7 @@ static int iExpanderExtraButtonButton_CB(Ihandle* extra_button, int button, int 
     IFnii cb = (IFnii)IupGetCallback(ih, "EXTRABUTTON_CB");
     if (cb)
     {
-      button = IupGetInt(extra_button, "EXTRABUTTON_NUMBER");
+      button = IupGetInt(extra_button, "_IUP_EXTRABUTTON_NUMBER");
       cb(ih, button, pressed);
     }
 
