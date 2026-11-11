@@ -616,7 +616,9 @@ IUP_SDK_API void iupdrvTrayDestroy(Ihandle* ih)
 
 IUP_SDK_API int iupdrvTrayIsAvailable(void)
 {
-  return 1;
+  char name[64];
+  snprintf(name, sizeof(name), "_NET_SYSTEM_TRAY_S%d", iupmot_screen);
+  return motTrayGetManagerWindow(XInternAtom(iupmot_display, name, False)) != None;
 }
 
 IUP_SDK_API void iupdrvTrayInitClass(Iclass* ic)

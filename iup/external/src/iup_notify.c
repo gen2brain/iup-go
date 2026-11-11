@@ -28,6 +28,12 @@ static int iNotifySetCloseAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static char* iNotifyGetAvailableAttrib(Ihandle* ih)
+{
+  (void)ih;
+  return iupStrReturnBoolean(iupdrvNotifyIsAvailable());
+}
+
 static void iNotifyDestroyMethod(Ihandle* ih)
 {
   iupdrvNotifyDestroy(ih);
@@ -78,6 +84,7 @@ Iclass* iupNotifyNewClass(void)
   iupClassRegisterAttribute(ic, "SHOW", NULL, iNotifySetShowAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CLOSE", NULL, iNotifySetCloseAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ID", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AVAILABLE", iNotifyGetAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   /* Platform-specific attributes registered by driver */
   iupdrvNotifyInitClass(ic);

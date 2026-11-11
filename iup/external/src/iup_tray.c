@@ -38,6 +38,12 @@ static int iTraySetMenuAttrib(Ihandle* ih, const char* value)
   return iupdrvTraySetMenu(ih, menu_ih);
 }
 
+static char* iTrayGetAvailableAttrib(Ihandle* ih)
+{
+  (void)ih;
+  return iupStrReturnBoolean(iupdrvTrayIsAvailable());
+}
+
 static void iTrayDestroyMethod(Ihandle* ih)
 {
   iupdrvTrayDestroy(ih);
@@ -70,6 +76,7 @@ Iclass* iupTrayNewClass(void)
   iupClassRegisterAttribute(ic, "TIP", NULL, iTraySetTipAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "MENU", NULL, iTraySetMenuAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TITLE", NULL, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "AVAILABLE", iTrayGetAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupdrvTrayInitClass(ic);
 
