@@ -309,7 +309,9 @@ protected:
 public:
   IupQtTabBar(Ihandle* ih_param) : QTabBar(), ih(ih_param), closeCallback(nullptr)
   {
-    setStyle(new IupQtTabStyle(ih_param));
+    IupQtTabStyle* tab_style = new IupQtTabStyle(ih_param);
+    tab_style->setParent(this);
+    setStyle(tab_style);
   }
 
   void setIhandle(Ihandle* ih_param) { ih = ih_param; }
