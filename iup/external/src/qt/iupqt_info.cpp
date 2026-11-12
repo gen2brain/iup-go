@@ -43,9 +43,66 @@
 
 #include "iupqt_drv.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0) && !defined(Q_OS_WIN) && !defined(Q_OS_MACOS) && !defined(Q_OS_HAIKU)
+  #include <QtGui/qguiapplication_platform.h>
+  #define IUP_QT_HAS_X11_APP 1
+#endif
+
+#ifdef IUPX11_USE_DLOPEN
+extern "C" {
+#include "iupunix_x11.h"
+}
+#elif defined(IUP_QT_HAS_X11_APP)
+#include <X11/Xlib.h>
+#endif
+
 /****************************************************************************
  * Screen Information
  ****************************************************************************/
+
+/* Qt ignores _NET_WORKAREA when more than one monitor is attached */
+static QRect qtGetWorkArea(QScreen* screen)
+{
+  QRect geom = screen->geometry();
+  QRect area = screen->availableGeometry();
+
+#ifdef IUP_QT_HAS_X11_APP
+  if (QGuiApplication::platformName() != QLatin1String("xcb"))
+    return area;
+
+  auto* x11_app = qGuiApp->nativeInterface<QNativeInterface::QX11Application>();
+  Display* xdisplay = x11_app ? x11_app->display() : nullptr;
+  if (!xdisplay)
+    return area;
+
+#ifdef IUPX11_USE_DLOPEN
+  if (!iupX11Open() || !XGetWindowProperty || !XFree)
+    return area;
+#endif
+
+  Atom type;
+  int format;
+  unsigned long count = 0, after = 0;
+  unsigned char* data = nullptr;
+
+  if (XGetWindowProperty(xdisplay, XRootWindow(xdisplay, XDefaultScreen(xdisplay)), XInternAtom(xdisplay, "_NET_WORKAREA", 0), 0, 4, 0, AnyPropertyType,
+                         &type, &format, &count, &after, &data) == Success && data)
+  {
+    if (format == 32 && count == 4)
+    {
+      long* value = reinterpret_cast<long*>(data);
+      qreal ratio = screen->devicePixelRatio();
+      QRect native(geom.topLeft(), geom.size() * ratio);
+      QRect work = native & QRect(static_cast<int>(value[0]), static_cast<int>(value[1]), static_cast<int>(value[2]), static_cast<int>(value[3]));
+      if (!work.isEmpty())
+        area = QRect(geom.topLeft() + (work.topLeft() - native.topLeft()) / ratio, work.size() / ratio);
+    }
+    XFree(data);
+  }
+#endif
+
+  return area;
+}
 
 extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
 {
@@ -53,7 +110,7 @@ extern "C" IUP_SDK_API void iupdrvAddScreenOffset(int* x, int* y, int add)
   if (!screen || add == 0)
     return;
 
-  QPoint offset = screen->availableGeometry().topLeft() - screen->geometry().topLeft();
+  QPoint offset = qtGetWorkArea(screen).topLeft() - screen->geometry().topLeft();
   if (add < 0)
     offset = -offset;
 
@@ -67,9 +124,9 @@ extern "C" IUP_SDK_API void iupdrvGetScreenSize(int* width, int* height)
 
   if (screen)
   {
-    QRect available_geom = screen->availableGeometry();
-    *width = available_geom.width();
-    *height = available_geom.height();
+    QRect area = qtGetWorkArea(screen);
+    *width = area.width();
+    *height = area.height();
   }
   else
   {
