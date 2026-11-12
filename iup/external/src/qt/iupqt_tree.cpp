@@ -6,6 +6,7 @@
 
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+#include <QTreeWidgetItemIterator>
 #include <QScrollBar>
 #include <QWidget>
 #include <QFont>
@@ -244,6 +245,8 @@ static QPixmap* qtTreeGetThemeIcon(Ihandle* ih, const char* icon_name, int size)
  * Custom Tree Widget
  ****************************************************************************/
 
+static void qtTreeReloadThemeIcons(Ihandle* ih);
+
 class IupQtTree : public QTreeWidget
 {
 private:
@@ -251,6 +254,13 @@ private:
   QTreeWidgetItem* mark_start_node;
 
 protected:
+  void changeEvent(QEvent* event) override
+  {
+    if (ih && (event->type() == QEvent::StyleChange || event->type() == QEvent::PaletteChange))
+      qtTreeReloadThemeIcons(ih);
+    QTreeWidget::changeEvent(event);
+  }
+
   void mousePressEvent(QMouseEvent* event) override
   {
     if (!ih)
@@ -648,6 +658,7 @@ static QTreeWidgetItem* qtTreeCopyNode(Ihandle* ih, QTreeWidgetItem* src, QTreeW
   new_item->setForeground(0, src->foreground(0));
   new_item->setBackground(0, src->background(0));
   new_item->setData(0, Qt::UserRole + 1, src->data(0, Qt::UserRole + 1));
+  new_item->setData(0, Qt::UserRole + 5, src->data(0, Qt::UserRole + 5));
 
   if (ih->data->show_rename)
     new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
@@ -688,6 +699,7 @@ static QTreeWidgetItem* qtTreeDragDropCopyItem(Ihandle* src_ih, Ihandle* dst_ih,
   new_item->setBackground(0, src_item->background(0));
   new_item->setData(0, Qt::UserRole + 1, src_item->data(0, Qt::UserRole + 1));
   new_item->setData(0, Qt::UserRole + 2, src_item->data(0, Qt::UserRole + 2));
+  new_item->setData(0, Qt::UserRole + 5, src_item->data(0, Qt::UserRole + 5));
 
   if (dst_ih->data->show_rename)
     new_item->setFlags(new_item->flags() | Qt::ItemIsEditable);
@@ -892,11 +904,15 @@ static int qtTreeSetImageAttrib(Ihandle* ih, int id, const char* value)
   {
     auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(value, ih, 0, nullptr));
     if (pixmap)
+    {
       item->setIcon(0, QIcon(*pixmap));
+      item->setData(0, Qt::UserRole + 5, true);
+    }
   }
   else
   {
     int kind = qtTreeGetNodeKind(item);
+    item->setData(0, Qt::UserRole + 5, QVariant());
     QPixmap* def_image = nullptr;
 
     if (kind == ITREE_BRANCH)
@@ -1135,6 +1151,51 @@ static void qtTreeUpdateExpandImage(Ihandle* ih, QTreeWidgetItem* item)
     pixmap = static_cast<QPixmap*>(ih->data->def_image_expanded);
   if (pixmap)
     item->setIcon(0, QIcon(*pixmap));
+}
+
+static void qtTreeReloadThemeIcon(Ihandle* ih, const char* marker, void** image, const char* icon_name, const char* fallback_name)
+{
+  auto* old_pixmap = reinterpret_cast<QPixmap*>(iupAttribGet(ih, marker));
+  if (!old_pixmap || *image != old_pixmap)
+    return;
+
+  QPixmap* pixmap = qtTreeGetThemeIcon(ih, icon_name, 16);
+  if (!pixmap && fallback_name)
+    pixmap = qtTreeGetThemeIcon(ih, fallback_name, 16);
+  if (!pixmap)
+    return;
+
+  delete old_pixmap;
+  *image = pixmap;
+  iupAttribSet(ih, marker, reinterpret_cast<char*>(pixmap));
+}
+
+static void qtTreeReloadThemeIcons(Ihandle* ih)
+{
+  if (!ih->handle)
+    return;
+
+  qtTreeReloadThemeIcon(ih, "_IUPQT_THEMED_LEAF", &ih->data->def_image_leaf, "text-x-generic", nullptr);
+  qtTreeReloadThemeIcon(ih, "_IUPQT_THEMED_COLLAPSED", &ih->data->def_image_collapsed, "folder", nullptr);
+  qtTreeReloadThemeIcon(ih, "_IUPQT_THEMED_EXPANDED", &ih->data->def_image_expanded, "folder-open", "folder");
+
+  auto* tree = reinterpret_cast<QTreeWidget*>(ih->handle);
+  for (QTreeWidgetItemIterator it(tree); *it; ++it)
+  {
+    QTreeWidgetItem* item = *it;
+    if (item->data(0, Qt::UserRole + 5).toBool())
+      continue;
+
+    if (qtTreeGetNodeKind(item) == ITREE_BRANCH)
+    {
+      if (item->isExpanded())
+        qtTreeUpdateExpandImage(ih, item);
+      else if (ih->data->def_image_collapsed)
+        item->setIcon(0, QIcon(*static_cast<QPixmap*>(ih->data->def_image_collapsed)));
+    }
+    else if (ih->data->def_image_leaf)
+      item->setIcon(0, QIcon(*static_cast<QPixmap*>(ih->data->def_image_leaf)));
+  }
 }
 
 static int qtTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
