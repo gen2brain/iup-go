@@ -1205,7 +1205,9 @@ IUP_SDK_API int iupClassObjectIsGlobalDefaultColor(Ihandle* ih, const char* name
   IattribFunc* afunc = (IattribFunc*)iupTableGet(ih->iclass->attrib_func, name);
   unsigned char r, g, b, dr, dg, db;
 
-  if (!afunc || !afunc->call_global_default || !iupClassIsGlobalDefault(afunc->default_value, 1))
+  /* no native control draws its text from the link color, so a link keeps it explicit */
+  if (!afunc || !afunc->call_global_default || !iupClassIsGlobalDefault(afunc->default_value, 1) ||
+      iupStrEqual(afunc->default_value, "LINKFGCOLOR"))
     return 0;
 
   return iupStrToRGB(value, &r, &g, &b) &&
