@@ -118,7 +118,6 @@ static int cocoaFontDlgPopup(Ihandle* ih, int x, int y)
 
   [fontManager setTarget:delegate];
   [fontManager setAction:@selector(changeFont:)];
-  [fontManager setSelectedFont:font isMultiple:NO];
 
   NSFontPanel* panel = [fontManager fontPanel:YES];
   [panel setDelegate:delegate];
@@ -170,6 +169,10 @@ static int cocoaFontDlgPopup(Ihandle* ih, int x, int y)
   [okButton release];
   [cancelButton release];
   [accessoryView release];
+
+  [panel orderFront:nil];
+  [fontManager setSelectedFont:font isMultiple:NO];
+  [panel setPanelFont:font isMultiple:NO];
 
   NSInteger result = [NSApp runModalForWindow:panel];
 
