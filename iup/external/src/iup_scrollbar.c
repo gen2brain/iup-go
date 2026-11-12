@@ -82,25 +82,29 @@ static char* iScrollbarGetMinAttrib(Ihandle* ih)
 
 static int iScrollbarSetOrientationAttrib(Ihandle* ih, const char* value)
 {
-  int min_w, min_h;
-
   if (ih->handle)
     return 0;
 
   if (iupStrEqualNoCase(value, "VERTICAL"))
-  {
     ih->data->orientation = ISCROLLBAR_VERTICAL;
-    iupdrvScrollbarGetMinSize(ih, &min_w, &min_h);
-    IupSetfAttribute(ih, "RASTERSIZE", "%dx%d", min_w, 100);
-  }
   else
-  {
     ih->data->orientation = ISCROLLBAR_HORIZONTAL;
-    iupdrvScrollbarGetMinSize(ih, &min_w, &min_h);
-    IupSetfAttribute(ih, "RASTERSIZE", "%dx%d", 100, min_h);
-  }
 
   return 0;
+}
+
+static void iScrollbarComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
+{
+  (void)children_expand;
+  iupdrvScrollbarGetMinSize(ih, w, h);
+
+  if (ih->data->orientation == ISCROLLBAR_VERTICAL)
+  {
+    if (*h < 100)
+      *h = 100;
+  }
+  else if (*w < 100)
+    *w = 100;
 }
 
 static char* iScrollbarGetOrientationAttrib(Ihandle* ih)
@@ -162,6 +166,7 @@ Iclass* iupScrollbarNewClass(void)
 
   ic->New = iupScrollbarNewClass;
   ic->Create = iScrollbarCreateMethod;
+  ic->ComputeNaturalSize = iScrollbarComputeNaturalSizeMethod;
   ic->LayoutUpdate = iupdrvBaseLayoutUpdateMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
 

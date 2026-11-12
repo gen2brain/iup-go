@@ -44,9 +44,10 @@ The increment size is "pagestep*(max-min)", so it must be 0<pagestep<1.
 Default: "0.1".
 In QML, a click on the trough moves the handle to the pointer instead of a page step.
 
-[RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): The initial size depends on the orientation.
-For horizontal, the default width is 100 pixels and the height is the system scrollbar size.
-For vertical, the default height is 100 pixels and the width is the system scrollbar size.
+[RASTERSIZE](../attrib/iup_rastersize.md) (non-inheritable): The natural size depends on the orientation.
+For horizontal, the width is 100 pixels and the height is the system scrollbar size.
+For vertical, the height is 100 pixels and the width is the system scrollbar size.
+Setting only one dimension keeps the natural size of the other.
 
 **VALUE** (non-inheritable): Contains a number between MIN and MAX, indicating the scrollbar position.
 Default: "0".
@@ -108,6 +109,15 @@ The line operation codes (IUP_SBUP, IUP_SBDN, IUP_SBLEFT, IUP_SBRIGHT) are not r
 The range of the scrollbar is defined by MIN and MAX.
 The PAGESIZE defines the size of the thumb indicator relative to the total range.
 The actual usable range for VALUE is from MIN to MAX-PAGESIZE.
+
+### Examples
+
+[Browse for Example Files](../../examples/)
+
+|                                      |                                    |                                     |                                     |
+|--------------------------------------|------------------------------------|-------------------------------------|-------------------------------------|
+| GTK                                  | Qt                                 | Win32                               | macOS                               |
+| ![](../images/iupscrollbar_gtk3.png) | ![](../images/iupscrollbar_qt.png) | ![](../images/iupscrollbar_win.png) | ![](../images/iupscrollbar_mac.png) |
 
 ### See Also
 
