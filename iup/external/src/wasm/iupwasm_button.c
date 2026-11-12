@@ -86,11 +86,20 @@ static int wasmButtonSetDefaultAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+/* the button's own padding inside its 1px border, PADDING is added to it */
+#define WASM_BUTTON_PADX 4
+#define WASM_BUTTON_PADY 4
+
+static void wasmButtonUpdatePadding(Ihandle* ih)
+{
+  iupwasmJsSetPadding(iupwasmIdOf(ih), WASM_BUTTON_PADX + ih->data->horiz_padding, WASM_BUTTON_PADY + ih->data->vert_padding);
+}
+
 static int wasmButtonSetPaddingAttrib(Ihandle* ih, const char* value)
 {
   iupStrToIntInt(value, &ih->data->horiz_padding, &ih->data->vert_padding, 'x');
   if (ih->handle)
-    iupwasmJsSetPadding(iupwasmIdOf(ih), ih->data->horiz_padding, ih->data->vert_padding);
+    wasmButtonUpdatePadding(ih);
   return 0;
 }
 
@@ -110,6 +119,7 @@ static int wasmButtonMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)(intptr_t)id;
   iupwasmRegisterHandle(id, ih);
   iupwasmJsButtonStyle(id);
+  wasmButtonUpdatePadding(ih);
 
   title = iupAttribGet(ih, "TITLE");
   image = iupAttribGet(ih, "IMAGE");
@@ -163,8 +173,8 @@ static int wasmButtonSetBgColorAttrib(Ihandle* ih, const char* value)
 IUP_SDK_API void iupdrvButtonAddBorders(Ihandle* ih, int* x, int* y)
 {
   (void)ih;
-  if (x) *x += 16;
-  if (y) *y += 8;
+  if (x) *x += 2 * (WASM_BUTTON_PADX + 1);
+  if (y) *y += 2 * (WASM_BUTTON_PADY + 1);
 }
 
 IUP_SDK_API void iupdrvButtonInitClass(Iclass* ic)
