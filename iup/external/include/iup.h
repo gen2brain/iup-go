@@ -20,10 +20,10 @@ extern "C" {
 
 #define IUP_NAME "IUP - Portable User Interface"
 #define IUP_DESCRIPTION "Multi-platform Toolkit for Building Graphical User Interfaces"
-#define IUP_COPYRIGHT "Copyright (C) 1994-2025 Tecgraf/PUC-Rio"
-#define IUP_VERSION "3.32"         /* bug fixes are reported only by IupVersion functions */
-#define IUP_VERSION_NUMBER 332000
-#define IUP_VERSION_DATE "2025/01/06"  /* does not include bug fix releases */
+#define IUP_COPYRIGHT "Copyright (C) 1994-2025 Tecgraf/PUC-Rio, 2022-2026 gen2brain"
+#define IUP_VERSION "4.0.0"         /* bug fixes are reported only by IupVersion functions */
+#define IUP_VERSION_NUMBER 400000
+#define IUP_VERSION_DATE "2026/11/13"  /* does not include bug fix releases */
 
 typedef struct Ihandle_ Ihandle;
 typedef int (*Icallback)(Ihandle*);
@@ -521,7 +521,8 @@ enum {IUP_RECBINARY, IUP_RECTEXT};
 
 
 /******************************************************************************
-* Copyright (C) 1994-2019 Tecgraf/PUC-Rio.
+* Copyright (C) 1994-2025 Tecgraf/PUC-Rio.
+* Copyright (C) 2022-2026 gen2brain.
 *
 * Permission is hereby granted, free of charge, to any person obtaining
 * a copy of this software and associated documentation files (the

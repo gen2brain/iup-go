@@ -16,6 +16,7 @@ Alternatively, build with `CGO_ENABLED=0` and no C compiler. A prebuilt library 
 for `linux`, `darwin`, and `windows` on `amd64` and `arm64`. Other backends and platforms require the cgo build.
 
 To build the IUP C library standalone (without Go bindings), see [iup/external](iup/external) for CMake build instructions.
+Source tarballs of the C library and its documentation are attached to the [latest release](https://github.com/gen2brain/iup-go/releases/latest).
 
 ### Requirements
 

@@ -31,7 +31,7 @@ Ex.: "1.7.2".
 
 Returns the IUP's copyright.
 
- Ex: "Copyright (C) 1994-2014 Tecgraf/PUC-Rio".
+ Ex: "Copyright (C) 1994-2025 Tecgraf/PUC-Rio, 2022-2026 gen2brain".
 
 ### DRIVER (read-only)
 
