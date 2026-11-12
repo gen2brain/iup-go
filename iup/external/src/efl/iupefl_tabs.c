@@ -387,6 +387,14 @@ static int eflTabsSetAllowReorderAttrib(Ihandle* ih, const char* value)
                      Tab Item Helper
 ****************************************************************/
 
+/* the theme starts every tab with a label and only a text unset clears it, so the row would leave room for one */
+static void eflTabsItemUnsetText(void* data, const Efl_Event* ev)
+{
+  (void)data;
+  efl_layout_signal_emit(ev->object, "efl,text,unset", "efl");
+  efl_layout_signal_process(ev->object, EINA_FALSE);
+}
+
 static Eo* eflTabsGetItemRow(Ihandle* child, Eo* item)
 {
   Eo* row = (Eo*)iupAttribGet(child, "_IUPEFL_TAB_ROW");
@@ -395,6 +403,8 @@ static Eo* eflTabsGetItemRow(Ihandle* child, Eo* item)
     row = efl_add(EFL_UI_BOX_CLASS, item, efl_ui_layout_orientation_set(efl_added, EFL_UI_LAYOUT_ORIENTATION_HORIZONTAL));
     efl_gfx_arrangement_content_padding_set(row, 4, 0);
     efl_content_set(efl_part(item, "efl.icon"), row);
+    efl_event_callback_add(item, EFL_UI_LAYOUT_EVENT_THEME_CHANGED, eflTabsItemUnsetText, NULL);
+    eflTabsItemUnsetText(NULL, &(Efl_Event){ .object = item });
     iupAttribSet(child, "_IUPEFL_TAB_ROW", (char*)row);
   }
   return row;
@@ -432,6 +442,8 @@ static void eflTabsSetItemTitle(Ihandle* ih, Ihandle* child, Eo* item, const cha
       efl_ui_textbox_cnp_dnd_mode_set(efl_added, EFL_UI_TEXTBOX_CNP_CONTENT_NOTHING),
       efl_text_interactive_selection_allowed_set(efl_added, EINA_FALSE));
     efl_canvas_object_pass_events_set(label, EINA_TRUE);
+    efl_gfx_hint_fill_set(label, EINA_TRUE, EINA_FALSE);
+    efl_gfx_hint_align_set(label, 0.5, 0.5);
     if (image)
       efl_pack_after(row, label, image);
     else
