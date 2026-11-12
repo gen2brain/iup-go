@@ -364,6 +364,28 @@ static int eflButtonSetActiveAttrib(Ihandle* ih, const char* value)
   }
 }
 
+static int efl_button_theme_colors = -1;
+
+/* color classes hide the frame only in themes built on them, otherwise only the anchor style has none */
+static int eflButtonUseAnchor(Ihandle* ih, Eo* parent)
+{
+  int chromeless = (ih->data->type & IUP_BUTTON_IMAGE) && iupAttribGet(ih, "IMPRESS") && !iupAttribGetBoolean(ih, "IMPRESSBORDER");
+
+  if (!chromeless && !iupAttribGetBoolean(ih, "FLAT"))
+    return 0;
+
+  if (efl_button_theme_colors < 0)
+  {
+    Eo* probe = efl_add(EFL_UI_BUTTON_CLASS, parent);
+    Evas_Object* edje = probe ? elm_layout_edje_get(probe) : NULL;
+    int r, g, b, a;
+    efl_button_theme_colors = edje && edje_object_color_class_get(edje, "/bg/normal/button", &r, &g, &b, &a, &r, &g, &b, &a, &r, &g, &b, &a) ? 1 : 0;
+    if (probe)
+      efl_del(probe);
+  }
+  return !efl_button_theme_colors;
+}
+
 static void eflButtonHoverInCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -462,7 +484,10 @@ static int eflButtonMapMethod(Ihandle* ih)
   else
     ih->data->type = IUP_BUTTON_TEXT;
 
-  btn = efl_add(EFL_UI_BUTTON_CLASS, parent);
+  if (eflButtonUseAnchor(ih, parent))
+    btn = efl_add(EFL_UI_BUTTON_CLASS, parent, efl_ui_widget_style_set(efl_added, "anchor"));
+  else
+    btn = efl_add(EFL_UI_BUTTON_CLASS, parent);
 
   if (!btn)
     return IUP_ERROR;
