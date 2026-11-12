@@ -35,7 +35,7 @@ Targets (--os):
 	windows  .exe with icon, version info and the IUP manifest, --format msix; Authenticode with --sign
 	darwin   .app bundle and a zip of it; signed, notarized and stapled with --sign and --notary-*
 	linux    .tar.gz with .desktop file, hicolor icons and a Makefile; --format deb,rpm; OpenPGP signatures with --sign
-	android  .apk from the template in the iup module, needs only the NDK; signed
+	android  .apk from the template in the iup module, needs only the NDK, --format aab for an App Bundle; signed
 	ios      .ipa signed with --sign and --profile
 	js       directory with the wasm module and loader, served by iupkg serve
 	haiku    .hpkg package, active when copied into the packages directory
@@ -187,7 +187,7 @@ func newFlagSet(c *config) *flag.FlagSet {
 	fs.StringVar(&c.minOS, "minos", "15.0", "ios: minimum iOS `version`")
 	fs.StringVar(&c.profile, "profile", "", "ios: provisioning profile `file` (.mobileprovision)")
 	fs.StringVar(&c.category, "category", "Utility", "linux: desktop entry `categories`, separated by ;")
-	fs.Func("format", "comma-separated `formats`, linux: targz, deb, rpm (default targz); windows: msix, written next to the .exe", func(s string) error {
+	fs.Func("format", "comma-separated `formats`, linux: targz, deb, rpm (default targz); windows: msix, written next to the .exe; android: apk, aab (default apk)", func(s string) error {
 		c.formats = splitList(s)
 		return nil
 	})
@@ -443,6 +443,19 @@ func (c *config) resolve() error {
 	}
 	if len(c.formats) == 0 && c.goos == "linux" {
 		c.formats = []string{"targz"}
+	}
+	if len(c.formats) == 0 && c.goos == "android" {
+		c.formats = []string{"apk"}
+	}
+	if c.goos == "android" {
+		for _, format := range c.formats {
+			if format != "apk" && format != "aab" {
+				return fmt.Errorf("unknown format %q (apk, aab)", format)
+			}
+		}
+		if c.install && !slices.Contains(c.formats, "apk") {
+			return errors.New("--install needs the apk format")
+		}
 	}
 	if c.goos == "windows" {
 		for _, format := range c.formats {

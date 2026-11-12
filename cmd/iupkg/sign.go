@@ -33,7 +33,7 @@ func runSign(args []string) error {
 	fs.StringVar(&c.notaryID, "notary-key-id", "", "darwin: App Store Connect API key `id` (default: from the key file name)")
 	fs.StringVar(&c.notaryIssue, "notary-issuer", "", "darwin: App Store Connect issuer `id`")
 	fs.Usage = func() {
-		fmt.Fprint(os.Stderr, "Usage:\n\n\tiupkg sign [flags] <file>\n\nSigns an existing .exe, .msix, .app, .ipa, .apk, .deb, .rpm, or Mach-O executable or dylib in place.\nWith an OpenPGP key any other file gets a detached <file>.asc signature.\n\nFlags:\n")
+		fmt.Fprint(os.Stderr, "Usage:\n\n\tiupkg sign [flags] <file>\n\nSigns an existing .exe, .msix, .app, .ipa, .apk, .aab, .deb, .rpm, or Mach-O executable or dylib in place.\nWith an OpenPGP key any other file gets a detached <file>.asc signature.\n\nFlags:\n")
 		printDefaults(fs)
 	}
 	if err := fs.Parse(args); err != nil {
@@ -79,7 +79,7 @@ func runSign(args []string) error {
 		return signMSIX(c, path)
 	case ".ipa":
 		return signIPA(c, path)
-	case ".apk":
+	case ".apk", ".aab":
 		return signAPK(c, path)
 	}
 	data, err := os.ReadFile(path)
@@ -236,7 +236,12 @@ func signAPK(c *config, path string) error {
 	if err != nil {
 		return err
 	}
-	entries, err = apk.SignV1(entries, id)
+	bundle := strings.EqualFold(filepath.Ext(path), ".aab")
+	if bundle {
+		entries, err = apk.SignBundle(entries, id)
+	} else {
+		entries, err = apk.SignV1(entries, id)
+	}
 	if err != nil {
 		return err
 	}
@@ -244,9 +249,10 @@ func signAPK(c *config, path string) error {
 	if err != nil {
 		return err
 	}
-	data, err = apk.SignV2(data, id)
-	if err != nil {
-		return err
+	if !bundle {
+		if data, err = apk.SignV2(data, id); err != nil {
+			return err
+		}
 	}
 	return os.WriteFile(path, data, 0o644)
 }

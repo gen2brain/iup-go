@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
 
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/apk"
 	"github.com/gen2brain/iup-go/cmd/iupkg/internal/icon"
@@ -40,6 +41,11 @@ var androidPermissions = map[string][]string{
 
 const androidAPI = "24"
 
+type androidLib struct {
+	abi  string
+	data []byte
+}
+
 func packageAndroid(c *config) error {
 	var archs []string
 	for _, a := range splitList(c.goarch) {
@@ -54,63 +60,14 @@ func packageAndroid(c *config) error {
 		return err
 	}
 
-	template := filepath.Join(c.iupDir, "libs", "android", "template.apk")
-	entries, err := apk.ReadTemplate(template)
-	if err != nil {
-		return fmt.Errorf("%s: %w", template, err)
-	}
-
-	manifest := apk.Find(entries, "AndroidManifest.xml")
-	arsc := apk.Find(entries, "resources.arsc")
-	if manifest == nil || arsc == nil {
-		return fmt.Errorf("%s: not an APK template", template)
-	}
-
-	var perms []string
-	for _, p := range c.permissions {
-		perms = append(perms, androidPermissions[p]...)
-	}
-	lib := "lib" + c.exe + ".so"
-	data, err := manifest.Content()
-	if err != nil {
-		return err
-	}
-	data, err = apk.PatchManifest(data, apk.ManifestValues{
-		Package: c.id, Label: c.name, Version: c.version, Build: c.build, Library: lib, Permissions: perms,
-	})
-	if err != nil {
-		return fmt.Errorf("%s: %w", template, err)
-	}
-	if err := manifest.SetContent(data); err != nil {
-		return err
-	}
-
-	table, err := arsc.Content()
-	if err != nil {
-		return err
-	}
-	if table, err = apk.RenamePackage(table, c.id); err != nil {
-		return fmt.Errorf("%s: %w", template, err)
-	}
-	if err := arsc.SetContent(table); err != nil {
-		return err
-	}
-
-	if err := replaceLauncherIcons(c, entries, arsc); err != nil {
-		return err
-	}
-	if slices.Contains(c.cleartext, "localhost") {
-		if err := allowLocalhostCleartext(entries, arsc); err != nil {
-			return err
-		}
-	}
-
 	tmp, err := os.MkdirTemp("", "iupkg-")
 	if err != nil {
 		return err
 	}
 	defer os.RemoveAll(tmp)
 
+	lib := "lib" + c.exe + ".so"
+	var libs []androidLib
 	for _, arch := range archs {
 		abi := androidABIs[arch]
 		out := filepath.Join(tmp, abi.abi, lib)
@@ -130,23 +87,15 @@ func packageAndroid(c *config) error {
 		if err != nil {
 			return err
 		}
-		e, err := apk.NewEntry("lib/"+abi.abi+"/"+lib, so, zip.Store, apk.AlignLib)
-		if err != nil {
-			return err
-		}
-		entries = append(entries, e)
+		libs = append(libs, androidLib{abi.abi, so})
 	}
 
-	for _, f := range c.files {
-		name := "assets/resources/" + f.name
-		if apk.Find(entries, name) != nil {
-			return fmt.Errorf("--data: %s is already in the package", f.name)
-		}
-		e, err := apk.NewEntry(name, f.data, zip.Deflate, 0)
-		if err != nil {
-			return err
-		}
-		entries = append(entries, e)
+	var perms []string
+	for _, p := range c.permissions {
+		perms = append(perms, androidPermissions[p]...)
+	}
+	values := apk.ManifestValues{
+		Package: c.id, Label: c.name, Version: c.version, Build: c.build, Library: lib, Permissions: perms,
 	}
 
 	var id *keys.Identity
@@ -158,45 +107,209 @@ func packageAndroid(c *config) error {
 	if err != nil {
 		return err
 	}
-	entries, err = apk.SignV1(entries, id)
-	if err != nil {
-		return err
-	}
-	data, err = apk.WriteZip(entries)
-	if err != nil {
-		return err
-	}
-	data, err = apk.SignV2(data, id)
-	if err != nil {
-		return err
-	}
 
-	out := filepath.Join(c.out, c.exe+".apk")
-	if err := os.WriteFile(out, data, 0o644); err != nil {
-		return err
-	}
-	fmt.Fprintln(os.Stderr, out)
-
-	if c.install {
-		return run("adb", "install", "-r", out)
+	for _, format := range c.formats {
+		var out string
+		if format == "aab" {
+			out, err = packageAndroidBundle(c, values, libs, id)
+		} else {
+			out, err = packageAndroidAPK(c, values, libs, id)
+		}
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stderr, out)
+		if c.install && format == "apk" {
+			if err := run("adb", "install", "-r", out); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
 
-func allowLocalhostCleartext(entries []*apk.Entry, arsc *apk.Entry) error {
+func packageAndroidAPK(c *config, values apk.ManifestValues, libs []androidLib, id *keys.Identity) (string, error) {
+	template := filepath.Join(c.iupDir, "libs", "android", "template.apk")
+	entries, err := apk.ReadTemplate(template)
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", template, err)
+	}
+
+	manifest := apk.Find(entries, "AndroidManifest.xml")
+	arsc := apk.Find(entries, "resources.arsc")
+	if manifest == nil || arsc == nil {
+		return "", fmt.Errorf("%s: not an APK template", template)
+	}
+
+	data, err := manifest.Content()
+	if err != nil {
+		return "", err
+	}
+	if data, err = apk.PatchManifest(data, values); err != nil {
+		return "", fmt.Errorf("%s: %w", template, err)
+	}
+	if err := manifest.SetContent(data); err != nil {
+		return "", err
+	}
+
 	table, err := arsc.Content()
 	if err != nil {
-		return err
+		return "", err
 	}
-	dst, err := apk.ResourcePaths(table, "xml", "iup_network_security")
+	if table, err = apk.RenamePackage(table, c.id); err != nil {
+		return "", fmt.Errorf("%s: %w", template, err)
+	}
+	if err := arsc.SetContent(table); err != nil {
+		return "", err
+	}
+
+	icons, err := apk.ResourcePaths(table, "mipmap", "ic_launcher")
 	if err != nil {
-		return err
+		return "", err
 	}
-	src, err := apk.ResourcePaths(table, "xml", "iup_network_security_localhost")
+	if err := replaceLauncherIcons(c, entries, icons); err != nil {
+		return "", err
+	}
+	if slices.Contains(c.cleartext, "localhost") {
+		dst, err := apk.ResourcePaths(table, "xml", "iup_network_security")
+		if err != nil {
+			return "", err
+		}
+		src, err := apk.ResourcePaths(table, "xml", "iup_network_security_localhost")
+		if err != nil {
+			return "", err
+		}
+		if err := copyEntry(entries, src[0], dst[0]); err != nil {
+			return "", err
+		}
+	}
+
+	for _, l := range libs {
+		e, err := apk.NewEntry("lib/"+l.abi+"/"+values.Library, l.data, zip.Store, apk.AlignLib)
+		if err != nil {
+			return "", err
+		}
+		entries = append(entries, e)
+	}
+	if entries, err = addAndroidData(c, entries, "assets/resources/"); err != nil {
+		return "", err
+	}
+
+	if entries, err = apk.SignV1(entries, id); err != nil {
+		return "", err
+	}
+	if data, err = apk.WriteZip(entries); err != nil {
+		return "", err
+	}
+	if data, err = apk.SignV2(data, id); err != nil {
+		return "", err
+	}
+
+	out := filepath.Join(c.out, c.exe+".apk")
+	return out, os.WriteFile(out, data, 0o644)
+}
+
+func packageAndroidBundle(c *config, values apk.ManifestValues, libs []androidLib, id *keys.Identity) (string, error) {
+	template := filepath.Join(c.iupDir, "libs", "android", "template.aab")
+	entries, err := apk.ReadTemplate(template)
 	if err != nil {
-		return err
+		return "", fmt.Errorf("%s: %w", template, err)
 	}
-	from, to := apk.Find(entries, src[0]), apk.Find(entries, dst[0])
+
+	manifest := apk.Find(entries, "base/manifest/AndroidManifest.xml")
+	table := apk.Find(entries, "base/resources.pb")
+	if manifest == nil || table == nil {
+		return "", fmt.Errorf("%s: not an app bundle template", template)
+	}
+
+	data, err := manifest.Content()
+	if err != nil {
+		return "", err
+	}
+	if data, err = apk.PatchBundleManifest(data, values); err != nil {
+		return "", fmt.Errorf("%s: %w", template, err)
+	}
+	if err := manifest.SetContent(data); err != nil {
+		return "", err
+	}
+
+	if data, err = table.Content(); err != nil {
+		return "", err
+	}
+	if data, err = apk.RenameBundlePackage(data, c.id); err != nil {
+		return "", fmt.Errorf("%s: %w", template, err)
+	}
+	if err := table.SetContent(data); err != nil {
+		return "", err
+	}
+
+	var icons []string
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name, "base/res/mipmap-") && strings.HasSuffix(e.Name, "/ic_launcher.png") {
+			icons = append(icons, e.Name)
+		}
+	}
+	if len(icons) == 0 {
+		return "", fmt.Errorf("%s: no launcher icons", template)
+	}
+	if err := replaceLauncherIcons(c, entries, icons); err != nil {
+		return "", err
+	}
+	if slices.Contains(c.cleartext, "localhost") {
+		if err := copyEntry(entries, "base/res/xml/iup_network_security_localhost.xml", "base/res/xml/iup_network_security.xml"); err != nil {
+			return "", err
+		}
+	}
+
+	var abis []string
+	for _, l := range libs {
+		e, err := apk.NewEntry("base/lib/"+l.abi+"/"+values.Library, l.data, zip.Deflate, 0)
+		if err != nil {
+			return "", err
+		}
+		entries = append(entries, e)
+		abis = append(abis, l.abi)
+	}
+	if data, err = apk.BundleNativeTargeting(abis); err != nil {
+		return "", err
+	}
+	e, err := apk.NewEntry("base/native.pb", data, zip.Deflate, 0)
+	if err != nil {
+		return "", err
+	}
+	entries = append(entries, e)
+	if entries, err = addAndroidData(c, entries, "base/assets/resources/"); err != nil {
+		return "", err
+	}
+
+	if entries, err = apk.SignBundle(entries, id); err != nil {
+		return "", err
+	}
+	if data, err = apk.WriteZip(entries); err != nil {
+		return "", err
+	}
+
+	out := filepath.Join(c.out, c.exe+".aab")
+	return out, os.WriteFile(out, data, 0o644)
+}
+
+func addAndroidData(c *config, entries []*apk.Entry, dir string) ([]*apk.Entry, error) {
+	for _, f := range c.files {
+		name := dir + f.name
+		if apk.Find(entries, name) != nil {
+			return nil, fmt.Errorf("--data: %s is already in the package", f.name)
+		}
+		e, err := apk.NewEntry(name, f.data, zip.Deflate, 0)
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, e)
+	}
+	return entries, nil
+}
+
+func copyEntry(entries []*apk.Entry, src, dst string) error {
+	from, to := apk.Find(entries, src), apk.Find(entries, dst)
 	if from == nil || to == nil {
 		return errors.New("template network security config missing")
 	}
@@ -207,15 +320,7 @@ func allowLocalhostCleartext(entries []*apk.Entry, arsc *apk.Entry) error {
 	return to.SetContent(data)
 }
 
-func replaceLauncherIcons(c *config, entries []*apk.Entry, arsc *apk.Entry) error {
-	table, err := arsc.Content()
-	if err != nil {
-		return err
-	}
-	paths, err := apk.ResourcePaths(table, "mipmap", "ic_launcher")
-	if err != nil {
-		return err
-	}
+func replaceLauncherIcons(c *config, entries []*apk.Entry, paths []string) error {
 	img, err := icon.Load(c.icon)
 	if err != nil {
 		return err

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"unicode/utf16"
@@ -22,6 +23,154 @@ func templateAPK(t *testing.T) string {
 		t.Skip(err)
 	}
 	return path
+}
+
+func templateBundle(t *testing.T) []*Entry {
+	_, file, _, _ := runtime.Caller(0)
+	path := filepath.Join(filepath.Dir(file), "..", "..", "..", "..", "iup", "libs", "android", "template.aab")
+	if _, err := os.Stat(path); err != nil {
+		t.Skip(err)
+	}
+	entries, err := ReadTemplate(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return entries
+}
+
+func bundleContent(t *testing.T, entries []*Entry, name string) []byte {
+	e := Find(entries, name)
+	if e == nil {
+		t.Fatalf("%s missing", name)
+	}
+	data, err := e.Content()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
+}
+
+func TestProtoRoundTrip(t *testing.T) {
+	entries := templateBundle(t)
+	for _, name := range []string{"base/manifest/AndroidManifest.xml", "base/resources.pb"} {
+		data := bundleContent(t, entries, name)
+		fields, err := protoParse(data)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if !bytes.Equal(protoEncode(fields), data) {
+			t.Errorf("%s: re-encoded bytes differ", name)
+		}
+	}
+}
+
+func TestPatchBundleManifest(t *testing.T) {
+	data := bundleContent(t, templateBundle(t), "base/manifest/AndroidManifest.xml")
+	values := ManifestValues{
+		Package: "org.example.demo", Label: "Demo App", Version: "2.0", Build: 9, Library: "libdemo.so",
+		Permissions: []string{"android.permission.CAMERA"},
+	}
+	out, err := PatchBundleManifest(data, values)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	attrs := map[string][]string{}
+	var code uint64
+	_, err = visitBundleXML(out, func(element []protoField) ([]protoField, error) {
+		name := protoGetString(element, xmlElementName)
+		for _, f := range element {
+			if f.num != xmlElementAttribute {
+				continue
+			}
+			attr, err := protoParse(f.b)
+			if err != nil {
+				return nil, err
+			}
+			key := name + "@" + protoGetString(attr, xmlAttributeName)
+			attrs[key] = append(attrs[key], protoGetString(attr, xmlAttributeValue))
+			if key == "manifest@versionCode" {
+				item, _ := protoParse(attr[protoFind(attr, xmlAttributeItem)].b)
+				prim, _ := protoParse(item[protoFind(item, itemPrimitive)].b)
+				code = prim[protoFind(prim, primitiveInt)].v
+			}
+		}
+		return element, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for key, want := range map[string]string{
+		"manifest@package": "org.example.demo", "manifest@versionName": "2.0", "manifest@versionCode": "9",
+		"application@label": "Demo App",
+	} {
+		if got := attrs[key]; len(got) != 1 || got[0] != want {
+			t.Errorf("%s = %q", key, got)
+		}
+	}
+	if code != 9 {
+		t.Errorf("versionCode item = %d", code)
+	}
+	if !slices.Contains(attrs["meta-data@value"], "libdemo.so") {
+		t.Errorf("ENTRY_LIBRARY = %q", attrs["meta-data@value"])
+	}
+	perms := attrs["uses-permission@name"]
+	slices.Sort(perms)
+	want := []string{"android.permission.CAMERA", "org.example.demo.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"}
+	if !slices.Equal(perms, want) {
+		t.Errorf("permissions = %q", perms)
+	}
+	for _, s := range attrs["provider@authorities"] {
+		if !strings.HasPrefix(s, "org.example.demo.") {
+			t.Errorf("authority %q not renamed", s)
+		}
+	}
+	if _, err := PatchBundleManifest(out, ManifestValues{Package: "a.b", Label: "x", Version: "1", Library: "libx.so"}); err != nil {
+		t.Errorf("repatch: %v", err)
+	}
+}
+
+func TestRenameBundlePackage(t *testing.T) {
+	out, err := RenameBundlePackage(bundleContent(t, templateBundle(t), "base/resources.pb"), "org.example.demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fields, err := protoParse(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg, err := protoParse(fields[protoFind(fields, tablePackage)].b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := protoGetString(pkg, packageName); got != "org.example.demo" {
+		t.Errorf("package = %q", got)
+	}
+}
+
+func TestBundleNativeTargeting(t *testing.T) {
+	data, err := BundleNativeTargeting([]string{"arm64-v8a", "x86_64"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dirs, err := protoParse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, d := range dirs {
+		dir, _ := protoParse(d.b)
+		targeting, _ := protoParse(dir[protoFind(dir, 2)].b)
+		abi, _ := protoParse(targeting[protoFind(targeting, 1)].b)
+		got = append(got, protoGetString(dir, 1)+"="+strconv.FormatUint(abi[protoFind(abi, 1)].v, 10))
+	}
+	if want := []string{"lib/arm64-v8a=3", "lib/x86_64=5"}; !slices.Equal(got, want) {
+		t.Errorf("directories = %q", got)
+	}
+	if _, err := BundleNativeTargeting([]string{"mips"}); err == nil {
+		t.Error("unknown ABI accepted")
+	}
 }
 
 func TestPatchManifest(t *testing.T) {

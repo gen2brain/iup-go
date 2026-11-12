@@ -80,10 +80,19 @@ func isRSA(id *keys.Identity) bool {
 }
 
 func SignV1(entries []*Entry, id *keys.Identity) ([]*Entry, error) {
+	return signJAR(entries, id, "X-Android-APK-Signed: 2\r\n")
+}
+
+// SignBundle JAR-signs an Android App Bundle, the only scheme bundletool and Play accept for it.
+func SignBundle(entries []*Entry, id *keys.Identity) ([]*Entry, error) {
+	return signJAR(entries, id, "")
+}
+
+func signJAR(entries []*Entry, id *keys.Identity, sfExtra string) ([]*Entry, error) {
 	var manifest bytes.Buffer
 	manifest.WriteString("Manifest-Version: 1.0\r\nCreated-By: iupkg\r\n\r\n")
 	var sf bytes.Buffer
-	sf.WriteString("Signature-Version: 1.0\r\nCreated-By: iupkg\r\nX-Android-APK-Signed: 2\r\n")
+	sf.WriteString("Signature-Version: 1.0\r\nCreated-By: iupkg\r\n" + sfExtra)
 	var sections bytes.Buffer
 	for _, e := range entries {
 		content, err := e.Content()

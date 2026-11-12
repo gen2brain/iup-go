@@ -1,7 +1,7 @@
 ## iupkg
 
 Builds and packages an IUP-Go program for distribution: a Windows executable with icon, version info and manifest, or an `.msix`,
-a macOS `.app`, a Linux tarball, `.deb` or `.rpm`, an Android `.apk`, an iOS `.ipa`, a WebAssembly site or a Haiku `.hpkg`.
+a macOS `.app`, a Linux tarball, `.deb` or `.rpm`, an Android `.apk` or `.aab`, an iOS `.ipa`, a WebAssembly site or a Haiku `.hpkg`.
 
 Every format is written by iupkg itself, including the signatures, so a Go toolchain is all a host needs.
 Cross-compiling C code and installing on devices need the platform tools named below.
@@ -50,7 +50,7 @@ iupkg staple <app>
  | `--cgo`                                              |                     | build with cgo (default: `go env CGO_ENABLED` for the host platform, off when cross-compiling, always on with a driver tag) |
  | `--debug`                                            |                     | keep symbols, debug info and file paths; otherwise `-trimpath -ldflags "-s -w"`                                             |
  | `--console`                                          |                     | windows: console application                                                                                                |
- | `--format`                                           | linux: `targz`      | linux: comma list of `targz`, `deb`, `rpm`; windows: `msix`, written next to the `.exe`                                     |
+ | `--format`                                           | linux: `targz`      | linux: comma list of `targz`, `deb`, `rpm`; windows: `msix`, written next to the `.exe`; android: `apk`, `aab`              |
  | `--category`                                         | `Utility`           | linux: desktop entry categories                                                                                             |
  | `--vendor`                                           | application name    | Windows company name, Debian maintainer (`Name <email>`), RPM and Haiku vendor                                              |
  | `--publisher`                                        | certificate subject | windows msix: publisher of the package identity                                                                             |
@@ -132,10 +132,12 @@ iupkg package --os linux --format deb,rpm --vendor "Jane Doe <jane@example.com>"
 `<exe>.apk`, built from the template APK shipped in the iup module. Only the Android NDK is needed: set `ANDROID_NDK_HOME`, or install it under `$ANDROID_SDK_ROOT/ndk`.
 The Go program is compiled as a shared library per ABI; the manifest, launcher icons and native libraries are written into the template, then the APK is aligned and signed (v1 and v2).
 No permission is requested unless listed. `--install` runs `adb install`.
+`--format aab` writes `<exe>.aab` instead, an Android App Bundle for Google Play, built the same way from the template bundle and signed with the upload key (v1); `--format apk,aab` writes both.
 Plain HTTP is blocked, as Android does by default; `--cleartext localhost` allows it to `localhost` and `127.0.0.1` only, for an app that serves media to IupVideo on the loopback address.
 
 ```sh
 iupkg package --os android --arch arm64,amd64 --name "My App" --id com.example.myapp --permissions camera,internet --install ./cmd/myapp
+iupkg package --os android --arch arm64,amd64,arm --format aab --sign upload.p12 ./cmd/myapp
 ```
 
 Programs that need their own Java code or manifest entries use the Gradle project in
@@ -239,7 +241,7 @@ IUPKG_P12_PASSWORD=secret iupkg package --os android --sign release.p12 ./cmd/my
 
 ### Signing existing files
 
-`iupkg sign` signs a file made elsewhere, in place, with the same signers: a Windows `.exe`, `.dll` or `.msix`, a macOS or iOS `.app` directory, an `.ipa`, an `.apk`, a `.deb`, an `.rpm`, or a bare Mach-O executable or dylib.
+`iupkg sign` signs a file made elsewhere, in place, with the same signers: a Windows `.exe`, `.dll` or `.msix`, a macOS or iOS `.app` directory, an `.ipa`, an `.apk` or `.aab`, a `.deb`, an `.rpm`, or a bare Mach-O executable or dylib.
 It takes `--sign`, `--signer` (`gpg`), `--profile` (iOS), `--entitlements` (macOS), `--timestamp`, `--timestamp-url` and the `--notary-*` flags; a macOS bundle with `--notary-key` is notarized and stapled after signing.
 
 ```sh
