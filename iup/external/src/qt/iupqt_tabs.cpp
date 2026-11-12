@@ -50,7 +50,7 @@ private:
   Ihandle* ih;
 
 public:
-  IupQtTabStyle(Ihandle* ih_param) : QProxyStyle(), ih(ih_param) {}
+  IupQtTabStyle(Ihandle* ih_param) : QProxyStyle(), ih(ih_param) { iupqtProxyStyleUpdateBase(this); }
 
   void drawControl(ControlElement element, const QStyleOption* option,
                    QPainter* painter, const QWidget* widget) const override
@@ -175,9 +175,17 @@ class IupQtTabBar : public QTabBar
 {
 private:
   Ihandle* ih;
+  IupQtTabStyle* tab_style;
   std::function<void(int)> closeCallback;
 
 protected:
+  void changeEvent(QEvent* event) override
+  {
+    if (tab_style && (event->type() == QEvent::StyleChange || event->type() == QEvent::PaletteChange))
+      iupqtProxyStyleUpdateBase(tab_style);
+    QTabBar::changeEvent(event);
+  }
+
   void mousePressEvent(QMouseEvent* event) override
   {
     if (event->button() == Qt::RightButton)
@@ -307,9 +315,9 @@ protected:
   }
 
 public:
-  IupQtTabBar(Ihandle* ih_param) : QTabBar(), ih(ih_param), closeCallback(nullptr)
+  IupQtTabBar(Ihandle* ih_param) : QTabBar(), ih(ih_param), tab_style(nullptr), closeCallback(nullptr)
   {
-    IupQtTabStyle* tab_style = new IupQtTabStyle(ih_param);
+    tab_style = new IupQtTabStyle(ih_param);
     tab_style->setParent(this);
     setStyle(tab_style);
   }
@@ -697,7 +705,21 @@ static void qtTabsUpdatePageFont(Ihandle* ih)
   }
 }
 
-static void qtTabsUpdatePageBgColor(Ihandle* ih, unsigned char r, unsigned char g, unsigned char b)
+static void qtTabsSetWindowColor(Ihandle* ih, QWidget* widget, const char* value)
+{
+  unsigned char r, g, b;
+  QPalette palette = widget->palette();
+
+  if (iupClassObjectIsGlobalDefaultColor(ih, "BGCOLOR", value) || !iupStrToRGB(value, &r, &g, &b))
+    iupqtPaletteUnsetRole(palette, QPalette::Window);
+  else
+    palette.setColor(QPalette::Window, QColor(r, g, b));
+
+  widget->setPalette(palette);
+  widget->setAutoFillBackground(true);
+}
+
+static void qtTabsUpdatePageBgColor(Ihandle* ih, const char* value)
 {
   Ihandle* child;
 
@@ -705,23 +727,26 @@ static void qtTabsUpdatePageBgColor(Ihandle* ih, unsigned char r, unsigned char 
   {
     auto* tab_container = reinterpret_cast<QWidget*>(iupAttribGet(child, "_IUPTAB_CONTAINER"));
     if (tab_container)
-    {
-      QPalette palette = tab_container->palette();
-      palette.setColor(QPalette::Window, QColor(r, g, b));
-      tab_container->setPalette(palette);
-      tab_container->setAutoFillBackground(true);
-    }
+      qtTabsSetWindowColor(ih, tab_container, value);
   }
 }
 
-static void qtTabsUpdatePageFgColor(Ihandle* ih, unsigned char r, unsigned char g, unsigned char b)
+static void qtTabsUpdateStyleSheet(Ihandle* ih)
 {
   auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
-  QTabBar* tab_bar = tabs->tabBar();
+  unsigned char r, g, b;
+  QString style;
 
-  QString styleSheet = tab_bar->styleSheet();
-  styleSheet += QString("QTabBar::tab { color: rgb(%1, %2, %3); }").arg(r).arg(g).arg(b);
-  tab_bar->setStyleSheet(styleSheet);
+  if (ih->data->horiz_padding != 0 || ih->data->vert_padding != 0)
+    style += QString("padding: %1px %2px;").arg(ih->data->vert_padding).arg(ih->data->horiz_padding);
+
+  if (iupStrToRGB(iupAttribGet(ih, "_IUPQT_TABFGCOLOR"), &r, &g, &b))
+    style += QString(" color: rgb(%1, %2, %3);").arg(r).arg(g).arg(b);
+
+  if (style.isEmpty())
+    tabs->tabBar()->setStyleSheet(QString());
+  else
+    tabs->tabBar()->setStyleSheet(QString("QTabBar::tab { %1 }").arg(style));
 }
 
 static void qtTabsUpdateTabType(Ihandle* ih)
@@ -760,20 +785,7 @@ static int qtTabsSetTabPaddingAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
-    QString styleSheet = tabs->tabBar()->styleSheet();
-
-    QStringList lines = styleSheet.split(';');
-    QStringList filtered;
-    for (const QString& line : lines)
-    {
-      if (!line.contains("padding"))
-        filtered.append(line);
-    }
-    styleSheet = filtered.join(";");
-
-    styleSheet += QString("QTabBar::tab { padding: %1px %2px; }").arg(vert_padding).arg(horiz_padding);
-    tabs->tabBar()->setStyleSheet(styleSheet);
+    qtTabsUpdateStyleSheet(ih);
     return 0;
   }
 
@@ -1067,8 +1079,10 @@ static int qtTabsSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
+  iupAttribSetStr(ih, "_IUPQT_TABFGCOLOR", iupClassObjectIsGlobalDefaultColor(ih, "FGCOLOR", value)? nullptr: value);
+
   if (ih->handle)
-    qtTabsUpdatePageFgColor(ih, r, g, b);
+    qtTabsUpdateStyleSheet(ih);
 
   return 1;
 }
@@ -1081,13 +1095,8 @@ static int qtTabsSetBgColorAttrib(Ihandle* ih, const char* value)
 
   if (ih->handle)
   {
-    auto* tabs = reinterpret_cast<QTabWidget*>(ih->handle);
-    QPalette palette = tabs->palette();
-    palette.setColor(QPalette::Window, QColor(r, g, b));
-    tabs->setPalette(palette);
-    tabs->setAutoFillBackground(true);
-
-    qtTabsUpdatePageBgColor(ih, r, g, b);
+    qtTabsSetWindowColor(ih, reinterpret_cast<QWidget*>(ih->handle), value);
+    qtTabsUpdatePageBgColor(ih, value);
   }
 
   return 1;
@@ -1155,7 +1164,6 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     char* tabtitle;
     char* tabimage;
     int pos;
-    unsigned char r, g, b;
 
     pos = IupGetChildPos(ih, child);
 
@@ -1207,11 +1215,7 @@ static void qtTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     else
       tabs->insertTab(index, tab_page, title);
 
-    iupStrToRGB(IupGetAttribute(ih, "BGCOLOR"), &r, &g, &b);
-    QPalette palette = tab_container->palette();
-    palette.setColor(QPalette::Window, QColor(r, g, b));
-    tab_container->setPalette(palette);
-    tab_container->setAutoFillBackground(true);
+    qtTabsSetWindowColor(ih, tab_container, IupGetAttribute(ih, "BGCOLOR"));
 
     iupAttribSet(ih, "_IUPQT_IGNORE_CHANGE", nullptr);
 
@@ -1296,13 +1300,7 @@ static int qtTabsMapMethod(Ihandle* ih)
     tabs->tabBar()->setExpanding(false);
   }
 
-  if (ih->data->horiz_padding != 0 || ih->data->vert_padding != 0)
-  {
-    QString styleSheet = QString(
-      "QTabBar::tab { padding: %1px %2px; }"
-    ).arg(ih->data->vert_padding).arg(ih->data->horiz_padding);
-    tabs->tabBar()->setStyleSheet(styleSheet);
-  }
+  qtTabsUpdateStyleSheet(ih);
 
   iupqtAddToParent(ih);
 

@@ -417,9 +417,13 @@ static int qtValSetBgColorAttrib(Ihandle* ih, const char* value)
   if (slider)
   {
     QPalette palette = slider->palette();
-    palette.setColor(QPalette::Window, QColor(r, g, b));
+    int is_default = iupClassObjectIsGlobalDefaultColor(ih, "BGCOLOR", value);
+    if (is_default)
+      iupqtPaletteUnsetRole(palette, QPalette::Window);
+    else
+      palette.setColor(QPalette::Window, QColor(r, g, b));
     slider->setPalette(palette);
-    slider->setAutoFillBackground(true);
+    slider->setAutoFillBackground(!is_default);
     return 1;
   }
 

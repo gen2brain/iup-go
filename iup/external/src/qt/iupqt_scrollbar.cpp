@@ -10,7 +10,6 @@
 #include <QAbstractSlider>
 #include <QProxyStyle>
 #include <QStyleOptionSlider>
-#include <QStyleFactory>
 #include <QApplication>
 #include <QPainter>
 
@@ -36,27 +35,7 @@ class IupQtScrollBarStyle : public QProxyStyle
 public:
   IupQtScrollBarStyle() : QProxyStyle()
   {
-    QStyle* appStyle = QApplication::style();
-    QStyle* base = nullptr;
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
-    QString name = appStyle->name();
-    if (!name.isEmpty())
-      base = QStyleFactory::create(name);
-#endif
-
-    if (!base)
-    {
-      QString objName = appStyle->objectName();
-      if (!objName.isEmpty())
-        base = QStyleFactory::create(objName);
-    }
-
-    if (!base)
-      base = QStyleFactory::create(QStringLiteral("Fusion"));
-
-    if (base)
-      setBaseStyle(base);
+    iupqtProxyStyleUpdateBase(this);
   }
 
   int styleHint(StyleHint hint, const QStyleOption* option = nullptr,
@@ -95,13 +74,23 @@ public:
 
 class IupQtScrollBar : public QScrollBar
 {
+  IupQtScrollBarStyle* sb_style;
+
+protected:
+  void changeEvent(QEvent* event) override
+  {
+    if (sb_style && (event->type() == QEvent::StyleChange || event->type() == QEvent::PaletteChange))
+      iupqtProxyStyleUpdateBase(sb_style);
+    QScrollBar::changeEvent(event);
+  }
+
 public:
   Ihandle* iup_handle;
 
   IupQtScrollBar(Qt::Orientation orientation, Ihandle* ih)
-    : QScrollBar(orientation), iup_handle(ih)
+    : QScrollBar(orientation), sb_style(nullptr), iup_handle(ih)
   {
-    IupQtScrollBarStyle* sb_style = new IupQtScrollBarStyle();
+    sb_style = new IupQtScrollBarStyle();
     sb_style->setParent(this);
     setStyle(sb_style);
     setRange(0, ISCROLLBAR_RANGE);

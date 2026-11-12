@@ -167,18 +167,25 @@ static int qtFrameSetBgColorAttrib(Ihandle* ih, const char* value)
     }
 
     QColor color(r, g, b);
+    int is_default = iupClassObjectIsGlobalDefaultColor(ih, "BGCOLOR", value);
 
     if (groupbox)
     {
       QPalette palette = groupbox->palette();
-      palette.setColor(QPalette::Window, color);
+      if (is_default)
+        iupqtPaletteUnsetRole(palette, QPalette::Window);
+      else
+        palette.setColor(QPalette::Window, color);
       groupbox->setPalette(palette);
     }
 
     if (inner)
     {
       QPalette palette = inner->palette();
-      palette.setColor(QPalette::Window, color);
+      if (is_default)
+        iupqtPaletteUnsetRole(palette, QPalette::Window);
+      else
+        palette.setColor(QPalette::Window, color);
       inner->setPalette(palette);
     }
   }
@@ -201,7 +208,10 @@ static int qtFrameSetFgColorAttrib(Ihandle* ih, const char* value)
     return 0;
 
   QPalette palette = groupbox->palette();
-  iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
+  if (iupClassObjectIsGlobalDefaultColor(ih, "FGCOLOR", value))
+    iupqtPaletteUnsetRole(palette, QPalette::WindowText);
+  else
+    iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
   groupbox->setPalette(palette);
 
   return 1;

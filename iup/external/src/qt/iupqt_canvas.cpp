@@ -1035,7 +1035,10 @@ static int qtCanvasSetBgColorAttrib(Ihandle* ih, const char* value)
     if (iupStrToRGB(value, &r, &g, &b))
     {
       QPalette palette = container_data->canvas->palette();
-      palette.setColor(QPalette::Window, QColor(r, g, b));
+      if (iupClassObjectIsGlobalDefaultColor(ih, "BGCOLOR", value))
+        iupqtPaletteUnsetRole(palette, QPalette::Window);
+      else
+        palette.setColor(QPalette::Window, QColor(r, g, b));
       container_data->canvas->setPalette(palette);
       container_data->canvas->setAutoFillBackground(true);
       return 1;

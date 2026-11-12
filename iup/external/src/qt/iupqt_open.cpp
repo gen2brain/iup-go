@@ -473,6 +473,9 @@ public:
 
 extern "C" IUP_SDK_API int iupdrvOpen(int* argc, char*** argv)
 {
+  /* the frame style sheet would otherwise cut every child off palette changes */
+  QCoreApplication::setAttribute(Qt::AA_UseStyleSheetPropagationInWidgetStyles);
+
   if (!QApplication::instance())
   {
     /* Qt WebEngine needs a real executable path in argv[0], and QApplication modifies argc */

@@ -27,6 +27,7 @@ class QApplication;
 class QFont;
 class QColor;
 class QPalette;
+class QProxyStyle;
 class QPixmap;
 class QEvent;
 class QKeyEvent;
@@ -122,6 +123,8 @@ IUP_DRV_API char* iupqtGetQFontAttrib(Ihandle* ih);
 IUP_DRV_API void iupqtUpdateWidgetFont(Ihandle* ih, QWidget* widget);
 IUP_DRV_API void iupqtSetWidgetPalette(QWidget* widget, const QPalette& palette);
 IUP_DRV_API void iupqtPaletteSetForeground(QPalette& palette, int role, const QColor& color);
+IUP_DRV_API void iupqtPaletteUnsetRole(QPalette& palette, int role);
+IUP_DRV_API void iupqtProxyStyleUpdateBase(QProxyStyle* style);
 IUP_DRV_API void iupqtUpdatePlaceholderColor(QWidget* widget);
 IUP_DRV_API int iupqtIsSelfActive(Ihandle* ih);
 

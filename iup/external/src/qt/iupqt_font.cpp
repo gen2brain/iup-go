@@ -109,6 +109,9 @@ static IqtFont* qtFindFont(const char* font)
     return nullptr;
 
   auto* qfont = new QFont(QString::fromUtf8(typeface), point_size);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 13, 0) && QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+  qfont->setFamilies(QStringList(qfont->family()));  /* else resolve() puts the inherited families after it */
+#endif
   qfont->setBold(is_bold);
   qfont->setItalic(is_italic);
   qfont->setUnderline(is_underline);

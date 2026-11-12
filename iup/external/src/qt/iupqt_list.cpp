@@ -1669,22 +1669,16 @@ static int qtListSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  if (ih->data->is_dropdown)
+  int is_default = iupClassObjectIsGlobalDefaultColor(ih, "BGCOLOR", value);
+  QWidget* widget = ih->data->is_dropdown? reinterpret_cast<QWidget*>(ih->handle): qtListGetListWidget(ih);
+  if (widget)
   {
-    auto* combo = reinterpret_cast<QComboBox*>(ih->handle);
-    QPalette palette = combo->palette();
-    palette.setColor(QPalette::Base, QColor(r, g, b));
-    combo->setPalette(palette);
-  }
-  else
-  {
-    QListWidget* list = qtListGetListWidget(ih);
-    if (list)
-    {
-      QPalette palette = list->palette();
+    QPalette palette = widget->palette();
+    if (is_default)
+      iupqtPaletteUnsetRole(palette, QPalette::Base);
+    else
       palette.setColor(QPalette::Base, QColor(r, g, b));
-      iupqtSetWidgetPalette(list, palette);
-    }
+    iupqtSetWidgetPalette(widget, palette);
   }
 
   return 1;
@@ -1697,22 +1691,16 @@ static int qtListSetFgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  if (ih->data->is_dropdown)
+  int is_default = iupClassObjectIsGlobalDefaultColor(ih, "FGCOLOR", value);
+  QWidget* widget = ih->data->is_dropdown? reinterpret_cast<QWidget*>(ih->handle): qtListGetListWidget(ih);
+  if (widget)
   {
-    auto* combo = reinterpret_cast<QComboBox*>(ih->handle);
-    QPalette palette = combo->palette();
-    iupqtPaletteSetForeground(palette, QPalette::Text, QColor(r, g, b));
-    combo->setPalette(palette);
-  }
-  else
-  {
-    QListWidget* list = qtListGetListWidget(ih);
-    if (list)
-    {
-      QPalette palette = list->palette();
+    QPalette palette = widget->palette();
+    if (is_default)
+      iupqtPaletteUnsetRole(palette, QPalette::Text);
+    else
       iupqtPaletteSetForeground(palette, QPalette::Text, QColor(r, g, b));
-      iupqtSetWidgetPalette(list, palette);
-    }
+    iupqtSetWidgetPalette(widget, palette);
   }
 
   return 1;
