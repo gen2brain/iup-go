@@ -1204,16 +1204,7 @@ static int eflTreeSetTopItemAttrib(Ihandle* ih, const char* value)
 
 static int eflTreeSetBgColorAttrib(Ihandle* ih, const char* value)
 {
-  Eo* tree = iupeflGetWidget(ih);
-  unsigned char r, g, b;
-
-  if (!tree)
-    return 0;
-
-  if (iupStrToRGB(value, &r, &g, &b))
-    iupeflSetColor(tree, r, g, b, 255);
-
-  return 1;
+  return iupeflSetBgColorAttrib(ih, value);
 }
 
 static IeflTreeNode* eflTreeGetNodeFromId(Ihandle* ih, int id)
