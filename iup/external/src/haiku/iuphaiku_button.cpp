@@ -70,6 +70,17 @@ public:
       return;
     }
 
+    unsigned char r, g, b;
+    char* bgcolor = fIhandle ? iupAttribGet(fIhandle, "BGCOLOR") : nullptr;
+    if (!bgcolor && fIhandle)
+      bgcolor = iupBaseNativeParentGetBgColor(fIhandle);
+    if (iupStrToRGB(bgcolor, &r, &g, &b))
+    {
+      SetDrawingMode(B_OP_COPY);
+      SetHighColor(make_color(r, g, b));
+      FillRect(bounds);
+    }
+
     int img_w = 0, img_h = 0;
     if (bm) { img_w = static_cast<int>(bm->Bounds().Width() + 1); img_h = static_cast<int>(bm->Bounds().Height() + 1); }
 
