@@ -101,7 +101,17 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   if (visible)
   {
+    GtkWidget* focus_widget = gtk_window_get_focus((GtkWindow*)ih->handle);
+
     gtk_widget_show(ih->handle);
+
+    /* GTK focuses its own first widget on the first show, a selectable label selects all its text */
+    if (!focus_widget)
+    {
+      focus_widget = gtk_window_get_focus((GtkWindow*)ih->handle);
+      if (focus_widget && GTK_IS_LABEL(focus_widget) && gtk_label_get_selectable(GTK_LABEL(focus_widget)))
+        gtk_label_select_region(GTK_LABEL(focus_widget), 0, 0);
+    }
 #ifdef GDK_WINDOWING_QUARTZ
     /* quartz recreates the NSWindow when the decorations change, which drops the keep-above level */
     if (iupAttribGetBoolean(ih, "TOPMOST"))
