@@ -251,6 +251,8 @@ static QLineEdit* qtTextGetLineEdit(Ihandle* ih)
   return spin ? spin->edit() : reinterpret_cast<QLineEdit*>(ih->handle);
 }
 
+#define IUPQT_TEXT_MARGIN 4
+
 class IupQtTextEdit : public QTextEdit
 {
 private:
@@ -266,6 +268,13 @@ public:
 
   void setIupOverwriteMode(bool mode) { overwrite_mode = mode; }
   bool isIupOverwriteMode() const { return overwrite_mode; }
+
+  /* the document margin scrolls with the text, the viewport margins frame it */
+  void setIupMargins(int horiz, int vert)
+  {
+    document()->setDocumentMargin(0);
+    setViewportMargins(horiz, vert, horiz, vert);
+  }
 
 protected:
   void wheelEvent(QWheelEvent* event) override
@@ -455,13 +464,8 @@ static void iupqtTextMeasureMultilineBorders()
 
     int frame_width = temp_text->frameWidth();
 
-    int doc_margin = static_cast<int>(temp_text->document()->documentMargin());
-
-    iupqt_multiline_border_x = 2 * frame_width + 2 * doc_margin;
-    iupqt_multiline_border_y = 2 * frame_width + 2 * doc_margin;
-
-    if (iupqt_multiline_border_x < 4) iupqt_multiline_border_x = 4;
-    if (iupqt_multiline_border_y < 4) iupqt_multiline_border_y = 4;
+    iupqt_multiline_border_x = 2 * frame_width;
+    iupqt_multiline_border_y = 2 * frame_width;
 
     delete temp_text;
   }
@@ -474,6 +478,12 @@ extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
     iupqtTextMeasureMultilineBorders();
     (*w) += iupqt_multiline_border_x;
     (*h) += iupqt_multiline_border_y;
+
+    if (!ih->data->horiz_padding && !ih->data->vert_padding)
+    {
+      (*w) += 2 * IUPQT_TEXT_MARGIN;
+      (*h) += 2 * IUPQT_TEXT_MARGIN;
+    }
   }
   else
   {
@@ -1854,6 +1864,9 @@ static int qtTextMapMethod(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     auto* text = new IupQtTextEdit(ih);
+    text->setBackgroundRole(QPalette::Base);
+    text->setAutoFillBackground(true);
+    text->setIupMargins(IUPQT_TEXT_MARGIN, IUPQT_TEXT_MARGIN);
 
     text->setAcceptRichText(false);
     if (iupAttribGetBoolean(ih, "WORDWRAP"))
@@ -1977,10 +1990,8 @@ static int qtTextSetPaddingAttrib(Ihandle* ih, const char* value)
   {
     if (ih->data->is_multiline)
     {
-      auto* text = reinterpret_cast<QTextEdit*>(ih->handle);
-      text->document()->setDocumentMargin(ih->data->horiz_padding);
-      /* QTextEdit has no separate vertical padding */
-      ih->data->vert_padding = 0;
+      auto* text = reinterpret_cast<IupQtTextEdit*>(ih->handle);
+      text->setIupMargins(ih->data->horiz_padding, ih->data->vert_padding);
     }
     else
     {

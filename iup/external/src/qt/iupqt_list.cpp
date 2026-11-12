@@ -401,6 +401,8 @@ protected:
  * Custom Item Delegate for Image Support
  ****************************************************************************/
 
+#define IUPQT_LIST_ITEM_SPACE 4
+
 class IupQtListItemDelegate : public QStyledItemDelegate
 {
 public:
@@ -459,9 +461,7 @@ public:
     QSize size = QStyledItemDelegate::sizeHint(option, index);
 
     QFontMetrics fm(option.font);
-    int normalized_height = fm.height() + 4;
-    if (size.height() > normalized_height)
-      size.setHeight(normalized_height);
+    size.setHeight(fm.height() + IUPQT_LIST_ITEM_SPACE);
 
     if (ih && ih->data->show_image)
     {
@@ -627,7 +627,7 @@ static void iupqtListMeasureItemMetrics(Ihandle* ih)
     iupqt_list_item_padding_x = actual_item_width - text_width;
     if (iupqt_list_item_padding_x < 0) iupqt_list_item_padding_x = 0;
 
-    iupqt_list_item_space = 4;
+    iupqt_list_item_space = IUPQT_LIST_ITEM_SPACE;
     iupqt_list_row_height = char_height + iupqt_list_item_space;
   }
 }
@@ -665,37 +665,15 @@ static void iupqtListMeasureBorders(Ihandle* ih)
   {
     QWidget temp_parent;
     QComboBox temp_combo(&temp_parent);
-    temp_combo.addItem("X");
+    temp_combo.addItem("WWWWWWWWWW");
 
     QSize combo_size = temp_combo.sizeHint();
     QFontMetrics fm(temp_combo.font());
-    int text_height = fm.height();
 
-    QStyleOptionComboBox opt;
-    opt.initFrom(&temp_combo);
-    opt.subControls = QStyle::SC_All;
-    opt.editable = false;
-    opt.rect = QRect(0, 0, combo_size.width(), combo_size.height());
-
-    QStyle* style = temp_combo.style();
-    QRect editRect = style->subControlRect(QStyle::CC_ComboBox, &opt, QStyle::SC_ComboBoxEditField, &temp_combo);
-
-    int sb_size = iupdrvGetScrollbarSize();
-    int total_decor = combo_size.width() - editRect.width();
-
-    iupqt_dropdown_border_x = total_decor - sb_size + fm.horizontalAdvance('X');
-
-    /* Windows11 CE_ComboBoxLabel shrinks the rect 4px per side and QCommonStyle 2px more;
-       SC_ComboBoxEditField misses both, so SC_remove under-reports the inset by 12px. */
-    QString style_name = style->objectName();
-    if (style_name.compare(QLatin1String("windows11"), Qt::CaseInsensitive) == 0)
-    {
-      iupqt_dropdown_border_x += 12;
-    }
-
+    iupqt_dropdown_border_x = combo_size.width() - fm.horizontalAdvance("WWWWWWWWWW") - iupdrvGetScrollbarSize();
     if (iupqt_dropdown_border_x < 0) iupqt_dropdown_border_x = 0;
 
-    iupqt_dropdown_border_y = combo_size.height() - text_height;
+    iupqt_dropdown_border_y = combo_size.height() - fm.height();
     if (iupqt_dropdown_border_y < 0) iupqt_dropdown_border_y = 0;
   }
 
