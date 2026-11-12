@@ -501,12 +501,12 @@ IUP_DRV_API void iupwinDarkModeApplyToWindow(HWND hwnd)
   if (!hwnd)
     return;
 
-  dark = iupwinDarkModeEnabled();
-  if (win_darkmode_supported)
-    my_AllowDarkModeForWindow(hwnd, dark ? TRUE : FALSE);
-
   if (GetClassNameW(hwnd, cls, 64) == 0)
     return;
+
+  dark = iupwinDarkModeEnabled();
+  if (win_darkmode_supported)  /* a dark-mode ListBox paints a white selection */
+    my_AllowDarkModeForWindow(hwnd, (dark && lstrcmpiW(cls, L"ListBox") != 0) ? TRUE : FALSE);
 
   if (lstrcmpiW(cls, L"SysListView32") == 0 || lstrcmpiW(cls, L"SysTreeView32") == 0)
   {
@@ -541,11 +541,7 @@ IUP_DRV_API void iupwinDarkModeApplyToWindow(HWND hwnd)
       if (cbi.hwndItem)
         winDarkModeTheme(cbi.hwndItem, L"DarkMode_CFD", dark);
       if (cbi.hwndList)
-      {
-        if (win_darkmode_supported)
-          my_AllowDarkModeForWindow(cbi.hwndList, dark? TRUE: FALSE);
         winDarkModeTheme(cbi.hwndList, L"DarkMode_Explorer", dark);
-      }
     }
   }
   else if (lstrcmpiW(cls, L"SysHeader32") == 0)
