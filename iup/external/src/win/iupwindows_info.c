@@ -72,27 +72,6 @@ IUP_SDK_API char* iupdrvGetSystemName(void)
 
   if (osvi.dwPlatformId == VER_PLATFORM_WIN32_NT)
   {
-    if (osvi.dwMajorVersion <= 4)
-      return "WinNT";
-
-    if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0)
-      return "Win2K";
-
-    if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion > 0)
-      return "WinXP";
-
-    if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 0)
-      return "Vista";
-
-    if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 1)
-      return "Win7";
-
-    if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 2)
-      return "Win8";
-
-    if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 3)
-      return "Win81";
-
     if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0)
     {
       if (osvi.dwBuildNumber >= 22000)

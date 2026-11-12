@@ -219,12 +219,6 @@ extern "C" IUP_SDK_API char* iupdrvGetSystemName(void)
   QOperatingSystemVersion os = QOperatingSystemVersion::current();
   if (os.majorVersion() == 10)
     return iupStrReturnStr(os.microVersion() >= 22000 ? "Win11" : "Win10");
-  if (os.majorVersion() == 6 && os.minorVersion() == 3)
-    return iupStrReturnStr("Win81");
-  if (os.majorVersion() == 6 && os.minorVersion() == 2)
-    return iupStrReturnStr("Win8");
-  if (os.majorVersion() == 6 && os.minorVersion() == 1)
-    return iupStrReturnStr("Win7");
   return iupStrReturnStr("Windows");
 #else
   struct utsname un;

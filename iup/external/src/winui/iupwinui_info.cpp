@@ -35,27 +35,6 @@ extern "C" IUP_SDK_API char* iupdrvGetSystemName(void)
 
   if (osvi.dwPlatformId == VER_PLATFORM_WIN32_NT)
   {
-    if (osvi.dwMajorVersion <= 4)
-      return const_cast<char*>("WinNT");
-
-    if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0)
-      return const_cast<char*>("Win2K");
-
-    if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion > 0)
-      return const_cast<char*>("WinXP");
-
-    if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 0)
-      return const_cast<char*>("Vista");
-
-    if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 1)
-      return const_cast<char*>("Win7");
-
-    if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 2)
-      return const_cast<char*>("Win8");
-
-    if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 3)
-      return const_cast<char*>("Win81");
-
     if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0)
     {
       if (osvi.dwBuildNumber >= 22000)
