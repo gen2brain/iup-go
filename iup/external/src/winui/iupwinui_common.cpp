@@ -975,6 +975,15 @@ extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* v
     return 0;
   if (winuiHandleIsHWND(ih))
     return 1;
+  if (iupClassObjectIsGlobalDefaultColor(ih, "BGCOLOR", value))
+  {
+    IInspectable obj{nullptr};
+    winrt::copy_from_abi(obj, ih->handle);
+    Control ctrl = obj ? obj.try_as<Control>() : nullptr;
+    if (ctrl)
+      ctrl.ClearValue(Control::BackgroundProperty());
+    return 1;
+  }
   iupwinuiSetBgColor(ih->handle, r, g, b);
   return 1;
 }
@@ -986,6 +995,15 @@ extern "C" IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* v
     return 0;
   if (winuiHandleIsHWND(ih))
     return 1;
+  if (iupClassObjectIsGlobalDefaultColor(ih, "FGCOLOR", value))
+  {
+    IInspectable obj{nullptr};
+    winrt::copy_from_abi(obj, ih->handle);
+    Control ctrl = obj ? obj.try_as<Control>() : nullptr;
+    if (ctrl)
+      ctrl.ClearValue(Control::ForegroundProperty());
+    return 1;
+  }
   iupwinuiSetFgColor(ih->handle, r, g, b);
   return 1;
 }

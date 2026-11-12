@@ -848,7 +848,9 @@ static int winuiMenuSetBgColorAttrib(Ihandle* ih, const char* value)
   if (aux && aux->isMenuBar)
   {
     auto menuBar = winuiGetHandle<MenuBar>(ih);
-    if (menuBar)
+    if (menuBar && iupClassObjectIsGlobalDefaultColor(ih, "BGCOLOR", value))
+      menuBar.ClearValue(Control::BackgroundProperty());
+    else if (menuBar)
     {
       Windows::UI::Color color;
       color.A = 255;

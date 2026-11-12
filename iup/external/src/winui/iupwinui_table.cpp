@@ -272,10 +272,9 @@ static SolidColorBrush winuiTableHeaderBgBrush()
 
 static SolidColorBrush winuiTableFocusBrush()
 {
-  using namespace Windows::UI::ViewManagement;
-  UISettings settings;
-  auto fg = settings.GetColorValue(UIColorType::Foreground);
-  return SolidColorBrush(ColorHelper::FromArgb(255, fg.R, fg.G, fg.B));
+  unsigned char r = 0, g = 0, b = 0;
+  iupStrToRGB(IupGetGlobal("TXTFGCOLOR"), &r, &g, &b);
+  return SolidColorBrush(ColorHelper::FromArgb(255, r, g, b));
 }
 
 static SolidColorBrush winuiTableSelectionBrush()
@@ -2199,7 +2198,10 @@ void winuiTableRefreshThemeColors(Ihandle* ih)
         Border border = winuiTableGetCellBorder(rowGrid, j);
         TextBlock tb = winuiTableGetCellTextBlock(rowGrid, j);
         if (border)
-          border.BorderBrush(gridBrush);
+        {
+          bool is_focused = (i + 1 == aux->current_row && j + 1 == aux->current_col && iupAttribGetBoolean(ih, "FOCUSFEEDBACK"));
+          border.BorderBrush(is_focused ? winuiTableFocusBrush() : gridBrush);
+        }
         if (border && tb)
           winuiTableApplyCellStyle(ih, i + 1, j + 1, border, tb);
       }

@@ -495,8 +495,8 @@ static LRESULT CALLBACK winuiDialogWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
         auto area = reinterpret_cast<LPCTSTR>(lParam);
         if (lstrcmp(area, TEXT("ImmersiveColorSet")) == 0)
         {
-          winuiDialogTitleBarThemeColor(hwnd);
           iupwinuiSetGlobalColors();
+          winuiDialogTitleBarThemeColor(hwnd);
 
           int dark_mode = iupGlobalIsDarkMode();
 

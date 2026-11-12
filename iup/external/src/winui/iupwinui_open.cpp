@@ -137,17 +137,17 @@ IUP_DRV_API void iupwinuiSetGlobalColors(void)
   int dark_mode = (appearance == IUP_APPEARANCE_DARK) ||
                   (appearance == IUP_APPEARANCE_SYSTEM && system_dark);
 
-  if (dark_mode != system_dark)  /* UISettings only reports the system appearance */
+  /* UISettings reports only the system appearance, and its dark Background is black, not the WinUI #202020 */
+  if (dark_mode || dark_mode != system_dark)
     iupGlobalSetAppearanceColors(dark_mode);
   else
   {
     auto bg = settings.GetColorValue(UIColorType::Background);
     auto fg = settings.GetColorValue(UIColorType::Foreground);
-    int txt_bg = dark_mode? 32: 255;
 
     iupGlobalSetDefaultColorAttrib("DLGBGCOLOR", bg.R, bg.G, bg.B);
     iupGlobalSetDefaultColorAttrib("DLGFGCOLOR", fg.R, fg.G, fg.B);
-    iupGlobalSetDefaultColorAttrib("TXTBGCOLOR", txt_bg, txt_bg, txt_bg);
+    iupGlobalSetDefaultColorAttrib("TXTBGCOLOR", 255, 255, 255);
     iupGlobalSetDefaultColorAttrib("TXTFGCOLOR", fg.R, fg.G, fg.B);
     iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", bg.R, bg.G, bg.B);
     iupGlobalSetDefaultColorAttrib("MENUFGCOLOR", fg.R, fg.G, fg.B);

@@ -742,12 +742,17 @@ static int winuiTabsSetFgColorAttrib(Ihandle* ih, const char* value)
   color.G = g;
   color.B = b;
   SolidColorBrush brush(color);
+  int is_default = iupClassObjectIsGlobalDefaultColor(ih, "FGCOLOR", value);
 
   Ihandle* child;
   for (child = ih->firstchild; child; child = child->brother)
   {
     TextBlock tabLabel = winuiTabsGetTabLabel(child);
-    if (tabLabel)
+    if (!tabLabel)
+      continue;
+    if (is_default)
+      tabLabel.ClearValue(TextBlock::ForegroundProperty());
+    else
       tabLabel.Foreground(brush);
   }
 
