@@ -177,8 +177,17 @@ IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 
 IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
 {
+  int border_size;
+
+  if (!ih->data->is_dropdown && !ih->data->has_editbox)
+  {
+    (*w) += 2 * GetSystemMetrics(SM_CXEDGE) + 2 * 2;  /* the list box draws the item text 2 pixels in */
+    (*h) += 2 * GetSystemMetrics(SM_CYEDGE);
+    return;
+  }
+
   /* LAYOUT_DECORATION_ESTIMATE */
-  int border_size = 2 * 4;
+  border_size = 2 * 4;
   (*w) += border_size;
   (*h) += border_size;
 
@@ -567,6 +576,8 @@ static int winListSetTopItemAttrib(Ihandle* ih, const char* value)
     {
       if (ih->data->is_virtual)
         ListView_EnsureVisible(ih->handle, pos - 1, FALSE);  /* IUP starts at 1 */
+      else if (!ih->data->has_editbox && !iupAttribGet(ih, "_IUPWIN_LIST_LAIDOUT"))
+        iupAttribSetInt(ih, "_IUPWIN_LIST_TOPITEM", pos);
       else
         SendMessage(ih->handle, WIN_SETTOPINDEX(ih), pos-1, 0);  /* IUP starts at 1 */
     }
@@ -2129,7 +2140,27 @@ static void winListLayoutUpdateMethod(Ihandle* ih)
     ListView_SetColumnWidth(ih->handle, 0, rect.right - rect.left);
   }
   else
+  {
     iupdrvBaseLayoutUpdateMethod(ih);
+
+    /* the selection set at map scrolled the list while it had no size yet */
+    if (!ih->data->has_editbox && ih->currentheight > 0 && !iupAttribGet(ih, "_IUPWIN_LIST_LAIDOUT"))
+    {
+      int top_item = iupAttribGetInt(ih, "_IUPWIN_LIST_TOPITEM");
+      iupAttribSet(ih, "_IUPWIN_LIST_LAIDOUT", "1");
+      iupAttribSet(ih, "_IUPWIN_LIST_TOPITEM", NULL);
+
+      if (top_item > 0)
+        SendMessage(ih->handle, LB_SETTOPINDEX, top_item - 1, 0);
+      else
+      {
+        int pos = (int)SendMessage(ih->handle, ih->data->is_multiple ? LB_GETCARETINDEX : LB_GETCURSEL, 0, 0);
+        SendMessage(ih->handle, LB_SETTOPINDEX, 0, 0);
+        if (pos > 0)
+          SendMessage(ih->handle, ih->data->is_multiple ? LB_SETCARETINDEX : LB_SETCURSEL, pos, 0);
+      }
+    }
+  }
 }
 
 static void winListUnMapMethod(Ihandle* ih)
@@ -2137,6 +2168,7 @@ static void winListUnMapMethod(Ihandle* ih)
   HWND handle;
 
   winListRemoveAllItemData(ih);
+  iupAttribSet(ih, "_IUPWIN_LIST_LAIDOUT", NULL);
 
   handle = (HWND)iupAttribGet(ih, "_IUPWIN_LISTBOX");
   if (handle)
