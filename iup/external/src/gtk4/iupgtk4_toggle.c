@@ -427,6 +427,14 @@ static int gtk4ToggleSetPaddingAttrib(Ihandle* ih, const char* value)
     return 1;
 }
 
+static int gtk4ToggleSetBgColorAttrib(Ihandle* ih, const char* value)
+{
+  /* the switch background is its track, which the theme draws for the on and off states */
+  if (ih->handle && GTK_IS_SWITCH(ih->handle))
+    return 1;
+  return iupdrvBaseSetBgColorAttrib(ih, value);
+}
+
 static int gtk4ToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 {
   unsigned char r, g, b;
@@ -828,7 +836,7 @@ IUP_SDK_API void iupdrvToggleInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, gtk4ToggleSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtk4ToggleSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtk4ToggleSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "VALUE", gtk4ToggleGetValueAttrib, gtk4ToggleSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
