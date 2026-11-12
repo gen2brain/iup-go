@@ -2122,8 +2122,9 @@ extern "C" IUP_SDK_API void iupdrvTextAddBorders(Ihandle* ih, int* w, int* h)
 {
   if (ih && ih->data && ih->data->is_multiline)
   {
+    /* BScrollView fancy border, and BTextView spaces the lines 1 pixel more than the font height */
     if (w) *w += 6;
-    if (h) *h += 6;
+    if (h) *h += 2 * 2 + iupAttribGetInt(ih, "VISIBLELINES");
     return;
   }
   haikuTextProbeChrome(w, h);
