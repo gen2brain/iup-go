@@ -77,6 +77,10 @@ typedef struct _IwinTableData {
 
   int suppress_callbacks;
 
+  BOOL laid_out;
+  int scroll_lin;              /* scroll requested before the first layout */
+  int scroll_col;
+
   /* Column reorder drag state */
   int drag_source_col;
   int drag_target_col;
@@ -1138,6 +1142,16 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 
   if (lin < 1 || lin > ih->data->num_lin)
     return;
+
+  {
+    IwinTableData* data = IWIN_TABLE_DATA(ih);
+    if (data && !data->laid_out)
+    {
+      data->scroll_lin = lin;
+      data->scroll_col = col;
+      return;
+    }
+  }
 
   ListView_EnsureVisible(list_view, lin - 1, FALSE);
 
@@ -3121,7 +3135,8 @@ static int winTableMapMethod(Ihandle* ih)
 
 static void winTableLayoutUpdateMethod(Ihandle* ih)
 {
-  HWND list_view = winTableGetListView(ih);
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+  HWND list_view = data ? winTableGetListView(ih) : NULL;
   BOOL was_visible = list_view ? IsWindowVisible(list_view) : FALSE;
 
   iupdrvBaseLayoutUpdateMethod(ih);
@@ -3141,6 +3156,14 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
 
       if (!was_visible)
         ShowWindow(list_view, SW_SHOW);
+
+      if (!data->laid_out)
+      {
+        data->laid_out = TRUE;
+        if (data->scroll_lin)
+          iupdrvTableScrollToCell(ih, data->scroll_lin, data->scroll_col);
+        data->scroll_lin = 0;
+      }
     }
 
     /* Repaint after a resize (e.g. maximize/restore); ListView leaves stale rows otherwise. */
