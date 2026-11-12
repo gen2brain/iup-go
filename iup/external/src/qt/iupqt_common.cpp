@@ -12,6 +12,9 @@
 #include <QLayout>
 #include <QWindow>
 #include <QApplication>
+#include <QStyleHints>
+#include <QStyleFactory>
+#include <QProxyStyle>
 #include <QPalette>
 #include <QCursor>
 #include <QThread>
@@ -678,6 +681,49 @@ IUP_DRV_API void iupqtPaletteSetForeground(QPalette& palette, int role, const QC
   palette.setColor(QPalette::Disabled, static_cast<QPalette::ColorRole>(role), disabled);
 }
 
+IUP_DRV_API void iupqtPaletteUnsetRole(QPalette& palette, int role)
+{
+  QPalette bits;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+  bits.setResolveMask(0);
+  bits.setColor(static_cast<QPalette::ColorRole>(role), Qt::black);
+  palette.setResolveMask(palette.resolveMask() & ~bits.resolveMask());
+#else
+  bits.resolve(0);
+  bits.setColor(static_cast<QPalette::ColorRole>(role), Qt::black);
+  palette.resolve(palette.resolve() & ~bits.resolve());
+#endif
+}
+
+/* the application never repolishes the base style a proxy style owns */
+IUP_DRV_API void iupqtProxyStyleUpdateBase(QProxyStyle* style)
+{
+  QStyle* app_style = QApplication::style();
+  QString name;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+  name = app_style->name();
+#endif
+  if (name.isEmpty())
+    name = app_style->objectName();
+  if (name.isEmpty())
+    name = QStringLiteral("Fusion");
+
+  QString key = name;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+  key += QString::number(static_cast<int>(QGuiApplication::styleHints()->colorScheme()));
+#endif
+  if (style->property("_IUPQT_BASEKEY").toString() == key)
+    return;
+
+  QStyle* base = QStyleFactory::create(name);
+  if (!base)
+    return;
+
+  style->setProperty("_IUPQT_BASEKEY", key);
+  style->setBaseStyle(base);
+}
+
 IUP_DRV_API void iupqtUpdatePlaceholderColor(QWidget* widget)
 {
   QPalette palette = widget->palette();
@@ -715,6 +761,15 @@ extern "C" IUP_SDK_API int iupdrvBaseSetBgColorAttrib(Ihandle* ih, const char* v
 
   auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   QPalette palette = widget->palette();
+  if (iupClassObjectIsGlobalDefaultColor(ih, "BGCOLOR", value))
+  {
+    iupqtPaletteUnsetRole(palette, QPalette::Window);
+    iupqtPaletteUnsetRole(palette, QPalette::Base);
+    iupqtPaletteUnsetRole(palette, widget->backgroundRole());
+    iupqtSetWidgetPalette(widget, palette);
+    return 1;
+  }
+
   QColor color(r, g, b);
   palette.setColor(QPalette::Window, color);
   palette.setColor(QPalette::Base, color);
@@ -736,9 +791,18 @@ extern "C" IUP_SDK_API int iupdrvBaseSetFgColorAttrib(Ihandle* ih, const char* v
 
   auto* widget = reinterpret_cast<QWidget*>(ih->handle);
   QPalette palette = widget->palette();
-  iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
-  iupqtPaletteSetForeground(palette, QPalette::ButtonText, QColor(r, g, b));
-  iupqtPaletteSetForeground(palette, QPalette::Text, QColor(r, g, b));
+  if (iupClassObjectIsGlobalDefaultColor(ih, "FGCOLOR", value))
+  {
+    iupqtPaletteUnsetRole(palette, QPalette::WindowText);
+    iupqtPaletteUnsetRole(palette, QPalette::ButtonText);
+    iupqtPaletteUnsetRole(palette, QPalette::Text);
+  }
+  else
+  {
+    iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
+    iupqtPaletteSetForeground(palette, QPalette::ButtonText, QColor(r, g, b));
+    iupqtPaletteSetForeground(palette, QPalette::Text, QColor(r, g, b));
+  }
   iupqtSetWidgetPalette(widget, palette);
 
   return 1;

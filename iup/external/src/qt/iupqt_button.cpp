@@ -549,7 +549,7 @@ static int qtButtonSetBgColorAttrib(Ihandle* ih, const char* value)
     if (swatch)
       button->setStyleSheet(QString());
     QPalette palette = button->palette();
-    palette.setColor(QPalette::Button, QApplication::palette(button).color(QPalette::Button));
+    iupqtPaletteUnsetRole(palette, QPalette::Button);
     button->setPalette(palette);
     iupAttribSet(ih, "_IUPQT_FILLBG", nullptr);
     button->update();
@@ -584,8 +584,16 @@ static int qtButtonSetFgColorAttrib(Ihandle* ih, const char* value)
   if (button)
   {
     QPalette palette = button->palette();
-    iupqtPaletteSetForeground(palette, QPalette::ButtonText, QColor(r, g, b));
-    iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
+    if (iupClassObjectIsGlobalDefaultColor(ih, "FGCOLOR", value))
+    {
+      iupqtPaletteUnsetRole(palette, QPalette::ButtonText);
+      iupqtPaletteUnsetRole(palette, QPalette::WindowText);
+    }
+    else
+    {
+      iupqtPaletteSetForeground(palette, QPalette::ButtonText, QColor(r, g, b));
+      iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
+    }
     button->setPalette(palette);
     return 1;
   }

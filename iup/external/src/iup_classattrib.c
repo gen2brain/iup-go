@@ -1200,6 +1200,19 @@ IUP_SDK_API void iupClassObjectUpdateGlobalDefaults(Ihandle* ih)
   iupdrvNativeScopeEnd(scope);
 }
 
+IUP_SDK_API int iupClassObjectIsGlobalDefaultColor(Ihandle* ih, const char* name, const char* value)
+{
+  IattribFunc* afunc = (IattribFunc*)iupTableGet(ih->iclass->attrib_func, name);
+  unsigned char r, g, b, dr, dg, db;
+
+  if (!afunc || !afunc->call_global_default || !iupClassIsGlobalDefault(afunc->default_value, 1))
+    return 0;
+
+  return iupStrToRGB(value, &r, &g, &b) &&
+         iupStrToRGB(IupGetGlobal(afunc->default_value), &dr, &dg, &db) &&
+         r == dr && g == dg && b == db;
+}
+
 static void iClassObjectEnsureDefaultAttributes(Ihandle* ih)
 {
   Iclass* ic;

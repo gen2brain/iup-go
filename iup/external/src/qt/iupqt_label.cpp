@@ -461,16 +461,23 @@ static int qtLabelSetBgColorAttrib(Ihandle* ih, const char* value)
   {
     QPalette palette;
     QColor color(r, g, b);
+    int is_default = iupClassObjectIsGlobalDefaultColor(ih, "BGCOLOR", value);
 
     palette = wrapper->palette();
-    palette.setColor(QPalette::Window, color);
+    if (is_default)
+      iupqtPaletteUnsetRole(palette, QPalette::Window);
+    else
+      palette.setColor(QPalette::Window, color);
     wrapper->setPalette(palette);
-    wrapper->setAutoFillBackground(true);
+    wrapper->setAutoFillBackground(!is_default);
 
     palette = widget->palette();
-    palette.setColor(QPalette::Window, color);
+    if (is_default)
+      iupqtPaletteUnsetRole(palette, QPalette::Window);
+    else
+      palette.setColor(QPalette::Window, color);
     widget->setPalette(palette);
-    widget->setAutoFillBackground(true);
+    widget->setAutoFillBackground(!is_default);
 
     return 1;
   }
@@ -491,7 +498,10 @@ static int qtLabelSetFgColorAttrib(Ihandle* ih, const char* value)
   if (label)
   {
     QPalette palette = label->palette();
-    iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
+    if (iupClassObjectIsGlobalDefaultColor(ih, "FGCOLOR", value))
+      iupqtPaletteUnsetRole(palette, QPalette::WindowText);
+    else
+      iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
     label->setPalette(palette);
     return 1;
   }

@@ -437,6 +437,9 @@ void iupClassObjectEnsureDefaultAttributes(Ihandle* ih);
 /* Re-applies the attributes whose default is a global palette name. */
 IUP_SDK_API void iupClassObjectUpdateGlobalDefaults(Ihandle* ih);
 
+/* Returns 1 when value is the current global color the attribute defaults to. */
+IUP_SDK_API int iupClassObjectIsGlobalDefaultColor(Ihandle* ih, const char* name, const char* value);
+
 /* Used in iupRegisterUpdateClasses */
 void iupClassUpdate(Iclass* ic);
 

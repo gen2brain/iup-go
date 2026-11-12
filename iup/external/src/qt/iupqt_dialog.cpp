@@ -1244,7 +1244,10 @@ static int qtDialogSetBgColorAttrib(Ihandle* ih, const char* value)
     return 0;
 
   QPalette palette = widget->palette();
-  palette.setColor(QPalette::Window, QColor(r, g, b));
+  if (iupClassObjectIsGlobalDefaultColor(ih, "BGCOLOR", value))
+    iupqtPaletteUnsetRole(palette, QPalette::Window);
+  else
+    palette.setColor(QPalette::Window, QColor(r, g, b));
   widget->setPalette(palette);
   widget->setAutoFillBackground(true);
   return 1;
@@ -1260,7 +1263,10 @@ static int qtDialogSetBackgroundAttrib(Ihandle* ih, const char* value)
   if (iupStrToRGB(value, &r, &g, &b))
   {
     QPalette palette = widget->palette();
-    palette.setColor(QPalette::Window, QColor(r, g, b));
+    if (iupClassObjectIsGlobalDefaultColor(ih, "BACKGROUND", value))
+      iupqtPaletteUnsetRole(palette, QPalette::Window);
+    else
+      palette.setColor(QPalette::Window, QColor(r, g, b));
     widget->setPalette(palette);
     widget->setAutoFillBackground(true);
     iupAttribSet(ih, "_IUPQT_BACKGROUND_IMAGE", nullptr);

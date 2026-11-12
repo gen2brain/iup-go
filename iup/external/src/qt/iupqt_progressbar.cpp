@@ -280,9 +280,13 @@ static int qtProgressBarSetBgColorAttrib(Ihandle* ih, const char* value)
   if (pbar)
   {
     QPalette palette = pbar->palette();
-    palette.setColor(QPalette::Window, QColor(r, g, b));
+    int is_default = iupClassObjectIsGlobalDefaultColor(ih, "BGCOLOR", value);
+    if (is_default)
+      iupqtPaletteUnsetRole(palette, QPalette::Window);
+    else
+      palette.setColor(QPalette::Window, QColor(r, g, b));
     pbar->setPalette(palette);
-    pbar->setAutoFillBackground(true);
+    pbar->setAutoFillBackground(!is_default);
     return 1;
   }
 

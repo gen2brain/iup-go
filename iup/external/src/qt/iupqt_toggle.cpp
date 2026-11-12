@@ -796,9 +796,18 @@ static int qtToggleSetFgColorAttrib(Ihandle* ih, const char* value)
 
   /* Set text color via palette; the check/radio label is drawn from Text */
   QPalette palette = button->palette();
-  iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
-  iupqtPaletteSetForeground(palette, QPalette::ButtonText, QColor(r, g, b));
-  iupqtPaletteSetForeground(palette, QPalette::Text, QColor(r, g, b));
+  if (iupClassObjectIsGlobalDefaultColor(ih, "FGCOLOR", value))
+  {
+    iupqtPaletteUnsetRole(palette, QPalette::WindowText);
+    iupqtPaletteUnsetRole(palette, QPalette::ButtonText);
+    iupqtPaletteUnsetRole(palette, QPalette::Text);
+  }
+  else
+  {
+    iupqtPaletteSetForeground(palette, QPalette::WindowText, QColor(r, g, b));
+    iupqtPaletteSetForeground(palette, QPalette::ButtonText, QColor(r, g, b));
+    iupqtPaletteSetForeground(palette, QPalette::Text, QColor(r, g, b));
+  }
   button->setPalette(palette);
 
   return 1;

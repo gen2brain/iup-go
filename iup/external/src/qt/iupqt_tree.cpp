@@ -49,7 +49,7 @@ class IupQtTreeBranchStyle : public QProxyStyle
 public:
   bool hide_lines;
   bool hide_buttons;
-  IupQtTreeBranchStyle(bool hl, bool hb) : hide_lines(hl), hide_buttons(hb) {}
+  IupQtTreeBranchStyle(bool hl, bool hb) : hide_lines(hl), hide_buttons(hb) { iupqtProxyStyleUpdateBase(this); }
 
   void drawPrimitive(PrimitiveElement pe, const QStyleOption* opt, QPainter* p, const QWidget* w) const override
   {
@@ -257,7 +257,12 @@ protected:
   void changeEvent(QEvent* event) override
   {
     if (ih && (event->type() == QEvent::StyleChange || event->type() == QEvent::PaletteChange))
+    {
+      auto* branch_style = reinterpret_cast<QProxyStyle*>(iupAttribGet(ih, "_IUPQT_BRANCHSTYLE"));
+      if (branch_style)
+        iupqtProxyStyleUpdateBase(branch_style);
       qtTreeReloadThemeIcons(ih);
+    }
     QTreeWidget::changeEvent(event);
   }
 
@@ -997,7 +1002,10 @@ static int qtTreeSetHlColorAttrib(Ihandle* ih, const char* value)
   {
     auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
     QPalette palette = tree->palette();
-    palette.setColor(QPalette::Highlight, QColor(r, g, b));
+    if (iupClassObjectIsGlobalDefaultColor(ih, "HLCOLOR", value))
+      iupqtPaletteUnsetRole(palette, QPalette::Highlight);
+    else
+      palette.setColor(QPalette::Highlight, QColor(r, g, b));
     iupqtSetWidgetPalette(tree, palette);
   }
 
@@ -1012,7 +1020,10 @@ static int qtTreeSetBgColorAttrib(Ihandle* ih, const char* value)
 
   auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QPalette palette = tree->palette();
-  palette.setColor(QPalette::Base, QColor(r, g, b));
+  if (iupClassObjectIsGlobalDefaultColor(ih, "BGCOLOR", value))
+    iupqtPaletteUnsetRole(palette, QPalette::Base);
+  else
+    palette.setColor(QPalette::Base, QColor(r, g, b));
   iupqtSetWidgetPalette(tree, palette);
 
   return 1;
@@ -1036,7 +1047,10 @@ static int qtTreeSetFgColorAttrib(Ihandle* ih, const char* value)
 
   auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QPalette palette = tree->palette();
-  iupqtPaletteSetForeground(palette, QPalette::Text, QColor(r, g, b));
+  if (iupClassObjectIsGlobalDefaultColor(ih, "FGCOLOR", value))
+    iupqtPaletteUnsetRole(palette, QPalette::Text);
+  else
+    iupqtPaletteSetForeground(palette, QPalette::Text, QColor(r, g, b));
   iupqtSetWidgetPalette(tree, palette);
 
   return 1;
@@ -2129,6 +2143,7 @@ static int qtTreeMapMethod(Ihandle* ih)
       auto* branch_style = new IupQtTreeBranchStyle(hl, hb);
       branch_style->setParent(tree);
       tree->setStyle(branch_style);
+      iupAttribSet(ih, "_IUPQT_BRANCHSTYLE", reinterpret_cast<char*>(branch_style));
     }
   }
 
