@@ -10,7 +10,7 @@ const (
 	COPYRIGHT      = "Copyright (C) 1994-2025 Tecgraf/PUC-Rio, 2022-2026 gen2brain"
 	VERSION        = "4.0.0"
 	VERSION_NUMBER = 400000
-	VERSION_DATE   = "2026/11/13"
+	VERSION_DATE   = "2026/11/15"
 )
 
 const (

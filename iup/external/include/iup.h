@@ -23,7 +23,7 @@ extern "C" {
 #define IUP_COPYRIGHT "Copyright (C) 1994-2025 Tecgraf/PUC-Rio, 2022-2026 gen2brain"
 #define IUP_VERSION "4.0.0"         /* bug fixes are reported only by IupVersion functions */
 #define IUP_VERSION_NUMBER 400000
-#define IUP_VERSION_DATE "2026/11/13"  /* does not include bug fix releases */
+#define IUP_VERSION_DATE "2026/11/15"  /* does not include bug fix releases */
 
 typedef struct Ihandle_ Ihandle;
 typedef int (*Icallback)(Ihandle*);
