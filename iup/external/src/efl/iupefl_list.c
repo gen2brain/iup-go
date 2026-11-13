@@ -878,6 +878,16 @@ static int eflListSetInsertAttrib(Ihandle* ih, const char* value)
     return 0;
 
   cursor = efl_text_interactive_main_cursor_get(entry);
+  if (efl_text_interactive_have_selection_get(entry))
+  {
+    Efl_Text_Cursor_Object* sel_start = NULL, *sel_end = NULL;
+    efl_text_interactive_selection_cursors_get(entry, &sel_start, &sel_end);
+    if (sel_start && sel_end)
+    {
+      efl_text_cursor_object_range_delete(sel_start, sel_end);
+      cursor = sel_start;
+    }
+  }
   if (cursor)
     efl_text_cursor_object_text_insert(cursor, value);
 

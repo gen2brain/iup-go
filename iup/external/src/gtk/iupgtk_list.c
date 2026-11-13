@@ -1376,6 +1376,7 @@ static int gtkListSetInsertAttrib(Ihandle* ih, const char* value)
 
   iupAttribSet(ih, "_IUPGTK_DISABLE_TEXT_CB", "1");  /* disable callbacks */
   entry = (GtkEntry*)iupAttribGet(ih, "_IUPGTK_ENTRY");
+  gtk_editable_delete_selection(GTK_EDITABLE(entry));
   pos = gtk_editable_get_position(GTK_EDITABLE(entry));
   gtk_editable_insert_text(GTK_EDITABLE(entry), iupgtkStrConvertToSystem(value), -1, &pos);
   iupAttribSet(ih, "_IUPGTK_DISABLE_TEXT_CB", NULL);

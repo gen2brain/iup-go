@@ -1771,8 +1771,9 @@ static int fltkListSetInsertAttrib(Ihandle* ih, const char* value)
   if (edit && value)
   {
     int pos = edit->insert_position();
+    int mark = edit->mark();
     iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", "1");
-    edit->replace(pos, pos, value);
+    edit->replace(pos < mark ? pos : mark, pos < mark ? mark : pos, value);
     iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", nullptr);
   }
   return 0;

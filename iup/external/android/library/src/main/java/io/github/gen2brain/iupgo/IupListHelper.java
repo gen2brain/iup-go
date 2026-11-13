@@ -866,9 +866,11 @@ public final class IupListHelper
         android.widget.EditText e = editBoxOf(widget);
         if (e == null || s == null) return;
         editBypassingFilters(e, ed -> {
-            int c = e.getSelectionStart();
-            if (c < 0) c = ed.length();
-            ed.insert(c, s);
+            int a = e.getSelectionStart(), b = e.getSelectionEnd();
+            if (a < 0) a = b = ed.length();
+            if (b < 0) b = a;
+            if (a > b) { int t = a; a = b; b = t; }
+            ed.replace(a, b, s);
         });
     }
 

@@ -895,11 +895,14 @@ static int gtk4TextSetInsertAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_delete_selection(buffer, FALSE, TRUE);
     gtk_text_buffer_insert_at_cursor(buffer, iupgtk4StrConvertToSystem(value), -1);
   }
   else
   {
-    int pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
+    int pos;
+    gtk_editable_delete_selection(GTK_EDITABLE(ih->handle));
+    pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
     gtk_editable_insert_text(GTK_EDITABLE(ih->handle), iupgtk4StrConvertToSystem(value), -1, &pos);
   }
   ih->data->disable_callbacks = 0;

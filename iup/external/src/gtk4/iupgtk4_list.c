@@ -1321,6 +1321,7 @@ static int gtk4ListSetInsertAttrib(Ihandle* ih, const char* value)
 
   iupAttribSet(ih, "_IUPGTK4_DISABLE_TEXT_CB", "1");
   entry = (GtkEntry*)iupAttribGet(ih, "_IUPGTK4_ENTRY");
+  gtk_editable_delete_selection(GTK_EDITABLE(entry));
   pos = gtk_editable_get_position(GTK_EDITABLE(entry));
   gtk_editable_insert_text(GTK_EDITABLE(entry), iupgtk4StrConvertToSystem(value), -1, &pos);
   iupAttribSet(ih, "_IUPGTK4_DISABLE_TEXT_CB", NULL);

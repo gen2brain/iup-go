@@ -1198,6 +1198,13 @@ static int qmlListSetInsertAttrib(Ihandle* ih, const char* value)
   if (data && data->edit)
   {
     int pos = data->edit->property("cursorPosition").toInt();
+    int start = data->edit->property("selectionStart").toInt();
+    int end = data->edit->property("selectionEnd").toInt();
+    if (end > start)
+    {
+      QMetaObject::invokeMethod(data->edit, "remove", Qt::DirectConnection, Q_ARG(int, start), Q_ARG(int, end));
+      pos = start;
+    }
     QMetaObject::invokeMethod(data->edit, "insert", Qt::DirectConnection, Q_ARG(int, pos), Q_ARG(QString, QString::fromUtf8(value ? value : "")));
   }
   return 0;

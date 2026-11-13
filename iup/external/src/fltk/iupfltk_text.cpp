@@ -1189,6 +1189,13 @@ static int fltkTextSetInsertAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
+    Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
+    int start, end;
+    if (editor && buf && buf->selection_position(&start, &end))
+    {
+      buf->remove_selection();
+      editor->insert_position(start);
+    }
     if (editor)
       editor->insert(value);
   }
@@ -1597,15 +1604,7 @@ static int fltkTextSetClipboardAttrib(Ihandle* ih, const char* value)
     char* text = iupStrDup(IupGetAttribute(clipboard, "TEXT"));
     IupDestroy(clipboard);
     if (text && iupObjectCheck(ih) && ih->handle)
-    {
-      Fl_Text_Buffer* buf = ih->data->is_multiline ? fltkTextGetBuffer(ih) : nullptr;
-      if (buf)
-      {
-        ih->data->disable_callbacks = 1;
-        buf->remove_selection();
-      }
       fltkTextSetInsertAttrib(ih, text);
-    }
     free(text);
   }
   else if (iupStrEqualNoCase(value, "CLEAR"))
