@@ -2126,7 +2126,7 @@ static int gtkListMapMethod(Ihandle* ih)
 
       g_signal_connect(G_OBJECT(entry), "delete-text", G_CALLBACK(gtkListEditDeleteText), ih);
       g_signal_connect(G_OBJECT(entry), "insert-text", G_CALLBACK(gtkListEditInsertText), ih);
-      /* g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(gtkListEditChanged), ih); */
+      g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(gtkListEditChanged), ih);
       g_signal_connect_after(G_OBJECT(entry), "move-cursor", G_CALLBACK(gtkListEditMoveCursor), ih);  /* only report some caret movements */
       g_signal_connect_after(G_OBJECT(entry), "key-release-event", G_CALLBACK(gtkListEditKeyReleaseEvent), ih);
       g_signal_connect(G_OBJECT(entry), "button-press-event", G_CALLBACK(gtkListEditButtonEvent), ih);  /* if connected "after" then it is ignored */
@@ -2454,6 +2454,64 @@ static void gtkListUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
+static int gtkListSetRecord(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  int ret = set(ih, value);
+  if (ih->handle && ih->data->has_editbox)
+    ih->data->last_caret_pos = IupGetInt(ih, "CARETPOS");
+  return ret;
+}
+
+static int gtkListSetValueAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtkListSetRecord(ih, value, gtkListSetValueAttrib);
+}
+
+static int gtkListSetCaretAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtkListSetRecord(ih, value, gtkListSetCaretAttrib);
+}
+
+static int gtkListSetCaretPosAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtkListSetRecord(ih, value, gtkListSetCaretPosAttrib);
+}
+
+static int gtkListSetSelectionAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtkListSetRecord(ih, value, gtkListSetSelectionAttrib);
+}
+
+static int gtkListSetSelectionPosAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtkListSetRecord(ih, value, gtkListSetSelectionPosAttrib);
+}
+
+static int gtkListSetSelectedTextAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtkListSetRecord(ih, value, gtkListSetSelectedTextAttrib);
+}
+
+static int gtkListSetInsertAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtkListSetRecord(ih, value, gtkListSetInsertAttrib);
+}
+
+static int gtkListSetAppendAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtkListSetRecord(ih, value, gtkListSetAppendAttrib);
+}
+
+static int gtkListSetScrollToAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtkListSetRecord(ih, value, gtkListSetScrollToAttrib);
+}
+
+static int gtkListSetScrollToPosAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtkListSetRecord(ih, value, gtkListSetScrollToPosAttrib);
+}
+
 IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -2473,24 +2531,24 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 
   /* IupList only */
   iupClassRegisterAttributeId(ic, "IDVALUE", gtkListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", gtkListGetValueAttrib, gtkListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", gtkListGetValueAttrib, gtkListSetValueAttribRecord, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, gtkListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, gtkListSetTopItemAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, gtkListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "PADDING", iupListGetPaddingAttrib, gtkListSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", gtkListGetSelectedTextAttrib, gtkListSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", gtkListGetSelectionAttrib, gtkListSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", gtkListGetSelectionPosAttrib, gtkListSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", gtkListGetCaretAttrib, gtkListSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", gtkListGetCaretPosAttrib, gtkListSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", NULL, gtkListSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", NULL, gtkListSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", gtkListGetSelectedTextAttrib, gtkListSetSelectedTextAttribRecord, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", gtkListGetSelectionAttrib, gtkListSetSelectionAttribRecord, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", gtkListGetSelectionPosAttrib, gtkListSetSelectionPosAttribRecord, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", gtkListGetCaretAttrib, gtkListSetCaretAttribRecord, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", gtkListGetCaretPosAttrib, gtkListSetCaretPosAttribRecord, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, gtkListSetInsertAttribRecord, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", NULL, gtkListSetAppendAttribRecord, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", gtkListGetReadOnlyAttrib, gtkListSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, gtkListSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, gtkListSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, gtkListSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, gtkListSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, gtkListSetScrollToAttribRecord, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, gtkListSetScrollToPosAttribRecord, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, gtkListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", gtkListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING | IUPAF_READONLY | IUPAF_NO_INHERIT);

@@ -665,14 +665,12 @@ static void gtk4ToggleToggled(GtkCheckButton* widget, Ihandle* ih)
       gtk4ToggleUpdateImage(ih, gtk_widget_get_sensitive(ih->handle), check);
   }
 
-  iupBaseCallValueChangedCb(ih);
-
   cb = (IFni)IupGetCallback(ih, "ACTION");
-  if (cb)
-  {
-    if (cb(ih, check) == IUP_CLOSE)
-      IupExitLoop();
-  }
+  if (cb && cb(ih, check) == IUP_CLOSE)
+    IupExitLoop();
+
+  if (iupObjectCheck(ih))
+    iupBaseCallValueChangedCb(ih);
 }
 
 static void gtk4SwitchToggled(GtkSwitch* widget, GParamSpec* pspec, Ihandle* ih)
@@ -684,15 +682,12 @@ static void gtk4SwitchToggled(GtkSwitch* widget, GParamSpec* pspec, Ihandle* ih)
   if (iupAttribGet(ih, "_IUPGTK4_IGNORE_TOGGLE"))
     return;
 
-  iupBaseCallValueChangedCb(ih);
-
   cb = (IFni)IupGetCallback(ih, "ACTION");
-  if (cb)
-  {
-    int check = gtk_switch_get_active(GTK_SWITCH(ih->handle)) ? 1 : 0;
-    if (cb(ih, check) == IUP_CLOSE)
-      IupExitLoop();
-  }
+  if (cb && cb(ih, gtk_switch_get_active(GTK_SWITCH(ih->handle)) ? 1 : 0) == IUP_CLOSE)
+    IupExitLoop();
+
+  if (iupObjectCheck(ih))
+    iupBaseCallValueChangedCb(ih);
 }
 
 static int gtk4ToggleMapMethod(Ihandle* ih)

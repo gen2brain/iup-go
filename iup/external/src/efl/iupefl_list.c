@@ -269,6 +269,7 @@ static void eflListEditChangedCallback(void* data, const Efl_Event* ev)
   Ihandle* ih = (Ihandle*)data;
   Efl_Text_Change_Info* info = (Efl_Text_Change_Info*)ev->info;
   IFnis edit_cb;
+  int caret_before = ih->data->last_caret_pos;
 
   if (iupAttribGet(ih, "_IUPEFL_DISABLE_TEXT_CB"))
     return;
@@ -330,23 +331,30 @@ static void eflListEditChangedCallback(void* data, const Efl_Event* ev)
   }
 
   iupBaseCallValueChangedCb(ih);
+
+  if (iupObjectCheck(ih))
+  {
+    Efl_Text_Cursor_Object* main_cur = efl_text_interactive_main_cursor_get(ev->object);
+    IFniii caret_cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+    int pos = main_cur ? efl_text_cursor_object_position_get(main_cur) : caret_before;
+    ih->data->last_caret_pos = pos;
+    if (caret_cb && pos != caret_before)
+      caret_cb(ih, 1, pos + 1, pos);
+  }
 }
 
 static void eflListEditCursorChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
-  int pos;
+  int pos = efl_text_cursor_object_position_get((Efl_Text_Cursor_Object*)ev->object);
 
-  if (!cb)
-    return;
-
-  pos = efl_text_cursor_object_position_get((Efl_Text_Cursor_Object*)ev->object);
   if (pos == ih->data->last_caret_pos)
     return;
 
   ih->data->last_caret_pos = pos;
-  cb(ih, 1, pos + 1, pos);
+  if (cb && !iupAttribGet(ih, "_IUPEFL_DISABLE_TEXT_CB"))
+    cb(ih, 1, pos + 1, pos);
 }
 
 /****************************************************************
@@ -407,6 +415,43 @@ static void eflGenlistDoubleClickCb(void* data, Evas_Object* obj, void* event_in
     int pos = (int)(uintptr_t)elm_object_item_data_get(item);
     iupListSingleCallDblClickCb(ih, cb, pos);
   }
+}
+
+static void eflListSelectFocusedJob(void* data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Eo* list = iupeflGetWidget(ih);
+  Eo* item;
+
+  iupAttribSet(ih, "_IUPEFL_LIST_SELFOCUS_JOB", NULL);
+  if (!list)
+    return;
+
+  item = efl_ui_focus_manager_focus_get(list);
+  if (item && efl_isa(item, EFL_UI_ITEM_CLASS) && !efl_ui_selectable_selected_get(item))
+    efl_ui_selectable_selected_set(item, EINA_TRUE);
+}
+
+static void eflListNavKeyDownCallback(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Efl_Input_Key* key = ev->info;
+  const char* keyname = efl_input_key_name_get(key);
+  Ecore_Job* job;
+
+  if (!keyname || ih->data->is_multiple)
+    return;
+  if (efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_SHIFT, NULL) ||
+      efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_CONTROL, NULL) ||
+      efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_ALT, NULL))
+    return;
+  if (strcmp(keyname, "Up") && strcmp(keyname, "Down") && strcmp(keyname, "Home") &&
+      strcmp(keyname, "End") && strcmp(keyname, "Prior") && strcmp(keyname, "Next"))
+    return;
+
+  job = (Ecore_Job*)iupAttribGet(ih, "_IUPEFL_LIST_SELFOCUS_JOB");
+  if (job) ecore_job_del(job);
+  iupAttribSet(ih, "_IUPEFL_LIST_SELFOCUS_JOB", (char*)ecore_job_add(eflListSelectFocusedJob, ih));
 }
 
 static void eflListSelectionChangedCallback(void* data, const Efl_Event* ev)
@@ -1167,6 +1212,7 @@ static int eflListSetValueAttrib(Ihandle* ih, const char* value)
       efl_ui_selectable_selected_set(item, EINA_TRUE);
 
       iupAttribSetInt(ih, "_IUPEFL_LIST_VALUE", pos);
+      iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos);
 
       if (is_dropdown)
         eflDropdownSetText(ih, efl_text_get(item));
@@ -1182,6 +1228,7 @@ static int eflListSetValueAttrib(Ihandle* ih, const char* value)
       efl_ui_selectable_selected_set(selected, EINA_FALSE);
     }
     iupAttribSet(ih, "_IUPEFL_LIST_VALUE", NULL);
+    iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
     if (is_dropdown)
       eflDropdownSetText(ih, "");
   }
@@ -1820,6 +1867,7 @@ static int eflListMapMethod(Ihandle* ih)
     efl_event_callback_add(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
     iupeflKeySetTarget(list, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
+    efl_event_callback_add(list, EFL_EVENT_KEY_DOWN, eflListNavKeyDownCallback, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
 
     iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)box);
@@ -1970,6 +2018,7 @@ static int eflListMapMethod(Ihandle* ih)
     efl_event_callback_add(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
     iupeflKeySetTarget(list, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
+    efl_event_callback_add(list, EFL_EVENT_KEY_DOWN, eflListNavKeyDownCallback, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
 
     ih->handle = (InativeHandle*)list;
@@ -2017,6 +2066,12 @@ static void eflListUnMapMethod(Ihandle* ih)
   Eina_Bool* prev_focused = (Eina_Bool*)iupAttribGet(ih, "_IUP_EFL_MANAGER_FOCUSED");
   Ecore_Job* topitem_job = (Ecore_Job*)iupAttribGet(ih, "_IUPEFL_LIST_TOPITEM_JOB");
   Ecore_Animator* topitem_anim = (Ecore_Animator*)iupAttribGet(ih, "_IUPEFL_LIST_TOPITEM_ANIM");
+
+  if (iupAttribGet(ih, "_IUPEFL_LIST_SELFOCUS_JOB"))
+  {
+    ecore_job_del((Ecore_Job*)iupAttribGet(ih, "_IUPEFL_LIST_SELFOCUS_JOB"));
+    iupAttribSet(ih, "_IUPEFL_LIST_SELFOCUS_JOB", NULL);
+  }
 
   if (topitem_job)
   {
@@ -2080,6 +2135,7 @@ static void eflListUnMapMethod(Ihandle* ih)
       efl_event_callback_del(list, EFL_EVENT_POINTER_MOVE, iupeflPointerMoveEvent, ih);
       efl_event_callback_del(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
       efl_event_callback_del(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
+      efl_event_callback_del(list, EFL_EVENT_KEY_DOWN, eflListNavKeyDownCallback, ih);
       efl_event_callback_del(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
       efl_event_callback_del(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflListEditChangedCallback, ih);
       efl_event_callback_del(efl_text_interactive_main_cursor_get(entry), EFL_TEXT_CURSOR_OBJECT_EVENT_CHANGED, eflListEditCursorChangedCallback, ih);
@@ -2135,6 +2191,7 @@ static void eflListUnMapMethod(Ihandle* ih)
       efl_event_callback_del(list, EFL_EVENT_POINTER_MOVE, iupeflPointerMoveEvent, ih);
       efl_event_callback_del(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
       efl_event_callback_del(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
+      efl_event_callback_del(list, EFL_EVENT_KEY_DOWN, eflListNavKeyDownCallback, ih);
       efl_event_callback_del(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
       efl_pack_clear(list);
       iupeflDelete(list);
@@ -2292,6 +2349,8 @@ IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
         efl_pack_end(list, item);
     }
   }
+
+  iupListUpdateOldValue(ih, pos, 0);
 }
 
 IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
@@ -2320,6 +2379,7 @@ IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
     }
     efl_pack_unpack(list, item);
     efl_del(item);
+    iupListUpdateOldValue(ih, pos, 1);
   }
 }
 
@@ -2585,13 +2645,73 @@ static char* eflListGetImageNativeHandleAttrib(Ihandle* ih, int id)
   return (char*)iupdrvListGetImageHandle(ih, id);
 }
 
+static int eflListSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  char* saved = iupAttribGet(ih, "_IUPEFL_DISABLE_TEXT_CB");
+  int ret;
+  iupAttribSet(ih, "_IUPEFL_DISABLE_TEXT_CB", "1");
+  ret = set(ih, value);
+  iupAttribSet(ih, "_IUPEFL_DISABLE_TEXT_CB", saved);
+  return ret;
+}
+
+static int eflListSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflListSetSilent(ih, value, eflListSetValueAttrib);
+}
+
+static int eflListSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflListSetSilent(ih, value, eflListSetCaretAttrib);
+}
+
+static int eflListSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflListSetSilent(ih, value, eflListSetCaretPosAttrib);
+}
+
+static int eflListSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflListSetSilent(ih, value, eflListSetSelectionAttrib);
+}
+
+static int eflListSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflListSetSilent(ih, value, eflListSetSelectionPosAttrib);
+}
+
+static int eflListSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflListSetSilent(ih, value, eflListSetInsertAttrib);
+}
+
+static int eflListSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflListSetSilent(ih, value, eflListSetAppendAttrib);
+}
+
+static int eflListSetScrollToAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflListSetSilent(ih, value, eflListSetScrollToAttrib);
+}
+
+static int eflListSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflListSetSilent(ih, value, eflListSetScrollToPosAttrib);
+}
+
+static int eflListSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflListSetSilent(ih, value, eflListSetClipboardAttrib);
+}
+
 IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   ic->Map = eflListMapMethod;
   ic->UnMap = eflListUnMapMethod;
 
   iupClassRegisterAttributeId(ic, "IDVALUE", eflListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", eflListGetValueAttrib, eflListSetValueAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", eflListGetValueAttrib, eflListSetValueAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, eflListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COUNT", eflListGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
@@ -2600,17 +2720,17 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, eflListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "READONLY", eflListGetReadOnlyAttrib, eflListSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "CARET", eflListGetCaretAttrib, eflListSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", eflListGetCaretPosAttrib, eflListSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", eflListGetSelectionAttrib, eflListSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", eflListGetSelectionPosAttrib, eflListSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", eflListGetCaretAttrib, eflListSetCaretAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", eflListGetCaretPosAttrib, eflListSetCaretPosAttribSilent, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", eflListGetSelectionAttrib, eflListSetSelectionAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", eflListGetSelectionPosAttrib, eflListSetSelectionPosAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTEDTEXT", eflListGetSelectedTextAttrib, eflListSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", NULL, eflListSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", NULL, eflListSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, eflListSetInsertAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", NULL, eflListSetAppendAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, eflListSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, eflListSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, eflListSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, eflListSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, eflListSetClipboardAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, eflListSetScrollToAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, eflListSetScrollToPosAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", eflListGetCueBannerAttrib, eflListSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflListSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);

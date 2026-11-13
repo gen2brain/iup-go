@@ -3,6 +3,8 @@
 **SELECTION_CB**: Action generated when a node is selected or deselected.
 This action occurs when the user clicks with the mouse or uses the keyboard with the appropriate combination of keys.
 It may be called more than once for the same node with the same status.
+With MARKMODE=SINGLE, a change calls it with status=0 for the previous node, then with status=1 for the new one.
+Setting VALUE does not generate it.
 
     int function(Ihandle *ih, int id, int status);
 

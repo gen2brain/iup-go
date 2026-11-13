@@ -11,6 +11,7 @@
 #include <Application.h>
 #include <Bitmap.h>
 #include <Button.h>
+#include <Clipboard.h>
 #include <ControlLook.h>
 #include <Cursor.h>
 #include <ListItem.h>
@@ -22,6 +23,7 @@
 #include <MenuItem.h>
 #include <Message.h>
 #include <MessageFilter.h>
+#include <MessageQueue.h>
 #include <Messenger.h>
 #include <PopUpMenu.h>
 #include <Rect.h>
@@ -54,6 +56,7 @@ extern "C" {
 #define IUPHAIKU_LIST_TEXT_MSG    'IupE'   /* text-control modification */
 #define IUPHAIKU_LIST_OPENMENU    'IupO'   /* combobox chevron clicked */
 #define IUPHAIKU_LIST_REORDER_MSG 'IupL'   /* SHOWDRAGDROP internal drag */
+#define IUPHAIKU_LIST_CARET_MSG   'IupK'
 
 static void haikuListReorder(Ihandle* ih, int src, int drop, int is_ctrl);
 
@@ -218,6 +221,7 @@ private:
 
 
 class IupHaikuListView;
+static void haikuListEditSetTextSilent(Ihandle* ih, const char* text);
 
 /* BScrollView reserves scrollbar width even when hidden. */
 class IupHaikuListWrap : public BView
@@ -341,14 +345,7 @@ public:
       {
         if (auto* it = dynamic_cast<BStringItem*>(ItemAt(idx)))
         {
-          if (auto* e = reinterpret_cast<BTextControl*>(iupAttribGet(fIhandle, "_IUPHAIKU_LIST_EDIT")))
-          {
-            BMessage* saved = e->ModificationMessage();
-            BMessage* clone = saved ? new BMessage(*saved) : nullptr;
-            e->SetModificationMessage(nullptr);
-            e->SetText(it->Text() ? it->Text() : "");
-            e->SetModificationMessage(clone);
-          }
+          haikuListEditSetTextSilent(fIhandle, it->Text() ? it->Text() : "");
         }
       }
 
@@ -589,7 +586,7 @@ public:
     int copy = char_len < 7 ? char_len : 7;
     memcpy(tmp, bytes, copy);
 
-    int ret = iupEditCallActionCb(fIhandle, cb, tmp, sel_s, sel_e, fIhandle->data->mask, fIhandle->data->nc, 0, 1);
+    int ret = iupEditCallActionCb(fIhandle, cb, tmp, iupStrUtf8ByteToChar(tv->Text(), sel_s), iupStrUtf8ByteToChar(tv->Text(), sel_e), fIhandle->data->mask, fIhandle->data->nc, 0, 1);
     if (ret == 0) return B_SKIP_MESSAGE;
     if (ret != -1 && char_len == 1)
     {
@@ -605,28 +602,85 @@ private:
   Ihandle* fIhandle;
 };
 
+static int haikuListEditCaretChar(BTextView* tv)
+{
+  int32 s = 0, e = 0;
+  tv->GetSelection(&s, &e);
+  return iupStrUtf8ByteToChar(tv->Text(), s);
+}
+
+static void haikuListEditFireCaret(Ihandle* ih, BTextView* tv)
+{
+  int pos = haikuListEditCaretChar(tv);
+  if (iupAttribGetInt(ih, "_IUPHAIKU_LAST_CARET") == pos + 1) return;
+  iupAttribSetInt(ih, "_IUPHAIKU_LAST_CARET", pos + 1);
+  auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
+  if (cb && cb(ih, 1, pos + 1, pos) == IUP_CLOSE) IupExitLoop();
+}
+
+class IupHaikuListEditCaretFilter : public BMessageFilter
+{
+public:
+  explicit IupHaikuListEditCaretFilter(BHandler* control)
+    : BMessageFilter(B_ANY_DELIVERY, B_ANY_SOURCE), fControl(control) {}
+
+  filter_result Filter(BMessage* msg, BHandler** target) override
+  {
+    (void)target;
+    switch (msg->what)
+    {
+      case B_MOUSE_MOVED:
+      {
+        int32 buttons = 0;
+        if (msg->FindInt32("buttons", &buttons) != B_OK || buttons == 0)
+          break;
+      }
+      /* fall through */
+      case B_KEY_DOWN:
+      case B_MOUSE_DOWN:
+      case B_MOUSE_UP:
+      case B_SELECT_ALL:
+      case B_PASTE:
+      case B_CUT:
+      case B_UNDO:
+        if (fControl->Looper())
+          fControl->Looper()->PostMessage(IUPHAIKU_LIST_CARET_MSG, fControl);
+        break;
+    }
+    return B_DISPATCH_MESSAGE;
+  }
+
+private:
+  BHandler* fControl;
+};
+
 class IupHaikuListEditCtrl : public BTextControl
 {
 public:
   explicit IupHaikuListEditCtrl(Ihandle* ih)
     : BTextControl(BRect(0, 0, 0, 0), "iup_list_edit", nullptr, "", nullptr, B_FOLLOW_NONE),
-      fIhandle(ih), fKeyFilter(nullptr) { BTextControl::SetDivider(0); }
+      fIhandle(ih), fKeyFilter(nullptr), fCaretFilter(nullptr) { BTextControl::SetDivider(0); }
 
   ~IupHaikuListEditCtrl() override
   {
     if (fKeyFilter && TextView()) TextView()->RemoveFilter(fKeyFilter);
     delete fKeyFilter;
+    if (fCaretFilter && TextView()) TextView()->RemoveFilter(fCaretFilter);
+    delete fCaretFilter;
   }
 
   void AttachedToWindow() override
   {
     BTextControl::AttachedToWindow();
     SetTarget(this);
-    SetModificationMessage(new BMessage(IUPHAIKU_LIST_TEXT_MSG));
+    if (fMute == 0)
+      SetModificationMessage(new BMessage(IUPHAIKU_LIST_TEXT_MSG));
     if (fIhandle && !fKeyFilter && TextView())
     {
       fKeyFilter = new IupHaikuListEditKeyFilter(fIhandle);
       TextView()->AddFilter(fKeyFilter);
+      fCaretFilter = new IupHaikuListEditCaretFilter(this);
+      TextView()->AddFilter(fCaretFilter);
     }
   }
 
@@ -634,16 +688,39 @@ public:
   {
     if (msg && msg->what == IUPHAIKU_LIST_TEXT_MSG && fIhandle)
     {
-      if (BTextView* tv = TextView())
-      {
-        auto ccb = reinterpret_cast<IFniii>(IupGetCallback(fIhandle, "CARET_CB"));
-        if (ccb) { int32 s = 0, e = 0; tv->GetSelection(&s, &e); ccb(fIhandle, 1, static_cast<int>(s) + 1, static_cast<int>(s)); }
-      }
-      Icallback vc = IupGetCallback(fIhandle, "VALUECHANGED_CB");
-      if (vc) { int r = vc(fIhandle); if (r == IUP_CLOSE) IupExitLoop(); }
+      Ihandle* ih = fIhandle;
+      Icallback vc = IupGetCallback(ih, "VALUECHANGED_CB");
+      if (vc && vc(ih) == IUP_CLOSE) { IupExitLoop(); return; }
+      if (iupObjectCheck(ih) && ih->handle && TextView()) haikuListEditFireCaret(ih, TextView());
+      return;
+    }
+    if (msg && msg->what == IUPHAIKU_LIST_CARET_MSG)
+    {
+      if (fIhandle && TextView() && !Looper()->MessageQueue()->FindMessage(static_cast<uint32>(IUPHAIKU_LIST_TEXT_MSG), 0))
+        haikuListEditFireCaret(fIhandle, TextView());
       return;
     }
     BTextControl::MessageReceived(msg);
+  }
+
+  void MuteBegin()
+  {
+    if (fMute++ == 0)
+      SetModificationMessage(nullptr);
+  }
+  void MuteEnd()
+  {
+    if (fMute > 0 && --fMute == 0)
+      SetModificationMessage(new BMessage(IUPHAIKU_LIST_TEXT_MSG));
+  }
+
+  void SetTextSilent(const char* text)
+  {
+    MuteBegin();
+    SetText(text);
+    MuteEnd();
+    if (fIhandle && TextView())
+      iupAttribSetInt(fIhandle, "_IUPHAIKU_LAST_CARET", haikuListEditCaretChar(TextView()) + 1);
   }
 
   /* the inner BTextView holds the focus and invalidates on focus change */
@@ -663,6 +740,8 @@ public:
 private:
   Ihandle* fIhandle;
   BMessageFilter* fKeyFilter;
+  BMessageFilter* fCaretFilter;
+  int fMute = 0;
   bool fLastFocus = false;
 };
 
@@ -729,10 +808,12 @@ public:
       {
         int pos = fPopUp->IndexOf(picked);
         const char* label = picked->Label();
-        if (label) fEdit->SetText(label);
+        if (label) fEdit->SetTextSilent(label);
 
         auto action = reinterpret_cast<IFnsii>(IupGetCallback(fIhandle, "ACTION"));
         if (action) iupListSingleCallActionCb(fIhandle, action, pos + 1);
+        Icallback vc = iupObjectCheck(fIhandle) ? IupGetCallback(fIhandle, "VALUECHANGED_CB") : nullptr;
+        if (vc && vc(fIhandle) == IUP_CLOSE) IupExitLoop();
       }
       return;
     }
@@ -750,6 +831,12 @@ private:
 };
 
 
+static void haikuListEditSetTextSilent(Ihandle* ih, const char* text)
+{
+  if (auto* e = reinterpret_cast<IupHaikuListEditCtrl*>(iupAttribGet(ih, "_IUPHAIKU_LIST_EDIT")))
+    e->SetTextSilent(text);
+}
+
 static IupHaikuListView* haikuListGetListView(Ihandle* ih)
 {
   if (!ih || !ih->handle) return nullptr;
@@ -760,6 +847,172 @@ static IupHaikuListEditCtrl* haikuListGetEdit(Ihandle* ih)
 {
   if (!ih || !ih->handle || !ih->data->has_editbox) return nullptr;
   return reinterpret_cast<IupHaikuListEditCtrl*>(iupAttribGet(ih, "_IUPHAIKU_LIST_EDIT"));
+}
+
+static BTextView* haikuListGetEditView(Ihandle* ih)
+{
+  IupHaikuListEditCtrl* e = haikuListGetEdit(ih);
+  return e ? e->TextView() : nullptr;
+}
+
+static char* haikuListGetEditSelection(Ihandle* ih, int base)
+{
+  BTextView* tv = haikuListGetEditView(ih);
+  if (!tv) return nullptr;
+  int32 s = 0, e = 0;
+  tv->GetSelection(&s, &e);
+  if (s == e) return nullptr;
+  return iupStrReturnIntInt(iupStrUtf8ByteToChar(tv->Text(), s) + base, iupStrUtf8ByteToChar(tv->Text(), e) + base, ':');
+}
+
+static void haikuListSetEditSelection(Ihandle* ih, const char* value, int base)
+{
+  BTextView* tv = haikuListGetEditView(ih);
+  if (!tv) return;
+  LooperLockGuard guard(tv->Looper());
+
+  if (!value || iupStrEqualNoCase(value, "NONE"))
+  {
+    int32 s = 0, e = 0;
+    tv->GetSelection(&s, &e);
+    tv->Select(e, e);
+    return;
+  }
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    tv->SelectAll();
+    return;
+  }
+
+  int start, end;
+  if (iupStrToIntInt(value, &start, &end, ':') != 2) return;
+  start -= base;
+  end -= base;
+  if (start < 0 || end < 0) return;
+  if (end < start) end = start;
+  tv->Select(iupStrUtf8CharToByte(tv->Text(), start), iupStrUtf8CharToByte(tv->Text(), end));
+}
+
+static char* haikuListGetEditCaret(Ihandle* ih, int base)
+{
+  BTextView* tv = haikuListGetEditView(ih);
+  if (!tv) return nullptr;
+  int32 s = 0, e = 0;
+  tv->GetSelection(&s, &e);
+  return iupStrReturnInt(iupStrUtf8ByteToChar(tv->Text(), s) + base);
+}
+
+static void haikuListSetEditCaret(Ihandle* ih, const char* value, int base, bool select)
+{
+  BTextView* tv = haikuListGetEditView(ih);
+  int pos = 0;
+  if (!tv || !iupStrToInt(value, &pos)) return;
+  pos -= base;
+  if (pos < 0) pos = 0;
+  LooperLockGuard guard(tv->Looper());
+  int32 byte = iupStrUtf8CharToByte(tv->Text(), pos);
+  if (select) tv->Select(byte, byte);
+  tv->ScrollToOffset(byte);
+}
+
+static void haikuListEditReplace(BTextView* tv, int32 s, int32 e, const char* value)
+{
+  int32 len = static_cast<int32>(strlen(value));
+  if (s != e) tv->Delete(s, e);
+  tv->Insert(s, value, len);
+  tv->Select(s + len, s + len);
+}
+
+static char* haikuListGetSelectionAttrib(Ihandle* ih) { return haikuListGetEditSelection(ih, 1); }
+static char* haikuListGetSelectionPosAttrib(Ihandle* ih) { return haikuListGetEditSelection(ih, 0); }
+static int haikuListSetSelectionAttrib(Ihandle* ih, const char* value) { haikuListSetEditSelection(ih, value, 1); return 0; }
+static int haikuListSetSelectionPosAttrib(Ihandle* ih, const char* value) { haikuListSetEditSelection(ih, value, 0); return 0; }
+static char* haikuListGetCaretAttrib(Ihandle* ih) { return haikuListGetEditCaret(ih, 1); }
+static char* haikuListGetCaretPosAttrib(Ihandle* ih) { return haikuListGetEditCaret(ih, 0); }
+static int haikuListSetCaretAttrib(Ihandle* ih, const char* value) { haikuListSetEditCaret(ih, value, 1, true); return 0; }
+static int haikuListSetCaretPosAttrib(Ihandle* ih, const char* value) { haikuListSetEditCaret(ih, value, 0, true); return 0; }
+static int haikuListSetScrollToAttrib(Ihandle* ih, const char* value) { haikuListSetEditCaret(ih, value, 1, false); return 0; }
+static int haikuListSetScrollToPosAttrib(Ihandle* ih, const char* value) { haikuListSetEditCaret(ih, value, 0, false); return 0; }
+
+static char* haikuListGetSelectedTextAttrib(Ihandle* ih)
+{
+  BTextView* tv = haikuListGetEditView(ih);
+  if (!tv) return nullptr;
+  int32 s = 0, e = 0;
+  tv->GetSelection(&s, &e);
+  if (s == e) return nullptr;
+  int len = e - s;
+  char* buf = iupStrGetMemory(len + 1);
+  tv->GetText(s, len, buf);
+  buf[len] = '\0';
+  return buf;
+}
+
+static int haikuListSetSelectedTextAttrib(Ihandle* ih, const char* value)
+{
+  BTextView* tv = haikuListGetEditView(ih);
+  if (!tv || !value) return 0;
+  LooperLockGuard guard(tv->Looper());
+  int32 s = 0, e = 0;
+  tv->GetSelection(&s, &e);
+  if (s != e) haikuListEditReplace(tv, s, e, value);
+  return 0;
+}
+
+static int haikuListSetInsertAttrib(Ihandle* ih, const char* value)
+{
+  BTextView* tv = haikuListGetEditView(ih);
+  if (!tv || !value) return 0;
+  LooperLockGuard guard(tv->Looper());
+  int32 s = 0, e = 0;
+  tv->GetSelection(&s, &e);
+  haikuListEditReplace(tv, s, e, value);
+  return 0;
+}
+
+static int haikuListSetAppendAttrib(Ihandle* ih, const char* value)
+{
+  BTextView* tv = haikuListGetEditView(ih);
+  if (!tv || !value) return 0;
+  LooperLockGuard guard(tv->Looper());
+  tv->Insert(tv->TextLength(), value, static_cast<int32>(strlen(value)));
+  return 0;
+}
+
+static int haikuListSetReadOnlyAttrib(Ihandle* ih, const char* value)
+{
+  BTextView* tv = haikuListGetEditView(ih);
+  if (!tv) return 1;
+  LooperLockGuard guard(tv->Looper());
+  tv->MakeEditable(!iupStrBoolean(value));
+  return 1;
+}
+
+static char* haikuListGetReadOnlyAttrib(Ihandle* ih)
+{
+  BTextView* tv = haikuListGetEditView(ih);
+  return tv ? iupStrReturnBoolean(!tv->IsEditable()) : nullptr;
+}
+
+static int haikuListSetNCAttrib(Ihandle* ih, const char* value)
+{
+  if (!ih->data->has_editbox)
+    return 0;
+  if (!iupStrToInt(value, &ih->data->nc))
+    ih->data->nc = 0;
+  return 1;
+}
+
+static int haikuListSetClipboardAttrib(Ihandle* ih, const char* value)
+{
+  BTextView* tv = haikuListGetEditView(ih);
+  if (!tv || !value) return 0;
+  LooperLockGuard guard(tv->Looper());
+  if      (iupStrEqualNoCase(value, "COPY"))  tv->Copy(be_clipboard);
+  else if (iupStrEqualNoCase(value, "CUT"))   tv->Cut(be_clipboard);
+  else if (iupStrEqualNoCase(value, "PASTE")) tv->Paste(be_clipboard);
+  else if (iupStrEqualNoCase(value, "CLEAR")) tv->Clear();
+  return 0;
 }
 
 static BMenu* haikuListGetMenu(Ihandle* ih)
@@ -863,6 +1116,7 @@ extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const cha
       if (auto* it = dynamic_cast<IupHaikuListItem*>(lv->ItemAt(i))) it->SetPos(i);
     if (auto* w = dynamic_cast<IupHaikuListWrap*>(reinterpret_cast<BView*>(ih->handle))) w->RelayoutChildren();
   }
+  iupListUpdateOldValue(ih, pos, 0);
 }
 
 extern "C" IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
@@ -888,6 +1142,7 @@ extern "C" IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
       if (auto* it = dynamic_cast<IupHaikuListItem*>(lv->ItemAt(i))) it->SetPos(i);
     if (auto* w = dynamic_cast<IupHaikuListWrap*>(reinterpret_cast<BView*>(ih->handle))) w->RelayoutChildren();
   }
+  iupListUpdateOldValue(ih, pos, 1);
 }
 
 extern "C" IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
@@ -906,6 +1161,7 @@ extern "C" IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
     for (int32 i = lv->CountItems() - 1; i >= 0; --i) delete lv->RemoveItem(i);
     if (auto* w = dynamic_cast<IupHaikuListWrap*>(reinterpret_cast<BView*>(ih->handle))) w->RelayoutChildren();
   }
+  if (!ih->data->has_editbox) iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
 }
 
 extern "C" IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
@@ -1101,6 +1357,8 @@ static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
     LooperLockGuard guard((reinterpret_cast<BView*>(ih->handle))->Looper());
     for (int32 i = 0; i < m->CountItems(); ++i)
       m->ItemAt(i)->SetMarked(i == pos - 1);
+    if (pos > 0 && pos <= m->CountItems()) iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos);
+    else iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
     return 0;
   }
 
@@ -1109,7 +1367,7 @@ static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
     IupHaikuListEditCtrl* e = haikuListGetEdit(ih);
     if (!e) return 0;
     LooperLockGuard guard(e->Looper());
-    e->SetText(value ? value : "");
+    e->SetTextSilent(value ? value : "");
     return 0;
   }
 
@@ -1118,7 +1376,7 @@ static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
     IupHaikuListEditCtrl* e = haikuListGetEdit(ih);
     if (!e) return 0;
     LooperLockGuard guard(e->Looper());
-    e->SetText(value ? value : "");
+    e->SetTextSilent(value ? value : "");
     return 0;
   }
 
@@ -1133,6 +1391,9 @@ static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
     if (!iupStrToInt(value, &pos)) { iupAttribSet(ih, "_IUPHAIKU_LIST_IGNORESELECT", nullptr); return 0; }
     if (pos == 0) lv->DeselectAll();
     else          lv->Select(pos - 1);
+    int cur = lv->CurrentSelection();
+    if (cur >= 0) iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", cur + 1);
+    else iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
   }
   else
   {
@@ -1491,6 +1752,74 @@ static int haikuListSetSpacingAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int haikuListSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  IupHaikuListEditCtrl* e = haikuListGetEdit(ih);
+  if (!e) return set(ih, value);
+  LooperLockGuard guard(e->Looper());
+  e->MuteBegin();
+  int ret = set(ih, value);
+  e->MuteEnd();
+  if (e->TextView())
+    iupAttribSetInt(ih, "_IUPHAIKU_LAST_CARET", haikuListEditCaretChar(e->TextView()) + 1);
+  return ret;
+}
+
+static int haikuListSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuListSetSilent(ih, value, haikuListSetValueAttrib);
+}
+
+static int haikuListSetSelectedTextAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuListSetSilent(ih, value, haikuListSetSelectedTextAttrib);
+}
+
+static int haikuListSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuListSetSilent(ih, value, haikuListSetSelectionAttrib);
+}
+
+static int haikuListSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuListSetSilent(ih, value, haikuListSetSelectionPosAttrib);
+}
+
+static int haikuListSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuListSetSilent(ih, value, haikuListSetCaretAttrib);
+}
+
+static int haikuListSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuListSetSilent(ih, value, haikuListSetCaretPosAttrib);
+}
+
+static int haikuListSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuListSetSilent(ih, value, haikuListSetInsertAttrib);
+}
+
+static int haikuListSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuListSetSilent(ih, value, haikuListSetAppendAttrib);
+}
+
+static int haikuListSetScrollToAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuListSetSilent(ih, value, haikuListSetScrollToAttrib);
+}
+
+static int haikuListSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuListSetSilent(ih, value, haikuListSetScrollToPosAttrib);
+}
+
+static int haikuListSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuListSetSilent(ih, value, haikuListSetClipboardAttrib);
+}
+
 extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   ic->Map = haikuListMapMethod;
@@ -1501,8 +1830,21 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, haikuListSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuListSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", haikuListGetValueAttrib, haikuListSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", haikuListGetValueAttrib, haikuListSetValueAttribSilent, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", nullptr, haikuListSetTopItemAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", haikuListGetSelectedTextAttrib, haikuListSetSelectedTextAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", haikuListGetSelectionAttrib, haikuListSetSelectionAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", haikuListGetSelectionPosAttrib, haikuListSetSelectionPosAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", haikuListGetCaretAttrib, haikuListSetCaretAttribSilent, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", haikuListGetCaretPosAttrib, haikuListSetCaretPosAttribSilent, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", nullptr, haikuListSetInsertAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", nullptr, haikuListSetAppendAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "READONLY", haikuListGetReadOnlyAttrib, haikuListSetReadOnlyAttrib, nullptr, nullptr, IUPAF_DEFAULT);
+  iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, haikuListSetNCAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, haikuListSetClipboardAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, haikuListSetScrollToAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, haikuListSetScrollToPosAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", nullptr, nullptr, nullptr, nullptr, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, haikuListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);

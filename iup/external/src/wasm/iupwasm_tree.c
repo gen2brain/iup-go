@@ -541,7 +541,6 @@ static int wasmTreeSetValueAttrib(Ihandle* ih, const char* value)
 {
   int treeId = iupwasmIdOf(ih);
   int id, rowId;
-  IFnii cb;
 
   if (!treeId)
     return 0;
@@ -576,9 +575,7 @@ static int wasmTreeSetValueAttrib(Ihandle* ih, const char* value)
     return 0;
 
   iupwasmJsTreeFocus(treeId, rowId);
-  cb = (IFnii)IupGetCallback(ih, "SELECTION_CB");
-  if (cb)
-    cb(ih, id, 1);
+  iupAttribSetInt(ih, "_IUPWASM_TREE_SELROW", rowId);
   return 0;
 }
 
@@ -934,9 +931,17 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTreeSelect(int treeId, int rowId, int ctrl, int
   }
   else
   {
+    int old_id = iupTreeFindNodeId(ih, (InodeHandle*)(intptr_t)iupAttribGetInt(ih, "_IUPWASM_TREE_SELROW"));
     iupwasmJsTreeMarkClear(treeId);
     wasmTreeMarkId(ih, id, 1);
-    if (cb) cb(ih, id, 1);
+    iupAttribSetInt(ih, "_IUPWASM_TREE_SELROW", rowId);
+    if (cb && old_id != id)
+    {
+      if (old_id >= 0)
+        cb(ih, old_id, 0);
+      if (iupObjectCheck(ih))
+        cb(ih, id, 1);
+    }
   }
   iupwasmJsTreeFocus(treeId, rowId);
 }

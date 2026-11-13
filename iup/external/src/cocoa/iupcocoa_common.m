@@ -520,6 +520,43 @@ static int cocoaUtf8SequenceLength(const unsigned char* s)
   return len;
 }
 
+IUP_DRV_API NSUInteger iupcocoaStrAdvanceChars(NSString* text, NSUInteger from, NSUInteger count)
+{
+  NSUInteger length = [text length];
+  while (count > 0 && from < length)
+  {
+    if (CFStringIsSurrogateHighCharacter([text characterAtIndex:from]) && from + 1 < length && CFStringIsSurrogateLowCharacter([text characterAtIndex:from + 1]))
+      from += 2;
+    else
+      from++;
+    count--;
+  }
+  return from;
+}
+
+IUP_DRV_API NSUInteger iupcocoaStrCountChars(NSString* text, NSUInteger from, NSUInteger to)
+{
+  NSUInteger count = 0;
+  if (to > [text length])
+    to = [text length];
+  while (from < to)
+  {
+    from = iupcocoaStrAdvanceChars(text, from, 1);
+    count++;
+  }
+  return count;
+}
+
+IUP_DRV_API NSUInteger iupcocoaStrCharToUnit(NSString* text, int pos)
+{
+  return iupcocoaStrAdvanceChars(text, 0, pos > 0 ? (NSUInteger)pos : 0);
+}
+
+IUP_DRV_API int iupcocoaStrUnitToChar(NSString* text, NSUInteger unit)
+{
+  return (int)iupcocoaStrCountChars(text, 0, unit);
+}
+
 IUP_DRV_API NSString* iupcocoaStrToNSString(const char* str)
 {
   NSString* ns_string;

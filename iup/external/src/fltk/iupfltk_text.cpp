@@ -220,12 +220,25 @@ static void fltkTextCallCaretCb(Ihandle* ih)
     col = pos + 1;
   }
 
-  if (pos != ih->data->last_caret_pos)
+  if (cb(ih, lin, col, pos) == IUP_CLOSE)
+    IupExitLoop();
+}
+
+static int fltkTextCaretByte(Ihandle* ih)
+{
+  if (ih->data->is_multiline)
   {
-    ih->data->last_caret_pos = pos;
-    if (cb(ih, lin, col, pos) == IUP_CLOSE)
-      IupExitLoop();
+    auto* editor = reinterpret_cast<Fl_Text_Editor*>(ih->handle);
+    return editor ? editor->insert_position() : 0;
   }
+  auto* input = reinterpret_cast<Fl_Input*>(ih->handle);
+  return input ? input->insert_position() : 0;
+}
+
+static void fltkTextReportCaret(Ihandle* ih, int caret_before)
+{
+  if (iupObjectCheck(ih) && fltkTextCaretByte(ih) != caret_before)
+    fltkTextCallCaretCb(ih);
 }
 
 static void fltkOverwriteToggleOnInsertKey(Ihandle* ih)
@@ -364,6 +377,8 @@ public:
 
   int handle(int event) override
   {
+    Ihandle* caret_ih = iup_handle;
+    int caret_before = fltkTextCaretByte(caret_ih);
     if (fltkTextMouseEvent(this, iup_handle, event))
       return 1;
     if (event == FL_PASTE && iupfltkHandleDropFiles(iup_handle))
@@ -401,14 +416,14 @@ public:
             char* before = iupStrDup(IupGetAttribute(iup_handle, "VALUE"));
             int ret = Fl_Input::handle(event);
             fltkTextArbitrateHistory(iup_handle, this, nullptr, history == 2, before);
-            fltkTextCallCaretCb(iup_handle);
+            fltkTextReportCaret(caret_ih, caret_before);
             return ret;
           }
         }
         break;
     }
     int ret = Fl_Input::handle(event);
-    fltkTextCallCaretCb(iup_handle);
+    fltkTextReportCaret(caret_ih, caret_before);
     return ret;
   }
 };
@@ -510,6 +525,8 @@ public:
 
   int handle(int event) override
   {
+    Ihandle* caret_ih = iup_handle;
+    int caret_before = fltkTextCaretByte(caret_ih);
     if (fltkTextMouseEvent(this, iup_handle, event))
       return 1;
     if (event == FL_PASTE && iupfltkHandleDropFiles(iup_handle))
@@ -606,7 +623,7 @@ public:
             char* before = iupStrDup(IupGetAttribute(iup_handle, "VALUE"));
             int ret = Fl_Text_Editor::handle(event);
             fltkTextArbitrateHistory(iup_handle, nullptr, text_buffer, history == 2, before);
-            fltkTextCallCaretCb(iup_handle);
+            fltkTextReportCaret(caret_ih, caret_before);
             return ret;
           }
         }
@@ -623,7 +640,7 @@ public:
         window()->cursor(FL_CURSOR_HAND);
     }
 
-    fltkTextCallCaretCb(iup_handle);
+    fltkTextReportCaret(caret_ih, caret_before);
     return ret;
   }
 };
@@ -1168,6 +1185,7 @@ static int fltkTextSetInsertAttrib(Ihandle* ih, const char* value)
   if (!value)
     return 0;
 
+  ih->data->disable_callbacks = 1;
   if (ih->data->is_multiline)
   {
     auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
@@ -1185,6 +1203,7 @@ static int fltkTextSetInsertAttrib(Ihandle* ih, const char* value)
       input->replace(sel_start, sel_end, value);
     }
   }
+  ih->data->disable_callbacks = 0;
   return 0;
 }
 
@@ -1574,18 +1593,20 @@ static int fltkTextSetClipboardAttrib(Ihandle* ih, const char* value)
   }
   else if (iupStrEqualNoCase(value, "PASTE"))
   {
-    if (ih->data->is_multiline)
+    Ihandle* clipboard = IupClipboard();
+    char* text = iupStrDup(IupGetAttribute(clipboard, "TEXT"));
+    IupDestroy(clipboard);
+    if (text && iupObjectCheck(ih) && ih->handle)
     {
-      auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
-      if (editor)
-        Fl::paste(*editor, 1);
+      Fl_Text_Buffer* buf = ih->data->is_multiline ? fltkTextGetBuffer(ih) : nullptr;
+      if (buf)
+      {
+        ih->data->disable_callbacks = 1;
+        buf->remove_selection();
+      }
+      fltkTextSetInsertAttrib(ih, text);
     }
-    else
-    {
-      Fl_Input* input = fltkTextGetInputWidget(ih);
-      if (input)
-        Fl::paste(*input, 1);
-    }
+    free(text);
   }
   else if (iupStrEqualNoCase(value, "CLEAR"))
   {

@@ -342,6 +342,10 @@ public:
   {
     BOutlineListView::SelectionChanged();
     if (!fIhandle) return;
+    BListItem* last = reinterpret_cast<BListItem*>(iupAttribGet(fIhandle, "_IUPHAIKU_TREE_LASTSEL"));
+    int32 cur_idx = CurrentSelection(0);
+    BListItem* current = cur_idx >= 0 ? ItemAt(cur_idx) : nullptr;
+    iupAttribSet(fIhandle, "_IUPHAIKU_TREE_LASTSEL", reinterpret_cast<char*>(current));
     if (iupAttribGet(fIhandle, "_IUPTREE_IGNORE_SELECTION_CB")) return;
     if (!iupdrvIsActive(fIhandle))
     {
@@ -361,7 +365,15 @@ public:
     haikuTreeSetFocus(fIhandle, id);
 
     auto cb = reinterpret_cast<IFnii>(IupGetCallback(fIhandle, "SELECTION_CB"));
-    if (cb) cb(fIhandle, id, 1);
+    if (!cb) return;
+    if (fIhandle->data->mark_mode == ITREE_MARK_SINGLE)
+    {
+      if (item == last) return;
+      int last_id = last ? iupTreeFindNodeId(fIhandle, reinterpret_cast<InodeHandle*>(last)) : -1;
+      if (last_id >= 0 && cb(fIhandle, last_id, 0) == IUP_CLOSE) { IupExitLoop(); return; }
+      if (!iupObjectCheck(fIhandle)) return;
+    }
+    if (cb(fIhandle, id, 1) == IUP_CLOSE) IupExitLoop();
   }
 
 protected:

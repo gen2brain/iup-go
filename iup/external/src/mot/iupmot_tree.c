@@ -2287,6 +2287,31 @@ static void motTreeKeyReleaseEvent(Widget w, Ihandle* ih, XKeyEvent* evt, Boolea
       motTreeCallMultiSelectionCb(ih);
   }
 
+  if (ih->data->mark_mode == ITREE_MARK_SINGLE && !(evt->state & ControlMask) &&
+      (motcode == XK_Down || motcode == XK_Up || motcode == XK_Home || motcode == XK_End || motcode == XK_Prior || motcode == XK_Next))
+  {
+    IFnii cbSelec = (IFnii)IupGetCallback(ih, "SELECTION_CB");
+    Widget wItemFocus = iupdrvTreeGetFocusNode(ih);
+    int curpos = iupTreeFindNodeId(ih, wItemFocus);
+    int oldpos = iupAttribGetInt(ih, "_IUPTREE_OLDVALUE");
+    if (curpos >= 0 && curpos != oldpos && motTreeIsNodeSelected(wItemFocus))
+    {
+      iupAttribSetInt(ih, "_IUPTREE_OLDVALUE", curpos);
+      if (cbSelec)
+      {
+        if (oldpos >= 0 && cbSelec(ih, oldpos, 0) == IUP_CLOSE)
+        {
+          IupExitLoop();
+          return;
+        }
+        if (!iupObjectCheck(ih))
+          return;
+        if (cbSelec(ih, curpos, 1) == IUP_CLOSE)
+          IupExitLoop();
+      }
+    }
+  }
+
   (void)w;
   (void)cont;
 }

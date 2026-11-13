@@ -6,6 +6,7 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
+#include <FL/Fl_Input.H>
 #include <FL/platform.H>
 
 #include <cstdio>
@@ -110,8 +111,14 @@ static int fltkEventDispatch(int event, Fl_Window* window)
   if (fltk_input_callbacks)
     fltkGlobalEventHandler(event);
 
+  Fl_Input* input = event == FL_KEYBOARD ? dynamic_cast<Fl_Input*>(Fl::focus()) : nullptr;
+  int caret_before = input ? input->insert_position() : 0;
+
   int ret = Fl::handle_(event, window);
   iupfltkTipsEvent(event);
+
+  if (input && Fl::focus() == input)
+    iupfltkListInputCaret(input, caret_before);
 
   if (event == FL_RELEASE && fltk_release_ih)
   {

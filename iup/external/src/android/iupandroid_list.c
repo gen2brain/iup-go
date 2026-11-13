@@ -190,6 +190,7 @@ IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
   if (iupAttribGetBoolean(ih, "SORT"))
     pos = androidListSortPos(ih, value);
   androidListCallStringAtPos(ih, "insertItem", "(Landroid/view/View;ILjava/lang/String;)V", pos, value);
+  iupListUpdateOldValue(ih, pos, 0);
 }
 
 IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
@@ -201,6 +202,7 @@ IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
   (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, (jint)pos);
   iupAndroid_CheckException(jni_env, "IupListHelper.removeItem");
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
+  iupListUpdateOldValue(ih, pos, 1);
 }
 
 IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)

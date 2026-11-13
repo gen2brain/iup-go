@@ -115,12 +115,51 @@ static void winuiTextSetScrollBarArrowCursors(DependencyObject parent)
   }
 }
 
+static int winuiTextUnitToChar(Ihandle* ih, int unit);
+static void winuiTextUnitToLinCol(Ihandle* ih, int pos, int* lin, int* col);
+
 /* each Changing is raised inside the programmatic set and pairs with one queued Changed */
 static void winuiTextChanging(Ihandle* ih)
 {
   auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (aux && ih->data->disable_callbacks)
     aux->programTextChanges++;
+  else if (aux)
+    iupAttribSet(ih, "_IUPWINUI_USER_EDIT", "1");
+}
+
+static int winuiTextCaretUnit(Ihandle* ih)
+{
+  if (auto reb = winuiGetHandle<RichEditBox>(ih))
+    return reb.Document().Selection().StartPosition();
+  if (auto tb = winuiGetHandle<TextBox>(ih))
+    return tb.SelectionStart();
+  return 0;
+}
+
+static void winuiTextCallCaretCb(Ihandle* ih)
+{
+  int unit = winuiTextCaretUnit(ih);
+  int pos = winuiTextUnitToChar(ih, unit);
+  if (pos == ih->data->last_caret_pos)
+    return;
+  ih->data->last_caret_pos = pos;
+
+  auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
+  if (cb)
+  {
+    int lin, col;
+    winuiTextUnitToLinCol(ih, unit, &lin, &col);
+    if (cb(ih, lin, col, pos) == IUP_CLOSE)
+      IupExitLoop();
+  }
+}
+
+static void winuiTextSelectionChanged(Ihandle* ih)
+{
+  if (ih->data->disable_callbacks || iupAttribGet(ih, "_IUPWINUI_USER_EDIT"))
+    return;
+  winuiTextCallCaretCb(ih);
 }
 
 static bool winuiTextIsProgramChange(Ihandle* ih)
@@ -212,8 +251,11 @@ static void winuiTextBoxTextChanged(Ihandle* ih)
   if (winuiTextIsProgramChange(ih) || ih->data->disable_callbacks)
     return;
 
+  iupAttribSet(ih, "_IUPWINUI_USER_EDIT", nullptr);
   winuiTextBoxApplyCaseFilter(ih);
   winuiTextCallValueChanged(ih);
+  if (iupObjectCheck(ih))
+    winuiTextCallCaretCb(ih);
 }
 
 static void winuiTextRichTextChanged(Ihandle* ih)
@@ -237,14 +279,21 @@ static void winuiTextRichTextChanged(Ihandle* ih)
     return;
   }
 
+  iupAttribSet(ih, "_IUPWINUI_USER_EDIT", nullptr);
+
   if (iupStrEqual(saved, current))
     return;
 
   if (!ih->data->disable_callbacks && (cb || ih->data->mask || ih->data->nc))
   {
     char* new_value = iupStrDup(current);
+    int key = iupAttribGetInt(ih, "_IUPWINUI_RICH_KEY");
 
-    if (!iupEditCheckNewValue(ih, cb, new_value, ih->data->mask, ih->data->nc))
+    if (key && iupStrUtf8ByteToChar(current, (int)strlen(current)) != iupStrUtf8ByteToChar(saved, (int)strlen(saved)) + 1)
+      key = 0;
+    iupAttribSet(ih, "_IUPWINUI_RICH_KEY", nullptr);
+
+    if (!iupEditCheckNewValueKey(ih, cb, key, new_value, ih->data->mask, ih->data->nc))
     {
       free(new_value);
       IupSetStrAttribute(ih, "VALUE", saved);
@@ -256,6 +305,8 @@ static void winuiTextRichTextChanged(Ihandle* ih)
 
   iupAttribSetStr(ih, "_IUPWINUI_RICH_SAVED", current);
   winuiTextCallValueChanged(ih);
+  if (iupObjectCheck(ih))
+    winuiTextCallCaretCb(ih);
 }
 
 static bool winuiTextIsOverwriteKey(Windows::System::VirtualKey k)
@@ -978,9 +1029,7 @@ static void winuiTextLinkPointerMoved(Ihandle* ih, Windows::Foundation::Point cl
   }
 }
 
-static int winuiTextUnitToChar(Ihandle* ih, int unit);
 static int winuiTextCharToUnit(Ihandle* ih, int pos);
-static void winuiTextUnitToLinCol(Ihandle* ih, int pos, int* lin, int* col);
 
 static int winuiTextConvertXYToPos(Ihandle* ih, int x, int y)
 {
@@ -1244,16 +1293,12 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->selectionChangedToken = reb.SelectionChanged([ih](IInspectable const&, RoutedEventArgs const&) {
-      if (ih->data->disable_callbacks) return;
-      auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
-      if (!cb) return;
-      auto reb = winuiGetHandle<RichEditBox>(ih);
-      if (!reb) return;
-      auto sel = reb.Document().Selection();
-      int pos = sel.StartPosition();
-      int lin, col;
-      winuiTextUnitToLinCol(ih, pos, &lin, &col);
-      if (cb(ih, lin, col, winuiTextUnitToChar(ih, pos)) == IUP_CLOSE) IupExitLoop();
+      winuiTextSelectionChanged(ih);
+    });
+
+    reb.CharacterReceived([ih](UIElement const&, CharacterReceivedRoutedEventArgs const& args) {
+      wchar_t ch = args.Character();
+      iupAttribSetInt(ih, "_IUPWINUI_RICH_KEY", (ch >= 32 && ch < 128) ? static_cast<int>(ch) : 0);
     });
 
     aux->gotFocusToken = reb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
@@ -1459,15 +1504,7 @@ static int winuiTextMapMethod(Ihandle* ih)
     });
 
     aux->selectionChangedToken = tb.SelectionChanged([ih](IInspectable const&, RoutedEventArgs const&) {
-      if (ih->data->disable_callbacks) return;
-      auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
-      if (!cb) return;
-      auto tb = winuiGetHandle<TextBox>(ih);
-      if (!tb) return;
-      int pos = tb.SelectionStart();
-      int lin, col;
-      winuiTextUnitToLinCol(ih, pos, &lin, &col);
-      if (cb(ih, lin, col, winuiTextUnitToChar(ih, pos)) == IUP_CLOSE) IupExitLoop();
+      winuiTextSelectionChanged(ih);
     });
 
     aux->gotFocusToken = tb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
@@ -4181,6 +4218,72 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
   return 1;
 }
 
+static int winuiTextSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  int saved = ih->data->disable_callbacks, ret;
+  ih->data->disable_callbacks = 1;
+  ret = set(ih, value);
+  ih->data->disable_callbacks = saved;
+  if (ih->handle)
+    ih->data->last_caret_pos = winuiTextUnitToChar(ih, winuiTextCaretUnit(ih));
+  return ret;
+}
+
+static int winuiTextSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiTextSetSilent(ih, value, winuiTextSetValueAttrib);
+}
+
+static int winuiTextSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiTextSetSilent(ih, value, winuiTextSetAppendAttrib);
+}
+
+static int winuiTextSetSelectedTextAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiTextSetSilent(ih, value, winuiTextSetSelectedTextAttrib);
+}
+
+static int winuiTextSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiTextSetSilent(ih, value, winuiTextSetSelectionAttrib);
+}
+
+static int winuiTextSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiTextSetSilent(ih, value, winuiTextSetSelectionPosAttrib);
+}
+
+static int winuiTextSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiTextSetSilent(ih, value, winuiTextSetCaretAttrib);
+}
+
+static int winuiTextSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiTextSetSilent(ih, value, winuiTextSetCaretPosAttrib);
+}
+
+static int winuiTextSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiTextSetSilent(ih, value, winuiTextSetInsertAttrib);
+}
+
+static int winuiTextSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiTextSetSilent(ih, value, winuiTextSetClipboardAttrib);
+}
+
+static int winuiTextSetScrollToAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiTextSetSilent(ih, value, winuiTextSetScrollToAttrib);
+}
+
+static int winuiTextSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiTextSetSilent(ih, value, winuiTextSetScrollToPosAttrib);
+}
+
 extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = winuiTextMapMethod;
@@ -4188,8 +4291,8 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "FONT", nullptr, winuiTextSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "VALUE", winuiTextGetValueAttrib, winuiTextSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", nullptr, winuiTextSetAppendAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", winuiTextGetValueAttrib, winuiTextSetValueAttribSilent, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", nullptr, winuiTextSetAppendAttribSilent, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", winuiTextGetReadOnlyAttrib, winuiTextSetReadOnlyAttrib, nullptr, nullptr, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "AUTOCORRECT", nullptr, winuiTextSetAutoCorrectAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINEVALUE", winuiTextGetLineValueAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
@@ -4207,23 +4310,23 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "ADDFORMATTAG", nullptr, iupTextSetAddFormatTagAttrib, nullptr, nullptr, IUPAF_IHANDLENAME|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ADDFORMATTAG_HANDLE", nullptr, iupTextSetAddFormatTagHandleAttrib, nullptr, nullptr, IUPAF_IHANDLE|IUPAF_NOT_MAPPED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", winuiTextGetSelectedTextAttrib, winuiTextSetSelectedTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", winuiTextGetSelectionAttrib, winuiTextSetSelectionAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", winuiTextGetSelectionPosAttrib, winuiTextSetSelectionPosAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", winuiTextGetSelectedTextAttrib, winuiTextSetSelectedTextAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", winuiTextGetSelectionAttrib, winuiTextSetSelectionAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", winuiTextGetSelectionPosAttrib, winuiTextSetSelectionPosAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "CARET", winuiTextGetCaretAttrib, winuiTextSetCaretAttrib, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", winuiTextGetCaretPosAttrib, winuiTextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", winuiTextGetCaretAttrib, winuiTextSetCaretAttribSilent, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", winuiTextGetCaretPosAttrib, winuiTextSetCaretPosAttribSilent, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "INSERT", nullptr, winuiTextSetInsertAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, winuiTextSetClipboardAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", nullptr, winuiTextSetInsertAttribSilent, nullptr, nullptr, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, winuiTextSetClipboardAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "COUNT", winuiTextGetCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINECOUNT", winuiTextGetLineCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, winuiTextSetNCAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, winuiTextSetScrollToAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, winuiTextSetScrollToPosAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, winuiTextSetScrollToAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, winuiTextSetScrollToPosAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "ALIGNMENT", nullptr, winuiTextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, winuiTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);

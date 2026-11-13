@@ -392,15 +392,48 @@ static void qmlTextValueChanged(Ihandle* ih)
     cb(ih);
 }
 
-static void qmlTextCursorPositionChanged(Ihandle* ih)
+static void qmlTextCallCaretCb(Ihandle* ih)
 {
   auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
+  int unit = qmlTextGetCursor(ih);
+  int pos = iupqmlStrUnitToChar(qmlTextGetText(ih), unit);
+  if (pos == ih->data->last_caret_pos)
+    return;
+  ih->data->last_caret_pos = pos;
   if (cb)
   {
-    int lin, col, pos = qmlTextGetCursor(ih);
-    qmlTextUnitToLinCol(ih, pos, &lin, &col);
-    cb(ih, lin, col, iupqmlStrUnitToChar(qmlTextGetText(ih), pos));
+    int lin, col;
+    qmlTextUnitToLinCol(ih, unit, &lin, &col);
+    cb(ih, lin, col, pos);
   }
+}
+
+static void qmlTextCursorPositionChanged(Ihandle* ih)
+{
+  QQuickItem* edit = qmlTextGetEdit(ih);
+  if (!edit)
+    return;
+
+  if (ih->data->disable_callbacks)
+  {
+    ih->data->last_caret_pos = iupqmlStrUnitToChar(qmlTextGetText(ih), qmlTextGetCursor(ih));
+    return;
+  }
+
+  QMetaObject::invokeMethod(edit, [ih]() {
+    if (iupObjectCheck(ih) && !ih->data->disable_callbacks)
+      qmlTextCallCaretCb(ih);
+  }, Qt::QueuedConnection);
+}
+
+namespace {
+struct QmlTextSilent
+{
+  Ihandle* ih;
+  int saved;
+  explicit QmlTextSilent(Ihandle* h) : ih(h), saved(h->data->disable_callbacks) { ih->data->disable_callbacks = 1; }
+  ~QmlTextSilent() { ih->data->disable_callbacks = saved; }
+};
 }
 
 static void qmlTextArbitrateHistory(Ihandle* ih, int redo)
@@ -420,9 +453,9 @@ static void qmlTextArbitrateHistory(Ihandle* ih, int redo)
   ih->data->disable_callbacks = 0;
 }
 
-static int qmlTextArbitrateClipboard(Ihandle* ih, int cut)
+static int qmlTextArbitrateClipboard(Ihandle* ih, int cut, int user)
 {
-  auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "ACTION"));
+  auto cb = user ? reinterpret_cast<IFnis>(IupGetCallback(ih, "ACTION")) : nullptr;
   int start, end, ret;
 
   if (!cb && !ih->data->mask && !ih->data->nc)
@@ -518,7 +551,7 @@ public:
     }
 
     if ((evt->matches(QKeySequence::Paste) || evt->matches(QKeySequence::Cut)) &&
-        !qmlTextArbitrateClipboard(ih, evt->matches(QKeySequence::Cut)))
+        !qmlTextArbitrateClipboard(ih, evt->matches(QKeySequence::Cut), 1))
     {
       if (evt->matches(QKeySequence::Cut))
         QMetaObject::invokeMethod(qmlTextGetEdit(ih), "copy", Qt::DirectConnection);
@@ -573,6 +606,7 @@ public:
 
 static int qmlTextSetValueAttrib(Ihandle* ih, const char* value)
 {
+  QmlTextSilent silent(ih);
   if (!value) value = "";
 
   if (!ih->handle)
@@ -616,6 +650,7 @@ static char* qmlTextGetLineValueAttrib(Ihandle* ih)
 
 static int qmlTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
 {
+  QmlTextSilent silent(ih);
   if (!value)
     return 0;
 
@@ -637,6 +672,7 @@ static char* qmlTextGetSelectedTextAttrib(Ihandle* ih)
 
 static int qmlTextSetSelectionAttrib(Ihandle* ih, const char* value)
 {
+  QmlTextSilent silent(ih);
   int start = 1, end = 1;
   QQuickItem* edit = qmlTextGetEdit(ih);
   if (!edit)
@@ -697,6 +733,7 @@ static char* qmlTextGetSelectionAttrib(Ihandle* ih)
 
 static int qmlTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
 {
+  QmlTextSilent silent(ih);
   int start = 0, end = 0;
   QQuickItem* edit = qmlTextGetEdit(ih);
   if (!edit)
@@ -737,6 +774,7 @@ static char* qmlTextGetSelectionPosAttrib(Ihandle* ih)
 
 static int qmlTextSetCaretAttrib(Ihandle* ih, const char* value)
 {
+  QmlTextSilent silent(ih);
   if (!value)
     return 0;
 
@@ -772,6 +810,7 @@ static char* qmlTextGetCaretAttrib(Ihandle* ih)
 
 static int qmlTextSetCaretPosAttrib(Ihandle* ih, const char* value)
 {
+  QmlTextSilent silent(ih);
   int pos = 0;
   if (!value)
     return 0;
@@ -790,6 +829,7 @@ static char* qmlTextGetCaretPosAttrib(Ihandle* ih)
 
 static int qmlTextSetScrollToAttrib(Ihandle* ih, const char* value)
 {
+  QmlTextSilent silent(ih);
   int lin = 1, col = 1, pos;
   if (!value)
     return 0;
@@ -806,6 +846,7 @@ static int qmlTextSetScrollToAttrib(Ihandle* ih, const char* value)
 
 static int qmlTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 {
+  QmlTextSilent silent(ih);
   int pos = 0;
   if (!value)
     return 0;
@@ -820,6 +861,7 @@ static int qmlTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 
 static int qmlTextSetInsertAttrib(Ihandle* ih, const char* value)
 {
+  QmlTextSilent silent(ih);
   if (!ih->handle || !value)
     return 0;
 
@@ -843,6 +885,7 @@ static void qmlTextAppendPlain(QTextDocument* doc, const QString& str)
 
 static int qmlTextSetAppendAttrib(Ihandle* ih, const char* value)
 {
+  QmlTextSilent silent(ih);
   if (!ih->handle)
     return 0;
 
@@ -909,6 +952,7 @@ static char* qmlTextGetNCAttrib(Ihandle* ih)
 
 static int qmlTextSetClipboardAttrib(Ihandle* ih, const char* value)
 {
+  QmlTextSilent silent(ih);
   QQuickItem* edit = qmlTextGetEdit(ih);
   if (!value || !edit)
     return 0;
@@ -917,14 +961,14 @@ static int qmlTextSetClipboardAttrib(Ihandle* ih, const char* value)
     QMetaObject::invokeMethod(edit, "copy", Qt::DirectConnection);
   else if (iupStrEqualNoCase(value, "CUT"))
   {
-    if (qmlTextArbitrateClipboard(ih, 1))
+    if (qmlTextArbitrateClipboard(ih, 1, 0))
       QMetaObject::invokeMethod(edit, "cut", Qt::DirectConnection);
     else
       QMetaObject::invokeMethod(edit, "copy", Qt::DirectConnection);
   }
   else if (iupStrEqualNoCase(value, "PASTE"))
   {
-    if (qmlTextArbitrateClipboard(ih, 0))
+    if (qmlTextArbitrateClipboard(ih, 0, 0))
       QMetaObject::invokeMethod(edit, "paste", Qt::DirectConnection);
   }
   else if (iupStrEqualNoCase(value, "CLEAR"))

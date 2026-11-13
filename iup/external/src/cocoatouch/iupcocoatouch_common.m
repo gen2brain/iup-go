@@ -764,6 +764,37 @@ IUP_DRV_API NSString* iupCocoaTouchStrToNSStringLen(const char* str, size_t len)
 	return ns_string ? ns_string : @"";
 }
 
+static NSUInteger cocoaTouchStrUnitSize(NSString* str, NSUInteger i)
+{
+	if (i + 1 < str.length && CFStringIsSurrogateHighCharacter([str characterAtIndex:i]) && CFStringIsSurrogateLowCharacter([str characterAtIndex:i + 1]))
+		return 2;
+	return 1;
+}
+
+IUP_DRV_API NSUInteger iupCocoaTouchStrCharToUnit(NSString* str, int pos)
+{
+	NSUInteger i = 0, len = str.length;
+	while (pos > 0 && i < len)
+	{
+		i += cocoaTouchStrUnitSize(str, i);
+		pos--;
+	}
+	return i;
+}
+
+IUP_DRV_API int iupCocoaTouchStrUnitToChar(NSString* str, NSUInteger unit)
+{
+	NSUInteger i = 0;
+	int n = 0;
+	if (unit > str.length) unit = str.length;
+	while (i < unit)
+	{
+		i += cocoaTouchStrUnitSize(str, i);
+		n++;
+	}
+	return n;
+}
+
 IUP_DRV_API NSString* iupCocoaTouchStrToNSString(const char* str)
 {
 	if (!str)

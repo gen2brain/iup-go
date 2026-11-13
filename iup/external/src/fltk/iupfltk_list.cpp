@@ -343,6 +343,20 @@ public:
   }
 };
 
+static void fltkListReportCaret(Ihandle* ih, Fl_Input* edit, int caret_before)
+{
+  if (!iupObjectCheck(ih) || !edit || edit->insert_position() == caret_before)
+    return;
+
+  auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
+  if (cb)
+  {
+    int pos = iupStrUtf8ByteToChar(edit->value(), edit->insert_position());
+    if (cb(ih, 1, pos + 1, pos) == IUP_CLOSE)
+      IupExitLoop();
+  }
+}
+
 class IupFltkInputChoice : public Fl_Input_Choice
 {
 public:
@@ -377,9 +391,13 @@ public:
         drop = true;
     }
 
-    if (drop) fltkListCallDropdownCb(iup_handle, 1);
+    Ihandle* ih = iup_handle;
+    if (drop) fltkListCallDropdownCb(ih, 1);
+    int caret_before = input()->insert_position();
     int ret = Fl_Input_Choice::handle(event);
-    if (drop) fltkListCallDropdownCb(iup_handle, 0);
+    if (!iupObjectCheck(ih)) return ret;
+    fltkListReportCaret(ih, input(), caret_before);
+    if (drop && iupObjectCheck(ih)) fltkListCallDropdownCb(ih, 0);
     return ret;
   }
 };
@@ -405,7 +423,11 @@ public:
         if (iupfltkEditCheckMask(iup_handle, this, event, "EDIT_CB", iup_handle->data->mask, iup_handle->data->nc, 0)) return 1;
         break;
     }
-    return Fl_Input::handle(event);
+    Ihandle* ih = iup_handle;
+    int caret_before = insert_position();
+    int ret = Fl_Input::handle(event);
+    if (iupObjectCheck(ih)) fltkListReportCaret(ih, this, caret_before);
+    return ret;
   }
 };
 
@@ -915,18 +937,10 @@ static void fltkListEditCallback(Fl_Widget* w, void* data)
   iupBaseCallValueChangedCb(ih);
 }
 
-static void fltkListCaretCallback(Fl_Widget* w, void* data)
+IUP_DRV_API void iupfltkListInputCaret(Fl_Input* input, int caret_before)
 {
-  auto* ih = static_cast<Ihandle*>(data);
-
-  auto* edit = static_cast<Fl_Input*>(w);
-
-  auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "CARET_CB"));
-  if (cb)
-  {
-    int pos = edit->insert_position() + 1;
-    cb(ih, pos, 0);
-  }
+  if (input->callback() == fltkListEditCallback && !dynamic_cast<IupFltkListInput*>(input))
+    fltkListReportCaret(static_cast<Ihandle*>(input->user_data()), input, caret_before);
 }
 
 /****************************************************************************
@@ -1623,7 +1637,9 @@ static int fltkListSetSelectedTextAttrib(Ihandle* ih, const char* value)
       start = end;
       end = tmp;
     }
+    iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", "1");
     edit->replace(start, end, value ? value : "");
+    iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", nullptr);
   }
 
   return 0;
@@ -1755,7 +1771,9 @@ static int fltkListSetInsertAttrib(Ihandle* ih, const char* value)
   if (edit && value)
   {
     int pos = edit->insert_position();
+    iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", "1");
     edit->replace(pos, pos, value);
+    iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", nullptr);
   }
   return 0;
 }
@@ -1766,7 +1784,9 @@ static int fltkListSetAppendAttrib(Ihandle* ih, const char* value)
   if (edit && value)
   {
     int len = static_cast<int>(strlen(edit->value()));
+    iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", "1");
     edit->replace(len, len, value);
+    iupAttribSet(ih, "_IUPFLTK_DISABLE_TEXT_CB", nullptr);
   }
   return 0;
 }
@@ -1965,6 +1985,7 @@ static int fltkListMapMethod(Ihandle* ih)
       {
         edit->callback(fltkListEditCallback, reinterpret_cast<void*>(ih));
         edit->when(FL_WHEN_CHANGED);
+        iupfltkEventDispatchInstall();
 
         if (ih->data->nc > 0)
           edit->maximum_size(ih->data->nc);

@@ -19,11 +19,13 @@
 
 #ifdef __cplusplus
 class Fl_Widget;
+class Fl_Input;
 class Fl_Group;
 class Fl_Window;
 class Fl_Input_;
 #else
 typedef struct _Fl_Widget Fl_Widget;
+typedef struct _Fl_Input Fl_Input;
 typedef struct _Fl_Group Fl_Group;
 typedef struct _Fl_Window Fl_Window;
 typedef struct _Fl_Input_ Fl_Input_;
@@ -102,6 +104,7 @@ IUP_DRV_API void iupfltkTipsRemove(Ihandle* ih);
 IUP_DRV_API void iupfltkTipsEvent(int event);
 IUP_DRV_API void iupfltkEventDispatchInstall(void);
 IUP_DRV_API void iupfltkSetReleaseTarget(Fl_Widget* widget, Ihandle* ih);
+IUP_DRV_API void iupfltkListInputCaret(Fl_Input* input, int caret_before);
 
 /****************************************************************************
  * Native Handle Access

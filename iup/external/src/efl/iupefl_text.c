@@ -193,9 +193,12 @@ static int eflTextOverwriteChar(Ihandle* ih, Eo* entry, const Efl_Text_Change_In
   return next != 0 && next != '\n' && next != 0x2028 && next != 0x2029;
 }
 
+static void eflTextCallCaretCb(Ihandle* ih);
+
 static void eflTextChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
+  int caret_before = ih->data->last_caret_pos;
   Efl_Text_Change_Info* info = (Efl_Text_Change_Info*)ev->info;
   IFnis action_cb;
   IFn value_cb;
@@ -346,30 +349,32 @@ static void eflTextChangedCallback(void* data, const Efl_Event* ev)
   value_cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (value_cb)
     value_cb(ih);
+
+  if (iupObjectCheck(ih))
+  {
+    ih->data->last_caret_pos = caret_before;
+    eflTextCallCaretCb(ih);
+  }
 }
 
-static void eflTextCursorChangedCallback(void* data, const Efl_Event* ev)
+static void eflTextCallCaretCb(Ihandle* ih)
 {
-  Ihandle* ih = (Ihandle*)data;
   IFniii cb;
-  Eo* entry;
-  Efl_Text_Cursor_Object* cursor = (Efl_Text_Cursor_Object*)ev->object;
+  Eo* entry = iupeflGetWidget(ih);
+  Efl_Text_Cursor_Object* cursor = entry ? efl_text_interactive_main_cursor_get(entry) : NULL;
   Efl_Text_Cursor_Object* line_cursor;
   int pos, lin, col, line_start_pos;
 
-  if (ih->data->disable_callbacks)
+  if (!cursor)
     return;
-
-  cb = (IFniii)IupGetCallback(ih, "CARET_CB");
-  if (!cb) return;
-
-  entry = iupeflGetWidget(ih);
-  if (!entry || !cursor) return;
 
   pos = efl_text_cursor_object_position_get(cursor);
   if (pos == ih->data->last_caret_pos)
     return;
   ih->data->last_caret_pos = pos;
+
+  cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+  if (!cb) return;
 
   lin = efl_text_cursor_object_line_number_get(cursor) + 1;
   col = 1;
@@ -386,6 +391,21 @@ static void eflTextCursorChangedCallback(void* data, const Efl_Event* ev)
 
   if (cb(ih, lin, col, pos) == IUP_CLOSE)
     IupExitLoop();
+}
+
+static void eflTextCursorChangedCallback(void* data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Efl_Text_Cursor_Object* cursor = (Efl_Text_Cursor_Object*)ev->object;
+
+  if (ih->data->disable_callbacks)
+  {
+    if (cursor)
+      ih->data->last_caret_pos = efl_text_cursor_object_position_get(cursor);
+    return;
+  }
+
+  eflTextCallCaretCb(ih);
 }
 
 static void eflSpinChangedCallback(void* data, const Efl_Event* ev)
@@ -1100,7 +1120,14 @@ static int eflTextSetClipboardAttrib(Ihandle* ih, const char* value)
   else if (iupStrEqualNoCase(value, "CUT"))
     efl_ui_textbox_selection_cut(entry);
   else if (iupStrEqualNoCase(value, "PASTE"))
-    efl_ui_textbox_selection_paste(entry);
+  {
+    Ihandle* clipboard = IupClipboard();
+    char* text = iupStrDup(IupGetAttribute(clipboard, "TEXT"));
+    IupDestroy(clipboard);
+    if (text && iupObjectCheck(ih) && ih->handle)
+      eflTextSetInsertAttrib(ih, text);
+    free(text);
+  }
   else if (iupStrEqualNoCase(value, "CLEAR"))
   {
     if (efl_text_interactive_have_selection_get(entry))
@@ -2936,6 +2963,50 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
   return 1;
 }
 
+static int eflTextSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  int saved = ih->data->disable_callbacks, ret;
+  ih->data->disable_callbacks = 1;
+  ret = set(ih, value);
+  ih->data->disable_callbacks = saved;
+  return ret;
+}
+
+static int eflTextSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflTextSetSilent(ih, value, eflTextSetCaretAttrib);
+}
+
+static int eflTextSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflTextSetSilent(ih, value, eflTextSetCaretPosAttrib);
+}
+
+static int eflTextSetScrollToAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflTextSetSilent(ih, value, eflTextSetScrollToAttrib);
+}
+
+static int eflTextSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflTextSetSilent(ih, value, eflTextSetScrollToPosAttrib);
+}
+
+static int eflTextSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflTextSetSilent(ih, value, eflTextSetSelectionAttrib);
+}
+
+static int eflTextSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflTextSetSilent(ih, value, eflTextSetSelectionPosAttrib);
+}
+
+static int eflTextSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+  return eflTextSetSilent(ih, value, eflTextSetClipboardAttrib);
+}
+
 IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = eflTextMapMethod;
@@ -2944,25 +3015,25 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "VALUE", eflTextGetValueAttrib, eflTextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", eflTextGetReadOnlyAttrib, eflTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "PASSWORD", NULL, eflTextSetPasswordAttrib, NULL, NULL, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "CARETPOS", eflTextGetCaretPosAttrib, eflTextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", eflTextGetSelectionAttrib, eflTextSetSelectionAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", eflTextGetCaretPosAttrib, eflTextSetCaretPosAttribSilent, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", eflTextGetSelectionAttrib, eflTextSetSelectionAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTEDTEXT", eflTextGetSelectedTextAttrib, eflTextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPEND", NULL, eflTextSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INSERT", NULL, eflTextSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, eflTextSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, eflTextSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, eflTextSetScrollToAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, eflTextSetScrollToPosAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupeflBaseGetActiveAttrib, eflTextSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, eflTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, eflTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FONT", NULL, eflTextSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NO_SAVE | IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "ALIGNMENT", eflTextGetAlignmentAttrib, eflTextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", eflTextGetCaretAttrib, eflTextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, eflTextSetClipboardAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", eflTextGetCaretAttrib, eflTextSetCaretAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, eflTextSetClipboardAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COUNT", eflTextGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINECOUNT", eflTextGetLineCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINEVALUE", eflTextGetLineValueAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", eflTextGetSelectionPosAttrib, eflTextSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", eflTextGetSelectionPosAttrib, eflTextSetSelectionPosAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, eflTextSetNCAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "CUEBANNER", eflTextGetCueBannerAttrib, eflTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABSIZE", eflTextGetTabSizeAttrib, eflTextSetTabSizeAttrib, "8", NULL, IUPAF_DEFAULT);

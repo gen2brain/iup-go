@@ -586,28 +586,56 @@ static void qtTextValueChanged(Ihandle* ih)
     cb(ih);
 }
 
-static void qtTextCursorPositionChanged(Ihandle* ih)
+static int qtTextGetCaretChar(Ihandle* ih)
+{
+  int pos;
+  if (ih->data->is_multiline)
+    pos = reinterpret_cast<IupQtTextEdit*>(ih->handle)->textCursor().position();
+  else
+    pos = qtTextGetLineEdit(ih)->cursorPosition();
+  return iupqtStrUnitToChar(qtTextGetString(ih), pos);
+}
+
+static void qtTextCallCaretCb(Ihandle* ih)
 {
   auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
+  int pos = qtTextGetCaretChar(ih);
+  if (pos == ih->data->last_caret_pos)
+    return;
+  ih->data->last_caret_pos = pos;
   if (cb)
   {
-    int lin, col, pos;
-
-    if (ih->data->is_multiline)
-    {
-      auto* text = reinterpret_cast<IupQtTextEdit*>(ih->handle);
-      QTextCursor cursor = text->textCursor();
-      pos = cursor.position();
-    }
-    else
-    {
-      auto* edit = qtTextGetLineEdit(ih);
-      pos = edit->cursorPosition();
-    }
-
-    qtTextUnitToLinCol(ih, pos, &lin, &col);
-    cb(ih, lin, col, iupqtStrUnitToChar(qtTextGetString(ih), pos));
+    int lin, col;
+    iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
+    cb(ih, lin, col, pos);
   }
+}
+
+static void qtTextCursorPositionChanged(Ihandle* ih)
+{
+  if (!ih->handle)
+    return;
+
+  if (ih->data->disable_callbacks)
+  {
+    ih->data->last_caret_pos = qtTextGetCaretChar(ih);
+    return;
+  }
+
+  QMetaObject::invokeMethod(reinterpret_cast<QWidget*>(ih->handle), [ih]() {
+    if (iupObjectCheck(ih) && !ih->data->disable_callbacks)
+      qtTextCallCaretCb(ih);
+  }, Qt::QueuedConnection);
+}
+
+namespace {
+struct QtTextSilent
+{
+  Ihandle* ih;
+  int saved;
+  explicit QtTextSilent(Ihandle* h) : ih(h), saved(h->data->disable_callbacks) { ih->data->disable_callbacks = 1; }
+  ~QtTextSilent() { ih->data->disable_callbacks = saved; }
+};
 }
 
 static void qtTextGetEditRange(Ihandle* ih, int* start, int* end)
@@ -922,6 +950,7 @@ static char* qtTextGetSelectedTextAttrib(Ihandle* ih)
 
 static int qtTextSetSelectionAttrib(Ihandle* ih, const char* value)
 {
+  QtTextSilent silent(ih);
   int start = 1, end = 1;
 
   if (!value || iupStrEqualNoCase(value, "NONE"))
@@ -1012,6 +1041,7 @@ static char* qtTextGetSelectionAttrib(Ihandle* ih)
 
 static int qtTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
 {
+  QtTextSilent silent(ih);
   int start = 0, end = 0;
 
   if (!value || iupStrEqualNoCase(value, "NONE"))
@@ -1101,6 +1131,7 @@ static char* qtTextGetSelectionPosAttrib(Ihandle* ih)
 
 static int qtTextSetCaretAttrib(Ihandle* ih, const char* value)
 {
+  QtTextSilent silent(ih);
   if (!value)
     return 0;
 
@@ -1146,6 +1177,7 @@ static char* qtTextGetCaretAttrib(Ihandle* ih)
 
 static int qtTextSetCaretPosAttrib(Ihandle* ih, const char* value)
 {
+  QtTextSilent silent(ih);
   int pos = 0;
 
   if (!value)
@@ -1192,6 +1224,7 @@ static char* qtTextGetCaretPosAttrib(Ihandle* ih)
 
 static int qtTextSetScrollToAttrib(Ihandle* ih, const char* value)
 {
+  QtTextSilent silent(ih);
   int lin = 1, col = 1, pos;
 
   if (!value)
@@ -1222,6 +1255,7 @@ static int qtTextSetScrollToAttrib(Ihandle* ih, const char* value)
 
 static int qtTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 {
+  QtTextSilent silent(ih);
   int pos = 0;
 
   if (!value)
@@ -1390,6 +1424,7 @@ static char* qtTextGetNCAttrib(Ihandle* ih)
 
 static int qtTextSetClipboardAttrib(Ihandle* ih, const char* value)
 {
+  QtTextSilent silent(ih);
   if (!value)
     return 0;
 

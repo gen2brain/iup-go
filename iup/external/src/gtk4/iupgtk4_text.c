@@ -358,28 +358,38 @@ static void gtkTextScrollToVisible(Ihandle* ih)
   gtk_text_view_scroll_mark_onscreen(GTK_TEXT_VIEW(ih->handle), mark);
 }
 
-static gboolean gtk4TextMoveCursor(GtkWidget* widget, GtkMovementStep step, gint count, gboolean extend_selection, Ihandle* ih)
+static void gtk4TextCallCaretCb(Ihandle* ih)
 {
+  int pos, lin, col;
   IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
-  if (cb)
+  if (!cb)
+    return;
+
+  if (ih->data->is_multiline)
   {
-    int pos, lin, col;
-    if (ih->data->is_multiline)
-    {
-      GtkTextIter iter;
-      GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
-      gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
-      pos = gtk_text_iter_get_offset(&iter);
-      gtkTextGetLinColFromPosition(&iter, &lin, &col);
-    }
-    else
-    {
-      pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
-      lin = 1;
-      col = pos + 1;
-    }
+    GtkTextIter iter;
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
+    pos = gtk_text_iter_get_offset(&iter);
+    gtkTextGetLinColFromPosition(&iter, &lin, &col);
+  }
+  else
+  {
+    pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
+    lin = 1;
+    col = pos + 1;
+  }
+
+  if (pos != ih->data->last_caret_pos)
+  {
+    ih->data->last_caret_pos = pos;
     cb(ih, lin, col, pos);
   }
+}
+
+static gboolean gtk4TextMoveCursor(GtkWidget* widget, GtkMovementStep step, gint count, gboolean extend_selection, Ihandle* ih)
+{
+  gtk4TextCallCaretCb(ih);
 
   (void)widget;
   (void)step;
@@ -395,26 +405,7 @@ static gboolean gtk4TextKeyReleaseEvent(GtkEventControllerKey* controller, guint
   (void)keycode;
   (void)state;
 
-  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
-  if (cb)
-  {
-    int pos, lin, col;
-    if (ih->data->is_multiline)
-    {
-      GtkTextIter iter;
-      GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
-      gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
-      pos = gtk_text_iter_get_offset(&iter);
-      gtkTextGetLinColFromPosition(&iter, &lin, &col);
-    }
-    else
-    {
-      pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
-      lin = 1;
-      col = pos + 1;
-    }
-    cb(ih, lin, col, pos);
-  }
+  gtk4TextCallCaretCb(ih);
 
   return FALSE;
 }
@@ -447,26 +438,7 @@ static gboolean gtk4TextButtonEvent(GtkGestureClick* gesture, int n_press, doubl
   (void)x;
   (void)y;
 
-  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
-  if (cb)
-  {
-    int pos, lin, col;
-    if (ih->data->is_multiline)
-    {
-      GtkTextIter iter;
-      GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
-      gtk_text_buffer_get_iter_at_mark(buffer, &iter, gtk_text_buffer_get_insert(buffer));
-      pos = gtk_text_iter_get_offset(&iter);
-      gtkTextGetLinColFromPosition(&iter, &lin, &col);
-    }
-    else
-    {
-      pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
-      lin = 1;
-      col = pos + 1;
-    }
-    cb(ih, lin, col, pos);
-  }
+  gtk4TextCallCaretCb(ih);
 
   return FALSE;
 }
@@ -1473,23 +1445,34 @@ static int gtk4TextSetNCAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static void gtk4TextPasteReadyCb(GObject* source, GAsyncResult* result, gpointer user_data)
+static void gtk4TextPaste(Ihandle* ih)
 {
-  Ihandle* ih = (Ihandle*)user_data;
-  GError* error = NULL;
-  char* text = gdk_clipboard_read_text_finish(GDK_CLIPBOARD(source), result, &error);
-  if (error)
-    g_error_free(error);
-  if (text)
+  Ihandle* clipboard = IupClipboard();
+  char* text = iupStrDup(IupGetAttribute(clipboard, "TEXT"));
+  IupDestroy(clipboard);
+  if (!text || !iupObjectCheck(ih) || !ih->handle)
   {
-    if (iupObjectCheck(ih))
-    {
-      int pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
-      gtk_editable_insert_text(GTK_EDITABLE(ih->handle), text, -1, &pos);
-      gtk_editable_set_position(GTK_EDITABLE(ih->handle), pos);
-    }
-    g_free(text);
+    free(text);
+    return;
   }
+
+  ih->data->disable_callbacks = 1;
+  if (ih->data->is_multiline)
+  {
+    GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
+    gtk_text_buffer_delete_selection(buffer, FALSE, TRUE);
+    gtk_text_buffer_insert_at_cursor(buffer, iupgtk4StrConvertToSystem(text), -1);
+  }
+  else
+  {
+    int pos;
+    gtk_editable_delete_selection(GTK_EDITABLE(ih->handle));
+    pos = gtk_editable_get_position(GTK_EDITABLE(ih->handle));
+    gtk_editable_insert_text(GTK_EDITABLE(ih->handle), iupgtk4StrConvertToSystem(text), -1, &pos);
+    gtk_editable_set_position(GTK_EDITABLE(ih->handle), pos);
+  }
+  ih->data->disable_callbacks = 0;
+  free(text);
 }
 
 static int gtk4TextSetClipboardAttrib(Ihandle* ih, const char* value)
@@ -1540,19 +1523,7 @@ static int gtk4TextSetClipboardAttrib(Ihandle* ih, const char* value)
     }
   }
   else if (iupStrEqualNoCase(value, "PASTE"))
-  {
-    if (ih->data->is_multiline)
-    {
-      GtkTextBuffer* buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(ih->handle));
-      GdkClipboard* clipboard = gtk_widget_get_clipboard(ih->handle);
-      gtk_text_buffer_paste_clipboard(buffer, clipboard, NULL, TRUE);
-    }
-    else
-    {
-      GdkClipboard* clipboard = gtk_widget_get_clipboard(ih->handle);
-      gdk_clipboard_read_text_async(clipboard, NULL, gtk4TextPasteReadyCb, ih);
-    }
-  }
+    gtk4TextPaste(ih);
   else if (iupStrEqualNoCase(value, "CLEAR"))
   {
     if (ih->data->is_multiline)
@@ -2771,6 +2742,67 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
   return 1;
 }
 
+static int gtk4TextSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  int saved = ih->data->disable_callbacks, ret;
+  ih->data->disable_callbacks = 1;
+  ret = set(ih, value);
+  ih->data->disable_callbacks = saved;
+  if (ih->handle)
+    ih->data->last_caret_pos = IupGetInt(ih, "CARETPOS");
+  return ret;
+}
+
+static int gtk4TextSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+  return gtk4TextSetSilent(ih, value, gtk4TextSetValueAttrib);
+}
+
+static int gtk4TextSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+  return gtk4TextSetSilent(ih, value, gtk4TextSetCaretAttrib);
+}
+
+static int gtk4TextSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return gtk4TextSetSilent(ih, value, gtk4TextSetCaretPosAttrib);
+}
+
+static int gtk4TextSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+  return gtk4TextSetSilent(ih, value, gtk4TextSetSelectionAttrib);
+}
+
+static int gtk4TextSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return gtk4TextSetSilent(ih, value, gtk4TextSetSelectionPosAttrib);
+}
+
+static int gtk4TextSetSelectedTextAttribSilent(Ihandle* ih, const char* value)
+{
+  return gtk4TextSetSilent(ih, value, gtk4TextSetSelectedTextAttrib);
+}
+
+static int gtk4TextSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+  return gtk4TextSetSilent(ih, value, gtk4TextSetInsertAttrib);
+}
+
+static int gtk4TextSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+  return gtk4TextSetSilent(ih, value, gtk4TextSetAppendAttrib);
+}
+
+static int gtk4TextSetScrollToAttribSilent(Ihandle* ih, const char* value)
+{
+  return gtk4TextSetSilent(ih, value, gtk4TextSetScrollToAttrib);
+}
+
+static int gtk4TextSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return gtk4TextSetSilent(ih, value, gtk4TextSetScrollToPosAttrib);
+}
+
 IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = gtk4TextMapMethod;
@@ -2780,20 +2812,20 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtk4TextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, gtk4TextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "VALUE", gtk4TextGetValueAttrib, gtk4TextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", gtk4TextGetValueAttrib, gtk4TextSetValueAttribSilent, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINEVALUE", gtk4TextGetLineValueAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", gtk4TextGetSelectedTextAttrib, gtk4TextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", gtk4TextGetSelectionAttrib, gtk4TextSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", gtk4TextGetSelectionPosAttrib, gtk4TextSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", gtk4TextGetCaretAttrib, gtk4TextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", gtk4TextGetCaretPosAttrib, gtk4TextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", NULL, gtk4TextSetInsertAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", NULL, gtk4TextSetAppendAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", gtk4TextGetSelectedTextAttrib, gtk4TextSetSelectedTextAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", gtk4TextGetSelectionAttrib, gtk4TextSetSelectionAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", gtk4TextGetSelectionPosAttrib, gtk4TextSetSelectionPosAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", gtk4TextGetCaretAttrib, gtk4TextSetCaretAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", gtk4TextGetCaretPosAttrib, gtk4TextSetCaretPosAttribSilent, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, gtk4TextSetInsertAttribSilent, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", NULL, gtk4TextSetAppendAttribSilent, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", gtk4TextGetReadOnlyAttrib, gtk4TextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, gtk4TextSetNCAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, gtk4TextSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, gtk4TextSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, gtk4TextSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, gtk4TextSetScrollToAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, gtk4TextSetScrollToPosAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINMIN", NULL, gtk4TextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINMAX", NULL, gtk4TextSetSpinMaxAttrib, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPININC", NULL, gtk4TextSetSpinIncAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);

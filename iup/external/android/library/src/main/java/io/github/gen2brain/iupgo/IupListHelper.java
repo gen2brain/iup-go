@@ -399,7 +399,8 @@ public final class IupListHelper
         if (e == null) return;
         if (text == null) text = "";
         /* MACTV.setText filters by default; (text, false) skips it. */
-        if (e instanceof MaterialAutoCompleteTextView m) { m.setText(text, false); return; }
+        final String value = text;
+        if (e instanceof MaterialAutoCompleteTextView m) { silentEdit(e, () -> m.setText(value, false)); return; }
         IupTextHelper.setText(0L, e, text);
     }
 
@@ -470,7 +471,56 @@ public final class IupListHelper
     {
         long ihandlePtr;
         int currentPosition;
+        boolean editbox;
+        boolean suppress;
+        int maxChars;
         IupDropdownView(Context ctx, long ih) { super(ctx); ihandlePtr = ih; }
+
+        @Override
+        protected void onSelectionChanged(int selStart, int selEnd)
+        {
+            super.onSelectionChanged(selStart, selEnd);
+            if (editbox && !suppress && ihandlePtr != 0)
+                IupTextHelper.dispatchCaret(ihandlePtr, IupTextHelper.unitToChar(getText(), selStart));
+        }
+    }
+
+    private static void silentEdit(android.widget.EditText e, Runnable op)
+    {
+        if (e instanceof IupDropdownView d)
+        {
+            boolean saved = d.suppress;
+            d.suppress = true;
+            op.run();
+            d.suppress = saved;
+        }
+        else if (e instanceof IupTextHelper.IupEditText t)
+        {
+            boolean saved = t.suppressVC;
+            t.suppressVC = true;
+            op.run();
+            t.suppressVC = saved;
+        }
+        else
+            op.run();
+    }
+
+    private static android.text.InputFilter dropdownActionFilter(final IupDropdownView actv)
+    {
+        return (source, start, end, dest, dstart, dend) -> {
+            if (actv.suppress) return null;
+            String insert = source.subSequence(start, end).toString();
+            if (actv.maxChars > 0 && dest.length() - (dend - dstart) + insert.length() > actv.maxChars)
+                return dest.subSequence(dstart, dend);
+            int key = insert.length() == 1 ? insert.charAt(0) : 0;
+            boolean composing = source instanceof android.text.Spannable
+                && android.view.inputmethod.BaseInputConnection.getComposingSpanStart((android.text.Spannable)source) >= 0;
+            String newValue = new StringBuilder(dest).replace(dstart, dend, insert).toString();
+            int result = IupTextHelper.dispatchAction(actv.ihandlePtr, key, composing ? 0 : key, newValue);
+            if (result == 0) return dest.subSequence(dstart, dend);
+            if (result > 0 && key != 0) return String.valueOf((char) result);
+            return null;
+        };
     }
 
     @Keep
@@ -496,6 +546,17 @@ public final class IupListHelper
         else
         {
             actv.setThreshold(1);
+            actv.editbox = true;
+            actv.setFilters(new android.text.InputFilter[] { dropdownActionFilter(actv) });
+            actv.addTextChangedListener(new android.text.TextWatcher()
+            {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override public void afterTextChanged(android.text.Editable s)
+                {
+                    if (!actv.suppress) IupTextHelper.dispatchValueChanged(actv.ihandlePtr);
+                }
+            });
         }
 
         ThemedAdapter adapter = new ThemedAdapter(til.getContext(),
@@ -505,7 +566,7 @@ public final class IupListHelper
         actv.setOnItemClickListener((parent, view, position, id) -> {
             String text = String.valueOf(parent.getItemAtPosition(position));
             actv.currentPosition = position + 1;
-            actv.setText(text, false);
+            silentEdit(actv, () -> actv.setText(text, false));
             updateDropdownLeadingImage(actv, position);
             /* Defer: synchronous Activity launch races ListPopupWindow's Surface teardown, MTE-traps libutils Looper. */
             actv.post(() -> dispatchAction(ihandlePtr, text, position + 1, 1));
@@ -632,13 +693,14 @@ public final class IupListHelper
                 int count = actv.getAdapter() != null ? actv.getAdapter().getCount() : 0;
                 if (index1Based >= 1 && index1Based <= count)
                 {
-                    actv.setText(String.valueOf(actv.getAdapter().getItem(index1Based - 1)), false);
+                    String itemText = String.valueOf(actv.getAdapter().getItem(index1Based - 1));
+                    silentEdit(actv, () -> actv.setText(itemText, false));
                     actv.currentPosition = index1Based;
                     updateDropdownLeadingImage(actv, index1Based - 1);
                 }
                 else
                 {
-                    actv.setText("", false);
+                    silentEdit(actv, () -> actv.setText("", false));
                     actv.currentPosition = 0;
                     actv.setCompoundDrawablesRelative(null, null, null, null);
                 }
@@ -753,7 +815,7 @@ public final class IupListHelper
         if (ed == null) return;
         android.text.InputFilter[] saved = e.getFilters();
         e.setFilters(new android.text.InputFilter[0]);
-        op.run(ed);
+        silentEdit(e, () -> op.run(ed));
         e.setFilters(saved);
     }
 
@@ -770,7 +832,7 @@ public final class IupListHelper
     {
         android.widget.EditText e = editBoxOf(widget);
         if (e == null) return;
-        e.setSelection(IupTextHelper.charToUnit(e.getText(), pos));
+        silentEdit(e, () -> e.setSelection(IupTextHelper.charToUnit(e.getText(), pos)));
     }
 
     @Keep
@@ -880,6 +942,11 @@ public final class IupListHelper
     {
         android.widget.EditText e = editBoxOf(widget);
         if (e == null) return;
+        if (e instanceof IupDropdownView d)
+        {
+            d.maxChars = nc;
+            return;
+        }
         if (nc > 0)
             e.setFilters(new android.text.InputFilter[] { new android.text.InputFilter.LengthFilter(nc) });
         else
@@ -916,9 +983,9 @@ public final class IupListHelper
     {
         android.widget.EditText e = editBoxOf(widget);
         if (e == null) return;
-        pos = IupTextHelper.charToUnit(e.getText(), pos);
-        e.setSelection(pos);
-        e.bringPointIntoView(pos);
+        final int unit = IupTextHelper.charToUnit(e.getText(), pos);
+        silentEdit(e, () -> e.setSelection(unit));
+        e.bringPointIntoView(unit);
     }
 
     @Keep
@@ -929,8 +996,8 @@ public final class IupListHelper
         CharSequence cs = e.getText();
         int len = cs == null ? 0 : cs.length();
         end = end < 0 ? len : IupTextHelper.charToUnit(cs, end);
-        start = IupTextHelper.charToUnit(cs, start);
-        e.setSelection(start, end);
+        final int a = IupTextHelper.charToUnit(cs, start), b = end;
+        silentEdit(e, () -> e.setSelection(a, b));
     }
 
     /* Packed (start << 32) | end; -1 if no selection. */

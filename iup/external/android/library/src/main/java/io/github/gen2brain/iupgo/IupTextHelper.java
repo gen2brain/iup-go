@@ -475,7 +475,10 @@ public final class IupTextHelper
         IupEditText tv = resolve(v);
         if (tv == null) return;
         pos = charToUnit(tv.getText(), pos);
+        boolean saved = tv.suppressVC;
+        tv.suppressVC = true;
         tv.setSelection(pos);
+        tv.suppressVC = saved;
         if (tv.getLayout() != null)
         {
             try { tv.bringPointIntoView(pos); } catch (Throwable ignored) {}
@@ -506,7 +509,10 @@ public final class IupTextHelper
         int len = e == null ? 0 : e.length();
         end = end < 0 ? len : charToUnit(e, end);
         start = charToUnit(e, start);
+        boolean saved = tv.suppressVC;
+        tv.suppressVC = true;
         tv.setSelection(start, end);
+        tv.suppressVC = saved;
         if (tv.getLayout() != null)
         {
             try { tv.bringPointIntoView(end); } catch (Throwable ignored) {}
@@ -828,11 +834,11 @@ public final class IupTextHelper
         tv.suppressVC = true;
         if (multilineNewline && buf.length() > 0) buf.append('\n');
         buf.append(text);
+        if (scrollEnd) tv.setSelection(buf.length());
         tv.suppressVC = false;
         tv.setFilters(filters);
         if (scrollEnd)
         {
-            tv.setSelection(buf.length());
             if (v instanceof NestedScrollView nsv)
                 nsv.post(() -> {
                     View child = nsv.getChildAt(0);

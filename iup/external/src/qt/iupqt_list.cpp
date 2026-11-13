@@ -1383,8 +1383,18 @@ static char* qtListGetSelectedTextAttrib(Ihandle* ih)
   return nullptr;
 }
 
+namespace {
+struct QtListSilent
+{
+  Ihandle* ih;
+  explicit QtListSilent(Ihandle* h) : ih(h) { iupAttribSet(ih, "_IUPQT_DISABLE_TEXT_CB", "1"); }
+  ~QtListSilent() { iupAttribSet(ih, "_IUPQT_DISABLE_TEXT_CB", nullptr); }
+};
+}
+
 static int qtListSetSelectedTextAttrib(Ihandle* ih, const char* value)
 {
+  QtListSilent silent(ih);
   QLineEdit* edit = qtListGetEditBox(ih);
   if (edit && edit->hasSelectedText())
     edit->insert(QString::fromUtf8(value ? value : ""));
@@ -1417,6 +1427,7 @@ static char* qtListGetSelectionPosAttrib(Ihandle* ih)
 
 static void qtListSetEditSelection(Ihandle* ih, const char* value, int base)
 {
+  QtListSilent silent(ih);
   QLineEdit* edit = qtListGetEditBox(ih);
   if (!edit)
     return;
@@ -1479,6 +1490,7 @@ static char* qtListGetCaretPosAttrib(Ihandle* ih)
 
 static void qtListSetEditCursor(Ihandle* ih, const char* value, int base)
 {
+  QtListSilent silent(ih);
   QLineEdit* edit = qtListGetEditBox(ih);
   int pos;
   if (!edit || !iupStrToInt(value, &pos))
@@ -1504,6 +1516,7 @@ static int qtListSetCaretPosAttrib(Ihandle* ih, const char* value)
 
 static int qtListSetInsertAttrib(Ihandle* ih, const char* value)
 {
+  QtListSilent silent(ih);
   QLineEdit* edit = qtListGetEditBox(ih);
   if (edit)
     edit->insert(QString::fromUtf8(value ? value : ""));
@@ -1512,6 +1525,7 @@ static int qtListSetInsertAttrib(Ihandle* ih, const char* value)
 
 static int qtListSetAppendAttrib(Ihandle* ih, const char* value)
 {
+  QtListSilent silent(ih);
   QLineEdit* edit = qtListGetEditBox(ih);
   if (edit)
   {
@@ -1584,6 +1598,7 @@ static int qtListSetNCAttrib(Ihandle* ih, const char* value)
 
 static int qtListSetClipboardAttrib(Ihandle* ih, const char* value)
 {
+  QtListSilent silent(ih);
   QLineEdit* edit = qtListGetEditBox(ih);
   if (!edit)
     return 0;
@@ -1844,11 +1859,12 @@ static void qtListEditTextChanged(QLineEdit* edit, Ihandle* ih)
 static void qtListCaretChanged(QLineEdit* edit, Ihandle* ih)
 {
   auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
-  if (cb)
-  {
-    int pos = edit->cursorPosition();
+  int pos = iupqtStrUnitToChar(edit->text(), edit->cursorPosition());
+  if (pos == ih->data->last_caret_pos)
+    return;
+  ih->data->last_caret_pos = pos;
+  if (cb && !iupAttribGet(ih, "_IUPQT_DISABLE_TEXT_CB"))
     cb(ih, 1, pos + 1, pos);
-  }
 }
 
 /****************************************************************************
@@ -2170,6 +2186,69 @@ static int qtListMapMethod(Ihandle* ih)
  * Class Initialization
  ****************************************************************************/
 
+static int qtListSetRecord(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  int ret = set(ih, value);
+  if (ih->handle && ih->data->has_editbox)
+    ih->data->last_caret_pos = IupGetInt(ih, "CARETPOS");
+  return ret;
+}
+
+static int qtListSetValueAttribRecord(Ihandle* ih, const char* value)
+{
+  return qtListSetRecord(ih, value, qtListSetValueAttrib);
+}
+
+static int qtListSetCaretAttribRecord(Ihandle* ih, const char* value)
+{
+  return qtListSetRecord(ih, value, qtListSetCaretAttrib);
+}
+
+static int qtListSetCaretPosAttribRecord(Ihandle* ih, const char* value)
+{
+  return qtListSetRecord(ih, value, qtListSetCaretPosAttrib);
+}
+
+static int qtListSetSelectionAttribRecord(Ihandle* ih, const char* value)
+{
+  return qtListSetRecord(ih, value, qtListSetSelectionAttrib);
+}
+
+static int qtListSetSelectionPosAttribRecord(Ihandle* ih, const char* value)
+{
+  return qtListSetRecord(ih, value, qtListSetSelectionPosAttrib);
+}
+
+static int qtListSetSelectedTextAttribRecord(Ihandle* ih, const char* value)
+{
+  return qtListSetRecord(ih, value, qtListSetSelectedTextAttrib);
+}
+
+static int qtListSetInsertAttribRecord(Ihandle* ih, const char* value)
+{
+  return qtListSetRecord(ih, value, qtListSetInsertAttrib);
+}
+
+static int qtListSetAppendAttribRecord(Ihandle* ih, const char* value)
+{
+  return qtListSetRecord(ih, value, qtListSetAppendAttrib);
+}
+
+static int qtListSetScrollToAttribRecord(Ihandle* ih, const char* value)
+{
+  return qtListSetRecord(ih, value, qtListSetScrollToAttrib);
+}
+
+static int qtListSetScrollToPosAttribRecord(Ihandle* ih, const char* value)
+{
+  return qtListSetRecord(ih, value, qtListSetScrollToPosAttrib);
+}
+
+static int qtListSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+  return qtListSetRecord(ih, value, qtListSetClipboardAttrib);
+}
+
 extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -2186,7 +2265,7 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 
   /* IupList only */
   iupClassRegisterAttributeId(ic, "IDVALUE", qtListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", qtListGetValueAttrib, qtListSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", qtListGetValueAttrib, qtListSetValueAttribRecord, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", nullptr, qtListSetShowDropdownAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", nullptr, qtListSetTopItemAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", nullptr, qtListSetVisibleItemsAttrib, IUPAF_SAMEASSYSTEM, "5", IUPAF_DEFAULT);
@@ -2197,17 +2276,17 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, qtListSetNCAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "SCROLLBAR", nullptr, nullptr, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", qtListGetSelectedTextAttrib, qtListSetSelectedTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", qtListGetSelectionAttrib, qtListSetSelectionAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", qtListGetSelectionPosAttrib, qtListSetSelectionPosAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", qtListGetCaretAttrib, qtListSetCaretAttrib, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", qtListGetCaretPosAttrib, qtListSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", nullptr, qtListSetInsertAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", nullptr, qtListSetAppendAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", qtListGetSelectedTextAttrib, qtListSetSelectedTextAttribRecord, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", qtListGetSelectionAttrib, qtListSetSelectionAttribRecord, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", qtListGetSelectionPosAttrib, qtListSetSelectionPosAttribRecord, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", qtListGetCaretAttrib, qtListSetCaretAttribRecord, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", qtListGetCaretPosAttrib, qtListSetCaretPosAttribRecord, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", nullptr, qtListSetInsertAttribRecord, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", nullptr, qtListSetAppendAttribRecord, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", qtListGetReadOnlyAttrib, qtListSetReadOnlyAttrib, nullptr, nullptr, IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, qtListSetClipboardAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, qtListSetScrollToAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, qtListSetScrollToPosAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, qtListSetClipboardAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, qtListSetScrollToAttribRecord, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, qtListSetScrollToPosAttribRecord, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", nullptr, qtListSetCueBannerAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", nullptr, qtListSetFilterAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", qtListGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);

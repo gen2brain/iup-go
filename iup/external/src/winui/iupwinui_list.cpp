@@ -397,12 +397,12 @@ static void winuiListSelectionChanged(Ihandle* ih)
   if (aux->isDropdown)
   {
     auto comboBox = winuiGetHandle<ComboBox>(ih);
-    if (comboBox)
-    {
-      int pos = comboBox.SelectedIndex() + 1;
-      if (pos > 0)
-        winuiListCallAction(ih, pos);
-    }
+    int pos = comboBox ? comboBox.SelectedIndex() + 1 : 0;
+    if (pos <= 0)
+      return;
+    winuiListCallAction(ih, pos);
+    if (aux->hasEditbox)
+      return;
   }
   else if (aux->isVirtual)
   {
@@ -574,9 +574,15 @@ static int winuiListSetValueAttrib(Ihandle* ih, const char* value)
       {
         int pos = 0;
         if (iupStrToInt(value, &pos) && pos > 0 && pos <= static_cast<int>(comboBox.Items().Size()))
+        {
           comboBox.SelectedIndex(pos - 1);
+          iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos);
+        }
         else
+        {
           comboBox.SelectedIndex(-1);
+          iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
+        }
       }
     }
   }
@@ -596,9 +602,15 @@ static int winuiListSetValueAttrib(Ihandle* ih, const char* value)
     {
       int pos = 0;
       if (iupStrToInt(value, &pos) && pos > 0 && pos <= static_cast<int>(listView.Items().Size()))
+      {
         listView.SelectedIndex(pos - 1);
+        iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos);
+      }
       else
+      {
         listView.SelectedIndex(-1);
+        iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
+      }
     }
   }
   else if (!aux->isMultiple)
@@ -608,9 +620,15 @@ static int winuiListSetValueAttrib(Ihandle* ih, const char* value)
     {
       int pos = 0;
       if (iupStrToInt(value, &pos) && pos > 0 && pos <= static_cast<int>(listBox.Items().Size()))
+      {
         listBox.SelectedIndex(pos - 1);
+        iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos);
+      }
       else
+      {
         listBox.SelectedIndex(-1);
+        iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
+      }
     }
   }
   else
@@ -1303,6 +1321,153 @@ static bool winuiListFocusIsInside(UIElement const& widget)
   return false;
 }
 
+static void winuiListEditCallCaretCb(Ihandle* ih, TextBox const& tb)
+{
+  int pos = iupwinuiStrUnitToChar(tb.Text(), tb.SelectionStart());
+  if (pos == ih->data->last_caret_pos)
+    return;
+  ih->data->last_caret_pos = pos;
+
+  auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
+  if (cb && cb(ih, 1, pos + 1, pos) == IUP_CLOSE)
+    IupExitLoop();
+}
+
+static void winuiListEditTextChanging(Ihandle* ih)
+{
+  if (iupAttribGet(ih, "_IUPWINUI_DISABLE_TEXT_CB"))
+    iupAttribSetInt(ih, "_IUPWINUI_LIST_PROGRAM_CHANGES", iupAttribGetInt(ih, "_IUPWINUI_LIST_PROGRAM_CHANGES") + 1);
+  else
+    iupAttribSet(ih, "_IUPWINUI_LIST_USER_EDIT", "1");
+}
+
+static void winuiListEditBeforeTextChanging(Ihandle* ih, TextBox const& tb, TextBoxBeforeTextChangingEventArgs const& args)
+{
+  if (iupAttribGet(ih, "_IUPWINUI_DISABLE_TEXT_CB"))
+    return;
+
+  auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "EDIT_CB"));
+  if (!cb && !ih->data->mask && !ih->data->nc)
+    return;
+
+  hstring oldH = tb.Text();
+  hstring newH = args.NewText();
+  char* new_value = iupStrDup(iupwinuiHStringToString(newH));
+  if (!new_value)
+    return;
+
+  if (ih->data->nc && static_cast<int>(strlen(new_value)) > ih->data->nc)
+  {
+    free(new_value);
+    args.Cancel(true);
+    return;
+  }
+
+  if (ih->data->mask && iupMaskCheck(ih->data->mask, new_value) == 0)
+  {
+    IFns fail_cb = reinterpret_cast<IFns>(IupGetCallback(ih, "MASKFAIL_CB"));
+    if (fail_cb) fail_cb(ih, new_value);
+    free(new_value);
+    args.Cancel(true);
+    return;
+  }
+
+  if (cb)
+  {
+    int oldLen = static_cast<int>(oldH.size());
+    int newLen = static_cast<int>(newH.size());
+    const wchar_t* oldStr = oldH.c_str();
+    const wchar_t* newStr = newH.c_str();
+    int insertPos = 0;
+    while (insertPos < oldLen && insertPos < newLen && oldStr[insertPos] == newStr[insertPos])
+      insertPos++;
+
+    int suffix = 0;
+    while (suffix < oldLen - insertPos && suffix < newLen - insertPos && oldStr[oldLen - 1 - suffix] == newStr[newLen - 1 - suffix])
+      suffix++;
+
+    int key = 0;
+    if (newLen - insertPos - suffix == 1 && newStr[insertPos] > 0 && newStr[insertPos] < 128)
+      key = static_cast<int>(newStr[insertPos]);
+    int replaced_len = oldLen - insertPos - suffix;
+
+    int ret = cb(ih, key, new_value);
+    if (ret == IUP_IGNORE || ret == IUP_CLOSE)
+    {
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+      args.Cancel(true);
+    }
+    else if (key && ret > 0 && ret != IUP_DEFAULT && ret != IUP_CONTINUE && ret != key)
+    {
+      std::wstring text(oldStr, oldLen);
+      text.replace(insertPos, replaced_len, 1, static_cast<wchar_t>(ret));
+      args.Cancel(true);
+
+      void* dq_ptr = iupwinuiGetDispatcherQueue();
+      if (dq_ptr)
+      {
+        Windows::Foundation::IInspectable dq_obj{nullptr};
+        winrt::copy_from_abi(dq_obj, dq_ptr);
+        TextBox target = tb;
+        dq_obj.as<Microsoft::UI::Dispatching::DispatcherQueue>().TryEnqueue([ih, target, text, insertPos]() {
+          if (!iupObjectCheck(ih))
+            return;
+          target.Text(hstring(text));
+          target.Select(insertPos + 1, 0);
+        });
+      }
+    }
+  }
+  free(new_value);
+}
+
+static void winuiListEditTextChanged(Ihandle* ih, TextBox const& tb)
+{
+  int program = iupAttribGetInt(ih, "_IUPWINUI_LIST_PROGRAM_CHANGES");
+  if (program > 0)
+  {
+    iupAttribSetInt(ih, "_IUPWINUI_LIST_PROGRAM_CHANGES", program - 1);
+    iupAttribSetStr(ih, "_IUPWINUI_LIST_LASTTEXT", iupwinuiHStringToString(tb.Text()));
+    return;
+  }
+  if (iupAttribGet(ih, "_IUPWINUI_DISABLE_TEXT_CB"))
+    return;
+
+  iupAttribSet(ih, "_IUPWINUI_LIST_USER_EDIT", nullptr);
+
+  char* current = iupwinuiHStringToString(tb.Text());
+  if (iupStrEqual(current ? current : "", iupAttribGet(ih, "_IUPWINUI_LIST_LASTTEXT")))
+    return;
+
+  char* filter = iupAttribGet(ih, "FILTER");
+  if (filter)
+  {
+    hstring original = tb.Text();
+    hstring filtered = winuiListApplyFilter(filter, original);
+    if (filtered != original)
+    {
+      int caret = tb.SelectionStart();
+      iupAttribSet(ih, "_IUPWINUI_DISABLE_TEXT_CB", "1");
+      tb.Text(filtered);
+      tb.Select((std::min)(static_cast<int>(filtered.size()), caret), 0);
+      iupAttribSet(ih, "_IUPWINUI_DISABLE_TEXT_CB", nullptr);
+    }
+  }
+
+  iupAttribSetStr(ih, "_IUPWINUI_LIST_LASTTEXT", iupwinuiHStringToString(tb.Text()));
+  iupBaseCallValueChangedCb(ih);
+  if (iupObjectCheck(ih))
+    winuiListEditCallCaretCb(ih, tb);
+}
+
+static void winuiListEditSelectionChanged(Ihandle* ih, TextBox const& tb)
+{
+  if (iupAttribGet(ih, "_IUPWINUI_DISABLE_TEXT_CB") || iupAttribGet(ih, "_IUPWINUI_LIST_USER_EDIT"))
+    return;
+  winuiListEditCallCaretCb(ih, tb);
+}
+
 static int winuiListMapMethod(Ihandle* ih)
 {
   auto* aux = new IupWinUIListAux();
@@ -1342,44 +1507,20 @@ static int winuiListMapMethod(Ihandle* ih)
             if (cue) editBox.PlaceholderText(iupwinuiStringToHString(cue));
           }
 
+          editBox.BeforeTextChanging([ih](TextBox const& sender, TextBoxBeforeTextChangingEventArgs const& args) {
+            winuiListEditBeforeTextChanging(ih, sender, args);
+          });
+
+          editBox.TextChanging([ih](TextBox const&, TextBoxTextChangingEventArgs const&) {
+            winuiListEditTextChanging(ih);
+          });
+
           editBox.TextChanged([ih](IInspectable const& inner_sender, TextChangedEventArgs const&) {
-            if (iupAttribGet(ih, "_IUPWINUI_DISABLE_TEXT_CB"))
-              return;
-
-            TextBox tb = inner_sender.as<TextBox>();
-            char* filter = iupAttribGet(ih, "FILTER");
-            if (filter)
-            {
-              hstring original = tb.Text();
-              hstring filtered = winuiListApplyFilter(filter, original);
-              if (filtered != original)
-              {
-                int caret = tb.SelectionStart();
-                iupAttribSet(ih, "_IUPWINUI_DISABLE_TEXT_CB", "1");
-                tb.Text(filtered);
-                tb.Select((std::min)(static_cast<int>(filtered.size()), caret), 0);
-                iupAttribSet(ih, "_IUPWINUI_DISABLE_TEXT_CB", nullptr);
-              }
-            }
-
-            auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "EDIT_CB"));
-            if (cb || ih->data->mask || ih->data->nc)
-            {
-              char* utf8 = iupwinuiHStringToString(tb.Text());
-              int byte_len = utf8 ? static_cast<int>(strlen(utf8)) : 0;
-              iupEditCallActionCb(ih, cb, utf8 ? utf8 : "", 0, byte_len, ih->data->mask, ih->data->nc, 0, 0);
-            }
-            iupBaseCallValueChangedCb(ih);
+            winuiListEditTextChanged(ih, inner_sender.as<TextBox>());
           });
 
           editBox.SelectionChanged([ih](IInspectable const& inner_sender, RoutedEventArgs const&) {
-            auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
-            if (cb)
-            {
-              TextBox tb = inner_sender.as<TextBox>();
-              int pos = iupwinuiStrUnitToChar(tb.Text(), tb.SelectionStart());
-              cb(ih, 1, pos + 1, pos);
-            }
+            winuiListEditSelectionChanged(ih, inner_sender.as<TextBox>());
           });
         }
       });
@@ -1465,47 +1606,22 @@ static int winuiListMapMethod(Ihandle* ih)
 
     iupwinuiAttachPointerEvents(ih, listBox, &aux->pointerHandlers);
 
+    aux->beforeTextChangingToken = textBox.BeforeTextChanging([ih](TextBox const& sender, TextBoxBeforeTextChangingEventArgs const& args) {
+      winuiListEditBeforeTextChanging(ih, sender, args);
+    });
+
+    aux->textChangingToken = textBox.TextChanging([ih](TextBox const&, TextBoxTextChangingEventArgs const&) {
+      winuiListEditTextChanging(ih);
+    });
+
     aux->textChangedToken = textBox.TextChanged([ih](IInspectable const& sender, TextChangedEventArgs const&) {
-      if (iupAttribGet(ih, "_IUPWINUI_DISABLE_TEXT_CB"))
-        return;
-
       TextBox tb = sender.try_as<TextBox>();
-      if (!tb)
-        return;
-
-      char* filter = iupAttribGet(ih, "FILTER");
-      if (filter)
-      {
-        hstring original = tb.Text();
-        hstring filtered = winuiListApplyFilter(filter, original);
-        if (filtered != original)
-        {
-          int caret = tb.SelectionStart();
-          iupAttribSet(ih, "_IUPWINUI_DISABLE_TEXT_CB", "1");
-          tb.Text(filtered);
-          tb.Select((std::min)(static_cast<int>(filtered.size()), caret), 0);
-          iupAttribSet(ih, "_IUPWINUI_DISABLE_TEXT_CB", nullptr);
-        }
-      }
-
-      auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "EDIT_CB"));
-      if (cb || ih->data->mask || ih->data->nc)
-      {
-        char* utf8 = iupwinuiHStringToString(tb.Text());
-        int byte_len = utf8 ? static_cast<int>(strlen(utf8)) : 0;
-        iupEditCallActionCb(ih, cb, utf8 ? utf8 : "", 0, byte_len, ih->data->mask, ih->data->nc, 0, 0);
-      }
-      iupBaseCallValueChangedCb(ih);
+      if (tb)
+        winuiListEditTextChanged(ih, tb);
     });
 
     aux->selectionChangedTextBoxToken = textBox.SelectionChanged([ih](IInspectable const& sender, RoutedEventArgs const&) {
-      auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
-      if (cb)
-      {
-        TextBox tb = sender.as<TextBox>();
-        int pos = iupwinuiStrUnitToChar(tb.Text(), tb.SelectionStart());
-        cb(ih, 1, pos + 1, pos);
-      }
+      winuiListEditSelectionChanged(ih, sender.as<TextBox>());
     });
 
     aux->keyDownToken = grid.PreviewKeyDown([ih](IInspectable const&, KeyRoutedEventArgs const& args) {
@@ -1774,6 +1890,10 @@ static void winuiListUnMapMethod(Ihandle* ih)
       {
         if (aux->textChangedToken)
           textBox.TextChanged(aux->textChangedToken);
+        if (aux->beforeTextChangingToken)
+          textBox.BeforeTextChanging(aux->beforeTextChangingToken);
+        if (aux->textChangingToken)
+          textBox.TextChanging(aux->textChangingToken);
         if (aux->selectionChangedTextBoxToken)
           textBox.SelectionChanged(aux->selectionChangedTextBoxToken);
       }
@@ -2201,7 +2321,10 @@ static int winuiListSetSelectedTextAttrib(Ihandle* ih, const char* value)
   if (!tb || tb.SelectionLength() == 0)
     return 0;
 
-  tb.SelectedText(iupwinuiStringToHString(value));
+  hstring text = iupwinuiStringToHString(value);
+  int start = tb.SelectionStart();
+  tb.SelectedText(text);
+  tb.Select(start + static_cast<int>(text.size()), 0);
   return 0;
 }
 
@@ -2384,7 +2507,10 @@ static int winuiListSetInsertAttrib(Ihandle* ih, const char* value)
   if (!tb)
     return 0;
 
-  tb.SelectedText(iupwinuiStringToHString(value));
+  hstring text = iupwinuiStringToHString(value);
+  int start = tb.SelectionStart();
+  tb.SelectedText(text);
+  tb.Select(start + static_cast<int>(text.size()), 0);
   return 0;
 }
 
@@ -2623,6 +2749,77 @@ static int winuiListSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int winuiListSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  char* saved = iupAttribGet(ih, "_IUPWINUI_DISABLE_TEXT_CB");
+  int ret;
+  iupAttribSet(ih, "_IUPWINUI_DISABLE_TEXT_CB", "1");
+  ret = set(ih, value);
+  iupAttribSet(ih, "_IUPWINUI_DISABLE_TEXT_CB", saved);
+  if (ih->handle && ih->data->has_editbox)
+  {
+    TextBox tb = winuiListGetTextBox(ih);
+    if (tb)
+      ih->data->last_caret_pos = iupwinuiStrUnitToChar(tb.Text(), tb.SelectionStart());
+  }
+  return ret;
+}
+
+static int winuiListSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiListSetSilent(ih, value, winuiListSetValueAttrib);
+}
+
+static int winuiListSetSelectedTextAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiListSetSilent(ih, value, winuiListSetSelectedTextAttrib);
+}
+
+static int winuiListSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiListSetSilent(ih, value, winuiListSetSelectionAttrib);
+}
+
+static int winuiListSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiListSetSilent(ih, value, winuiListSetSelectionPosAttrib);
+}
+
+static int winuiListSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiListSetSilent(ih, value, winuiListSetCaretAttrib);
+}
+
+static int winuiListSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiListSetSilent(ih, value, winuiListSetCaretPosAttrib);
+}
+
+static int winuiListSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiListSetSilent(ih, value, winuiListSetInsertAttrib);
+}
+
+static int winuiListSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiListSetSilent(ih, value, winuiListSetAppendAttrib);
+}
+
+static int winuiListSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiListSetSilent(ih, value, winuiListSetClipboardAttrib);
+}
+
+static int winuiListSetScrollToAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiListSetSilent(ih, value, winuiListSetScrollToAttrib);
+}
+
+static int winuiListSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return winuiListSetSilent(ih, value, winuiListSetScrollToPosAttrib);
+}
+
 extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   ic->Map = winuiListMapMethod;
@@ -2633,7 +2830,7 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "BGCOLOR", nullptr, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, winuiListSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", winuiListGetValueAttrib, winuiListSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", winuiListGetValueAttrib, winuiListSetValueAttribSilent, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IDVALUE", winuiListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", nullptr, winuiListSetShowDropdownAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
@@ -2645,18 +2842,18 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "IMAGE", nullptr, winuiListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", winuiListGetImageNativeHandleAttrib, nullptr, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", winuiListGetSelectedTextAttrib, winuiListSetSelectedTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", winuiListGetSelectionAttrib, winuiListSetSelectionAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", winuiListGetSelectionPosAttrib, winuiListSetSelectionPosAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", winuiListGetCaretAttrib, winuiListSetCaretAttrib, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", winuiListGetCaretPosAttrib, winuiListSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", nullptr, winuiListSetInsertAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", nullptr, winuiListSetAppendAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", winuiListGetSelectedTextAttrib, winuiListSetSelectedTextAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", winuiListGetSelectionAttrib, winuiListSetSelectionAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", winuiListGetSelectionPosAttrib, winuiListSetSelectionPosAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", winuiListGetCaretAttrib, winuiListSetCaretAttribSilent, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", winuiListGetCaretPosAttrib, winuiListSetCaretPosAttribSilent, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", nullptr, winuiListSetInsertAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", nullptr, winuiListSetAppendAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", winuiListGetReadOnlyAttrib, winuiListSetReadOnlyAttrib, nullptr, nullptr, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, winuiListSetNCAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, winuiListSetClipboardAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, winuiListSetScrollToAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, winuiListSetScrollToPosAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, winuiListSetClipboardAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, winuiListSetScrollToAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, winuiListSetScrollToPosAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", nullptr, winuiListSetCueBannerAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", nullptr, winuiListSetFilterAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
 

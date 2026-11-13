@@ -28,7 +28,7 @@
 /* Used by List and Text, implemented in Text
    Can NOT use ih->data
 */
-int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void* mask, int nc)
+int iupEditCheckNewValueKey(Ihandle* ih, IFnis cb, int key, const char* new_value, void* mask, int nc)
 {
   if (!new_value)
     return 1;
@@ -45,7 +45,7 @@ int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void* mas
 
   if (cb)
   {
-    int cb_ret = cb(ih, 0, (char*)new_value);
+    int cb_ret = cb(ih, key, (char*)new_value);
     if (cb_ret==IUP_IGNORE)
       return 0;
     if (cb_ret==IUP_CLOSE)
@@ -56,6 +56,11 @@ int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void* mas
   }
 
   return 1;
+}
+
+int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void* mask, int nc)
+{
+  return iupEditCheckNewValueKey(ih, cb, 0, new_value, mask, nc);
 }
 
 int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int start, int end, void* mask, int nc, int remove_dir, int utf8)

@@ -968,17 +968,31 @@ static void motTextModifyVerifyCallback(Widget w, Ihandle* ih, XmTextVerifyPtr t
     }
   }
 
+  if (text->doit && text->event)
+    iupAttribSet(ih, "_IUPMOT_USER_EDIT", "1");
+
   (void)w;
 }
 
-static void motTextMotionVerifyCallback(Widget w, Ihandle* ih, XmTextVerifyCallbackStruct* textverify)
+static void motTextCaretTimeout(XtPointer client_data, XtIntervalId* id)
 {
+  Ihandle* ih = (Ihandle*)client_data;
+  IFniii cb;
   int col, lin, pos;
+  (void)id;
 
-  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
-  if (!cb) return;
+  iupAttribSet(ih, "_IUPMOT_CARET_PENDING", NULL);
+  if (!ih->handle)
+    return;
 
-  pos = textverify->newInsert;
+  pos = (int)XmTextGetInsertionPosition(ih->handle);
+  if (pos == ih->data->last_caret_pos)
+    return;
+  ih->data->last_caret_pos = pos;
+
+  cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+  if (!cb)
+    return;
 
   if (ih->data->is_multiline)
   {
@@ -988,18 +1002,40 @@ static void motTextMotionVerifyCallback(Widget w, Ihandle* ih, XmTextVerifyCallb
   }
   else
   {
-    col = pos;
-    col++; /* IUP starts at 1 */
+    col = pos + 1; /* IUP starts at 1 */
     lin = 1;
   }
 
-  if (pos != ih->data->last_caret_pos)
+  cb(ih, lin, col, pos);
+}
+
+static void motTextMotionVerifyCallback(Widget w, Ihandle* ih, XmTextVerifyCallbackStruct* textverify)
+{
+  (void)w;
+
+  if (!textverify->event && !iupAttribGet(ih, "_IUPMOT_USER_EDIT"))
   {
-    ih->data->last_caret_pos = pos;
-    cb(ih, lin, col, pos);
+    if (!iupAttribGet(ih, "_IUPMOT_CARET_PENDING"))
+      ih->data->last_caret_pos = (int)textverify->newInsert;
+    return;
   }
 
-  (void)w;
+  if (!iupAttribGet(ih, "_IUPMOT_CARET_PENDING"))
+  {
+    iupAttribSet(ih, "_IUPMOT_CARET_PENDING", (char*)XtAppAddTimeOut(iupmot_appcontext, 0, motTextCaretTimeout, (XtPointer)ih));
+  }
+}
+
+static void motTextUnMapMethod(Ihandle* ih)
+{
+  XtIntervalId caret_timer = (XtIntervalId)iupAttribGet(ih, "_IUPMOT_CARET_PENDING");
+  if (caret_timer)
+  {
+    XtRemoveTimeOut(caret_timer);
+    iupAttribSet(ih, "_IUPMOT_CARET_PENDING", NULL);
+  }
+
+  iupdrvBaseUnMapMethod(ih);
 }
 
 static void motTextUpdateSpin(Ihandle* ih)
@@ -1013,6 +1049,8 @@ static void motTextUpdateSpin(Ihandle* ih)
 
 static void motTextValueChangedCallback(Widget w, Ihandle* ih, XmAnyCallbackStruct* valuechanged)
 {
+  iupAttribSet(ih, "_IUPMOT_USER_EDIT", NULL);
+
   if (ih->data->disable_callbacks)
     return;
 
@@ -1340,6 +1378,7 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
   ic->Map = motTextMapMethod;
+  ic->UnMap = motTextUnMapMethod;
   ic->LayoutUpdate = motTextLayoutUpdateMethod;
 
   /* Driver Dependent Attribute functions */

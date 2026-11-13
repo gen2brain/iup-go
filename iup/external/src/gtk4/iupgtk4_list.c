@@ -2703,6 +2703,64 @@ static void gtk4ListUnMapMethod(Ihandle* ih)
   iupdrvBaseUnMapMethod(ih);
 }
 
+static int gtk4ListSetRecord(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  int ret = set(ih, value);
+  if (ih->handle && ih->data->has_editbox)
+    ih->data->last_caret_pos = IupGetInt(ih, "CARETPOS");
+  return ret;
+}
+
+static int gtk4ListSetValueAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtk4ListSetRecord(ih, value, gtk4ListSetValueAttrib);
+}
+
+static int gtk4ListSetCaretAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtk4ListSetRecord(ih, value, gtk4ListSetCaretAttrib);
+}
+
+static int gtk4ListSetCaretPosAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtk4ListSetRecord(ih, value, gtk4ListSetCaretPosAttrib);
+}
+
+static int gtk4ListSetSelectionAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtk4ListSetRecord(ih, value, gtk4ListSetSelectionAttrib);
+}
+
+static int gtk4ListSetSelectionPosAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtk4ListSetRecord(ih, value, gtk4ListSetSelectionPosAttrib);
+}
+
+static int gtk4ListSetSelectedTextAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtk4ListSetRecord(ih, value, gtk4ListSetSelectedTextAttrib);
+}
+
+static int gtk4ListSetInsertAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtk4ListSetRecord(ih, value, gtk4ListSetInsertAttrib);
+}
+
+static int gtk4ListSetAppendAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtk4ListSetRecord(ih, value, gtk4ListSetAppendAttrib);
+}
+
+static int gtk4ListSetScrollToAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtk4ListSetRecord(ih, value, gtk4ListSetScrollToAttrib);
+}
+
+static int gtk4ListSetScrollToPosAttribRecord(Ihandle* ih, const char* value)
+{
+  return gtk4ListSetRecord(ih, value, gtk4ListSetScrollToPosAttrib);
+}
+
 IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   ic->Map = gtk4ListMapMethod;
@@ -2712,7 +2770,7 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, gtk4ListSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, gtk4ListSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "VALUE", gtk4ListGetValueAttrib, gtk4ListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", gtk4ListGetValueAttrib, gtk4ListSetValueAttribRecord, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IDVALUE", gtk4ListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, gtk4ListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
@@ -2720,18 +2778,18 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, gtk4ListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "PADDING", iupListGetPaddingAttrib, gtk4ListSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", gtk4ListGetSelectedTextAttrib, gtk4ListSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", gtk4ListGetSelectionAttrib, gtk4ListSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", gtk4ListGetSelectionPosAttrib, gtk4ListSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", gtk4ListGetCaretAttrib, gtk4ListSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", gtk4ListGetCaretPosAttrib, gtk4ListSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", NULL, gtk4ListSetInsertAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", NULL, gtk4ListSetAppendAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", gtk4ListGetSelectedTextAttrib, gtk4ListSetSelectedTextAttribRecord, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", gtk4ListGetSelectionAttrib, gtk4ListSetSelectionAttribRecord, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", gtk4ListGetSelectionPosAttrib, gtk4ListSetSelectionPosAttribRecord, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", gtk4ListGetCaretAttrib, gtk4ListSetCaretAttribRecord, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", gtk4ListGetCaretPosAttrib, gtk4ListSetCaretPosAttribRecord, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, gtk4ListSetInsertAttribRecord, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", NULL, gtk4ListSetAppendAttribRecord, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", gtk4ListGetReadOnlyAttrib, gtk4ListSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, gtk4ListSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, gtk4ListSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, gtk4ListSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, gtk4ListSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, gtk4ListSetScrollToAttribRecord, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, gtk4ListSetScrollToPosAttribRecord, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, gtk4ListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", gtk4ListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING | IUPAF_READONLY | IUPAF_NO_INHERIT);

@@ -58,6 +58,8 @@ IUP_DRV_API UIViewController* iupCocoaTouchNewLaunchPlaceholder(void);
 
 /* Invalid UTF-8 sequences become U+FFFD; NULL returns nil. */
 IUP_DRV_API NSString* iupCocoaTouchStrToNSString(const char* str);
+IUP_DRV_API NSUInteger iupCocoaTouchStrCharToUnit(NSString* str, int pos);
+IUP_DRV_API int iupCocoaTouchStrUnitToChar(NSString* str, NSUInteger unit);
 IUP_DRV_API NSString* iupCocoaTouchStrToNSStringLen(const char* str, size_t len);
 
 /* client-area Fixed of a mapped Dialog, nil otherwise */

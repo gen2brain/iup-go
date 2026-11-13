@@ -471,6 +471,8 @@ public final class IupTreeHelper
                     {
                         if (old >= 0) tree.adapter.notifyItemChanged(old);
                         tree.adapter.notifyItemChanged(pos);
+                        if (!tree.markMultiple && old >= 0 && old < tree.visible.size())
+                            dispatchSelection(tree.ihandlePtr, idOfNode(tree, tree.visible.get(old)), 0);
                         dispatchSelection(tree.ihandlePtr, idOfNode(tree, tree.visible.get(pos)), 1);
                     }
                     return true;
@@ -855,12 +857,9 @@ public final class IupTreeHelper
         rebuildVisible(t);
         int idx = t.visible.indexOf(target);
         if (idx < 0) return;
-        int old = t.focusIdx;
         t.focusIdx = idx;
         t.adapter.notifyDataSetChanged();
         t.scrollToPosition(idx);
-        if (old != idx)
-            dispatchSelection(t.ihandlePtr, id, 1);
     }
 
     @Keep

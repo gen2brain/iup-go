@@ -269,7 +269,7 @@ The menu is destroyed when the control is unmapped or destroyed, so a menu canno
 
 [ACTION](../call/iup_action.md): Action generated when the text is edited, but before its value is actually changed.
 Can be generated when using the keyboard, undo system or from the clipboard.
-Setting the CLIPBOARD attribute does not generate it, the same way setting VALUE does not.
+Setting VALUE, INSERT, APPEND, SELECTEDTEXT or CLIPBOARD does not generate it.
 
     int function(Ihandle *ih, int c, char *new_value);
 
@@ -294,6 +294,9 @@ Use [IupConvertXYToPos](../func/iup_convertxytopos.md) to convert (x,y) coordina
 **pos**: 0 based character position.
 
 For single line controls, **lin** is always 1, and **pos** is always "**col**-1".
+
+Called only when the user moves the caret; setting CARET, CARETPOS, SELECTION, VALUE or any other attribute does not generate it.
+When an edit moves the caret, it is called after VALUECHANGED_CB.
 
 [DROPFILES_CB](../call/iup_dropfiles_cb.md): Action generated when one or more files are dropped in the element.
 

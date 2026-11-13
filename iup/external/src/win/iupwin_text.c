@@ -678,42 +678,24 @@ static void winTextGetLinColFromPosition(Ihandle* ih, int wpos, int* lin, int* c
 
 static int winTextGetCaretPosition(Ihandle* ih)
 {
-  int wpos = 0;
+  DWORD start = 0, end = 0;
+  int wpos;
   POINT point;
 
-  if (GetFocus() != ih->handle || !GetCaretPos(&point))
-  {
-    /* if it does not have the focus, or could not get caret position,
-       then use the selection start position */
-    SendMessage(ih->handle, EM_GETSEL, (WPARAM)&wpos, 0);
-  }
+  SendMessage(ih->handle, EM_GETSEL, (WPARAM)&start, (LPARAM)&end);
+  if (start == end || GetFocus() != ih->handle || !GetCaretPos(&point) || (point.x < 0 && point.y < 0))
+    return (int)start;
+
+  if (ih->data->has_formatting)
+    wpos = (int)SendMessage(ih->handle, EM_CHARFROMPOS, 0, (LPARAM)&point);
   else
   {
-    if (ih->data->has_formatting)
-    {
-      wpos = (int)SendMessage(ih->handle, EM_CHARFROMPOS, 0, (LPARAM)&point);
-    }
-    else if(point.x < 0 && point.y < 0)
-    {
-    /* if the caret position is located outside the visible client area,
-       then use the selection start position */
-      SendMessage(ih->handle, EM_GETSEL, (WPARAM)&wpos, 0);
-    }
-    else
-    {
-      LRESULT ret;
-
-      /* Workaround for weird behavior because of the return value in GetCaretPos */
-      if (ih->data->is_multiline && point.y < 5)
-        point.y += 5;
-
-      ret = SendMessage(ih->handle, EM_CHARFROMPOS, 0, MAKELPARAM(point.x, point.y));
-      wpos = LOWORD(ret);
-    }
+    if (ih->data->is_multiline && point.y < 5)
+      point.y += 5;
+    wpos = LOWORD(SendMessage(ih->handle, EM_CHARFROMPOS, 0, MAKELPARAM(point.x, point.y)));
   }
 
-  /* pos here includes the line breaks in 1 or 2 configuration */
-  return wpos;
+  return (abs(wpos - (int)end) < abs(wpos - (int)start)) ? (int)end : (int)start;
 }
 
 static int winTextGetCaret(Ihandle* ih, int* lin, int* col)
@@ -2939,6 +2921,75 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
   return 1;
 }
 
+static int winTextSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  int saved = ih->data->disable_callbacks, ret;
+  ih->data->disable_callbacks = 1;
+  ret = set(ih, value);
+  ih->data->disable_callbacks = saved;
+  if (ih->handle)
+  {
+    int lin, col;
+    ih->data->last_caret_pos = winTextGetCaret(ih, &lin, &col);
+  }
+  return ret;
+}
+
+static int winTextSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+  return winTextSetSilent(ih, value, winTextSetValueAttrib);
+}
+
+static int winTextSetSelectedTextAttribSilent(Ihandle* ih, const char* value)
+{
+  return winTextSetSilent(ih, value, winTextSetSelectedTextAttrib);
+}
+
+static int winTextSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+  return winTextSetSilent(ih, value, winTextSetSelectionAttrib);
+}
+
+static int winTextSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return winTextSetSilent(ih, value, winTextSetSelectionPosAttrib);
+}
+
+static int winTextSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+  return winTextSetSilent(ih, value, winTextSetCaretAttrib);
+}
+
+static int winTextSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return winTextSetSilent(ih, value, winTextSetCaretPosAttrib);
+}
+
+static int winTextSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+  return winTextSetSilent(ih, value, winTextSetInsertAttrib);
+}
+
+static int winTextSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+  return winTextSetSilent(ih, value, winTextSetAppendAttrib);
+}
+
+static int winTextSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+  return winTextSetSilent(ih, value, winTextSetClipboardAttrib);
+}
+
+static int winTextSetScrollToAttribSilent(Ihandle* ih, const char* value)
+{
+  return winTextSetSilent(ih, value, winTextSetScrollToAttrib);
+}
+
+static int winTextSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return winTextSetSilent(ih, value, winTextSetScrollToPosAttrib);
+}
+
 IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -2961,20 +3012,20 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 
   /* IupText only */
   iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, winTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "VALUE", winTextGetValueAttrib, winTextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", winTextGetValueAttrib, winTextSetValueAttribSilent, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINEVALUE", winTextGetLineValueAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", winTextGetSelectedTextAttrib, winTextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", winTextGetSelectionAttrib, winTextSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", winTextGetSelectionPosAttrib, winTextSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", winTextGetCaretAttrib, winTextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", winTextGetCaretPosAttrib, winTextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", NULL, winTextSetInsertAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", NULL, winTextSetAppendAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", winTextGetSelectedTextAttrib, winTextSetSelectedTextAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", winTextGetSelectionAttrib, winTextSetSelectionAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", winTextGetSelectionPosAttrib, winTextSetSelectionPosAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", winTextGetCaretAttrib, winTextSetCaretAttribSilent, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", winTextGetCaretPosAttrib, winTextSetCaretPosAttribSilent, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, winTextSetInsertAttribSilent, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", NULL, winTextSetAppendAttribSilent, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", winTextGetReadOnlyAttrib, winTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, winTextSetNCAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, winTextSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, winTextSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, winTextSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, winTextSetClipboardAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, winTextSetScrollToAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, winTextSetScrollToPosAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINMIN", NULL, winTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINMAX", NULL, winTextSetSpinMaxAttrib, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPININC", NULL, winTextSetSpinIncAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);

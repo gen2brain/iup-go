@@ -305,28 +305,6 @@ static NSFont* cocoaGetNativeFont(Ihandle* ih)
   return iup_font ? [iup_font nativeFont] : nil;
 }
 
-static void cocoaListCaretNotification(NSNotification* notification, Ihandle* ih)
-{
-  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
-  if (!cb) return;
-
-  NSTextField* text_field = [notification object];
-  NSText* field_editor = [[text_field window] fieldEditor:NO forObject:text_field];
-
-  if (field_editor)
-  {
-    NSRange range = [field_editor selectedRange];
-    int pos = (int)range.location;
-    int lin = 1;
-
-    if (pos != ih->data->last_caret_pos)
-    {
-      ih->data->last_caret_pos = pos;
-      cb(ih, lin, pos + 1, pos);
-    }
-  }
-}
-
 static CGFloat cocoaListGetScrollbarSize(void)
 {
   NSScroller* scroller = [[NSScroller alloc] initWithFrame:NSMakeRect(0, 0, 100, 100)];
@@ -427,26 +405,67 @@ static void cocoaListUpdateColumnWidth(Ihandle* ih)
   }
 }
 
-static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
+static void cocoaListCheckCaret(Ihandle* ih, NSTextField* text_field)
 {
-  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
-  if (!cb) return;
+  NSText* editor = [text_field currentEditor];
+  IFniii cb;
+  int pos;
 
-  NSRange range = [textView selectedRange];
-  int pos = (int)range.location;
-  int lin = 1;
+  if (!editor)
+    return;
 
-  if (pos != ih->data->last_caret_pos)
-  {
-    ih->data->last_caret_pos = pos;
-    cb(ih, lin, pos + 1, pos);
-  }
+  pos = iupcocoaStrUnitToChar([editor string], [editor selectedRange].location);
+  if (pos == ih->data->last_caret_pos)
+    return;
+  ih->data->last_caret_pos = pos;
+
+  if (iupAttribGet(ih, "_IUPCOCOA_DISABLE_TEXT_CB"))
+    return;
+
+  cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+  if (cb)
+    cb(ih, 1, pos + 1, pos);
 }
+
+static BOOL cocoaListFieldShouldChange(NSTextField* field, NSTextView* text_view, NSRange range, NSString* replacement)
+{
+  id the_delegate = [field delegate];
+  if ([the_delegate respondsToSelector:@selector(textView:shouldChangeTextInRange:replacementString:)])
+    return [the_delegate textView:text_view shouldChangeTextInRange:range replacementString:replacement];
+  return YES;
+}
+
+static void cocoaListFieldSelectionChanged(NSTextField* field)
+{
+  id the_delegate = [field delegate];
+  if ([the_delegate respondsToSelector:@selector(checkCaret:)])
+    [the_delegate performSelector:@selector(checkCaret:) withObject:field afterDelay:0];
+}
+
+
+@interface NSTextField (IupCocoaFieldEditorDelegate) <NSTextViewDelegate>
+@end
 
 @interface IupCocoaListTextField : NSTextField
 @end
 
 @implementation IupCocoaListTextField
+- (BOOL) textView:(NSTextView*)text_view shouldChangeTextInRange:(NSRange)range replacementString:(NSString*)replacement
+{
+  if (!cocoaListFieldShouldChange(self, text_view, range, replacement))
+    return NO;
+  if ([NSTextField instancesRespondToSelector:_cmd])
+    return [super textView:text_view shouldChangeTextInRange:range replacementString:replacement];
+  return YES;
+}
+
+- (void) textViewDidChangeSelection:(NSNotification*)notification
+{
+  if ([NSTextField instancesRespondToSelector:_cmd])
+    [super textViewDidChangeSelection:notification];
+  cocoaListFieldSelectionChanged(self);
+}
+
 - (NSMenu*)textView:(NSTextView*)text_view menu:(NSMenu*)the_menu forEvent:(NSEvent*)the_event atIndex:(NSUInteger)char_index
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
@@ -815,6 +834,22 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 @end
 
 @implementation IupCocoaComboBox
+- (BOOL) textView:(NSTextView*)text_view shouldChangeTextInRange:(NSRange)range replacementString:(NSString*)replacement
+{
+  if (!cocoaListFieldShouldChange(self, text_view, range, replacement))
+    return NO;
+  if ([NSComboBox instancesRespondToSelector:_cmd])
+    return [super textView:text_view shouldChangeTextInRange:range replacementString:replacement];
+  return YES;
+}
+
+- (void) textViewDidChangeSelection:(NSNotification*)notification
+{
+  if ([NSComboBox instancesRespondToSelector:_cmd])
+    [super textViewDidChangeSelection:notification];
+  cocoaListFieldSelectionChanged(self);
+}
+
 - (NSMenu*)textView:(NSTextView*)text_view menu:(NSMenu*)the_menu forEvent:(NSEvent*)the_event atIndex:(NSUInteger)char_index
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
@@ -957,7 +992,6 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 - (void) comboBoxWillDismiss:(NSNotification*)the_notification;
 - (void) controlTextDidChange:(NSNotification*)the_notification;
 - (void) controlTextDidEndEditing:(NSNotification*)the_notification;
-- (void) controlTextDidBeginEditing:(NSNotification*)the_notification;
 - (BOOL) control:(NSControl*)control textView:(NSTextView*)textView doCommandBySelector:(SEL)commandSelector;
 - (BOOL) textView:(NSTextView*)textView shouldChangeTextInRange:(NSRange)affectedCharRange replacementString:(NSString*)replacementString;
 @end
@@ -1000,11 +1034,18 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
     cb(ih, 0);
 }
 
+- (void) checkCaret:(NSTextField*)text_field
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih && iupObjectCheck(ih))
+    cocoaListCheckCaret(ih, text_field);
+}
+
 - (void) controlTextDidChange:(NSNotification*)the_notification
 {
   id text_obj = [the_notification object];
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_obj, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!ih) return;
+  if (!ih || iupAttribGet(ih, "_IUPCOCOA_DISABLE_TEXT_CB")) return;
 
   const char* filter = iupAttribGet(ih, "FILTER");
   if(filter)
@@ -1063,56 +1104,20 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
     }
   }
 
-  cocoaListCaretNotification(the_notification, ih);
   iupBaseCallValueChangedCb(ih);
+  [self performSelector:@selector(checkCaret:) withObject:text_obj afterDelay:0];
 }
 
 - (void) controlTextDidEndEditing:(NSNotification*)the_notification
 {
   id text_obj = [the_notification object];
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_obj, IHANDLE_ASSOCIATED_OBJ_KEY);
+  iupcocoaTextFieldSaveRange(the_notification);
   if (!ih) return;
 
-  cocoaListCaretNotification(the_notification, ih);
+  cocoaListCheckCaret(ih, (NSTextField*)text_obj);
 }
 
-- (void) controlTextDidBeginEditing:(NSNotification*)the_notification
-{
-  id text_obj = [the_notification object];
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_obj, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!ih) return;
-
-  IFn cb = (IFn)IupGetCallback(ih, "EDIT_CB");
-  if (!cb) return;
-
-  NSText* fieldEditor = [[text_obj window] fieldEditor:YES forObject:text_obj];
-  if ([fieldEditor isKindOfClass:[NSTextView class]])
-  {
-    [(NSTextView*)fieldEditor setDelegate:self];
-  }
-}
-
-- (void)textViewDidChangeSelection:(NSNotification*)notification
-{
-  NSTextView* textView = [notification object];
-
-  NSControl* control = nil;
-  for (NSView* view = [textView superview]; view != nil; view = [view superview])
-  {
-    if ([view isKindOfClass:[NSControl class]])
-    {
-      control = (NSControl*)view;
-      break;
-    }
-  }
-
-  if (!control) return;
-
-  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(control, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!ih) return;
-
-  cocoaListCallCaretCbForTextView(ih, textView);
-}
 
 - (BOOL) control:(NSControl*)control textView:(NSTextView*)textView doCommandBySelector:(SEL)commandSelector
 {
@@ -1177,51 +1182,24 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
   if (!control) return YES;
 
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(control, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (!ih) return YES;
+  if (!ih || iupAttribGet(ih, "_IUPCOCOA_DISABLE_TEXT_CB")) return YES;
 
   IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
-  if (!cb) return YES;
+  NSString* text = [textView string];
+  int start = iupcocoaStrUnitToChar(text, affectedCharRange.location);
+  int end = iupcocoaStrUnitToChar(text, affectedCharRange.location + affectedCharRange.length);
+  const char* c_str = [replacementString length] ? [replacementString UTF8String] : NULL;
 
-  if (affectedCharRange.length > 0 && [replacementString length] == 0)
+  int ret = iupEditCallActionCb(ih, cb, c_str, start, end, ih->data->mask, ih->data->nc, c_str ? 0 : 1, 1);
+  if (ret == 0)
+    return NO;
+  else if (ret != -1 && c_str)
   {
-    int ret = iupEditCallActionCb(ih, cb, NULL, (int)affectedCharRange.location,
-                                   (int)(affectedCharRange.location + affectedCharRange.length),
-                                   ih->data->mask, ih->data->nc, 1, 1);
-    if (ret == 0)
-      return NO;
-  }
-  else if ([replacementString length] > 0)
-  {
-    for (NSUInteger i = 0; i < [replacementString length]; i++)
-    {
-      unichar c = [replacementString characterAtIndex:i];
-      char single_char[5] = "";
-
-      if (c < 0x80)
-      {
-        single_char[0] = (char)c;
-        single_char[1] = 0;
-      }
-      else
-      {
-        NSString* singleCharStr = [NSString stringWithCharacters:&c length:1];
-        const char* utf8 = [singleCharStr UTF8String];
-        iupStrCopyN(single_char, sizeof(single_char), utf8);
-      }
-
-      int pos = (int)(affectedCharRange.location + i);
-      int ret = iupEditCallActionCb(ih, cb, single_char, pos, pos,
-                                     ih->data->mask, ih->data->nc, 0, 1);
-
-      if (ret == 0)
-        return NO;
-      else if (ret > 0 && ret != (int)c)
-      {
-        NSString* replacement = [NSString stringWithFormat:@"%c", ret];
-        [textView insertText:replacement replacementRange:NSMakeRange(pos, 0)];
-        return NO;
-      }
-    }
+    char replace_char[2];
+    replace_char[0] = (char)ret;
+    replace_char[1] = 0;
+    iupcocoaTextFieldReplace(ih, (NSTextField*)control, affectedCharRange, iupcocoaStrToNSString(replace_char));
+    return NO;
   }
 
   return YES;
@@ -3122,19 +3100,18 @@ static NSControl* cocoaListGetEditControl(Ihandle* ih)
   return nil;
 }
 
+static NSTextField* cocoaListGetEditField(Ihandle* ih)
+{
+  if (!ih->data->has_editbox)
+    return nil;
+  return (NSTextField*)cocoaListGetEditControl(ih);
+}
+
 static int cocoaListSetInsertAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->has_editbox || !value)
-    return 0;
-
-  NSControl* text_control = cocoaListGetEditControl(ih);
-  NSText* field_editor = text_control ? [[text_control window] fieldEditor:YES forObject:text_control] : nil;
-  if (field_editor)
-  {
-    NSString* ns_string = iupcocoaStrToNSString(value);
-    [field_editor insertText:ns_string];
-  }
-
+  NSTextField* text_field = cocoaListGetEditField(ih);
+  if (text_field)
+    iupcocoaTextFieldInsert(ih, text_field, value);
   return 0;
 }
 
@@ -3158,305 +3135,87 @@ static int cocoaListSetAppendAttrib(Ihandle* ih, const char* value)
 
 static int cocoaListSetSelectionAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->has_editbox)
-    return 0;
-
-  NSControl* text_control = cocoaListGetEditControl(ih);
-  if (!text_control)
-    return 0;
-
-  NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-
-  if (!field_editor)
-  {
-    [[text_control window] makeFirstResponder:text_control];
-    field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-    if (!field_editor)
-      return 0;
-  }
-
-  if (!value || iupStrEqualNoCase(value, "NONE"))
-  {
-    [field_editor setSelectedRange:NSMakeRange(0, 0)];
-    return 0;
-  }
-
-  if (iupStrEqualNoCase(value, "ALL"))
-  {
-    [field_editor selectAll:nil];
-    return 0;
-  }
-
-  int start = 1, end = 1;
-  if (iupStrToIntInt(value, &start, &end, ':') != 2)
-    return 0;
-
-  if (start < 1 || end < 1)
-    return 0;
-
-  start--;
-  end--;
-
-  NSRange range = NSMakeRange(start, end - start + 1);
-  [field_editor setSelectedRange:range];
-
+  NSTextField* text_field = cocoaListGetEditField(ih);
+  if (text_field)
+    iupcocoaTextFieldSetSelection(text_field, value, 1);
   return 0;
 }
 
 static char* cocoaListGetSelectionAttrib(Ihandle* ih)
 {
-  if (!ih->data->has_editbox)
-    return NULL;
-
-  NSControl* text_control = cocoaListGetEditControl(ih);
-  if (!text_control)
-    return NULL;
-
-  NSText* field_editor = [[text_control window] fieldEditor:NO forObject:text_control];
-  if (!field_editor)
-    return NULL;
-
-  NSRange range = [field_editor selectedRange];
-  if (range.length == 0)
-    return NULL;
-
-  int start = (int)range.location + 1;
-  int end = (int)(range.location + range.length);
-  return iupStrReturnIntInt(start, end, ':');
+  NSTextField* text_field = cocoaListGetEditField(ih);
+  return text_field ? iupcocoaTextFieldGetSelection(text_field, 1) : NULL;
 }
 
 static int cocoaListSetSelectionPosAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->has_editbox)
-    return 0;
-
-  NSControl* text_control = cocoaListGetEditControl(ih);
-  if (!text_control)
-    return 0;
-
-  NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-  if (!field_editor)
-  {
-    [[text_control window] makeFirstResponder:text_control];
-    field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-    if (!field_editor)
-      return 0;
-  }
-
-  if (!value || iupStrEqualNoCase(value, "NONE"))
-  {
-    [field_editor setSelectedRange:NSMakeRange(0, 0)];
-    return 0;
-  }
-
-  if (iupStrEqualNoCase(value, "ALL"))
-  {
-    [field_editor selectAll:nil];
-    return 0;
-  }
-
-  int start = 0, end = 0;
-  if (iupStrToIntInt(value, &start, &end, ':') != 2)
-    return 0;
-
-  if (start < 0 || end < 0)
-    return 0;
-
-  NSRange range = NSMakeRange(start, end - start);
-  [field_editor setSelectedRange:range];
-
+  NSTextField* text_field = cocoaListGetEditField(ih);
+  if (text_field)
+    iupcocoaTextFieldSetSelection(text_field, value, 0);
   return 0;
 }
 
 static char* cocoaListGetSelectionPosAttrib(Ihandle* ih)
 {
-  if (!ih->data->has_editbox)
-    return NULL;
-
-  NSControl* text_control = cocoaListGetEditControl(ih);
-  if (!text_control)
-    return NULL;
-
-  NSText* field_editor = [[text_control window] fieldEditor:NO forObject:text_control];
-  if (!field_editor)
-    return NULL;
-
-  NSRange range = [field_editor selectedRange];
-  if (range.length == 0)
-    return NULL;
-
-  int start = (int)range.location;
-  int end = (int)(range.location + range.length);
-  return iupStrReturnIntInt(start, end, ':');
+  NSTextField* text_field = cocoaListGetEditField(ih);
+  return text_field ? iupcocoaTextFieldGetSelection(text_field, 0) : NULL;
 }
 
 static int cocoaListSetSelectedTextAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->has_editbox || !value)
-    return 0;
-
-  NSControl* text_control = cocoaListGetEditControl(ih);
-  if (!text_control)
-    return 0;
-
-  NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-  if (!field_editor)
-    return 0;
-
-  NSRange range = [field_editor selectedRange];
-  if (range.length > 0)
-  {
-    NSString* ns_string = iupcocoaStrToNSString(value);
-    [field_editor replaceCharactersInRange:range withString:ns_string];
-  }
-
+  NSTextField* text_field = cocoaListGetEditField(ih);
+  if (text_field)
+    iupcocoaTextFieldSetSelectedText(ih, text_field, value);
   return 0;
 }
 
 static char* cocoaListGetSelectedTextAttrib(Ihandle* ih)
 {
-  if (!ih->data->has_editbox)
-    return NULL;
-
-  NSControl* text_control = cocoaListGetEditControl(ih);
-  if (!text_control)
-    return NULL;
-
-  NSText* field_editor = [[text_control window] fieldEditor:NO forObject:text_control];
-
-  if (!field_editor)
-    return NULL;
-
-  NSRange range = [field_editor selectedRange];
-  if (range.length == 0)
-    return NULL;
-
-  NSString* full_string = [(id)text_control stringValue];
-  if (!full_string)
-    return NULL;
-
-  NSString* selected = [full_string substringWithRange:range];
-  const char* c_str = [selected UTF8String];
-  return iupStrReturnStr(c_str);
+  NSTextField* text_field = cocoaListGetEditField(ih);
+  return text_field ? iupcocoaTextFieldGetSelectedText(text_field) : NULL;
 }
 
 static int cocoaListSetCaretAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->has_editbox || !value)
-    return 0;
-
-  int pos = 1;
-  iupStrToInt(value, &pos);
-  if (pos < 1) pos = 1;
-  pos--;
-
-  NSControl* text_control = cocoaListGetEditControl(ih);
-  if (text_control)
-  {
-    NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-    if(field_editor)
-    {
-      [field_editor setSelectedRange:NSMakeRange(pos, 0)];
-    }
-  }
-
+  NSTextField* text_field = cocoaListGetEditField(ih);
+  if (text_field && value)
+    iupcocoaTextFieldSetCaret(text_field, value, 1);
   return 0;
 }
 
 static char* cocoaListGetCaretAttrib(Ihandle* ih)
 {
-  if (!ih->data->has_editbox)
-    return NULL;
-
-  NSControl* text_control = cocoaListGetEditControl(ih);
-  if (!text_control)
-    return NULL;
-
-  NSText* field_editor = [[text_control window] fieldEditor:NO forObject:text_control];
-  if (!field_editor)
-    return NULL;
-
-  NSRange range = [field_editor selectedRange];
-  int pos = (int)range.location + 1;
-  return iupStrReturnInt(pos);
+  NSTextField* text_field = cocoaListGetEditField(ih);
+  return text_field ? iupcocoaTextFieldGetCaret(text_field, 1) : NULL;
 }
 
 static int cocoaListSetCaretPosAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->has_editbox || !value)
-    return 0;
-
-  int pos = 0;
-  iupStrToInt(value, &pos);
-  if (pos < 0) pos = 0;
-
-  NSControl* text_control = cocoaListGetEditControl(ih);
-  if (text_control)
-  {
-    NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-    if (field_editor)
-      [field_editor setSelectedRange:NSMakeRange(pos, 0)];
-  }
-
+  NSTextField* text_field = cocoaListGetEditField(ih);
+  if (text_field && value)
+    iupcocoaTextFieldSetCaret(text_field, value, 0);
   return 0;
 }
 
 static char* cocoaListGetCaretPosAttrib(Ihandle* ih)
 {
-  if (!ih->data->has_editbox)
-    return NULL;
-
-  NSControl* text_control = cocoaListGetEditControl(ih);
-  if (!text_control)
-    return NULL;
-
-  NSText* field_editor = [[text_control window] fieldEditor:NO forObject:text_control];
-  if (!field_editor)
-    return NULL;
-
-  NSRange range = [field_editor selectedRange];
-  int pos = (int)range.location;
-  return iupStrReturnInt(pos);
+  NSTextField* text_field = cocoaListGetEditField(ih);
+  return text_field ? iupcocoaTextFieldGetCaret(text_field, 0) : NULL;
 }
 
 static int cocoaListSetScrollToAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->has_editbox || !value)
-    return 0;
-
-  int pos = 1;
-  iupStrToInt(value, &pos);
-  if (pos < 1) pos = 1;
-  pos--;
-
-  NSControl* text_control = cocoaListGetEditControl(ih);
-  if (text_control)
-  {
-    NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-    if (field_editor)
-      [field_editor scrollRangeToVisible:NSMakeRange(pos, 0)];
-  }
-
+  NSTextField* text_field = cocoaListGetEditField(ih);
+  if (text_field && value)
+    iupcocoaTextFieldScrollTo(text_field, value, 1);
   return 0;
 }
 
 static int cocoaListSetScrollToPosAttrib(Ihandle* ih, const char* value)
 {
-  if (!ih->data->has_editbox || !value)
-    return 0;
-
-  int pos = 0;
-  iupStrToInt(value, &pos);
-  if (pos < 0) pos = 0;
-
-  NSControl* text_control = cocoaListGetEditControl(ih);
-  if (text_control)
-  {
-    NSText* field_editor = [[text_control window] fieldEditor:YES forObject:text_control];
-    if (field_editor)
-      [field_editor scrollRangeToVisible:NSMakeRange(pos, 0)];
-  }
-
+  NSTextField* text_field = cocoaListGetEditField(ih);
+  if (text_field && value)
+    iupcocoaTextFieldScrollTo(text_field, value, 0);
   return 0;
 }
 
@@ -4214,6 +3973,8 @@ static void cocoaListUnMapMethod(Ihandle* ih)
     case IUPCOCOALISTSUBTYPE_EDITBOXDROPDOWN:
       {
         NSComboBox* combo_box = (NSComboBox*)base_view;
+        if ([combo_box delegate])
+          [NSObject cancelPreviousPerformRequestsWithTarget:[combo_box delegate]];
         [combo_box setDelegate:nil];
         objc_setAssociatedObject(base_view, IUP_COCOA_LIST_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
         break;
@@ -4224,8 +3985,11 @@ static void cocoaListUnMapMethod(Ihandle* ih)
         NSTableView* table_view = (NSTableView*)iupAttribGet(ih, "_IUPCOCOA_TABLEVIEW");
         if(text_field)
         {
+          if ([text_field delegate])
+            [NSObject cancelPreviousPerformRequestsWithTarget:[text_field delegate]];
           [text_field setDelegate:nil];
           objc_setAssociatedObject(text_field, IUP_COCOA_LIST_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN);
+          objc_setAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
         }
         if(table_view)
         {
@@ -4258,6 +4022,77 @@ static void cocoaListUnMapMethod(Ihandle* ih)
   ih->handle = NULL;
 }
 
+static int cocoaListSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  char* saved = iupAttribGet(ih, "_IUPCOCOA_DISABLE_TEXT_CB");
+  NSTextField* text_field;
+  int ret;
+
+  iupAttribSet(ih, "_IUPCOCOA_DISABLE_TEXT_CB", "1");
+  ret = set(ih, value);
+  iupAttribSet(ih, "_IUPCOCOA_DISABLE_TEXT_CB", saved);
+
+  text_field = ih->handle ? cocoaListGetEditField(ih) : nil;
+  if (text_field)
+    ih->data->last_caret_pos = iupcocoaTextFieldCaretChar(text_field);
+  return ret;
+}
+
+static int cocoaListSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaListSetSilent(ih, value, cocoaListSetValueAttrib);
+}
+
+static int cocoaListSetSelectedTextAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaListSetSilent(ih, value, cocoaListSetSelectedTextAttrib);
+}
+
+static int cocoaListSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaListSetSilent(ih, value, cocoaListSetSelectionAttrib);
+}
+
+static int cocoaListSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaListSetSilent(ih, value, cocoaListSetSelectionPosAttrib);
+}
+
+static int cocoaListSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaListSetSilent(ih, value, cocoaListSetCaretAttrib);
+}
+
+static int cocoaListSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaListSetSilent(ih, value, cocoaListSetCaretPosAttrib);
+}
+
+static int cocoaListSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaListSetSilent(ih, value, cocoaListSetInsertAttrib);
+}
+
+static int cocoaListSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaListSetSilent(ih, value, cocoaListSetAppendAttrib);
+}
+
+static int cocoaListSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaListSetSilent(ih, value, cocoaListSetClipboardAttrib);
+}
+
+static int cocoaListSetScrollToAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaListSetSilent(ih, value, cocoaListSetScrollToAttrib);
+}
+
+static int cocoaListSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaListSetSilent(ih, value, cocoaListSetScrollToPosAttrib);
+}
+
 IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -4270,7 +4105,7 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, cocoaListSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 
   iupClassRegisterAttributeId(ic, "IDVALUE", cocoaListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", cocoaListGetValueAttrib, cocoaListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", cocoaListGetValueAttrib, cocoaListSetValueAttribSilent, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDRAGDROP", NULL, cocoaListSetShowDragDropAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DRAGDROPLIST", NULL, cocoaListSetDragDropListAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterReplaceAttribFunc(ic, "DRAGSOURCE", NULL, cocoaListSetDragSourceAttrib);
@@ -4280,18 +4115,18 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, cocoaListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "PADDING", iupListGetPaddingAttrib, cocoaListSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", cocoaListGetSelectedTextAttrib, cocoaListSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", cocoaListGetSelectionAttrib, cocoaListSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", cocoaListGetSelectionPosAttrib, cocoaListSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", cocoaListGetCaretAttrib, cocoaListSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", cocoaListGetCaretPosAttrib, cocoaListSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", NULL, cocoaListSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", NULL, cocoaListSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", cocoaListGetSelectedTextAttrib, cocoaListSetSelectedTextAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", cocoaListGetSelectionAttrib, cocoaListSetSelectionAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", cocoaListGetSelectionPosAttrib, cocoaListSetSelectionPosAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", cocoaListGetCaretAttrib, cocoaListSetCaretAttribSilent, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", cocoaListGetCaretPosAttrib, cocoaListSetCaretPosAttribSilent, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, cocoaListSetInsertAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", NULL, cocoaListSetAppendAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", cocoaListGetReadOnlyAttrib, cocoaListSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, cocoaListSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, cocoaListSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, cocoaListSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, cocoaListSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, cocoaListSetClipboardAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, cocoaListSetScrollToAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, cocoaListSetScrollToPosAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CONTEXTMENU", iupcocoaCommonBaseGetContextMenuAttrib, cocoaListSetContextMenuAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, cocoaListSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", NULL, cocoaListSetFilterAttrib, NULL, NULL, IUPAF_NO_INHERIT);

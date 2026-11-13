@@ -25,6 +25,7 @@
 #include <Looper.h>
 #include <Message.h>
 #include <MessageFilter.h>
+#include <MessageQueue.h>
 #include <Rect.h>
 #include <Region.h>
 #include <String.h>
@@ -53,6 +54,7 @@ extern "C" {
 
 #define IUPHAIKU_TEXT_MODIFIED_MSG 'IupT'
 #define IUPHAIKU_TEXT_INVOKE_MSG   'IupI'
+#define IUPHAIKU_TEXT_CARET_MSG    'IupK'
 
 static void haikuTextFireCaretCb(Ihandle* ih, BTextView* tv);
 
@@ -254,13 +256,49 @@ private:
   Ihandle* fIhandle;
 };
 
+class IupHaikuTextCaretFilter : public BMessageFilter
+{
+public:
+  explicit IupHaikuTextCaretFilter(BHandler* control)
+    : BMessageFilter(B_ANY_DELIVERY, B_ANY_SOURCE), fControl(control) {}
+
+  filter_result Filter(BMessage* msg, BHandler** target) override
+  {
+    (void)target;
+    switch (msg->what)
+    {
+      case B_MOUSE_MOVED:
+      {
+        int32 buttons = 0;
+        if (msg->FindInt32("buttons", &buttons) != B_OK || buttons == 0)
+          break;
+      }
+      /* fall through */
+      case B_KEY_DOWN:
+      case B_MOUSE_DOWN:
+      case B_MOUSE_UP:
+      case B_SELECT_ALL:
+      case B_PASTE:
+      case B_CUT:
+      case B_UNDO:
+        if (fControl->Looper())
+          fControl->Looper()->PostMessage(IUPHAIKU_TEXT_CARET_MSG, fControl);
+        break;
+    }
+    return B_DISPATCH_MESSAGE;
+  }
+
+private:
+  BHandler* fControl;
+};
+
 class IupHaikuTextControl : public BTextControl
 {
 public:
   explicit IupHaikuTextControl(Ihandle* ih)
     : BTextControl(BRect(0, 0, 0, 0), "iup_text", nullptr, "",
                    nullptr, B_FOLLOW_NONE),
-      fIhandle(ih), fKeyFilter(nullptr), fUndoFilter(nullptr), fWheelFilter(nullptr), fMute(false)
+      fIhandle(ih), fKeyFilter(nullptr), fUndoFilter(nullptr), fWheelFilter(nullptr), fCaretFilter(nullptr), fMute(0)
   {
     BTextControl::SetDivider(0);
     /* Keep B_NAVIGABLE: SetFlags syncs it to the inner view, else Tab skips it. */
@@ -278,6 +316,9 @@ public:
     if (fWheelFilter && TextView())
       TextView()->RemoveFilter(fWheelFilter);
     delete fWheelFilter;
+    if (fCaretFilter && TextView())
+      TextView()->RemoveFilter(fCaretFilter);
+    delete fCaretFilter;
   }
 
   void AttachedToWindow() override
@@ -296,6 +337,8 @@ public:
       TextView()->AddFilter(fUndoFilter);
       fWheelFilter = new IupHaikuTextWheelFilter(fIhandle);
       TextView()->AddFilter(fWheelFilter);
+      fCaretFilter = new IupHaikuTextCaretFilter(this);
+      TextView()->AddFilter(fCaretFilter);
     }
   }
 
@@ -331,13 +374,16 @@ public:
   {
     if (msg && msg->what == IUPHAIKU_TEXT_MODIFIED_MSG && fIhandle)
     {
-      Icallback cb = IupGetCallback(fIhandle, "VALUECHANGED_CB");
-      if (cb)
-      {
-        int ret = cb(fIhandle);
-        if (ret == IUP_CLOSE) IupExitLoop();
-      }
-      if (TextView()) haikuTextFireCaretCb(fIhandle, TextView());
+      Ihandle* ih = fIhandle;
+      Icallback cb = IupGetCallback(ih, "VALUECHANGED_CB");
+      if (cb && cb(ih) == IUP_CLOSE) { IupExitLoop(); return; }
+      if (iupObjectCheck(ih) && ih->handle && TextView()) haikuTextFireCaretCb(ih, TextView());
+      return;
+    }
+    if (msg && msg->what == IUPHAIKU_TEXT_CARET_MSG)
+    {
+      if (fIhandle && TextView() && !Looper()->MessageQueue()->FindMessage(static_cast<uint32>(IUPHAIKU_TEXT_MODIFIED_MSG), 0))
+        haikuTextFireCaretCb(fIhandle, TextView());
       return;
     }
     /* Async, so focus already moved; call KILLFOCUS_CB directly past the guard. */
@@ -383,15 +429,13 @@ public:
   /* Clear the modification message around programmatic SetText so VALUECHANGED_CB stays user-only. */
   void MuteBegin()
   {
-    if (fMute) return;
-    fMute = true;
-    SetModificationMessage(nullptr);
+    if (fMute++ == 0)
+      SetModificationMessage(nullptr);
   }
   void MuteEnd()
   {
-    if (!fMute) return;
-    fMute = false;
-    SetModificationMessage(new BMessage(IUPHAIKU_TEXT_MODIFIED_MSG));
+    if (fMute > 0 && --fMute == 0)
+      SetModificationMessage(new BMessage(IUPHAIKU_TEXT_MODIFIED_MSG));
   }
 
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }
@@ -401,7 +445,8 @@ private:
   IupHaikuTextKeyFilter* fKeyFilter;
   IupHaikuTextUndoFilter* fUndoFilter;
   IupHaikuTextWheelFilter* fWheelFilter;
-  bool fMute;
+  IupHaikuTextCaretFilter* fCaretFilter;
+  int fMute;
   bool fLastFocus = false;
 };
 
@@ -466,6 +511,7 @@ public:
     if (msg->what == B_MOUSE_WHEEL_CHANGED && fIhandle && haikuTextWheel(fIhandle, this, msg))
       return;
     BTextView::MessageReceived(msg);
+    if (fIhandle) haikuTextFireCaretCb(fIhandle, this);
   }
 
   void MakeFocus(bool focused = true) override
@@ -736,10 +782,16 @@ protected:
   }
 
 public:
-  void Select(int32 startOffset, int32 endOffset) override
+  void KeyDown(const char* bytes, int32 numBytes) override
   {
-    BTextView::Select(startOffset, endOffset);
-    if (!fSuppress && fIhandle) haikuTextFireCaretCb(fIhandle, this);
+    BTextView::KeyDown(bytes, numBytes);
+    if (fIhandle) haikuTextFireCaretCb(fIhandle, this);
+  }
+
+  void MouseUp(BPoint where) override
+  {
+    BTextView::MouseUp(where);
+    if (fIhandle) haikuTextFireCaretCb(fIhandle, this);
   }
 
   bool LinkAt(BPoint where) const
@@ -763,6 +815,7 @@ public:
   void MouseMoved(BPoint where, uint32 transit, const BMessage* drag) override
   {
     BTextView::MouseMoved(where, transit, drag);
+    if (fIhandle) haikuTextFireCaretCb(fIhandle, this);
     if (transit == B_EXITED_VIEW || transit == B_OUTSIDE_VIEW) return;
     SetViewCursor(LinkAt(where) ? &fLinkCursor : B_CURSOR_I_BEAM, true);
   }
@@ -805,6 +858,7 @@ public:
       }
     }
     BTextView::MouseDown(where);
+    if (fIhandle) haikuTextFireCaretCb(fIhandle, this);
   }
 
   void SetIhandle(Ihandle* ih) { fIhandle = ih; }
@@ -838,22 +892,28 @@ static void haikuTextFireCaretCb(Ihandle* ih, BTextView* tv)
   if (!ih || !tv) return;
   if (ih->data->disable_callbacks) return;
 
-  auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
-  if (!cb) return;
-
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
-  int32 ln = tv->LineAt(s);
-  int32 ls = tv->OffsetAt(ln);
-  int lin = ln + 1;
-  int col = s - ls + 1;
-  int pos = s;
+  int pos = iupStrUtf8ByteToChar(tv->Text(), s);
 
   int last = iupAttribGetInt(ih, "_IUPHAIKU_LAST_CARET");
   if (last == pos + 1) return;
   iupAttribSetInt(ih, "_IUPHAIKU_LAST_CARET", pos + 1);
 
-  cb(ih, lin, col, pos);
+  auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
+  if (!cb) return;
+
+  int32 ln = tv->LineAt(s);
+  int lin = ln + 1;
+  int col = pos - iupStrUtf8ByteToChar(tv->Text(), tv->OffsetAt(ln)) + 1;
+  if (cb(ih, lin, col, pos) == IUP_CLOSE) IupExitLoop();
+}
+
+static void haikuTextRecordCaret(Ihandle* ih, BTextView* tv)
+{
+  int32 s = 0, e = 0;
+  tv->GetSelection(&s, &e);
+  iupAttribSetInt(ih, "_IUPHAIKU_LAST_CARET", iupStrUtf8ByteToChar(tv->Text(), s) + 1);
 }
 
 #define IUPHAIKU_SPIN_UP_MSG   'IupU'
@@ -995,17 +1055,12 @@ static IupHaikuTextView* haikuTextGetMultilineView(Ihandle* ih)
 /* BTextView offsets are byte offsets into the UTF-8 buffer; IUP positions are character indices. */
 static int32 haikuTextCharToByte(BTextView* tv, int char_pos)
 {
-  const char* text = tv->Text();
-  if (!text || char_pos <= 0) return 0;
-  int32 byte = 0;
-  int chars = 0;
-  while (text[byte] && chars < char_pos)
-  {
-    auto c = static_cast<unsigned char>(text[byte]);
-    byte += (c < 0x80) ? 1 : (c < 0xE0) ? 2 : (c < 0xF0) ? 3 : 4;
-    chars++;
-  }
-  return byte;
+  return static_cast<int32>(iupStrUtf8CharToByte(tv->Text(), char_pos));
+}
+
+static int haikuTextByteToChar(BTextView* tv, int32 byte_pos)
+{
+  return iupStrUtf8ByteToChar(tv->Text(), static_cast<int>(byte_pos));
 }
 
 static int haikuTextParseRange(BTextView* tv, const char* sel, bool one_based, int32* start, int32* end, int char_offset = 0)
@@ -1243,7 +1298,7 @@ static int haikuTextSetSelectionAttrib(Ihandle* ih, const char* value)
     int ps = 0, pe = 0;
     iupdrvTextConvertLinColToPos(ih, lin1, col1, &ps);
     iupdrvTextConvertLinColToPos(ih, lin2, col2, &pe);
-    s = ps; e = pe;
+    s = haikuTextCharToByte(tv, ps); e = haikuTextCharToByte(tv, pe);
     tv->Select(s, e);
     return 0;
   }
@@ -1286,11 +1341,11 @@ static char* haikuTextGetSelectionAttrib(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     int lin1, col1, lin2, col2;
-    iupdrvTextConvertPosToLinCol(ih, static_cast<int>(s), &lin1, &col1);
-    iupdrvTextConvertPosToLinCol(ih, static_cast<int>(e), &lin2, &col2);
+    iupdrvTextConvertPosToLinCol(ih, haikuTextByteToChar(tv, s), &lin1, &col1);
+    iupdrvTextConvertPosToLinCol(ih, haikuTextByteToChar(tv, e), &lin2, &col2);
     return iupStrReturnStrf("%d,%d:%d,%d", lin1, col1, lin2, col2);
   }
-  return iupStrReturnStrf("%d:%d", static_cast<int>(s) + 1, static_cast<int>(e) + 1);
+  return iupStrReturnStrf("%d:%d", haikuTextByteToChar(tv, s) + 1, haikuTextByteToChar(tv, e) + 1);
 }
 
 static char* haikuTextGetSelectionPosAttrib(Ihandle* ih)
@@ -1300,7 +1355,7 @@ static char* haikuTextGetSelectionPosAttrib(Ihandle* ih)
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
   if (s == e) return nullptr;
-  return iupStrReturnStrf("%d:%d", static_cast<int>(s), static_cast<int>(e));
+  return iupStrReturnStrf("%d:%d", haikuTextByteToChar(tv, s), haikuTextByteToChar(tv, e));
 }
 
 static char* haikuTextGetSelectedTextAttrib(Ihandle* ih)
@@ -1340,10 +1395,9 @@ static int haikuTextSetCaretPosAttrib(Ihandle* ih, const char* value)
   int pos = 0;
   if (!iupStrToInt(value, &pos)) return 0;
   LooperLockGuard guard(haikuTextGetLooper(ih));
-  if (pos < 0) pos = 0;
-  if (pos > tv->TextLength()) pos = tv->TextLength();
-  tv->Select(pos, pos);
-  tv->ScrollToOffset(pos);
+  int32 byte = haikuTextCharToByte(tv, pos < 0 ? 0 : pos);
+  tv->Select(byte, byte);
+  tv->ScrollToOffset(byte);
   return 0;
 }
 
@@ -1353,7 +1407,7 @@ static char* haikuTextGetCaretPosAttrib(Ihandle* ih)
   if (!tv) return nullptr;
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
-  return iupStrReturnInt(static_cast<int>(s));
+  return iupStrReturnInt(haikuTextByteToChar(tv, s));
 }
 
 static int haikuTextSetCaretAttrib(Ihandle* ih, const char* value)
@@ -1379,9 +1433,9 @@ static char* haikuTextGetCaretAttrib(Ihandle* ih)
   if (!tv) return nullptr;
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
-  if (!ih->data->is_multiline) return iupStrReturnInt(static_cast<int>(s) + 1);
+  if (!ih->data->is_multiline) return iupStrReturnInt(haikuTextByteToChar(tv, s) + 1);
   int lin = 1, col = 1;
-  iupdrvTextConvertPosToLinCol(ih, s, &lin, &col);
+  iupdrvTextConvertPosToLinCol(ih, haikuTextByteToChar(tv, s), &lin, &col);
   return iupStrReturnIntInt(lin, col, ',');
 }
 
@@ -1452,7 +1506,7 @@ static int haikuTextSetScrollToAttrib(Ihandle* ih, const char* value)
     if (iupStrToIntInt(value, &lin, &col, ',') < 1) return 0;
     int pos = 0;
     iupdrvTextConvertLinColToPos(ih, lin, col, &pos);
-    tv->ScrollToOffset(pos);
+    tv->ScrollToOffset(haikuTextCharToByte(tv, pos));
   }
   else
   {
@@ -1460,7 +1514,7 @@ static int haikuTextSetScrollToAttrib(Ihandle* ih, const char* value)
     if (!iupStrToInt(value, &pos)) return 0;
     pos--;
     if (pos < 0) pos = 0;
-    tv->ScrollToOffset(pos);
+    tv->ScrollToOffset(haikuTextCharToByte(tv, pos));
   }
   return 0;
 }
@@ -1472,7 +1526,7 @@ static int haikuTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   int pos = 0;
   if (!iupStrToInt(value, &pos)) return 0;
   LooperLockGuard guard(haikuTextGetLooper(ih));
-  tv->ScrollToOffset(pos);
+  tv->ScrollToOffset(haikuTextCharToByte(tv, pos));
   return 0;
 }
 
@@ -1855,7 +1909,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* tag, in
       int p1 = 0, p2 = 0;
       iupdrvTextConvertLinColToPos(ih, l1, c1, &p1);
       iupdrvTextConvertLinColToPos(ih, l2, c2, &p2);
-      start = p1; end = p2;
+      start = haikuTextCharToByte(tv, p1); end = haikuTextCharToByte(tv, p2);
     }
     else if (haikuTextParseRange(tv, sel, true, &start, &end)) { /* range parsed */ }
     else return;
@@ -2037,7 +2091,7 @@ static int haikuTextConvertXYToPos(Ihandle* ih, int x, int y)
   if (!tv)
     return -1;
   LooperLockGuard guard(haikuTextGetLooper(ih));
-  return static_cast<int>(tv->OffsetAt(BPoint(static_cast<float>(x), static_cast<float>(y))));
+  return haikuTextByteToChar(tv, tv->OffsetAt(BPoint(static_cast<float>(x), static_cast<float>(y))));
 }
 
 static int haikuTextMapMethod(Ihandle* ih)
@@ -2326,9 +2380,8 @@ extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, i
   if (!tv) { if (pos) *pos = 0; return; }
   LooperLockGuard guard(haikuTextGetLooper(ih));
 
-  int32 line_start = tv->OffsetAt(lin - 1);
-  int32 line_end   = tv->OffsetAt(lin);
-  int32 line_len   = line_end - line_start;
+  int line_start = haikuTextByteToChar(tv, tv->OffsetAt(lin - 1));
+  int line_len = haikuTextByteToChar(tv, tv->OffsetAt(lin)) - line_start;
   if (col - 1 > line_len) col = line_len + 1;
   if (pos) *pos = line_start + col - 1;
 }
@@ -2338,25 +2391,10 @@ extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, i
   BTextView* tv = haikuTextGetEditor(ih);
   if (!tv) { if (lin) *lin = 1; if (col) *col = 1; return; }
   LooperLockGuard guard(haikuTextGetLooper(ih));
-  int32 ln = tv->LineAt(pos);
+  int32 ln = tv->LineAt(haikuTextCharToByte(tv, pos));
   int32 ls = tv->OffsetAt(ln);
   if (lin) *lin = ln + 1;
-  if (col) *col = pos - ls + 1;
-}
-
-static int haikuTextByteToChar(const char* text, int32 byte_pos)
-{
-  int32 byte = 0;
-  int chars = 0;
-
-  if (!text) return 0;
-  while (text[byte] && byte < byte_pos)
-  {
-    auto c = static_cast<unsigned char>(text[byte]);
-    byte += (c < 0x80) ? 1 : (c < 0xE0) ? 2 : (c < 0xF0) ? 3 : 4;
-    chars++;
-  }
-  return chars;
+  if (col) *col = pos - haikuTextByteToChar(tv, ls) + 1;
 }
 
 static int haikuTextSameFont(const BFont& a, const BFont& b, const rgb_color& color_a, const rgb_color& color_b)
@@ -2451,7 +2489,7 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
 
     if (byte > 0 && !haikuTextSameFont(bfont, run_font, color, run_color))
     {
-      haikuTextAddFormatRun(ih, bulk_tag, run_font, haikuTextByteToChar(text, run_byte), haikuTextByteToChar(text, byte), run_byte);
+      haikuTextAddFormatRun(ih, bulk_tag, run_font, iupStrUtf8ByteToChar(text, run_byte), iupStrUtf8ByteToChar(text, byte), run_byte);
       run_byte = byte;
       run_font = bfont;
       run_color = color;
@@ -2460,9 +2498,80 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
     byte = next;
   }
 
-  haikuTextAddFormatRun(ih, bulk_tag, run_font, haikuTextByteToChar(text, run_byte), haikuTextByteToChar(text, length), run_byte);
+  haikuTextAddFormatRun(ih, bulk_tag, run_font, iupStrUtf8ByteToChar(text, run_byte), iupStrUtf8ByteToChar(text, length), run_byte);
 
   return 1;
+}
+
+static int haikuTextSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  if (!ih->handle) return set(ih, value);
+  LooperLockGuard guard(haikuTextGetLooper(ih));
+  auto* tc = dynamic_cast<IupHaikuTextControl*>(haikuTextGetTextControl(ih));
+  int saved = ih->data->disable_callbacks;
+  ih->data->disable_callbacks = 1;
+  if (tc) tc->MuteBegin();
+  int ret = set(ih, value);
+  if (tc) tc->MuteEnd();
+  ih->data->disable_callbacks = saved;
+  if (BTextView* tv = haikuTextGetEditor(ih))
+    haikuTextRecordCaret(ih, tv);
+  return ret;
+}
+
+static int haikuTextSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuTextSetSilent(ih, value, haikuTextSetValueAttrib);
+}
+
+static int haikuTextSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuTextSetSilent(ih, value, haikuTextSetSelectionAttrib);
+}
+
+static int haikuTextSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuTextSetSilent(ih, value, haikuTextSetSelectionPosAttrib);
+}
+
+static int haikuTextSetSelectedTextAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuTextSetSilent(ih, value, haikuTextSetSelectedTextAttrib);
+}
+
+static int haikuTextSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuTextSetSilent(ih, value, haikuTextSetCaretAttrib);
+}
+
+static int haikuTextSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuTextSetSilent(ih, value, haikuTextSetCaretPosAttrib);
+}
+
+static int haikuTextSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuTextSetSilent(ih, value, haikuTextSetAppendAttrib);
+}
+
+static int haikuTextSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuTextSetSilent(ih, value, haikuTextSetInsertAttrib);
+}
+
+static int haikuTextSetScrollToAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuTextSetSilent(ih, value, haikuTextSetScrollToAttrib);
+}
+
+static int haikuTextSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuTextSetSilent(ih, value, haikuTextSetScrollToPosAttrib);
+}
+
+static int haikuTextSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+  return haikuTextSetSilent(ih, value, haikuTextSetClipboardAttrib);
 }
 
 extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
@@ -2475,7 +2584,7 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "FGCOLOR", nullptr, haikuTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "ACTIVE", iupBaseGetActiveAttrib, haikuTextSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", haikuTextGetValueAttrib, haikuTextSetValueAttrib, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", haikuTextGetValueAttrib, haikuTextSetValueAttribSilent, nullptr, nullptr, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINEVALUE", haikuTextGetLineValueAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COUNT", haikuTextGetCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINECOUNT", haikuTextGetLineCountAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);
@@ -2484,19 +2593,19 @@ extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, haikuTextSetNCAttrib, nullptr, nullptr, IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, haikuTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "SELECTION", haikuTextGetSelectionAttrib, haikuTextSetSelectionAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", haikuTextGetSelectionPosAttrib, haikuTextSetSelectionPosAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", haikuTextGetSelectedTextAttrib, haikuTextSetSelectedTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", haikuTextGetSelectionAttrib, haikuTextSetSelectionAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", haikuTextGetSelectionPosAttrib, haikuTextSetSelectionPosAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", haikuTextGetSelectedTextAttrib, haikuTextSetSelectedTextAttribSilent, nullptr, nullptr, IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "CARET", haikuTextGetCaretAttrib, haikuTextSetCaretAttrib, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", haikuTextGetCaretPosAttrib, haikuTextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", haikuTextGetCaretAttrib, haikuTextSetCaretAttribSilent, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", haikuTextGetCaretPosAttrib, haikuTextSetCaretPosAttribSilent, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "APPEND", nullptr, haikuTextSetAppendAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", nullptr, haikuTextSetInsertAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, haikuTextSetClipboardAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", nullptr, haikuTextSetAppendAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", nullptr, haikuTextSetInsertAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, haikuTextSetClipboardAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, haikuTextSetScrollToAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, haikuTextSetScrollToPosAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, haikuTextSetScrollToAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, haikuTextSetScrollToPosAttribSilent, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "WORDWRAP", nullptr, haikuTextSetWordWrapAttrib, nullptr, nullptr, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "TABSIZE", nullptr, haikuTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_DEFAULT);

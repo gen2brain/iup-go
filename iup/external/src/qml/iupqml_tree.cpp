@@ -1292,6 +1292,8 @@ static int qmlTreeSetValueAttrib(Ihandle* ih, const char* value)
 
   if (node)
   {
+    char* ignore = iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB");
+    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
     qmlTreeExpandAncestors(data, node);
 
     if (ih->data->mark_mode == ITREE_MARK_SINGLE)
@@ -1302,6 +1304,7 @@ static int qmlTreeSetValueAttrib(Ihandle* ih, const char* value)
     else
       qmlTreeSetCurrent(data, node, false);
 
+    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", ignore);
     qmlTreeScrollTo(data, node, 0);
   }
 

@@ -486,6 +486,20 @@ static void cocoaTouchTextSetSelection(Ihandle* ih, NSUInteger start, NSUInteger
 	[v setSelectedRange:NSMakeRange(start, end - start)];
 }
 
+static void cocoaTouchTextCharSelection(Ihandle* ih, int* start, int* end)
+{
+	NSRange r = cocoaTouchTextSelection(ih);
+	NSString* s = cocoaTouchTextGetString(ih);
+	*start = iupCocoaTouchStrUnitToChar(s, r.location);
+	*end = iupCocoaTouchStrUnitToChar(s, r.location + r.length);
+}
+
+static void cocoaTouchTextSetCharSelection(Ihandle* ih, int start, int end)
+{
+	NSString* s = cocoaTouchTextGetString(ih);
+	cocoaTouchTextSetSelection(ih, iupCocoaTouchStrCharToUnit(s, start), iupCocoaTouchStrCharToUnit(s, end));
+}
+
 IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
 	if (!pos) return;
@@ -495,24 +509,26 @@ IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int
 
 	if (lin < 1) lin = 1;
 	if (col < 1) col = 1;
-	int cur_lin = 1, cur_col = 1;
-	NSUInteger len = [s length];
-	for (NSUInteger i = 0; i < len; i++)
+	int cur_lin = 1, cur_col = 1, n = 0;
+	NSUInteger len = [s length], i = 0;
+	while (i < len)
 	{
 		if (cur_lin == lin && cur_col == col)
 		{
-			*pos = (int)i;
+			*pos = n;
 			return;
 		}
 		unichar c = [s characterAtIndex:i];
 		if (c == '\n')
 		{
-			if (cur_lin == lin) { *pos = (int)i; return; }
+			if (cur_lin == lin) { *pos = n; return; }
 			cur_lin++; cur_col = 1;
 		}
 		else cur_col++;
+		i += (i + 1 < len && CFStringIsSurrogateHighCharacter(c)) ? 2 : 1;
+		n++;
 	}
-	*pos = (int)len;
+	*pos = n;
 }
 
 IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
@@ -521,14 +537,14 @@ IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, in
 	if (col) *col = 1;
 	NSString* s = cocoaTouchTextGetString(ih);
 	if (!s || pos <= 0) return;
-	NSUInteger len = [s length];
-	if ((NSUInteger)pos > len) pos = (int)len;
+	NSUInteger end = iupCocoaTouchStrCharToUnit(s, pos), i = 0;
 	int l = 1, c = 1;
-	for (int i = 0; i < pos; i++)
+	while (i < end)
 	{
-		unichar ch = [s characterAtIndex:(NSUInteger)i];
+		unichar ch = [s characterAtIndex:i];
 		if (ch == '\n') { l++; c = 1; }
 		else             c++;
+		i += (i + 1 < end && CFStringIsSurrogateHighCharacter(ch)) ? 2 : 1;
 	}
 	if (lin) *lin = l;
 	if (col) *col = c;
@@ -615,6 +631,19 @@ IUP_SDK_API void iupdrvTextAddFormatTagStopBulk(Ihandle* ih, void* state)
 	[bulk release];
 }
 
+static NSRange cocoaTouchTextCharRange(Ihandle* ih, int s, int e, NSUInteger text_len)
+{
+	NSString* str = cocoaTouchTextGetString(ih);
+	NSUInteger su, eu;
+	if (s < 0) s = 0;
+	if (e < s) e = s;
+	su = iupCocoaTouchStrCharToUnit(str, s);
+	eu = iupCocoaTouchStrCharToUnit(str, e);
+	if (eu > text_len) eu = text_len;
+	if (su > eu) su = eu;
+	return NSMakeRange(su, eu - su);
+}
+
 static NSRange cocoaTouchTextResolveFormatRange(Ihandle* ih, Ihandle* tag, NSUInteger text_len)
 {
 	const char* sel = iupAttribGet(tag, "SELECTION");
@@ -628,19 +657,12 @@ static NSRange cocoaTouchTextResolveFormatRange(Ihandle* ih, Ihandle* tag, NSUIn
 				int s = 0, e = 0;
 				iupdrvTextConvertLinColToPos(ih, l1, c1, &s);
 				iupdrvTextConvertLinColToPos(ih, l2, c2, &e);
-				if (s < 0) s = 0; if (e < s) e = s;
-				if ((NSUInteger)e > text_len) e = (int)text_len;
-				return NSMakeRange((NSUInteger)s, (NSUInteger)(e - s));
+				return cocoaTouchTextCharRange(ih, s, e, text_len);
 			}
 		}
 		int s = 0, e = 0;
 		if (iupStrToIntInt(sel, &s, &e, ':') == 2)
-		{
-			s--; e--;  /* 1-based */
-			if (s < 0) s = 0; if (e < s) e = s;
-			if ((NSUInteger)e > text_len) e = (int)text_len;
-			return NSMakeRange((NSUInteger)s, (NSUInteger)(e - s));
-		}
+			return cocoaTouchTextCharRange(ih, s - 1, e - 1, text_len);
 	}
 
 	const char* selpos = iupAttribGet(tag, "SELECTIONPOS");
@@ -648,11 +670,7 @@ static NSRange cocoaTouchTextResolveFormatRange(Ihandle* ih, Ihandle* tag, NSUIn
 	{
 		int s = 0, e = 0;
 		if (iupStrToIntInt(selpos, &s, &e, ':') == 2)
-		{
-			if (s < 0) s = 0; if (e < s) e = s;
-			if ((NSUInteger)e > text_len) e = (int)text_len;
-			return NSMakeRange((NSUInteger)s, (NSUInteger)(e - s));
-		}
+			return cocoaTouchTextCharRange(ih, s, e, text_len);
 	}
 
 	/* undefined on the tag falls back to the control selection, then to the caret */
@@ -1147,6 +1165,31 @@ static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
 	return iupCocoaTouchKeyTextCode(replacement);
 }
 
+static void cocoaTouchTextCallCaretCb(Ihandle* ih, NSString* text, NSUInteger unit)
+{
+	int pos = iupCocoaTouchStrUnitToChar(text ? text : @"", unit);
+	if (ih->data->disable_callbacks)
+	{
+		ih->data->last_caret_pos = pos;
+		return;
+	}
+	if (iupAttribGet(ih, "_IUPCOCOATOUCH_USER_EDIT") || pos == ih->data->last_caret_pos) return;
+	ih->data->last_caret_pos = pos;
+	IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+	if (!cb) return;
+	int lin, col;
+	iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
+	if (cb(ih, lin, col, pos) == IUP_CLOSE) IupExitLoop();
+}
+
+static void cocoaTouchTextEditDone(Ihandle* ih, NSString* text, NSUInteger unit)
+{
+	iupAttribSet(ih, "_IUPCOCOATOUCH_USER_EDIT", NULL);
+	IFn cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
+	if (cb && cb(ih) == IUP_CLOSE) IupExitLoop();
+	if (iupObjectCheck(ih)) cocoaTouchTextCallCaretCb(ih, text, unit);
+}
+
 @implementation IupCocoaTouchTextDelegate
 
 - (BOOL)textField:(UITextField*)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString*)replacement
@@ -1166,8 +1209,9 @@ static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
 	{
 		const char* applied_utf8 = [applied UTF8String];
 		int ret = iupEditCallActionCb(_ihandle, cb, applied_utf8,
-			(int)effective.location, (int)(effective.location + effective.length),
+			iupCocoaTouchStrUnitToChar(current, effective.location), iupCocoaTouchStrUnitToChar(current, effective.location + effective.length),
 			_ihandle->data->mask, _ihandle->data->nc, 0, 1);
+		if (!iupObjectCheck(_ihandle)) return NO;
 		if (ret == 0) return NO;
 		if (ret != -1 && applied_utf8 && applied_utf8[0])
 		{
@@ -1180,10 +1224,14 @@ static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
 	if (replaced || effective.length != range.length || ![applied isEqualToString:replacement])
 	{
 		NSString* new_text = [current stringByReplacingCharactersInRange:effective withString:applied];
+		_ihandle->data->disable_callbacks = 1;
 		textField.text = new_text;
 		cocoaTouchTextFieldSetSelection(textField, effective.location + applied.length, effective.location + applied.length);
+		_ihandle->data->disable_callbacks = 0;
+		cocoaTouchTextEditDone(_ihandle, textField.text, cocoaTouchTextFieldSelection(textField).location);
 		return NO;
 	}
+	iupAttribSet(_ihandle, "_IUPCOCOATOUCH_USER_EDIT", "1");
 	return YES;
 }
 
@@ -1210,27 +1258,20 @@ static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
 {
 	(void)textField;
 	if (!_ihandle) return;
+	iupAttribSet(_ihandle, "_IUPCOCOATOUCH_USER_EDIT", NULL);
 	iupCallKillFocusCb(_ihandle);
 }
 
 - (void)onFieldEditingChanged:(UITextField*)textField
 {
-	(void)textField;
-	if (!_ihandle) return;
-	IFn cb = (IFn)IupGetCallback(_ihandle, "VALUECHANGED_CB");
-	if (cb && cb(_ihandle) == IUP_CLOSE) IupExitLoop();
+	if (!_ihandle || _ihandle->data->disable_callbacks) return;
+	cocoaTouchTextEditDone(_ihandle, textField.text, cocoaTouchTextFieldSelection(textField).location);
 }
 
 - (void)textFieldDidChangeSelection:(UITextField*)textField
 {
 	if (!_ihandle) return;
-	IFniii cb = (IFniii)IupGetCallback(_ihandle, "CARET_CB");
-	if (!cb) return;
-	NSRange sel = cocoaTouchTextFieldSelection(textField);
-	int pos = (int)sel.location;
-	int lin, col;
-	iupdrvTextConvertPosToLinCol(_ihandle, pos, &lin, &col);
-	if (cb(_ihandle, lin, col, pos) == IUP_CLOSE) IupExitLoop();
+	cocoaTouchTextCallCaretCb(_ihandle, textField.text, cocoaTouchTextFieldSelection(textField).location);
 }
 
 - (BOOL)textView:(UITextView*)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString*)replacement
@@ -1249,8 +1290,9 @@ static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
 	{
 		const char* applied_utf8 = [applied UTF8String];
 		int ret = iupEditCallActionCb(_ihandle, cb, applied_utf8,
-			(int)effective.location, (int)(effective.location + effective.length),
+			iupCocoaTouchStrUnitToChar(current, effective.location), iupCocoaTouchStrUnitToChar(current, effective.location + effective.length),
 			_ihandle->data->mask, _ihandle->data->nc, 0, 1);
+		if (!iupObjectCheck(_ihandle)) return NO;
 		if (ret == 0) return NO;
 		if (ret != -1 && applied_utf8 && applied_utf8[0])
 		{
@@ -1263,10 +1305,14 @@ static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
 	if (replaced || effective.length != range.length || ![applied isEqualToString:replacement])
 	{
 		NSString* new_text = [current stringByReplacingCharactersInRange:effective withString:applied];
+		_ihandle->data->disable_callbacks = 1;
 		textView.text = new_text;
 		[textView setSelectedRange:NSMakeRange(effective.location + applied.length, 0)];
+		_ihandle->data->disable_callbacks = 0;
+		cocoaTouchTextEditDone(_ihandle, textView.text, textView.selectedRange.location);
 		return NO;
 	}
+	iupAttribSet(_ihandle, "_IUPCOCOATOUCH_USER_EDIT", "1");
 	return YES;
 }
 
@@ -1280,15 +1326,14 @@ static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
 {
 	(void)textView;
 	if (!_ihandle) return;
+	iupAttribSet(_ihandle, "_IUPCOCOATOUCH_USER_EDIT", NULL);
 	iupCallKillFocusCb(_ihandle);
 }
 
 - (void)textViewDidChange:(UITextView*)textView
 {
-	(void)textView;
-	if (!_ihandle) return;
-	IFn cb = (IFn)IupGetCallback(_ihandle, "VALUECHANGED_CB");
-	if (cb && cb(_ihandle) == IUP_CLOSE) IupExitLoop();
+	if (!_ihandle || _ihandle->data->disable_callbacks) return;
+	cocoaTouchTextEditDone(_ihandle, textView.text, textView.selectedRange.location);
 }
 
 - (void)textViewDidChangeSelection:(UITextView*)textView
@@ -1296,13 +1341,7 @@ static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
 	if ([textView.superview isKindOfClass:[IupCocoaTouchTextScroll class]])
 		[(IupCocoaTouchTextScroll*)textView.superview revealRange:textView.selectedRange];
 	if (!_ihandle) return;
-	IFniii cb = (IFniii)IupGetCallback(_ihandle, "CARET_CB");
-	if (!cb) return;
-	NSRange sel = textView.selectedRange;
-	int pos = (int)sel.location;
-	int lin, col;
-	iupdrvTextConvertPosToLinCol(_ihandle, pos, &lin, &col);
-	if (cb(_ihandle, lin, col, pos) == IUP_CLOSE) IupExitLoop();
+	cocoaTouchTextCallCaretCb(_ihandle, textView.text, textView.selectedRange.location);
 }
 
 - (void)onStepperChanged:(UIStepper*)stepper
@@ -1578,7 +1617,7 @@ static int cocoaTouchTextSetTabSizeAttrib(Ihandle* ih, const char* value)
 static char* cocoaTouchTextGetCountAttrib(Ihandle* ih)
 {
 	NSString* s = cocoaTouchTextGetString(ih);
-	return iupStrReturnInt((int)s.length);
+	return iupStrReturnInt(iupCocoaTouchStrUnitToChar(s, s.length));
 }
 
 static char* cocoaTouchTextGetLineCountAttrib(Ihandle* ih)
@@ -1651,16 +1690,17 @@ static char* cocoaTouchTextGetScrollVisibleAttrib(Ihandle* ih)
 
 static char* cocoaTouchTextGetSelectionAttrib(Ihandle* ih)
 {
-	NSRange r = cocoaTouchTextSelection(ih);
-	if (r.length == 0) return NULL;
+	int s, e;
+	cocoaTouchTextCharSelection(ih, &s, &e);
+	if (s == e) return NULL;
 	if (ih->data->is_multiline)
 	{
 		int lin1, col1, lin2, col2;
-		iupdrvTextConvertPosToLinCol(ih, (int)r.location, &lin1, &col1);
-		iupdrvTextConvertPosToLinCol(ih, (int)(r.location + r.length), &lin2, &col2);
+		iupdrvTextConvertPosToLinCol(ih, s, &lin1, &col1);
+		iupdrvTextConvertPosToLinCol(ih, e, &lin2, &col2);
 		return iupStrReturnStrf("%d,%d:%d,%d", lin1, col1, lin2, col2);
 	}
-	return iupStrReturnIntInt((int)r.location + 1, (int)(r.location + r.length) + 1, ':');
+	return iupStrReturnIntInt(s + 1, e + 1, ':');
 }
 
 static int cocoaTouchTextSetSelectionAttrib(Ihandle* ih, const char* value)
@@ -1693,15 +1733,16 @@ static int cocoaTouchTextSetSelectionAttrib(Ihandle* ih, const char* value)
 	}
 	if (s < 0) s = 0;
 	if (e < s) e = s;
-	cocoaTouchTextSetSelection(ih, (NSUInteger)s, (NSUInteger)e);
+	cocoaTouchTextSetCharSelection(ih, s, e);
 	return 0;
 }
 
 static char* cocoaTouchTextGetSelectionPosAttrib(Ihandle* ih)
 {
-	NSRange r = cocoaTouchTextSelection(ih);
-	if (r.length == 0) return NULL;
-	return iupStrReturnIntInt((int)r.location, (int)(r.location + r.length), ':');
+	int s, e;
+	cocoaTouchTextCharSelection(ih, &s, &e);
+	if (s == e) return NULL;
+	return iupStrReturnIntInt(s, e, ':');
 }
 
 static int cocoaTouchTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
@@ -1722,14 +1763,14 @@ static int cocoaTouchTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
 	if (iupStrToIntInt(value, &s, &e, ':') != 2) return 0;
 	if (s < 0) s = 0;
 	if (e < s) e = s;
-	cocoaTouchTextSetSelection(ih, (NSUInteger)s, (NSUInteger)e);
+	cocoaTouchTextSetCharSelection(ih, s, e);
 	return 0;
 }
 
 static char* cocoaTouchTextGetCaretAttrib(Ihandle* ih)
 {
-	NSRange r = cocoaTouchTextSelection(ih);
-	int pos = (int)r.location;
+	int pos, end;
+	cocoaTouchTextCharSelection(ih, &pos, &end);
 	if (ih->data->is_multiline)
 	{
 		int lin, col;
@@ -1755,14 +1796,15 @@ static int cocoaTouchTextSetCaretAttrib(Ihandle* ih, const char* value)
 		pos--;
 		if (pos < 0) pos = 0;
 	}
-	cocoaTouchTextSetSelection(ih, (NSUInteger)pos, (NSUInteger)pos);
+	cocoaTouchTextSetCharSelection(ih, pos, pos);
 	return 0;
 }
 
 static char* cocoaTouchTextGetCaretPosAttrib(Ihandle* ih)
 {
-	NSRange r = cocoaTouchTextSelection(ih);
-	return iupStrReturnInt((int)r.location);
+	int pos, end;
+	cocoaTouchTextCharSelection(ih, &pos, &end);
+	return iupStrReturnInt(pos);
 }
 
 static int cocoaTouchTextSetCaretPosAttrib(Ihandle* ih, const char* value)
@@ -1770,7 +1812,7 @@ static int cocoaTouchTextSetCaretPosAttrib(Ihandle* ih, const char* value)
 	int pos = 0;
 	if (!value || !iupStrToInt(value, &pos)) return 0;
 	if (pos < 0) pos = 0;
-	cocoaTouchTextSetSelection(ih, (NSUInteger)pos, (NSUInteger)pos);
+	cocoaTouchTextSetCharSelection(ih, pos, pos);
 	return 0;
 }
 
@@ -1836,14 +1878,15 @@ static int cocoaTouchTextSetScrollToAttrib(Ihandle* ih, const char* value)
 		pos--;
 		if (pos < 0) pos = 0;
 	}
+	NSUInteger unit = iupCocoaTouchStrCharToUnit(cocoaTouchTextGetString(ih), pos);
 	UITextView* v = cocoaTouchTextView(ih);
 	if (v)
 	{
-		cocoaTouchTextScrollRangeToVisible(v, NSMakeRange((NSUInteger)pos, 0));
+		cocoaTouchTextScrollRangeToVisible(v, NSMakeRange(unit, 0));
 		return 0;
 	}
 	UITextField* f = cocoaTouchTextField(ih);
-	if (f) cocoaTouchTextFieldSetSelection(f, (NSUInteger)pos, (NSUInteger)pos);
+	if (f) cocoaTouchTextFieldSetSelection(f, unit, unit);
 	return 0;
 }
 
@@ -1852,10 +1895,11 @@ static int cocoaTouchTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 	int pos = 0;
 	if (!value || !iupStrToInt(value, &pos)) return 0;
 	if (pos < 0) pos = 0;
+	NSUInteger unit = iupCocoaTouchStrCharToUnit(cocoaTouchTextGetString(ih), pos);
 	UITextView* v = cocoaTouchTextView(ih);
-	if (v) { cocoaTouchTextScrollRangeToVisible(v, NSMakeRange((NSUInteger)pos, 0)); return 0; }
+	if (v) { cocoaTouchTextScrollRangeToVisible(v, NSMakeRange(unit, 0)); return 0; }
 	UITextField* f = cocoaTouchTextField(ih);
-	if (f) cocoaTouchTextFieldSetSelection(f, (NSUInteger)pos, (NSUInteger)pos);
+	if (f) cocoaTouchTextFieldSetSelection(f, unit, unit);
 	return 0;
 }
 
@@ -2113,7 +2157,7 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
 	                         usingBlock:^(NSDictionary<NSAttributedStringKey, id>* attrs, NSRange range, BOOL* stop)
 	{
 		Ihandle* formattag = IupUser();
-		IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", (int)range.location, (int)(range.location + range.length));
+		IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", iupCocoaTouchStrUnitToChar(storage.string, range.location), iupCocoaTouchStrUnitToChar(storage.string, range.location + range.length));
 		IupAppend(bulk_tag, formattag);
 
 		UIFont* font = attrs[NSFontAttributeName];
@@ -2151,12 +2195,77 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
 	return 1;
 }
 
+static int cocoaTouchTextSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+	int saved = ih->data->disable_callbacks, ret;
+	ih->data->disable_callbacks = 1;
+	ret = set(ih, value);
+	ih->data->disable_callbacks = saved;
+	if (ih->handle) ih->data->last_caret_pos = IupGetInt(ih, "CARETPOS");
+	return ret;
+}
+
+static int cocoaTouchTextSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchTextSetSilent(ih, value, cocoaTouchTextSetValueAttrib);
+}
+
+static int cocoaTouchTextSetSelectedTextAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchTextSetSilent(ih, value, cocoaTouchTextSetSelectedTextAttrib);
+}
+
+static int cocoaTouchTextSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchTextSetSilent(ih, value, cocoaTouchTextSetSelectionAttrib);
+}
+
+static int cocoaTouchTextSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchTextSetSilent(ih, value, cocoaTouchTextSetSelectionPosAttrib);
+}
+
+static int cocoaTouchTextSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchTextSetSilent(ih, value, cocoaTouchTextSetCaretAttrib);
+}
+
+static int cocoaTouchTextSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchTextSetSilent(ih, value, cocoaTouchTextSetCaretPosAttrib);
+}
+
+static int cocoaTouchTextSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchTextSetSilent(ih, value, cocoaTouchTextSetInsertAttrib);
+}
+
+static int cocoaTouchTextSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchTextSetSilent(ih, value, cocoaTouchTextSetAppendAttrib);
+}
+
+static int cocoaTouchTextSetScrollToAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchTextSetSilent(ih, value, cocoaTouchTextSetScrollToAttrib);
+}
+
+static int cocoaTouchTextSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchTextSetSilent(ih, value, cocoaTouchTextSetScrollToPosAttrib);
+}
+
+static int cocoaTouchTextSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchTextSetSilent(ih, value, cocoaTouchTextSetClipboardAttrib);
+}
+
 IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
 	ic->Map = cocoaTouchTextMapMethod;
 	ic->UnMap = iupdrvBaseUnMapMethod;
 
-	iupClassRegisterAttribute(ic, "VALUE", cocoaTouchTextGetValueAttrib, cocoaTouchTextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "VALUE", cocoaTouchTextGetValueAttrib, cocoaTouchTextSetValueAttribSilent, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "BGCOLOR", NULL, cocoaTouchTextSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "FGCOLOR", NULL, cocoaTouchTextSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "READONLY", cocoaTouchTextGetReadOnlyAttrib, cocoaTouchTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
@@ -2175,17 +2284,17 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 	iupClassRegisterAttribute(ic, "SCROLLVISIBLE", cocoaTouchTextGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "LINEVALUE", cocoaTouchTextGetLineValueAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-	iupClassRegisterAttribute(ic, "SELECTEDTEXT",cocoaTouchTextGetSelectedTextAttrib, cocoaTouchTextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "SELECTION", cocoaTouchTextGetSelectionAttrib, cocoaTouchTextSetSelectionAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "SELECTIONPOS",cocoaTouchTextGetSelectionPosAttrib, cocoaTouchTextSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "CARET", cocoaTouchTextGetCaretAttrib, cocoaTouchTextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "CARETPOS", cocoaTouchTextGetCaretPosAttrib, cocoaTouchTextSetCaretPosAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "SELECTEDTEXT",cocoaTouchTextGetSelectedTextAttrib, cocoaTouchTextSetSelectedTextAttribSilent, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "SELECTION", cocoaTouchTextGetSelectionAttrib, cocoaTouchTextSetSelectionAttribSilent, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "SELECTIONPOS",cocoaTouchTextGetSelectionPosAttrib, cocoaTouchTextSetSelectionPosAttribSilent, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "CARET", cocoaTouchTextGetCaretAttrib, cocoaTouchTextSetCaretAttribSilent, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "CARETPOS", cocoaTouchTextGetCaretPosAttrib, cocoaTouchTextSetCaretPosAttribSilent, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-	iupClassRegisterAttribute(ic, "INSERT", NULL, cocoaTouchTextSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "APPEND", NULL, cocoaTouchTextSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "SCROLLTO", NULL, cocoaTouchTextSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, cocoaTouchTextSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, cocoaTouchTextSetClipboardAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "INSERT", NULL, cocoaTouchTextSetInsertAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "APPEND", NULL, cocoaTouchTextSetAppendAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "SCROLLTO", NULL, cocoaTouchTextSetScrollToAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, cocoaTouchTextSetScrollToPosAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, cocoaTouchTextSetClipboardAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttribute(ic, "SPINVALUE", cocoaTouchTextGetSpinValueAttrib, cocoaTouchTextSetSpinValueAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "SPINMIN", NULL, cocoaTouchTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);

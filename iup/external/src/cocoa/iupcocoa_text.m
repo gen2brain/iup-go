@@ -181,15 +181,15 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY);
 
-  if(ih->data->disable_callbacks)
+  if(ih->data->disable_callbacks || iupAttribGet(ih, "_IUPCOCOA_DISABLE_TEXT_CB"))
   {
     return YES;
   }
 
   IFnis action_cb = (IFnis)IupGetCallback(ih, "ACTION");
 
-  int start_pos = (int)change_range.location;
-  int end_pos = (int)(start_pos + change_range.length);
+  int start_pos = iupcocoaStrUnitToChar([text_view string], change_range.location);
+  int end_pos = iupcocoaStrUnitToChar([text_view string], change_range.location + change_range.length);
 
   if(end_pos < start_pos)
   {
@@ -232,7 +232,6 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
     return NO;
   }
 
-  [text_view didChangeText];
   return YES;
 }
 
@@ -311,6 +310,16 @@ static NSView* cocoaTextFieldHitTest(NSTextField* field, NSView* hit)
     iupcocoaCommonBaseHandleMouseMotionCallback(ih, event, self); \
 }
 
+static void cocoaTextFieldSelectionChanged(NSTextField* field)
+{
+  id the_delegate = [field delegate];
+  if ([the_delegate respondsToSelector:@selector(checkFieldCaret:)])
+    [the_delegate performSelector:@selector(checkFieldCaret:) withObject:field afterDelay:0];
+}
+
+@interface NSTextField (IupCocoaTextFieldEditorDelegate) <NSTextViewDelegate>
+@end
+
 @interface IupCocoaTextField : NSTextField
 @end
 
@@ -344,6 +353,13 @@ IUPCOCOA_TEXTFIELD_MOUSE_METHODS
       return NO;
   }
   return cocoaTextHandleShouldChangeText(self, text_view, change_range, replacement_string);
+}
+
+- (void) textViewDidChangeSelection:(NSNotification*)notification
+{
+  if ([NSTextField instancesRespondToSelector:_cmd])
+    [super textViewDidChangeSelection:notification];
+  cocoaTextFieldSelectionChanged(self);
 }
 
 - (NSMenu*)textView:(NSTextView*)text_view menu:(NSMenu*)the_menu forEvent:(NSEvent*)the_event atIndex:(NSUInteger)char_index
@@ -477,6 +493,13 @@ IUPCOCOA_TEXTFIELD_MOUSE_METHODS
       return NO;
   }
   return cocoaTextHandleShouldChangeText(self, text_view, change_range, replacement_string);
+}
+
+- (void) textViewDidChangeSelection:(NSNotification*)notification
+{
+  if ([NSSecureTextField instancesRespondToSelector:_cmd])
+    [super textViewDidChangeSelection:notification];
+  cocoaTextFieldSelectionChanged(self);
 }
 
 - (NSMenu*)textView:(NSTextView*)text_view menu:(NSMenu*)the_menu forEvent:(NSEvent*)the_event atIndex:(NSUInteger)char_index
@@ -659,7 +682,7 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
       if(!did_find_range)
         return;
 
-      pos = (int)cursor_range.location;
+      pos = iupcocoaStrUnitToChar([[text_view textStorage] string], cursor_range.location);
       lin = (int)lin_start;
       col = (int)col_start;
       break;
@@ -667,12 +690,12 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
     case IUPCOCOATEXTSUBTYPE_FIELD:
     {
       NSTextField* text_field = cocoaTextGetTextField(ih);
-      NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
+      NSText* field_editor = [text_field currentEditor];
       if (!field_editor)
         return;
 
       NSRange selected_range = [field_editor selectedRange];
-      pos = (int)selected_range.location;
+      pos = iupcocoaStrUnitToChar([field_editor string], selected_range.location);
       col = pos + 1;
       lin = 1;
       break;
@@ -680,12 +703,12 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
     case IUPCOCOATEXTSUBTYPE_STEPPER:
     {
       NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-      NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
+      NSText* field_editor = [text_field currentEditor];
       if (!field_editor)
         return;
 
       NSRange selected_range = [field_editor selectedRange];
-      pos = (int)selected_range.location;
+      pos = iupcocoaStrUnitToChar([field_editor string], selected_range.location);
       col = pos + 1;
       lin = 1;
       break;
@@ -711,7 +734,7 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
   NSTextField* text_field = [the_notification object];
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY);
 
-  if(ih->data->disable_callbacks)
+  if(ih->data->disable_callbacks || iupAttribGet(ih, "_IUPCOCOA_DISABLE_TEXT_CB"))
   {
     return;
   }
@@ -731,7 +754,15 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
   NSTextField* text_field = [the_notification object];
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY);
 
-  if (ih && iupObjectCheck(ih) && !ih->data->disable_callbacks)
+  if (ih && iupObjectCheck(ih) && !ih->data->disable_callbacks && !iupAttribGet(ih, "_IUPCOCOA_DISABLE_TEXT_CB"))
+    cocoaTextCallCaretCb(ih);
+}
+
+- (void) checkFieldCaret:(NSTextField*)text_field
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY);
+
+  if (ih && iupObjectCheck(ih) && !ih->data->disable_callbacks && !iupAttribGet(ih, "_IUPCOCOA_DISABLE_TEXT_CB"))
     cocoaTextCallCaretCb(ih);
 }
 
@@ -746,6 +777,7 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
 
 - (void) controlTextDidEndEditing:(NSNotification*)the_notification
 {
+  iupcocoaTextFieldSaveRange(the_notification);
   /* the window parks the responder while it swaps the field editor, so check on the next pass */
   [self performSelector:@selector(checkFocusOut:) withObject:[the_notification object] afterDelay:0];
 }
@@ -903,6 +935,7 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
         ih->data->disable_callbacks = 1;
         [text_view replaceCharactersInRange:effective_range withString:filtered_string];
         ih->data->disable_callbacks = 0;
+        iupAttribSet(ih, "_IUPCOCOA_USER_EDIT", "1");
         [text_view didChangeText];
         return NO;
       }
@@ -912,8 +945,8 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
   IFnis action_cb = (IFnis)IupGetCallback(ih, "ACTION");
   int ret_val;
 
-  int start_pos = (int)effective_range.location;
-  int end_pos = (int)(start_pos + effective_range.length);
+  int start_pos = iupcocoaStrUnitToChar([text_view string], effective_range.location);
+  int end_pos = iupcocoaStrUnitToChar([text_view string], effective_range.location + effective_range.length);
 
   if(end_pos < start_pos)
   {
@@ -952,6 +985,7 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
     [text_view replaceCharactersInRange:effective_range withString:replacement];
     ih->data->disable_callbacks = 0;
 
+    iupAttribSet(ih, "_IUPCOCOA_USER_EDIT", "1");
     [text_view didChangeText];
     return NO;
   }
@@ -961,11 +995,12 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
     ih->data->disable_callbacks = 1;
     [text_view replaceCharactersInRange:effective_range withString:replacement_string];
     ih->data->disable_callbacks = 0;
+    iupAttribSet(ih, "_IUPCOCOA_USER_EDIT", "1");
     [text_view didChangeText];
     return NO;
   }
 
-  [text_view didChangeText];
+  iupAttribSet(ih, "_IUPCOCOA_USER_EDIT", "1");
   return YES;
 }
 
@@ -999,12 +1034,39 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
   return YES;
 }
 
+- (void) textDidChange:(NSNotification*)the_notification
+{
+  Ihandle* ih = [self ihandle];
+  (void)the_notification;
+
+  if (!ih || !iupAttribGet(ih, "_IUPCOCOA_USER_EDIT"))
+    return;
+  iupAttribSet(ih, "_IUPCOCOA_USER_EDIT", NULL);
+  if (ih->data->disable_callbacks || iupAttribGet(ih, "_IUPCOCOA_DISABLE_TEXT_CB"))
+    return;
+
+  iupBaseCallValueChangedCb(ih);
+}
+
+- (void) checkViewCaret
+{
+  Ihandle* ih = [self ihandle];
+  if (ih && iupObjectCheck(ih))
+    cocoaTextCallCaretCb(ih);
+}
+
 - (void) textViewDidChangeSelection:(NSNotification*)the_notification
 {
   Ihandle* ih = [self ihandle];
+  (void)the_notification;
 
-  if (ih && !ih->data->disable_callbacks)
-    cocoaTextCallCaretCb(ih);
+  if (!ih)
+    return;
+
+  if (ih->data->disable_callbacks || iupAttribGet(ih, "_IUPCOCOA_DISABLE_TEXT_CB"))
+    return;
+
+  [self performSelector:@selector(checkViewCaret) withObject:nil afterDelay:0];
 }
 
 @end
@@ -1246,20 +1308,6 @@ IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
   if (h) *h += cocoa_textfield_extra_h;
 }
 
-/* Characters may be multiple bytes (e.g. emoji characters). */
-static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
-{
-  NSUInteger length = [text_string length];
-  NSUInteger index = 0;
-  NSUInteger glyph_count = 0;
-  while (index < length)
-  {
-    index = NSMaxRange([text_string rangeOfComposedCharacterSequenceAtIndex:index]);
-    glyph_count++;
-  }
-  return glyph_count;
-}
-
 @interface IupCaseFormatter : NSFormatter
 @property(nonatomic, assign) BOOL uppercase;
 @property(nonatomic, assign) BOOL lowercase;
@@ -1319,7 +1367,7 @@ static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
   Ihandle* ih = [self ihandle];
   if (ih && ih->data->nc > 0)
   {
-    NSUInteger glyph_count = cocoaTextCountGlyphsInString(*partial_string);
+    NSUInteger glyph_count = (NSUInteger)iupcocoaStrUnitToChar(*partial_string, [*partial_string length]);
     if (glyph_count > ih->data->nc)
     {
       return NO;
@@ -1376,7 +1424,7 @@ static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
   if(ih->data->nc > 0)
   {
     /* I think this is supposed to be a glyph count instead of a byte count. */
-    NSUInteger glyph_count = cocoaTextCountGlyphsInString(partial_string);
+    NSUInteger glyph_count = (NSUInteger)iupcocoaStrUnitToChar(partial_string, [partial_string length]);
     if(glyph_count > ih->data->nc)
     {
       return NO;
@@ -1413,7 +1461,7 @@ static NSUInteger cocoaTextCountGlyphsInString(NSString* text_string)
   Ihandle* ih = [self ihandle];
   if(ih->data->nc > 0)
   {
-    NSUInteger glyph_count = cocoaTextCountGlyphsInString(partial_string);
+    NSUInteger glyph_count = (NSUInteger)iupcocoaStrUnitToChar(partial_string, [partial_string length]);
     if(glyph_count > ih->data->nc)
     {
       return NO;
@@ -2080,9 +2128,7 @@ static bool cocoaTextComputeRangeFromLineColumnForTextView(NSTextView* text_view
   if(current_line < start_line)
     return false;
 
-  NSUInteger start_pos = line_start + (start_column - 1);
-  if(start_pos > text_length)
-    start_pos = text_length;
+  NSUInteger start_pos = iupcocoaStrAdvanceChars(text, line_start, start_column - 1);
 
   NSUInteger end_line_start = line_start;
   if(end_line > current_line)
@@ -2106,14 +2152,9 @@ static bool cocoaTextComputeRangeFromLineColumnForTextView(NSTextView* text_view
       break;
     }
   }
-  NSUInteger end_line_length = end_line_end - end_line_start;
-
-  NSUInteger end_col = end_column - 1;
-  if(end_col > end_line_length)
-    end_col = end_line_length;
-  NSUInteger end_pos = end_line_start + end_col;
-  if(end_pos > text_length)
-    end_pos = text_length;
+  NSUInteger end_pos = iupcocoaStrAdvanceChars(text, end_line_start, end_column - 1);
+  if(end_pos > end_line_end)
+    end_pos = end_line_end;
 
   *out_range = NSMakeRange(start_pos, end_pos - start_pos);
   return true;
@@ -2152,7 +2193,7 @@ static bool cocoaTextComputeLineColumnFromRangeForTextView(NSTextView* text_view
   }
 
   *out_start_line = line;
-  *out_start_column = start_pos - line_start + 1;
+  *out_start_column = iupcocoaStrCountChars(text, line_start, start_pos) + 1;
 
   for(NSUInteger i = start_pos; i < text_length && i < end_pos; i++)
   {
@@ -2164,228 +2205,66 @@ static bool cocoaTextComputeLineColumnFromRangeForTextView(NSTextView* text_view
   }
 
   *out_end_line = line;
-  *out_end_column = end_pos - line_start + 1;
+  *out_end_column = iupcocoaStrCountChars(text, line_start, end_pos) + 1;
 
   return true;
 }
 
 IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
+  if (cocoaTextGetSubType(ih) != IUPCOCOATEXTSUBTYPE_VIEW)
   {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        NSTextView* text_view = cocoaTextGetTextView(ih);
-        NSUInteger lin_start = lin;
-        NSUInteger col_start = col;
-        NSUInteger lin_end = lin;
-        NSUInteger col_end = col;
-        NSRange native_selection_range = NSMakeRange(0, 0);
+    if (pos)
+      *pos = col > 0 ? col - 1 : 0;
+    return;
+  }
 
-        bool did_find_range = cocoaTextComputeRangeFromLineColumnForTextView(text_view, lin_start, col_start, lin_end, col_end, &native_selection_range);
-        if(did_find_range)
-        {
-          if(pos)
-          {
-            *pos = (int)native_selection_range.location;
-          }
-        }
-        return;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
+  NSTextView* text_view = cocoaTextGetTextView(ih);
+  NSUInteger lin_start = lin;
+  NSUInteger col_start = col;
+  NSUInteger lin_end = lin;
+  NSUInteger col_end = col;
+  NSRange native_selection_range = NSMakeRange(0, 0);
 
-        if(![field_editor isKindOfClass:[NSTextView class]])
-        {
-          if(pos)
-          {
-            if(col > 0)
-            {
-              *pos = col - 1;
-            }
-            else
-            {
-              *pos = 0;
-            }
-          }
-          return;
-        }
-
-        NSTextView* text_view = (NSTextView*)field_editor;
-        NSUInteger lin_start = lin;
-        NSUInteger col_start = col;
-        NSUInteger lin_end = lin;
-        NSUInteger col_end = col;
-        NSRange native_selection_range = NSMakeRange(0, 0);
-
-        bool did_find_range = cocoaTextComputeRangeFromLineColumnForTextView(text_view, lin_start, col_start, lin_end, col_end, &native_selection_range);
-        if(did_find_range)
-        {
-          if(pos)
-          {
-            *pos = (int)native_selection_range.location;
-          }
-        }
-        return;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-
-        if(![field_editor isKindOfClass:[NSTextView class]])
-        {
-          if(pos)
-          {
-            if(col > 0)
-            {
-              *pos = col - 1;
-            }
-            else
-            {
-              *pos = 0;
-            }
-          }
-          return;
-        }
-
-        NSTextView* text_view = (NSTextView*)field_editor;
-        NSUInteger lin_start = lin;
-        NSUInteger col_start = col;
-        NSUInteger lin_end = lin;
-        NSUInteger col_end = col;
-        NSRange native_selection_range = NSMakeRange(0, 0);
-
-        bool did_find_range = cocoaTextComputeRangeFromLineColumnForTextView(text_view, lin_start, col_start, lin_end, col_end, &native_selection_range);
-        if(did_find_range)
-        {
-          if(pos)
-          {
-            *pos = (int)native_selection_range.location;
-          }
-        }
-        return;
-      }
-    default:
-      {
-        break;
-      }
+  bool did_find_range = cocoaTextComputeRangeFromLineColumnForTextView(text_view, lin_start, col_start, lin_end, col_end, &native_selection_range);
+  if(did_find_range)
+  {
+    if(pos)
+    {
+      *pos = iupcocoaStrUnitToChar([[text_view textStorage] string], native_selection_range.location);
+    }
   }
 }
 
 IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
+  if (cocoaTextGetSubType(ih) != IUPCOCOATEXTSUBTYPE_VIEW)
   {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        NSTextView* text_view = cocoaTextGetTextView(ih);
-        NSRange range_position = NSMakeRange(pos, 0);
+    if (lin)
+      *lin = 1;
+    if (col)
+      *col = pos + 1;
+    return;
+  }
 
-        NSUInteger lin_start=1;
-        NSUInteger col_start=1;
-        NSUInteger lin_end=1;
-        NSUInteger col_end=1;
-        bool did_find_range = cocoaTextComputeLineColumnFromRangeForTextView(text_view, range_position, &lin_start, &col_start, &lin_end, &col_end);
-        if(did_find_range)
-        {
-          if(lin)
-          {
-            *lin = (int)lin_start;
-          }
-          if(col)
-          {
-            *col = (int)col_start;
-          }
-        }
-        return;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
+  NSTextView* text_view = cocoaTextGetTextView(ih);
+  NSRange range_position = NSMakeRange(iupcocoaStrCharToUnit([[text_view textStorage] string], pos), 0);
 
-        if(![field_editor isKindOfClass:[NSTextView class]])
-        {
-          if(lin)
-          {
-            *lin = 1;
-          }
-          if(col)
-          {
-            *col = pos + 1;
-          }
-
-          return;
-        }
-
-        NSTextView* text_view = (NSTextView*)field_editor;
-        NSUInteger lin_start=1;
-        NSUInteger col_start=1;
-        NSUInteger lin_end=1;
-        NSUInteger col_end=1;
-        NSRange range_position = NSMakeRange(pos, 0);
-        bool did_find_range = cocoaTextComputeLineColumnFromRangeForTextView(text_view, range_position, &lin_start, &col_start, &lin_end, &col_end);
-        if(did_find_range)
-        {
-          if(lin)
-          {
-            *lin = (int)lin_start;
-          }
-          if(col)
-          {
-            *col = (int)col_start;
-          }
-        }
-        return;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-
-        if(![field_editor isKindOfClass:[NSTextView class]])
-        {
-          if(lin)
-          {
-            *lin = 1;
-          }
-          if(col)
-          {
-            *col = pos + 1;
-          }
-
-          return;
-        }
-
-        NSTextView* text_view = (NSTextView*)field_editor;
-        NSUInteger lin_start=1;
-        NSUInteger col_start=1;
-        NSUInteger lin_end=1;
-        NSUInteger col_end=1;
-        NSRange range_position = NSMakeRange(pos, 0);
-        bool did_find_range = cocoaTextComputeLineColumnFromRangeForTextView(text_view, range_position, &lin_start, &col_start, &lin_end, &col_end);
-        if(did_find_range)
-        {
-          if(lin)
-          {
-            *lin = (int)lin_start;
-          }
-          if(col)
-          {
-            *col = (int)col_start;
-          }
-        }
-        return;
-      }
-    default:
-      {
-        break;
-      }
+  NSUInteger lin_start=1;
+  NSUInteger col_start=1;
+  NSUInteger lin_end=1;
+  NSUInteger col_end=1;
+  bool did_find_range = cocoaTextComputeLineColumnFromRangeForTextView(text_view, range_position, &lin_start, &col_start, &lin_end, &col_end);
+  if(did_find_range)
+  {
+    if(lin)
+    {
+      *lin = (int)lin_start;
+    }
+    if(col)
+    {
+      *col = (int)col_start;
+    }
   }
 }
 
@@ -3474,8 +3353,9 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
       {
         return;
       }
-      NSUInteger start = (NSUInteger)start_int;
-      NSUInteger end = (NSUInteger)end_int;
+      NSString* text = [[text_view textStorage] string];
+      NSUInteger start = iupcocoaStrCharToUnit(text, start_int);
+      NSUInteger end = iupcocoaStrCharToUnit(text, end_int);
       native_selection_range = NSMakeRange(start, end-start);
     }
     else
@@ -3751,44 +3631,185 @@ static int cocoaTextSetAlignmentAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static char* cocoaTextGetSelectedTextAttrib(Ihandle* ih)
+static char cocoa_text_field_range_key;
+
+static NSTextView* cocoaTextFieldCurrentEditor(NSTextField* text_field)
 {
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
+  NSText* editor = [text_field currentEditor];
+  return [editor isKindOfClass:[NSTextView class]] ? (NSTextView*)editor : nil;
+}
+
+static NSString* cocoaTextFieldString(NSTextField* text_field)
+{
+  NSTextView* editor = cocoaTextFieldCurrentEditor(text_field);
+  return editor ? [editor string] : [text_field stringValue];
+}
+
+static NSRange cocoaTextFieldGetRange(NSTextField* text_field)
+{
+  NSTextView* editor = cocoaTextFieldCurrentEditor(text_field);
+  if (editor)
+    return [editor selectedRange];
+
+  NSValue* stored = objc_getAssociatedObject(text_field, &cocoa_text_field_range_key);
+  NSRange range = stored ? [stored rangeValue] : NSMakeRange(0, 0);
+  NSUInteger length = [[text_field stringValue] length];
+  if (range.location > length)
+    range = NSMakeRange(length, 0);
+  else if (NSMaxRange(range) > length)
+    range.length = length - range.location;
+  return range;
+}
+
+static void cocoaTextFieldSetRange(NSTextField* text_field, NSRange range)
+{
+  NSTextView* editor = cocoaTextFieldCurrentEditor(text_field);
+  if (editor)
+    [editor setSelectedRange:range];
+  else
+    objc_setAssociatedObject(text_field, &cocoa_text_field_range_key, [NSValue valueWithRange:range], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+IUP_DRV_API void iupcocoaTextFieldSaveRange(NSNotification* notification)
+{
+  NSTextField* text_field = [notification object];
+  NSText* editor = [[notification userInfo] objectForKey:@"NSFieldEditor"];
+  if ([text_field isKindOfClass:[NSTextField class]] && editor)
+    objc_setAssociatedObject(text_field, &cocoa_text_field_range_key, [NSValue valueWithRange:[editor selectedRange]], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+IUP_DRV_API void iupcocoaTextFieldReplace(Ihandle* ih, NSTextField* text_field, NSRange range, NSString* ns_string)
+{
+  NSTextView* editor = cocoaTextFieldCurrentEditor(text_field);
+  char* saved = iupAttribGet(ih, "_IUPCOCOA_DISABLE_TEXT_CB");
+
+  iupAttribSet(ih, "_IUPCOCOA_DISABLE_TEXT_CB", "1");
+  if (editor)
   {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        NSTextView* text_view = cocoaTextGetTextView(ih);
-        NSRange selected_range = [text_view selectedRange];
-        NSString* selected_string = [[[text_view textStorage] string] substringWithRange:selected_range];
-        return iupStrReturnStr([selected_string UTF8String]);
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSRange selected_range = [field_editor selectedRange];
-        NSString* selected_string = [[field_editor string] substringWithRange:selected_range];
-        return iupStrReturnStr([selected_string UTF8String]);
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSRange selected_range = [field_editor selectedRange];
-        NSString* selected_string = [[field_editor string] substringWithRange:selected_range];
-        return iupStrReturnStr([selected_string UTF8String]);
-        break;
-      }
-    default:
-      {
-        break;
-      }
+    if ([editor shouldChangeTextInRange:range replacementString:ns_string])
+    {
+      [editor replaceCharactersInRange:range withString:ns_string];
+      [editor setSelectedRange:NSMakeRange(range.location + [ns_string length], 0)];
+    }
+    [editor didChangeText];
+  }
+  else
+  {
+    [text_field setStringValue:[[text_field stringValue] stringByReplacingCharactersInRange:range withString:ns_string]];
+    cocoaTextFieldSetRange(text_field, NSMakeRange(range.location + [ns_string length], 0));
+  }
+  iupAttribSet(ih, "_IUPCOCOA_DISABLE_TEXT_CB", saved);
+}
+
+IUP_DRV_API char* iupcocoaTextFieldGetCaret(NSTextField* text_field, int base)
+{
+  return iupStrReturnInt(iupcocoaStrUnitToChar(cocoaTextFieldString(text_field), cocoaTextFieldGetRange(text_field).location) + base);
+}
+
+IUP_DRV_API void iupcocoaTextFieldSetCaret(NSTextField* text_field, const char* value, int base)
+{
+  int pos = base;
+  iupStrToInt(value, &pos);
+  pos -= base;
+  if (pos < 0)
+    pos = 0;
+  cocoaTextFieldSetRange(text_field, NSMakeRange(iupcocoaStrCharToUnit(cocoaTextFieldString(text_field), pos), 0));
+}
+
+IUP_DRV_API char* iupcocoaTextFieldGetSelection(NSTextField* text_field, int base)
+{
+  NSRange range = cocoaTextFieldGetRange(text_field);
+  NSString* text = cocoaTextFieldString(text_field);
+  if (range.length == 0)
+    return NULL;
+  return iupStrReturnIntInt(iupcocoaStrUnitToChar(text, range.location) + base, iupcocoaStrUnitToChar(text, NSMaxRange(range)) + base, ':');
+}
+
+IUP_DRV_API void iupcocoaTextFieldSetSelection(NSTextField* text_field, const char* value, int base)
+{
+  NSString* text = cocoaTextFieldString(text_field);
+  int start, end;
+
+  if (!value || iupStrEqualNoCase(value, "NONE"))
+  {
+    cocoaTextFieldSetRange(text_field, NSMakeRange(cocoaTextFieldGetRange(text_field).location, 0));
+    return;
   }
 
-  return NULL;
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    cocoaTextFieldSetRange(text_field, NSMakeRange(0, [text length]));
+    return;
+  }
+
+  if (iupStrToIntInt(value, &start, &end, ':') != 2)
+    return;
+  start -= base;
+  end -= base;
+  if (start < 0 || end < 0)
+    return;
+
+  NSUInteger start_unit = iupcocoaStrCharToUnit(text, start);
+  NSUInteger end_unit = iupcocoaStrCharToUnit(text, end);
+  if (end_unit < start_unit)
+    end_unit = start_unit;
+  cocoaTextFieldSetRange(text_field, NSMakeRange(start_unit, end_unit - start_unit));
+}
+
+IUP_DRV_API char* iupcocoaTextFieldGetSelectedText(NSTextField* text_field)
+{
+  NSRange range = cocoaTextFieldGetRange(text_field);
+  if (range.length == 0)
+    return NULL;
+  return iupStrReturnStr([[cocoaTextFieldString(text_field) substringWithRange:range] UTF8String]);
+}
+
+IUP_DRV_API void iupcocoaTextFieldSetSelectedText(Ihandle* ih, NSTextField* text_field, const char* value)
+{
+  NSRange range = cocoaTextFieldGetRange(text_field);
+  if (value && range.length > 0)
+    iupcocoaTextFieldReplace(ih, text_field, range, iupcocoaStrToNSString(value));
+}
+
+IUP_DRV_API void iupcocoaTextFieldInsert(Ihandle* ih, NSTextField* text_field, const char* value)
+{
+  if (value)
+    iupcocoaTextFieldReplace(ih, text_field, cocoaTextFieldGetRange(text_field), iupcocoaStrToNSString(value));
+}
+
+IUP_DRV_API void iupcocoaTextFieldScrollTo(NSTextField* text_field, const char* value, int base)
+{
+  NSTextView* editor = cocoaTextFieldCurrentEditor(text_field);
+  int pos = base;
+  if (!editor)
+    return;
+  iupStrToInt(value, &pos);
+  pos -= base;
+  if (pos < 0)
+    pos = 0;
+  [editor scrollRangeToVisible:NSMakeRange(iupcocoaStrCharToUnit([editor string], pos), 0)];
+}
+
+static NSTextField* cocoaTextGetSingleLineField(Ihandle* ih)
+{
+  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
+  if (sub_type == IUPCOCOATEXTSUBTYPE_FIELD)
+    return cocoaTextGetTextField(ih);
+  if (sub_type == IUPCOCOATEXTSUBTYPE_STEPPER)
+    return cocoaTextGetStepperTextField(ih);
+  return nil;
+}
+
+static char* cocoaTextGetSelectedTextAttrib(Ihandle* ih)
+{
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
+    return iupcocoaTextFieldGetSelectedText(single_field);
+
+  NSTextView* text_view = cocoaTextGetTextView(ih);
+  NSRange selected_range = [text_view selectedRange];
+  NSString* selected_string = [[[text_view textStorage] string] substringWithRange:selected_range];
+  return iupStrReturnStr([selected_string UTF8String]);
 }
 
 static int cocoaTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
@@ -3798,120 +3819,62 @@ static int cocoaTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
   {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        NSTextView* text_view = cocoaTextGetTextView(ih);
-        NSRange selected_range = [text_view selectedRange];
-        if((NSNotFound == selected_range.location) || (0 == selected_range.length))
-        {
-          return 0;
-        }
-
-        NSTextStorage* text_storage = [text_view textStorage];
-        IupCocoaFont* iup_font = iupcocoaGetFont(ih);
-
-        NSMutableDictionary* attribute_dict = [[iup_font attributeDictionary] mutableCopy];
-        [attribute_dict autorelease];
-        NSDictionary<NSAttributedStringKey, id>* text_storage_attributes = [[text_storage attributedSubstringFromRange:NSMakeRange(selected_range.location, 1)] attributesAtIndex:0 effectiveRange:NULL];
-        [attribute_dict addEntriesFromDictionary:text_storage_attributes];
-
-        NSString* ns_insert_string = iupcocoaStrToNSString(value);
-
-        NSAttributedString* attributed_insert_string = [[NSAttributedString alloc] initWithString:ns_insert_string attributes:attribute_dict];
-        [attributed_insert_string autorelease];
-
-        NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
-        [undo_manager beginUndoGrouping];
-
-        ih->data->disable_callbacks = 1;
-        [text_view shouldChangeTextInRange:selected_range replacementString:[attributed_insert_string string]];
-        [text_storage beginEditing];
-
-        [text_storage replaceCharactersInRange:selected_range withAttributedString:attributed_insert_string];
-
-        ih->data->disable_callbacks = 0;
-
-        [text_storage endEditing];
-
-        [text_view didChangeText];
-        [undo_manager endUndoGrouping];
-
-        return 0;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSRange selected_range = [field_editor selectedRange];
-        if((NSNotFound == selected_range.location) || (0 == selected_range.length))
-        {
-          return 0;
-        }
-
-        NSString* ns_string = iupcocoaStrToNSString(value);
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        [(NSTextView*)field_editor insertText:ns_string replacementRange:selected_range];
-        return 0;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSRange selected_range = [field_editor selectedRange];
-        if((NSNotFound == selected_range.location) || (0 == selected_range.length))
-        {
-          return 0;
-        }
-
-        NSString* ns_string = iupcocoaStrToNSString(value);
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        [(NSTextView*)field_editor insertText:ns_string replacementRange:selected_range];
-        return 0;
-      }
-    default:
-      {
-        break;
-      }
+    iupcocoaTextFieldSetSelectedText(ih, single_field, value);
+    return 0;
   }
+
+  NSTextView* text_view = cocoaTextGetTextView(ih);
+  NSRange selected_range = [text_view selectedRange];
+  if((NSNotFound == selected_range.location) || (0 == selected_range.length))
+  {
+    return 0;
+  }
+
+  NSTextStorage* text_storage = [text_view textStorage];
+  IupCocoaFont* iup_font = iupcocoaGetFont(ih);
+
+  NSMutableDictionary* attribute_dict = [[iup_font attributeDictionary] mutableCopy];
+  [attribute_dict autorelease];
+  NSDictionary<NSAttributedStringKey, id>* text_storage_attributes = [[text_storage attributedSubstringFromRange:NSMakeRange(selected_range.location, 1)] attributesAtIndex:0 effectiveRange:NULL];
+  [attribute_dict addEntriesFromDictionary:text_storage_attributes];
+
+  NSString* ns_insert_string = iupcocoaStrToNSString(value);
+
+  NSAttributedString* attributed_insert_string = [[NSAttributedString alloc] initWithString:ns_insert_string attributes:attribute_dict];
+  [attributed_insert_string autorelease];
+
+  NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
+  [undo_manager beginUndoGrouping];
+
+  ih->data->disable_callbacks = 1;
+  [text_view shouldChangeTextInRange:selected_range replacementString:[attributed_insert_string string]];
+  [text_storage beginEditing];
+
+  [text_storage replaceCharactersInRange:selected_range withAttributedString:attributed_insert_string];
+
+  ih->data->disable_callbacks = 0;
+
+  [text_storage endEditing];
+
+  [text_view didChangeText];
+  [undo_manager endUndoGrouping];
+
   return 0;
 }
 
 static int cocoaTextSetSelectionAttrib(Ihandle* ih, const char* value)
 {
-  NSTextView* text_view = nil;
-
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
   {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        text_view = cocoaTextGetTextView(ih);
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    default:
-      {
-        return 0;
-      }
+    iupcocoaTextFieldSetSelection(single_field, value, 1);
+    return 0;
   }
+
+  NSTextView* text_view = cocoaTextGetTextView(ih);
 
   NSRange selection_range = NSMakeRange(0, 0);
 
@@ -3927,49 +3890,18 @@ static int cocoaTextSetSelectionAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    int ret_val;
     NSUInteger lin_start=1;
     NSUInteger col_start=1;
     NSUInteger lin_end=1;
     NSUInteger col_end=1;
 
-    switch(sub_type)
+    if(sscanf(value, "%lu,%lu:%lu,%lu", &lin_start, &col_start, &lin_end, &col_end) != 4)
     {
-      case IUPCOCOATEXTSUBTYPE_VIEW:
-        {
-          ret_val = sscanf(value, "%lu,%lu:%lu,%lu", &lin_start, &col_start, &lin_end, &col_end);
-          if(ret_val != 4)
-          {
-            return 0;
-          }
-          if(lin_start<1 || col_start<1 || lin_end<1 || col_end<1)
-          {
-            return 0;
-          }
-          break;
-        }
-      case IUPCOCOATEXTSUBTYPE_FIELD:
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-        {
-          int col_start_int = 1;
-          int col_end_int = 1;
-          if(iupStrToIntInt(value, &col_start_int, &col_end_int, ':')!=2)
-          {
-            return 0;
-          }
-          col_start = col_start_int;
-          col_end = col_end_int;
-
-          if(col_start<0 || col_end<0)
-          {
-            return 0;
-          }
-          break;
-        }
-    default:
-        {
-          return 0;
-        }
+      return 0;
+    }
+    if(lin_start<1 || col_start<1 || lin_end<1 || col_end<1)
+    {
+      return 0;
     }
 
     bool did_find_range = cocoaTextComputeRangeFromLineColumnForTextView(text_view, lin_start, col_start, lin_end, col_end, &selection_range);
@@ -3986,38 +3918,11 @@ static int cocoaTextSetSelectionAttrib(Ihandle* ih, const char* value)
 
 static char* cocoaTextGetSelectionAttrib(Ihandle* ih)
 {
-  NSTextView* text_view = nil;
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
+    return iupcocoaTextFieldGetSelection(single_field, 1);
 
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
-  {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        text_view = cocoaTextGetTextView(ih);
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    default:
-      {
-        return NULL;
-        break;
-      }
-  }
+  NSTextView* text_view = cocoaTextGetTextView(ih);
 
   NSRange selected_range = [text_view selectedRange];
   if(NSNotFound == selected_range.location)
@@ -4035,76 +3940,19 @@ static char* cocoaTextGetSelectionAttrib(Ihandle* ih)
     return NULL;
   }
 
-  switch(sub_type)
-  {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        return iupStrReturnStrf("%lu,%lu:%lu,%lu", lin_start, col_start, lin_end, col_end);
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-  case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        if(lin_end > 1)
-        {
-          did_find_range = cocoaTextComputeRangeFromLineColumnForTextView(text_view, 1, col_start, 1, col_end, &selected_range);
-          if(did_find_range)
-          {
-            col_start = selected_range.location + 1;
-            col_end = col_start + selected_range.length;
-          }
-          else
-          {
-            return NULL;
-          }
-        }
-
-        return iupStrReturnIntInt((int)col_start, (int)col_end, ':');
-        break;
-      }
-  default:
-      {
-        return NULL;
-        break;
-      }
-  }
-
-  return NULL;
+  return iupStrReturnStrf("%lu,%lu:%lu,%lu", lin_start, col_start, lin_end, col_end);
 }
 
 static int cocoaTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
 {
-  NSTextView* text_view = nil;
-
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
   {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        text_view = cocoaTextGetTextView(ih);
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    default:
-      {
-        return 0;
-      }
+    iupcocoaTextFieldSetSelection(single_field, value, 0);
+    return 0;
   }
+
+  NSTextView* text_view = cocoaTextGetTextView(ih);
 
   NSUInteger start;
   NSUInteger end;
@@ -4134,8 +3982,9 @@ static int cocoaTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
     {
       return 0;
     }
-    start = (NSUInteger)start_int;
-    end = (NSUInteger)end_int;
+    NSString* text = [[text_view textStorage] string];
+    start = iupcocoaStrCharToUnit(text, start_int);
+    end = iupcocoaStrCharToUnit(text, end_int);
     selection_range = NSMakeRange(start, end-start);
   }
 
@@ -4146,112 +3995,43 @@ static int cocoaTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
 
 static char* cocoaTextGetSelectionPosAttrib(Ihandle* ih)
 {
-  NSTextView* text_view = nil;
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
+    return iupcocoaTextFieldGetSelection(single_field, 0);
 
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
-  {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        text_view = cocoaTextGetTextView(ih);
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    default:
-      {
-        return NULL;
-        break;
-      }
-  }
+  NSTextView* text_view = cocoaTextGetTextView(ih);
 
   NSRange selected_range = [text_view selectedRange];
   if(NSNotFound == selected_range.location)
   {
     return NULL;
   }
-  NSUInteger start = selected_range.location;
-  NSUInteger end = selected_range.location + selected_range.length;
+  NSString* text = [[text_view textStorage] string];
+  int start = iupcocoaStrUnitToChar(text, selected_range.location);
+  int end = iupcocoaStrUnitToChar(text, selected_range.location + selected_range.length);
 
-  return iupStrReturnIntInt((int)start, (int)end, ':');
+  return iupStrReturnIntInt(start, end, ':');
 }
 
 static int cocoaTextSetCaretAttrib(Ihandle* ih, const char* value)
 {
-  NSTextView* text_view = nil;
-
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
   {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        text_view = cocoaTextGetTextView(ih);
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    default:
-      {
-        return 0;
-      }
+    iupcocoaTextFieldSetCaret(single_field, value, 1);
+    return 0;
   }
 
+  NSTextView* text_view = cocoaTextGetTextView(ih);
   NSRange cursor_range = NSMakeRange(0, 0);
-
-  if (sub_type == IUPCOCOATEXTSUBTYPE_VIEW)
+  int lin_int = 1, col_int = 1;
+  iupStrToIntInt(value, &lin_int, &col_int, ',');
+  if (lin_int < 1) lin_int = 1;
+  if (col_int < 1) col_int = 1;
+  NSUInteger lin_start = (NSUInteger)lin_int;
+  NSUInteger col_start = (NSUInteger)col_int;
+  if (cocoaTextComputeRangeFromLineColumnForTextView(text_view, lin_start, col_start, lin_start, col_start, &cursor_range))
   {
-    int lin_int = 1, col_int = 1;
-    iupStrToIntInt(value, &lin_int, &col_int, ',');
-    if (lin_int < 1) lin_int = 1;
-    if (col_int < 1) col_int = 1;
-    NSUInteger lin_start = (NSUInteger)lin_int;
-    NSUInteger col_start = (NSUInteger)col_int;
-    NSUInteger lin_end = lin_start;
-    NSUInteger col_end = col_start;
-    bool did_find_range = cocoaTextComputeRangeFromLineColumnForTextView(text_view, lin_start, col_start, lin_end, col_end, &cursor_range);
-    if (did_find_range)
-    {
-      [text_view setSelectedRange:cursor_range affinity:NSSelectionAffinityDownstream stillSelecting:NO];
-      [text_view scrollRangeToVisible:cursor_range];
-    }
-  }
-  else
-  {
-    int pos = 1;
-    iupStrToInt(value, &pos);
-    pos--;
-    if (pos < 0) pos = 0;
-    NSUInteger len = [[text_view string] length];
-    if ((NSUInteger)pos > len) pos = (int)len;
-    cursor_range = NSMakeRange((NSUInteger)pos, 0);
     [text_view setSelectedRange:cursor_range affinity:NSSelectionAffinityDownstream stillSelecting:NO];
     [text_view scrollRangeToVisible:cursor_range];
   }
@@ -4261,38 +4041,11 @@ static int cocoaTextSetCaretAttrib(Ihandle* ih, const char* value)
 
 static char* cocoaTextGetCaretAttrib(Ihandle* ih)
 {
-  NSTextView* text_view = nil;
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
+    return iupcocoaTextFieldGetCaret(single_field, 1);
 
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
-  {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        text_view = cocoaTextGetTextView(ih);
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    default:
-      {
-        return NULL;
-        break;
-      }
-  }
+  NSTextView* text_view = cocoaTextGetTextView(ih);
 
   NSRange cursor_range = [[[text_view selectedRanges] lastObject] rangeValue];
   if(NSNotFound == cursor_range.location)
@@ -4312,40 +4065,7 @@ static char* cocoaTextGetCaretAttrib(Ihandle* ih)
 
   [text_view scrollRangeToVisible:cursor_range];
 
-  switch(sub_type)
-  {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        return iupStrReturnIntInt((int)lin_start, (int)col_start, ',');
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-  case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        if(lin_end > 1)
-        {
-          did_find_range = cocoaTextComputeRangeFromLineColumnForTextView(text_view, 1, col_start, 1, col_end, &cursor_range);
-          if(did_find_range)
-          {
-            col_start = cursor_range.location + 1;
-          }
-          else
-          {
-            return NULL;
-          }
-        }
-
-        return iupStrReturnInt((int)col_start);
-        break;
-      }
-  default:
-      {
-        return NULL;
-        break;
-      }
-  }
-
-  return NULL;
+  return iupStrReturnIntInt((int)lin_start, (int)col_start, ',');
 }
 
 static int cocoaTextSetScrollToAttrib(Ihandle* ih, const char* value)
@@ -4353,64 +4073,22 @@ static int cocoaTextSetScrollToAttrib(Ihandle* ih, const char* value)
   if (!value)
     return 0;
 
-  NSTextView* text_view = nil;
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-
-  switch(sub_type)
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
   {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      text_view = cocoaTextGetTextView(ih);
-      break;
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-    {
-      NSTextField* text_field = cocoaTextGetTextField(ih);
-      NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-      if ([field_editor isKindOfClass:[NSTextView class]])
-        text_view = (NSTextView*)field_editor;
-      break;
-    }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-    {
-      NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-      NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-      if ([field_editor isKindOfClass:[NSTextView class]])
-        text_view = (NSTextView*)field_editor;
-      break;
-    }
-    default:
-      return 0;
-  }
-
-  if (!text_view)
+    iupcocoaTextFieldScrollTo(single_field, value, 1);
     return 0;
+  }
 
+  NSTextView* text_view = cocoaTextGetTextView(ih);
   NSRange cursor_range = NSMakeRange(0, 0);
+  int lin = 1, col = 1;
+  iupStrToIntInt(value, &lin, &col, ',');
+  if (lin < 1) lin = 1;
+  if (col < 1) col = 1;
 
-  if (ih->data->is_multiline)
-  {
-    int lin = 1, col = 1;
-    iupStrToIntInt(value, &lin, &col, ',');
-    if (lin < 1) lin = 1;
-    if (col < 1) col = 1;
-
-    NSUInteger lin_start = lin;
-    NSUInteger col_start = col;
-    NSUInteger lin_end = lin;
-    NSUInteger col_end = col;
-
-    bool did_find_range = cocoaTextComputeRangeFromLineColumnForTextView(text_view, lin_start, col_start, lin_end, col_end, &cursor_range);
-    if (did_find_range)
-      [text_view scrollRangeToVisible:cursor_range];
-  }
-  else
-  {
-    int pos = 1;
-    iupStrToInt(value, &pos);
-    if (pos < 1) pos = 1;
-    pos--;
-    cursor_range = NSMakeRange(pos, 0);
+  if (cocoaTextComputeRangeFromLineColumnForTextView(text_view, lin, col, lin, col, &cursor_range))
     [text_view scrollRangeToVisible:cursor_range];
-  }
 
   return 0;
 }
@@ -4420,42 +4098,20 @@ static int cocoaTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   if (!value)
     return 0;
 
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
+  {
+    iupcocoaTextFieldScrollTo(single_field, value, 0);
+    return 0;
+  }
+
   int pos = 0;
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
 
-  NSTextView* text_view = nil;
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
+  NSTextView* text_view = cocoaTextGetTextView(ih);
 
-  switch(sub_type)
-  {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      text_view = cocoaTextGetTextView(ih);
-      break;
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-    {
-      NSTextField* text_field = cocoaTextGetTextField(ih);
-      NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-      if ([field_editor isKindOfClass:[NSTextView class]])
-        text_view = (NSTextView*)field_editor;
-      break;
-    }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-    {
-      NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-      NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-      if ([field_editor isKindOfClass:[NSTextView class]])
-        text_view = (NSTextView*)field_editor;
-      break;
-    }
-    default:
-      return 0;
-  }
-
-  if (!text_view)
-    return 0;
-
-  NSRange cursor_range = NSMakeRange(pos, 0);
+  NSRange cursor_range = NSMakeRange(iupcocoaStrCharToUnit([[text_view textStorage] string], pos), 0);
   [text_view setSelectedRange:cursor_range];
   [text_view scrollRangeToVisible:cursor_range];
 
@@ -4464,37 +4120,14 @@ static int cocoaTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 
 static int cocoaTextSetCaretPosAttrib(Ihandle* ih, const char* value)
 {
-  NSTextView* text_view = nil;
-
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
   {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        text_view = cocoaTextGetTextView(ih);
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    default:
-      {
-        return 0;
-      }
+    iupcocoaTextFieldSetCaret(single_field, value, 0);
+    return 0;
   }
+
+  NSTextView* text_view = cocoaTextGetTextView(ih);
 
   NSRange cursor_range = NSMakeRange(0, 0);
 
@@ -4507,89 +4140,27 @@ static int cocoaTextSetCaretPosAttrib(Ihandle* ih, const char* value)
   {
     return 0;
   }
-  cursor_range = NSMakeRange(pos, 0);
+  cursor_range = NSMakeRange(iupcocoaStrCharToUnit([[text_view textStorage] string], pos), 0);
 
   [text_view setSelectedRange:cursor_range affinity:NSSelectionAffinityDownstream stillSelecting:NO];
-
-  switch(sub_type)
-  {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        [text_view scrollRangeToVisible:cursor_range];
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        break;
-      }
-    default:
-      {
-        return 0;
-      }
-  }
+  [text_view scrollRangeToVisible:cursor_range];
   return 0;
 }
 
 static char* cocoaTextGetCaretPosAttrib(Ihandle* ih)
 {
-  NSTextView* text_view = nil;
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
+    return iupcocoaTextFieldGetCaret(single_field, 0);
 
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
-  {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        text_view = cocoaTextGetTextView(ih);
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        NSTextField* text_field = cocoaTextGetStepperTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        text_view = (NSTextView*)field_editor;
-        break;
-      }
-    default:
-      {
-        return NULL;
-        break;
-      }
-  }
-
+  NSTextView* text_view = cocoaTextGetTextView(ih);
   NSRange cursor_range = [[[text_view selectedRanges] lastObject] rangeValue];
   if(NSNotFound == cursor_range.location)
   {
     return NULL;
   }
-  switch(sub_type)
-  {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        [text_view scrollRangeToVisible:cursor_range];
-        break;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-  case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        break;
-      }
-  default:
-      {
-        return NULL;
-        break;
-      }
-  }
-  return iupStrReturnInt((int)cursor_range.location);
+  [text_view scrollRangeToVisible:cursor_range];
+  return iupStrReturnInt(iupcocoaStrUnitToChar([[text_view textStorage] string], cursor_range.location));
 }
 
 static char* cocoaTextGetLineValueAttrib(Ihandle* ih)
@@ -4954,94 +4525,66 @@ static int cocoaTextSetInsertAttrib(Ihandle* ih, const char* value)
     return 0;
   }
 
-  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
-  switch(sub_type)
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
   {
-    case IUPCOCOATEXTSUBTYPE_VIEW:
-      {
-        NSTextView* text_view = cocoaTextGetTextView(ih);
-        NSTextStorage* text_storage = [text_view textStorage];
-
-        NSRange insertion_point = [[[text_view selectedRanges] lastObject] rangeValue];
-        if(NSNotFound == insertion_point.location)
-        {
-          int saved_newline = ih->data->append_newline;
-          ih->data->append_newline = 0;
-          int ret_val = cocoaTextSetAppendAttrib(ih, value);
-          ih->data->append_newline = saved_newline;
-          return ret_val;
-        }
-        else if([text_storage length] == insertion_point.location)
-        {
-          int saved_newline = ih->data->append_newline;
-          ih->data->append_newline = 0;
-          int ret_val = cocoaTextSetAppendAttrib(ih, value);
-          ih->data->append_newline = saved_newline;
-          return ret_val;
-        }
-        else if(insertion_point.length > 0)
-        {
-          return cocoaTextSetSelectedTextAttrib(ih, value);
-        }
-
-        IupCocoaFont* iup_font = iupcocoaGetFont(ih);
-
-        NSMutableDictionary* attribute_dict = [[iup_font attributeDictionary] mutableCopy];
-        [attribute_dict autorelease];
-        NSDictionary<NSAttributedStringKey, id>* text_storage_attributes = [[text_storage attributedSubstringFromRange:NSMakeRange(insertion_point.location, 1)] attributesAtIndex:0 effectiveRange:NULL];
-        [attribute_dict addEntriesFromDictionary:text_storage_attributes];
-
-        NSString* ns_insert_string = iupcocoaStrToNSString(value);
-
-        NSAttributedString* attributed_insert_string = [[NSAttributedString alloc] initWithString:ns_insert_string attributes:attribute_dict];
-        [attributed_insert_string autorelease];
-
-        NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
-        [undo_manager beginUndoGrouping];
-
-        ih->data->disable_callbacks = 1;
-        [text_view shouldChangeTextInRange:insertion_point replacementString:[attributed_insert_string string]];
-        [text_storage beginEditing];
-
-        [text_storage insertAttributedString:attributed_insert_string atIndex:insertion_point.location];
-
-        ih->data->disable_callbacks = 0;
-
-        [text_storage endEditing];
-
-        [text_view didChangeText];
-        [undo_manager endUndoGrouping];
-
-        return 0;
-      }
-    case IUPCOCOATEXTSUBTYPE_FIELD:
-      {
-        NSTextField* text_field = cocoaTextGetTextField(ih);
-        NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
-        NSRange selected_range = [field_editor selectedRange];
-        if(NSNotFound == selected_range.location)
-        {
-          return cocoaTextSetAppendAttrib(ih, value);
-        }
-        else if(selected_range.length > 0)
-        {
-          return cocoaTextSetSelectedTextAttrib(ih, value);
-        }
-
-        NSString* ns_string = iupcocoaStrToNSString(value);
-        NSCAssert([field_editor isKindOfClass:[NSTextView class]], @"Expected that the field editor is a NSTextView");
-        [(NSTextView*)field_editor insertText:ns_string replacementRange:selected_range];
-        return 0;
-      }
-    case IUPCOCOATEXTSUBTYPE_STEPPER:
-      {
-        break;
-      }
-    default:
-      {
-        break;
-      }
+    iupcocoaTextFieldInsert(ih, single_field, value);
+    return 0;
   }
+
+  NSTextView* text_view = cocoaTextGetTextView(ih);
+  NSTextStorage* text_storage = [text_view textStorage];
+
+  NSRange insertion_point = [[[text_view selectedRanges] lastObject] rangeValue];
+  if(NSNotFound == insertion_point.location)
+  {
+    int saved_newline = ih->data->append_newline;
+    ih->data->append_newline = 0;
+    int ret_val = cocoaTextSetAppendAttrib(ih, value);
+    ih->data->append_newline = saved_newline;
+    return ret_val;
+  }
+  else if([text_storage length] == insertion_point.location)
+  {
+    int saved_newline = ih->data->append_newline;
+    ih->data->append_newline = 0;
+    int ret_val = cocoaTextSetAppendAttrib(ih, value);
+    ih->data->append_newline = saved_newline;
+    return ret_val;
+  }
+  else if(insertion_point.length > 0)
+  {
+    return cocoaTextSetSelectedTextAttrib(ih, value);
+  }
+
+  IupCocoaFont* iup_font = iupcocoaGetFont(ih);
+
+  NSMutableDictionary* attribute_dict = [[iup_font attributeDictionary] mutableCopy];
+  [attribute_dict autorelease];
+  NSDictionary<NSAttributedStringKey, id>* text_storage_attributes = [[text_storage attributedSubstringFromRange:NSMakeRange(insertion_point.location, 1)] attributesAtIndex:0 effectiveRange:NULL];
+  [attribute_dict addEntriesFromDictionary:text_storage_attributes];
+
+  NSString* ns_insert_string = iupcocoaStrToNSString(value);
+
+  NSAttributedString* attributed_insert_string = [[NSAttributedString alloc] initWithString:ns_insert_string attributes:attribute_dict];
+  [attributed_insert_string autorelease];
+
+  NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];
+  [undo_manager beginUndoGrouping];
+
+  ih->data->disable_callbacks = 1;
+  [text_view shouldChangeTextInRange:insertion_point replacementString:[attributed_insert_string string]];
+  [text_storage beginEditing];
+
+  [text_storage insertAttributedString:attributed_insert_string atIndex:insertion_point.location];
+
+  ih->data->disable_callbacks = 0;
+
+  [text_storage endEditing];
+
+  [text_view didChangeText];
+  [undo_manager endUndoGrouping];
+
   return 0;
 }
 
@@ -5248,8 +4791,7 @@ static char* cocoaTextGetCountAttrib(Ihandle* ih)
     return iupStrReturnInt(0);
   }
 
-  NSUInteger glyph_count = cocoaTextCountGlyphsInString(text_string);
-  return iupStrReturnInt((int)glyph_count);
+  return iupStrReturnInt(iupcocoaStrUnitToChar(text_string, [text_string length]));
 }
 
 static char* cocoaTextGetScrollVisibleAttrib(Ihandle* ih)
@@ -5537,7 +5079,7 @@ static int cocoaTextViewIndexAtPoint(NSTextView* text_view, NSPoint point)
   NSPoint origin = [text_view textContainerOrigin];
   point.x -= origin.x;
   point.y -= origin.y;
-  return cocoaTextLayoutIndexAtPoint([text_view layoutManager], [text_view textContainer], point, [text_view string]);
+  return iupcocoaStrUnitToChar([text_view string], cocoaTextLayoutIndexAtPoint([text_view layoutManager], [text_view textContainer], point, [text_view string]));
 }
 
 static int cocoaTextConvertXYToPos(Ihandle* ih, int x, int y)
@@ -5567,7 +5109,7 @@ static int cocoaTextConvertXYToPos(Ihandle* ih, int x, int y)
   [text_storage addLayoutManager:layout_manager];
 
   NSPoint local = NSMakePoint(point.x - NSMinX(title_rect), [text_field isFlipped] ? point.y - NSMinY(title_rect) : NSMaxY(title_rect) - point.y);
-  int pos = cocoaTextLayoutIndexAtPoint(layout_manager, text_container, local, [value string]);
+  int pos = iupcocoaStrUnitToChar([value string], cocoaTextLayoutIndexAtPoint(layout_manager, text_container, local, [value string]));
 
   [text_container release];
   [layout_manager release];
@@ -5803,6 +5345,13 @@ static void cocoaTextUnMapMethod(Ihandle* ih)
     NSTextView* text_view = [scroll_view documentView];
     if (text_view)
     {
+      id view_delegate = [text_view delegate];
+      if (view_delegate)
+      {
+        [NSObject cancelPreviousPerformRequestsWithTarget:view_delegate];
+        if ([view_delegate respondsToSelector:@selector(setIhandle:)])
+          [view_delegate setIhandle:NULL];
+      }
       [text_view setDelegate:nil];
       objc_setAssociatedObject(text_view, IUP_COCOA_TEXT_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
       objc_setAssociatedObject(text_view, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
@@ -5814,6 +5363,8 @@ static void cocoaTextUnMapMethod(Ihandle* ih)
     NSStepper* stepper_view = (NSStepper*)objc_getAssociatedObject(the_view, IUP_COCOA_TEXT_STEPPER_OBJ_KEY);
     if (text_field)
     {
+      if ([text_field delegate])
+        [NSObject cancelPreviousPerformRequestsWithTarget:[text_field delegate]];
       [text_field setDelegate:nil];
       objc_setAssociatedObject(text_field, IUP_COCOA_TEXT_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
       objc_setAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
@@ -5828,6 +5379,8 @@ static void cocoaTextUnMapMethod(Ihandle* ih)
   else
   {
     NSTextField* text_field = (NSTextField*)the_view;
+    if ([text_field delegate])
+      [NSObject cancelPreviousPerformRequestsWithTarget:[text_field delegate]];
     [text_field setDelegate:nil];
     objc_setAssociatedObject(text_field, IUP_COCOA_TEXT_DELEGATE_OBJ_KEY, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     objc_setAssociatedObject(text_field, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
@@ -5963,7 +5516,7 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
                                 usingBlock:^(NSDictionary<NSAttributedStringKey, id>* attributes, NSRange range, BOOL* stop)
   {
     Ihandle* formattag = IupUser();
-    IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", (int)range.location, (int)(range.location + range.length));
+    IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", iupcocoaStrUnitToChar([text_storage string], range.location), iupcocoaStrUnitToChar([text_storage string], range.location + range.length));
     IupAppend(bulk_tag, formattag);
 
     NSFont* font = [attributes objectForKey:NSFontAttributeName];
@@ -6009,6 +5562,93 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
   return 1;
 }
 
+IUP_DRV_API int iupcocoaTextFieldCaretChar(NSTextField* text_field)
+{
+  return iupcocoaStrUnitToChar(cocoaTextFieldString(text_field), cocoaTextFieldGetRange(text_field).location);
+}
+
+static int cocoaTextCaretChar(Ihandle* ih)
+{
+  NSTextField* single_field = cocoaTextGetSingleLineField(ih);
+  if (single_field)
+    return iupcocoaTextFieldCaretChar(single_field);
+
+  NSTextView* text_view = cocoaTextGetTextView(ih);
+  NSRange range = [[[text_view selectedRanges] lastObject] rangeValue];
+  if (NSNotFound == range.location)
+    range.location = [[text_view textStorage] length];
+  return iupcocoaStrUnitToChar([[text_view textStorage] string], range.location);
+}
+
+static int cocoaTextSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  char* saved = iupAttribGet(ih, "_IUPCOCOA_DISABLE_TEXT_CB");
+  int ret;
+
+  iupAttribSet(ih, "_IUPCOCOA_DISABLE_TEXT_CB", "1");
+  ret = set(ih, value);
+  iupAttribSet(ih, "_IUPCOCOA_DISABLE_TEXT_CB", saved);
+
+  if (ih->handle)
+    ih->data->last_caret_pos = cocoaTextCaretChar(ih);
+  return ret;
+}
+
+static int cocoaTextSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaTextSetSilent(ih, value, cocoaTextSetValueAttrib);
+}
+
+static int cocoaTextSetSelectedTextAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaTextSetSilent(ih, value, cocoaTextSetSelectedTextAttrib);
+}
+
+static int cocoaTextSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaTextSetSilent(ih, value, cocoaTextSetSelectionAttrib);
+}
+
+static int cocoaTextSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaTextSetSilent(ih, value, cocoaTextSetSelectionPosAttrib);
+}
+
+static int cocoaTextSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaTextSetSilent(ih, value, cocoaTextSetCaretAttrib);
+}
+
+static int cocoaTextSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaTextSetSilent(ih, value, cocoaTextSetCaretPosAttrib);
+}
+
+static int cocoaTextSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaTextSetSilent(ih, value, cocoaTextSetInsertAttrib);
+}
+
+static int cocoaTextSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaTextSetSilent(ih, value, cocoaTextSetAppendAttrib);
+}
+
+static int cocoaTextSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaTextSetSilent(ih, value, cocoaTextSetClipboardAttrib);
+}
+
+static int cocoaTextSetScrollToAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaTextSetSilent(ih, value, cocoaTextSetScrollToAttrib);
+}
+
+static int cocoaTextSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return cocoaTextSetSilent(ih, value, cocoaTextSetScrollToPosAttrib);
+}
+
 IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = cocoaTextMapMethod;
@@ -6021,25 +5661,25 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "ACTIVE", cocoaTextGetActiveAttrib, cocoaTextSetActiveAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_DEFAULT);
 
-  iupClassRegisterAttribute(ic, "VALUE", cocoaTextGetValueAttrib, cocoaTextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", cocoaTextGetValueAttrib, cocoaTextSetValueAttribSilent, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "LINEVALUE", cocoaTextGetLineValueAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", cocoaTextGetSelectedTextAttrib, cocoaTextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", cocoaTextGetSelectionAttrib, cocoaTextSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", cocoaTextGetSelectionPosAttrib, cocoaTextSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", cocoaTextGetCaretAttrib, cocoaTextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", cocoaTextGetCaretPosAttrib, cocoaTextSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", cocoaTextGetSelectedTextAttrib, cocoaTextSetSelectedTextAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", cocoaTextGetSelectionAttrib, cocoaTextSetSelectionAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", cocoaTextGetSelectionPosAttrib, cocoaTextSetSelectionPosAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", cocoaTextGetCaretAttrib, cocoaTextSetCaretAttribSilent, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", cocoaTextGetCaretPosAttrib, cocoaTextSetCaretPosAttribSilent, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttribute(ic, "INSERT", NULL, cocoaTextSetInsertAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", NULL, cocoaTextSetAppendAttrib, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, cocoaTextSetInsertAttribSilent, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", NULL, cocoaTextSetAppendAttribSilent, NULL, NULL, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "READONLY", cocoaTextGetReadOnlyAttrib, cocoaTextSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "NC", iupTextGetNCAttrib, cocoaTextSetNCAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
-  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, cocoaTextSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, cocoaTextSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, cocoaTextSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, cocoaTextSetClipboardAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, cocoaTextSetScrollToAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, cocoaTextSetScrollToPosAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "SPINMIN", NULL, cocoaTextSetSpinMinAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINMAX", NULL, cocoaTextSetSpinMaxAttrib, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);

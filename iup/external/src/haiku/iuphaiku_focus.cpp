@@ -69,11 +69,13 @@ extern "C" IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
     if (!win->IsActive()) win->Activate(true);
     auto* tc = dynamic_cast<BTextControl*>(view);
     BView* inner = nullptr;
+    if (!tc) tc = reinterpret_cast<BTextControl*>(iupAttribGet(ih, "_IUPHAIKU_LIST_EDIT"));
     if (tc) inner = tc->TextView();
     else
     {
       inner = reinterpret_cast<BView*>(iupAttribGet(ih, "_IUPHAIKU_LIST_INNER"));
       if (!inner) inner = reinterpret_cast<BView*>(iupAttribGet(ih, "_IUPHAIKU_TEXT_INNER"));
+      if (!inner) inner = reinterpret_cast<BView*>(iupAttribGet(ih, "_IUPHAIKU_TREE_INNER"));
     }
     (inner ? inner : view)->MakeFocus(true);
   }

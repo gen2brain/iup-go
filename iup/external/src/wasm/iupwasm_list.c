@@ -287,16 +287,55 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDispatchListDropdown(int id, int state)
     cb(ih, state);
 }
 
-EMSCRIPTEN_KEEPALIVE int iupwasmDispatchListEdit(int id, int c, const char* after)
+EM_JS(void, iupwasmJsListEditDone, (int id, int fix, const char* value, int caret), {
+  globalThis.__iupApply({ op: 'texteditdone', id: id, fix: fix, value: UTF8ToString(value), caret: caret });
+})
+
+EMSCRIPTEN_KEEPALIVE void iupwasmDispatchListEdit(int id, const char* oldvalue, const char* insert,
+                                                  int start, int end, int remove_dir, int keyseq)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
   IFnis cb;
+  int ret;
+
   if (!ih)
-    return IUP_DEFAULT;
+    return;
+
+  if (iupwasmKeyIgnored(keyseq))
+  {
+    iupwasmJsListEditDone(id, 1, oldvalue ? oldvalue : "", start);
+    return;
+  }
+
+  iupAttribSetStr(ih, "_IUPWASM_EDITOLD", oldvalue ? oldvalue : "");
   cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
-  if (cb)
-    return cb(ih, c, (char*)after);
-  return IUP_DEFAULT;
+  ret = iupEditCallActionCb(ih, cb, (insert && insert[0]) ? insert : NULL, start, end,
+                            ih->data->mask, ih->data->nc, remove_dir, 1);
+  if (!iupObjectCheck(ih))
+    return;
+  iupAttribSet(ih, "_IUPWASM_EDITOLD", NULL);
+
+  if (ret == 0)
+  {
+    iupwasmJsListEditDone(id, 1, oldvalue ? oldvalue : "", start);
+    return;
+  }
+
+  if (ret > 0)
+  {
+    char rep[2];
+    char* fixed;
+    rep[0] = (char)ret;
+    rep[1] = 0;
+    fixed = iupStrInsert(oldvalue ? oldvalue : "", rep, start, end, 1);
+    iupwasmJsListEditDone(id, 1, fixed ? fixed : "", start + 1);
+    if (fixed && fixed != oldvalue)
+      free(fixed);
+  }
+  else
+    iupwasmJsListEditDone(id, 0, "", 0);
+
+  iupBaseCallValueChangedCb(ih);
 }
 
 /* the browser moves a <select> before the model sees the key, so a vetoed key is undone here */
@@ -323,6 +362,11 @@ EMSCRIPTEN_KEEPALIVE int iupwasmDispatchListAction(int id, int item, int state, 
     return IUP_DEFAULT;
   iupAttribSetInt(ih, "_IUPWASM_LISTSEL", item);
   cb = (IFnsii)IupGetCallback(ih, "ACTION");
+  if (cb && !ih->data->is_multiple && state == 1)
+  {
+    iupListSingleCallActionCb(ih, cb, item);
+    return IUP_DEFAULT;
+  }
   if (cb)
     return cb(ih, (char*)text, item, state);
   return IUP_DEFAULT;
@@ -408,6 +452,10 @@ static int wasmListSetValueAttrib(Ihandle* ih, const char* value)
     int pos = 0;
     iupStrToInt(value, &pos);
     iupwasmJsListSetSelIndex(id, pos - 1);
+    if (pos > 0)
+      iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos);
+    else
+      iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
   }
   return 0;
 }
@@ -421,7 +469,10 @@ static char* wasmListGetValueAttrib(Ihandle* ih)
     return iupStrReturnInt(iupAttribGetInt(ih, "_IUPWASM_VLISTSEL"));
   if (ih->data->has_editbox)
   {
-    char* p = iupwasmJsListGetText(id);
+    char* p;
+    if (iupAttribGet(ih, "_IUPWASM_EDITOLD"))
+      return iupStrReturnStr(iupAttribGet(ih, "_IUPWASM_EDITOLD"));
+    p = iupwasmJsListGetText(id);
     char* r = iupStrReturnStr(p);
     free(p);
     return r;
@@ -564,6 +615,7 @@ IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
   int id = iupwasmIdOf(ih);
   if (id)
     iupwasmJsListInsert(id, pos, value ? value : "");
+  iupListUpdateOldValue(ih, pos, 0);
 }
 
 IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
@@ -571,6 +623,7 @@ IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
   int id = iupwasmIdOf(ih);
   if (id)
     iupwasmJsListRemove(id, pos);
+  iupListUpdateOldValue(ih, pos, 1);
 }
 
 IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
@@ -870,6 +923,70 @@ static int wasmListSetSelectedTextAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int wasmListSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  int ret = set(ih, value);
+  int id = iupwasmIdOf(ih);
+  if (id && ih->data->has_editbox)
+    ih->data->last_caret_pos = iupwasmJsListEditGetCaret(id);
+  return ret;
+}
+
+static int wasmListSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmListSetSilent(ih, value, wasmListSetValueAttrib);
+}
+
+static int wasmListSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmListSetSilent(ih, value, wasmListSetAppendAttrib);
+}
+
+static int wasmListSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmListSetSilent(ih, value, wasmListSetInsertAttrib);
+}
+
+static int wasmListSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmListSetSilent(ih, value, wasmListSetClipboardAttrib);
+}
+
+static int wasmListSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmListSetSilent(ih, value, wasmListSetCaretPosAttrib);
+}
+
+static int wasmListSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmListSetSilent(ih, value, wasmListSetSelectionPosAttrib);
+}
+
+static int wasmListSetSelectedTextAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmListSetSilent(ih, value, wasmListSetSelectedTextAttrib);
+}
+
+static int wasmListSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmListSetSilent(ih, value, wasmListSetCaretAttrib);
+}
+
+static int wasmListSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmListSetSilent(ih, value, wasmListSetSelectionAttrib);
+}
+
+static int wasmListSetScrollToEditAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmListSetSilent(ih, value, wasmListSetScrollToEditAttrib);
+}
+
+static int wasmListSetScrollToPosEditAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmListSetSilent(ih, value, wasmListSetScrollToPosEditAttrib);
+}
+
 IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   ic->Map = wasmListMapMethod;
@@ -879,28 +996,28 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "READONLY", NULL, wasmListSetReadOnlyAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", iupwasmGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "NC", NULL, wasmListSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", NULL, wasmListSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", NULL, wasmListSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, wasmListSetClipboardAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", wasmListGetCaretPosAttrib, wasmListSetCaretPosAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", wasmListGetSelectionPosAttrib, wasmListSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", wasmListGetSelectedTextAttrib, wasmListSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", NULL, wasmListSetAppendAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, wasmListSetInsertAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, wasmListSetClipboardAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", wasmListGetCaretPosAttrib, wasmListSetCaretPosAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", wasmListGetSelectionPosAttrib, wasmListSetSelectionPosAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", wasmListGetSelectedTextAttrib, wasmListSetSelectedTextAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FITIMAGE", wasmListGetFitImageAttrib, wasmListSetFitImageAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, wasmListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, wasmListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, wasmListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "PADDING", iupListGetPaddingAttrib, wasmListSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, wasmListSetDropExpandAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", wasmListGetCaretAttrib, wasmListSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", wasmListGetSelectionAttrib, wasmListSetSelectionAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, wasmListSetScrollToEditAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, wasmListSetScrollToPosEditAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", wasmListGetCaretAttrib, wasmListSetCaretAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", wasmListGetSelectionAttrib, wasmListSetSelectionAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, wasmListSetScrollToEditAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, wasmListSetScrollToPosEditAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NOT_SUPPORTED);  /* native <select> popup item count is UA-controlled */
   iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);  /* DOM always repaints */
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, wasmListSetImageAttrib, IUPAF_IHANDLENAME | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", wasmListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING | IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IDVALUE", wasmListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", wasmListGetValueAttrib, wasmListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", wasmListGetValueAttrib, wasmListSetValueAttribSilent, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "FGCOLOR", NULL, iupdrvBaseSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTFGCOLOR", IUPAF_DEFAULT);
 }

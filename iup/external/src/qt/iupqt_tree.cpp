@@ -1409,7 +1409,9 @@ static int qtTreeSetValueAttrib(Ihandle* ih, const char* value)
   }
   else if (iupStrEqualNoCase(value, "CLEAR"))
   {
+    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
     tree->setCurrentItem(nullptr);
+    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
     return 0;
   }
   else
@@ -1421,6 +1423,7 @@ static int qtTreeSetValueAttrib(Ihandle* ih, const char* value)
 
   if (item)
   {
+    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
     /* single mode selects the focus node; multiple mode moves focus only */
     if (ih->data->mark_mode == ITREE_MARK_SINGLE)
     {
@@ -1429,6 +1432,7 @@ static int qtTreeSetValueAttrib(Ihandle* ih, const char* value)
     }
     else
       tree->setCurrentItem(item, 0, QItemSelectionModel::NoUpdate);
+    iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
     tree->scrollToItem(item);
   }
 
@@ -2028,24 +2032,33 @@ static int qtTreeSetExpandAllAttrib(Ihandle* ih, const char* value)
 
 static void qtTreeSelectionChanged(Ihandle* ih)
 {
-  if (iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB"))
-    return;
-
   auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QList<QTreeWidgetItem*> selected = tree->selectedItems();
-
   auto cb = reinterpret_cast<IFnii>(IupGetCallback(ih, "SELECTION_CB"));
-  if (cb)
-  {
-    if (selected.count() > 0)
-    {
-      int id = qtTreeFindNodeId(ih, selected.first());
-      cb(ih, id, 1);
-    }
-  }
 
-  if (ih->data->mark_mode == ITREE_MARK_SINGLE && selected.count() > 0)
-    tree->setMarkStartNode(selected.first());
+  if (ih->data->mark_mode == ITREE_MARK_SINGLE)
+  {
+    auto* last = reinterpret_cast<QTreeWidgetItem*>(iupAttribGet(ih, "_IUPQT_TREE_LASTSEL"));
+    QTreeWidgetItem* current = selected.count() > 0 ? selected.first() : nullptr;
+    iupAttribSet(ih, "_IUPQT_TREE_LASTSEL", reinterpret_cast<char*>(current));
+    if (current && !iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB"))
+      tree->setMarkStartNode(current);
+    if (iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB") || current == last)
+      return;
+
+    int last_id = qtTreeFindNodeId(ih, last);
+    if (cb && last_id >= 0)
+      cb(ih, last_id, 0);
+    if (cb && current && iupObjectCheck(ih))
+      cb(ih, qtTreeFindNodeId(ih, current), 1);
+  }
+  else
+  {
+    if (iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB"))
+      return;
+    if (cb && selected.count() > 0)
+      cb(ih, qtTreeFindNodeId(ih, selected.first()), 1);
+  }
 }
 
 static void qtTreeItemExpanded(Ihandle* ih, QTreeWidgetItem* item)

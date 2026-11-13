@@ -498,6 +498,31 @@ static void eflTreeRightClickCallback(void* data, const Efl_Event* ev)
   }
 }
 
+static void eflTreeSelectFocusedJob(void* data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Eo* tree = iupeflGetWidget(ih);
+  Elm_Object_Item* item;
+
+  iupAttribSet(ih, "_IUPEFL_TREE_SELFOCUS_JOB", NULL);
+  if (!tree)
+    return;
+
+  item = elm_object_focused_item_get(tree);
+  if (item && !elm_genlist_item_selected_get(item))
+    elm_genlist_item_selected_set(item, EINA_TRUE);
+}
+
+static int eflIsNavigationKey(Efl_Input_Key* key, const char* keyname)
+{
+  if (efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_SHIFT, NULL) ||
+      efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_CONTROL, NULL) ||
+      efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_ALT, NULL))
+    return 0;
+  return strcmp(keyname, "Up") == 0 || strcmp(keyname, "Down") == 0 || strcmp(keyname, "Home") == 0 ||
+         strcmp(keyname, "End") == 0 || strcmp(keyname, "Prior") == 0 || strcmp(keyname, "Next") == 0;
+}
+
 static void eflTreeKeyDownCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -520,6 +545,12 @@ static void eflTreeKeyDownCallback(void* data, const Efl_Event* ev)
       eflTreeStartRenameEdit(ih, item);
       efl_input_processed_set(key, EINA_TRUE);
     }
+  }
+  else if (ih->data->mark_mode == ITREE_MARK_SINGLE && eflIsNavigationKey(key, keyname))
+  {
+    Ecore_Job* job = (Ecore_Job*)iupAttribGet(ih, "_IUPEFL_TREE_SELFOCUS_JOB");
+    if (job) ecore_job_del(job);
+    iupAttribSet(ih, "_IUPEFL_TREE_SELFOCUS_JOB", (char*)ecore_job_add(eflTreeSelectFocusedJob, ih));
   }
 }
 
@@ -2749,6 +2780,13 @@ static int eflTreeMapMethod(Ihandle* ih)
 static void eflTreeUnMapMethod(Ihandle* ih)
 {
   Eo* tree = iupeflGetWidget(ih);
+  Ecore_Job* selfocus_job = (Ecore_Job*)iupAttribGet(ih, "_IUPEFL_TREE_SELFOCUS_JOB");
+
+  if (selfocus_job)
+  {
+    ecore_job_del(selfocus_job);
+    iupAttribSet(ih, "_IUPEFL_TREE_SELFOCUS_JOB", NULL);
+  }
 
   eflTreeEndRenameEdit(ih, 0);
 

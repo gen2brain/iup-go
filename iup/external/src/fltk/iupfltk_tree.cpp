@@ -399,7 +399,15 @@ public:
           return 1;
         }
 
-        return Fl_Tree::handle(event);
+        Fl_Tree_Item* focus_before = get_item_focus();
+        int ret = Fl_Tree::handle(event);
+
+        Fl_Tree_Item* focus_after = get_item_focus();
+        if (iup_handle->data->mark_mode == ITREE_MARK_SINGLE && focus_after && focus_after != focus_before &&
+            !focus_after->is_selected() && !(Fl::event_state() & (FL_CTRL | FL_SHIFT | FL_ALT | FL_META)))
+          select_only(focus_after, when());
+
+        return ret;
       }
       default:
         return Fl_Tree::handle(event);

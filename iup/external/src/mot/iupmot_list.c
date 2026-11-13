@@ -1313,22 +1313,44 @@ static void motListEditModifyVerifyCallback(Widget cbedit, Ihandle* ih, XmTextVe
   (void)cbedit;
 }
 
+static void motListEditCaretTimeout(XtPointer client_data, XtIntervalId* id)
+{
+  Ihandle* ih = (Ihandle*)client_data;
+  Widget cbedit;
+  IFniii cb;
+  int pos;
+  (void)id;
+
+  iupAttribSet(ih, "_IUPMOT_CARET_PENDING", NULL);
+  if (!ih->handle)
+    return;
+
+  XtVaGetValues(ih->handle, XmNtextField, &cbedit, NULL);
+  pos = (int)XmTextFieldGetInsertionPosition(cbedit);
+  if (pos == ih->data->last_caret_pos)
+    return;
+  ih->data->last_caret_pos = pos;
+
+  cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+  if (cb)
+    cb(ih, 1, pos + 1, pos);
+}
+
 static void motListEditMotionVerifyCallback(Widget w, Ihandle* ih, XmTextVerifyCallbackStruct* textverify)
 {
-  int pos;
+  (void)w;
 
-  IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
-  if (!cb) return;
-
-  pos = textverify->newInsert;
-
-  if (pos != ih->data->last_caret_pos)
+  if (!textverify->event)
   {
-    ih->data->last_caret_pos = pos;
-    cb(ih, 1, pos+1, pos);
+    if (!iupAttribGet(ih, "_IUPMOT_CARET_PENDING"))
+      ih->data->last_caret_pos = (int)textverify->newInsert;
+    return;
   }
 
-  (void)w;
+  if (!iupAttribGet(ih, "_IUPMOT_CARET_PENDING"))
+  {
+    iupAttribSet(ih, "_IUPMOT_CARET_PENDING", (char*)XtAppAddTimeOut(iupmot_appcontext, 0, motListEditCaretTimeout, (XtPointer)ih));
+  }
 }
 
 static void motListEditKeyPressEvent(Widget cbedit, Ihandle* ih, XKeyEvent* evt, Boolean* cont)
@@ -1693,6 +1715,13 @@ static int motListMapMethod(Ihandle* ih)
 
 static void motListUnMapMethod(Ihandle* ih)
 {
+  XtIntervalId caret_timer = (XtIntervalId)iupAttribGet(ih, "_IUPMOT_CARET_PENDING");
+  if (caret_timer)
+  {
+    XtRemoveTimeOut(caret_timer);
+    iupAttribSet(ih, "_IUPMOT_CARET_PENDING", NULL);
+  }
+
   if (ih->data->show_dragdrop && !ih->data->is_dropdown && !ih->data->is_multiple)
   {
     XtRemoveEventHandler(ih->handle, ButtonPressMask|ButtonReleaseMask, False, motListDragButtonHandler, (XtPointer)ih);

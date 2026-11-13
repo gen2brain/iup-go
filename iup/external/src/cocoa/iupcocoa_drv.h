@@ -67,6 +67,10 @@ IUP_DRV_API void iupcocoaSetViewFrame(NSView* view, NSRect rect);
 
 /* Invalid UTF-8 sequences become U+FFFD; NULL returns nil. */
 IUP_DRV_API NSString* iupcocoaStrToNSString(const char* str);
+IUP_DRV_API NSUInteger iupcocoaStrAdvanceChars(NSString* text, NSUInteger from, NSUInteger count);
+IUP_DRV_API NSUInteger iupcocoaStrCountChars(NSString* text, NSUInteger from, NSUInteger to);
+IUP_DRV_API NSUInteger iupcocoaStrCharToUnit(NSString* text, int pos);
+IUP_DRV_API int iupcocoaStrUnitToChar(NSString* text, NSUInteger unit);
 
 /* Coordinate conversion helpers: Cocoa uses Cartesian (y-up), IUP uses (y-down). */
 IUP_DRV_API int iupcocoaComputeCartesianScreenHeightFromIup(int iup_height);
@@ -149,6 +153,18 @@ IUP_DRV_API IupCocoaFont* iupcocoaGetFont(Ihandle* ih);
 IUP_DRV_API IupCocoaFont* iupcocoaFindFont(const char* iup_font_name);
 
 IUP_DRV_API int iupcocoaTextFieldCellInset(void);
+
+IUP_DRV_API void iupcocoaTextFieldSaveRange(NSNotification* notification);
+IUP_DRV_API void iupcocoaTextFieldReplace(Ihandle* ih, NSTextField* text_field, NSRange range, NSString* ns_string);
+IUP_DRV_API char* iupcocoaTextFieldGetCaret(NSTextField* text_field, int base);
+IUP_DRV_API int iupcocoaTextFieldCaretChar(NSTextField* text_field);
+IUP_DRV_API void iupcocoaTextFieldSetCaret(NSTextField* text_field, const char* value, int base);
+IUP_DRV_API char* iupcocoaTextFieldGetSelection(NSTextField* text_field, int base);
+IUP_DRV_API void iupcocoaTextFieldSetSelection(NSTextField* text_field, const char* value, int base);
+IUP_DRV_API char* iupcocoaTextFieldGetSelectedText(NSTextField* text_field);
+IUP_DRV_API void iupcocoaTextFieldSetSelectedText(Ihandle* ih, NSTextField* text_field, const char* value);
+IUP_DRV_API void iupcocoaTextFieldInsert(Ihandle* ih, NSTextField* text_field, const char* value);
+IUP_DRV_API void iupcocoaTextFieldScrollTo(NSTextField* text_field, const char* value, int base);
 
 IUP_DRV_API NSMutableAttributedString* iupcocoaBuildMarkupAttributedString(Ihandle* ih, const char* value);
 

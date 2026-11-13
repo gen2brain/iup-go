@@ -229,7 +229,8 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatchCare
   IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
   if (!cb) return;
 
-  int lin, col;
-  IupTextConvertPosToLinCol(ih, (int)pos, &lin, &col);
+  int lin = 1, col = (int)pos + 1;
+  if (IupClassMatch(ih, "text"))
+    IupTextConvertPosToLinCol(ih, (int)pos, &lin, &col);
   if (cb(ih, lin, col, (int)pos) == IUP_CLOSE) IupExitLoop();
 }

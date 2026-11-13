@@ -1554,8 +1554,15 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   NSCAssert([outline_view isKindOfClass:[IupCocoaOutlineView class]], @"Expected IupCocoaOutlineView");
   Ihandle* ih = [(IupCocoaOutlineView*)outline_view ih];
 
-  if (NULL == ih || iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB"))
+  if (NULL == ih)
     return;
+
+  if (iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB"))
+  {
+    [previousSelections release];
+    previousSelections = [[outline_view selectedRowIndexes] copy];
+    return;
+  }
 
   NSInteger focus_row = [outline_view selectedRow];
   if (focus_row >= 0)
@@ -2881,7 +2888,7 @@ static void cocoaTreeRemoveNodeData(Ihandle* ih, IupCocoaTreeItem* tree_item, in
 /* ADDING ITEMS                                                              */
 /*****************************************************************************/
 
-IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const char* title, int add)
+static void cocoaTreeAddNode(Ihandle* ih, int prev_id, int kind, const char* title, int add)
 {
   NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
   IupCocoaTreeDelegate* data_source_delegate = (IupCocoaTreeDelegate*)[outline_view dataSource];
@@ -2963,8 +2970,6 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const cha
         [(IupCocoaOutlineView*)outline_view setMarkStartNode:inode_new];
         iupAttribSet(ih, "_IUPTREE_MARKSTART_NODE", (char*)inode_new);
 
-        iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
-
         NSInteger row = [outline_view rowForItem:inode_new];
         if (row >= 0)
         {
@@ -2976,8 +2981,6 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const cha
                 [outline_view deselectRow:row];
             }
         }
-
-        iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
     }
   }
 
@@ -2987,6 +2990,14 @@ IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const cha
   [outline_view layoutSubtreeIfNeeded];
 
   [tree_item_new release];
+}
+
+IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int prev_id, int kind, const char* title, int add)
+{
+  char* saved = iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB");
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
+  cocoaTreeAddNode(ih, prev_id, kind, title, add);
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", saved);
 }
 
 /*****************************************************************************/
@@ -4300,7 +4311,7 @@ static int cocoaTreeSetToggleVisibleAttrib(Ihandle* ih, int item_id, const char*
   return 0;
 }
 
-static int cocoaTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
+static int cocoaTreeDelNode(Ihandle* ih, int id, const char* value)
 {
   if (!ih->handle)
     return 0;
@@ -4364,6 +4375,16 @@ if (item)
   }
 
   return 0;
+}
+
+static int cocoaTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
+{
+  char* saved = iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB");
+  int ret;
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
+  ret = cocoaTreeDelNode(ih, id, value);
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", saved);
+  return ret;
 }
 
 static int cocoaTreeSetMoveNodeAttrib(Ihandle* ih, int id, const char* value)

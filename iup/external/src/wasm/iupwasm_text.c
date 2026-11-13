@@ -275,6 +275,8 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDispatchTextEdit(int id, const char* oldvalue, 
   cb = (IFnis)IupGetCallback(ih, "ACTION");
   ret = iupEditCallActionCb(ih, cb, (insert && insert[0]) ? insert : NULL, start, end,
                             ih->data->mask, ih->data->nc, remove_dir, 1);
+  if (!iupObjectCheck(ih))
+    return;
   iupAttribSet(ih, "_IUPWASM_EDITOLD", NULL);
 
   if (ret == 0)
@@ -1160,19 +1162,82 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
   return 1;
 }
 
+static int wasmTextSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  int ret = set(ih, value);
+  if (iupwasmIdOf(ih))
+    iupStrToInt(wasmTextGetCaretPosAttrib(ih), &ih->data->last_caret_pos);
+  return ret;
+}
+
+static int wasmTextSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmTextSetSilent(ih, value, wasmTextSetValueAttrib);
+}
+
+static int wasmTextSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmTextSetSilent(ih, value, wasmTextSetAppendAttrib);
+}
+
+static int wasmTextSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmTextSetSilent(ih, value, wasmTextSetCaretPosAttrib);
+}
+
+static int wasmTextSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmTextSetSilent(ih, value, wasmTextSetSelectionPosAttrib);
+}
+
+static int wasmTextSetSelectedTextAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmTextSetSilent(ih, value, wasmTextSetSelectedTextAttrib);
+}
+
+static int wasmTextSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmTextSetSilent(ih, value, wasmTextSetInsertAttrib);
+}
+
+static int wasmTextSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmTextSetSilent(ih, value, wasmTextSetCaretAttrib);
+}
+
+static int wasmTextSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmTextSetSilent(ih, value, wasmTextSetSelectionAttrib);
+}
+
+static int wasmTextSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmTextSetSilent(ih, value, wasmTextSetClipboardAttrib);
+}
+
+static int wasmTextSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmTextSetSilent(ih, value, wasmTextSetScrollToPosAttrib);
+}
+
+static int wasmTextSetScrollToAttribSilent(Ihandle* ih, const char* value)
+{
+  return wasmTextSetSilent(ih, value, wasmTextSetScrollToAttrib);
+}
+
 IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = wasmTextMapMethod;
   ic->UnMap = iupdrvBaseUnMapMethod;
   ic->LayoutUpdate = iupdrvBaseLayoutUpdateMethod;
 
-  iupClassRegisterAttribute(ic, "VALUE", wasmTextGetValueAttrib, wasmTextSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", wasmTextGetValueAttrib, wasmTextSetValueAttribSilent, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", NULL, wasmTextSetReadOnlyAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINMIN", NULL, wasmTextSetSpinRangeAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINMAX", NULL, wasmTextSetSpinRangeAttrib, IUPAF_SAMEASSYSTEM, "100", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPININC", NULL, wasmTextSetSpinRangeAttrib, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SPINVALUE", wasmTextGetSpinValueAttrib, wasmTextSetSpinValueAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", NULL, wasmTextSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", NULL, wasmTextSetAppendAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", NULL, wasmTextSetCueBannerAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ALIGNMENT", NULL, wasmTextSetAlignmentAttrib, IUPAF_SAMEASSYSTEM, "ALEFT", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BGCOLOR", NULL, iupdrvBaseSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "TXTBGCOLOR", IUPAF_DEFAULT);
@@ -1184,22 +1249,22 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "REMOVEFORMATTING", NULL, wasmTextSetRemoveFormattingAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "NC", NULL, wasmTextSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", wasmTextGetCaretPosAttrib, wasmTextSetCaretPosAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", wasmTextGetSelectionPosAttrib, wasmTextSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", wasmTextGetSelectedTextAttrib, wasmTextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", NULL, wasmTextSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", wasmTextGetCaretPosAttrib, wasmTextSetCaretPosAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", wasmTextGetSelectionPosAttrib, wasmTextSetSelectionPosAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", wasmTextGetSelectedTextAttrib, wasmTextSetSelectedTextAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, wasmTextSetInsertAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COUNT", wasmTextGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, wasmTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
   iupClassRegisterAttribute(ic, "TABSIZE", NULL, wasmTextSetTabSizeAttrib, IUPAF_SAMEASSYSTEM, "8", IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", wasmTextGetCaretAttrib, wasmTextSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", wasmTextGetSelectionAttrib, wasmTextSetSelectionAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", wasmTextGetCaretAttrib, wasmTextSetCaretAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", wasmTextGetSelectionAttrib, wasmTextSetSelectionAttribSilent, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINECOUNT", wasmTextGetLineCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "LINEVALUE", wasmTextGetLineValueAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, wasmTextSetClipboardAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, wasmTextSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, wasmTextSetClipboardAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, wasmTextSetScrollToPosAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PASSWORD", NULL, wasmTextSetPasswordAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", NULL, wasmTextSetFilterAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", iupwasmGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "OVERWRITE", NULL, wasmTextSetOverwriteAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, wasmTextSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, wasmTextSetScrollToAttribSilent, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 }

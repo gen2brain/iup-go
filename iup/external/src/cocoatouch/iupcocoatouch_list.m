@@ -310,26 +310,105 @@ static void cocoaTouchListSetDropdownDisplay(UIButton* button, NSString* text, U
 	}
 }
 
+static NSString* cocoaTouchListFilterEdit(Ihandle* ih, NSString* replacement)
+{
+	const char* filter = iupAttribGet(ih, "FILTER");
+	if (!filter || [replacement length] == 0) return replacement;
+	if (iupStrEqualNoCase(filter, "LOWERCASE")) return [replacement lowercaseString];
+	if (iupStrEqualNoCase(filter, "UPPERCASE")) return [replacement uppercaseString];
+	if (iupStrEqualNoCase(filter, "NUMBER"))
+	{
+		NSCharacterSet* non_digits = [[NSCharacterSet characterSetWithCharactersInString:@"0123456789"] invertedSet];
+		if ([replacement rangeOfCharacterFromSet:non_digits].location != NSNotFound) return nil;
+	}
+	return replacement;
+}
+
+static NSUInteger cocoaTouchListFieldCaretUnit(UITextField* field)
+{
+	UITextRange* sel = field.selectedTextRange;
+	return sel ? (NSUInteger)[field offsetFromPosition:field.beginningOfDocument toPosition:sel.start] : 0;
+}
+
+- (void)callCaret:(UITextField*)field
+{
+	int pos = iupCocoaTouchStrUnitToChar(field.text ?: @"", cocoaTouchListFieldCaretUnit(field));
+	if (_suppressEditCb || iupAttribGet(_ihandle, "_IUPCOCOATOUCH_LIST_SILENT"))
+	{
+		_ihandle->data->last_caret_pos = pos;
+		return;
+	}
+	if (iupAttribGet(_ihandle, "_IUPCOCOATOUCH_USER_EDIT") || pos == _ihandle->data->last_caret_pos) return;
+	_ihandle->data->last_caret_pos = pos;
+	IFniii cb = (IFniii)IupGetCallback(_ihandle, "CARET_CB");
+	if (cb && cb(_ihandle, 1, pos + 1, pos) == IUP_CLOSE) IupExitLoop();
+}
+
+- (void)editDone:(UITextField*)field
+{
+	iupAttribSet(_ihandle, "_IUPCOCOATOUCH_USER_EDIT", NULL);
+	IFn changed_cb = (IFn)IupGetCallback(_ihandle, "VALUECHANGED_CB");
+	if (changed_cb && changed_cb(_ihandle) == IUP_CLOSE) { IupExitLoop(); return; }
+	if (iupObjectCheck(_ihandle)) [self callCaret:field];
+}
+
+- (BOOL)textField:(UITextField*)field shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString*)replacement
+{
+	if (!_ihandle || !iupObjectCheck(_ihandle) || _suppressEditCb || iupAttribGet(_ihandle, "_IUPCOCOATOUCH_LIST_SILENT")) return YES;
+	NSString* current = field.text ?: @"";
+	NSString* applied = cocoaTouchListFilterEdit(_ihandle, replacement);
+	if (!applied) return NO;
+
+	BOOL replaced = NO;
+	IFnis cb = (IFnis)IupGetCallback(_ihandle, "EDIT_CB");
+	if (cb || _ihandle->data->mask || _ihandle->data->nc > 0)
+	{
+		const char* applied_utf8 = [applied UTF8String];
+		int ret = iupEditCallActionCb(_ihandle, cb, applied_utf8,
+			iupCocoaTouchStrUnitToChar(current, range.location), iupCocoaTouchStrUnitToChar(current, range.location + range.length),
+			_ihandle->data->mask, _ihandle->data->nc, 0, 1);
+		if (!iupObjectCheck(_ihandle)) return NO;
+		if (ret == 0) return NO;
+		if (ret != -1 && applied_utf8 && applied_utf8[0])
+		{
+			char rep[2] = { (char)ret, 0 };
+			applied = iupCocoaTouchStrToNSString(rep);
+			replaced = YES;
+		}
+	}
+
+	if (replaced || ![applied isEqualToString:replacement])
+	{
+		NSString* new_text = [current stringByReplacingCharactersInRange:range withString:applied];
+		_suppressEditCb = YES;
+		field.text = new_text;
+		UITextPosition* p = [field positionFromPosition:field.beginningOfDocument offset:(NSInteger)(range.location + applied.length)];
+		if (p) field.selectedTextRange = [field textRangeFromPosition:p toPosition:p];
+		_suppressEditCb = NO;
+		[self editDone:field];
+		return NO;
+	}
+	iupAttribSet(_ihandle, "_IUPCOCOATOUCH_USER_EDIT", "1");
+	return YES;
+}
+
 - (void)textFieldDidChange:(UITextField*)field
 {
 	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
-	if (_suppressEditCb) return;
-	NSString* full = field.text ?: @"";
-	IFnis edit_cb = (IFnis)IupGetCallback(_ihandle, "EDIT_CB");
-	if (edit_cb) edit_cb(_ihandle, 0, (char*)[full UTF8String]);
-	IFn changed_cb = (IFn)IupGetCallback(_ihandle, "VALUECHANGED_CB");
-	if (changed_cb && changed_cb(_ihandle) == IUP_CLOSE) IupExitLoop();
+	if (_suppressEditCb || iupAttribGet(_ihandle, "_IUPCOCOATOUCH_LIST_SILENT")) return;
+	[self editDone:field];
 }
 
 - (void)textFieldDidChangeSelection:(UITextField*)field
 {
 	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
-	IFniii cb = (IFniii)IupGetCallback(_ihandle, "CARET_CB");
-	if (!cb) return;
-	UITextRange* sel = field.selectedTextRange;
-	if (!sel) return;
-	int pos = (int)[field offsetFromPosition:field.beginningOfDocument toPosition:sel.start];
-	cb(_ihandle, 1, pos + 1, pos);
+	[self callCaret:field];
+}
+
+- (void)textFieldDidEndEditing:(UITextField*)field
+{
+	(void)field;
+	if (_ihandle) iupAttribSet(_ihandle, "_IUPCOCOATOUCH_USER_EDIT", NULL);
 }
 
 - (void)handleDoubleTap:(UITapGestureRecognizer*)gr
@@ -369,6 +448,21 @@ static void cocoaTouchListSetDropdownDisplay(UIButton* button, NSString* text, U
 	if (_field) _field.frame = CGRectMake(0, 0, w, fh);
 	CGFloat gap = _field ? 4 : 0;
 	if (_table) _table.frame = CGRectMake(0, fh + gap, w, MAX(0, h - fh - gap));
+}
+
+- (BOOL)canBecomeFirstResponder
+{
+	return _field ? [_field canBecomeFirstResponder] : NO;
+}
+
+- (BOOL)becomeFirstResponder
+{
+	return _field ? [_field becomeFirstResponder] : NO;
+}
+
+- (BOOL)isFirstResponder
+{
+	return _field ? [_field isFirstResponder] : NO;
 }
 
 @end
@@ -852,6 +946,7 @@ IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 	[ctrl.itemImages insertObject:[NSNull null] atIndex:insert_at];
 	if (ih->data->is_dropdown) cocoaTouchListRebuildDropdownMenu(ih);
 	else                       cocoaTouchListReloadTable(ih);
+	iupListUpdateOldValue(ih, (int)insert_at, 0);
 }
 
 IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
@@ -873,6 +968,7 @@ IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
 	{
 		cocoaTouchListReloadTable(ih);
 	}
+	iupListUpdateOldValue(ih, pos, 1);
 }
 
 IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
@@ -884,6 +980,7 @@ IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
 	ctrl.selectedIndex = -1;
 	if (ih->data->is_dropdown) cocoaTouchListRebuildDropdownMenu(ih);
 	else                       cocoaTouchListReloadTable(ih);
+	if (!ih->data->has_editbox) iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
 }
 
 static char* cocoaTouchListGetImageNativeHandleAttribId(Ihandle* ih, int id)
@@ -1038,6 +1135,8 @@ static int cocoaTouchListSetValueAttrib(Ihandle* ih, const char* value)
 		if (value) iupStrToInt(value, &pos);
 		if (pos < 0 || pos > (int)count) pos = 0;
 		ctrl.selectedIndex = pos > 0 ? (NSInteger)(pos - 1) : -1;
+		if (pos > 0) iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos);
+		else iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
 		cocoaTouchListRebuildDropdownMenu(ih);
 		return 0;
 	}
@@ -1075,7 +1174,10 @@ static int cocoaTouchListSetValueAttrib(Ihandle* ih, const char* value)
 		[table selectRowAtIndexPath:[NSIndexPath indexPathForRow:pos - 1 inSection:0]
 		                   animated:NO
 		             scrollPosition:UITableViewScrollPositionNone];
+		iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos);
 	}
+	else
+		iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
 	return 0;
 }
 
@@ -1173,7 +1275,7 @@ static int cocoaTouchListSetFontAttrib(Ihandle* ih, const char* value)
 	return 1;
 }
 
-static char* cocoaTouchListGetSelectedTextAttrib(Ihandle* ih)
+static char* cocoaTouchListGetSelectedItemText(Ihandle* ih)
 {
 	IupCocoaTouchListController* ctrl = cocoaTouchListGetController(ih);
 	if (!ctrl) return NULL;
@@ -1196,7 +1298,175 @@ static char* cocoaTouchListGetSelectedTextAttrib(Ihandle* ih)
 
 static char* cocoaTouchListGetValueStringAttrib(Ihandle* ih)
 {
-	return cocoaTouchListGetSelectedTextAttrib(ih);
+	return cocoaTouchListGetSelectedItemText(ih);
+}
+
+static UITextField* cocoaTouchListGetEditField(Ihandle* ih)
+{
+	return ih->data->has_editbox ? cocoaTouchListGetField(ih) : nil;
+}
+
+static NSRange cocoaTouchListEditRange(UITextField* f)
+{
+	UITextRange* r = f.selectedTextRange;
+	if (!r) return NSMakeRange(f.text.length, 0);
+	NSInteger s = [f offsetFromPosition:f.beginningOfDocument toPosition:r.start];
+	NSInteger e = [f offsetFromPosition:f.beginningOfDocument toPosition:r.end];
+	if (s < 0) s = 0;
+	if (e < s) e = s;
+	return NSMakeRange((NSUInteger)s, (NSUInteger)(e - s));
+}
+
+static void cocoaTouchListEditSetRange(UITextField* f, NSUInteger start, NSUInteger end)
+{
+	NSUInteger len = f.text.length;
+	if (start > len) start = len;
+	if (end > len) end = len;
+	if (end < start) end = start;
+	UITextPosition* ps = [f positionFromPosition:f.beginningOfDocument offset:(NSInteger)start];
+	UITextPosition* pe = [f positionFromPosition:f.beginningOfDocument offset:(NSInteger)end];
+	if (ps && pe) f.selectedTextRange = [f textRangeFromPosition:ps toPosition:pe];
+}
+
+static void cocoaTouchListEditReplace(UITextField* f, NSRange r, NSString* value)
+{
+	NSString* text = f.text ?: @"";
+	f.text = [text stringByReplacingCharactersInRange:r withString:value];
+	cocoaTouchListEditSetRange(f, r.location + value.length, r.location + value.length);
+}
+
+static char* cocoaTouchListGetEditSelection(Ihandle* ih, int base)
+{
+	UITextField* f = cocoaTouchListGetEditField(ih);
+	if (!f) return NULL;
+	NSRange r = cocoaTouchListEditRange(f);
+	if (r.length == 0) return NULL;
+	NSString* text = f.text ?: @"";
+	return iupStrReturnIntInt(iupCocoaTouchStrUnitToChar(text, r.location) + base, iupCocoaTouchStrUnitToChar(text, NSMaxRange(r)) + base, ':');
+}
+
+static void cocoaTouchListSetEditSelection(Ihandle* ih, const char* value, int base)
+{
+	UITextField* f = cocoaTouchListGetEditField(ih);
+	int s, e;
+	if (!f) return;
+	NSString* text = f.text ?: @"";
+	if (!value || iupStrEqualNoCase(value, "NONE"))
+	{
+		NSRange r = cocoaTouchListEditRange(f);
+		cocoaTouchListEditSetRange(f, r.location, r.location);
+		return;
+	}
+	if (iupStrEqualNoCase(value, "ALL"))
+	{
+		cocoaTouchListEditSetRange(f, 0, text.length);
+		return;
+	}
+	if (iupStrToIntInt(value, &s, &e, ':') != 2) return;
+	s -= base;
+	e -= base;
+	if (s < 0 || e < 0) return;
+	cocoaTouchListEditSetRange(f, iupCocoaTouchStrCharToUnit(text, s), iupCocoaTouchStrCharToUnit(text, e));
+}
+
+static char* cocoaTouchListGetEditCaret(Ihandle* ih, int base)
+{
+	UITextField* f = cocoaTouchListGetEditField(ih);
+	if (!f) return NULL;
+	return iupStrReturnInt(iupCocoaTouchStrUnitToChar(f.text ?: @"", cocoaTouchListEditRange(f).location) + base);
+}
+
+static void cocoaTouchListSetEditCaret(Ihandle* ih, const char* value, int base)
+{
+	UITextField* f = cocoaTouchListGetEditField(ih);
+	int pos;
+	if (!f || !iupStrToInt(value, &pos)) return;
+	pos -= base;
+	if (pos < 0) pos = 0;
+	NSUInteger unit = iupCocoaTouchStrCharToUnit(f.text ?: @"", pos);
+	cocoaTouchListEditSetRange(f, unit, unit);
+}
+
+static char* cocoaTouchListGetSelectionAttrib(Ihandle* ih) { return cocoaTouchListGetEditSelection(ih, 1); }
+static char* cocoaTouchListGetSelectionPosAttrib(Ihandle* ih) { return cocoaTouchListGetEditSelection(ih, 0); }
+static int cocoaTouchListSetSelectionAttrib(Ihandle* ih, const char* value) { cocoaTouchListSetEditSelection(ih, value, 1); return 0; }
+static int cocoaTouchListSetSelectionPosAttrib(Ihandle* ih, const char* value) { cocoaTouchListSetEditSelection(ih, value, 0); return 0; }
+static char* cocoaTouchListGetCaretAttrib(Ihandle* ih) { return cocoaTouchListGetEditCaret(ih, 1); }
+static char* cocoaTouchListGetCaretPosAttrib(Ihandle* ih) { return cocoaTouchListGetEditCaret(ih, 0); }
+static int cocoaTouchListSetCaretAttrib(Ihandle* ih, const char* value) { cocoaTouchListSetEditCaret(ih, value, 1); return 0; }
+static int cocoaTouchListSetCaretPosAttrib(Ihandle* ih, const char* value) { cocoaTouchListSetEditCaret(ih, value, 0); return 0; }
+
+static char* cocoaTouchListGetSelectedTextAttrib(Ihandle* ih)
+{
+	UITextField* f = cocoaTouchListGetEditField(ih);
+	if (!f) return NULL;
+	NSRange r = cocoaTouchListEditRange(f);
+	if (r.length == 0) return NULL;
+	return iupStrReturnStr([[(f.text ?: @"") substringWithRange:r] UTF8String]);
+}
+
+static int cocoaTouchListSetSelectedTextAttrib(Ihandle* ih, const char* value)
+{
+	UITextField* f = cocoaTouchListGetEditField(ih);
+	if (!f || !value) return 0;
+	NSRange r = cocoaTouchListEditRange(f);
+	if (r.length > 0) cocoaTouchListEditReplace(f, r, iupCocoaTouchStrToNSString(value));
+	return 0;
+}
+
+static int cocoaTouchListSetInsertAttrib(Ihandle* ih, const char* value)
+{
+	UITextField* f = cocoaTouchListGetEditField(ih);
+	if (f && value) cocoaTouchListEditReplace(f, cocoaTouchListEditRange(f), iupCocoaTouchStrToNSString(value));
+	return 0;
+}
+
+static int cocoaTouchListSetAppendAttrib(Ihandle* ih, const char* value)
+{
+	UITextField* f = cocoaTouchListGetEditField(ih);
+	if (f && value) f.text = [(f.text ?: @"") stringByAppendingString:iupCocoaTouchStrToNSString(value)];
+	return 0;
+}
+
+static int cocoaTouchListSetReadOnlyAttrib(Ihandle* ih, const char* value)
+{
+	UITextField* f = cocoaTouchListGetEditField(ih);
+	if (!f) return 1;
+	f.enabled = iupStrBoolean(value) ? NO : YES;
+	return 1;
+}
+
+static int cocoaTouchListSetCueBannerAttrib(Ihandle* ih, const char* value)
+{
+	UITextField* f = cocoaTouchListGetEditField(ih);
+	if (!f) return 1;
+	f.placeholder = value ? iupCocoaTouchStrToNSString(value) : @"";
+	return 1;
+}
+
+static int cocoaTouchListSetClipboardAttrib(Ihandle* ih, const char* value)
+{
+	UITextField* f = cocoaTouchListGetEditField(ih);
+	if (!f || !value) return 0;
+	UIPasteboard* pb = [UIPasteboard generalPasteboard];
+	NSRange r = cocoaTouchListEditRange(f);
+	NSString* text = f.text ?: @"";
+	if (iupStrEqualNoCase(value, "COPY") || iupStrEqualNoCase(value, "CUT"))
+	{
+		if (r.length == 0) return 0;
+		[pb setString:[text substringWithRange:r]];
+		if (iupStrEqualNoCase(value, "CUT")) cocoaTouchListEditReplace(f, r, @"");
+	}
+	else if (iupStrEqualNoCase(value, "PASTE"))
+	{
+		NSString* paste = pb.string;
+		if (paste) cocoaTouchListEditReplace(f, r, paste);
+	}
+	else if (iupStrEqualNoCase(value, "CLEAR"))
+	{
+		if (r.length > 0) cocoaTouchListEditReplace(f, r, @"");
+	}
+	return 0;
 }
 
 static int cocoaTouchListSetValueStringAttrib(Ihandle* ih, const char* value)
@@ -1396,6 +1666,74 @@ static void cocoaTouchListUnMapMethod(Ihandle* ih)
 	iupdrvBaseUnMapMethod(ih);
 }
 
+static int cocoaTouchListSetNCAttrib(Ihandle* ih, const char* value)
+{
+	if (!ih->data->has_editbox) return 0;
+	if (!iupStrToInt(value, &ih->data->nc)) ih->data->nc = 0;
+	return 1;
+}
+
+static int cocoaTouchListSetFilterAttrib(Ihandle* ih, const char* value)
+{
+	(void)value;
+	return ih->data->has_editbox ? 1 : 0;
+}
+
+static int cocoaTouchListSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+	if (!ih->data->has_editbox || !ih->handle) return set(ih, value);
+	iupAttribSet(ih, "_IUPCOCOATOUCH_LIST_SILENT", "1");
+	int ret = set(ih, value);
+	iupAttribSet(ih, "_IUPCOCOATOUCH_LIST_SILENT", NULL);
+	ih->data->last_caret_pos = IupGetInt(ih, "CARETPOS");
+	return ret;
+}
+
+static int cocoaTouchListSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchListSetSilent(ih, value, cocoaTouchListSetValueAttrib);
+}
+
+static int cocoaTouchListSetSelectedTextAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchListSetSilent(ih, value, cocoaTouchListSetSelectedTextAttrib);
+}
+
+static int cocoaTouchListSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchListSetSilent(ih, value, cocoaTouchListSetSelectionAttrib);
+}
+
+static int cocoaTouchListSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchListSetSilent(ih, value, cocoaTouchListSetSelectionPosAttrib);
+}
+
+static int cocoaTouchListSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchListSetSilent(ih, value, cocoaTouchListSetCaretAttrib);
+}
+
+static int cocoaTouchListSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchListSetSilent(ih, value, cocoaTouchListSetCaretPosAttrib);
+}
+
+static int cocoaTouchListSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchListSetSilent(ih, value, cocoaTouchListSetInsertAttrib);
+}
+
+static int cocoaTouchListSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchListSetSilent(ih, value, cocoaTouchListSetAppendAttrib);
+}
+
+static int cocoaTouchListSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+	return cocoaTouchListSetSilent(ih, value, cocoaTouchListSetClipboardAttrib);
+}
+
 IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
 	ic->Map   = cocoaTouchListMapMethod;
@@ -1407,29 +1745,28 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 
 	iupClassRegisterAttributeId(ic, "IDVALUE", cocoaTouchListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
 
-	iupClassRegisterAttribute(ic, "VALUE", cocoaTouchListGetValueAttrib, cocoaTouchListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "VALUE", cocoaTouchListGetValueAttrib, cocoaTouchListSetValueAttribSilent, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "VALUESTRING", cocoaTouchListGetValueStringAttrib, cocoaTouchListSetValueStringAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "SELECTEDTEXT", cocoaTouchListGetSelectedTextAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "SELECTEDTEXT", cocoaTouchListGetSelectedTextAttrib, cocoaTouchListSetSelectedTextAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "TOPITEM", NULL, cocoaTouchListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, cocoaTouchListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, cocoaTouchListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 	iupClassRegisterAttribute(ic, "PADDING", iupListGetPaddingAttrib, cocoaTouchListSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
 
-	/* EDITBOX text attributes: VALUE + EDIT_CB are wired, the rest stay as hash storage. */
-	iupClassRegisterAttribute(ic, "READONLY", NULL, NULL, NULL, NULL, IUPAF_DEFAULT);
-	iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED);
-	iupClassRegisterAttribute(ic, "SELECTION", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "SELECTIONPOS", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "CARET", NULL, NULL, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "CARETPOS", NULL, NULL, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "INSERT", NULL, NULL, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "APPEND", NULL, NULL, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "SCROLLTO", NULL, NULL, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, NULL, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "CUEBANNER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
-	iupClassRegisterAttribute(ic, "FILTER", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "READONLY", NULL, cocoaTouchListSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
+	iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, cocoaTouchListSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
+	iupClassRegisterAttribute(ic, "SELECTION", cocoaTouchListGetSelectionAttrib, cocoaTouchListSetSelectionAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "SELECTIONPOS", cocoaTouchListGetSelectionPosAttrib, cocoaTouchListSetSelectionPosAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "CARET", cocoaTouchListGetCaretAttrib, cocoaTouchListSetCaretAttribSilent, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "CARETPOS", cocoaTouchListGetCaretPosAttrib, cocoaTouchListSetCaretPosAttribSilent, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "INSERT", NULL, cocoaTouchListSetInsertAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "APPEND", NULL, cocoaTouchListSetAppendAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, cocoaTouchListSetClipboardAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "SCROLLTO", NULL, cocoaTouchListSetCaretAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, cocoaTouchListSetCaretPosAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "CUEBANNER", NULL, cocoaTouchListSetCueBannerAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "FILTER", NULL, cocoaTouchListSetFilterAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttributeId(ic, "IMAGE", NULL, cocoaTouchListSetImageIdAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", cocoaTouchListGetImageNativeHandleAttribId, NULL, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);

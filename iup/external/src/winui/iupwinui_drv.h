@@ -425,6 +425,8 @@ struct IupWinUIListAux
 {
   winrt::event_token selectionChangedToken;
   winrt::event_token textChangedToken;
+  winrt::event_token beforeTextChangingToken;
+  winrt::event_token textChangingToken;
   winrt::event_token selectionChangedTextBoxToken;
   winrt::event_token dropDownOpenedToken;
   winrt::event_token dropDownClosedToken;
@@ -442,6 +444,7 @@ struct IupWinUIListAux
   bool isVirtual;
 
   IupWinUIListAux() : selectionChangedToken{}, textChangedToken{},
+                       beforeTextChangingToken{}, textChangingToken{},
                        selectionChangedTextBoxToken{},
                        dropDownOpenedToken{}, dropDownClosedToken{},
                        doubleTappedToken{}, keyDownToken{},

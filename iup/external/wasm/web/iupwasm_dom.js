@@ -79,6 +79,96 @@
       return before.split('\n').length + ',' + (iupU2C(before.slice(ls), pos - ls) + 1);
     }
 
+    function iupWireEdit(el, wid, editFn, caretFn) {
+      // the edit is applied here and reported with the previous text, so typing never waits for the worker
+      el.addEventListener('beforeinput', function (e) {
+        if (e.isComposing || el.__iupRender) return;
+        var v = el.value, s = el.selectionStart || 0, en = el.selectionEnd || 0;
+        var t = e.inputType, ins = null, rd = 0, del = null, ow = false;
+        if (t === 'insertText' || t === 'insertFromPaste' || t === 'insertFromDrop' || t === 'insertReplacementText') {
+          ins = (e.data != null) ? e.data : (e.dataTransfer ? e.dataTransfer.getData('text/plain') : '');
+          if (ins == null || ins === '') return;
+          // OVERWRITE: a collapsed caret not at end replaces the next char
+          ow = el.__iupOverwrite && t === 'insertText' && ins.length === 1;
+          if (ow && s === en && s < v.length && v[s] !== '\n') { en = s + 1; el.setSelectionRange(s, en); }
+        } else if (t === 'insertLineBreak' || t === 'insertParagraph') {
+          ins = '\n';
+        } else if (t === 'deleteContentBackward' || t === 'deleteContentForward' ||
+                   t === 'deleteByCut' || t === 'deleteByDrag') {
+          rd = (t === 'deleteContentBackward') ? -1 : 1;
+        } else if (t.indexOf('delete') === 0) {
+          if (!iupDeleteRange(v, s, en, t)) return;
+          del = t;
+        } else if (t === 'historyUndo' || t === 'historyRedo') {
+          if (el.__iupEditPending) { e.preventDefault(); return; }
+          var hv = v;
+          setTimeout(function () {
+            var after = el.value;
+            if (after === hv || el.__iupEditPending) return;
+            el.__iupEditPending = 1; el.__iupEditVC = 1;
+            Dt(editFn, ['number', 'string', 'string', 'number', 'number', 'number', 'number'],
+               [wid, hv, after, 0, iupU2C(hv, hv.length), 0, 0]);
+          }, 0);
+          return;
+        } else return;
+        var kseq = globalThis.__iupKeyPend || 0; globalThis.__iupKeyPend = 0;
+        // while one edit is arbitrated the next ones wait, so a rejection can never land on text typed after it
+        if (el.__iupEditPending) {
+          e.preventDefault();
+          (el.__iupEditQ = el.__iupEditQ || []).push({ ins: ins, rd: rd, del: del, ow: ow, seq: kseq });
+          return;
+        }
+        if (del) {
+          e.preventDefault();
+          var dr = iupDeleteRange(v, s, en, del);
+          el.value = v.slice(0, dr.ds) + v.slice(dr.de);
+          try { el.setSelectionRange(dr.ds, dr.ds); } catch (_) {}
+          s = dr.ds; en = dr.de;
+        }
+        el.__iupEditPending = 1; el.__iupEditVC = 1;
+        Dt(editFn, ['number', 'string', 'string', 'number', 'number', 'number', 'number'],
+           [wid, v, ins === null ? '' : ins, iupU2C(v, s), iupU2C(v, en), rd, kseq]);
+      });
+      el.__iupEditNext = function () {
+        var q = el.__iupEditQ;
+        if (!q || !q.length) { el.__iupEditPending = 0; return; }
+        var it = q.shift(), s2 = el.selectionStart || 0, e2 = el.selectionEnd || 0, v2 = el.value;
+        if (it.ins !== null) {
+          if (it.ow && s2 === e2 && s2 < v2.length && v2[s2] !== '\n') e2 = s2 + 1;
+          el.value = v2.slice(0, s2) + it.ins + v2.slice(e2);
+          try { el.setSelectionRange(s2 + it.ins.length, s2 + it.ins.length); } catch (_) {}
+        } else {
+          var ds = s2, de = e2;
+          if (it.del) {
+            var qr = iupDeleteRange(v2, s2, e2, it.del);
+            if (!qr) { el.__iupEditNext(); return; }
+            ds = qr.ds; de = qr.de;
+            s2 = ds; e2 = de;
+          }
+          else if (ds === de) { if (it.rd < 0) { if (ds === 0) { el.__iupEditNext(); return; } ds--; } else { if (ds >= v2.length) { el.__iupEditNext(); return; } de = ds + 1; } }
+          el.value = v2.slice(0, ds) + v2.slice(de);
+          try { el.setSelectionRange(ds, ds); } catch (_) {}
+        }
+        el.__iupEditVC = 1;
+        Dt(editFn, ['number', 'string', 'string', 'number', 'number', 'number', 'number'],
+           [wid, v2, it.ins === null ? '' : it.ins, iupU2C(v2, s2), iupU2C(v2, e2), it.rd, it.seq || 0]);
+      };
+      el.addEventListener('input', function () {
+        var m = el.__iupFilter;
+        if (m) {
+          var v = el.value, nv = m === 'NUMBER' ? v.replace(/[^0-9+\-.eE]/g, '') : m === 'UPPERCASE' ? v.toUpperCase() : m === 'LOWERCASE' ? v.toLowerCase() : v;
+          if (nv !== v) { var p = el.selectionStart; el.value = nv; try { el.setSelectionRange(p, p); } catch (_) {} }
+        }
+        // an arbitrated edit reports VALUECHANGED from the model, once it is accepted
+        if (el.__iupEditVC) { el.__iupEditVC = 0; return; }
+        D('iupwasmDispatchValueChanged', wid);
+      });
+      var reportCaret = function () { caretFn(el, wid); };
+      el.addEventListener('keyup', reportCaret);
+      el.addEventListener('click', reportCaret);
+      el.addEventListener('select', reportCaret);
+    }
+
     // beforeinput carries no range for a word or line delete in an <input>, and getTargetRanges() is empty outside contenteditable
     function iupDeleteRange(val, s, en, type) {
       var ws = function (c) { return c === ' ' || c === '\t' || c === '\n'; };
@@ -1732,6 +1822,7 @@
         if (el) el.value = c.value;
       } break;
       case 'texteditdone': {
+        if (el && el.__iupVal) el = el.__iupVal;
         if (el) {
           if (c.fix) {
             el.value = c.value;
@@ -1818,99 +1909,10 @@
         if (el && el.type !== undefined) el.type = c.on ? 'password' : 'text';
       } break;
       case 'textwire': {
-        if (el) {
-          var wid = c.id;
-          // the edit is applied here and reported with the previous text, so typing never waits for the worker
-          el.addEventListener('beforeinput', function (e) {
-            if (e.isComposing || el.__iupRender) return;
-            var v = el.value, s = el.selectionStart || 0, en = el.selectionEnd || 0;
-            var t = e.inputType, ins = null, rd = 0, del = null, ow = false;
-            if (t === 'insertText' || t === 'insertFromPaste' || t === 'insertFromDrop' || t === 'insertReplacementText') {
-              ins = (e.data != null) ? e.data : (e.dataTransfer ? e.dataTransfer.getData('text/plain') : '');
-              if (ins == null || ins === '') return;
-              // OVERWRITE: a collapsed caret not at end replaces the next char
-              ow = el.__iupOverwrite && t === 'insertText' && ins.length === 1;
-              if (ow && s === en && s < v.length && v[s] !== '\n') { en = s + 1; el.setSelectionRange(s, en); }
-            } else if (t === 'insertLineBreak' || t === 'insertParagraph') {
-              ins = '\n';
-            } else if (t === 'deleteContentBackward' || t === 'deleteContentForward' ||
-                       t === 'deleteByCut' || t === 'deleteByDrag') {
-              rd = (t === 'deleteContentBackward') ? -1 : 1;
-            } else if (t.indexOf('delete') === 0) {
-              if (!iupDeleteRange(v, s, en, t)) return;
-              del = t;
-            } else if (t === 'historyUndo' || t === 'historyRedo') {
-              if (el.__iupEditPending) { e.preventDefault(); return; }
-              var hv = v;
-              setTimeout(function () {
-                var after = el.value;
-                if (after === hv || el.__iupEditPending) return;
-                el.__iupEditPending = 1; el.__iupEditVC = 1;
-                Dt('iupwasmDispatchTextEdit', ['number', 'string', 'string', 'number', 'number', 'number', 'number'],
-                   [wid, hv, after, 0, iupU2C(hv, hv.length), 0, 0]);
-              }, 0);
-              return;
-            } else return;
-            var kseq = globalThis.__iupKeyPend || 0; globalThis.__iupKeyPend = 0;
-            // while one edit is arbitrated the next ones wait, so a rejection can never land on text typed after it
-            if (el.__iupEditPending) {
-              e.preventDefault();
-              (el.__iupEditQ = el.__iupEditQ || []).push({ ins: ins, rd: rd, del: del, ow: ow, seq: kseq });
-              return;
-            }
-            if (del) {
-              e.preventDefault();
-              var dr = iupDeleteRange(v, s, en, del);
-              el.value = v.slice(0, dr.ds) + v.slice(dr.de);
-              try { el.setSelectionRange(dr.ds, dr.ds); } catch (_) {}
-              s = dr.ds; en = dr.de;
-            }
-            el.__iupEditPending = 1; el.__iupEditVC = 1;
-            Dt('iupwasmDispatchTextEdit', ['number', 'string', 'string', 'number', 'number', 'number', 'number'],
-               [wid, v, ins === null ? '' : ins, iupU2C(v, s), iupU2C(v, en), rd, kseq]);
-          });
-          el.__iupEditNext = function () {
-            var q = el.__iupEditQ;
-            if (!q || !q.length) { el.__iupEditPending = 0; return; }
-            var it = q.shift(), s2 = el.selectionStart || 0, e2 = el.selectionEnd || 0, v2 = el.value;
-            if (it.ins !== null) {
-              if (it.ow && s2 === e2 && s2 < v2.length && v2[s2] !== '\n') e2 = s2 + 1;
-              el.value = v2.slice(0, s2) + it.ins + v2.slice(e2);
-              try { el.setSelectionRange(s2 + it.ins.length, s2 + it.ins.length); } catch (_) {}
-            } else {
-              var ds = s2, de = e2;
-              if (it.del) {
-                var qr = iupDeleteRange(v2, s2, e2, it.del);
-                if (!qr) { el.__iupEditNext(); return; }
-                ds = qr.ds; de = qr.de;
-                s2 = ds; e2 = de;
-              }
-              else if (ds === de) { if (it.rd < 0) { if (ds === 0) { el.__iupEditNext(); return; } ds--; } else { if (ds >= v2.length) { el.__iupEditNext(); return; } de = ds + 1; } }
-              el.value = v2.slice(0, ds) + v2.slice(de);
-              try { el.setSelectionRange(ds, ds); } catch (_) {}
-            }
-            el.__iupEditVC = 1;
-            Dt('iupwasmDispatchTextEdit', ['number', 'string', 'string', 'number', 'number', 'number', 'number'],
-               [wid, v2, it.ins === null ? '' : it.ins, iupU2C(v2, s2), iupU2C(v2, e2), it.rd, it.seq || 0]);
-          };
-          el.addEventListener('input', function () {
-            var m = el.__iupFilter;
-            if (m) {
-              var v = el.value, nv = m === 'NUMBER' ? v.replace(/[^0-9+\-.eE]/g, '') : m === 'UPPERCASE' ? v.toUpperCase() : m === 'LOWERCASE' ? v.toLowerCase() : v;
-              if (nv !== v) { var p = el.selectionStart; el.value = nv; try { el.setSelectionRange(p, p); } catch (_) {} }
-            }
-            // an arbitrated edit reports VALUECHANGED from the model, once it is accepted
-            if (el.__iupEditVC) { el.__iupEditVC = 0; return; }
-            D('iupwasmDispatchValueChanged', wid);
-          });
-          var reportCaret = function () {
-            var p = el.selectionStart || 0, lc = iupPosToLc(el.value, p).split(',');
-            Dt('iupwasmDispatchTextCaret', ['number', 'number', 'number', 'number'], [wid, +lc[0], +lc[1], iupU2C(el.value, p)]);
-          };
-          el.addEventListener('keyup', reportCaret);
-          el.addEventListener('click', reportCaret);
-          el.addEventListener('select', reportCaret);
-        }
+        if (el) iupWireEdit(el, c.id, 'iupwasmDispatchTextEdit', function (te, tid) {
+          var p = te.selectionStart || 0, lc = iupPosToLc(te.value, p).split(',');
+          Dt('iupwasmDispatchTextCaret', ['number', 'number', 'number', 'number'], [tid, +lc[0], +lc[1], iupU2C(te.value, p)]);
+        });
       } break;
       case 'textfilter': {
         if (el) el.__iupFilter = c.mode ? c.mode.toUpperCase() : '';
@@ -2177,14 +2179,9 @@
           var lid = c.id, lwval = el.__iupVal, lwopts = el.__iupOpts;
           if (c.dropdown) lwval.addEventListener('mousedown', function () { D('iupwasmDispatchListDropdown', lid, 1); });
           if (c.editbox) {
-            lwval.addEventListener('input', function () {
-              D('iupwasmDispatchValueChanged', lid);
-              Dt('iupwasmDispatchListEdit', ['number', 'number', 'string'], [lid, 0, lwval.value]);
+            iupWireEdit(lwval, lid, 'iupwasmDispatchListEdit', function (te, tid) {
+              Dt('iupwasmDispatchListCaret', ['number', 'number'], [tid, iupU2C(te.value, te.selectionStart || 0)]);
             });
-            var reportListCaret = function () { Dt('iupwasmDispatchListCaret', ['number', 'number'], [lid, lwval.selectionStart || 0]); };
-            lwval.addEventListener('keyup', reportListCaret);
-            lwval.addEventListener('click', reportListCaret);
-            lwval.addEventListener('select', reportListCaret);
           }
           if (lwopts.tagName === 'SELECT') {
             lwopts.addEventListener('change', function () {

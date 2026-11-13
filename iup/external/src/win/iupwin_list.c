@@ -383,19 +383,17 @@ static int winListEditCharToUnit(HWND cbedit, int pos)
 
 static int winListGetCaretPos(HWND cbedit)
 {
-  int pos = 0;
+  DWORD start = 0, end = 0;
+  int pos;
   POINT point;
 
-  if (GetFocus() != cbedit || !GetCaretPos(&point))
+  SendMessage(cbedit, EM_GETSEL, (WPARAM)&start, (LPARAM)&end);
+  pos = (int)start;
+  if (start != end && GetFocus() == cbedit && GetCaretPos(&point))
   {
-    /* if it does not have the focus, or could not get caret position,
-       then use the selection start position */
-    SendMessage(cbedit, EM_GETSEL, (WPARAM)&pos, 0);
-  }
-  else
-  {
-    pos = (int)SendMessage(cbedit, EM_CHARFROMPOS, 0, MAKELPARAM(point.x, point.y));
-    pos = LOWORD(pos);
+    int wpos = LOWORD(SendMessage(cbedit, EM_CHARFROMPOS, 0, MAKELPARAM(point.x, point.y)));
+    if (abs(wpos - (int)end) < abs(wpos - (int)start))
+      pos = (int)end;
   }
 
   return winListEditUnitToChar(cbedit, pos);
@@ -1293,8 +1291,8 @@ static int winListWmCommand(Ihandle* ih, WPARAM wp, LPARAM lp)
     {
     case CBN_EDITCHANGE:
       {
-        /* called only when the edit was changed by the user */
-        iupBaseCallValueChangedCb(ih);
+        if (!iupAttribGet(ih, "_IUPWIN_LIST_SILENT"))
+          iupBaseCallValueChangedCb(ih);
         break;
       }
     case CBN_SETFOCUS:
@@ -2389,6 +2387,73 @@ static int winListMapMethod(Ihandle* ih)
   return IUP_NOERROR;
 }
 
+static int winListSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
+{
+  char* saved = iupAttribGet(ih, "_IUPWIN_LIST_SILENT");
+  int ret;
+  iupAttribSet(ih, "_IUPWIN_LIST_SILENT", "1");
+  ret = set(ih, value);
+  iupAttribSet(ih, "_IUPWIN_LIST_SILENT", saved);
+  if (ih->handle && ih->data->has_editbox)
+    ih->data->last_caret_pos = winListGetCaretPos((HWND)iupAttribGet(ih, "_IUPWIN_EDITBOX"));
+  return ret;
+}
+
+static int winListSetValueAttribSilent(Ihandle* ih, const char* value)
+{
+  return winListSetSilent(ih, value, winListSetValueAttrib);
+}
+
+static int winListSetSelectedTextAttribSilent(Ihandle* ih, const char* value)
+{
+  return winListSetSilent(ih, value, winListSetSelectedTextAttrib);
+}
+
+static int winListSetSelectionAttribSilent(Ihandle* ih, const char* value)
+{
+  return winListSetSilent(ih, value, winListSetSelectionAttrib);
+}
+
+static int winListSetSelectionPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return winListSetSilent(ih, value, winListSetSelectionPosAttrib);
+}
+
+static int winListSetCaretAttribSilent(Ihandle* ih, const char* value)
+{
+  return winListSetSilent(ih, value, winListSetCaretAttrib);
+}
+
+static int winListSetCaretPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return winListSetSilent(ih, value, winListSetCaretPosAttrib);
+}
+
+static int winListSetInsertAttribSilent(Ihandle* ih, const char* value)
+{
+  return winListSetSilent(ih, value, winListSetInsertAttrib);
+}
+
+static int winListSetAppendAttribSilent(Ihandle* ih, const char* value)
+{
+  return winListSetSilent(ih, value, winListSetAppendAttrib);
+}
+
+static int winListSetClipboardAttribSilent(Ihandle* ih, const char* value)
+{
+  return winListSetSilent(ih, value, winListSetClipboardAttrib);
+}
+
+static int winListSetScrollToAttribSilent(Ihandle* ih, const char* value)
+{
+  return winListSetSilent(ih, value, winListSetScrollToAttrib);
+}
+
+static int winListSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
+{
+  return winListSetSilent(ih, value, winListSetScrollToPosAttrib);
+}
+
 IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   /* Driver Dependent Class functions */
@@ -2409,7 +2474,7 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 
   /* IupList only */
   iupClassRegisterAttributeId(ic, "IDVALUE", winListGetIdValueAttrib, iupListSetIdValueAttrib, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "VALUE", winListGetValueAttrib, winListSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "VALUE", winListGetValueAttrib, winListSetValueAttribSilent, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, winListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, winListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_DEFAULT);
@@ -2417,18 +2482,18 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "SPACING", iupListGetSpacingAttrib, winListSetSpacingAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NOT_MAPPED);
 
   iupClassRegisterAttribute(ic, "PADDING", iupListGetPaddingAttrib, winListSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", winListGetSelectedTextAttrib, winListSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTION", winListGetSelectionAttrib, winListSetSelectionAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTIONPOS", winListGetSelectionPosAttrib, winListSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARET", winListGetCaretAttrib, winListSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "CARETPOS", winListGetCaretPosAttrib, winListSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "INSERT", NULL, winListSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "APPEND", NULL, winListSetAppendAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", winListGetSelectedTextAttrib, winListSetSelectedTextAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTION", winListGetSelectionAttrib, winListSetSelectionAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", winListGetSelectionPosAttrib, winListSetSelectionPosAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARET", winListGetCaretAttrib, winListSetCaretAttribSilent, NULL, NULL, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", winListGetCaretPosAttrib, winListSetCaretPosAttribSilent, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "INSERT", NULL, winListSetInsertAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "APPEND", NULL, winListSetAppendAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", winListGetReadOnlyAttrib, winListSetReadOnlyAttrib, NULL, NULL, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "NC", iupListGetNCAttrib, winListSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED);
-  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, winListSetClipboardAttrib, NULL, NULL, IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, winListSetScrollToAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, winListSetScrollToPosAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, winListSetClipboardAttribSilent, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, winListSetScrollToAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, winListSetScrollToPosAttribSilent, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", winListGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "IMAGE", NULL, winListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
