@@ -978,6 +978,10 @@ static void winuiTextLinkPointerMoved(Ihandle* ih, Windows::Foundation::Point cl
   }
 }
 
+static int winuiTextUnitToChar(Ihandle* ih, int unit);
+static int winuiTextCharToUnit(Ihandle* ih, int pos);
+static void winuiTextUnitToLinCol(Ihandle* ih, int pos, int* lin, int* col);
+
 static int winuiTextConvertXYToPos(Ihandle* ih, int x, int y)
 {
   auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
@@ -988,7 +992,10 @@ static int winuiTextConvertXYToPos(Ihandle* ih, int x, int y)
   Windows::Foundation::Point point{static_cast<float>(x / scale), static_cast<float>(y / scale)};
 
   if (aux->isMultiline && winuiGetHandle<RichEditBox>(ih))
-    return winuiTextGetPosFromPoint(ih, point);
+  {
+    int pos = winuiTextGetPosFromPoint(ih, point);
+    return pos < 0 ? pos : winuiTextUnitToChar(ih, pos);
+  }
 
   auto tb = winuiGetHandle<TextBox>(ih);
   if (!tb)
@@ -1021,7 +1028,7 @@ static int winuiTextConvertXYToPos(Ihandle* ih, int x, int y)
     if (count == 0)
       break;
   }
-  return best;
+  return winuiTextUnitToChar(ih, best);
 }
 
 static int winuiTextMapMethod(Ihandle* ih)
@@ -1245,8 +1252,8 @@ static int winuiTextMapMethod(Ihandle* ih)
       auto sel = reb.Document().Selection();
       int pos = sel.StartPosition();
       int lin, col;
-      iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
-      if (cb(ih, lin, col, pos) == IUP_CLOSE) IupExitLoop();
+      winuiTextUnitToLinCol(ih, pos, &lin, &col);
+      if (cb(ih, lin, col, winuiTextUnitToChar(ih, pos)) == IUP_CLOSE) IupExitLoop();
     });
 
     aux->gotFocusToken = reb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
@@ -1459,8 +1466,8 @@ static int winuiTextMapMethod(Ihandle* ih)
       if (!tb) return;
       int pos = tb.SelectionStart();
       int lin, col;
-      iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
-      if (cb(ih, lin, col, pos) == IUP_CLOSE) IupExitLoop();
+      winuiTextUnitToLinCol(ih, pos, &lin, &col);
+      if (cb(ih, lin, col, winuiTextUnitToChar(ih, pos)) == IUP_CLOSE) IupExitLoop();
     });
 
     aux->gotFocusToken = tb.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
@@ -1872,7 +1879,7 @@ static int winuiTextStringLinColToPos(const wchar_t* text, int textLen, int lin,
 
   col--;
   if (col < 0) col = 0;
-  if (col > lineLen) col = lineLen;
+  col = iupStrUtf16CharToUnit(reinterpret_cast<const unsigned short*>(text + lineStart), lineLen, col);
 
   return lineStart + col;
 }
@@ -1897,10 +1904,34 @@ static void winuiTextStringPosToLinCol(const wchar_t* text, int textLen, int pos
   }
 
   *lin = currentLine;
-  *col = pos - lineStart + 1;
+  *col = iupStrUtf16UnitToChar(reinterpret_cast<const unsigned short*>(text + lineStart), textLen - lineStart, pos - lineStart) + 1;
 }
 
-extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
+static hstring winuiTextNativeText(Ihandle* ih)
+{
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  hstring text;
+  if (aux && aux->isFormatted)
+  {
+    if (auto reb = winuiGetHandle<RichEditBox>(ih))
+      reb.Document().GetText(TextGetOptions::None, text);
+  }
+  else if (auto tb = winuiGetHandle<TextBox>(ih))
+    text = tb.Text();
+  return text;
+}
+
+static int winuiTextUnitToChar(Ihandle* ih, int unit)
+{
+  return iupwinuiStrUnitToChar(winuiTextNativeText(ih), unit);
+}
+
+static int winuiTextCharToUnit(Ihandle* ih, int pos)
+{
+  return iupwinuiStrCharToUnit(winuiTextNativeText(ih), pos);
+}
+
+static void winuiTextLinColToUnit(Ihandle* ih, int lin, int col, int* pos)
 {
   auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux)
@@ -1911,8 +1942,7 @@ extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, i
 
   if (!ih->data->is_multiline)
   {
-    *pos = col - 1;
-    if (*pos < 0) *pos = 0;
+    *pos = winuiTextCharToUnit(ih, col - 1 < 0 ? 0 : col - 1);
     return;
   }
 
@@ -1937,7 +1967,7 @@ extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, i
   }
 }
 
-extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
+static void winuiTextUnitToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
   if (!aux)
@@ -1950,7 +1980,7 @@ extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, i
   if (!ih->data->is_multiline)
   {
     *lin = 1;
-    *col = pos + 1;
+    *col = winuiTextUnitToChar(ih, pos) + 1;
     return;
   }
 
@@ -1985,6 +2015,17 @@ extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, i
   }
 }
 
+extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
+{
+  winuiTextLinColToUnit(ih, lin, col, pos);
+  *pos = winuiTextUnitToChar(ih, *pos);
+}
+
+extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
+{
+  winuiTextUnitToLinCol(ih, winuiTextCharToUnit(ih, pos), lin, col);
+}
+
 extern "C" IUP_SDK_API void* iupdrvTextAddFormatTagStartBulk(Ihandle* ih)
 {
   (void)ih;
@@ -2001,32 +2042,7 @@ static int winuiTextLinColToPos(ITextDocument const& doc, int lin, int col)
 {
   hstring text;
   doc.GetText(TextGetOptions::None, text);
-  std::wstring_view wtext(text.c_str(), text.size());
-  int textLen = static_cast<int>(wtext.size());
-
-  int currentLine = 1;
-  int lineStart = 0;
-
-  while (currentLine < lin && lineStart < textLen)
-  {
-    if (wtext[lineStart] == L'\r')
-      currentLine++;
-    lineStart++;
-  }
-
-  int lineLen = 0;
-  int p = lineStart;
-  while (p < textLen && wtext[p] != L'\r')
-  {
-    lineLen++;
-    p++;
-  }
-
-  col--;
-  if (col < 0) col = 0;
-  if (col > lineLen) col = lineLen;
-
-  return lineStart + col;
+  return winuiTextStringLinColToPos(text.c_str(), static_cast<int>(text.size()), lin, col);
 }
 
 static void winuiTextParseCharacterFormat(Ihandle* formattag, ITextRange const& range)
@@ -2602,6 +2618,8 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
       else if (!iupStrEqualNoCase(selectionpos, "NONE"))
       {
         iupStrToIntInt(selectionpos, &start_pos, &end_pos, ':');
+        start_pos = winuiTextCharToUnit(ih, start_pos);
+        end_pos = winuiTextCharToUnit(ih, end_pos);
       }
     }
   }
@@ -2892,12 +2910,12 @@ static char* winuiTextGetSelectionAttrib(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     int lin1, col1, lin2, col2;
-    iupdrvTextConvertPosToLinCol(ih, start, &lin1, &col1);
-    iupdrvTextConvertPosToLinCol(ih, end, &lin2, &col2);
+    winuiTextUnitToLinCol(ih, start, &lin1, &col1);
+    winuiTextUnitToLinCol(ih, end, &lin2, &col2);
     return iupStrReturnStrf("%d,%d:%d,%d", lin1, col1, lin2, col2);
   }
   else
-    return iupStrReturnIntInt(start + 1, end + 1, ':');
+    return iupStrReturnIntInt(winuiTextUnitToChar(ih, start) + 1, winuiTextUnitToChar(ih, end) + 1, ':');
 }
 
 static int winuiTextSetSelectionAttrib(Ihandle* ih, const char* value)
@@ -2956,8 +2974,8 @@ static int winuiTextSetSelectionAttrib(Ihandle* ih, const char* value)
       return 0;
 
     int start, end;
-    iupdrvTextConvertLinColToPos(ih, lin1, col1, &start);
-    iupdrvTextConvertLinColToPos(ih, lin2, col2, &end);
+    winuiTextLinColToUnit(ih, lin1, col1, &start);
+    winuiTextLinColToUnit(ih, lin2, col2, &end);
 
     if (aux->isFormatted)
     {
@@ -2981,6 +2999,8 @@ static int winuiTextSetSelectionAttrib(Ihandle* ih, const char* value)
     end--;
     if (start < 0) start = 0;
     if (end < 0) end = 0;
+    start = winuiTextCharToUnit(ih, start);
+    end = winuiTextCharToUnit(ih, end);
 
     auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
@@ -3017,7 +3037,7 @@ static char* winuiTextGetSelectionPosAttrib(Ihandle* ih)
   if (start == end)
     return nullptr;
 
-  return iupStrReturnIntInt(start, end, ':');
+  return iupStrReturnIntInt(winuiTextUnitToChar(ih, start), winuiTextUnitToChar(ih, end), ':');
 }
 
 static int winuiTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
@@ -3074,6 +3094,8 @@ static int winuiTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
     return 0;
   if (start < 0) start = 0;
   if (end < 0) end = 0;
+  start = winuiTextCharToUnit(ih, start);
+  end = winuiTextCharToUnit(ih, end);
 
   if (aux->isFormatted)
   {
@@ -3115,11 +3137,11 @@ static char* winuiTextGetCaretAttrib(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     int lin, col;
-    iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
+    winuiTextUnitToLinCol(ih, pos, &lin, &col);
     return iupStrReturnIntInt(lin, col, ',');
   }
   else
-    return iupStrReturnInt(pos + 1);
+    return iupStrReturnInt(winuiTextUnitToChar(ih, pos) + 1);
 }
 
 static int winuiTextSetCaretAttrib(Ihandle* ih, const char* value)
@@ -3137,7 +3159,7 @@ static int winuiTextSetCaretAttrib(Ihandle* ih, const char* value)
     iupStrToIntInt(value, &lin, &col, ',');
     if (lin < 1) lin = 1;
     if (col < 1) col = 1;
-    iupdrvTextConvertLinColToPos(ih, lin, col, &pos);
+    winuiTextLinColToUnit(ih, lin, col, &pos);
   }
   else
   {
@@ -3145,6 +3167,7 @@ static int winuiTextSetCaretAttrib(Ihandle* ih, const char* value)
     iupStrToInt(value, &pos);
     pos--;
     if (pos < 0) pos = 0;
+    pos = winuiTextCharToUnit(ih, pos);
   }
 
   if (aux->isFormatted)
@@ -3184,7 +3207,7 @@ static char* winuiTextGetCaretPosAttrib(Ihandle* ih)
     pos = tb.SelectionStart();
   }
 
-  return iupStrReturnInt(pos);
+  return iupStrReturnInt(winuiTextUnitToChar(ih, pos));
 }
 
 static int winuiTextSetCaretPosAttrib(Ihandle* ih, const char* value)
@@ -3198,6 +3221,7 @@ static int winuiTextSetCaretPosAttrib(Ihandle* ih, const char* value)
   int pos = 0;
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
+  pos = winuiTextCharToUnit(ih, pos);
 
   if (aux->isFormatted)
   {
@@ -3276,12 +3300,14 @@ static char* winuiTextGetCountAttrib(Ihandle* ih)
     count = static_cast<int>(text.size());
     if (count > 0 && text.c_str()[count - 1] == L'\r')
       count--;
+    count = iupStrUtf16UnitToChar(reinterpret_cast<const unsigned short*>(text.c_str()), count, count);
   }
   else
   {
     auto tb = winuiGetHandle<TextBox>(ih);
     if (!tb) return nullptr;
-    count = static_cast<int>(tb.Text().size());
+    hstring text = tb.Text();
+    count = iupStrUtf16UnitToChar(reinterpret_cast<const unsigned short*>(text.c_str()), static_cast<int>(text.size()), static_cast<int>(text.size()));
   }
 
   return iupStrReturnInt(count);
@@ -3619,7 +3645,7 @@ static int winuiTextSetScrollToAttrib(Ihandle* ih, const char* value)
     int pos = 1;
     iupStrToInt(value, &pos);
     if (pos < 1) pos = 1;
-    pos--;
+    pos = winuiTextCharToUnit(ih, pos - 1);
 
     auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
@@ -3640,6 +3666,7 @@ static int winuiTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   int pos = 0;
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
+  pos = winuiTextCharToUnit(ih, pos);
 
   if (ih->data->is_multiline)
   {
@@ -4124,7 +4151,9 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
       Ihandle* formattag = IupUser();
       const char* url;
 
-      IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", run_start, pos);
+      IupSetStrf(formattag, "SELECTIONPOS", "%d:%d",
+                 iupStrUtf16UnitToChar(reinterpret_cast<const unsigned short*>(text.c_str()), static_cast<int>(text.size()), run_start),
+                 iupStrUtf16UnitToChar(reinterpret_cast<const unsigned short*>(text.c_str()), static_cast<int>(text.size()), pos));
       IupAppend(bulk_tag, formattag);
 
       IupSetAttribute(formattag, "WEIGHT", run_bold ? "BOLD" : "NORMAL");

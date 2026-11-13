@@ -66,6 +66,10 @@ IUP_DRV_API void iupqmlSetPaddings(QQuickItem* item, double left, double right, 
 IUP_DRV_API void iupqmlRestorePaddings(QQuickItem* item, QQuickItem* tpl);
 IUP_DRV_API int iupqmlCallMethod(QObject* obj, const char* method, const QVariant& arg1 = QVariant(), const QVariant& arg2 = QVariant());
 
+/* Strings */
+IUP_DRV_API int iupqmlStrUnitToChar(const QString& str, int unit);
+IUP_DRV_API int iupqmlStrCharToUnit(const QString& str, int pos);
+
 /* Images */
 IUP_DRV_API QString iupqmlImageUrl(QPixmap* pixmap);
 IUP_DRV_API void iupqmlImageRelease(QPixmap* pixmap);

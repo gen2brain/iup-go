@@ -113,10 +113,10 @@ JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeGe
   (void)cls;
   Ihandle* ih = (Ihandle*)ihandle_ptr;
   if (!ih || !j_name) return JNI_FALSE;
-  const char* name = (*jni_env)->GetStringUTFChars(jni_env, j_name, NULL);
+  const char* name = iupAndroid_JStringToUtf8(jni_env, j_name);
   const char* val = iupAttribGet(ih, name);
   jboolean result = (val && iupStrBoolean(val)) ? JNI_TRUE : JNI_FALSE;
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_name, name);
+  free((char*)name);
   return result;
 }
 
@@ -126,10 +126,10 @@ JNIEXPORT jstring JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeGet
   (void)cls;
   Ihandle* ih = (Ihandle*)ihandle_ptr;
   if (!ih || !j_name) return NULL;
-  const char* name = (*jni_env)->GetStringUTFChars(jni_env, j_name, NULL);
+  const char* name = iupAndroid_JStringToUtf8(jni_env, j_name);
   const char* val = iupAttribGet(ih, name);
   jstring result = val ? iupAndroid_NewStringUTF(jni_env, val) : NULL;
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_name, name);
+  free((char*)name);
   return result;
 }
 
@@ -245,13 +245,13 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupMenuHelper_nativeDispat
 
     if (j_path)
     {
-      const char* c_path = (*jni_env)->GetStringUTFChars(jni_env, j_path, NULL);
+      const char* c_path = iupAndroid_JStringToUtf8(jni_env, j_path);
       if (c_path && *c_path)
       {
         staged = strdup(c_path);
         dispatch_name = staged;
       }
-      (*jni_env)->ReleaseStringUTFChars(jni_env, j_path, c_path);
+      free((char*)c_path);
       (*jni_env)->DeleteLocalRef(jni_env, j_path);
     }
   }

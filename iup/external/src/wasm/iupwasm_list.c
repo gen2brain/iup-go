@@ -262,9 +262,10 @@ EM_JS(void, iupwasmJsListEditInsert, (int id, const char* v), { globalThis.__iup
 EM_JS(void, iupwasmJsListEditClipboard, (int id, const char* action), { globalThis.__iupApply({ op: 'listeditclipboard', id: id, action: UTF8ToString(action) }); })
 EM_JS(void, iupwasmJsListEditSetCaret, (int id, int pos), { globalThis.__iupApply({ op: 'listeditcaret', id: id, pos: pos }); })
 EM_JS(void, iupwasmJsListEditSetSel, (int id, int s, int e), { globalThis.__iupApply({ op: 'listeditselpos', id: id, s: s, e: e }); })
+EM_JS(void, iupwasmJsListEditSetSelText, (int id, const char* v), { globalThis.__iupApply({ op: 'listeditsetseltext', id: id, value: UTF8ToString(v) }); })
 EM_JS(int, iupwasmJsListEditGetCaret, (int id), {
   if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'listeditcaret', id: id });
-  var el = globalThis.__iup.els[id]; return (el && el.__iupVal) ? (el.__iupVal.selectionStart || 0) : 0;
+  var el = globalThis.__iup.els[id]; return (el && el.__iupVal) ? globalThis.__iupU2C(el.__iupVal.value, el.__iupVal.selectionStart || 0) : 0;
 })
 EM_JS(char*, iupwasmJsListEditGetSel, (int id), {
   var s = (typeof document === 'undefined') ? globalThis.__iupReadSync({ op: 'listeditselpos', id: id }) : "";
@@ -831,7 +832,7 @@ static char* wasmListGetSelectionAttrib(Ihandle* ih)
   if (!p || !*p) { free(p); return NULL; }
   iupStrToIntInt(p, &s, &e, ':');
   free(p);
-  return iupStrReturnStrf("%d:%d", s + 1, e);
+  return iupStrReturnIntInt(s + 1, e + 1, ':');
 }
 
 static int wasmListSetSelectionAttrib(Ihandle* ih, const char* value)
@@ -840,8 +841,8 @@ static int wasmListSetSelectionAttrib(Ihandle* ih, const char* value)
   if (!id || !ih->data->has_editbox || !value) return 0;
   if (iupStrEqualNoCase(value, "NONE")) { iupwasmJsListEditSetSel(id, 0, 0); return 0; }
   if (iupStrEqualNoCase(value, "ALL")) { iupwasmJsListEditSetSel(id, 0, 1000000); return 0; }
-  iupStrToIntInt(value, &s, &e, ':');
-  iupwasmJsListEditSetSel(id, s > 0 ? s - 1 : 0, e);
+  if (iupStrToIntInt(value, &s, &e, ':') != 2 || s < 1 || e < 1) return 0;
+  iupwasmJsListEditSetSel(id, s - 1, e - 1);
   return 0;
 }
 
@@ -850,6 +851,22 @@ static int wasmListSetScrollToPosEditAttrib(Ihandle* ih, const char* value)
   int id = iupwasmIdOf(ih), pos = 0;
   if (id && ih->data->has_editbox && iupStrToInt(value, &pos))
     iupwasmJsListEditSetCaret(id, pos);  /* moving the caret scrolls the input into view */
+  return 0;
+}
+
+static int wasmListSetScrollToEditAttrib(Ihandle* ih, const char* value)
+{
+  int id = iupwasmIdOf(ih), pos = 1;
+  if (id && ih->data->has_editbox && iupStrToInt(value, &pos))
+    iupwasmJsListEditSetCaret(id, pos > 0 ? pos - 1 : 0);
+  return 0;
+}
+
+static int wasmListSetSelectedTextAttrib(Ihandle* ih, const char* value)
+{
+  int id = iupwasmIdOf(ih);
+  if (id && ih->data->has_editbox && value)
+    iupwasmJsListEditSetSelText(id, value);
   return 0;
 }
 
@@ -867,7 +884,7 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, wasmListSetClipboardAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARETPOS", wasmListGetCaretPosAttrib, wasmListSetCaretPosAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTIONPOS", wasmListGetSelectionPosAttrib, wasmListSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", wasmListGetSelectedTextAttrib, NULL, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", wasmListGetSelectedTextAttrib, wasmListSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FITIMAGE", wasmListGetFitImageAttrib, wasmListSetFitImageAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDROPDOWN", NULL, wasmListSetShowDropdownAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TOPITEM", NULL, wasmListSetTopItemAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
@@ -876,7 +893,7 @@ IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "DROPEXPAND", NULL, wasmListSetDropExpandAttrib, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARET", wasmListGetCaretAttrib, wasmListSetCaretAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTION", wasmListGetSelectionAttrib, wasmListSetSelectionAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, wasmListSetScrollToPosEditAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTO", NULL, wasmListSetScrollToEditAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLTOPOS", NULL, wasmListSetScrollToPosEditAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VISIBLEITEMS", NULL, NULL, IUPAF_SAMEASSYSTEM, "5", IUPAF_NOT_SUPPORTED);  /* native <select> popup item count is UA-controlled */
   iupClassRegisterAttribute(ic, "AUTOREDRAW", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_SUPPORTED | IUPAF_NO_INHERIT);  /* DOM always repaints */

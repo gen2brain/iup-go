@@ -2284,3 +2284,76 @@ IUP_SDK_API char* iupStrFileMakeURL(const char* filename)
   }
   return url;
 }
+
+IUP_SDK_API int iupStrUtf8CharToByte(const char* str, int char_pos)
+{
+  const unsigned char* s = (const unsigned char*)str;
+  int byte = 0;
+
+  if (!str || char_pos <= 0)
+    return 0;
+
+  while (s[byte] && char_pos > 0)
+  {
+    byte++;
+    while ((s[byte] & 0xC0) == 0x80)
+      byte++;
+    char_pos--;
+  }
+  return byte;
+}
+
+IUP_SDK_API int iupStrUtf8ByteToChar(const char* str, int byte_pos)
+{
+  const unsigned char* s = (const unsigned char*)str;
+  int byte, count = 0;
+
+  if (!str || byte_pos <= 0)
+    return 0;
+
+  for (byte = 0; s[byte] && byte < byte_pos; byte++)
+  {
+    if ((s[byte] & 0xC0) != 0x80)
+      count++;
+  }
+  return count;
+}
+
+IUP_SDK_API int iupStrUtf16CharToUnit(const unsigned short* str, int len, int char_pos)
+{
+  int unit = 0;
+
+  if (!str || char_pos <= 0)
+    return 0;
+
+  while (unit < len && char_pos > 0)
+  {
+    if (str[unit] >= 0xD800 && str[unit] <= 0xDBFF && unit + 1 < len && str[unit + 1] >= 0xDC00 && str[unit + 1] <= 0xDFFF)
+      unit += 2;
+    else
+      unit++;
+    char_pos--;
+  }
+  return unit;
+}
+
+IUP_SDK_API int iupStrUtf16UnitToChar(const unsigned short* str, int len, int unit_pos)
+{
+  int unit = 0, count = 0;
+
+  if (!str || unit_pos <= 0)
+    return 0;
+
+  if (unit_pos > len)
+    unit_pos = len;
+
+  while (unit < unit_pos)
+  {
+    if (str[unit] >= 0xD800 && str[unit] <= 0xDBFF && unit + 1 < len && str[unit + 1] >= 0xDC00 && str[unit + 1] <= 0xDFFF)
+      unit += 2;
+    else
+      unit++;
+    count++;
+  }
+  return count;
+}

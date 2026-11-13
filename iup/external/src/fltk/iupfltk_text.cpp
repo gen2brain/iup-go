@@ -173,6 +173,26 @@ static void fltkTextArbitrateHistory(Ihandle* ih, Fl_Input_* input, Fl_Text_Buff
   free(before);
 }
 
+/* IUP text positions count characters, Fl_Input and Fl_Text_Buffer count bytes */
+static int fltkBufSkipChars(Fl_Text_Buffer* buf, int from, int count)
+{
+  int len = buf->length();
+  while (count-- > 0 && from < len)
+    from = buf->next_char(from);
+  return from;
+}
+
+static int fltkBufCharsBetween(Fl_Text_Buffer* buf, int from, int to)
+{
+  int count = 0;
+  while (from < to)
+  {
+    from = buf->next_char(from);
+    count++;
+  }
+  return count;
+}
+
 static void fltkTextCallCaretCb(Ihandle* ih)
 {
   auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
@@ -186,16 +206,17 @@ static void fltkTextCallCaretCb(Ihandle* ih)
     Fl_Text_Buffer* buf = editor ? editor->buffer() : nullptr;
     if (!editor || !buf) return;
 
-    pos = editor->insert_position();
-    lin = buf->count_lines(0, pos) + 1;
-    col = pos - buf->line_start(pos) + 1;
+    int byte = editor->insert_position();
+    lin = buf->count_lines(0, byte) + 1;
+    col = fltkBufCharsBetween(buf, buf->line_start(byte), byte) + 1;
+    pos = fltkBufCharsBetween(buf, 0, byte);
   }
   else
   {
     auto* input = reinterpret_cast<Fl_Input*>(ih->handle);
     if (!input) return;
 
-    pos = input->insert_position();
+    pos = iupStrUtf8ByteToChar(input->value(), input->insert_position());
     col = pos + 1;
   }
 
@@ -836,8 +857,7 @@ static int fltkTextSetCaretAttrib(Ihandle* ih, const char* value)
     if (col < 1) col = 1;
     if (buf && editor)
     {
-      int pos = buf->skip_lines(0, lin - 1);
-      pos += col - 1;
+      int pos = fltkBufSkipChars(buf, buf->skip_lines(0, lin - 1), col - 1);
       editor->insert_position(pos);
     }
   }
@@ -850,7 +870,7 @@ static int fltkTextSetCaretAttrib(Ihandle* ih, const char* value)
       iupStrToInt(value, &pos);
       pos--;
       if (pos < 0) pos = 0;
-      input->insert_position(pos);
+      input->insert_position(iupStrUtf8CharToByte(input->value(), pos));
     }
   }
 
@@ -867,8 +887,7 @@ static char* fltkTextGetCaretAttrib(Ihandle* ih)
     {
       int pos = editor->insert_position();
       int lin = buf->count_lines(0, pos) + 1;
-      int line_start = buf->line_start(pos);
-      int col = pos - line_start + 1;
+      int col = fltkBufCharsBetween(buf, buf->line_start(pos), pos) + 1;
       return iupStrReturnIntInt(lin, col, ',');
     }
   }
@@ -877,7 +896,7 @@ static char* fltkTextGetCaretAttrib(Ihandle* ih)
     Fl_Input* input = fltkTextGetInputWidget(ih);
     if (input)
     {
-      int pos = input->insert_position();
+      int pos = iupStrUtf8ByteToChar(input->value(), input->insert_position());
       return iupStrReturnInt(pos + 1);
     }
   }
@@ -915,8 +934,8 @@ static int fltkTextSetSelectionAttrib(Ihandle* ih, const char* value)
     if (lin_start < 1 || col_start < 1 || lin_end < 1 || col_end < 1)
       return 0;
 
-    int start_pos = buf->skip_lines(0, lin_start - 1) + (col_start - 1);
-    int end_pos = buf->skip_lines(0, lin_end - 1) + (col_end - 1);
+    int start_pos = fltkBufSkipChars(buf, buf->skip_lines(0, lin_start - 1), col_start - 1);
+    int end_pos = fltkBufSkipChars(buf, buf->skip_lines(0, lin_end - 1), col_end - 1);
     buf->select(start_pos, end_pos);
   }
   else
@@ -950,7 +969,7 @@ static int fltkTextSetSelectionAttrib(Ihandle* ih, const char* value)
 
     Fl_Input* input = fltkTextGetInputWidget(ih);
     if (input)
-      input->insert_position(start, end);
+      input->insert_position(iupStrUtf8CharToByte(input->value(), start), iupStrUtf8CharToByte(input->value(), end));
   }
 
   return 0;
@@ -967,12 +986,10 @@ static char* fltkTextGetSelectionAttrib(Ihandle* ih)
       if (buf->selection_position(&start, &end))
       {
         int start_lin = buf->count_lines(0, start) + 1;
-        int start_line_start = buf->line_start(start);
-        int start_col = start - start_line_start + 1;
+        int start_col = fltkBufCharsBetween(buf, buf->line_start(start), start) + 1;
 
         int end_lin = buf->count_lines(0, end) + 1;
-        int end_line_start = buf->line_start(end);
-        int end_col = end - end_line_start + 1;
+        int end_col = fltkBufCharsBetween(buf, buf->line_start(end), end) + 1;
 
         return iupStrReturnStrf("%d,%d:%d,%d", start_lin, start_col, end_lin, end_col);
       }
@@ -987,8 +1004,8 @@ static char* fltkTextGetSelectionAttrib(Ihandle* ih)
       int pos = input->insert_position();
       if (mark != pos)
       {
-        int start = mark < pos ? mark : pos;
-        int end = mark > pos ? mark : pos;
+        int start = iupStrUtf8ByteToChar(input->value(), mark < pos ? mark : pos);
+        int end = iupStrUtf8ByteToChar(input->value(), mark > pos ? mark : pos);
         start++;
         end++;
         return iupStrReturnIntInt(start, end, ':');
@@ -1332,13 +1349,13 @@ static int fltkTextSetCaretPosAttrib(Ihandle* ih, const char* value)
   {
     auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (editor)
-      editor->insert_position(pos);
+      editor->insert_position(fltkBufSkipChars(editor->buffer(), 0, pos));
   }
   else
   {
     Fl_Input* input = fltkTextGetInputWidget(ih);
     if (input)
-      input->insert_position(pos);
+      input->insert_position(iupStrUtf8CharToByte(input->value(), pos));
   }
 
   return 0;
@@ -1352,7 +1369,7 @@ static char* fltkTextGetCaretPosAttrib(Ihandle* ih)
   {
     auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (editor)
-      pos = editor->insert_position();
+      pos = fltkBufCharsBetween(editor->buffer(), 0, editor->insert_position());
     else
       return nullptr;
   }
@@ -1360,7 +1377,7 @@ static char* fltkTextGetCaretPosAttrib(Ihandle* ih)
   {
     Fl_Input* input = fltkTextGetInputWidget(ih);
     if (input)
-      pos = input->insert_position();
+      pos = iupStrUtf8ByteToChar(input->value(), input->insert_position());
     else
       return nullptr;
   }
@@ -1416,13 +1433,13 @@ static int fltkTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
   {
     Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
     if (buf)
-      buf->select(start, end);
+      buf->select(fltkBufSkipChars(buf, 0, start), fltkBufSkipChars(buf, 0, end));
   }
   else
   {
     Fl_Input* input = fltkTextGetInputWidget(ih);
     if (input)
-      input->insert_position(start, end);
+      input->insert_position(iupStrUtf8CharToByte(input->value(), start), iupStrUtf8CharToByte(input->value(), end));
   }
 
   return 0;
@@ -1437,7 +1454,7 @@ static char* fltkTextGetSelectionPosAttrib(Ihandle* ih)
     {
       int start, end;
       if (buf->selection_position(&start, &end))
-        return iupStrReturnStrf("%d:%d", start, end);
+        return iupStrReturnStrf("%d:%d", fltkBufCharsBetween(buf, 0, start), fltkBufCharsBetween(buf, 0, end));
     }
   }
   else
@@ -1449,8 +1466,8 @@ static char* fltkTextGetSelectionPosAttrib(Ihandle* ih)
       int pos = input->insert_position();
       if (mark != pos)
       {
-        int start = mark < pos ? mark : pos;
-        int end = mark > pos ? mark : pos;
+        int start = iupStrUtf8ByteToChar(input->value(), mark < pos ? mark : pos);
+        int end = iupStrUtf8ByteToChar(input->value(), mark > pos ? mark : pos);
         return iupStrReturnStrf("%d:%d", start, end);
       }
     }
@@ -1659,7 +1676,7 @@ static int fltkTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
     auto* editor = reinterpret_cast<IupFltkTextEditor*>(ih->handle);
     if (buf && editor)
     {
-      int lin = buf->count_lines(0, pos);
+      int lin = buf->count_lines(0, fltkBufSkipChars(buf, 0, pos));
       editor->scroll(lin, 0);
     }
   }
@@ -1667,7 +1684,7 @@ static int fltkTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   {
     Fl_Input* input = fltkTextGetInputWidget(ih);
     if (input)
-      input->insert_position(pos);
+      input->insert_position(iupStrUtf8CharToByte(input->value(), pos));
   }
 
   return 0;
@@ -1791,7 +1808,7 @@ static int fltkTextConvertXYToPos(Ihandle* ih, int x, int y)
   if (ih->data->is_multiline)
   {
     auto* editor = reinterpret_cast<IupFltkTextEditor*>(widget);
-    return editor->iupPositionAt(editor->x() + x, editor->y() + y);
+    return fltkBufCharsBetween(editor->buffer(), 0, editor->iupPositionAt(editor->x() + x, editor->y() + y));
   }
 
   Fl_Input* input = fltkTextGetInputWidget(ih);
@@ -1818,12 +1835,12 @@ static int fltkTextConvertXYToPos(Ihandle* ih, int x, int y)
     int next = pos + fl_utf8len1(value[pos]);
     double width = secret ? (count + 1) * secret_width : fl_width(value, next);
     if (width > target)
-      return (target - prev < width - target) ? pos : next;
+      return iupStrUtf8ByteToChar(value, (target - prev < width - target) ? pos : next);
     prev = width;
     pos = next;
     count++;
   }
-  return size;
+  return iupStrUtf8ByteToChar(value, size);
 }
 
 static int fltkTextMapMethod(Ihandle* ih)

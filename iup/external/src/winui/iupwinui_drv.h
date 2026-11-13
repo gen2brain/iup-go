@@ -128,6 +128,8 @@ inline bool winuiHandleIsHWND(Ihandle* ih)
 IUP_DRV_API winrt::hstring iupwinuiStringToHString(const char* str);
 IUP_DRV_API char* iupwinuiHStringToString(const winrt::hstring& str);
 IUP_DRV_API std::wstring iupwinuiStringToWString(const char* str);
+IUP_DRV_API int iupwinuiStrUnitToChar(const winrt::hstring& str, int unit);
+IUP_DRV_API int iupwinuiStrCharToUnit(const winrt::hstring& str, int pos);
 
 /****************************************************************************
  * Mnemonic Processing Helper

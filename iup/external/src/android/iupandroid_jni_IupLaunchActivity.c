@@ -5,6 +5,7 @@
  */
 
 #include <stddef.h>
+#include <stdlib.h>
 #include <dlfcn.h>
 #include <unistd.h>
 
@@ -37,9 +38,9 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupLaunchActivity_IupEntry
 
   if (entry_callback == NULL && j_entry_function_name != NULL)
   {
-    const char* c_entry_function_name = (*jni_env)->GetStringUTFChars(jni_env, j_entry_function_name, NULL);
+    const char* c_entry_function_name = iupAndroid_JStringToUtf8(jni_env, j_entry_function_name);
     entry_callback = (IFentry)dlsym(RTLD_DEFAULT, c_entry_function_name);
-    (*jni_env)->ReleaseStringUTFChars(jni_env, j_entry_function_name, c_entry_function_name);
+    free((char*)c_entry_function_name);
   }
 
   if (entry_callback == NULL)
@@ -49,10 +50,10 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupLaunchActivity_IupEntry
     /* Android 7.0+ hardening can blank RTLD_DEFAULT for app-owned symbols. */
     if (entry_callback == NULL && j_library_name != NULL)
     {
-      const char* c_entry_library_name = (*jni_env)->GetStringUTFChars(jni_env, j_library_name, NULL);
+      const char* c_entry_library_name = iupAndroid_JStringToUtf8(jni_env, j_library_name);
       void* dl_handle = dlopen(c_entry_library_name, RTLD_LOCAL | RTLD_NOW);
       entry_callback = (IFentry)dlsym(dl_handle, "IupEntryPoint");
-      (*jni_env)->ReleaseStringUTFChars(jni_env, j_library_name, c_entry_library_name);
+      free((char*)c_entry_library_name);
     }
   }
 

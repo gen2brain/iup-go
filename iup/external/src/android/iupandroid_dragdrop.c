@@ -159,22 +159,22 @@ JNIEXPORT jbyteArray JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_re
   IFnsVi cb_data = (IFnsVi)IupGetCallback(ih, "DRAGDATA_CB");
   if (!cb_size || !cb_data) return NULL;
 
-  const char* type = (*jni_env)->GetStringUTFChars(jni_env, j_type, NULL);
+  const char* type = iupAndroid_JStringToUtf8(jni_env, j_type);
   int size = cb_size(ih, (char*)type);
   if (size <= 0)
   {
-    (*jni_env)->ReleaseStringUTFChars(jni_env, j_type, type);
+    free((char*)type);
     return NULL;
   }
 
   void* buf = malloc((size_t)size);
   if (!buf)
   {
-    (*jni_env)->ReleaseStringUTFChars(jni_env, j_type, type);
+    free((char*)type);
     return NULL;
   }
   cb_data(ih, (char*)type, buf, size);
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_type, type);
+  free((char*)type);
 
   jbyteArray j_data = (*jni_env)->NewByteArray(jni_env, (jsize)size);
   (*jni_env)->SetByteArrayRegion(jni_env, j_data, 0, (jsize)size, (const jbyte*)buf);
@@ -212,9 +212,9 @@ JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_acce
   if (!ih || !iupObjectCheck(ih) || !j_type) return JNI_FALSE;
   const char* drop_types = iupAttribGet(ih, "DROPTYPES");
   if (!drop_types || !*drop_types) return JNI_FALSE;
-  const char* type = (*jni_env)->GetStringUTFChars(jni_env, j_type, NULL);
+  const char* type = iupAndroid_JStringToUtf8(jni_env, j_type);
   int ok = androidDragDropTypeMatches(drop_types, type);
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_type, type);
+  free((char*)type);
   return ok ? JNI_TRUE : JNI_FALSE;
 }
 
@@ -228,14 +228,14 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_deliverD
   IFnsViii cb = (IFnsViii)IupGetCallback(ih, "DROPDATA_CB");
   if (!cb) return;
 
-  const char* type = j_type ? (*jni_env)->GetStringUTFChars(jni_env, j_type, NULL) : "TEXT";
+  const char* type = j_type ? iupAndroid_JStringToUtf8(jni_env, j_type) : "TEXT";
   jsize len = (*jni_env)->GetArrayLength(jni_env, j_data);
   jbyte* bytes = (*jni_env)->GetByteArrayElements(jni_env, j_data, NULL);
 
   cb(ih, (char*)type, (void*)bytes, (int)len, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y));
 
   (*jni_env)->ReleaseByteArrayElements(jni_env, j_data, bytes, JNI_ABORT);
-  if (j_type) (*jni_env)->ReleaseStringUTFChars(jni_env, j_type, type);
+  if (j_type) free((char*)type);
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_deliverMotion(
@@ -273,9 +273,9 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupDragDropHelper_dispatch
   }
   if (!cb) return IUP_DEFAULT;
 
-  const char* path = (*jni_env)->GetStringUTFChars(jni_env, j_path, NULL);
+  const char* path = iupAndroid_JStringToUtf8(jni_env, j_path);
   int ret = cb(cb_ih, (char*)path, (int)remaining, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y));
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_path, path);
+  free((char*)path);
   return ret;
 }
 

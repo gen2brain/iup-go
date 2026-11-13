@@ -6,6 +6,7 @@
 
 #include <jni.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "iup.h"
@@ -124,11 +125,11 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchTe
   if (!ih || !iupObjectCheck(ih) || !jtext)
     return;
 
-  text = (*jni_env)->GetStringUTFChars(jni_env, jtext, NULL);
+  text = iupAndroid_JStringToUtf8(jni_env, jtext);
   if (text)
   {
     iupKeyCallTextInputCb(ih, text);
-    (*jni_env)->ReleaseStringUTFChars(jni_env, jtext, text);
+    free((char*)text);
   }
 }
 

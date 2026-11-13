@@ -1331,6 +1331,16 @@ IUP_DRV_API char* iupwinuiHStringToString(const hstring& str)
   return buf;
 }
 
+IUP_DRV_API int iupwinuiStrUnitToChar(const hstring& str, int unit)
+{
+  return iupStrUtf16UnitToChar(reinterpret_cast<const unsigned short*>(str.c_str()), static_cast<int>(str.size()), unit);
+}
+
+IUP_DRV_API int iupwinuiStrCharToUnit(const hstring& str, int pos)
+{
+  return iupStrUtf16CharToUnit(reinterpret_cast<const unsigned short*>(str.c_str()), static_cast<int>(str.size()), pos);
+}
+
 IUP_DRV_API std::wstring iupwinuiStringToWString(const char* str)
 {
   if (!str || !str[0])

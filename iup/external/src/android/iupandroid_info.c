@@ -232,11 +232,11 @@ IUP_SDK_API int iupdrvGetUserDir(char* path, int size, int kind)
   int ok = 0;
   if (j_path)
   {
-    const char* c_path = (*env)->GetStringUTFChars(env, j_path, NULL);
+    const char* c_path = iupAndroid_JStringToUtf8(env, j_path);
     if (c_path)
     {
       iupStrCopyN(path, size, c_path);
-      (*env)->ReleaseStringUTFChars(env, j_path, c_path);
+      free((char*)c_path);
       ok = path[0] ? 1 : 0;
     }
     (*env)->DeleteLocalRef(env, j_path);

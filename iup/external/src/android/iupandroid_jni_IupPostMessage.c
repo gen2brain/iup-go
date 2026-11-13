@@ -5,12 +5,15 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <jni.h>
 
 #include "iup.h"
 #include "iupcbs.h"
 
 #include "iup_object.h"
+
+#include "iupandroid_drv.h"
 
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupPostMessage_OnMainThreadCallback(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jlong message_data, jstring j_usr_str, jlong j_usr_int, jdouble j_usr_double)
@@ -24,8 +27,8 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupPostMessage_OnMainThrea
     return;
 
   /* Producer side passes NULL when the payload is empty; surface "" to the callback. */
-  const char* c_usr_str = j_usr_str ? (*jni_env)->GetStringUTFChars(jni_env, j_usr_str, NULL) : "";
+  const char* c_usr_str = j_usr_str ? iupAndroid_JStringToUtf8(jni_env, j_usr_str) : "";
   int ret = user_post_message_callback(ih, (char*)c_usr_str, (int)j_usr_int, j_usr_double, (void*)message_data);
-  if (j_usr_str) (*jni_env)->ReleaseStringUTFChars(jni_env, j_usr_str, c_usr_str);
+  if (j_usr_str) free((char*)c_usr_str);
   if (ret == IUP_CLOSE) IupExitLoop();
 }

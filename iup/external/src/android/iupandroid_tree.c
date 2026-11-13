@@ -285,9 +285,9 @@ static char* androidTreeGetTitleIdAttrib(Ihandle* ih, int id)
   iupAndroid_CheckException(env, "getNodeTitle");
   (*env)->DeleteLocalRef(env, cls);
   if (!js) return NULL;
-  const char* s = (*env)->GetStringUTFChars(env, js, NULL);
+  const char* s = iupAndroid_JStringToUtf8(env, js);
   char* r = s ? iupStrReturnStr(s) : NULL;
-  if (s) (*env)->ReleaseStringUTFChars(env, js, s);
+  if (s) free((char*)s);
   (*env)->DeleteLocalRef(env, js);
   return r;
 }
@@ -674,9 +674,9 @@ static char* androidTreeGetMarkedNodesAttrib(Ihandle* ih)
   iupAndroid_CheckException(env, "getMarkedNodesStr");
   (*env)->DeleteLocalRef(env, cls);
   if (!js) return NULL;
-  const char* s = (*env)->GetStringUTFChars(env, js, NULL);
+  const char* s = iupAndroid_JStringToUtf8(env, js);
   char* r = s ? iupStrReturnStr(s) : NULL;
-  if (s) (*env)->ReleaseStringUTFChars(env, js, s);
+  if (s) free((char*)s);
   (*env)->DeleteLocalRef(env, js);
   return r;
 }
@@ -723,9 +723,9 @@ static char* androidTreeGetColorIdAttrib(Ihandle* ih, int id)
   iupAndroid_CheckException(env, "getNodeColorStr");
   (*env)->DeleteLocalRef(env, cls);
   if (!js) return NULL;
-  const char* s = (*env)->GetStringUTFChars(env, js, NULL);
+  const char* s = iupAndroid_JStringToUtf8(env, js);
   char* r = s ? iupStrReturnStr(s) : NULL;
-  if (s) (*env)->ReleaseStringUTFChars(env, js, s);
+  if (s) free((char*)s);
   (*env)->DeleteLocalRef(env, js);
   return r;
 }

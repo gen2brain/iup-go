@@ -500,7 +500,14 @@ extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* 
   (void)h;
 }
 
-extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
+static QString qtTextGetString(Ihandle* ih)
+{
+  if (ih->data->is_multiline)
+    return reinterpret_cast<IupQtTextEdit*>(ih->handle)->document()->toPlainText();
+  return qtTextGetLineEdit(ih)->text();
+}
+
+static void qtTextLinColToUnit(Ihandle* ih, int lin, int col, int* pos)
 {
   if (ih->data->is_multiline)
   {
@@ -513,6 +520,7 @@ extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, i
     QTextBlock block = doc->findBlockByLineNumber(lin);
     if (block.isValid())
     {
+      col = iupqtStrCharToUnit(block.text(), col);
       int blockLen = block.length() - 1;
       if (col > blockLen)
         col = blockLen;
@@ -524,10 +532,10 @@ extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, i
       *pos = 0;
   }
   else
-    *pos = col - 1; /* single line, position is column */
+    *pos = iupqtStrCharToUnit(qtTextGetLineEdit(ih)->text(), col - 1); /* single line, position is column */
 }
 
-extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
+static void qtTextUnitToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
   if (ih->data->is_multiline)
   {
@@ -538,7 +546,7 @@ extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, i
     if (block.isValid())
     {
       *lin = block.blockNumber() + 1; /* IUP starts at 1 */
-      *col = pos - block.position() + 1;
+      *col = iupqtStrUnitToChar(block.text(), pos - block.position()) + 1;
     }
     else
     {
@@ -549,8 +557,19 @@ extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, i
   else
   {
     *lin = 1;
-    *col = pos + 1;
+    *col = iupqtStrUnitToChar(qtTextGetLineEdit(ih)->text(), pos) + 1;
   }
+}
+
+extern "C" IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
+{
+  qtTextLinColToUnit(ih, lin, col, pos);
+  *pos = iupqtStrUnitToChar(qtTextGetString(ih), *pos);
+}
+
+extern "C" IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
+{
+  qtTextUnitToLinCol(ih, iupqtStrCharToUnit(qtTextGetString(ih), pos), lin, col);
 }
 
 /****************************************************************************
@@ -586,13 +605,14 @@ static void qtTextCursorPositionChanged(Ihandle* ih)
       pos = edit->cursorPosition();
     }
 
-    iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
-    cb(ih, lin, col, pos);
+    qtTextUnitToLinCol(ih, pos, &lin, &col);
+    cb(ih, lin, col, iupqtStrUnitToChar(qtTextGetString(ih), pos));
   }
 }
 
 static void qtTextGetEditRange(Ihandle* ih, int* start, int* end)
 {
+  QString text = qtTextGetString(ih);
   if (ih->data->is_multiline)
   {
     QTextCursor cursor = (reinterpret_cast<IupQtTextEdit*>(ih->handle))->textCursor();
@@ -605,6 +625,8 @@ static void qtTextGetEditRange(Ihandle* ih, int* start, int* end)
     *start = edit->hasSelectedText() ? edit->selectionStart() : edit->cursorPosition();
     *end = edit->hasSelectedText() ? *start + static_cast<int>(edit->selectedText().length()) : *start;
   }
+  *start = iupqtStrUnitToChar(text, *start);
+  *end = iupqtStrUnitToChar(text, *end);
 }
 
 /* the history is applied first, then validated as a whole value and undone again when refused */
@@ -735,7 +757,8 @@ static int qtTextKeyPress(Ihandle* ih, QKeyEvent* evt)
   if ((evt->key() == Qt::Key_Backspace || evt->key() == Qt::Key_Delete) && !(evt->modifiers() & (Qt::ControlModifier | Qt::AltModifier)))
   {
     int remove_dir = evt->key() == Qt::Key_Delete ? 1 : -1;
-    int len = ih->data->is_multiline ? static_cast<int>((reinterpret_cast<IupQtTextEdit*>(ih->handle))->toPlainText().length()) : static_cast<int>((qtTextGetLineEdit(ih))->text().length());
+    QString value = qtTextGetString(ih);
+    int len = iupqtStrUnitToChar(value, static_cast<int>(value.length()));
     if (start == end && ((remove_dir == -1 && start == 0) || (remove_dir == 1 && start >= len)))
       return 0;
     ret = iupEditCallActionCb(ih, cb, nullptr, start, end, ih->data->mask, ih->data->nc, remove_dir, 1);
@@ -938,8 +961,8 @@ static int qtTextSetSelectionAttrib(Ihandle* ih, const char* value)
     int lin1 = 1, col1 = 1, lin2 = 1, col2 = 1;
     if (!iupStrToLinColRange(value, &lin1, &col1, &lin2, &col2))
       return 0;
-    iupdrvTextConvertLinColToPos(ih, lin1, col1, &start);
-    iupdrvTextConvertLinColToPos(ih, lin2, col2, &end);
+    qtTextLinColToUnit(ih, lin1, col1, &start);
+    qtTextLinColToUnit(ih, lin2, col2, &end);
     auto* text = reinterpret_cast<IupQtTextEdit*>(ih->handle);
     QTextCursor cursor = text->textCursor();
     cursor.setPosition(start);
@@ -952,9 +975,9 @@ static int qtTextSetSelectionAttrib(Ihandle* ih, const char* value)
       return 0;
     if (start < 1) start = 1;
     if (end < 1) end = 1;
-    start--;
-    end--;
     auto* edit = qtTextGetLineEdit(ih);
+    start = iupqtStrCharToUnit(edit->text(), start - 1);
+    end = iupqtStrCharToUnit(edit->text(), end - 1);
     edit->setSelection(start, end - start);
   }
 
@@ -974,8 +997,8 @@ static char* qtTextGetSelectionAttrib(Ihandle* ih)
     start = cursor.selectionStart();
     end = cursor.selectionEnd();
     int lin1, col1, lin2, col2;
-    iupdrvTextConvertPosToLinCol(ih, start, &lin1, &col1);
-    iupdrvTextConvertPosToLinCol(ih, end, &lin2, &col2);
+    qtTextUnitToLinCol(ih, start, &lin1, &col1);
+    qtTextUnitToLinCol(ih, end, &lin2, &col2);
     return iupStrReturnStrf("%d,%d:%d,%d", lin1, col1, lin2, col2);
   }
 
@@ -984,7 +1007,7 @@ static char* qtTextGetSelectionAttrib(Ihandle* ih)
   if (start < 0)
     return nullptr;
   end = start + edit->selectedText().length();
-  return iupStrReturnStrf("%d:%d", start + 1, end + 1);
+  return iupStrReturnStrf("%d:%d", iupqtStrUnitToChar(edit->text(), start) + 1, iupqtStrUnitToChar(edit->text(), end) + 1);
 }
 
 static int qtTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
@@ -1029,6 +1052,12 @@ static int qtTextSetSelectionPosAttrib(Ihandle* ih, const char* value)
   if (start < 0) start = 0;
   if (end < 0) end = 0;
 
+  {
+    QString str = qtTextGetString(ih);
+    start = iupqtStrCharToUnit(str, start);
+    end = iupqtStrCharToUnit(str, end);
+  }
+
   if (ih->data->is_multiline)
   {
     auto* text = reinterpret_cast<IupQtTextEdit*>(ih->handle);
@@ -1066,7 +1095,8 @@ static char* qtTextGetSelectionPosAttrib(Ihandle* ih)
     end = start + edit->selectedText().length();
   }
 
-  return iupStrReturnStrf("%d:%d", start, end);
+  QString str = qtTextGetString(ih);
+  return iupStrReturnStrf("%d:%d", iupqtStrUnitToChar(str, start), iupqtStrUnitToChar(str, end));
 }
 
 static int qtTextSetCaretAttrib(Ihandle* ih, const char* value)
@@ -1078,7 +1108,7 @@ static int qtTextSetCaretAttrib(Ihandle* ih, const char* value)
   {
     int lin = 1, col = 1, pos;
     iupStrToIntInt(value, &lin, &col, ',');
-    iupdrvTextConvertLinColToPos(ih, lin, col, &pos);
+    qtTextLinColToUnit(ih, lin, col, &pos);
     auto* text = reinterpret_cast<IupQtTextEdit*>(ih->handle);
     QTextCursor cursor = text->textCursor();
     cursor.setPosition(pos);
@@ -1091,7 +1121,7 @@ static int qtTextSetCaretAttrib(Ihandle* ih, const char* value)
     pos--;
     if (pos < 0) pos = 0;
     auto* edit = qtTextGetLineEdit(ih);
-    edit->setCursorPosition(pos);
+    edit->setCursorPosition(iupqtStrCharToUnit(edit->text(), pos));
   }
 
   return 0;
@@ -1104,13 +1134,13 @@ static char* qtTextGetCaretAttrib(Ihandle* ih)
     auto* text = reinterpret_cast<IupQtTextEdit*>(ih->handle);
     QTextCursor cursor = text->textCursor();
     int lin, col;
-    iupdrvTextConvertPosToLinCol(ih, cursor.position(), &lin, &col);
+    qtTextUnitToLinCol(ih, cursor.position(), &lin, &col);
     return iupStrReturnIntInt(lin, col, ',');
   }
   else
   {
     auto* edit = qtTextGetLineEdit(ih);
-    return iupStrReturnInt(edit->cursorPosition() + 1);
+    return iupStrReturnInt(iupqtStrUnitToChar(edit->text(), edit->cursorPosition()) + 1);
   }
 }
 
@@ -1123,6 +1153,7 @@ static int qtTextSetCaretPosAttrib(Ihandle* ih, const char* value)
 
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
+  pos = iupqtStrCharToUnit(qtTextGetString(ih), pos);
 
   if (ih->data->is_multiline)
   {
@@ -1156,7 +1187,7 @@ static char* qtTextGetCaretPosAttrib(Ihandle* ih)
     pos = edit->cursorPosition();
   }
 
-  return iupStrReturnInt(pos);
+  return iupStrReturnInt(iupqtStrUnitToChar(qtTextGetString(ih), pos));
 }
 
 static int qtTextSetScrollToAttrib(Ihandle* ih, const char* value)
@@ -1170,7 +1201,7 @@ static int qtTextSetScrollToAttrib(Ihandle* ih, const char* value)
   if (lin < 1) lin = 1;
   if (col < 1) col = 1;
 
-  iupdrvTextConvertLinColToPos(ih, lin, col, &pos);
+  qtTextLinColToUnit(ih, lin, col, &pos);
 
   if (ih->data->is_multiline)
   {
@@ -1198,6 +1229,7 @@ static int qtTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
+  pos = iupqtStrCharToUnit(qtTextGetString(ih), pos);
 
   if (ih->data->is_multiline)
   {
@@ -1517,12 +1549,13 @@ static char* qtTextGetCountAttrib(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     auto* text = reinterpret_cast<IupQtTextEdit*>(ih->handle);
-    count = text->toPlainText().length();
+    QString str = text->toPlainText();
+    count = iupqtStrUnitToChar(str, static_cast<int>(str.length()));
   }
   else
   {
-    auto* edit = qtTextGetLineEdit(ih);
-    count = edit->text().length();
+    QString str = qtTextGetLineEdit(ih)->text();
+    count = iupqtStrUnitToChar(str, static_cast<int>(str.length()));
   }
 
   return iupStrReturnInt(count);
@@ -1896,12 +1929,12 @@ static int qtTextConvertXYToPos(Ihandle* ih, int x, int y)
   if (ih->data->is_multiline)
   {
     auto* text = reinterpret_cast<QTextEdit*>(ih->handle);
-    return text->cursorForPosition(QPoint(x, y)).position();
+    return iupqtStrUnitToChar(qtTextGetString(ih), text->cursorForPosition(QPoint(x, y)).position());
   }
 
   auto* spin = reinterpret_cast<IupQtSpinBox*>(iupAttribGet(ih, "_IUPQT_SPINBOX"));
   QLineEdit* edit = spin ? spin->edit() : reinterpret_cast<QLineEdit*>(ih->handle);
-  return edit->cursorPositionAt(QPoint(x, y));
+  return iupqtStrUnitToChar(edit->text(), edit->cursorPositionAt(QPoint(x, y)));
 }
 
 static int qtTextMapMethod(Ihandle* ih)
@@ -2155,8 +2188,8 @@ static bool qtTextParseSelection(Ihandle* ih, const char* value, int* start, int
   if (lin_start < 1 || col_start < 1 || lin_end < 1 || col_end < 1)
     return false;
 
-  iupdrvTextConvertLinColToPos(ih, lin_start, col_start, start);
-  iupdrvTextConvertLinColToPos(ih, lin_end, col_end, end);
+  qtTextLinColToUnit(ih, lin_start, col_start, start);
+  qtTextLinColToUnit(ih, lin_end, col_end, end);
   return true;
 }
 
@@ -2438,6 +2471,7 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
     return 0;
 
   QTextDocument* doc = text->document();
+  QString doc_text = doc->toPlainText();
 
   for (QTextBlock block = doc->begin(); block.isValid(); block = block.next())
   {
@@ -2453,7 +2487,7 @@ extern "C" IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_ta
       QFont font = charFormat.font();
       Ihandle* formattag = IupUser();
 
-      IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", fragment.position(), fragment.position() + fragment.length());
+      IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", iupqtStrUnitToChar(doc_text, fragment.position()), iupqtStrUnitToChar(doc_text, fragment.position() + fragment.length()));
       IupAppend(bulk_tag, formattag);
 
       IupSetAttribute(formattag, "WEIGHT", charFormat.fontWeight() >= QFont::DemiBold ? "BOLD" : "NORMAL");
@@ -2564,6 +2598,9 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
     {
       if (!qtTextParseSelectionPos(selectionpos, &start_pos, &end_pos))
         return;
+      QString str = qtTextGetString(ih);
+      start_pos = iupqtStrCharToUnit(str, start_pos);
+      end_pos = iupqtStrCharToUnit(str, end_pos);
     }
     else
     {

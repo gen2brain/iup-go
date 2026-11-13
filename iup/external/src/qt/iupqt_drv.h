@@ -32,6 +32,7 @@ class QPixmap;
 class QEvent;
 class QKeyEvent;
 class QMouseEvent;
+class QString;
 #else
 typedef struct _QWidget QWidget;
 typedef struct _QApplication QApplication;
@@ -91,6 +92,10 @@ IUP_DRV_API char* iupqtStrConvertFromFilename(const char* str);
 IUP_DRV_API char* iupqtStrConvertToFilename(const char* str);
 IUP_DRV_API void iupqtStrSetUTF8Mode(int utf8mode);
 IUP_DRV_API int iupqtStrGetUTF8Mode();
+#ifdef __cplusplus
+IUP_DRV_API int iupqtStrUnitToChar(const QString& str, int unit);
+IUP_DRV_API int iupqtStrCharToUnit(const QString& str, int pos);
+#endif
 
 /****************************************************************************
  * Focus Management

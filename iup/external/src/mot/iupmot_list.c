@@ -710,9 +710,6 @@ static int motListSetSelectionAttrib(Ihandle* ih, const char* value)
   start--; /* IUP starts at 1 */
   end--;
 
-  /* end is inside the selection, in IUP is outside */
-  end--;
-
   XtVaGetValues(ih->handle, XmNtextField, &cbedit, NULL);
   XmTextFieldSetSelection(cbedit, (XmTextPosition)start, (XmTextPosition)end, CurrentTime);
 
@@ -729,9 +726,6 @@ static char* motListGetSelectionAttrib(Ihandle* ih)
   XtVaGetValues(ih->handle, XmNtextField, &cbedit, NULL);
   if (!XmTextFieldGetSelectionPosition(cbedit, &start, &end) || start==end)
     return NULL;
-
-  /* end is inside the selection, in IUP is outside */
-  end++;
 
   start++; /* IUP starts at 1 */
   end++;
@@ -765,9 +759,6 @@ static int motListSetSelectionPosAttrib(Ihandle* ih, const char* value)
   if(start<0 || end<0)
     return 0;
 
-  /* end is inside the selection, in IUP is outside */
-  end--;
-
   XtVaGetValues(ih->handle, XmNtextField, &cbedit, NULL);
   XmTextFieldSetSelection(cbedit, (XmTextPosition)start, (XmTextPosition)end, CurrentTime);
 
@@ -784,9 +775,6 @@ static char* motListGetSelectionPosAttrib(Ihandle* ih)
   XtVaGetValues(ih->handle, XmNtextField, &cbedit, NULL);
   if (!XmTextFieldGetSelectionPosition(cbedit, &start, &end) || start==end)
     return NULL;
-
-  /* end is inside the selection, in IUP is outside */
-  end++;
 
   return iupStrReturnIntInt((int)start, (int)end, ':');
 }

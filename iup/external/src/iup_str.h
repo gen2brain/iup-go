@@ -387,6 +387,18 @@ IUP_SDK_API void iupStrRemove(char* value, int start, int end, int dir, int utf8
 * \ingroup str */
 IUP_SDK_API char* iupStrInsert(const char* value, const char* insert_value, int start, int end, int utf8);
 
+/** Converts a character position in a UTF-8 string to a byte offset, and back.
+ * Positions past the end are clamped to the string end.
+ * \ingroup str */
+IUP_SDK_API int iupStrUtf8CharToByte(const char* str, int char_pos);
+IUP_SDK_API int iupStrUtf8ByteToChar(const char* str, int byte_pos);
+
+/** Converts a character position in a UTF-16 buffer to a code unit offset, and back.
+ * A surrogate pair is one character. Positions past the end are clamped to len.
+ * \ingroup str */
+IUP_SDK_API int iupStrUtf16CharToUnit(const unsigned short* str, int len, int char_pos);
+IUP_SDK_API int iupStrUtf16UnitToChar(const unsigned short* str, int len, int unit_pos);
+
 /** Process the mnemonic in the string. If not found returns str.
 * If returned pointer different the input, it must be freed.
 * If found returns a new string. Action can be:

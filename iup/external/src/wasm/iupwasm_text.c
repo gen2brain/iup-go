@@ -144,9 +144,8 @@ EM_JS(int, iupwasmJsTextXY2Pos, (int id, int x, int y), {
 })
 
 EM_JS(int, iupwasmJsTextGetCaret, (int id), {
-  if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'textcaret', id: id });
-  var el = globalThis.__iup.els[id];
-  return el ? (el.selectionStart || 0) : 0;
+  var req = { op: 'textcaret', id: id };
+  return typeof document === 'undefined' ? globalThis.__iupReadSync(req) : globalThis.__iupRead(req);
 })
 
 EM_JS(void, iupwasmJsTextSetCaret, (int id, int pos), {
@@ -159,8 +158,8 @@ EM_JS(void, iupwasmJsTextSetSelectionPos, (int id, int start, int end), {
 
 EM_JS(int, iupwasmJsTextGetSelectionPos, (int id), {
   var s;
-  if (typeof document === 'undefined') s = globalThis.__iupReadSync({ op: 'textselpos', id: id });
-  else { var el = globalThis.__iup.els[id]; s = el ? ((el.selectionStart || 0) + ":" + (el.selectionEnd || 0)) : ""; }
+  var req = { op: 'textselpos', id: id };
+  s = typeof document === 'undefined' ? globalThis.__iupReadSync(req) : globalThis.__iupRead(req);
   var len = lengthBytesUTF8(s) + 1, p = _malloc(len);
   stringToUTF8(s, p, len);
   return p;
@@ -168,8 +167,8 @@ EM_JS(int, iupwasmJsTextGetSelectionPos, (int id), {
 
 EM_JS(int, iupwasmJsTextGetSelectedText, (int id), {
   var s;
-  if (typeof document === 'undefined') s = globalThis.__iupReadSync({ op: 'textseltext', id: id });
-  else { var el = globalThis.__iup.els[id]; s = el ? el.value.slice(el.selectionStart || 0, el.selectionEnd || 0) : ""; }
+  var req = { op: 'textseltext', id: id };
+  s = typeof document === 'undefined' ? globalThis.__iupReadSync(req) : globalThis.__iupRead(req);
   var len = lengthBytesUTF8(s) + 1, p = _malloc(len);
   stringToUTF8(s, p, len);
   return p;
@@ -180,9 +179,12 @@ EM_JS(void, iupwasmJsTextInsert, (int id, const char* v), {
 })
 
 EM_JS(int, iupwasmJsTextCount, (int id), {
-  if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'textcount', id: id });
-  var el = globalThis.__iup.els[id];
-  return el ? el.value.length : 0;
+  var req = { op: 'textcount', id: id };
+  return typeof document === 'undefined' ? globalThis.__iupReadSync(req) : globalThis.__iupRead(req);
+})
+
+EM_JS(void, iupwasmJsTextSetSelectedText, (int id, const char* v), {
+  globalThis.__iupApply({ op: 'textsetseltext', id: id, value: UTF8ToString(v) });
 })
 
 EM_JS(void, iupwasmJsTextSetTabSize, (int id, int n), {
@@ -193,7 +195,8 @@ EM_JS(void, iupwasmJsTextWire, (int id), { globalThis.__iupApply({ op: 'textwire
 
 /* lin/col forms compute against the live textarea value, so they are multiline-correct */
 EM_JS(char*, iupwasmJsTextGetCaretLC, (int id), {
-  var s = (typeof document === 'undefined') ? globalThis.__iupReadSync({ op: 'textcaretlc', id: id }) : "1,1";
+  var req = { op: 'textcaretlc', id: id };
+  var s = (typeof document === 'undefined') ? globalThis.__iupReadSync(req) : globalThis.__iupRead(req);
   var len = lengthBytesUTF8(s) + 1, p = _malloc(len); stringToUTF8(s, p, len); return p;
 })
 
@@ -202,7 +205,8 @@ EM_JS(void, iupwasmJsTextSetCaretLC, (int id, int lin, int col), {
 })
 
 EM_JS(char*, iupwasmJsTextGetSelectionLC, (int id), {
-  var s = (typeof document === 'undefined') ? globalThis.__iupReadSync({ op: 'textsellc', id: id }) : "";
+  var req = { op: 'textsellc', id: id };
+  var s = (typeof document === 'undefined') ? globalThis.__iupReadSync(req) : globalThis.__iupRead(req);
   var len = lengthBytesUTF8(s) + 1, p = _malloc(len); stringToUTF8(s, p, len); return p;
 })
 
@@ -498,6 +502,14 @@ static char* wasmTextGetSelectedTextAttrib(Ihandle* ih)
   return r;
 }
 
+static int wasmTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
+{
+  int id = iupwasmIdOf(ih);
+  if (id && value)
+    iupwasmJsTextSetSelectedText(id, value);
+  return 0;
+}
+
 static int wasmTextSetInsertAttrib(Ihandle* ih, const char* value)
 {
   int id = iupwasmIdOf(ih);
@@ -558,7 +570,13 @@ static char* wasmTextGetSelectionAttrib(Ihandle* ih)
   if (!id) return NULL;
   p = (char*)(intptr_t)iupwasmJsTextGetSelectionLC(id);
   if (!p || !*p) { free(p); return NULL; }
-  r = iupStrReturnStr(p);
+  if (ih->data->is_multiline)
+    r = iupStrReturnStr(p);
+  else
+  {
+    int l1, c1, l2, c2;
+    r = iupStrToLinColRange(p, &l1, &c1, &l2, &c2) ? iupStrReturnIntInt(c1, c2, ':') : NULL;
+  }
   free(p);
   return r;
 }
@@ -694,11 +712,13 @@ IUP_SDK_API void iupdrvTextAddSpin(Ihandle* ih, int* w, int h)
 }
 
 EM_JS(int, iupwasmJsTextLcToPos, (int id, int lin, int col), {
-  return globalThis.__iupReadSync({ op: 'textlctopos', id: id, lin: lin, col: col });
+  var req = { op: 'textlctopos', id: id, lin: lin, col: col };
+  return typeof document === 'undefined' ? globalThis.__iupReadSync(req) : globalThis.__iupRead(req);
 })
 
 EM_JS(void, iupwasmJsTextPosToLc, (int id, int pos, int* lp, int* cp), {
-  var r = globalThis.__iupReadSync({ op: 'textpostolc', id: id, pos: pos });
+  var req = { op: 'textpostolc', id: id, pos: pos };
+  var r = typeof document === 'undefined' ? globalThis.__iupReadSync(req) : globalThis.__iupRead(req);
   HEAP32[lp >> 2] = r[0];
   HEAP32[cp >> 2] = r[1];
 })
@@ -1166,7 +1186,7 @@ IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "NC", NULL, wasmTextSetNCAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARETPOS", wasmTextGetCaretPosAttrib, wasmTextSetCaretPosAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTIONPOS", wasmTextGetSelectionPosAttrib, wasmTextSetSelectionPosAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "SELECTEDTEXT", wasmTextGetSelectedTextAttrib, NULL, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTEDTEXT", wasmTextGetSelectedTextAttrib, wasmTextSetSelectedTextAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INSERT", NULL, wasmTextSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "COUNT", wasmTextGetCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PADDING", iupTextGetPaddingAttrib, wasmTextSetPaddingAttrib, IUPAF_SAMEASSYSTEM, "0x0", IUPAF_NOT_MAPPED);

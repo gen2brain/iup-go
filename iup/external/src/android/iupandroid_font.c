@@ -61,11 +61,11 @@ IUP_SDK_API char* iupdrvGetSystemFont(void)
 
   if (j_str != NULL)
   {
-    const char* utf = (*jni_env)->GetStringUTFChars(jni_env, j_str, NULL);
+    const char* utf = iupAndroid_JStringToUtf8(jni_env, j_str);
     if (utf)
     {
       iupStrCopyN(systemfont, sizeof(systemfont), utf);
-      (*jni_env)->ReleaseStringUTFChars(jni_env, j_str, utf);
+      free((char*)utf);
     }
     (*jni_env)->DeleteLocalRef(jni_env, j_str);
   }
@@ -288,11 +288,11 @@ IUP_SDK_API int iupdrvFontGetFamilyList(char*** list)
   {
     jstring j_str = (jstring)(*jni_env)->GetObjectArrayElement(jni_env, j_array, i);
     if (!j_str) continue;
-    const char* c_str = (*jni_env)->GetStringUTFChars(jni_env, j_str, NULL);
+    const char* c_str = iupAndroid_JStringToUtf8(jni_env, j_str);
     if (c_str)
     {
       temp[out++] = iupStrDup(c_str);
-      (*jni_env)->ReleaseStringUTFChars(jni_env, j_str, c_str);
+      free((char*)c_str);
     }
     (*jni_env)->DeleteLocalRef(jni_env, j_str);
   }

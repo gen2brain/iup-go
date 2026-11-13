@@ -357,6 +357,30 @@ IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
     SendMessage(ih->handle, WIN_SETHORIZONTALEXTENT(ih), 0, 0);
 }
 
+static int winListEditConvert(HWND cbedit, int value, int to_char)
+{
+  int len = GetWindowTextLengthW(cbedit);
+  WCHAR* text = (WCHAR*)malloc((len + 1) * sizeof(WCHAR));
+  int ret;
+  len = GetWindowTextW(cbedit, text, len + 1);
+  if (to_char)
+    ret = iupStrUtf16UnitToChar((const unsigned short*)text, len, value);
+  else
+    ret = iupStrUtf16CharToUnit((const unsigned short*)text, len, value);
+  free(text);
+  return ret;
+}
+
+static int winListEditUnitToChar(HWND cbedit, int unit)
+{
+  return winListEditConvert(cbedit, unit, 1);
+}
+
+static int winListEditCharToUnit(HWND cbedit, int pos)
+{
+  return winListEditConvert(cbedit, pos, 0);
+}
+
 static int winListGetCaretPos(HWND cbedit)
 {
   int pos = 0;
@@ -374,7 +398,7 @@ static int winListGetCaretPos(HWND cbedit)
     pos = LOWORD(pos);
   }
 
-  return pos;
+  return winListEditUnitToChar(cbedit, pos);
 }
 
 static char* winListGetText(Ihandle* ih, int pos)
@@ -806,7 +830,7 @@ static int winListSetSelectionAttrib(Ihandle* ih, const char* value)
   end--;
 
   cbedit = (HWND)iupAttribGet(ih, "_IUPWIN_EDITBOX");
-  SendMessage(cbedit, EM_SETSEL, (WPARAM)start, (LPARAM)end);
+  SendMessage(cbedit, EM_SETSEL, (WPARAM)winListEditCharToUnit(cbedit, start), (LPARAM)winListEditCharToUnit(cbedit, end));
 
   return 0;
 }
@@ -823,8 +847,8 @@ static char* winListGetSelectionAttrib(Ihandle* ih)
   if (start == end)
     return NULL;
 
-  start++; /* IUP starts at 1 */
-  end++;
+  start = winListEditUnitToChar(cbedit, start) + 1; /* IUP starts at 1 */
+  end = winListEditUnitToChar(cbedit, end) + 1;
   return iupStrReturnIntInt(start, end, ':');
 }
 
@@ -856,7 +880,7 @@ static int winListSetSelectionPosAttrib(Ihandle* ih, const char* value)
     return 0;
 
   cbedit = (HWND)iupAttribGet(ih, "_IUPWIN_EDITBOX");
-  SendMessage(cbedit, EM_SETSEL, (WPARAM)start, (LPARAM)end);
+  SendMessage(cbedit, EM_SETSEL, (WPARAM)winListEditCharToUnit(cbedit, start), (LPARAM)winListEditCharToUnit(cbedit, end));
 
   return 0;
 }
@@ -873,7 +897,7 @@ static char* winListGetSelectionPosAttrib(Ihandle* ih)
   if (start == end)
     return NULL;
 
-  return iupStrReturnIntInt(start, end, ':');
+  return iupStrReturnIntInt(winListEditUnitToChar(cbedit, start), winListEditUnitToChar(cbedit, end), ':');
 }
 
 static int winListSetInsertAttrib(Ihandle* ih, const char* value)
@@ -941,6 +965,7 @@ static int winListSetCaretAttrib(Ihandle* ih, const char* value)
   pos--; /* IUP starts at 1 */
 
   cbedit = (HWND)iupAttribGet(ih, "_IUPWIN_EDITBOX");
+  pos = winListEditCharToUnit(cbedit, pos);
   SendMessage(cbedit, EM_SETSEL, (WPARAM)pos, (LPARAM)pos);
   SendMessage(cbedit, EM_SCROLLCARET, 0L, 0L);
 
@@ -972,6 +997,7 @@ static int winListSetCaretPosAttrib(Ihandle* ih, const char* value)
   if (pos < 0) pos = 0;
 
   cbedit = (HWND)iupAttribGet(ih, "_IUPWIN_EDITBOX");
+  pos = winListEditCharToUnit(cbedit, pos);
   SendMessage(cbedit, EM_SETSEL, (WPARAM)pos, (LPARAM)pos);
   SendMessage(cbedit, EM_SCROLLCARET, 0L, 0L);
 
@@ -1005,7 +1031,9 @@ static int winListSetScrollToAttrib(Ihandle* ih, const char* value)
   pos--;  /* return to Windows reference */
 
   cbedit = (HWND)iupAttribGet(ih, "_IUPWIN_EDITBOX");
-  SendMessage(cbedit, EM_LINESCROLL, (WPARAM)pos, (LPARAM)0);
+  pos = winListEditCharToUnit(cbedit, pos);
+  SendMessage(cbedit, EM_SETSEL, (WPARAM)pos, (LPARAM)pos);
+  SendMessage(cbedit, EM_SCROLLCARET, 0L, 0L);
 
   return 0;
 }
@@ -1024,7 +1052,9 @@ static int winListSetScrollToPosAttrib(Ihandle* ih, const char* value)
   if (pos < 0) pos = 0;
 
   cbedit = (HWND)iupAttribGet(ih, "_IUPWIN_EDITBOX");
-  SendMessage(cbedit, EM_LINESCROLL, (WPARAM)pos, (LPARAM)0);
+  pos = winListEditCharToUnit(cbedit, pos);
+  SendMessage(cbedit, EM_SETSEL, (WPARAM)pos, (LPARAM)pos);
+  SendMessage(cbedit, EM_SCROLLCARET, 0L, 0L);
 
   return 0;
 }
@@ -1385,6 +1415,8 @@ static int winListCallEditCb(Ihandle* ih, HWND cbedit, char* insert_value, int r
   int ret, start, end;
   IFnis cb = (IFnis)IupGetCallback(ih, "EDIT_CB");
   SendMessage(cbedit, EM_GETSEL, (WPARAM)&start, (LPARAM)&end);
+  start = winListEditUnitToChar(cbedit, start);
+  end = winListEditUnitToChar(cbedit, end);
   ret = iupEditCallActionCb(ih, cb, insert_value, start, end, (char*)ih->data->mask, ih->data->nc, remove_dir, iupwinStrGetUTF8Mode());
   if (ret == 0)
     return 0;

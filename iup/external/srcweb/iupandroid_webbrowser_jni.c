@@ -6,6 +6,7 @@
 
 #include <jni.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -27,9 +28,9 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupWebBrowserHelper_dispat
   IFns cb = (IFns)IupGetCallback(ih, "NAVIGATE_CB");
   if (!cb) return IUP_DEFAULT;
 
-  const char* url = j_url ? (*jni_env)->GetStringUTFChars(jni_env, j_url, NULL) : "";
+  const char* url = j_url ? iupAndroid_JStringToUtf8(jni_env, j_url) : "";
   int rc = cb(ih, (char*)url);
-  if (j_url) (*jni_env)->ReleaseStringUTFChars(jni_env, j_url, url);
+  if (j_url) free((char*)url);
   return rc;
 }
 
@@ -42,9 +43,9 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupWebBrowserHelper_dispat
   IFns cb = (IFns)IupGetCallback(ih, "COMPLETED_CB");
   if (!cb) return;
 
-  const char* url = j_url ? (*jni_env)->GetStringUTFChars(jni_env, j_url, NULL) : "";
+  const char* url = j_url ? iupAndroid_JStringToUtf8(jni_env, j_url) : "";
   cb(ih, (char*)url);
-  if (j_url) (*jni_env)->ReleaseStringUTFChars(jni_env, j_url, url);
+  if (j_url) free((char*)url);
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupWebBrowserHelper_dispatchError(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jstring j_url)
@@ -56,9 +57,9 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupWebBrowserHelper_dispat
   IFns cb = (IFns)IupGetCallback(ih, "ERROR_CB");
   if (!cb) return;
 
-  const char* url = j_url ? (*jni_env)->GetStringUTFChars(jni_env, j_url, NULL) : "";
+  const char* url = j_url ? iupAndroid_JStringToUtf8(jni_env, j_url) : "";
   cb(ih, (char*)url);
-  if (j_url) (*jni_env)->ReleaseStringUTFChars(jni_env, j_url, url);
+  if (j_url) free((char*)url);
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupWebBrowserHelper_dispatchNewWindow(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jstring j_url)
@@ -70,9 +71,9 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupWebBrowserHelper_dispat
   IFns cb = (IFns)IupGetCallback(ih, "NEWWINDOW_CB");
   if (!cb) return;
 
-  const char* url = j_url ? (*jni_env)->GetStringUTFChars(jni_env, j_url, NULL) : "";
+  const char* url = j_url ? iupAndroid_JStringToUtf8(jni_env, j_url) : "";
   cb(ih, (char*)url);
-  if (j_url) (*jni_env)->ReleaseStringUTFChars(jni_env, j_url, url);
+  if (j_url) free((char*)url);
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupWebBrowserHelper_dispatchUpdate(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)

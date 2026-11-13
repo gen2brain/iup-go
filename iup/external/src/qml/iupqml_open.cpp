@@ -413,6 +413,16 @@ IUP_DRV_API void iupqmlRestorePaddings(QQuickItem* item, QQuickItem* tpl)
   item->setProperty("_iup_paddings", false);
 }
 
+IUP_DRV_API int iupqmlStrUnitToChar(const QString& str, int unit)
+{
+  return iupStrUtf16UnitToChar(reinterpret_cast<const unsigned short*>(str.utf16()), static_cast<int>(str.length()), unit);
+}
+
+IUP_DRV_API int iupqmlStrCharToUnit(const QString& str, int pos)
+{
+  return iupStrUtf16CharToUnit(reinterpret_cast<const unsigned short*>(str.utf16()), static_cast<int>(str.length()), pos);
+}
+
 IUP_DRV_API int iupqmlCallMethod(QObject* obj, const char* method, const QVariant& arg1, const QVariant& arg2)
 {
   if (!obj)

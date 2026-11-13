@@ -768,33 +768,25 @@ static int eflListSetSelectedTextAttrib(Ihandle* ih, const char* value)
 {
   Eo* entry;
   Efl_Text_Cursor_Object* cursor_start, *cursor_end;
-  int start_pos, end_pos;
 
   if (!ih->data->has_editbox)
     return 0;
+  if (!value)
+    return 0;
 
   entry = (Eo*)iupAttribGet(ih, "_IUPEFL_ENTRY");
-  if (!entry)
+  if (!entry || !efl_text_interactive_have_selection_get(entry))
     return 0;
 
   efl_text_interactive_selection_cursors_get(entry, &cursor_start, &cursor_end);
   if (!cursor_start || !cursor_end)
     return 0;
 
-  start_pos = efl_text_cursor_object_position_get(cursor_start);
-  end_pos = efl_text_cursor_object_position_get(cursor_end);
-
-  if (start_pos != end_pos)
-  {
-    efl_text_cursor_object_range_delete(cursor_start, cursor_end);
-  }
-
-  if (value && value[0])
-  {
-    Efl_Text_Cursor_Object* main_cursor = efl_text_interactive_main_cursor_get(entry);
-    if (main_cursor)
-      efl_text_cursor_object_text_insert(main_cursor, value);
-  }
+  iupAttribSet(ih, "_IUPEFL_DISABLE_TEXT_CB", "1");
+  efl_text_cursor_object_range_delete(cursor_start, cursor_end);
+  if (value[0])
+    efl_text_cursor_object_text_insert(cursor_start, value);
+  iupAttribSet(ih, "_IUPEFL_DISABLE_TEXT_CB", NULL);
 
   return 0;
 }
@@ -803,39 +795,26 @@ static char* eflListGetSelectedTextAttrib(Ihandle* ih)
 {
   Eo* entry;
   Efl_Text_Cursor_Object* cursor_start, *cursor_end;
-  int start_pos, end_pos;
-  const char* full_text;
-  int len;
-  char* selected;
+  char* text;
   char* ret;
 
   if (!ih->data->has_editbox)
     return NULL;
 
   entry = (Eo*)iupAttribGet(ih, "_IUPEFL_ENTRY");
-  if (!entry)
+  if (!entry || !efl_text_interactive_have_selection_get(entry))
     return NULL;
 
   efl_text_interactive_selection_cursors_get(entry, &cursor_start, &cursor_end);
   if (!cursor_start || !cursor_end)
     return NULL;
 
-  start_pos = efl_text_cursor_object_position_get(cursor_start);
-  end_pos = efl_text_cursor_object_position_get(cursor_end);
-
-  if (start_pos == end_pos)
+  text = efl_text_cursor_object_range_text_get(cursor_start, cursor_end);
+  if (!text)
     return NULL;
 
-  full_text = efl_text_get(entry);
-  if (!full_text)
-    return NULL;
-
-  len = end_pos - start_pos;
-  selected = malloc(len + 1);
-  iupStrCopyN(selected, len + 1, full_text + start_pos);
-
-  ret = iupStrReturnStr(selected);
-  free(selected);
+  ret = text[0] ? iupStrReturnStr(text) : NULL;
+  free(text);
   return ret;
 }
 

@@ -1377,7 +1377,7 @@ static int winuiListMapMethod(Ihandle* ih)
             if (cb)
             {
               TextBox tb = inner_sender.as<TextBox>();
-              int pos = tb.SelectionStart();
+              int pos = iupwinuiStrUnitToChar(tb.Text(), tb.SelectionStart());
               cb(ih, 1, pos + 1, pos);
             }
           });
@@ -1503,7 +1503,7 @@ static int winuiListMapMethod(Ihandle* ih)
       if (cb)
       {
         TextBox tb = sender.as<TextBox>();
-        int pos = tb.SelectionStart();
+        int pos = iupwinuiStrUnitToChar(tb.Text(), tb.SelectionStart());
         cb(ih, 1, pos + 1, pos);
       }
     });
@@ -2219,7 +2219,8 @@ static char* winuiListGetSelectionAttrib(Ihandle* ih)
   if (len == 0)
     return nullptr;
 
-  return iupStrReturnIntInt(start + 1, start + len + 1, ':');
+  hstring text = tb.Text();
+  return iupStrReturnIntInt(iupwinuiStrUnitToChar(text, start) + 1, iupwinuiStrUnitToChar(text, start + len) + 1, ':');
 }
 
 static int winuiListSetSelectionAttrib(Ihandle* ih, const char* value)
@@ -2253,7 +2254,10 @@ static int winuiListSetSelectionAttrib(Ihandle* ih, const char* value)
   start--;
   end--;
 
-  tb.Select(start, end - start);
+  hstring text = tb.Text();
+  start = iupwinuiStrCharToUnit(text, start);
+  end = iupwinuiStrCharToUnit(text, end);
+  tb.Select(start, end > start ? end - start : 0);
   return 0;
 }
 
@@ -2271,7 +2275,8 @@ static char* winuiListGetSelectionPosAttrib(Ihandle* ih)
   if (len == 0)
     return nullptr;
 
-  return iupStrReturnIntInt(start, start + len, ':');
+  hstring text = tb.Text();
+  return iupStrReturnIntInt(iupwinuiStrUnitToChar(text, start), iupwinuiStrUnitToChar(text, start + len), ':');
 }
 
 static int winuiListSetSelectionPosAttrib(Ihandle* ih, const char* value)
@@ -2302,7 +2307,10 @@ static int winuiListSetSelectionPosAttrib(Ihandle* ih, const char* value)
   if (start < 0 || end < 0)
     return 0;
 
-  tb.Select(start, end - start);
+  hstring text = tb.Text();
+  start = iupwinuiStrCharToUnit(text, start);
+  end = iupwinuiStrCharToUnit(text, end);
+  tb.Select(start, end > start ? end - start : 0);
   return 0;
 }
 
@@ -2316,7 +2324,7 @@ static char* winuiListGetCaretAttrib(Ihandle* ih)
     return nullptr;
 
   int pos = tb.SelectionStart() + tb.SelectionLength();
-  return iupStrReturnInt(pos + 1);
+  return iupStrReturnInt(iupwinuiStrUnitToChar(tb.Text(), pos) + 1);
 }
 
 static int winuiListSetCaretAttrib(Ihandle* ih, const char* value)
@@ -2333,7 +2341,7 @@ static int winuiListSetCaretAttrib(Ihandle* ih, const char* value)
   if (pos < 1) pos = 1;
   pos--;
 
-  tb.Select(pos, 0);
+  tb.Select(iupwinuiStrCharToUnit(tb.Text(), pos), 0);
   return 0;
 }
 
@@ -2347,7 +2355,7 @@ static char* winuiListGetCaretPosAttrib(Ihandle* ih)
     return nullptr;
 
   int pos = tb.SelectionStart() + tb.SelectionLength();
-  return iupStrReturnInt(pos);
+  return iupStrReturnInt(iupwinuiStrUnitToChar(tb.Text(), pos));
 }
 
 static int winuiListSetCaretPosAttrib(Ihandle* ih, const char* value)
@@ -2363,7 +2371,7 @@ static int winuiListSetCaretPosAttrib(Ihandle* ih, const char* value)
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
 
-  tb.Select(pos, 0);
+  tb.Select(iupwinuiStrCharToUnit(tb.Text(), pos), 0);
   return 0;
 }
 
@@ -2506,11 +2514,12 @@ static int winuiListSetScrollToAttrib(Ihandle* ih, const char* value)
   if (!tb)
     return 0;
 
-  int lin = 1;
-  iupStrToInt(value, &lin);
-  if (lin < 1) lin = 1;
+  int pos = 1;
+  iupStrToInt(value, &pos);
+  if (pos < 1) pos = 1;
+  pos--;
 
-  tb.Select(0, 0);
+  tb.Select(iupwinuiStrCharToUnit(tb.Text(), pos), 0);
   return 0;
 }
 
@@ -2527,7 +2536,7 @@ static int winuiListSetScrollToPosAttrib(Ihandle* ih, const char* value)
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
 
-  tb.Select(pos, 0);
+  tb.Select(iupwinuiStrCharToUnit(tb.Text(), pos), 0);
   return 0;
 }
 

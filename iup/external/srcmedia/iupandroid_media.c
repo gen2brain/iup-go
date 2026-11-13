@@ -6,6 +6,7 @@
 
 #include <jni.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "iup.h"
@@ -71,11 +72,11 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupPermissionHelper_dispat
   if (!ih || !iupObjectCheck(ih))
     return;
 
-  name = (*jni_env)->GetStringUTFChars(jni_env, permission, NULL);
+  name = iupAndroid_JStringToUtf8(jni_env, permission);
   if (name && strcmp(name, "android.permission.CAMERA") == 0)
     iupandroidCameraPermission(ih, granted ? 1 : 0);
   else if (name && strcmp(name, "android.permission.RECORD_AUDIO") == 0)
     iupandroidMicrophonePermission(ih, granted ? 1 : 0);
   if (name)
-    (*jni_env)->ReleaseStringUTFChars(jni_env, permission, name);
+    free((char*)name);
 }

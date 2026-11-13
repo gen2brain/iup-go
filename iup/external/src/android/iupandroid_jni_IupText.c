@@ -5,6 +5,7 @@
  */
 
 #include <jni.h>
+#include <stdlib.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -84,19 +85,19 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatchActi
 
   if (!cb && !mask) return -1;
 
-  const char* str = new_value ? (*jni_env)->GetStringUTFChars(jni_env, new_value, NULL) : NULL;
+  const char* str = new_value ? iupAndroid_JStringToUtf8(jni_env, new_value) : NULL;
   const char* effective = str ? str : "";
 
   if (mask && iupMaskCheck(mask, effective) == 0)
   {
     IFns fail_cb = (IFns)IupGetCallback(ih, "MASKFAIL_CB");
     if (fail_cb) fail_cb(ih, (char*)effective);
-    if (str) (*jni_env)->ReleaseStringUTFChars(jni_env, new_value, str);
+    if (str) free((char*)str);
     return 0;  /* abort: filter rejects the change */
   }
 
   int ret = cb ? cb(ih, (int)key, (char*)effective) : IUP_DEFAULT;
-  if (str) (*jni_env)->ReleaseStringUTFChars(jni_env, new_value, str);
+  if (str) free((char*)str);
 
   if (ret == IUP_IGNORE) return 0;
   if (ret == IUP_CLOSE)
@@ -203,7 +204,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatchLink
   Ihandle* ih = (Ihandle*)ihandle_ptr;
   if (!ih || !iupObjectCheck(ih) || !url) return;
 
-  const char* utf = (*jni_env)->GetStringUTFChars(jni_env, url, NULL);
+  const char* utf = iupAndroid_JStringToUtf8(jni_env, url);
   IFns cb = (IFns)IupGetCallback(ih, "LINK_CB");
   if (cb)
   {
@@ -213,7 +214,7 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatchLink
   }
   else
     IupHelp(utf);
-  (*jni_env)->ReleaseStringUTFChars(jni_env, url, utf);
+  free((char*)utf);
 }
 
 

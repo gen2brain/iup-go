@@ -776,8 +776,9 @@ public:
     if (!cb && !ih->data->mask && !ih->data->nc)
       return false;
 
-    int start = edit->property("selectionStart").toInt();
-    int end = edit->property("selectionEnd").toInt();
+    QString value = edit->property("text").toString();
+    int start = iupqmlStrUnitToChar(value, edit->property("selectionStart").toInt());
+    int end = iupqmlStrUnitToChar(value, edit->property("selectionEnd").toInt());
     int ret;
 
     if (evt->matches(QKeySequence::Paste) || evt->matches(QKeySequence::Cut))
@@ -808,7 +809,7 @@ public:
     if ((evt->key() == Qt::Key_Backspace || evt->key() == Qt::Key_Delete) && !(evt->modifiers() & (Qt::ControlModifier | Qt::AltModifier)))
     {
       int remove_dir = evt->key() == Qt::Key_Delete ? 1 : -1;
-      int len = static_cast<int>(edit->property("text").toString().length());
+      int len = iupqmlStrUnitToChar(value, static_cast<int>(value.length()));
       if (start == end && ((remove_dir == -1 && start == 0) || (remove_dir == 1 && start >= len)))
         return false;
       ret = iupEditCallActionCb(ih, cb, nullptr, start, end, ih->data->mask, ih->data->nc, remove_dir, 1);
@@ -1063,65 +1064,118 @@ static int qmlListSetSelectedTextAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* qmlListGetSelectionAttrib(Ihandle* ih)
-{
-  IupQmlListData* data = qmlListGetData(ih);
-  if (data && data->edit)
-  {
-    int start = data->edit->property("selectionStart").toInt();
-    int end = data->edit->property("selectionEnd").toInt();
-    if (end > start)
-      return iupStrReturnIntInt(start + 1, end, ':');
-  }
-  return nullptr;
-}
-
-static int qmlListSetSelectionAttrib(Ihandle* ih, const char* value)
+static char* qmlListGetEditSelection(Ihandle* ih, int base)
 {
   IupQmlListData* data = qmlListGetData(ih);
   if (!data || !data->edit)
-    return 0;
+    return nullptr;
+
+  int start = data->edit->property("selectionStart").toInt();
+  int end = data->edit->property("selectionEnd").toInt();
+  if (end <= start)
+    return nullptr;
+
+  QString text = data->edit->property("text").toString();
+  return iupStrReturnIntInt(iupqmlStrUnitToChar(text, start) + base, iupqmlStrUnitToChar(text, end) + base, ':');
+}
+
+static char* qmlListGetSelectionAttrib(Ihandle* ih)
+{
+  return qmlListGetEditSelection(ih, 1);
+}
+
+static char* qmlListGetSelectionPosAttrib(Ihandle* ih)
+{
+  return qmlListGetEditSelection(ih, 0);
+}
+
+static void qmlListSetEditSelection(Ihandle* ih, const char* value, int base)
+{
+  IupQmlListData* data = qmlListGetData(ih);
+  if (!data || !data->edit)
+    return;
 
   if (!value || iupStrEqualNoCase(value, "NONE"))
   {
     QMetaObject::invokeMethod(data->edit, "deselect", Qt::DirectConnection);
-    return 0;
+    return;
   }
 
   if (iupStrEqualNoCase(value, "ALL"))
   {
     QMetaObject::invokeMethod(data->edit, "selectAll", Qt::DirectConnection);
-    return 0;
+    return;
   }
 
-  int start = 1, end = 1;
-  if (iupStrToIntInt(value, &start, &end, ':') == 2)
-  {
-    if (start < 1) start = 1;
-    if (end < 1) end = 1;
-    if (end < start) end = start;
-    QMetaObject::invokeMethod(data->edit, "select", Qt::DirectConnection, Q_ARG(int, start - 1), Q_ARG(int, end));
-  }
+  int start, end;
+  if (iupStrToIntInt(value, &start, &end, ':') != 2)
+    return;
+  start -= base;
+  end -= base;
+  if (start < 0 || end < 0)
+    return;
+
+  QString text = data->edit->property("text").toString();
+  int start_unit = iupqmlStrCharToUnit(text, start);
+  int end_unit = iupqmlStrCharToUnit(text, end);
+  if (end_unit < start_unit)
+    end_unit = start_unit;
+  QMetaObject::invokeMethod(data->edit, "select", Qt::DirectConnection, Q_ARG(int, start_unit), Q_ARG(int, end_unit));
+}
+
+static int qmlListSetSelectionAttrib(Ihandle* ih, const char* value)
+{
+  qmlListSetEditSelection(ih, value, 1);
   return 0;
+}
+
+static int qmlListSetSelectionPosAttrib(Ihandle* ih, const char* value)
+{
+  qmlListSetEditSelection(ih, value, 0);
+  return 0;
+}
+
+static char* qmlListGetEditCursor(Ihandle* ih, int base)
+{
+  IupQmlListData* data = qmlListGetData(ih);
+  if (!data || !data->edit)
+    return nullptr;
+  QString text = data->edit->property("text").toString();
+  return iupStrReturnInt(iupqmlStrUnitToChar(text, data->edit->property("cursorPosition").toInt()) + base);
 }
 
 static char* qmlListGetCaretAttrib(Ihandle* ih)
 {
+  return qmlListGetEditCursor(ih, 1);
+}
+
+static char* qmlListGetCaretPosAttrib(Ihandle* ih)
+{
+  return qmlListGetEditCursor(ih, 0);
+}
+
+static void qmlListSetEditCursor(Ihandle* ih, const char* value, int base)
+{
   IupQmlListData* data = qmlListGetData(ih);
-  if (data && data->edit)
-    return iupStrReturnInt(data->edit->property("cursorPosition").toInt() + 1);
-  return nullptr;
+  int pos;
+  if (!data || !data->edit || !iupStrToInt(value, &pos))
+    return;
+
+  pos -= base;
+  if (pos < 0)
+    pos = 0;
+  data->edit->setProperty("cursorPosition", iupqmlStrCharToUnit(data->edit->property("text").toString(), pos));
 }
 
 static int qmlListSetCaretAttrib(Ihandle* ih, const char* value)
 {
-  IupQmlListData* data = qmlListGetData(ih);
-  int pos;
-  if (data && data->edit && iupStrToInt(value, &pos))
-  {
-    if (pos < 1) pos = 1;
-    data->edit->setProperty("cursorPosition", pos - 1);
-  }
+  qmlListSetEditCursor(ih, value, 1);
+  return 0;
+}
+
+static int qmlListSetCaretPosAttrib(Ihandle* ih, const char* value)
+{
+  qmlListSetEditCursor(ih, value, 0);
   return 0;
 }
 
@@ -1193,13 +1247,13 @@ static int qmlListSetClipboardAttrib(Ihandle* ih, const char* value)
 
 static int qmlListSetScrollToAttrib(Ihandle* ih, const char* value)
 {
-  IupQmlListData* data = qmlListGetData(ih);
-  int pos;
-  if (data && data->edit && iupStrToInt(value, &pos))
-  {
-    if (pos < 1) pos = 1;
-    data->edit->setProperty("cursorPosition", pos - 1);
-  }
+  qmlListSetEditCursor(ih, value, 1);
+  return 0;
+}
+
+static int qmlListSetScrollToPosAttrib(Ihandle* ih, const char* value)
+{
+  qmlListSetEditCursor(ih, value, 0);
   return 0;
 }
 
@@ -1324,8 +1378,17 @@ static int qmlListConvertXYToPos(Ihandle* ih, int x, int y)
  * Map Method
  ****************************************************************************/
 
+static QQuickItem* qmlListFocusItem(Ihandle* ih)
+{
+  IupQmlListData* data = qmlListGetData(ih);
+  return data ? data->edit : nullptr;
+}
+
 static int qmlListMapMethod(Ihandle* ih)
 {
+  if (ih->data->has_editbox)
+    iupAttribSet(ih, "_IUPQML_FOCUS_FUNC", reinterpret_cast<char*>(qmlListFocusItem));
+
   auto* data = new IupQmlListData();
   memset(data, 0, sizeof(IupQmlListData));
   data->anchor = -1;
@@ -1593,12 +1656,15 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "SELECTEDTEXT", qmlListGetSelectedTextAttrib, qmlListSetSelectedTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTION", qmlListGetSelectionAttrib, qmlListSetSelectionAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", qmlListGetSelectionPosAttrib, qmlListSetSelectionPosAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARET", qmlListGetCaretAttrib, qmlListSetCaretAttrib, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", qmlListGetCaretPosAttrib, qmlListSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INSERT", nullptr, qmlListSetInsertAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPEND", nullptr, qmlListSetAppendAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", qmlListGetReadOnlyAttrib, qmlListSetReadOnlyAttrib, nullptr, nullptr, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, qmlListSetClipboardAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, qmlListSetScrollToAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, qmlListSetScrollToPosAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", nullptr, qmlListSetCueBannerAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", nullptr, qmlListSetFilterAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", qmlListGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);

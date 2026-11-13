@@ -624,10 +624,10 @@ static void androidListEditStrCall(Ihandle* ih, const char* name, const char* va
 
 static int androidListSetCaretAttrib(Ihandle* ih, const char* value)
 {
-  int lin = 1, col = 1;
+  int col = 1;
   if (!ih->handle || !ih->data->has_editbox) return 0;
   if (!value) return 0;
-  iupStrToIntInt(value, &lin, &col, ',');
+  iupStrToInt(value, &col);
   if (col < 1) col = 1;
   androidListCallVoidII(ih, "setEditCaret", "(Landroid/view/View;I)V", (jint)(col - 1), 0);
   return 0;
@@ -636,7 +636,7 @@ static int androidListSetCaretAttrib(Ihandle* ih, const char* value)
 static char* androidListGetCaretAttrib(Ihandle* ih)
 {
   if (!ih->handle || !ih->data->has_editbox) return NULL;
-  return iupStrReturnIntInt(1, androidListEditIntGet(ih, "getEditCaret") + 1, ',');
+  return iupStrReturnInt(androidListEditIntGet(ih, "getEditCaret") + 1);
 }
 
 static int androidListSetCaretPosAttrib(Ihandle* ih, const char* value)
@@ -665,9 +665,9 @@ static char* androidListGetSelectedTextAttrib(Ihandle* ih)
   iupAndroid_CheckException(env, "IupListHelper.getEditSelectedText");
   (*env)->DeleteLocalRef(env, cls);
   if (!js) return NULL;
-  const char* c = (*env)->GetStringUTFChars(env, js, NULL);
+  const char* c = iupAndroid_JStringToUtf8(env, js);
   char* ret = iupStrReturnStr(c);
-  (*env)->ReleaseStringUTFChars(env, js, c);
+  free((char*)c);
   (*env)->DeleteLocalRef(env, js);
   return ret;
 }

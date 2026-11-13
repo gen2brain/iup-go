@@ -53,19 +53,30 @@
     }
 
     // 1-based lin/col <-> char-offset over a multiline value
+    // IUP text positions count characters, JS strings count UTF-16 units: a surrogate pair is one character
+    function iupU2C(val, u) {
+      var n = 0, i = 0;
+      if (u > val.length) u = val.length;
+      while (i < u) { i += (val.codePointAt(i) > 0xFFFF) ? 2 : 1; n++; }
+      return n;
+    }
+    function iupC2U(val, c) {
+      var n = 0, i = 0;
+      while (n < c && i < val.length) { i += (val.codePointAt(i) > 0xFFFF) ? 2 : 1; n++; }
+      return i;
+    }
+    globalThis.__iupU2C = iupU2C;
     function iupLcToPos(val, lin, col) {
       var lines = val.split('\n');
       if (lin < 1) lin = 1; if (lin > lines.length) lin = lines.length;
       var pos = 0;
       for (var i = 0; i < lin - 1; i++) pos += lines[i].length + 1;
-      var c = (col < 1) ? 0 : col - 1;
-      if (c > lines[lin - 1].length) c = lines[lin - 1].length;
-      return pos + c;
+      return pos + iupC2U(lines[lin - 1], (col < 1) ? 0 : col - 1);
     }
     function iupPosToLc(val, pos) {
       if (pos < 0) pos = 0; if (pos > val.length) pos = val.length;
-      var before = val.slice(0, pos);
-      return before.split('\n').length + ',' + (pos - before.lastIndexOf('\n'));
+      var before = val.slice(0, pos), ls = before.lastIndexOf('\n') + 1;
+      return before.split('\n').length + ',' + (iupU2C(before.slice(ls), pos - ls) + 1);
     }
 
     // beforeinput carries no range for a word or line delete in an <input>, and getTargetRanges() is empty outside contenteditable
@@ -219,6 +230,11 @@
 
     var apply = function (c) {
       var el = els[c.id];
+      if (el && typeof el.value === 'string' && /^text(setcaret|scrolltopos|setselpos|add\w*pos)$/.test(c.op)) {
+        if (c.pos != null) c.pos = iupC2U(el.value, c.pos);
+        if (c.start != null) c.start = iupC2U(el.value, c.start);
+        if (c.end != null) c.end = iupC2U(el.value, c.end);
+      }
       switch (c.op) {
       case 'theme': installTheme(c); break;
       // main owns the interval: the Worker running the app is blocked in the pump and would never run it
@@ -1479,8 +1495,9 @@
                   if (buf) inner += emitSpan(buf, cur, curlink);
                   buf = ''; cur = null; curlink = -1;
                   var dim = ''; if (im.iw) dim += 'width:' + im.iw + 'px;'; if (im.ih) dim += 'height:' + im.ih + 'px;';
-                  inner += '<img src="' + im.img + '" style="vertical-align:middle;' + dim + '">';
-                  var step = im.e - gp; i += step > 0 ? step : 1;
+                  var step = im.e - gp;
+                  inner += '<img data-iuplen="' + (step > 0 ? step : 1) + '" src="' + im.img + '" style="vertical-align:middle;' + dim + '">';
+                  i += step > 0 ? step : 1;
                   continue;
                 }
                 var st = styleAt(gp), lk = linkAt(gp);
@@ -1489,7 +1506,7 @@
               }
               if (buf) inner += emitSpan(buf, cur, curlink);
               if (!inner) inner = '<br>';
-              if (marker) inner = '<span style="margin-right:6px;">' + marker + '</span>' + inner;
+              if (marker) inner = '<span data-iupmarker="1" contenteditable="false" style="margin-right:6px;">' + marker + '</span>' + inner;
               var dstyle = (al ? 'text-align:' + al + ';' : '') + pst;
               html += '<div' + (dstyle ? ' style="' + dstyle + '"' : '') + '>' + inner + '</div>';
               pos = le + 1;
@@ -1500,22 +1517,88 @@
             var s = '', tags = (elem && elem.__iupTags) || [];
             for (var k = 0; k < tags.length; k++) {
               var g = tags[k];
-              s += g.s + '\t' + g.e + '\t' + (g.css || '') + '\t' + (g.pcss || '') + '\t' + (g.link != null ? g.link : -1) + '\n';
+              s += iupU2C(elem.__iupText, g.s) + '\t' + iupU2C(elem.__iupText, g.e) + '\t' + (g.css || '') + '\t' + (g.pcss || '') + '\t' + (g.link != null ? g.link : -1) + '\n';
             }
             return s;
           };
           if (!globalThis.__iupTextOff) globalThis.__iupTextOff = function (elem, lin, col) {
-            var lines = elem.__iupText.split('\n'), o = 0, k;
-            for (k = 0; k < lin - 1 && k < lines.length; k++) o += lines[k].length + 1;
-            var ll = (lin - 1 < lines.length) ? lines[lin - 1].length : 0;
-            if (col - 1 > ll) col = ll + 1;
-            return o + (col - 1);
+            return iupLcToPos(elem.__iupText, lin, col);
           };
           Object.defineProperty(tel, 'value', {
             get: function () { return tel.__iupText; },
-            set: function (v) { tel.__iupText = v || ''; tel.__iupTags = []; tel.__iupRender(); },
+            set: function (v) { tel.__iupText = v || ''; tel.__iupTags = []; tel.__iupSel = [0, 0]; tel.__iupRender(); },
             configurable: true
           });
+          // the rendered lines map back to text offsets: one <div> per line, markers excluded, images by their text length
+          var tlen = function (n) {
+            if (n.nodeType === 3) return n.length;
+            if (n.nodeType !== 1 || n.getAttribute('data-iupmarker')) return 0;
+            if (n.tagName === 'IMG') return parseInt(n.getAttribute('data-iuplen')) || 1;
+            var t = 0; for (var k = 0; k < n.childNodes.length; k++) t += tlen(n.childNodes[k]); return t;
+          };
+          var tlineStart = function (k) {
+            var lines = tel.__iupText.split('\n'), o = 0;
+            for (var j = 0; j < k && j < lines.length; j++) o += lines[j].length + 1;
+            return o;
+          };
+          // without tags the text is a single text node, so offsets are direct
+          var tplain = function () { return !tel.children.length; };
+          tel.__iupDomToPos = function (node, off) {
+            if (tplain()) return node === tel ? (off ? tel.__iupText.length : 0) : off;
+            var line = node;
+            while (line && line.parentNode !== tel) line = line.parentNode;
+            if (!line) return node === tel ? tlineStart(off) : 0;
+            var k = Array.prototype.indexOf.call(tel.children, line), base = tlineStart(k), acc = 0;
+            var walk = function (n) {
+              if (n === node) {
+                if (n.nodeType === 3) { acc += off; return true; }
+                for (var q = 0; q < off && q < n.childNodes.length; q++) acc += tlen(n.childNodes[q]);
+                return true;
+              }
+              if (n.nodeType === 1 && n.getAttribute('data-iupmarker')) return n.contains(node);
+              if (n.nodeType !== 1 || n.tagName === 'IMG' || !n.contains(node)) { acc += tlen(n); return false; }
+              for (var q2 = 0; q2 < n.childNodes.length; q2++) if (walk(n.childNodes[q2])) return true;
+              return false;
+            };
+            for (var q3 = 0; q3 < line.childNodes.length; q3++) if (walk(line.childNodes[q3])) break;
+            return base + acc;
+          };
+          var tposToDom = function (pos) {
+            if (tplain()) return tel.firstChild ? [tel.firstChild, pos] : [tel, 0];
+            var lines = tel.__iupText.split('\n'), k = 0, o = 0;
+            while (k < lines.length - 1 && pos > o + lines[k].length) { o += lines[k].length + 1; k++; }
+            var line = tel.children[k], col = pos - o;
+            if (!line) return [tel, tel.childNodes.length];
+            var found = null;
+            var walk = function (n) {
+              if (found) return;
+              if (n.nodeType === 3) { if (col <= n.length) found = [n, col]; else col -= n.length; return; }
+              if (n.nodeType !== 1 || n.getAttribute('data-iupmarker')) return;
+              if (n.tagName === 'IMG') { var il = tlen(n); if (col < il) found = [n.parentNode, Array.prototype.indexOf.call(n.parentNode.childNodes, n)]; else col -= il; return; }
+              for (var q = 0; q < n.childNodes.length && !found; q++) walk(n.childNodes[q]);
+            };
+            walk(line);
+            return found || [line, line.childNodes.length];
+          };
+          tel.__iupSel = [0, 0];
+          var tdomSel = function () {
+            var ds = document.getSelection();
+            if (!ds || !ds.rangeCount || !tel.contains(ds.anchorNode)) return null;
+            var r = ds.getRangeAt(0);
+            return [tel.__iupDomToPos(r.startContainer, r.startOffset), tel.__iupDomToPos(r.endContainer, r.endOffset)];
+          };
+          Object.defineProperty(tel, 'selectionStart', { get: function () { var d = tdomSel(); return d ? d[0] : tel.__iupSel[0]; }, configurable: true });
+          Object.defineProperty(tel, 'selectionEnd', { get: function () { var d = tdomSel(); return d ? d[1] : tel.__iupSel[1]; }, configurable: true });
+          tel.setSelectionRange = function (a, b) {
+            var n = tel.__iupText.length;
+            a = Math.max(0, Math.min(a, n)); b = Math.max(a, Math.min(b, n));
+            tel.__iupSel = [a, b];
+            var ds = document.getSelection();
+            if (!ds || !tel.isConnected) return;
+            var ra = tposToDom(a), rb = tposToDom(b), rg = document.createRange();
+            rg.setStart(ra[0], ra[1]); rg.setEnd(rb[0], rb[1]);
+            ds.removeAllRanges(); ds.addRange(rg);
+          };
         } else if (c.multiline) { tel = document.createElement('textarea'); tel.wrap = c.wordwrap ? 'soft' : 'off'; }
         else { tel = document.createElement('input'); tel.type = c.password ? 'password' : 'text'; }
         tel.style.position = 'absolute'; tel.style.boxSizing = 'border-box'; tel.style.margin = '0';
@@ -1543,13 +1626,7 @@
       case 'textaddtag': {
         if (el && el.__iupRender) {
           var tlines = el.__iupText.split('\n');
-          var toff = function (lin, col) {
-            var o = 0, k;
-            for (k = 0; k < lin - 1 && k < tlines.length; k++) o += tlines[k].length + 1;
-            var ll = (lin - 1 < tlines.length) ? tlines[lin - 1].length : 0;
-            if (col - 1 > ll) col = ll + 1;
-            return o + (col - 1);
-          };
+          var toff = function (lin, col) { return iupLcToPos(el.__iupText, lin, col); };
           var ts = toff(c.l1, c.c1), te = toff(c.l2, c.c2);
           if (te > el.__iupText.length) te = el.__iupText.length;
           if (te > ts) { el.__iupTags.push({ s: ts, e: te, css: c.css }); el.__iupRender(); }
@@ -1658,7 +1735,8 @@
         if (el) {
           if (c.fix) {
             el.value = c.value;
-            try { el.setSelectionRange(c.caret, c.caret); } catch (_) {}
+            var tdc = iupC2U(c.value, c.caret);
+            try { el.setSelectionRange(tdc, tdc); } catch (_) {}
           }
           if (el.__iupEditNext) el.__iupEditNext(); else el.__iupEditPending = 0;
         }
@@ -1701,6 +1779,15 @@
           var ins = el.selectionStart || 0, ine = el.selectionEnd || 0;
           el.value = el.value.slice(0, ins) + c.value + el.value.slice(ine);
           el.setSelectionRange(ins + c.value.length, ins + c.value.length);
+        }
+      } break;
+      case 'textsetseltext': {
+        if (el) {
+          var sts = el.selectionStart || 0, ste = el.selectionEnd || 0;
+          if (sts !== ste) {
+            el.value = el.value.slice(0, sts) + c.value + el.value.slice(ste);
+            el.setSelectionRange(sts + c.value.length, sts + c.value.length);
+          }
         }
       } break;
       case 'texttabsize': {
@@ -1760,7 +1847,7 @@
                 if (after === hv || el.__iupEditPending) return;
                 el.__iupEditPending = 1; el.__iupEditVC = 1;
                 Dt('iupwasmDispatchTextEdit', ['number', 'string', 'string', 'number', 'number', 'number', 'number'],
-                   [wid, hv, after, 0, hv.length, 0, 0]);
+                   [wid, hv, after, 0, iupU2C(hv, hv.length), 0, 0]);
               }, 0);
               return;
             } else return;
@@ -1780,7 +1867,7 @@
             }
             el.__iupEditPending = 1; el.__iupEditVC = 1;
             Dt('iupwasmDispatchTextEdit', ['number', 'string', 'string', 'number', 'number', 'number', 'number'],
-               [wid, v, ins === null ? '' : ins, s, en, rd, kseq]);
+               [wid, v, ins === null ? '' : ins, iupU2C(v, s), iupU2C(v, en), rd, kseq]);
           });
           el.__iupEditNext = function () {
             var q = el.__iupEditQ;
@@ -1804,7 +1891,7 @@
             }
             el.__iupEditVC = 1;
             Dt('iupwasmDispatchTextEdit', ['number', 'string', 'string', 'number', 'number', 'number', 'number'],
-               [wid, v2, it.ins === null ? '' : it.ins, s2, e2, it.rd, it.seq || 0]);
+               [wid, v2, it.ins === null ? '' : it.ins, iupU2C(v2, s2), iupU2C(v2, e2), it.rd, it.seq || 0]);
           };
           el.addEventListener('input', function () {
             var m = el.__iupFilter;
@@ -1818,7 +1905,7 @@
           });
           var reportCaret = function () {
             var p = el.selectionStart || 0, lc = iupPosToLc(el.value, p).split(',');
-            Dt('iupwasmDispatchTextCaret', ['number', 'number', 'number', 'number'], [wid, +lc[0], +lc[1], p]);
+            Dt('iupwasmDispatchTextCaret', ['number', 'number', 'number', 'number'], [wid, +lc[0], +lc[1], iupU2C(el.value, p)]);
           };
           el.addEventListener('keyup', reportCaret);
           el.addEventListener('click', reportCaret);
@@ -2071,10 +2158,19 @@
         }
       } break;
       case 'listeditcaret': {
-        if (el && el.__iupVal && el.__iupVal.setSelectionRange) el.__iupVal.setSelectionRange(c.pos, c.pos);
+        if (el && el.__iupVal && el.__iupVal.setSelectionRange) { var lcp = iupC2U(el.__iupVal.value, c.pos); el.__iupVal.setSelectionRange(lcp, lcp); }
       } break;
       case 'listeditselpos': {
-        if (el && el.__iupVal && el.__iupVal.setSelectionRange) el.__iupVal.setSelectionRange(c.s, c.e);
+        if (el && el.__iupVal && el.__iupVal.setSelectionRange) el.__iupVal.setSelectionRange(iupC2U(el.__iupVal.value, c.s), iupC2U(el.__iupVal.value, c.e));
+      } break;
+      case 'listeditsetseltext': {
+        if (el && el.__iupVal) {
+          var lsv = el.__iupVal, lss = lsv.selectionStart || 0, lse = lsv.selectionEnd || 0;
+          if (lss !== lse) {
+            lsv.value = lsv.value.slice(0, lss) + c.value + lsv.value.slice(lse);
+            lsv.setSelectionRange(lss + c.value.length, lss + c.value.length);
+          }
+        }
       } break;
       case 'listwire': {
         if (el) {
@@ -3614,11 +3710,8 @@ globalThis.__iupMediaPick = function (kind, index) {
         };
         if (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') {
           var th = thit();
-          if (!th || !el.contains(th[0])) return -1;
-          var tpre = document.createRange();
-          tpre.selectNodeContents(el);
-          tpre.setEnd(th[0], th[1]);
-          return tpre.toString().length;
+          if (!th || !el.contains(th[0]) || !el.__iupDomToPos) return -1;
+          return iupU2C(el.value, el.__iupDomToPos(th[0], th[1]));
         }
         // form fields have no point to caret query, so a mirror div with the same text layout answers it
         var tcs = getComputedStyle(el), tm = document.createElement('div');
@@ -3641,7 +3734,7 @@ globalThis.__iupMediaPick = function (kind, index) {
         var tmh = thit();
         document.body.removeChild(tm);
         if (!tmh || !tm.contains(tmh[0])) return -1;
-        return tmh[0] === tm ? (tmh[1] ? tval.length : 0) : tmh[1];
+        return iupU2C(el.value, tmh[0] === tm ? (tmh[1] ? tval.length : 0) : tmh[1]);
       } break;
       case 'treexy2row': {
         if (!el) return 0;
@@ -3768,16 +3861,16 @@ globalThis.__iupMediaPick = function (kind, index) {
         return (el && globalThis.__iupTextRuns) ? globalThis.__iupTextRuns(el) : '';
       } break;
       case 'textcaret': {
-        return el ? (el.selectionStart || 0) : 0;
+        return el ? iupU2C(el.value, el.selectionStart || 0) : 0;
       } break;
       case 'textselpos': {
-        return el ? ((el.selectionStart || 0) + ':' + (el.selectionEnd || 0)) : '';
+        return el ? (iupU2C(el.value, el.selectionStart || 0) + ':' + iupU2C(el.value, el.selectionEnd || 0)) : '';
       } break;
       case 'textseltext': {
         return el ? el.value.slice(el.selectionStart || 0, el.selectionEnd || 0) : '';
       } break;
       case 'textcount': {
-        return el ? el.value.length : 0;
+        return el ? iupU2C(el.value, el.value.length) : 0;
       } break;
       case 'scrollvisible': {
         var sv = el && (el.__iupVal || el);
@@ -3785,11 +3878,11 @@ globalThis.__iupMediaPick = function (kind, index) {
         return (sv.scrollWidth > sv.clientWidth ? 1 : 0) | (sv.scrollHeight > sv.clientHeight ? 2 : 0);
       } break;
       case 'textlctopos': {
-        return el ? iupLcToPos(el.value, req.lin, req.col) : (req.col > 0 ? req.col - 1 : 0);
+        return el ? iupU2C(el.value, iupLcToPos(el.value, req.lin, req.col)) : (req.col > 0 ? req.col - 1 : 0);
       } break;
       case 'textpostolc': {
         if (!el) return [1, req.pos + 1];
-        var tlc = iupPosToLc(el.value, req.pos).split(',');
+        var tlc = iupPosToLc(el.value, iupC2U(el.value, req.pos)).split(',');
         return [parseInt(tlc[0]), parseInt(tlc[1])];
       } break;
       case 'textcaretlc': {
@@ -3826,10 +3919,10 @@ globalThis.__iupMediaPick = function (kind, index) {
         return el ? el.__iupVal.value : '';
       } break;
       case 'listeditcaret': {
-        return (el && el.__iupVal) ? (el.__iupVal.selectionStart || 0) : 0;
+        return (el && el.__iupVal) ? iupU2C(el.__iupVal.value, el.__iupVal.selectionStart || 0) : 0;
       } break;
       case 'listeditselpos': {
-        return (el && el.__iupVal) ? ((el.__iupVal.selectionStart || 0) + ':' + (el.__iupVal.selectionEnd || 0)) : '';
+        return (el && el.__iupVal) ? (iupU2C(el.__iupVal.value, el.__iupVal.selectionStart || 0) + ':' + iupU2C(el.__iupVal.value, el.__iupVal.selectionEnd || 0)) : '';
       } break;
       case 'listeditseltext': {
         return (el && el.__iupVal) ? el.__iupVal.value.slice(el.__iupVal.selectionStart || 0, el.__iupVal.selectionEnd || 0) : '';

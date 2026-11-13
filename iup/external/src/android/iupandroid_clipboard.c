@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <jni.h>
@@ -50,9 +51,9 @@ static char* androidClipboardGetTextAttrib(Ihandle* ih)
 
   if (!j_text) return NULL;
 
-  const char* chars = (*jni_env)->GetStringUTFChars(jni_env, j_text, NULL);
+  const char* chars = iupAndroid_JStringToUtf8(jni_env, j_text);
   char* value = iupStrReturnStr(chars);
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_text, chars);
+  free((char*)chars);
   (*jni_env)->DeleteLocalRef(jni_env, j_text);
   return value;
 }
@@ -193,10 +194,10 @@ static char* androidClipboardGetFormatDataStringAttrib(Ihandle* ih)
     return NULL;
   }
 
-  const char* chars = (*jni_env)->GetStringUTFChars(jni_env, j_text, NULL);
+  const char* chars = iupAndroid_JStringToUtf8(jni_env, j_text);
   char* value = iupStrReturnStr(chars);
   iupAttribSetInt(ih, "FORMATDATASIZE", (int)strlen(chars) + 1);
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_text, chars);
+  free((char*)chars);
   (*jni_env)->DeleteLocalRef(jni_env, j_text);
   return value;
 }

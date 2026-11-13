@@ -1210,10 +1210,9 @@ static char* gtk4TextGetSelectedTextAttrib(Ihandle* ih)
     int start, end;
     if (gtk_editable_get_selection_bounds(GTK_EDITABLE(ih->handle), &start, &end))
     {
-      char* selectedtext = iupStrDup(gtk_editable_get_text(GTK_EDITABLE(ih->handle)));
-      selectedtext[end] = 0;
-      char* value = iupStrReturnStr(iupgtk4StrConvertFromSystem(selectedtext + start));
-      free(selectedtext);
+      char* selectedtext = gtk_editable_get_chars(GTK_EDITABLE(ih->handle), start, end);
+      char* value = iupStrReturnStr(iupgtk4StrConvertFromSystem(selectedtext));
+      g_free(selectedtext);
       return value;
     }
   }

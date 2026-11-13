@@ -1629,7 +1629,7 @@ static int fltkListSetSelectedTextAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static char* fltkListGetSelectionAttrib(Ihandle* ih)
+static char* fltkListGetEditSelection(Ihandle* ih, int base)
 {
   Fl_Input* edit = fltkListGetEditBox(ih);
   if (!edit)
@@ -1637,7 +1637,6 @@ static char* fltkListGetSelectionAttrib(Ihandle* ih)
 
   int start = edit->insert_position();
   int end = edit->mark();
-
   if (start == end)
     return nullptr;
 
@@ -1648,40 +1647,64 @@ static char* fltkListGetSelectionAttrib(Ihandle* ih)
     end = tmp;
   }
 
-  return iupStrReturnIntInt(start + 1, end, ':');
+  const char* value = edit->value();
+  return iupStrReturnIntInt(iupStrUtf8ByteToChar(value, start) + base, iupStrUtf8ByteToChar(value, end) + base, ':');
 }
 
-static int fltkListSetSelectionAttrib(Ihandle* ih, const char* value)
+static char* fltkListGetSelectionAttrib(Ihandle* ih)
+{
+  return fltkListGetEditSelection(ih, 1);
+}
+
+static char* fltkListGetSelectionPosAttrib(Ihandle* ih)
+{
+  return fltkListGetEditSelection(ih, 0);
+}
+
+static void fltkListSetEditSelection(Ihandle* ih, const char* value, int base)
 {
   Fl_Input* edit = fltkListGetEditBox(ih);
   if (!edit)
-    return 0;
+    return;
 
   if (!value || iupStrEqualNoCase(value, "NONE"))
   {
     int pos = edit->insert_position();
     edit->insert_position(pos, pos);
-    return 0;
+    return;
   }
 
   if (iupStrEqualNoCase(value, "ALL"))
   {
     edit->insert_position(0, static_cast<int>(strlen(edit->value())));
-    return 0;
+    return;
   }
 
-  int start = 1, end = 1;
-  if (iupStrToIntInt(value, &start, &end, ':') == 2)
-  {
-    if (start < 1) start = 1;
-    if (end < 1) end = 1;
-    start--;
-    end--;
-    if (end < start)
-      end = start;
-    edit->insert_position(start, end + 1);
-  }
+  int start, end;
+  if (iupStrToIntInt(value, &start, &end, ':') != 2)
+    return;
+  start -= base;
+  end -= base;
+  if (start < 0 || end < 0)
+    return;
 
+  const char* text = edit->value();
+  int start_byte = iupStrUtf8CharToByte(text, start);
+  int end_byte = iupStrUtf8CharToByte(text, end);
+  if (end_byte < start_byte)
+    end_byte = start_byte;
+  edit->insert_position(start_byte, end_byte);
+}
+
+static int fltkListSetSelectionAttrib(Ihandle* ih, const char* value)
+{
+  fltkListSetEditSelection(ih, value, 1);
+  return 0;
+}
+
+static int fltkListSetSelectionPosAttrib(Ihandle* ih, const char* value)
+{
+  fltkListSetEditSelection(ih, value, 0);
   return 0;
 }
 
@@ -1689,23 +1712,40 @@ static char* fltkListGetCaretAttrib(Ihandle* ih)
 {
   Fl_Input* edit = fltkListGetEditBox(ih);
   if (edit)
-    return iupStrReturnInt(edit->insert_position() + 1);
+    return iupStrReturnInt(iupStrUtf8ByteToChar(edit->value(), edit->insert_position()) + 1);
   return nullptr;
+}
+
+static char* fltkListGetCaretPosAttrib(Ihandle* ih)
+{
+  Fl_Input* edit = fltkListGetEditBox(ih);
+  if (edit)
+    return iupStrReturnInt(iupStrUtf8ByteToChar(edit->value(), edit->insert_position()));
+  return nullptr;
+}
+
+static void fltkListSetEditCursor(Ihandle* ih, const char* value, int base)
+{
+  Fl_Input* edit = fltkListGetEditBox(ih);
+  int pos;
+  if (!edit || !iupStrToInt(value, &pos))
+    return;
+
+  pos -= base;
+  if (pos < 0)
+    pos = 0;
+  edit->insert_position(iupStrUtf8CharToByte(edit->value(), pos));
 }
 
 static int fltkListSetCaretAttrib(Ihandle* ih, const char* value)
 {
-  Fl_Input* edit = fltkListGetEditBox(ih);
-  if (!edit)
-    return 0;
+  fltkListSetEditCursor(ih, value, 1);
+  return 0;
+}
 
-  int pos;
-  if (iupStrToInt(value, &pos))
-  {
-    if (pos < 1) pos = 1;
-    pos--;
-    edit->insert_position(pos);
-  }
+static int fltkListSetCaretPosAttrib(Ihandle* ih, const char* value)
+{
+  fltkListSetEditCursor(ih, value, 0);
   return 0;
 }
 
@@ -1779,17 +1819,13 @@ static int fltkListSetClipboardAttrib(Ihandle* ih, const char* value)
 
 static int fltkListSetScrollToAttrib(Ihandle* ih, const char* value)
 {
-  Fl_Input* edit = fltkListGetEditBox(ih);
-  if (!edit)
-    return 0;
+  fltkListSetEditCursor(ih, value, 1);
+  return 0;
+}
 
-  int pos;
-  if (iupStrToInt(value, &pos))
-  {
-    if (pos < 1) pos = 1;
-    pos--;
-    edit->insert_position(pos);
-  }
+static int fltkListSetScrollToPosAttrib(Ihandle* ih, const char* value)
+{
+  fltkListSetEditCursor(ih, value, 0);
   return 0;
 }
 
@@ -2158,12 +2194,15 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "SELECTEDTEXT", fltkListGetSelectedTextAttrib, fltkListSetSelectedTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTION", fltkListGetSelectionAttrib, fltkListSetSelectionAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", fltkListGetSelectionPosAttrib, fltkListSetSelectionPosAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARET", fltkListGetCaretAttrib, fltkListSetCaretAttrib, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", fltkListGetCaretPosAttrib, fltkListSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INSERT", nullptr, fltkListSetInsertAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPEND", nullptr, fltkListSetAppendAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", fltkListGetReadOnlyAttrib, fltkListSetReadOnlyAttrib, nullptr, nullptr, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, fltkListSetClipboardAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, fltkListSetScrollToAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, fltkListSetScrollToPosAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "IMAGE", nullptr, fltkListSetImageAttrib, IUPAF_IHANDLENAME|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGENATIVEHANDLE", fltkListGetImageNativeHandleAttribId, nullptr, IUPAF_NO_STRING|IUPAF_READONLY|IUPAF_NO_INHERIT);

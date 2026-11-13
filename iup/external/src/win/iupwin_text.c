@@ -526,6 +526,89 @@ static void winTextUpdateFontFormat(CHARFORMAT2* charformat, const char* value)
     charformat->dwEffects |= CFE_STRIKEOUT;
 }
 
+/* IUP text positions count characters: a surrogate pair is one, and so is the \r\n of a multiline edit control */
+static WCHAR* winTextGetNativeText(Ihandle* ih, int* len)
+{
+  WCHAR* text;
+
+  if (ih->data->has_formatting)
+  {
+    GETTEXTLENGTHEX gtl;
+    GETTEXTEX gt;
+    gtl.flags = GTL_NUMCHARS | GTL_PRECISE;
+    gtl.codepage = 1200;
+    *len = (int)SendMessage(ih->handle, EM_GETTEXTLENGTHEX, (WPARAM)&gtl, 0);
+    text = (WCHAR*)malloc((*len + 1) * sizeof(WCHAR));
+    gt.cb = (*len + 1) * sizeof(WCHAR);
+    gt.flags = GT_DEFAULT;
+    gt.codepage = 1200;
+    gt.lpDefaultChar = NULL;
+    gt.lpUsedDefChar = NULL;
+    *len = (int)SendMessage(ih->handle, EM_GETTEXTEX, (WPARAM)&gt, (LPARAM)text);
+  }
+  else
+  {
+    *len = GetWindowTextLengthW(ih->handle);
+    text = (WCHAR*)malloc((*len + 1) * sizeof(WCHAR));
+    *len = GetWindowTextW(ih->handle, text, *len + 1);
+  }
+  text[*len] = 0;
+  return text;
+}
+
+static int winTextUnitSize(Ihandle* ih, const WCHAR* text, int len, int i)
+{
+  if (i + 1 < len)
+  {
+    if (text[i] == L'\r' && text[i + 1] == L'\n' && ih->data->is_multiline && !ih->data->has_formatting)
+      return 2;
+    if (IS_HIGH_SURROGATE(text[i]) && IS_LOW_SURROGATE(text[i + 1]))
+      return 2;
+  }
+  return 1;
+}
+
+static int winTextCountChars(Ihandle* ih, const WCHAR* text, int len, int from, int to)
+{
+  int count = 0;
+  if (to > len)
+    to = len;
+  while (from < to)
+  {
+    from += winTextUnitSize(ih, text, len, from);
+    count++;
+  }
+  return count;
+}
+
+static int winTextAdvanceChars(Ihandle* ih, const WCHAR* text, int len, int from, int count)
+{
+  while (count > 0 && from < len)
+  {
+    from += winTextUnitSize(ih, text, len, from);
+    count--;
+  }
+  return from;
+}
+
+static int winTextUnitToChar(Ihandle* ih, int wpos)
+{
+  int len, pos;
+  WCHAR* text = winTextGetNativeText(ih, &len);
+  pos = winTextCountChars(ih, text, len, 0, wpos);
+  free(text);
+  return pos;
+}
+
+static int winTextCharToUnit(Ihandle* ih, int pos)
+{
+  int len, wpos;
+  WCHAR* text = winTextGetNativeText(ih, &len);
+  wpos = winTextAdvanceChars(ih, text, len, 0, pos);
+  free(text);
+  return wpos;
+}
+
 static int winTextSetLinColToPosition(Ihandle* ih, int lin, int col)
 {
   int linmax, colmax, lineindex, wpos;
@@ -540,11 +623,17 @@ static int winTextSetLinColToPosition(Ihandle* ih, int lin, int col)
   lineindex = (int)SendMessage(ih->handle, EM_LINEINDEX, (WPARAM)lin, 0L);
 
   colmax = (int)SendMessage(ih->handle, EM_LINELENGTH, (WPARAM)lineindex, 0L);
-  if (col > colmax)
-    col = colmax;    /* after the last character */
+
+  {
+    int len;
+    WCHAR* text = winTextGetNativeText(ih, &len);
+    wpos = winTextAdvanceChars(ih, text, len, lineindex, col);
+    free(text);
+  }
+  if (wpos > lineindex + colmax)
+    wpos = lineindex + colmax;    /* after the last character */
 
   /* pos here includes the line breaks in 1 or 2 configuration */
-  wpos = lineindex + col;
   return wpos;
 }
 
@@ -576,37 +665,15 @@ static void winTextGetLinColFromPosition(Ihandle* ih, int wpos, int* lin, int* c
     *lin = (int)SendMessage(ih->handle, EM_LINEFROMCHAR, (WPARAM)wpos, (LPARAM)0L);
 
   lineindex = (int)SendMessage(ih->handle, EM_LINEINDEX, (WPARAM)(*lin), (LPARAM)0L);
-  *col = wpos - lineindex;  /* lineindex is at the first character of the line */
+  {
+    int len;
+    WCHAR* text = winTextGetNativeText(ih, &len);
+    *col = winTextCountChars(ih, text, len, lineindex, wpos);  /* lineindex is at the first character of the line */
+    free(text);
+  }
 
   (*lin)++; /* IUP starts at 1 */
   (*col)++;
-}
-
-static int winTextRemoveExtraChars(Ihandle* ih, int wpos)
-{
-  /* called only if not single line and not formatting */
-  int lin = (int)SendMessage(ih->handle, EM_LINEFROMCHAR, (WPARAM)wpos, (LPARAM)0L);
-  int pos = wpos - lin;  /* remove \r characters from count */
-  return pos;
-}
-
-static int winTextAddExtraChars(Ihandle* ih, int pos)
-{
-  /* called only if not single line and not formatting */
-  int lin, clin, wpos;
-
-  clin = (int)SendMessage(ih->handle, EM_LINEFROMCHAR, (WPARAM)pos, (LPARAM)0L);
-
-  /* pos is smaller than the actual pos (missing the \r count),
-     so we must calculate the line until the returned value is the same as the expected. */
-  do
-  {
-    lin = clin;
-    clin = (int)SendMessage(ih->handle, EM_LINEFROMCHAR, (WPARAM)(pos + lin + 1), (LPARAM)0L);   /* add one because we can be at the last character */
-  } while (clin != lin);                                                                /* and it will not change to the next line by 1 */
-
-  wpos = pos + lin;  /* add \r characters from count */
-  return wpos;
 }
 
 static int winTextGetCaretPosition(Ihandle* ih)
@@ -657,17 +724,12 @@ static int winTextGetCaret(Ihandle* ih, int* lin, int* col)
   if (ih->data->is_multiline)
   {
     winTextGetLinColFromPosition(ih, wpos, lin, col);
-
-    if (!ih->data->has_formatting)  /* when formatting or single line text uses only one char per line end */
-      pos = winTextRemoveExtraChars(ih, wpos);
-    else
-      pos = wpos;
+    pos = winTextUnitToChar(ih, wpos);
   }
   else
   {
-    pos = wpos;
-    *col = wpos;
-    (*col)++;  /* IUP starts at 1 */
+    pos = winTextUnitToChar(ih, wpos);
+    *col = pos + 1;  /* IUP starts at 1 */
     *lin = 1;
   }
 
@@ -681,16 +743,8 @@ static int winTextGetSelection(Ihandle* ih, int* start, int* end)
 
   SendMessage(ih->handle, EM_GETSEL, (WPARAM)start, (LPARAM)end);
 
-  if (ih->data->is_multiline && !ih->data->has_formatting)  /* when formatting or single line text uses only one char per line end */
-  {
-    if (*start == *end)
-      (*end) = (*start) = winTextRemoveExtraChars(ih, *start);
-    else
-    {
-      (*start) = winTextRemoveExtraChars(ih, *start);
-      (*end) = winTextRemoveExtraChars(ih, *end);
-    }
-  }
+  (*start) = winTextUnitToChar(ih, *start);
+  (*end) = winTextUnitToChar(ih, *end);
 
   if (*start == *end)
     return 0;
@@ -699,16 +753,8 @@ static int winTextGetSelection(Ihandle* ih, int* start, int* end)
 
 static void winTextSetSelection(Ihandle* ih, int start, int end)
 {
-  if (ih->data->is_multiline && !ih->data->has_formatting)  /* when formatting or single line text uses only one char per line end */
-  {
-    if (start == end)
-      end = start = winTextAddExtraChars(ih, start);
-    else
-    {
-      start = winTextAddExtraChars(ih, start);
-      end = winTextAddExtraChars(ih, end);
-    }
-  }
+  start = winTextCharToUnit(ih, start);
+  end = winTextCharToUnit(ih, end);
 
   SendMessage(ih->handle, EM_SETSEL, (WPARAM)start, (LPARAM)end);
 }
@@ -716,22 +762,12 @@ static void winTextSetSelection(Ihandle* ih, int start, int end)
 IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
   int wpos = winTextSetLinColToPosition(ih, lin, col);
-
-  if (!ih->data->has_formatting)  /* when formatting or single line text uses only one char per line end */
-    *pos = winTextRemoveExtraChars(ih, wpos);
-  else
-    *pos = wpos;
+  *pos = winTextUnitToChar(ih, wpos);
 }
 
 IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
-  int wpos;
-
-  if (!ih->data->has_formatting)  /* when formatting or single line text uses only one char per line end */
-    wpos = winTextAddExtraChars(ih, pos);
-  else
-    wpos = pos;
-
+  int wpos = winTextCharToUnit(ih, pos);
   winTextGetLinColFromPosition(ih, wpos, lin, col);
 }
 
@@ -752,15 +788,7 @@ static int winTextConvertXYToPos(Ihandle* ih, int x, int y)
     wpos = LOWORD(ret);
   }
 
-  if (ih->data->is_multiline)
-  {
-    if (!ih->data->has_formatting)  /* when formatting or single line text uses only one char per line end */
-      pos = winTextRemoveExtraChars(ih, wpos);
-    else
-      pos = wpos;
-  }
-  else
-    pos = wpos;
+  pos = winTextUnitToChar(ih, wpos);
 
   return pos;
 }
@@ -985,7 +1013,10 @@ static int winTextSetNCAttrib(Ihandle* ih, const char* value)
 
 static char* winTextGetCountAttrib(Ihandle* ih)
 {
-  int count = winTextGetLastPosition(ih);
+  int len, count;
+  WCHAR* text = winTextGetNativeText(ih, &len);
+  count = winTextCountChars(ih, text, len, 0, len);
+  free(text);
   return iupStrReturnInt(count);
 }
 
@@ -1054,8 +1085,8 @@ static int winTextSetSelectionAttrib(Ihandle* ih, const char* value)
     if(start<1 || end<1)
       return 0;
 
-    start--; /* IUP starts at 1 */
-    end--;
+    start = winTextCharToUnit(ih, start - 1); /* IUP starts at 1 */
+    end = winTextCharToUnit(ih, end - 1);
   }
 
   SendMessage(ih->handle, EM_SETSEL, (WPARAM)start, (LPARAM)end);
@@ -1080,8 +1111,8 @@ static char* winTextGetSelectionAttrib(Ihandle* ih)
   }
   else
   {
-    start++; /* IUP starts at 1 */
-    end++;
+    start = winTextUnitToChar(ih, start) + 1; /* IUP starts at 1 */
+    end = winTextUnitToChar(ih, end) + 1;
     return iupStrReturnIntInt(start, end, ':');
   }
 }
@@ -1228,7 +1259,7 @@ static int winTextSetCaretAttrib(Ihandle* ih, const char* value)
     iupStrToInt(value, &pos);
     if (pos < 1) pos = 1;
     pos--; /* IUP starts at 1 */
-    wpos = pos;
+    wpos = winTextCharToUnit(ih, pos);
   }
 
   SendMessage(ih->handle, EM_SETSEL, (WPARAM)wpos, (LPARAM)wpos);
@@ -1267,10 +1298,7 @@ static char* winTextGetCaretPosAttrib(Ihandle* ih)
 {
   int pos;
   int wpos = winTextGetCaretPosition(ih);
-  if (ih->data->is_multiline && !ih->data->has_formatting)  /* when formatting or single line text uses only one char per line end */
-    pos = winTextRemoveExtraChars(ih, wpos);
-  else
-    pos = wpos;
+  pos = winTextUnitToChar(ih, wpos);
   return iupStrReturnInt(pos);
 }
 
@@ -2154,6 +2182,7 @@ static int winTextOverwriteChar(Ihandle* ih, int start, int end)
   if (!ih->data->has_formatting || start != end || !iupAttribGetBoolean(ih, "OVERWRITE"))
     return 0;
 
+  SendMessage(ih->handle, EM_GETSEL, (WPARAM)&start, 0);
   range.chrg.cpMin = start;
   range.chrg.cpMax = start + 1;
   range.lpstrText = next;
@@ -2809,7 +2838,7 @@ static void winTextAddFormatRun(Ihandle* ih, Ihandle* bulk_tag, const CHARFORMAT
   Ihandle* formattag = IupUser();
   const char* url;
 
-  IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", start, end);
+  IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", winTextUnitToChar(ih, start), winTextUnitToChar(ih, end));
   IupAppend(bulk_tag, formattag);
 
   IupSetAttribute(formattag, "WEIGHT", (charformat->dwEffects & CFE_BOLD) ? "BOLD" : "NORMAL");
@@ -2895,7 +2924,7 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
     if (paraformat.dxStartIndent > 0)
     {
       Ihandle* formattag = IupUser();
-      IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", start, start + length);
+      IupSetStrf(formattag, "SELECTIONPOS", "%d:%d", winTextUnitToChar(ih, start), winTextUnitToChar(ih, start + length));
       IupSetInt(formattag, "INDENT", paraformat.dxStartIndent / pixel2twips);
       IupAppend(bulk_tag, formattag);
     }

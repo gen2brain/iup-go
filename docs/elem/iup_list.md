@@ -182,7 +182,6 @@ Must be set after VIRTUALMODE is enabled.
 > ------------------------------------------------------------------------
 
 **APPEND, CARET, CARETPOS**, **CLIPBOARD**, **CUEBANNER, FILTER, INSERT, PADDING**, **MASK, NC, READONLY, SELECTEDTEXT, SELECTION, SELECTIONPOS**, **SCROLLTO**, **SCROLLTOPOS** : Same as the [IupText](iup_text.md) attributes, but are valid only when EDITBOX=YES and effective only for the edit box inside the list.
-SELECTIONPOS, CARETPOS and SCROLLTOPOS are not supported in Qt, QML, FLTK and Haiku.
 
 > 
 >

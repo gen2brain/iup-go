@@ -650,9 +650,9 @@ static int androidWebBrowserSetInsertImageFileAttrib(Ihandle* ih, const char* va
     if (j_path) (*jni_env)->DeleteLocalRef(jni_env, j_path);
     if (j_uri)
     {
-      const char* data_uri = (*jni_env)->GetStringUTFChars(jni_env, j_uri, NULL);
+      const char* data_uri = iupAndroid_JStringToUtf8(jni_env, j_uri);
       androidWebBrowserExecCommand(ih, "insertImage", data_uri);
-      (*jni_env)->ReleaseStringUTFChars(jni_env, j_uri, data_uri);
+      free((char*)data_uri);
       (*jni_env)->DeleteLocalRef(jni_env, j_uri);
     }
   }

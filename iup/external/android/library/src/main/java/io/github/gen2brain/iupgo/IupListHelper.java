@@ -372,7 +372,7 @@ public final class IupListHelper
             fireListSelection(lv, ihandlePtr, text, position, multiple);
         });
 
-        box.setTag(lv);
+        box.setTag(edit.getTag() instanceof View inner ? inner : edit);
         return box;
     }
 
@@ -571,14 +571,8 @@ public final class IupListHelper
             if (tag instanceof MaterialAutoCompleteTextView m)
                 return (ArrayAdapter<String>)m.getAdapter();
         }
-        /* EDITBOX wrapper: LinearLayout with ListView tagged. */
-        if (widget instanceof android.widget.LinearLayout)
-        {
-            Object tag = widget.getTag();
-            if (tag instanceof ListView)
-                return (ArrayAdapter<String>)((ListView)tag).getAdapter();
-        }
-        return null;
+        ListView lv = listViewOf(widget);
+        return lv != null ? (ArrayAdapter<String>)lv.getAdapter() : null;
     }
 
     @Keep
@@ -718,10 +712,10 @@ public final class IupListHelper
     private static ListView listViewOf(View widget)
     {
         if (widget instanceof ListView) return (ListView)widget;
-        if (widget instanceof android.widget.LinearLayout)
+        if (widget instanceof android.widget.LinearLayout box)
         {
-            Object tag = widget.getTag();
-            if (tag instanceof ListView) return (ListView)tag;
+            for (int i = 0; i < box.getChildCount(); i++)
+                if (box.getChildAt(i) instanceof ListView lv) return lv;
         }
         return null;
     }
@@ -768,8 +762,7 @@ public final class IupListHelper
     {
         android.widget.EditText e = editBoxOf(widget);
         if (e == null) return 0;
-        int c = e.getSelectionStart();
-        return c < 0 ? 0 : c;
+        return IupTextHelper.unitToChar(e.getText(), e.getSelectionStart());
     }
 
     @Keep
@@ -777,11 +770,7 @@ public final class IupListHelper
     {
         android.widget.EditText e = editBoxOf(widget);
         if (e == null) return;
-        CharSequence cs = e.getText();
-        int len = cs == null ? 0 : cs.length();
-        if (pos < 0) pos = 0;
-        if (pos > len) pos = len;
-        e.setSelection(pos);
+        e.setSelection(IupTextHelper.charToUnit(e.getText(), pos));
     }
 
     @Keep
@@ -835,7 +824,7 @@ public final class IupListHelper
         android.widget.EditText e = editBoxOf(widget);
         if (e == null) return 0;
         CharSequence cs = e.getText();
-        return cs == null ? 0 : cs.length();
+        return cs == null ? 0 : Character.codePointCount(cs, 0, cs.length());
     }
 
     @Keep
@@ -927,10 +916,7 @@ public final class IupListHelper
     {
         android.widget.EditText e = editBoxOf(widget);
         if (e == null) return;
-        CharSequence cs = e.getText();
-        int len = cs == null ? 0 : cs.length();
-        if (pos < 0) pos = 0;
-        if (pos > len) pos = len;
+        pos = IupTextHelper.charToUnit(e.getText(), pos);
         e.setSelection(pos);
         e.bringPointIntoView(pos);
     }
@@ -942,10 +928,8 @@ public final class IupListHelper
         if (e == null) return;
         CharSequence cs = e.getText();
         int len = cs == null ? 0 : cs.length();
-        if (end < 0) end = len;
-        if (start < 0) start = 0;
-        if (start > len) start = len;
-        if (end > len) end = len;
+        end = end < 0 ? len : IupTextHelper.charToUnit(cs, end);
+        start = IupTextHelper.charToUnit(cs, start);
         e.setSelection(start, end);
     }
 
@@ -958,6 +942,8 @@ public final class IupListHelper
         int s = e.getSelectionStart(), en = e.getSelectionEnd();
         if (s < 0 || en < 0 || s == en) return -1L;
         if (s > en) { int t = s; s = en; en = t; }
+        s = IupTextHelper.unitToChar(e.getText(), s);
+        en = IupTextHelper.unitToChar(e.getText(), en);
         return ((long)s << 32) | (en & 0xFFFFFFFFL);
     }
 

@@ -185,6 +185,16 @@ IUP_DRV_API int iupqtStrGetUTF8Mode()
   return 1;
 }
 
+IUP_DRV_API int iupqtStrUnitToChar(const QString& str, int unit)
+{
+  return iupStrUtf16UnitToChar(reinterpret_cast<const unsigned short*>(str.utf16()), static_cast<int>(str.length()), unit);
+}
+
+IUP_DRV_API int iupqtStrCharToUnit(const QString& str, int pos)
+{
+  return iupStrUtf16CharToUnit(reinterpret_cast<const unsigned short*>(str.utf16()), static_cast<int>(str.length()), pos);
+}
+
 /****************************************************************************
  * Global Attributes
  ****************************************************************************/

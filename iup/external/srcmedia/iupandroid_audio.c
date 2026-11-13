@@ -68,8 +68,8 @@ int iupdrvAudioDeviceList(ma_device_info** devices)
     {
       jstring id = (jstring)(*env)->GetObjectArrayElement(env, values, i);
       jstring name = (jstring)(*env)->GetObjectArrayElement(env, values, i + 1);
-      const char* id_text = id ? (*env)->GetStringUTFChars(env, id, NULL) : NULL;
-      const char* name_text = name ? (*env)->GetStringUTFChars(env, name, NULL) : NULL;
+      const char* id_text = id ? iupAndroid_JStringToUtf8(env, id) : NULL;
+      const char* name_text = name ? iupAndroid_JStringToUtf8(env, name) : NULL;
       int device_id;
 
       if (id_text && iupStrToInt(id_text, &device_id))
@@ -81,9 +81,9 @@ int iupdrvAudioDeviceList(ma_device_info** devices)
       }
 
       if (id_text)
-        (*env)->ReleaseStringUTFChars(env, id, id_text);
+        free((char*)id_text);
       if (name_text)
-        (*env)->ReleaseStringUTFChars(env, name, name_text);
+        free((char*)name_text);
       if (id)
         (*env)->DeleteLocalRef(env, id);
       if (name)

@@ -65,14 +65,14 @@ static int androidVideoAudioDevices(IvideoAudioDevice** devices)
     {
       jstring id = (jstring)(*env)->GetObjectArrayElement(env, values, i);
       jstring name = (jstring)(*env)->GetObjectArrayElement(env, values, i + 1);
-      const char* id_text = id ? (*env)->GetStringUTFChars(env, id, NULL) : NULL;
-      const char* name_text = name ? (*env)->GetStringUTFChars(env, name, NULL) : NULL;
+      const char* id_text = id ? iupAndroid_JStringToUtf8(env, id) : NULL;
+      const char* name_text = name ? iupAndroid_JStringToUtf8(env, name) : NULL;
       if (id_text)
         count = iupVideoAddAudioDevice(devices, count, id_text, name_text);
       if (id_text)
-        (*env)->ReleaseStringUTFChars(env, id, id_text);
+        free((char*)id_text);
       if (name_text)
-        (*env)->ReleaseStringUTFChars(env, name, name_text);
+        free((char*)name_text);
       if (id)
         (*env)->DeleteLocalRef(env, id);
       if (name)
@@ -246,10 +246,10 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupVideoHelper_error(JNIEn
   (void)cls;
   if (!session)
     return;
-  text = message ? (*env)->GetStringUTFChars(env, message, NULL) : NULL;
+  text = message ? iupAndroid_JStringToUtf8(env, message) : NULL;
   iupVideoError(session, text ? text : "Android video playback failed");
   if (text)
-    (*env)->ReleaseStringUTFChars(env, message, text);
+    free((char*)text);
 }
 
 static int androidVideoSubtitleCount(IvideoSession* session)
@@ -277,11 +277,11 @@ static char* androidVideoSubtitleName(IvideoSession* session, int index, int lan
   iupAndroid_CheckException(env, "IupVideoHelper.subtitleName");
   if (value)
   {
-    const char* text = (*env)->GetStringUTFChars(env, value, NULL);
+    const char* text = iupAndroid_JStringToUtf8(env, value);
     if (text)
     {
       result = iupStrReturnStr(text);
-      (*env)->ReleaseStringUTFChars(env, value, text);
+      free((char*)text);
     }
     (*env)->DeleteLocalRef(env, value);
   }

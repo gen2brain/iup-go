@@ -53,10 +53,8 @@ In Windows, if the element does not have the focus, the returned value is the po
 The caret is only displayed if the element has the keyboard focus, but its position can be changed even if not visible.
 When changed, it will also change the selection, but the text will be scrolled only when it receives the focus.
 
-See the Notes below if using UTF-8 strings in GTK.
-
 **CARETPOS** (non-inheritable): Also the **character** position of the insertion point, but using a zero based character unique index "pos".
-Useful for indexing the VALUE string. See the Notes below if using UTF-8 strings in GTK.
+Useful for indexing the VALUE string.
 
 **CHANGECASE** (non-inheritable): Change case according to given conversion. Can be UPPER, LOWER, TOGGLE, or TITLE.
 TITLE case change first letter of words separated by spaces to upper case others to lower case, but the first letter is changed only if word has more than 3 characters, for instance: "Best of the World".
@@ -207,11 +205,8 @@ In Windows, when changing the selection, the caret position is also changed.
 
 The values ALL and NONE are also accepted independently of MULTILINE.
 
-See the Notes below if using UTF-8 strings in GTK.
-
 **SELECTIONPOS** (non-inheritable): Same as SELECTION but using a zero-based **character** index "**pos1**:**pos2**".
 Useful for indexing the VALUE string. The values ALL and NONE are also accepted.
-See the Notes below if using UTF-8 strings in GTK.
 
 [SIZE](../attrib/iup_size.md) (non-inheritable): Since the contents can be changed by the user, the **Natural Size** is not affected by the text contents.
 Use VISIBLECOLUMNS and VISIBLELINES to control the **Natural Size**.
@@ -361,8 +356,8 @@ So the "DEFAULTENTER" button will not be processed when the element has the keyb
 
 In Windows, a Ctrl+key combination not supported by the control sounds a beep.
 
-When using UTF-8 strings in GTK, all attributes are indexed by characters, NOT by bytes.
-This also applies to Windows if FORMATTING=YES depending on the Windows codepage (for example, East Asian codepage where some characters take two bytes).
+All positions (CARET, CARETPOS, SELECTION, SELECTIONPOS, COUNT, SCROLLTO, SCROLLTOPOS, the format tag SELECTION and SELECTIONPOS, the CARET_CB parameters and [IupConvertXYToPos](../func/iup_convertxytopos.md)) count characters, not bytes, on every driver.
+A character outside the Basic Multilingual Plane, such as an emoji, counts as one character, and a line break counts as one character.
 
 Internal Drag&Drop support is enabled by default.
 But in Windows, the internal Drag&Drop is enabled only if FORMATTING=YES.

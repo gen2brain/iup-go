@@ -91,6 +91,13 @@ static UIElement winuiGetFocusableElement(Ihandle* ih)
   else if (IupClassMatch(ih, "list"))
   {
     auto* aux = winuiGetAux<IupWinUIListAux>(ih, IUPWINUI_LIST_AUX);
+    char* textbox = iupAttribGet(ih, "_IUPWINUI_TEXTBOX");
+    if (aux && aux->hasEditbox && textbox)
+    {
+      Windows::Foundation::IInspectable obj{nullptr};
+      winrt::copy_from_abi(obj, textbox);
+      return obj.try_as<UIElement>();
+    }
     if (aux && aux->isDropdown)
       return winuiGetHandle<ComboBox>(ih);
     else

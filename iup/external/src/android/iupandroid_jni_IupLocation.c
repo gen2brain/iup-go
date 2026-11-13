@@ -5,12 +5,15 @@
  */
 
 #include <jni.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "iup.h"
 #include "iup_object.h"
 #include "iup_str.h"
 #include "iup_location.h"
+
+#include "iupandroid_drv.h"
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupLocationHelper_dispatchFix(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr,
   jdouble latitude, jdouble longitude, jdouble altitude, jboolean has_altitude, jfloat accuracy,
@@ -62,8 +65,8 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupLocationHelper_dispatch
 
   memset(&msg, 0, sizeof(msg));
   msg.type = IUP_LOCATION_ERROR;
-  utf = text? (*jni_env)->GetStringUTFChars(jni_env, text, NULL): NULL;
+  utf = text? iupAndroid_JStringToUtf8(jni_env, text): NULL;
   iupStrCopyN(msg.error, sizeof(msg.error), utf? utf: "Location error");
-  if (utf) (*jni_env)->ReleaseStringUTFChars(jni_env, text, utf);
+  if (utf) free((char*)utf);
   iupLocationPost(ih, &msg);
 }

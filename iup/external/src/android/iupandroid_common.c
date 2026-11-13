@@ -282,17 +282,78 @@ void iupAndroid_GetButtonBorderSize(int* w, int* h)
   if (h) *h = cached_h;
 }
 
-char* iupAndroid_JStringToReturnStr(JNIEnv* jni_env, jstring j_string)
+IUP_SDK_API char* iupAndroid_JStringToUtf8(JNIEnv* jni_env, jstring j_string)
 {
+  jsize len, i;
+  jchar* units;
+  unsigned char* str;
+  unsigned char* d;
+
   if (j_string == NULL)
     return NULL;
 
+  len = (*jni_env)->GetStringLength(jni_env, j_string);
+  units = (jchar*)malloc((len + 1) * sizeof(jchar));
+  str = (unsigned char*)malloc(len * 3 + 1);
+  if (!units || !str)
+  {
+    free(units);
+    free(str);
+    return NULL;
+  }
+  (*jni_env)->GetStringRegion(jni_env, j_string, 0, len, units);
+
+  d = str;
+  for (i = 0; i < len; i++)
+  {
+    unsigned int c = units[i];
+    if (c >= 0xD800 && c <= 0xDBFF && i + 1 < len && units[i + 1] >= 0xDC00 && units[i + 1] <= 0xDFFF)
+    {
+      c = 0x10000 + ((c - 0xD800) << 10) + (units[i + 1] - 0xDC00);
+      i++;
+    }
+    else if (c >= 0xD800 && c <= 0xDFFF)
+      c = 0xFFFD;
+
+    if (c < 0x80)
+      *d++ = (unsigned char)c;
+    else if (c < 0x800)
+    {
+      *d++ = (unsigned char)(0xC0 | (c >> 6));
+      *d++ = (unsigned char)(0x80 | (c & 0x3F));
+    }
+    else if (c < 0x10000)
+    {
+      *d++ = (unsigned char)(0xE0 | (c >> 12));
+      *d++ = (unsigned char)(0x80 | ((c >> 6) & 0x3F));
+      *d++ = (unsigned char)(0x80 | (c & 0x3F));
+    }
+    else
+    {
+      *d++ = (unsigned char)(0xF0 | (c >> 18));
+      *d++ = (unsigned char)(0x80 | ((c >> 12) & 0x3F));
+      *d++ = (unsigned char)(0x80 | ((c >> 6) & 0x3F));
+      *d++ = (unsigned char)(0x80 | (c & 0x3F));
+    }
+  }
+  *d = 0;
+  free(units);
+  return (char*)str;
+}
+
+char* iupAndroid_JStringToReturnStr(JNIEnv* jni_env, jstring j_string)
+{
   char* value = NULL;
-  const char* c_string = (*jni_env)->GetStringUTFChars(jni_env, j_string, NULL);
+  char* c_string;
+
+  if (j_string == NULL)
+    return NULL;
+
+  c_string = iupAndroid_JStringToUtf8(jni_env, j_string);
   if (c_string != NULL)
   {
     value = iupStrReturnStr(c_string);
-    (*jni_env)->ReleaseStringUTFChars(jni_env, j_string, c_string);
+    free(c_string);
   }
   (*jni_env)->DeleteLocalRef(jni_env, j_string);
   return value;

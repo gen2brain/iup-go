@@ -1237,10 +1237,10 @@ IUP_SDK_API int iupdrvTextGetFormatTags(Ihandle* ih, Ihandle* bulk_tag)
   if (!jruns)
     return 1;
 
-  runs = (*jni_env)->GetStringUTFChars(jni_env, jruns, NULL);
+  runs = iupAndroid_JStringToUtf8(jni_env, jruns);
   copy = runs ? iupStrDup(runs) : NULL;
   if (runs)
-    (*jni_env)->ReleaseStringUTFChars(jni_env, jruns, runs);
+    free((char*)runs);
   (*jni_env)->DeleteLocalRef(jni_env, jruns);
 
   if (!copy)

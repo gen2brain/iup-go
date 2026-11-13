@@ -350,15 +350,19 @@ protected:
     auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "EDIT_CB"));
     if (cb || ih->data->mask || ih->data->nc)
     {
+      QString value = text();
       int start = hasSelectedText() ? selectionStart() : cursorPosition();
       int end = hasSelectedText() ? start + static_cast<int>(selectedText().length()) : start;
       int ret = -1;
       int checked = 0;
 
+      start = iupqtStrUnitToChar(value, start);
+      end = iupqtStrUnitToChar(value, end);
+
       if ((event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Delete) && !(event->modifiers() & (Qt::ControlModifier | Qt::AltModifier)))
       {
         int remove_dir = event->key() == Qt::Key_Delete ? 1 : -1;
-        if (start != end || (remove_dir == 1 && start < static_cast<int>(text().length())) || (remove_dir == -1 && start > 0))
+        if (start != end || (remove_dir == 1 && start < iupqtStrUnitToChar(value, static_cast<int>(value.length()))) || (remove_dir == -1 && start > 0))
         {
           ret = iupEditCallActionCb(ih, cb, nullptr, start, end, ih->data->mask, ih->data->nc, remove_dir, 1);
           checked = 1;
@@ -1390,48 +1394,70 @@ static int qtListSetSelectedTextAttrib(Ihandle* ih, const char* value)
 static char* qtListGetSelectionAttrib(Ihandle* ih)
 {
   QLineEdit* edit = qtListGetEditBox(ih);
-  if (edit)
-  {
-    int start = edit->selectionStart();
-    int len = edit->selectedText().length();
-    if (len > 0)
-      return iupStrReturnIntInt(start + 1, start + len, ':');
-  }
-  return nullptr;
+  if (!edit || !edit->hasSelectedText())
+    return nullptr;
+
+  QString text = edit->text();
+  int start = edit->selectionStart();
+  int end = start + static_cast<int>(edit->selectedText().length());
+  return iupStrReturnIntInt(iupqtStrUnitToChar(text, start) + 1, iupqtStrUnitToChar(text, end) + 1, ':');
 }
 
-static int qtListSetSelectionAttrib(Ihandle* ih, const char* value)
+static char* qtListGetSelectionPosAttrib(Ihandle* ih)
+{
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (!edit || !edit->hasSelectedText())
+    return nullptr;
+
+  QString text = edit->text();
+  int start = edit->selectionStart();
+  int end = start + static_cast<int>(edit->selectedText().length());
+  return iupStrReturnIntInt(iupqtStrUnitToChar(text, start), iupqtStrUnitToChar(text, end), ':');
+}
+
+static void qtListSetEditSelection(Ihandle* ih, const char* value, int base)
 {
   QLineEdit* edit = qtListGetEditBox(ih);
   if (!edit)
-    return 0;
+    return;
 
   if (!value || iupStrEqualNoCase(value, "NONE"))
   {
     edit->deselect();
-    return 0;
+    return;
   }
 
   if (iupStrEqualNoCase(value, "ALL"))
   {
     edit->selectAll();
-    return 0;
+    return;
   }
 
-  int start = 1, end = 1;
-  if (iupStrToIntInt(value, &start, &end, ':') == 2)
-  {
-    if (start < 1) start = 1;
-    if (end < 1) end = 1;
+  int start, end;
+  if (iupStrToIntInt(value, &start, &end, ':') != 2)
+    return;
+  start -= base;
+  end -= base;
+  if (start < 0 || end < 0)
+    return;
 
-    start--;
-    end--;
+  QString text = edit->text();
+  int start_unit = iupqtStrCharToUnit(text, start);
+  int end_unit = iupqtStrCharToUnit(text, end);
+  if (end_unit < start_unit)
+    end_unit = start_unit;
+  edit->setSelection(start_unit, end_unit - start_unit);
+}
 
-    if (end < start)
-      end = start;
+static int qtListSetSelectionAttrib(Ihandle* ih, const char* value)
+{
+  qtListSetEditSelection(ih, value, 1);
+  return 0;
+}
 
-    edit->setSelection(start, end - start + 1);
-  }
+static int qtListSetSelectionPosAttrib(Ihandle* ih, const char* value)
+{
+  qtListSetEditSelection(ih, value, 0);
   return 0;
 }
 
@@ -1439,23 +1465,40 @@ static char* qtListGetCaretAttrib(Ihandle* ih)
 {
   QLineEdit* edit = qtListGetEditBox(ih);
   if (edit)
-    return iupStrReturnInt(edit->cursorPosition() + 1);
+    return iupStrReturnInt(iupqtStrUnitToChar(edit->text(), edit->cursorPosition()) + 1);
   return nullptr;
+}
+
+static char* qtListGetCaretPosAttrib(Ihandle* ih)
+{
+  QLineEdit* edit = qtListGetEditBox(ih);
+  if (edit)
+    return iupStrReturnInt(iupqtStrUnitToChar(edit->text(), edit->cursorPosition()));
+  return nullptr;
+}
+
+static void qtListSetEditCursor(Ihandle* ih, const char* value, int base)
+{
+  QLineEdit* edit = qtListGetEditBox(ih);
+  int pos;
+  if (!edit || !iupStrToInt(value, &pos))
+    return;
+
+  pos -= base;
+  if (pos < 0)
+    pos = 0;
+  edit->setCursorPosition(iupqtStrCharToUnit(edit->text(), pos));
 }
 
 static int qtListSetCaretAttrib(Ihandle* ih, const char* value)
 {
-  QLineEdit* edit = qtListGetEditBox(ih);
-  if (!edit)
-    return 0;
+  qtListSetEditCursor(ih, value, 1);
+  return 0;
+}
 
-  int pos;
-  if (iupStrToInt(value, &pos))
-  {
-    if (pos < 1) pos = 1;
-    pos--;
-    edit->setCursorPosition(pos);
-  }
+static int qtListSetCaretPosAttrib(Ihandle* ih, const char* value)
+{
+  qtListSetEditCursor(ih, value, 0);
   return 0;
 }
 
@@ -1558,17 +1601,13 @@ static int qtListSetClipboardAttrib(Ihandle* ih, const char* value)
 
 static int qtListSetScrollToAttrib(Ihandle* ih, const char* value)
 {
-  QLineEdit* edit = qtListGetEditBox(ih);
-  if (!edit)
-    return 0;
+  qtListSetEditCursor(ih, value, 1);
+  return 0;
+}
 
-  int pos;
-  if (iupStrToInt(value, &pos))
-  {
-    if (pos < 1) pos = 1;
-    pos--;
-    edit->setCursorPosition(pos);
-  }
+static int qtListSetScrollToPosAttrib(Ihandle* ih, const char* value)
+{
+  qtListSetEditCursor(ih, value, 0);
   return 0;
 }
 
@@ -1903,6 +1942,7 @@ static int qtListMapMethod(Ihandle* ih)
     auto* list = new IupQtListWidget(ih);
     list->setMinimumSize(0, 0);
     layout->addWidget(list, 1);  /* 1 stretch - take remaining space */
+    container->setFocusProxy(edit);
 
     ih->handle = reinterpret_cast<InativeHandle*>(container);
 
@@ -2159,12 +2199,15 @@ extern "C" IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 
   iupClassRegisterAttribute(ic, "SELECTEDTEXT", qtListGetSelectedTextAttrib, qtListSetSelectedTextAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTION", qtListGetSelectionAttrib, qtListSetSelectionAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SELECTIONPOS", qtListGetSelectionPosAttrib, qtListSetSelectionPosAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CARET", qtListGetCaretAttrib, qtListSetCaretAttrib, nullptr, nullptr, IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CARETPOS", qtListGetCaretPosAttrib, qtListSetCaretPosAttrib, IUPAF_SAMEASSYSTEM, "0", IUPAF_NO_SAVE|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INSERT", nullptr, qtListSetInsertAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "APPEND", nullptr, qtListSetAppendAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "READONLY", qtListGetReadOnlyAttrib, qtListSetReadOnlyAttrib, nullptr, nullptr, IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "CLIPBOARD", nullptr, qtListSetClipboardAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLTO", nullptr, qtListSetScrollToAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPOS", nullptr, qtListSetScrollToPosAttrib, nullptr, nullptr, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "CUEBANNER", nullptr, qtListSetCueBannerAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FILTER", nullptr, qtListSetFilterAttrib, nullptr, nullptr, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", qtListGetScrollVisibleAttrib, nullptr, nullptr, nullptr, IUPAF_READONLY|IUPAF_NO_INHERIT);

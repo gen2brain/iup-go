@@ -5,12 +5,15 @@
  */
 
 #include <jni.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "iup.h"
 #include "iup_object.h"
 #include "iup_str.h"
 #include "iup_sensor.h"
+
+#include "iupandroid_drv.h"
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupSensorHelper_dispatchReading(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr,
   jdouble x, jdouble y, jdouble z, jlong time_ms)
@@ -41,8 +44,8 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupSensorHelper_dispatchEr
 
   memset(&msg, 0, sizeof(msg));
   msg.type = IUP_SENSOR_ERROR;
-  utf = text? (*jni_env)->GetStringUTFChars(jni_env, text, NULL): NULL;
+  utf = text? iupAndroid_JStringToUtf8(jni_env, text): NULL;
   iupStrCopyN(msg.error, sizeof(msg.error), utf? utf: "Sensor error");
-  if (utf) (*jni_env)->ReleaseStringUTFChars(jni_env, text, utf);
+  if (utf) free((char*)utf);
   iupSensorPost(ih, &msg);
 }

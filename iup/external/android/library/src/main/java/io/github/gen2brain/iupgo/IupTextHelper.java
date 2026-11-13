@@ -183,7 +183,7 @@ public final class IupTextHelper
         {
             super.onSelectionChanged(selStart, selEnd);
             if (suppressVC) return;
-            dispatchCaret(ihandlePtr, selStart);
+            dispatchCaret(ihandlePtr, unitToChar(getText(), selStart));
         }
     }
 
@@ -442,13 +442,31 @@ public final class IupTextHelper
     }
 
 
+    static int unitToChar(CharSequence s, int unit)
+    {
+        if (s == null || unit <= 0) return 0;
+        if (unit > s.length()) unit = s.length();
+        return Character.codePointCount(s, 0, unit);
+    }
+
+    static int charToUnit(CharSequence s, int pos)
+    {
+        if (s == null || pos <= 0) return 0;
+        int len = s.length(), unit = 0;
+        while (pos > 0 && unit < len)
+        {
+            unit += Character.charCount(Character.codePointAt(s, unit));
+            pos--;
+        }
+        return Math.min(unit, len);
+    }
+
     @Keep
     public static int getCaretPos(View v)
     {
         IupEditText tv = resolve(v);
         if (tv == null) return 0;
-        int p = tv.getSelectionStart();
-        return Math.max(p, 0);
+        return unitToChar(tv.getText(), tv.getSelectionStart());
     }
 
     @Keep
@@ -456,10 +474,7 @@ public final class IupTextHelper
     {
         IupEditText tv = resolve(v);
         if (tv == null) return;
-        Editable e = tv.getText();
-        int len = e == null ? 0 : e.length();
-        if (pos < 0) pos = 0;
-        if (pos > len) pos = len;
+        pos = charToUnit(tv.getText(), pos);
         tv.setSelection(pos);
         if (tv.getLayout() != null)
         {
@@ -476,6 +491,8 @@ public final class IupTextHelper
         int s = tv.getSelectionStart(), e = tv.getSelectionEnd();
         if (s < 0 || e < 0 || s == e) return -1L;
         if (s > e) { int t = s; s = e; e = t; }
+        s = unitToChar(tv.getText(), s);
+        e = unitToChar(tv.getText(), e);
         return ((long)s << 32) | (e & 0xFFFFFFFFL);
     }
 
@@ -487,10 +504,8 @@ public final class IupTextHelper
         if (tv == null) return;
         Editable e = tv.getText();
         int len = e == null ? 0 : e.length();
-        if (end < 0) end = len;
-        if (start < 0) start = 0;
-        if (start > len) start = len;
-        if (end > len) end = len;
+        end = end < 0 ? len : charToUnit(e, end);
+        start = charToUnit(e, start);
         tv.setSelection(start, end);
         if (tv.getLayout() != null)
         {
@@ -630,7 +645,7 @@ public final class IupTextHelper
         if (tv == null) return 0;
         Editable buf = tv.getText();
         if (buf == null) return 0;
-        return clamp(linColToPos(buf, lin, col), 0, buf.length());
+        return unitToChar(buf, clamp(linColToPos(buf, lin, col), 0, buf.length()));
     }
 
     @Keep
@@ -639,7 +654,7 @@ public final class IupTextHelper
         IupEditText tv = resolve(v);
         if (tv == null) return 0;
         Editable e = tv.getText();
-        return e == null ? 0 : e.length();
+        return e == null ? 0 : Character.codePointCount(e, 0, e.length());
     }
 
     /* Logical line count: number of '\n' + 1. */
@@ -681,9 +696,7 @@ public final class IupTextHelper
         IupEditText tv = resolve(v);
         if (tv == null) return;
         Editable e = tv.getText();
-        int len = e == null ? 0 : e.length();
-        if (pos < 0) pos = 0;
-        if (pos > len) pos = len;
+        pos = charToUnit(e, pos);
         Layout layout = tv.getLayout();
         if (layout == null) return;
         try { tv.bringPointIntoView(pos); } catch (Throwable ignored) {}
@@ -793,11 +806,9 @@ public final class IupTextHelper
         if (tv == null) return oneOne;
         Editable buf = tv.getText();
         if (buf == null) return oneOne;
-        int len = buf.length();
-        if (pos < 0) pos = 0;
-        if (pos > len) pos = len;
+        pos = charToUnit(buf, pos);
         int line = 1, col = 1;
-        for (int i = 0; i < pos; i++)
+        for (int i = 0; i < pos; i += Character.charCount(Character.codePointAt(buf, i)))
         {
             if (buf.charAt(i) == '\n') { line++; col = 1; }
             else col++;
@@ -1337,7 +1348,7 @@ public final class IupTextHelper
         if (selectionPos != null)
         {
             int[] p = parseTwoInts(selectionPos, ':');
-            if (p != null) return new int[]{clamp(p[0], 0, len), clamp(p[1], 0, len)};
+            if (p != null) return new int[]{charToUnit(buf, p[0]), charToUnit(buf, p[1])};
         }
         if (selection != null)
         {
@@ -1363,7 +1374,7 @@ public final class IupTextHelper
         int c = 1;
         while (pos < len && c < col && s.charAt(pos) != '\n')
         {
-            pos++;
+            pos += Character.charCount(Character.codePointAt(s, pos));
             c++;
         }
         return pos;

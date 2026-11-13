@@ -6,6 +6,7 @@
 
 #include <jni.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "iup.h"
@@ -104,9 +105,9 @@ JNIEXPORT jstring JNICALL Java_io_github_gen2brain_iupgo_IupCommon_nativeIupAttr
   if (!ih || j_key_string == NULL)
     return NULL;
 
-  const char* key_string = (*jni_env)->GetStringUTFChars(jni_env, j_key_string, NULL);
+  const char* key_string = iupAndroid_JStringToUtf8(jni_env, j_key_string);
   char* value_string = iupAttribGet(ih, key_string);
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_key_string, key_string);
+  free((char*)key_string);
 
   if (value_string != NULL && *value_string != 0)
     return iupAndroid_NewStringUTF(jni_env, value_string);
@@ -120,14 +121,14 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_nativeIupAttribS
   if (!ih || j_key_string == NULL)
     return;
 
-  const char* key_string = (*jni_env)->GetStringUTFChars(jni_env, j_key_string, NULL);
-  const char* value_string = j_value_string ? (*jni_env)->GetStringUTFChars(jni_env, j_value_string, NULL) : NULL;
+  const char* key_string = iupAndroid_JStringToUtf8(jni_env, j_key_string);
+  const char* value_string = j_value_string ? iupAndroid_JStringToUtf8(jni_env, j_value_string) : NULL;
 
   iupAttribSet(ih, key_string, value_string);
 
   if (value_string != NULL)
-    (*jni_env)->ReleaseStringUTFChars(jni_env, j_value_string, value_string);
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_key_string, key_string);
+    free((char*)value_string);
+  free((char*)key_string);
 }
 
 JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupCommon_nativeIupAttribGetInt(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jstring j_key_string)
@@ -137,9 +138,9 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupCommon_nativeIupAttribG
   if (!ih || j_key_string == NULL)
     return 0;
 
-  const char* key_string = (*jni_env)->GetStringUTFChars(jni_env, j_key_string, NULL);
+  const char* key_string = iupAndroid_JStringToUtf8(jni_env, j_key_string);
   int value_int = iupAttribGetInt(ih, key_string);
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_key_string, key_string);
+  free((char*)key_string);
 
   return (jint)value_int;
 }
@@ -151,9 +152,9 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_nativeIupAttribS
   if (!ih || j_key_string == NULL)
     return;
 
-  const char* key_string = (*jni_env)->GetStringUTFChars(jni_env, j_key_string, NULL);
+  const char* key_string = iupAndroid_JStringToUtf8(jni_env, j_key_string);
   iupAttribSetInt(ih, key_string, (int)j_value_int);
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_key_string, key_string);
+  free((char*)key_string);
 }
 
 /* -15 signals "no callback registered"; IUP returns -4..0, user codes are >= 0. */
@@ -166,9 +167,9 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupCommon_HandleIupCallbac
   if (!ih || !iupObjectCheck(ih) || j_key_string == NULL)
     return ret_val;
 
-  const char* key_string = (*jni_env)->GetStringUTFChars(jni_env, j_key_string, NULL);
+  const char* key_string = iupAndroid_JStringToUtf8(jni_env, j_key_string);
   Icallback callback_function = IupGetCallback(ih, key_string);
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_key_string, key_string);
+  free((char*)key_string);
 
   if (callback_function)
   {
@@ -189,9 +190,9 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupCommon_HandleIupCallbac
   if (!ih || !iupObjectCheck(ih) || j_key_string == NULL)
     return ret_val;
 
-  const char* key_string = (*jni_env)->GetStringUTFChars(jni_env, j_key_string, NULL);
+  const char* key_string = iupAndroid_JStringToUtf8(jni_env, j_key_string);
   IFni callback_function = (IFni)IupGetCallback(ih, key_string);
-  (*jni_env)->ReleaseStringUTFChars(jni_env, j_key_string, key_string);
+  free((char*)key_string);
 
   if (callback_function)
   {

@@ -5,6 +5,7 @@
  */
 
 #include <jni.h>
+#include <stdlib.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -127,9 +128,9 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchEdi
   IFniis cb = (IFniis)IupGetCallback(ih, "EDITCHANGED_CB");
   if (!cb) return 0;
 
-  const char* text = j_text ? (*jni_env)->GetStringUTFChars(jni_env, j_text, NULL) : "";
+  const char* text = j_text ? iupAndroid_JStringToUtf8(jni_env, j_text) : "";
   int ret = cb(ih, (int)lin, (int)col, (char*)text);
-  if (j_text) (*jni_env)->ReleaseStringUTFChars(jni_env, j_text, text);
+  if (j_text) free((char*)text);
   if (ret == IUP_CLOSE) IupExitLoop();
   return (ret == IUP_IGNORE) ? 1 : 0;
 }
@@ -144,9 +145,9 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchEdi
   IFniisi cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
   if (!cb) return 0;
 
-  const char* text = j_text ? (*jni_env)->GetStringUTFChars(jni_env, j_text, NULL) : "";
+  const char* text = j_text ? iupAndroid_JStringToUtf8(jni_env, j_text) : "";
   int ret = cb(ih, (int)lin, (int)col, (char*)text, (int)apply);
-  if (j_text) (*jni_env)->ReleaseStringUTFChars(jni_env, j_text, text);
+  if (j_text) free((char*)text);
   if (ret == IUP_CLOSE) IupExitLoop();
   return (ret == IUP_IGNORE) ? 1 : 0;
 }

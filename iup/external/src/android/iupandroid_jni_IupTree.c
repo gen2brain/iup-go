@@ -6,6 +6,7 @@
 
 #include <jni.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -141,9 +142,9 @@ JNIEXPORT jint JNICALL Java_io_github_gen2brain_iupgo_IupTreeHelper_dispatchRena
   IFnis cb = (IFnis)IupGetCallback(ih, "RENAME_CB");
   if (!cb) return 0;
 
-  const char* title = j_title ? (*env)->GetStringUTFChars(env, j_title, NULL) : "";
+  const char* title = j_title ? iupAndroid_JStringToUtf8(env, j_title) : "";
   int ret = cb(ih, (int)id, (char*)title);
-  if (j_title) (*env)->ReleaseStringUTFChars(env, j_title, title);
+  if (j_title) free((char*)title);
   if (ret == IUP_CLOSE) IupExitLoop();
   return (ret == IUP_IGNORE) ? 1 : 0;
 }

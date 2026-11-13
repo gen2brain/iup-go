@@ -144,7 +144,7 @@ static int androidFileDlgPopup(Ihandle* ih, int x, int y)
 
   const char* result = NULL;
   if (j_string)
-    result = (*jni_env)->GetStringUTFChars(jni_env, j_string, NULL);
+    result = iupAndroid_JStringToUtf8(jni_env, j_string);
 
   if (result && *result)
   {
@@ -174,9 +174,9 @@ static int androidFileDlgPopup(Ihandle* ih, int x, int y)
     iupAndroid_CheckException(jni_env, "IupFileDlgHelper.getLastUri");
     if (j_uri)
     {
-      const char* c_uri = (*jni_env)->GetStringUTFChars(jni_env, j_uri, NULL);
+      const char* c_uri = iupAndroid_JStringToUtf8(jni_env, j_uri);
       iupAttribSetStr(ih, "VALUEURI", c_uri);
-      (*jni_env)->ReleaseStringUTFChars(jni_env, j_uri, c_uri);
+      free((char*)c_uri);
       (*jni_env)->DeleteLocalRef(jni_env, j_uri);
     }
 
@@ -194,7 +194,7 @@ static int androidFileDlgPopup(Ihandle* ih, int x, int y)
 
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
-  if (result) (*jni_env)->ReleaseStringUTFChars(jni_env, j_string, result);
+  if (result) free((char*)result);
   if (j_string) (*jni_env)->DeleteLocalRef(jni_env, j_string);
 
   return IUP_NOERROR;
