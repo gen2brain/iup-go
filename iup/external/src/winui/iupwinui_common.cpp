@@ -18,6 +18,7 @@ extern "C" {
 #include "iup_image.h"
 #include "iup_dlglist.h"
 #include "iup_globalattrib.h"
+#include "iup_key.h"
 }
 
 #include <string>
@@ -1567,4 +1568,78 @@ IUP_DRV_API void iupwinuiSetAccelCueAlt(int down)
     return;
 
   iupwinuiRefreshAccelCues();
+}
+
+IUP_DRV_API void iupwinuiAttachPointerEvents(Ihandle* ih, UIElement const& widget, IupWinUIPointerHandlers* handlers)
+{
+  handlers->pressed = winrt::box_value(Microsoft::UI::Xaml::Input::PointerEventHandler(
+    [ih](IInspectable const& sender, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& args) {
+      auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
+      if (!cb)
+        return;
+
+      auto element = sender.as<UIElement>();
+      auto point = args.GetCurrentPoint(element);
+      auto props = point.Properties();
+      int button = iupwinuiGetPointerButton(props);
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
+      int ret = cb(ih, button, 1, x, y, status);
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+    }));
+  widget.AddHandler(UIElement::PointerPressedEvent(), handlers->pressed, true);
+
+  handlers->released = winrt::box_value(Microsoft::UI::Xaml::Input::PointerEventHandler(
+    [ih](IInspectable const& sender, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& args) {
+      auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
+      if (!cb)
+        return;
+
+      auto element = sender.as<UIElement>();
+      auto point = args.GetCurrentPoint(element);
+      auto props = point.Properties();
+      int button = iupwinuiGetPointerReleasedButton(props);
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
+      int ret = cb(ih, button, 0, x, y, status);
+      if (ret == IUP_CLOSE)
+        IupExitLoop();
+    }));
+  widget.AddHandler(UIElement::PointerReleasedEvent(), handlers->released, true);
+
+  handlers->moved = winrt::box_value(Microsoft::UI::Xaml::Input::PointerEventHandler(
+    [ih](IInspectable const& sender, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& args) {
+      auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "MOTION_CB"));
+      if (!cb)
+        return;
+
+      auto element = sender.as<UIElement>();
+      auto point = args.GetCurrentPoint(element);
+      auto props = point.Properties();
+      int x, y;
+      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
+      int button = 0;
+      if (props.IsLeftButtonPressed()) button = IUP_BUTTON1;
+      else if (props.IsRightButtonPressed()) button = IUP_BUTTON3;
+      else if (props.IsMiddleButtonPressed()) button = IUP_BUTTON2;
+      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
+      cb(ih, x, y, status);
+    }));
+  widget.AddHandler(UIElement::PointerMovedEvent(), handlers->moved, true);
+}
+
+IUP_DRV_API void iupwinuiDetachPointerEvents(UIElement const& widget, IupWinUIPointerHandlers* handlers)
+{
+  if (handlers->pressed)
+    widget.RemoveHandler(UIElement::PointerPressedEvent(), handlers->pressed);
+  if (handlers->released)
+    widget.RemoveHandler(UIElement::PointerReleasedEvent(), handlers->released);
+  if (handlers->moved)
+    widget.RemoveHandler(UIElement::PointerMovedEvent(), handlers->moved);
 }

@@ -138,6 +138,11 @@ EM_JS(void, iupwasmJsTextSetMaxLength, (int id, int n), {
   globalThis.__iupApply({ op: 'textmaxlen', id: id, n: n });
 })
 
+EM_JS(int, iupwasmJsTextXY2Pos, (int id, int x, int y), {
+  var req = { op: 'textxy2pos', id: id, x: x, y: y };
+  return typeof document === 'undefined' ? globalThis.__iupReadSync(req) : globalThis.__iupRead(req);
+})
+
 EM_JS(int, iupwasmJsTextGetCaret, (int id), {
   if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'textcaret', id: id });
   var el = globalThis.__iup.els[id];
@@ -615,6 +620,12 @@ static int wasmTextSetPasswordAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static int wasmTextConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  int id = iupwasmIdOf(ih);
+  return id ? iupwasmJsTextXY2Pos(id, x, y) : -1;
+}
+
 static int wasmTextMapMethod(Ihandle* ih)
 {
   char* val;
@@ -656,6 +667,8 @@ static int wasmTextMapMethod(Ihandle* ih)
 
   iupwasmJsTextWire(id);
   iupwasmAddToParent(ih);
+  IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)wasmTextConvertXYToPos);
+
   return IUP_NOERROR;
 }
 

@@ -308,6 +308,23 @@ static int fltkTextWheelEvent(Fl_Widget* w, Ihandle* ih)
   return 1;
 }
 
+static int fltkTextMouseEvent(Fl_Widget* w, Ihandle* ih, int event)
+{
+  switch (event)
+  {
+    case FL_PUSH:
+    case FL_RELEASE:
+      return iupfltkMouseButtonEvent(w, ih, event);
+    case FL_MOVE:
+    case FL_DRAG:
+      iupfltkMouseMoveEvent(w, ih);
+      break;
+    default:
+      break;
+  }
+  return 0;
+}
+
 class IupFltkInput : public Fl_Input
 {
 public:
@@ -315,6 +332,8 @@ public:
 
   IupFltkInput(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Input(x, y, w, h), iup_handle(ih) {}
+
+  int iupXScroll() const { return xscroll(); }
 
   void draw() override
   {
@@ -324,6 +343,8 @@ public:
 
   int handle(int event) override
   {
+    if (fltkTextMouseEvent(this, iup_handle, event))
+      return 1;
     if (event == FL_PASTE && iupfltkHandleDropFiles(iup_handle))
       return 1;
     if (event == FL_MOUSEWHEEL && fltkTextWheelEvent(this, iup_handle))
@@ -379,6 +400,8 @@ public:
   IupFltkSecretInput(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Secret_Input(x, y, w, h), iup_handle(ih) {}
 
+  int iupXScroll() const { return xscroll(); }
+
   void draw() override
   {
     Fl_Secret_Input::draw();
@@ -387,6 +410,8 @@ public:
 
   int handle(int event) override
   {
+    if (fltkTextMouseEvent(this, iup_handle, event))
+      return 1;
     if (event == FL_PASTE && iupfltkHandleDropFiles(iup_handle))
       return 1;
     if (event == FL_MOUSEWHEEL && fltkTextWheelEvent(this, iup_handle))
@@ -435,6 +460,7 @@ public:
     buffer(text_buffer);
   }
 
+  int iupPositionAt(int x, int y) const { return xy_to_position(x, y, CURSOR_POS); }
   bool hScrollVisible() const { return mHScrollBar && mHScrollBar->visible() != 0; }
   bool vScrollVisible() const { return mVScrollBar && mVScrollBar->visible() != 0; }
 
@@ -463,6 +489,8 @@ public:
 
   int handle(int event) override
   {
+    if (fltkTextMouseEvent(this, iup_handle, event))
+      return 1;
     if (event == FL_PASTE && iupfltkHandleDropFiles(iup_handle))
       return 1;
     if (event == FL_MOUSEWHEEL && fltkTextWheelEvent(this, iup_handle))
@@ -626,6 +654,12 @@ public:
 
   int handle(int event) override
   {
+    if (event == FL_RELEASE)
+      iupfltkSetReleaseTarget(nullptr, nullptr);
+    if (fltkTextMouseEvent(this, iup_handle, event))
+      return 1;
+    if (event == FL_PUSH && IupGetCallback(iup_handle, "BUTTON_CB"))
+      iupfltkSetReleaseTarget(this, iup_handle);
     if (event == FL_MOUSEWHEEL && fltkTextWheelEvent(this, iup_handle))
       return 1;
     if (event == FL_FOCUS && !iup_focused)
@@ -1748,8 +1782,54 @@ extern "C" IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* 
   (void)h;
 }
 
+static int fltkTextConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  auto* widget = reinterpret_cast<Fl_Widget*>(ih->handle);
+  if (!widget)
+    return -1;
+
+  if (ih->data->is_multiline)
+  {
+    auto* editor = reinterpret_cast<IupFltkTextEditor*>(widget);
+    return editor->iupPositionAt(editor->x() + x, editor->y() + y);
+  }
+
+  Fl_Input* input = fltkTextGetInputWidget(ih);
+  if (!input)
+    return -1;
+
+  /* the same measure Fl_Input_::handle_mouse uses to place the cursor */
+  fl_font(input->textfont(), input->textsize());
+  int xscroll = 0;
+  if (auto* field = dynamic_cast<IupFltkInput*>(input))
+    xscroll = field->iupXScroll();
+  else if (auto* secret_field = dynamic_cast<IupFltkSecretInput*>(input))
+    xscroll = secret_field->iupXScroll();
+  double target = widget->x() + x - input->x() - Fl::box_dx(input->box()) + xscroll;
+  const char* value = input->value();
+  int size = input->size();
+  int secret = input->input_type() == FL_SECRET_INPUT;
+  double secret_width = secret ? fl_width("\xe2\x80\xa2") : 0;
+  double prev = 0;
+  int pos = 0, count = 0;
+
+  while (pos < size)
+  {
+    int next = pos + fl_utf8len1(value[pos]);
+    double width = secret ? (count + 1) * secret_width : fl_width(value, next);
+    if (width > target)
+      return (target - prev < width - target) ? pos : next;
+    prev = width;
+    pos = next;
+    count++;
+  }
+  return size;
+}
+
 static int fltkTextMapMethod(Ihandle* ih)
 {
+  IupSetCallback(ih, "_IUP_XY2POS_CB", reinterpret_cast<Icallback>(fltkTextConvertXYToPos));
+
   int has_border = iupAttribGetBoolean(ih, "BORDER");
 
   if (ih->data->is_multiline)

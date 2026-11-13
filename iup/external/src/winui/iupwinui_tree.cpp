@@ -2523,6 +2523,8 @@ static int winuiTreeMapMethod(Ihandle* ih)
 
   winuiSetAux(ih, IUPWINUI_TREE_AUX, aux);
 
+  iupwinuiAttachPointerEvents(ih, treeView, &aux->pointerHandlers);
+
   winuiTreeApplyItemTemplate(ih, treeView);
 
   winuiStoreHandle(ih, treeView);
@@ -2565,6 +2567,7 @@ static void winuiTreeUnMapMethod(Ihandle* ih)
     TreeView treeView = winuiTreeGetTreeView(ih);
     if (treeView)
     {
+      iupwinuiDetachPointerEvents(treeView, &aux->pointerHandlers);
       if (aux->dragItemsStartingToken)
         treeView.DragItemsStarting(aux->dragItemsStartingToken);
       if (aux->dragItemsCompletedToken)

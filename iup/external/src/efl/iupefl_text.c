@@ -1510,6 +1510,31 @@ static void eflTextLinkMotion(void* data, const Efl_Event* ev)
                      Methods
 ****************************************************************/
 
+static int eflTextConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  Eo* entry = iupeflGetWidget(ih);
+  Efl_Text_Cursor_Object* cur;
+  Eina_Position2D entry_pos, text_pos;
+  Eo* text_obj;
+  int pos;
+
+  if (!entry || !efl_isa(entry, EFL_UI_TEXTBOX_CLASS))
+    return -1;
+
+  cur = efl_ui_textbox_cursor_create(entry);
+  if (!cur)
+    return -1;
+
+  /* the cursor works in text object coordinates, the mouse callbacks in widget coordinates */
+  text_obj = efl_text_cursor_object_text_object_get(cur);
+  entry_pos = efl_gfx_entity_position_get(entry);
+  text_pos = text_obj ? efl_gfx_entity_position_get(text_obj) : entry_pos;
+  efl_text_cursor_object_cluster_coord_set(cur, EINA_POSITION2D(entry_pos.x + x - text_pos.x, entry_pos.y + y - text_pos.y));
+  pos = efl_text_cursor_object_position_get(cur);
+  efl_del(cur);
+  return pos;
+}
+
 static int eflTextMapMethod(Ihandle* ih)
 {
   Eo* parent;
@@ -1672,6 +1697,7 @@ static int eflTextMapMethod(Ihandle* ih)
   ih->handle = (InativeHandle*)widget;
 
   iupeflBaseAddCallbacks(ih, widget);
+  IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)eflTextConvertXYToPos);
 
   if (ih->data->is_multiline && !is_spin)
   {

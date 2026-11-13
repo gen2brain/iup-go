@@ -274,6 +274,8 @@ protected:
       return;
     }
 
+    iupqtMouseButtonEvent(this, event, ih);
+
     if (event->button() == Qt::RightButton)
     {
       QTreeWidgetItem* item = itemAt(event->pos());
@@ -290,10 +292,19 @@ protected:
     QTreeWidget::mousePressEvent(event);
   }
 
+  void mouseReleaseEvent(QMouseEvent* event) override
+  {
+    QTreeWidget::mouseReleaseEvent(event);
+    if (ih)
+      iupqtMouseButtonEvent(this, event, ih);
+  }
+
   void mouseMoveEvent(QMouseEvent* event) override
   {
     /* the universal event filter in iupqt_dragdrop.cpp owns drag initiation */
     QTreeWidget::mouseMoveEvent(event);
+    if (ih)
+      iupqtMouseMoveEvent(this, event, ih);
   }
 
   void mouseDoubleClickEvent(QMouseEvent* event) override
@@ -303,6 +314,8 @@ protected:
       QTreeWidget::mouseDoubleClickEvent(event);
       return;
     }
+
+    iupqtMouseButtonEvent(this, event, ih);
 
     QTreeWidgetItem* item = itemAt(event->pos());
     if (item)
@@ -361,7 +374,7 @@ protected:
   }
 
 public:
-  IupQtTree(Ihandle* ih_param) : QTreeWidget(), ih(ih_param), mark_start_node(nullptr) {}
+  IupQtTree(Ihandle* ih_param) : QTreeWidget(), ih(ih_param), mark_start_node(nullptr) { setMouseTracking(true); }
 
   void setMarkStartNode(QTreeWidgetItem* node) { mark_start_node = node; }
   QTreeWidgetItem* getMarkStartNode() const { return mark_start_node; }

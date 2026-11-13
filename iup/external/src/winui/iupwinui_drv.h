@@ -287,6 +287,17 @@ inline void iupwinuiPointerToPixel(Ihandle* ih, winrt::Windows::Foundation::Poin
   *y = static_cast<int>(pos.Y * scale);
 }
 
+/* pointer handlers added with handledEventsToo, so a control that handles the click still reports it */
+struct IupWinUIPointerHandlers
+{
+  winrt::Windows::Foundation::IInspectable pressed{nullptr};
+  winrt::Windows::Foundation::IInspectable released{nullptr};
+  winrt::Windows::Foundation::IInspectable moved{nullptr};
+};
+
+IUP_DRV_API void iupwinuiAttachPointerEvents(Ihandle* ih, winrt::Microsoft::UI::Xaml::UIElement const& widget, IupWinUIPointerHandlers* handlers);
+IUP_DRV_API void iupwinuiDetachPointerEvents(winrt::Microsoft::UI::Xaml::UIElement const& widget, IupWinUIPointerHandlers* handlers);
+
 /****************************************************************************
  * Auxiliary Data Structures
  *
@@ -379,6 +390,7 @@ struct IupWinUITextAux
   winrt::event_token keyDownToken;
   winrt::event_token tappedToken;
   winrt::event_token selectionChangedToken;
+  IupWinUIPointerHandlers pointerHandlers;
   std::wstring savedText;
   std::vector<std::pair<winrt::Microsoft::UI::Text::ITextRange, winrt::hstring>> faceRanges;
   bool isPassword;
@@ -418,9 +430,7 @@ struct IupWinUIListAux
   winrt::event_token keyDownToken;
   winrt::event_token gotFocusToken;
   winrt::event_token lostFocusToken;
-  winrt::Windows::Foundation::IInspectable pointerPressedHandler;
-  winrt::Windows::Foundation::IInspectable pointerReleasedHandler;
-  winrt::Windows::Foundation::IInspectable pointerMovedHandler;
+  IupWinUIPointerHandlers pointerHandlers;
   winrt::event_token containerContentChangingToken;
   winrt::event_token dragItemsStartingToken;
   winrt::event_token dragItemsCompletedToken;
@@ -434,7 +444,6 @@ struct IupWinUIListAux
                        dropDownOpenedToken{}, dropDownClosedToken{},
                        doubleTappedToken{}, keyDownToken{},
                        gotFocusToken{}, lostFocusToken{},
-                       pointerPressedHandler{nullptr}, pointerReleasedHandler{nullptr}, pointerMovedHandler{nullptr},
                        containerContentChangingToken{},
                        dragItemsStartingToken{}, dragItemsCompletedToken{},
                        isDropdown(false), hasEditbox(false), isMultiple(false),
@@ -463,6 +472,7 @@ struct IupWinUITreeAux
   winrt::event_token layoutUpdatedToken{};
   winrt::event_token containerContentChangingToken{};
   winrt::Windows::Foundation::IInspectable toggleTappedHandler{nullptr};
+  IupWinUIPointerHandlers pointerHandlers;
   bool namesDirty;
 
   IupWinUITreeAux() : expandingToken{}, collapsedToken{},

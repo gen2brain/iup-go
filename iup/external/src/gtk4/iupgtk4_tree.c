@@ -1478,6 +1478,7 @@ iupgtk4TreeSetupEventControllers(Ihandle* ih)
   gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click_gesture), 0);  /* all buttons */
   gtk_widget_add_controller(listview, GTK_EVENT_CONTROLLER(click_gesture));
   g_signal_connect(click_gesture, "pressed", G_CALLBACK(iupgtk4TreeButtonPressed), ih);
+  g_signal_connect(click_gesture, "released", G_CALLBACK(iupgtk4ButtonReleased), ih);
 
   GtkEventController* key_controller = gtk_event_controller_key_new();
   gtk_widget_add_controller(listview, key_controller);

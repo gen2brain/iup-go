@@ -367,16 +367,9 @@ public:
     BListView::MouseDown(where);
     if (!fIhandle) return;
     BMessage* msg = Looper() ? Looper()->CurrentMessage() : nullptr;
-    int32 clicks = 1, buttons = 0, mods = 0;
-    if (msg) { msg->FindInt32("clicks", &clicks); msg->FindInt32("buttons", &buttons); msg->FindInt32("modifiers", &mods); }
-
-    int btn = IUP_BUTTON1;
-    if      (buttons & B_SECONDARY_MOUSE_BUTTON) btn = IUP_BUTTON3;
-    else if (buttons & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
-    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, clicks == 2 ? 1 : 0);
-    auto bcb = reinterpret_cast<IFniiiis>(IupGetCallback(fIhandle, "BUTTON_CB"));
-    if (bcb) bcb(fIhandle, btn, 1, static_cast<int>(where.x), static_cast<int>(where.y), status);
+    int32 clicks = 1;
+    if (msg) msg->FindInt32("clicks", &clicks);
+    iuphaikuMouseButtonEvent(fIhandle, msg, where, 1);
 
     if (clicks >= 2)
     {
@@ -393,12 +386,7 @@ public:
   {
     BListView::MouseUp(where);
     if (!fIhandle) return;
-    int32 mods = 0;
-    if (BMessage* msg = Looper() ? Looper()->CurrentMessage() : nullptr) msg->FindInt32("modifiers", &mods);
-    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), 0, 0, status, 0);
-    auto bcb = reinterpret_cast<IFniiiis>(IupGetCallback(fIhandle, "BUTTON_CB"));
-    if (bcb) bcb(fIhandle, IUP_BUTTON1, 0, static_cast<int>(where.x), static_cast<int>(where.y), status);
+    iuphaikuMouseButtonEvent(fIhandle, Looper() ? Looper()->CurrentMessage() : nullptr, where, 0);
   }
 
   bool InitiateDrag(BPoint where, int32 index, bool /*wasSelected*/) override
@@ -423,15 +411,7 @@ public:
   {
     BListView::MouseMoved(where, transit, drag);
     if (!fIhandle) return;
-    if (transit == B_INSIDE_VIEW || transit == B_ENTERED_VIEW)
-    {
-      int32 buttons = 0, mods = 0;
-      if (BMessage* cur = Looper() ? Looper()->CurrentMessage() : nullptr) { cur->FindInt32("buttons", &buttons); cur->FindInt32("modifiers", &mods); }
-      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, 0);
-      auto mcb = reinterpret_cast<IFniis>(IupGetCallback(fIhandle, "MOTION_CB"));
-      if (mcb) mcb(fIhandle, static_cast<int>(where.x), static_cast<int>(where.y), status);
-    }
+    iuphaikuMouseMoveEvent(fIhandle, Looper() ? Looper()->CurrentMessage() : nullptr, where, transit);
     if (!drag || !fIhandle->data->show_dragdrop) return;
     if (drag->what != IUPHAIKU_LIST_REORDER_MSG) return;
     int32 team = 0;

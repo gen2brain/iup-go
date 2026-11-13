@@ -978,6 +978,52 @@ static void winuiTextLinkPointerMoved(Ihandle* ih, Windows::Foundation::Point cl
   }
 }
 
+static int winuiTextConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  if (!aux || aux->isSpin || aux->isPassword)
+    return -1;
+
+  double scale = iupwinuiGetScale(ih);
+  Windows::Foundation::Point point{static_cast<float>(x / scale), static_cast<float>(y / scale)};
+
+  if (aux->isMultiline && winuiGetHandle<RichEditBox>(ih))
+    return winuiTextGetPosFromPoint(ih, point);
+
+  auto tb = winuiGetHandle<TextBox>(ih);
+  if (!tb)
+    return -1;
+
+  /* character rects are relative to the text start: the content scroller plus the TextBox padding */
+  if (auto content = iupwinuiFindScrollViewer(tb))
+  {
+    auto origin = content.TransformToVisual(tb).TransformPoint(Windows::Foundation::Point{0, 0});
+    point.X -= origin.X;
+    point.Y -= origin.Y;
+  }
+  point.X -= static_cast<float>(tb.Padding().Left);
+  point.Y -= static_cast<float>(tb.Padding().Top);
+
+  int count = static_cast<int>(tb.Text().size());
+  int best = 0;
+  float best_dist = -1;
+  for (int pos = 0; pos <= count; pos++)
+  {
+    Windows::Foundation::Rect edge = (pos < count) ? tb.GetRectFromCharacterIndex(pos, false) : tb.GetRectFromCharacterIndex(count - 1, true);
+    float dx = point.X > edge.X ? point.X - edge.X : edge.X - point.X;
+    float dy = point.Y < edge.Y ? edge.Y - point.Y : (point.Y > edge.Y + edge.Height ? point.Y - (edge.Y + edge.Height) : 0);
+    float dist = dy * 10000 + dx;
+    if (best_dist < 0 || dist < best_dist)
+    {
+      best_dist = dist;
+      best = pos;
+    }
+    if (count == 0)
+      break;
+  }
+  return best;
+}
+
 static int winuiTextMapMethod(Ihandle* ih)
 {
   auto* aux = new IupWinUITextAux();
@@ -1477,6 +1523,9 @@ static int winuiTextMapMethod(Ihandle* ih)
 
   winuiSetAux(ih, IUPWINUI_TEXT_AUX, aux);
 
+  iupwinuiAttachPointerEvents(ih, winuiGetHandle<UIElement>(ih), &aux->pointerHandlers);
+  IupSetCallback(ih, "_IUP_XY2POS_CB", reinterpret_cast<Icallback>(winuiTextConvertXYToPos));
+
   winuiGetHandle<UIElement>(ih).AddHandler(UIElement::PointerWheelChangedEvent(), winrt::box_value(
     PointerEventHandler([ih](IInspectable const& sender, PointerRoutedEventArgs const& args) {
       auto cb = reinterpret_cast<IFnfiis>(IupGetCallback(ih, "WHEEL_CB"));
@@ -1518,6 +1567,8 @@ static void winuiTextUnMapMethod(Ihandle* ih)
 
   if (ih->handle && aux)
   {
+    iupwinuiDetachPointerEvents(winuiGetHandle<UIElement>(ih), &aux->pointerHandlers);
+
     if (aux->isSpin)
     {
       auto nb = winuiGetHandle<NumberBox>(ih);

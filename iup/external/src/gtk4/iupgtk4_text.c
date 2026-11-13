@@ -326,13 +326,28 @@ static int gtkTextConvertXYToPos(Ihandle* ih, int x, int y)
   }
   else
   {
-    int pos = 0;
-    int trailing;
-    const char* text = gtk_editable_get_text(GTK_EDITABLE(ih->handle));
-    PangoLayout* layout = gtk_widget_create_pango_layout(ih->handle, text);
-    pango_layout_xy_to_index(layout, x * PANGO_SCALE, y * PANGO_SCALE, &pos, &trailing);
-    g_object_unref(layout);
-    return pos + trailing;
+    GtkEditable* delegate = gtk_editable_get_delegate(GTK_EDITABLE(ih->handle));
+    graphene_point_t in = GRAPHENE_POINT_INIT((float)x, (float)y), out;
+    int pos, count, best = 0;
+    float best_dist = -1;
+
+    if (!GTK_IS_TEXT(delegate) || !gtk_widget_compute_point(ih->handle, GTK_WIDGET(delegate), &in, &out))
+      return -1;
+
+    count = (int)g_utf8_strlen(gtk_editable_get_text(delegate), -1);
+    for (pos = 0; pos <= count; pos++)
+    {
+      graphene_rect_t strong;
+      float dist;
+      gtk_text_compute_cursor_extents(GTK_TEXT(delegate), (gsize)pos, &strong, NULL);
+      dist = out.x > strong.origin.x ? out.x - strong.origin.x : strong.origin.x - out.x;
+      if (best_dist < 0 || dist < best_dist)
+      {
+        best_dist = dist;
+        best = pos;
+      }
+    }
+    return best;
   }
 }
 
@@ -1969,6 +1984,18 @@ static int gtk4TextMapMethod(Ihandle* ih)
   GtkGesture* click_gesture = gtk_gesture_click_new();
   gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(click_gesture));
   g_signal_connect(click_gesture, "released", G_CALLBACK(gtk4TextButtonEvent), ih);
+
+  if (ih->data->is_multiline)
+  {
+    GtkGesture* button_gesture = gtk_gesture_click_new();
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(button_gesture), 0);
+    gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(button_gesture), GTK_PHASE_CAPTURE);
+    gtk_widget_add_controller(ih->handle, GTK_EVENT_CONTROLLER(button_gesture));
+    g_signal_connect(button_gesture, "pressed", G_CALLBACK(iupgtk4ButtonPressed), ih);
+    g_signal_connect(button_gesture, "released", G_CALLBACK(iupgtk4ButtonReleased), ih);
+  }
+  else
+    iupgtk4SetupEntryButtonEvents(ih->handle, ih);
 
   GtkEventController* scroll_controller = gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL);
   gtk_widget_add_controller(ih->handle, scroll_controller);

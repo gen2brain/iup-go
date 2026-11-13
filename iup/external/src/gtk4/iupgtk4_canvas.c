@@ -1038,23 +1038,6 @@ static int gtk4CanvasTouchSlot(IgtkTouchState* ts, GdkEventSequence* seq, int ad
   return -1;
 }
 
-/* GTK4 events carry surface coordinates; translate to the canvas widget */
-static void gtk4CanvasEventCoords(GtkWidget* widget, GdkEvent* event, int* ox, int* oy)
-{
-  double sx = 0, sy = 0;
-  GtkNative* native = gtk_widget_get_native(widget);
-  gdk_event_get_position(event, &sx, &sy);
-  *ox = (int)sx; *oy = (int)sy;
-  if (native)
-  {
-    double nx = 0, ny = 0;
-    graphene_point_t in, out;
-    gtk_native_get_surface_transform(native, &nx, &ny);
-    in.x = (float)(sx - nx); in.y = (float)(sy - ny);
-    if (gtk_widget_compute_point(GTK_WIDGET(native), widget, &in, &out)) { *ox = (int)out.x; *oy = (int)out.y; }
-  }
-}
-
 static gboolean gtk4CanvasTouchEvent(GtkEventControllerLegacy* controller, GdkEvent* event, Ihandle* ih)
 {
   GdkEventType type = gdk_event_get_event_type(event);
@@ -1075,7 +1058,7 @@ static gboolean gtk4CanvasTouchEvent(GtkEventControllerLegacy* controller, GdkEv
 
   slot = gtk4CanvasTouchSlot(ts, gdk_event_get_event_sequence(event), type == GDK_TOUCH_BEGIN);
   if (slot < 0) return FALSE;
-  gtk4CanvasEventCoords(ih->handle, event, &x, &y);
+  iupgtk4EventCoords(ih->handle, event, &x, &y);
   ts->pts[slot].x = x; ts->pts[slot].y = y;
   primary = gdk_touch_event_get_emulating_pointer(event)? 1 : 0;
   st = (type == GDK_TOUCH_BEGIN)? 'D' : ((type == GDK_TOUCH_UPDATE)? 'M' : 'U');

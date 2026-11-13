@@ -1857,6 +1857,53 @@ static void qtTextUnMapMethod(Ihandle* ih)
  * Map Method
  ****************************************************************************/
 
+class IupQtTextMouseFilter : public QObject
+{
+public:
+  explicit IupQtTextMouseFilter(Ihandle* ihandle, QObject* parent) : QObject(parent), ih(ihandle) {}
+
+protected:
+  bool eventFilter(QObject* obj, QEvent* event) override
+  {
+    switch (event->type())
+    {
+      case QEvent::MouseButtonPress:
+      case QEvent::MouseButtonRelease:
+      case QEvent::MouseButtonDblClick:
+        iupqtMouseButtonEvent(qobject_cast<QWidget*>(obj), event, ih);
+        break;
+      case QEvent::MouseMove:
+        iupqtMouseMoveEvent(qobject_cast<QWidget*>(obj), event, ih);
+        break;
+      default:
+        break;
+    }
+    return false;
+  }
+
+private:
+  Ihandle* ih;
+};
+
+static void qtTextAttachMouse(Ihandle* ih, QWidget* target)
+{
+  target->setMouseTracking(true);
+  target->installEventFilter(new IupQtTextMouseFilter(ih, target));
+}
+
+static int qtTextConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  if (ih->data->is_multiline)
+  {
+    auto* text = reinterpret_cast<QTextEdit*>(ih->handle);
+    return text->cursorForPosition(QPoint(x, y)).position();
+  }
+
+  auto* spin = reinterpret_cast<IupQtSpinBox*>(iupAttribGet(ih, "_IUPQT_SPINBOX"));
+  QLineEdit* edit = spin ? spin->edit() : reinterpret_cast<QLineEdit*>(ih->handle);
+  return edit->cursorPositionAt(QPoint(x, y));
+}
+
 static int qtTextMapMethod(Ihandle* ih)
 {
   QWidget* widget = nullptr;
@@ -1965,6 +2012,14 @@ static int qtTextMapMethod(Ihandle* ih)
   ih->handle = reinterpret_cast<InativeHandle*>(widget);
 
   iupqtAddToParent(ih);
+
+  if (ih->data->is_multiline)
+    qtTextAttachMouse(ih, reinterpret_cast<QTextEdit*>(widget)->viewport());
+  else if (auto* spin = reinterpret_cast<IupQtSpinBox*>(iupAttribGet(ih, "_IUPQT_SPINBOX")))
+    qtTextAttachMouse(ih, spin->edit());
+  else
+    qtTextAttachMouse(ih, widget);
+  IupSetCallback(ih, "_IUP_XY2POS_CB", reinterpret_cast<Icallback>(qtTextConvertXYToPos));
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))
     iupqtSetCanFocus(widget, 0);

@@ -166,6 +166,16 @@ static NSView* cocoaListGetBaseWidget(Ihandle* ih)
   }
 }
 
+static int cocoaListConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  NSView* base_widget = cocoaListGetBaseWidget(ih);
+  if (![base_widget isKindOfClass:[NSTableView class]])
+    return -1;
+
+  NSInteger row = [(NSTableView*)base_widget rowAtPoint:NSMakePoint(x, y)];
+  return row < 0 ? -1 : (int)row + 1;
+}
+
 static void cocoaListScrollRowToVisible(Ihandle* ih, NSTableView* table_view, NSInteger row)
 {
   if (iupAttribGet(ih, "_IUPCOCOA_LIST_LAIDOUT"))
@@ -542,44 +552,6 @@ static void cocoaListCallCaretCbForTextView(Ihandle* ih, NSTextView* textView)
 
 @end
 
-/* IUP_DEFAULT lets the widget handle selection normally, IUP_IGNORE consumes the event */
-static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* represented_view, bool is_pressed)
-{
-  IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
-  if (!cb)
-    return YES;
-
-  NSPoint the_point = [the_event locationInWindow];
-  NSPoint converted_point = [represented_view convertPoint:the_point fromView:nil];
-  CGFloat final_y = converted_point.y;
-
-  if (![represented_view isFlipped])
-  {
-    NSRect view_bounds = [represented_view bounds];
-    final_y = view_bounds.size.height - converted_point.y;
-  }
-
-  NSInteger which_cocoa_button = [the_event buttonNumber];
-  char mod_status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-  iupcocoaButtonKeySetStatus(the_event, mod_status);
-
-  if ([the_event modifierFlags] & NSEventModifierFlagControl && 0 == which_cocoa_button)
-    which_cocoa_button = 1;
-
-  int which_iup_button = iupcocoaCommonBaseIupButtonForCocoaButton(which_cocoa_button);
-
-  int ret = cb(ih, which_iup_button, is_pressed, iupROUND(converted_point.x), iupROUND(final_y), mod_status);
-  if (ret == IUP_CLOSE)
-  {
-    IupExitLoop();
-    return NO;
-  }
-  else if (ret == IUP_IGNORE)
-    return NO;
-
-  return YES;
-}
-
 #ifdef GNUSTEP
 /* NSStackView never sizes its children on GNUstep, subviews stay at NSZeroRect */
 @interface IupCocoaListEditBoxContainer : NSView
@@ -765,7 +737,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 - (void)mouseDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  BOOL propagate = ih ? cocoaListHandleMouseButton(ih, event, self, true) : YES;
+  BOOL propagate = ih ? iupcocoaCommonBaseHandleControlMouseButton(ih, event, self, true) : YES;
   if (propagate)
   {
     [super mouseDown:event];
@@ -773,7 +745,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     {
       NSEvent* up_event = [NSApp currentEvent];
       if (up_event && [up_event type] == NSEventTypeLeftMouseUp)
-        cocoaListHandleMouseButton(ih, up_event, self, false);
+        iupcocoaCommonBaseHandleControlMouseButton(ih, up_event, self, false);
     }
   }
 }
@@ -781,7 +753,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 - (void)rightMouseDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  BOOL propagate = ih ? cocoaListHandleMouseButton(ih, event, self, true) : YES;
+  BOOL propagate = ih ? iupcocoaCommonBaseHandleControlMouseButton(ih, event, self, true) : YES;
   if (propagate)
   {
     [super rightMouseDown:event];
@@ -789,7 +761,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     {
       NSEvent* up_event = [NSApp currentEvent];
       if (up_event && [up_event type] == NSEventTypeRightMouseUp)
-        cocoaListHandleMouseButton(ih, up_event, self, false);
+        iupcocoaCommonBaseHandleControlMouseButton(ih, up_event, self, false);
     }
   }
 }
@@ -797,7 +769,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
 - (void)otherMouseDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  BOOL propagate = ih ? cocoaListHandleMouseButton(ih, event, self, true) : YES;
+  BOOL propagate = ih ? iupcocoaCommonBaseHandleControlMouseButton(ih, event, self, true) : YES;
   if (propagate)
   {
     [super otherMouseDown:event];
@@ -805,7 +777,7 @@ static BOOL cocoaListHandleMouseButton(Ihandle* ih, NSEvent* the_event, NSView* 
     {
       NSEvent* up_event = [NSApp currentEvent];
       if (up_event && [up_event type] == NSEventTypeOtherMouseUp)
-        cocoaListHandleMouseButton(ih, up_event, self, false);
+        iupcocoaCommonBaseHandleControlMouseButton(ih, up_event, self, false);
     }
   }
 }
@@ -4177,6 +4149,8 @@ static int cocoaListMapMethod(Ihandle* ih)
       cocoaSourceDragCreateAssociatedData(ih, base_widget, base_widget);
       cocoaTargetDropCreateAssociatedData(ih, base_widget, base_widget);
     }
+
+    IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)cocoaListConvertXYToPos);
 
     if (!ih->data->is_virtual)
       cocoaListUpdateDragDrop(ih);

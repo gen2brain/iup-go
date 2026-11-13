@@ -328,6 +328,9 @@ public:
       {
         iupfltkDragDropHandleEvent(this, iup_handle, event);
 
+        if (iupfltkMouseButtonEvent(this, iup_handle, event))
+          return 1;
+
         if (Fl::event_button() == FL_RIGHT_MOUSE)
         {
           Fl_Tree_Item* item = find_clicked();
@@ -368,8 +371,12 @@ public:
 
         return Fl_Tree::handle(event);
       }
+      case FL_MOVE:
+        iupfltkMouseMoveEvent(this, iup_handle);
+        return Fl_Tree::handle(event);
       case FL_DRAG:
       {
+        iupfltkMouseMoveEvent(this, iup_handle);
         if (iupfltkDragDropHandleEvent(this, iup_handle, event))
           return 1;
         return Fl_Tree::handle(event);
@@ -377,7 +384,9 @@ public:
       case FL_RELEASE:
       {
         iupfltkDragDropHandleEvent(this, iup_handle, event);
-        return Fl_Tree::handle(event);
+        int ret = Fl_Tree::handle(event);
+        iupfltkMouseButtonEvent(this, iup_handle, event);
+        return ret;
       }
       case FL_KEYBOARD:
       {

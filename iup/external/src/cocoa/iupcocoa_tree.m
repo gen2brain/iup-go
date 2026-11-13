@@ -174,6 +174,16 @@ static NSOutlineView* cocoaTreeGetOutlineView(Ihandle* ih)
 
 static int cocoaTreeSetRenameAttrib(Ihandle* ih, const char* value);
 
+static int cocoaTreeConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  NSOutlineView* outline_view = cocoaTreeGetOutlineView(ih);
+  NSInteger row = [outline_view rowAtPoint:NSMakePoint(x, y)];
+  if (row < 0)
+    return -1;
+
+  return iupTreeFindNodeId(ih, (InodeHandle*)[outline_view itemAtRow:row]);
+}
+
 @interface IupCocoaTreeRowView : NSTableRowView
 @property(nonatomic, assign) Ihandle* ih;
 @property(nonatomic, assign) BOOL iupFocused;
@@ -466,6 +476,9 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 
 - (void) rightMouseDown:(NSEvent*)event
 {
+  if (self.ih && !iupcocoaCommonBaseHandleControlMouseButton(self.ih, event, self, true))
+    return;
+
   NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
   NSInteger row = [self rowAtPoint:point];
 
@@ -482,6 +495,36 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   }
 
   [super rightMouseDown:event];
+
+  NSEvent* up_event = [NSApp currentEvent];
+  if (self.ih && up_event && [up_event type] == NSEventTypeRightMouseUp)
+    iupcocoaCommonBaseHandleControlMouseButton(self.ih, up_event, self, false);
+}
+
+- (void) rightMouseUp:(NSEvent*)event
+{
+  if (!self.ih || iupcocoaCommonBaseHandleControlMouseButton(self.ih, event, self, false))
+    [super rightMouseUp:event];
+}
+
+- (void) otherMouseDown:(NSEvent*)event
+{
+  if (self.ih && !iupcocoaCommonBaseHandleControlMouseButton(self.ih, event, self, true))
+    return;
+
+  [super otherMouseDown:event];
+}
+
+- (void) otherMouseUp:(NSEvent*)event
+{
+  if (!self.ih || iupcocoaCommonBaseHandleControlMouseButton(self.ih, event, self, false))
+    [super otherMouseUp:event];
+}
+
+- (void) mouseUp:(NSEvent*)event
+{
+  if (!self.ih || iupcocoaCommonBaseHandleControlMouseButton(self.ih, event, self, false))
+    [super mouseUp:event];
 }
 
 #ifdef GNUSTEP
@@ -494,6 +537,9 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 
 - (void) mouseDown:(NSEvent*)event
 {
+  if (self.ih && !iupcocoaCommonBaseHandleControlMouseButton(self.ih, event, self, true))
+    return;
+
 #ifdef GNUSTEP
   NSInteger click_row = [self rowAtPoint:[self convertPoint:[event locationInWindow] fromView:nil]];
   BOOL rename_click = self.ih && self.ih->data->show_rename && [event clickCount] == 1 && click_row >= 0 &&
@@ -535,6 +581,10 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   }
 
   [super mouseDown:event];
+
+  NSEvent* up_event = [NSApp currentEvent];
+  if (self.ih && up_event && [up_event type] == NSEventTypeLeftMouseUp)
+    iupcocoaCommonBaseHandleControlMouseButton(self.ih, up_event, self, false);
 
 #ifdef GNUSTEP
   if (rename_click && [self selectedRow] == click_row)
@@ -601,23 +651,8 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
 {
   [super updateTrackingAreas];
 
-  Ihandle* ih = [self ih];
-  if (!ih)
-    return;
-
-  if (!IupGetCallback(ih, "TIPS_CB"))
-    return;
-
-  for (NSTrackingArea* area in [self trackingAreas]) {
-    if ([area owner] == self) {
-      [self removeTrackingArea:area];
-    }
-  }
-
-  NSTrackingAreaOptions options = NSTrackingMouseMoved | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect;
-  NSTrackingArea* trackingArea = [[NSTrackingArea alloc] initWithRect:[self bounds] options:options owner:self userInfo:nil];
-  [self addTrackingArea:trackingArea];
-  [trackingArea release];
+  if ([self ih])
+    iupcocoaCommonBaseUpdateMotionArea(self);
 }
 
 - (void)mouseMoved:(NSEvent*)event
@@ -627,6 +662,8 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   Ihandle* ih = [self ih];
   if (!ih)
     return;
+
+  iupcocoaCommonBaseHandleMouseMotionCallback(ih, event, self);
 
   if (!iupAttribGetBoolean(ih, "INFOTIP"))
   {
@@ -4706,6 +4743,8 @@ static int cocoaTreeMapMethod(Ihandle* ih)
 
   cocoaSourceDragCreateAssociatedData(ih, outline_view, scroll_view);
   cocoaTargetDropCreateAssociatedData(ih, outline_view, scroll_view);
+
+  IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)cocoaTreeConvertXYToPos);
 
   cocoaTreeUpdateDragDrop(ih);
 

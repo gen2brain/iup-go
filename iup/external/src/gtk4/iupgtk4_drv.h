@@ -20,7 +20,10 @@ extern "C" {
 IUP_DRV_API void iupgtk4SetupEnterLeaveEvents(GtkWidget* widget, Ihandle* ih);
 IUP_DRV_API void iupgtk4SetupMotionEvents(GtkWidget* widget, Ihandle* ih);
 IUP_DRV_API void iupgtk4SetupButtonEvents(GtkWidget* widget, Ihandle* ih);
+IUP_DRV_API void iupgtk4SetupEntryButtonEvents(GtkWidget* widget, Ihandle* ih);
+IUP_DRV_API void iupgtk4EventCoords(GtkWidget* widget, GdkEvent* event, int* ox, int* oy);
 IUP_DRV_API void iupgtk4ButtonPressed(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih);
+IUP_DRV_API void iupgtk4ButtonReleased(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih);
 
 IUP_DRV_API int iupgtk4SetMnemonicTitle(Ihandle* ih, GtkLabel* label, const char* value);
 IUP_DRV_API char* iupgtk4StrEscapeUnderline(const char* str);

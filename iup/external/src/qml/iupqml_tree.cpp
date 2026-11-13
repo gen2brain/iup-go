@@ -20,6 +20,8 @@
 #include <QVariant>
 #include <QTimer>
 #include <QStyleHints>
+#include <QMouseEvent>
+#include <QDateTime>
 
 #include <cstring>
 #include <cstdlib>
@@ -2316,6 +2318,12 @@ static const char* qmlTreeViewQml =
   "  signal iupRenamed(int row, string text)\n"
   "  signal iupRenameStarted(var editor, int row)\n"
   "  signal iupDragDropped(int row, point pos)\n"
+  "  signal iupMouse(int button, bool pressed, point pos, int modifiers)\n"
+  "  PointHandler {\n"
+  "    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton\n"
+  "    property int iupButton: 0\n"
+  "    onActiveChanged: { if (active) iupButton = point.pressedButtons; view.iupMouse(iupButton, active, point.position, point.modifiers) }\n"
+  "  }\n"
   "  function iupScroll(row, top) { forceLayout(); positionViewAtRow(row, top ? TableView.AlignTop : TableView.Contain) }\n"
   "  function iupScrollVisible() { return (ScrollBar.horizontal.visible ? 1 : 0) + (ScrollBar.vertical.visible ? 2 : 0) }\n"
   "  ScrollBar.vertical: ScrollBar { policy: size < 1.0 ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff }\n"
@@ -2390,6 +2398,34 @@ static const char* qmlTreeViewQml =
   "    }\n"
   "  }\n"
   "}\n";
+
+/* delegates take the presses, so a passive PointHandler on the view reports them */
+static void qmlTreeMouse(Ihandle* ih, int button, bool pressed, QPointF pos, int modifiers)
+{
+  IupQmlTreeData* data = qmlTreeGetData(ih);
+  if (!data || !IupGetCallback(ih, "BUTTON_CB"))
+    return;
+
+  QPointF local = data->wrapper->mapFromItem(data->view, pos);
+  QEvent::Type type = pressed ? QEvent::MouseButtonPress : QEvent::MouseButtonRelease;
+
+  if (pressed)
+  {
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    qint64 last = static_cast<qint64>(iupAttribGetDouble(ih, "_IUPQML_TREE_PRESSTIME"));
+    if (button == iupAttribGetInt(ih, "_IUPQML_TREE_PRESSBUTTON") && now - last < QGuiApplication::styleHints()->mouseDoubleClickInterval())
+    {
+      type = QEvent::MouseButtonDblClick;
+      now = 0;
+    }
+    iupAttribSetDouble(ih, "_IUPQML_TREE_PRESSTIME", static_cast<double>(now));
+    iupAttribSetInt(ih, "_IUPQML_TREE_PRESSBUTTON", button);
+  }
+
+  auto mouse_button = static_cast<Qt::MouseButton>(button);
+  QMouseEvent evt(type, local, local, local, mouse_button, pressed ? Qt::MouseButtons(mouse_button) : Qt::NoButton, static_cast<Qt::KeyboardModifiers>(modifiers));
+  iupqmlMouseButtonEvent(&evt, ih);
+}
 
 static void qmlTreePressed(Ihandle* ih, int row, int modifiers)
 {
@@ -2589,6 +2625,9 @@ static int qmlTreeMapMethod(Ihandle* ih)
       d->rename_gen++;
       qmlTreeExecute(ih, qmlTreeNodeAtRow(d, *static_cast<int*>(args[1])), 0);
     }
+  });
+  iupqmlConnect(view, "iupMouse(int,bool,QPointF,int)", [ih](void** args) {
+    qmlTreeMouse(ih, *static_cast<int*>(args[1]), *static_cast<bool*>(args[2]), *static_cast<QPointF*>(args[3]), *static_cast<int*>(args[4]));
   });
   iupqmlConnect(view, "iupPressed(int,int)", [ih](void** args) {
     qmlTreePressed(ih, *static_cast<int*>(args[1]), *static_cast<int*>(args[2]));

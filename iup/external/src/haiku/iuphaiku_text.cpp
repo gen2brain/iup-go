@@ -1991,6 +1991,55 @@ static int haikuTextSetRemoveFormattingAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+class IupHaikuTextMouseFilter : public BMessageFilter
+{
+public:
+  explicit IupHaikuTextMouseFilter(Ihandle* ih)
+    : BMessageFilter(B_ANY_DELIVERY, B_ANY_SOURCE), fIhandle(ih) {}
+
+  filter_result Filter(BMessage* msg, BHandler** target) override
+  {
+    if (msg->what != B_MOUSE_DOWN && msg->what != B_MOUSE_UP && msg->what != B_MOUSE_MOVED)
+      return B_DISPATCH_MESSAGE;
+
+    auto* view = dynamic_cast<BView*>(*target);
+    if (!view || !fIhandle || !fIhandle->handle)
+      return B_DISPATCH_MESSAGE;
+
+    BPoint where;
+    if (msg->FindPoint("be:view_where", &where) != B_OK)
+    {
+      BPoint screen;
+      if (msg->FindPoint("screen_where", &screen) != B_OK)
+        return B_DISPATCH_MESSAGE;
+      where = view->ConvertFromScreen(screen);
+    }
+
+    if (msg->what == B_MOUSE_MOVED)
+    {
+      int32 transit = B_INSIDE_VIEW;
+      msg->FindInt32("be:transit", &transit);
+      iuphaikuMouseMoveEvent(fIhandle, msg, where, static_cast<uint32>(transit));
+    }
+    else
+      iuphaikuMouseButtonEvent(fIhandle, msg, where, msg->what == B_MOUSE_DOWN ? 1 : 0);
+
+    return B_DISPATCH_MESSAGE;
+  }
+
+private:
+  Ihandle* fIhandle;
+};
+
+static int haikuTextConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  BTextView* tv = haikuTextGetEditor(ih);
+  if (!tv)
+    return -1;
+  LooperLockGuard guard(haikuTextGetLooper(ih));
+  return static_cast<int>(tv->OffsetAt(BPoint(static_cast<float>(x), static_cast<float>(y))));
+}
+
 static int haikuTextMapMethod(Ihandle* ih)
 {
   if (ih->data->is_multiline)
@@ -2070,6 +2119,10 @@ static int haikuTextMapMethod(Ihandle* ih)
       : reinterpret_cast<BView*>(ih->handle);
     iuphaikuSetCanFocus(focus_view, 0);
   }
+
+  if (BTextView* editor = haikuTextGetEditor(ih))
+    editor->AddFilter(new IupHaikuTextMouseFilter(ih));
+  IupSetCallback(ih, "_IUP_XY2POS_CB", reinterpret_cast<Icallback>(haikuTextConvertXYToPos));
 
   return IUP_NOERROR;
 }

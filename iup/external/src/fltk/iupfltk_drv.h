@@ -101,6 +101,7 @@ IUP_DRV_API int iupfltkCanvasDeferBlit(Ihandle* ih);
 IUP_DRV_API void iupfltkTipsRemove(Ihandle* ih);
 IUP_DRV_API void iupfltkTipsEvent(int event);
 IUP_DRV_API void iupfltkEventDispatchInstall(void);
+IUP_DRV_API void iupfltkSetReleaseTarget(Fl_Widget* widget, Ihandle* ih);
 
 /****************************************************************************
  * Native Handle Access

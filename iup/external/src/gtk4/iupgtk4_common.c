@@ -992,7 +992,7 @@ IUP_DRV_API void iupgtk4ButtonPressed(GtkGestureClick* gesture, int n_press, dou
   }
 }
 
-static void gtk4ButtonReleased(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih)
+IUP_DRV_API void iupgtk4ButtonReleased(GtkGestureClick* gesture, int n_press, double x, double y, Ihandle* ih)
 {
   IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
   if (cb)
@@ -1035,7 +1035,60 @@ IUP_DRV_API void iupgtk4SetupButtonEvents(GtkWidget* widget, Ihandle* ih)
   gtk_widget_add_controller(widget, GTK_EVENT_CONTROLLER(click_gesture));
 
   g_signal_connect(click_gesture, "pressed", G_CALLBACK(iupgtk4ButtonPressed), ih);
-  g_signal_connect(click_gesture, "released", G_CALLBACK(gtk4ButtonReleased), ih);
+  g_signal_connect(click_gesture, "released", G_CALLBACK(iupgtk4ButtonReleased), ih);
+}
+
+/* GTK4 events carry surface coordinates; translate to the widget */
+IUP_DRV_API void iupgtk4EventCoords(GtkWidget* widget, GdkEvent* event, int* ox, int* oy)
+{
+  double sx = 0, sy = 0;
+  GtkNative* native = gtk_widget_get_native(widget);
+  gdk_event_get_position(event, &sx, &sy);
+  *ox = (int)sx; *oy = (int)sy;
+  if (native)
+  {
+    double nx = 0, ny = 0;
+    graphene_point_t in, out;
+    gtk_native_get_surface_transform(native, &nx, &ny);
+    in.x = (float)(sx - nx); in.y = (float)(sy - ny);
+    if (gtk_widget_compute_point(GTK_WIDGET(native), widget, &in, &out)) { *ox = (int)out.x; *oy = (int)out.y; }
+  }
+}
+
+static gboolean gtk4ButtonReleaseEvent(GtkEventControllerLegacy* controller, GdkEvent* event, Ihandle* ih)
+{
+  IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+  if (cb && gdk_event_get_event_type(event) == GDK_BUTTON_RELEASE)
+  {
+    int button = (int)gdk_button_event_get_button(event);
+    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+    int x, y;
+
+    iupgtk4EventCoords(ih->handle, event, &x, &y);
+    iupgtk4ButtonKeySetStatus(gdk_event_get_modifier_state(event), button, status, 0);
+
+    if (cb(ih, IUP_BUTTON1 + (button - 1), 0, x, y, status) == IUP_CLOSE)
+      IupExitLoop();
+  }
+
+  (void)controller;
+  return FALSE;
+}
+
+/* the inner GtkText of an entry claims the click, so the release comes from the raw event */
+IUP_DRV_API void iupgtk4SetupEntryButtonEvents(GtkWidget* widget, Ihandle* ih)
+{
+  GtkGesture* click_gesture = gtk_gesture_click_new();
+  GtkEventController* legacy = gtk_event_controller_legacy_new();
+
+  gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click_gesture), 0);
+  gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(click_gesture), GTK_PHASE_CAPTURE);
+  gtk_widget_add_controller(widget, GTK_EVENT_CONTROLLER(click_gesture));
+  g_signal_connect(click_gesture, "pressed", G_CALLBACK(iupgtk4ButtonPressed), ih);
+
+  gtk_event_controller_set_propagation_phase(legacy, GTK_PHASE_CAPTURE);
+  gtk_widget_add_controller(widget, legacy);
+  g_signal_connect(legacy, "event", G_CALLBACK(gtk4ButtonReleaseEvent), ih);
 }
 
 IUP_DRV_API void iupgtk4SetupMotionEvents(GtkWidget* widget, Ihandle* ih)

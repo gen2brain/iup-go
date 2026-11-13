@@ -164,7 +164,7 @@ EM_JS(int, iupwasmJsListXY2Pos, (int id, int y), {
   if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'listxy2pos', id: id, y: y });
   var el = globalThis.__iup.els[id], sel = el && el.__iupOpts;
   if (!sel || !sel.options || !sel.options.length) return 0;
-  var vy = sel.getBoundingClientRect().top + y;
+  var vy = el.getBoundingClientRect().top + y;
   for (var i = 0; i < sel.options.length; i++)
     if (vy <= sel.options[i].getBoundingClientRect().bottom) return i + 1;
   return sel.options.length;

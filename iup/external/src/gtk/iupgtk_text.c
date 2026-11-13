@@ -853,14 +853,27 @@ static int gtkTextConvertXYToPos(Ihandle* ih, int x, int y)
   else
   {
     int trailing, off_x, off_y, pos;
+    PangoLayout* layout = gtk_entry_get_layout(GTK_ENTRY(ih->handle));
+#if GTK_CHECK_VERSION(3, 0, 0)
+    GdkRectangle text_area;
 
-    /* transform to Layout coordinates */
+    /* events come in text area coordinates, the layout offsets are in widget coordinates */
+    gtk_entry_get_text_area(GTK_ENTRY(ih->handle), &text_area);
+    x += text_area.x;
+    y += text_area.y;
+#else
+    int text_x, text_y;
+    gdk_window_get_position(gtk_entry_get_text_window(GTK_ENTRY(ih->handle)), &text_x, &text_y);
+    x += text_x;
+    y += text_y;
+#endif
+
     gtk_entry_get_layout_offsets(GTK_ENTRY(ih->handle), &off_x, &off_y);
     x = iupGTK_PIXELS2PANGOUNITS(x - off_x);
     y = iupGTK_PIXELS2PANGOUNITS(y - off_y);
 
-    pango_layout_xy_to_index(gtk_entry_get_layout(GTK_ENTRY(ih->handle)), x, y, &pos, &trailing);
-    return pos;
+    pango_layout_xy_to_index(layout, x, y, &pos, &trailing);
+    return (int)g_utf8_pointer_to_offset(pango_layout_get_text(layout), pango_layout_get_text(layout) + pos) + trailing;
   }
 }
 

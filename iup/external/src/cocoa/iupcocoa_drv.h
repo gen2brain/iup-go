@@ -85,7 +85,9 @@ IUP_DRV_API void iupcocoaEnsureDefaultApplicationMenu(void);
 
 IUP_DRV_API int iupcocoaCommonBaseIupButtonForCocoaButton(NSInteger which_cocoa_button);
 IUP_DRV_API bool iupcocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view, bool is_pressed);
+IUP_DRV_API BOOL iupcocoaCommonBaseHandleControlMouseButton(Ihandle* ih, NSEvent* the_event, NSView* represented_view, bool is_pressed);
 IUP_DRV_API bool iupcocoaCommonBaseHandleMouseMotionCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view);
+IUP_DRV_API void iupcocoaCommonBaseUpdateMotionArea(NSView* view);
 IUP_DRV_API void iupcocoaCanvasDrawBuffer(NSBitmapImageRep* buffer, NSRect bounds);
 
 /* WHEEL_CB: WARNING: IUP does not support delta-y axis. */

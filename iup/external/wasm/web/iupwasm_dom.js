@@ -11,6 +11,8 @@
     var Dt = function (name, types, args) { dispatch.callType(name, types, args); };
     // DOM e.buttons: 1 left, 2 right, 4 middle. IUP: button2 is the middle one, button3 the right one.
     var mmods = function (e) { return (e.shiftKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 4 : 0) | ((e.buttons & 1) ? 8 : 0) | ((e.buttons & 4) ? 16 : 0) | ((e.buttons & 2) ? 32 : 0) | (e.metaKey ? 64 : 0); };
+    // mouse coordinates relative to the element, offsetX is relative to whatever child is under the pointer
+    var elXY = function (el, e) { var r = el.getBoundingClientRect(); return [Math.round(e.clientX - r.left), Math.round(e.clientY - r.top)]; };
 
     function iupWebInit(el, id) {
       el.style.border = 'none'; el.style.background = 'var(--iup-txtbg)'; el.setAttribute('allowfullscreen', '');
@@ -3079,7 +3081,8 @@
             var dsid = c.id;
             el.addEventListener('dragstart', function (e) {
               e.dataTransfer.setData('text/plain', String(dsid)); e.dataTransfer.effectAllowed = 'copyMove';
-              D('iupwasmDndDragBegin', dsid, Math.round(e.offsetX || 0), Math.round(e.offsetY || 0));
+              var dxy = elXY(el, e);
+              D('iupwasmDndDragBegin', dsid, dxy[0], dxy[1]);
             });
             el.addEventListener('dragend', function (e) { D('iupwasmDndDragEnd', dsid, e.dataTransfer.dropEffect === 'move' ? 1 : 0); });
           }
@@ -3089,11 +3092,11 @@
         if (el && c.enable && !el.__iupDropWired) {
           el.__iupDropWired = 1;
           var dtid = c.id;
-          el.addEventListener('dragover', function (e) { e.preventDefault(); D('iupwasmDndDropMotion', dtid, Math.round(e.offsetX || 0), Math.round(e.offsetY || 0), mmods(e)); });
+          el.addEventListener('dragover', function (e) { e.preventDefault(); var oxy = elXY(el, e); D('iupwasmDndDropMotion', dtid, oxy[0], oxy[1], mmods(e)); });
           el.addEventListener('drop', function (e) {
             e.preventDefault();
             var s = e.dataTransfer.getData('text/plain') || '';
-            var dx = Math.round(e.offsetX || 0), dy = Math.round(e.offsetY || 0);
+            var dxy2 = elXY(el, e), dx = dxy2[0], dy = dxy2[1];
             var sid = parseInt(s, 10);
             // an inner drag carries its source id; anything else is text dropped from outside
             if (sid && globalThis.__iup.els[sid]) D('iupwasmDndTransfer', sid, dtid, 0, dx, dy);
@@ -3109,7 +3112,7 @@
           el.addEventListener('drop', function (e) {
             if (!e.dataTransfer.files || !e.dataTransfer.files.length) return;
             e.preventDefault();
-            var dfx = Math.round(e.offsetX || 0), dfy = Math.round(e.offsetY || 0), files = e.dataTransfer.files;
+            var dfxy = elXY(el, e), dfx = dfxy[0], dfy = dfxy[1], files = e.dataTransfer.files;
             for (var i = 0; i < files.length; i++) Dt('iupwasmDndDropFile', ['number', 'string', 'number', 'number', 'number'], [dftid, files[i].name, files.length - 1 - i, dfx, dfy]);
           });
         }
@@ -3597,9 +3600,48 @@ globalThis.__iupMediaPick = function (kind, index) {
       case 'listxy2pos': {
         var lxs = el && el.__iupOpts;
         if (!lxs || !lxs.options || !lxs.options.length) return 0;
-        var lvy = lxs.getBoundingClientRect().top + req.y;
+        var lvy = el.getBoundingClientRect().top + req.y;
         for (var lxi = 0; lxi < lxs.options.length; lxi++) if (lvy <= lxs.options[lxi].getBoundingClientRect().bottom) return lxi + 1;
         return lxs.options.length;
+      } break;
+      case 'textxy2pos': {
+        if (!el) return -1;
+        var tr = el.getBoundingClientRect(), tcx = tr.left + req.x, tcy = tr.top + req.y;
+        var thit = function () {
+          if (document.caretRangeFromPoint) { var cr = document.caretRangeFromPoint(tcx, tcy); return cr ? [cr.startContainer, cr.startOffset] : null; }
+          var cp = document.caretPositionFromPoint ? document.caretPositionFromPoint(tcx, tcy) : null;
+          return cp ? [cp.offsetNode, cp.offset] : null;
+        };
+        if (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') {
+          var th = thit();
+          if (!th || !el.contains(th[0])) return -1;
+          var tpre = document.createRange();
+          tpre.selectNodeContents(el);
+          tpre.setEnd(th[0], th[1]);
+          return tpre.toString().length;
+        }
+        // form fields have no point to caret query, so a mirror div with the same text layout answers it
+        var tcs = getComputedStyle(el), tm = document.createElement('div');
+        ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'letterSpacing', 'wordSpacing', 'textTransform', 'textIndent', 'textAlign',
+         'lineHeight', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth',
+         'borderBottomWidth', 'borderLeftWidth', 'borderStyle', 'boxSizing', 'tabSize', 'overflowWrap', 'wordBreak', 'overflowX', 'overflowY'].forEach(function (p) { tm.style[p] = tcs[p]; });
+        tm.style.position = 'fixed'; tm.style.margin = '0'; tm.style.opacity = '0'; tm.style.zIndex = '2147483647';
+        tm.style.left = tr.left + 'px'; tm.style.top = tr.top + 'px'; tm.style.width = tr.width + 'px'; tm.style.height = tr.height + 'px';
+        var tval = el.type === 'password' ? '\u2022'.repeat(el.value.length) : el.value;
+        if (el.tagName === 'INPUT') {
+          tm.style.whiteSpace = 'pre'; tm.style.overflow = 'hidden';
+          tm.style.lineHeight = (el.clientHeight - parseFloat(tcs.paddingTop) - parseFloat(tcs.paddingBottom)) + 'px';
+          tcy = tr.top + tr.height / 2;
+        } else {
+          tm.style.whiteSpace = 'pre-wrap';
+        }
+        tm.textContent = tval;
+        document.body.appendChild(tm);
+        tm.scrollTop = el.scrollTop; tm.scrollLeft = el.scrollLeft;
+        var tmh = thit();
+        document.body.removeChild(tm);
+        if (!tmh || !tm.contains(tmh[0])) return -1;
+        return tmh[0] === tm ? (tmh[1] ? tval.length : 0) : tmh[1];
       } break;
       case 'treexy2row': {
         if (!el) return 0;
@@ -3970,21 +4012,23 @@ globalThis.__iupMediaPick = function (kind, index) {
       document.addEventListener('mousedown', function (e) {
         stashMods(e);
         var id = iupId(e.target); if (!id) return;
-        D('iupwasmDispatchButton', id, 49 + (e.button || 0), 1, Math.round(e.offsetX || 0), Math.round(e.offsetY || 0),
-          mmods(e), e.detail >= 2 ? 1 : 0);
+        var bxy = elXY(e.target.closest('[data-iup-id]'), e);
+        D('iupwasmDispatchButton', id, 49 + (e.button || 0), 1, bxy[0], bxy[1], mmods(e), e.detail >= 2 ? 1 : 0);
       });
       document.addEventListener('mouseup', function (e) {
         stashMods(e);
         var id = iupId(e.target); if (!id) return;
-        D('iupwasmDispatchButton', id, 49 + (e.button || 0), 0, Math.round(e.offsetX || 0), Math.round(e.offsetY || 0),
-          mmods(e), 0);
+        var rxy = elXY(e.target.closest('[data-iup-id]'), e);
+        D('iupwasmDispatchButton', id, 49 + (e.button || 0), 0, rxy[0], rxy[1], mmods(e), 0);
       });
       // generic MOTION_CB for non-canvas controls (canvas wires its own, avoid double-fire)
       document.addEventListener('mousemove', function (e) {
         stashMods(e);
         globalThis.__iupMouse = [e.clientX, e.clientY];
         if (e.target.tagName === 'CANVAS') return;
-        var id = iupId(e.target); if (id) D('iupwasmDispatchMotion', id, Math.round(e.offsetX || 0), Math.round(e.offsetY || 0), mmods(e));
+        var id = iupId(e.target); if (!id) return;
+        var mxy = elXY(e.target.closest('[data-iup-id]'), e);
+        D('iupwasmDispatchMotion', id, mxy[0], mxy[1], mmods(e));
       });
       // ENTERWINDOW_CB / LEAVEWINDOW_CB, delegated: fire only when the resolved iup element changes
       var hoverId = 0;

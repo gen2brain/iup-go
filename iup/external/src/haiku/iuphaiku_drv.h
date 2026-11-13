@@ -92,6 +92,8 @@ IUP_DRV_API void iuphaikuRecentDispatch(Ihandle* menu, int index);
 IUP_DRV_API int  iuphaikuKeyDecode(int byte, int raw_char, int key, unsigned int modifiers);
 IUP_DRV_API int  iuphaikuKeyPadScanCode(int code, int* byte_val);
 IUP_DRV_API void iuphaikuButtonKeySetStatus(unsigned int modifiers, unsigned int buttons, int button, char* status, int doubleclick);
+IUP_DRV_API void iuphaikuMouseButtonEvent(Ihandle* ih, BMessage* msg, BPoint where, int pressed);
+IUP_DRV_API void iuphaikuMouseMoveEvent(Ihandle* ih, BMessage* msg, BPoint where, uint32 transit);
 
 IUP_DRV_API void iuphaikuSetCanFocus(BView* widget, int can);
 IUP_DRV_API void iuphaikuFocusInOutEvent(Ihandle* ih, int focus_in);

@@ -867,3 +867,50 @@ IUP_DRV_API const char* iuphaikuGetNativeFontIdName()
 {
   return "BFONT";
 }
+
+IUP_DRV_API void iuphaikuMouseButtonEvent(Ihandle* ih, BMessage* msg, BPoint where, int pressed)
+{
+  auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
+  if (!cb)
+    return;
+
+  int32 clicks = 1, buttons = 0, mods = 0;
+  if (msg)
+  {
+    msg->FindInt32("clicks", &clicks);
+    msg->FindInt32("buttons", &buttons);
+    msg->FindInt32("modifiers", &mods);
+  }
+
+  int btn = IUP_BUTTON1;
+  if (pressed)
+  {
+    if (buttons & B_SECONDARY_MOUSE_BUTTON)
+      btn = IUP_BUTTON3;
+    else if (buttons & B_TERTIARY_MOUSE_BUTTON)
+      btn = IUP_BUTTON2;
+  }
+
+  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+  iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), pressed ? static_cast<unsigned>(buttons) : 0, 0, status, (pressed && clicks == 2) ? 1 : 0);
+  if (cb(ih, btn, pressed, static_cast<int>(where.x), static_cast<int>(where.y), status) == IUP_CLOSE)
+    IupExitLoop();
+}
+
+IUP_DRV_API void iuphaikuMouseMoveEvent(Ihandle* ih, BMessage* msg, BPoint where, uint32 transit)
+{
+  auto cb = reinterpret_cast<IFniis>(IupGetCallback(ih, "MOTION_CB"));
+  if (!cb || (transit != B_INSIDE_VIEW && transit != B_ENTERED_VIEW))
+    return;
+
+  int32 buttons = 0, mods = 0;
+  if (msg)
+  {
+    msg->FindInt32("buttons", &buttons);
+    msg->FindInt32("modifiers", &mods);
+  }
+
+  char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+  iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, 0);
+  cb(ih, static_cast<int>(where.x), static_cast<int>(where.y), status);
+}

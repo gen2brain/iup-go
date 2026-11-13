@@ -236,10 +236,87 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
   return YES;
 }
 
+static BOOL cocoaTextWantsMouse(Ihandle* ih)
+{
+  return ih && (IupGetCallback(ih, "BUTTON_CB") || IupGetCallback(ih, "MOTION_CB"));
+}
+
+static void cocoaTextSendRelease(Ihandle* ih, NSView* view, NSEventType up_type)
+{
+  NSEvent* up_event = [NSApp currentEvent];
+  if (ih && up_event && [up_event type] == up_type)
+    iupcocoaCommonBaseHandleControlMouseButton(ih, up_event, view, false);
+}
+
+/* while editing, clicks go to the field editor; the field takes them so BUTTON_CB sees them */
+static NSView* cocoaTextFieldHitTest(NSTextField* field, NSView* hit)
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(field, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (hit && hit != field && cocoaTextWantsMouse(ih) && [hit isDescendantOf:field])
+    return field;
+  return hit;
+}
+
+#define IUPCOCOA_TEXTFIELD_MOUSE_METHODS \
+- (NSView*)hitTest:(NSPoint)point \
+{ \
+  return cocoaTextFieldHitTest(self, [super hitTest:point]); \
+} \
+- (void)mouseDown:(NSEvent*)event \
+{ \
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY); \
+  if (ih && !iupcocoaCommonBaseHandleControlMouseButton(ih, event, self, true)) \
+    return; \
+  NSText* editor = [self currentEditor]; \
+  if (editor && cocoaTextWantsMouse(ih)) \
+    [editor mouseDown:event]; \
+  else \
+    [super mouseDown:event]; \
+  cocoaTextSendRelease(ih, self, NSEventTypeLeftMouseUp); \
+} \
+- (void)mouseUp:(NSEvent*)event \
+{ \
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY); \
+  if (!ih || iupcocoaCommonBaseHandleControlMouseButton(ih, event, self, false)) \
+    [super mouseUp:event]; \
+} \
+- (void)rightMouseDown:(NSEvent*)event \
+{ \
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY); \
+  if (ih && !iupcocoaCommonBaseHandleControlMouseButton(ih, event, self, true)) \
+    return; \
+  NSText* editor = [self currentEditor]; \
+  if (editor && cocoaTextWantsMouse(ih)) \
+    [editor rightMouseDown:event]; \
+  else \
+    [super rightMouseDown:event]; \
+  cocoaTextSendRelease(ih, self, NSEventTypeRightMouseUp); \
+} \
+- (void)rightMouseUp:(NSEvent*)event \
+{ \
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY); \
+  if (!ih || iupcocoaCommonBaseHandleControlMouseButton(ih, event, self, false)) \
+    [super rightMouseUp:event]; \
+} \
+- (void)updateTrackingAreas \
+{ \
+  [super updateTrackingAreas]; \
+  iupcocoaCommonBaseUpdateMotionArea(self); \
+} \
+- (void)mouseMoved:(NSEvent*)event \
+{ \
+  [super mouseMoved:event]; \
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY); \
+  if (ih) \
+    iupcocoaCommonBaseHandleMouseMotionCallback(ih, event, self); \
+}
+
 @interface IupCocoaTextField : NSTextField
 @end
 
 @implementation IupCocoaTextField
+
+IUPCOCOA_TEXTFIELD_MOUSE_METHODS
 
 - (void)scrollWheel:(NSEvent*)the_event
 {
@@ -372,6 +449,8 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
 
 @implementation IupCocoaSecureTextField
 
+IUPCOCOA_TEXTFIELD_MOUSE_METHODS
+
 - (void)scrollWheel:(NSEvent*)the_event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
@@ -447,6 +526,52 @@ static BOOL cocoaTextHandleShouldChangeText(NSTextField* text_field, NSTextView*
 @end
 
 @implementation IupCocoaTextView
+
+- (void)mouseDown:(NSEvent*)event
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih && !iupcocoaCommonBaseHandleControlMouseButton(ih, event, self, true))
+    return;
+  [super mouseDown:event];
+  cocoaTextSendRelease(ih, self, NSEventTypeLeftMouseUp);
+}
+
+- (void)mouseUp:(NSEvent*)event
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!ih || iupcocoaCommonBaseHandleControlMouseButton(ih, event, self, false))
+    [super mouseUp:event];
+}
+
+- (void)rightMouseDown:(NSEvent*)event
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih && !iupcocoaCommonBaseHandleControlMouseButton(ih, event, self, true))
+    return;
+  [super rightMouseDown:event];
+  cocoaTextSendRelease(ih, self, NSEventTypeRightMouseUp);
+}
+
+- (void)rightMouseUp:(NSEvent*)event
+{
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (!ih || iupcocoaCommonBaseHandleControlMouseButton(ih, event, self, false))
+    [super rightMouseUp:event];
+}
+
+- (void)updateTrackingAreas
+{
+  [super updateTrackingAreas];
+  iupcocoaCommonBaseUpdateMotionArea(self);
+}
+
+- (void)mouseMoved:(NSEvent*)event
+{
+  [super mouseMoved:event];
+  Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
+  if (ih)
+    iupcocoaCommonBaseHandleMouseMotionCallback(ih, event, self);
+}
 
 - (void)scrollWheel:(NSEvent*)the_event
 {
@@ -5393,6 +5518,63 @@ static int cocoaTextSetContextMenuAttrib(Ihandle* ih, const char* value)
 
 static void cocoaTextApplyPadding(Ihandle* ih);
 
+static int cocoaTextLayoutIndexAtPoint(NSLayoutManager* layout_manager, NSTextContainer* text_container, NSPoint point, NSString* text)
+{
+  CGFloat fraction = 0;
+  NSUInteger glyph_index = [layout_manager glyphIndexForPoint:point inTextContainer:text_container fractionOfDistanceThroughGlyph:&fraction];
+  NSUInteger char_index = [layout_manager characterIndexForGlyphAtIndex:glyph_index];
+  if (fraction > 0.5 && char_index < [text length])
+  {
+    unichar c = [text characterAtIndex:char_index];
+    if (c != '\n' && c != '\r')
+      char_index++;
+  }
+  return (int)char_index;
+}
+
+static int cocoaTextViewIndexAtPoint(NSTextView* text_view, NSPoint point)
+{
+  NSPoint origin = [text_view textContainerOrigin];
+  point.x -= origin.x;
+  point.y -= origin.y;
+  return cocoaTextLayoutIndexAtPoint([text_view layoutManager], [text_view textContainer], point, [text_view string]);
+}
+
+static int cocoaTextConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  IupCocoaTextSubType sub_type = cocoaTextGetSubType(ih);
+  if (sub_type == IUPCOCOATEXTSUBTYPE_VIEW)
+    return cocoaTextViewIndexAtPoint(cocoaTextGetTextView(ih), NSMakePoint(x, y));
+
+  NSTextField* text_field = (sub_type == IUPCOCOATEXTSUBTYPE_STEPPER) ? cocoaTextGetStepperTextField(ih) : cocoaTextGetTextField(ih);
+  NSPoint point = NSMakePoint(x, y);
+  if (![text_field isFlipped])
+    point.y = [text_field bounds].size.height - y;
+
+  NSText* editor = [text_field currentEditor];
+  if ([editor isKindOfClass:[NSTextView class]])
+    return cocoaTextViewIndexAtPoint((NSTextView*)editor, [editor convertPoint:point fromView:text_field]);
+
+  NSAttributedString* value = [text_field attributedStringValue];
+  NSRect title_rect = [[text_field cell] titleRectForBounds:[text_field bounds]];
+  NSTextStorage* text_storage = [[NSTextStorage alloc] initWithAttributedString:value];
+  NSLayoutManager* layout_manager = [[NSLayoutManager alloc] init];
+  NSTextContainer* text_container = [[NSTextContainer alloc] initWithContainerSize:NSMakeSize(1.0e7, 1.0e7)];
+  NSText* field_editor = [[text_field window] fieldEditor:YES forObject:text_field];
+  if ([field_editor isKindOfClass:[NSTextView class]])
+    [text_container setLineFragmentPadding:[[(NSTextView*)field_editor textContainer] lineFragmentPadding]];
+  [layout_manager addTextContainer:text_container];
+  [text_storage addLayoutManager:layout_manager];
+
+  NSPoint local = NSMakePoint(point.x - NSMinX(title_rect), [text_field isFlipped] ? point.y - NSMinY(title_rect) : NSMaxY(title_rect) - point.y);
+  int pos = cocoaTextLayoutIndexAtPoint(layout_manager, text_container, local, [value string]);
+
+  [text_container release];
+  [layout_manager release];
+  [text_storage release];
+  return pos;
+}
+
 static int cocoaTextMapMethod(Ihandle* ih)
 {
   NSView* root_view = nil;
@@ -5565,6 +5747,8 @@ static int cocoaTextMapMethod(Ihandle* ih)
 
   ih->handle = root_view;
   iupcocoaSetAssociatedViews(ih, main_view, root_view);
+
+  IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)cocoaTextConvertXYToPos);
 
   if (!ih->data->is_multiline)
   {

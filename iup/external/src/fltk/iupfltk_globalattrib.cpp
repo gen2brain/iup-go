@@ -102,6 +102,9 @@ static void fltkGlobalEventHandler(int event)
 
 static int fltk_input_callbacks = 0;
 
+static Fl_Widget* fltk_release_widget = nullptr;
+static Ihandle* fltk_release_ih = nullptr;
+
 static int fltkEventDispatch(int event, Fl_Window* window)
 {
   if (fltk_input_callbacks)
@@ -109,7 +112,23 @@ static int fltkEventDispatch(int event, Fl_Window* window)
 
   int ret = Fl::handle_(event, window);
   iupfltkTipsEvent(event);
+
+  if (event == FL_RELEASE && fltk_release_ih)
+  {
+    Ihandle* ih = fltk_release_ih;
+    fltk_release_ih = nullptr;
+    if (iupObjectCheck(ih))
+      iupfltkMouseButtonEvent(fltk_release_widget, ih, FL_RELEASE);
+  }
   return ret;
+}
+
+/* a container whose child takes the press never sees the release */
+IUP_DRV_API void iupfltkSetReleaseTarget(Fl_Widget* widget, Ihandle* ih)
+{
+  iupfltkEventDispatchInstall();
+  fltk_release_widget = widget;
+  fltk_release_ih = ih;
 }
 
 IUP_DRV_API void iupfltkEventDispatchInstall(void)

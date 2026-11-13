@@ -416,6 +416,8 @@ public:
       msg->FindInt32("clicks", &clicks);
     }
 
+    iuphaikuMouseButtonEvent(fIhandle, msg, where, 1);
+
     int32 idx = IndexOf(where);
     if (idx >= 0)
     {
@@ -457,6 +459,20 @@ public:
     }
 
     BOutlineListView::MouseDown(where);
+  }
+
+  void MouseUp(BPoint where) override
+  {
+    BOutlineListView::MouseUp(where);
+    if (fIhandle)
+      iuphaikuMouseButtonEvent(fIhandle, Looper() ? Looper()->CurrentMessage() : nullptr, where, 0);
+  }
+
+  void MouseMoved(BPoint where, uint32 transit, const BMessage* drag) override
+  {
+    BOutlineListView::MouseMoved(where, transit, drag);
+    if (fIhandle)
+      iuphaikuMouseMoveEvent(fIhandle, Looper() ? Looper()->CurrentMessage() : nullptr, where, transit);
   }
 
   bool InitiateDrag(BPoint where, int32 /*index*/, bool /*wasSelected*/) override

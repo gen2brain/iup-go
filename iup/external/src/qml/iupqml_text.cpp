@@ -1803,6 +1803,27 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
  ****************************************************************************/
 
 
+static int qmlTextConvertXYToPos(Ihandle* ih, int x, int y)
+{
+  auto* edit = reinterpret_cast<QQuickItem*>(iupAttribGet(ih, "_IUPQML_EVENT_ITEM"));
+  if (!edit)
+    return -1;
+
+  if (ih->data->is_multiline)
+  {
+    int pos = -1;
+    QMetaObject::invokeMethod(edit, "positionAt", Qt::DirectConnection, Q_RETURN_ARG(int, pos), Q_ARG(qreal, x), Q_ARG(qreal, y));
+    return pos;
+  }
+
+  /* TextInput.positionAt is a QML function, the item QML wraps it */
+  auto* spin = reinterpret_cast<QQuickItem*>(iupAttribGet(ih, "_IUPQML_SPINBOX"));
+  QVariant pos;
+  if (!QMetaObject::invokeMethod(spin ? spin : edit, "iupPositionAt", Qt::DirectConnection, Q_RETURN_ARG(QVariant, pos), Q_ARG(QVariant, x), Q_ARG(QVariant, y)))
+    return -1;
+  return pos.toInt();
+}
+
 static int qmlTextMapMethod(Ihandle* ih)
 {
   QQuickItem* handle = nullptr;
@@ -1838,6 +1859,7 @@ static int qmlTextMapMethod(Ihandle* ih)
       "  valueFromText: function(text, locale) { return spin.iupAuto ? parseInt(text) : spin.value }\n"
       "  validator: spin.iupAuto ? iupIntValidator : null\n"
       "  IntValidator { id: iupIntValidator; bottom: Math.min(spin.from, spin.to); top: Math.max(spin.from, spin.to) }\n"
+      "  function iupPositionAt(x, y) { return contentItem.positionAt(x, y) }\n"
       "}");
     if (!handle)
       return IUP_ERROR;
@@ -1881,7 +1903,7 @@ static int qmlTextMapMethod(Ihandle* ih)
   }
   else
   {
-    handle = iupqmlCreateItem(IUPQML_IMPORTS "TextField { selectByMouse: true }");
+    handle = iupqmlCreateItem(IUPQML_IMPORTS "TextField { selectByMouse: true; function iupPositionAt(x, y) { return positionAt(x, y) } }");
     if (!handle)
       return IUP_ERROR;
     edit = handle;
@@ -1924,6 +1946,7 @@ static int qmlTextMapMethod(Ihandle* ih)
 
   iupqmlAddToParent(ih);
   iupqmlInstallFilter(ih, edit);
+  IupSetCallback(ih, "_IUP_XY2POS_CB", reinterpret_cast<Icallback>(qmlTextConvertXYToPos));
   edit->setProperty("_iup_keys_handled", true);
   edit->installEventFilter(new IupQmlTextKeyFilter(edit, ih));
 

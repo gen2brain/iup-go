@@ -1860,6 +1860,60 @@ IUP_DRV_API bool iupcocoaCommonBaseHandleMouseButtonCallback(Ihandle* ih, NSEven
   return !caller_should_propagate;
 }
 
+/* IUP_DEFAULT lets the widget handle selection normally, IUP_IGNORE consumes the event */
+IUP_DRV_API BOOL iupcocoaCommonBaseHandleControlMouseButton(Ihandle* ih, NSEvent* the_event, NSView* represented_view, bool is_pressed)
+{
+  IFniiiis cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
+  if (!cb)
+    return YES;
+
+  NSPoint the_point = [the_event locationInWindow];
+  NSPoint converted_point = [represented_view convertPoint:the_point fromView:nil];
+  CGFloat final_y = converted_point.y;
+
+  if (![represented_view isFlipped])
+  {
+    NSRect view_bounds = [represented_view bounds];
+    final_y = view_bounds.size.height - converted_point.y;
+  }
+
+  NSInteger which_cocoa_button = [the_event buttonNumber];
+  char mod_status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
+  iupcocoaButtonKeySetStatus(the_event, mod_status);
+
+  if ([the_event modifierFlags] & NSEventModifierFlagControl && 0 == which_cocoa_button)
+    which_cocoa_button = 1;
+
+  int which_iup_button = iupcocoaCommonBaseIupButtonForCocoaButton(which_cocoa_button);
+
+  int ret = cb(ih, which_iup_button, is_pressed, iupROUND(converted_point.x), iupROUND(final_y), mod_status);
+  if (ret == IUP_CLOSE)
+  {
+    IupExitLoop();
+    return NO;
+  }
+  else if (ret == IUP_IGNORE)
+    return NO;
+
+  return YES;
+}
+
+IUP_DRV_API void iupcocoaCommonBaseUpdateMotionArea(NSView* view)
+{
+  for (NSTrackingArea* area in [view trackingAreas])
+  {
+    if ([area owner] == view && [[area userInfo] objectForKey:@"IupMotion"])
+      [view removeTrackingArea:area];
+  }
+
+  NSTrackingArea* tracking_area = [[NSTrackingArea alloc] initWithRect:[view bounds]
+                                                               options:(NSTrackingMouseMoved | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect)
+                                                                 owner:view
+                                                              userInfo:[NSDictionary dictionaryWithObject:@YES forKey:@"IupMotion"]];
+  [view addTrackingArea:tracking_area];
+  [tracking_area release];
+}
+
 IUP_DRV_API bool iupcocoaCommonBaseHandleMouseMotionCallback(Ihandle* ih, NSEvent* the_event, NSView* represented_view)
 {
   bool caller_should_propagate = true;
