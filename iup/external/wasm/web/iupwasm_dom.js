@@ -81,8 +81,26 @@
 
     function iupWireEdit(el, wid, editFn, caretFn) {
       // the edit is applied here and reported with the previous text, so typing never waits for the worker
+      var fmtEdit = function (it) {
+        var v = el.value, a = el.selectionStart || 0, b = el.selectionEnd || 0;
+        if (it.del) {
+          var fr = iupDeleteRange(v, a, b, it.del);
+          if (!fr) return false;
+          a = fr.ds; b = fr.de;
+        } else if (it.ins === null && a === b) {
+          if (it.rd < 0) { if (a === 0) return false; a -= (a > 1 && /[\udc00-\udfff]/.test(v[a - 1]) && /[\ud800-\udbff]/.test(v[a - 2])) ? 2 : 1; }
+          else { if (b >= v.length) return false; b += (/[\ud800-\udbff]/.test(v[b]) && b + 1 < v.length) ? 2 : 1; }
+        } else if (it.ow && a === b && a < v.length && v[a] !== '\n') b = a + 1;
+        el.__iupFmtUndo = { text: v, tags: el.__iupTags.map(function (g) { return Object.assign({}, g); }), s: a, e: b };
+        el.__iupReplace(a, b, it.ins === null ? '' : it.ins);
+        el.__iupEditPending = 1; el.__iupEditVC = 1;
+        Dt(editFn, ['number', 'string', 'string', 'number', 'number', 'number', 'number'],
+           [wid, v, it.ins === null ? '' : it.ins, iupU2C(v, a), iupU2C(v, b), 0, it.seq || 0]);
+        return true;
+      };
       el.addEventListener('beforeinput', function (e) {
-        if (e.isComposing || el.__iupRender) return;
+        if (e.isComposing) return;
+        var fmt = !!el.__iupRender;
         var v = el.value, s = el.selectionStart || 0, en = el.selectionEnd || 0;
         var t = e.inputType, ins = null, rd = 0, del = null, ow = false;
         if (t === 'insertText' || t === 'insertFromPaste' || t === 'insertFromDrop' || t === 'insertReplacementText') {
@@ -90,17 +108,17 @@
           if (ins == null || ins === '') return;
           // OVERWRITE: a collapsed caret not at end replaces the next char
           ow = el.__iupOverwrite && t === 'insertText' && ins.length === 1;
-          if (ow && s === en && s < v.length && v[s] !== '\n') { en = s + 1; el.setSelectionRange(s, en); }
+          if (ow && !fmt && s === en && s < v.length && v[s] !== '\n') { en = s + 1; el.setSelectionRange(s, en); }
         } else if (t === 'insertLineBreak' || t === 'insertParagraph') {
           ins = '\n';
         } else if (t === 'deleteContentBackward' || t === 'deleteContentForward' ||
                    t === 'deleteByCut' || t === 'deleteByDrag') {
           rd = (t === 'deleteContentBackward') ? -1 : 1;
         } else if (t.indexOf('delete') === 0) {
-          if (!iupDeleteRange(v, s, en, t)) return;
+          if (!iupDeleteRange(v, s, en, t)) { if (fmt) e.preventDefault(); return; }
           del = t;
         } else if (t === 'historyUndo' || t === 'historyRedo') {
-          if (el.__iupEditPending) { e.preventDefault(); return; }
+          if (el.__iupEditPending || fmt) { e.preventDefault(); return; }
           var hv = v;
           setTimeout(function () {
             var after = el.value;
@@ -110,12 +128,17 @@
                [wid, hv, after, 0, iupU2C(hv, hv.length), 0, 0]);
           }, 0);
           return;
-        } else return;
+        } else { if (fmt) e.preventDefault(); return; }
         var kseq = globalThis.__iupKeyPend || 0; globalThis.__iupKeyPend = 0;
         // while one edit is arbitrated the next ones wait, so a rejection can never land on text typed after it
         if (el.__iupEditPending) {
           e.preventDefault();
           (el.__iupEditQ = el.__iupEditQ || []).push({ ins: ins, rd: rd, del: del, ow: ow, seq: kseq });
+          return;
+        }
+        if (fmt) {
+          e.preventDefault();
+          fmtEdit({ ins: ins, rd: rd, del: del, ow: ow, seq: kseq });
           return;
         }
         if (del) {
@@ -132,6 +155,11 @@
       el.__iupEditNext = function () {
         var q = el.__iupEditQ;
         if (!q || !q.length) { el.__iupEditPending = 0; return; }
+        if (el.__iupRender) {
+          el.__iupEditPending = 0;
+          if (!fmtEdit(q.shift())) el.__iupEditNext();
+          return;
+        }
         var it = q.shift(), s2 = el.selectionStart || 0, e2 = el.selectionEnd || 0, v2 = el.value;
         if (it.ins !== null) {
           if (it.ow && s2 === e2 && s2 < v2.length && v2[s2] !== '\n') e2 = s2 + 1;
@@ -1614,6 +1642,21 @@
           if (!globalThis.__iupTextOff) globalThis.__iupTextOff = function (elem, lin, col) {
             return iupLcToPos(elem.__iupText, lin, col);
           };
+          tel.__iupReplace = function (a, b, str) {
+            var t = tel.__iupText, n = str.length, cut = b - a, kept = [];
+            tel.__iupText = t.slice(0, a) + str + t.slice(b);
+            for (var k = 0; k < tel.__iupTags.length; k++) {
+              var g = tel.__iupTags[k];
+              var gs = g.s <= a ? g.s : (g.s >= b ? g.s - cut : a);
+              var ge = g.e <= a ? g.e : (g.e >= b ? g.e - cut : a);
+              if (ge > a || (ge === a && gs < a)) ge += n;
+              if (gs > a || (gs === a && a > 0)) gs += n;
+              if (ge > gs) { g.s = gs; g.e = ge; kept.push(g); }
+            }
+            tel.__iupTags = kept;
+            tel.__iupRender();
+            tel.setSelectionRange(a + n, a + n);
+          };
           Object.defineProperty(tel, 'value', {
             get: function () { return tel.__iupText; },
             set: function (v) { tel.__iupText = v || ''; tel.__iupTags = []; tel.__iupSel = [0, 0]; tel.__iupRender(); },
@@ -1823,12 +1866,21 @@
       } break;
       case 'texteditdone': {
         if (el && el.__iupVal) el = el.__iupVal;
-        if (el) {
+        if (el && el.__iupRender && c.fix && el.__iupFmtUndo) {
+          var fu = el.__iupFmtUndo;
+          el.__iupText = fu.text; el.__iupTags = fu.tags;
+          var fins = c.value.slice(fu.s, c.value.length - (fu.text.length - fu.e));
+          if (c.value !== fu.text) el.__iupReplace(fu.s, fu.e, fins);
+          else { el.__iupRender(); el.setSelectionRange(fu.s, fu.e); }
+        }
+        else if (el) {
           if (c.fix) {
             el.value = c.value;
             var tdc = iupC2U(c.value, c.caret);
             try { el.setSelectionRange(tdc, tdc); } catch (_) {}
           }
+        }
+        if (el) {
           if (el.__iupEditNext) el.__iupEditNext(); else el.__iupEditPending = 0;
         }
       } break;
