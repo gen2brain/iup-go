@@ -2233,6 +2233,8 @@ static NSInteger cocoaTableRowOfField(Ihandle* ih, NSTableView* tableView, NSVie
   NSTableView* tableView = cocoaTableGetTableView(ih);
 
   NSTextField* textField = [notification object];
+  if (![textField isKindOfClass:[NSView class]] || ![textField isDescendantOf:tableView])
+    return;
   NSInteger col;
   NSInteger row = cocoaTableRowOfField(ih, tableView, textField, &col);
   if (row < 0 || col < 0)
@@ -2296,6 +2298,8 @@ static NSInteger cocoaTableRowOfField(Ihandle* ih, NSTableView* tableView, NSVie
 {
   NSTableView* tableView = cocoaTableGetTableView(ih);
   NSTextField* textField = [notification object];
+  if (![textField isKindOfClass:[NSView class]] || ![textField isDescendantOf:tableView])
+    return;
   objc_setAssociatedObject(textField, &kEditTextKey, nil, OBJC_ASSOCIATION_RETAIN);
 #ifdef GNUSTEP
   [textField setEditable:NO];
@@ -3476,6 +3480,7 @@ static int cocoaTableMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUPCOCOA_TABLEVIEW", (char*)tableView);
 
   iupcocoaSetAssociatedViews(ih, tableView, scrollView);
+  objc_setAssociatedObject(tableView, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
 
   /* Set SHOWGRID - must be after tableView is stored in attribute */
   iupdrvTableSetShowGrid(ih, iupAttribGetBoolean(ih, "SHOWGRID"));
@@ -3503,6 +3508,9 @@ static void cocoaTableUnMapMethod(Ihandle* ih)
 
   cocoaSourceDragDestroyAssociatedData(ih);
   cocoaTargetDropDestroyAssociatedData(ih);
+
+  if (cocoaTableGetTableView(ih))
+    objc_setAssociatedObject(cocoaTableGetTableView(ih), IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
 
   cocoaTableFreeData(ih);
 

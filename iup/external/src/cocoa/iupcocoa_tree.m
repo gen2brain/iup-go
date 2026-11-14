@@ -4744,6 +4744,7 @@ static int cocoaTreeMapMethod(Ihandle* ih)
 
   ih->handle = scroll_view;
   iupcocoaSetAssociatedViews(ih, outline_view, scroll_view);
+  objc_setAssociatedObject(outline_view, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
 
   iupcocoaAddToParent(ih);
 
@@ -4793,6 +4794,7 @@ static void cocoaTreeUnMapMethod(Ihandle* ih)
 
   IupCocoaOutlineView* outline_view = (IupCocoaOutlineView*)cocoaTreeGetOutlineView(ih);
   [outline_view setMarkStartNode:nil];
+  objc_setAssociatedObject(outline_view, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
   [outline_view setDataSource:nil];
   [outline_view setDelegate:nil];
 

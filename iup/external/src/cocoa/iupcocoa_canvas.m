@@ -1448,6 +1448,7 @@ static int cocoaCanvasMapMethod(Ihandle* ih)
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)extra_parent);
 
   iupcocoaSetAssociatedViews(ih, canvas_view, extra_parent);
+  objc_setAssociatedObject(canvas_view, IHANDLE_ASSOCIATED_OBJ_KEY, (id)ih, OBJC_ASSOCIATION_ASSIGN);
 
   iupcocoaAddToParent(ih);
 
@@ -1473,6 +1474,7 @@ static void cocoaCanvasUnMapMethod(Ihandle* ih)
   if (canvas_view)
   {
     [[NSNotificationCenter defaultCenter] removeObserver:canvas_view];
+    objc_setAssociatedObject(canvas_view, IHANDLE_ASSOCIATED_OBJ_KEY, nil, OBJC_ASSOCIATION_ASSIGN);
   }
 
   {

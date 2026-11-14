@@ -19,7 +19,7 @@ Mnemonics of hidden or inactive controls, including controls in a tab that is no
 Supported in Win32, WinUI, GTK, GTK 4, Qt, QML, FLTK, EFL and Motif.
 In QML, the character is underlined only while the Alt key is held.
 In Haiku, the shortcut is activated with Command+key (the physical Alt key on the default keymap), but the character is not underlined.
-In macOS, iOS, Android and WebAssembly, the "&" is stripped from the displayed text and no shortcut is registered.
+In macOS, GNUstep, iOS, Android and WebAssembly, the "&" is stripped from the displayed text and no shortcut is registered.
 
 In GTK, when the string has an underscore, the "&" mnemonic must come before it.
 
