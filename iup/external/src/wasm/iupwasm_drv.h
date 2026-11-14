@@ -39,6 +39,7 @@ void iupwasmJsDestroy(int id);
 void iupwasmJsAddToBody(int id);
 void iupwasmJsAddChild(int parent, int child);
 void iupwasmJsSetPos(int id, int x, int y, int w, int h);
+void iupwasmJsElemScreen(int id, int ptr);
 void iupwasmJsSetText(int id, const char* txt);
 void iupwasmJsSetVisible(int id, int visible);
 void iupwasmJsSetBgColor(int id, int r, int g, int b);

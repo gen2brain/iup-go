@@ -321,8 +321,18 @@ IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 
 IUP_SDK_API void iupdrvDialogGetPosition(Ihandle* ih, InativeHandle* handle, int* x, int* y)
 {
+  int id;
   if (!ih && handle)
     ih = iupwasmHandleFromId((int)(intptr_t)handle);
+  id = ih ? iupwasmIdOf(ih) : 0;
+  if (id && iupdrvIsVisible(ih))
+  {
+    int origin[2] = { 0, 0 };
+    iupwasmJsElemScreen(id, (int)(intptr_t)origin);
+    if (x) *x = origin[0];
+    if (y) *y = origin[1];
+    return;
+  }
   if (x) *x = ih ? iupAttribGetInt(ih, "_IUPWASM_POSX") : 0;
   if (y) *y = ih ? iupAttribGetInt(ih, "_IUPWASM_POSY") : 0;
 }

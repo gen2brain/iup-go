@@ -81,14 +81,14 @@ EM_JS(void, iupwasmJsSetZorder, (int id, int top), {
   globalThis.__iupApply({ op: 'zorder', id: id, top: top });
 })
 
-/* element origin in screen coords (viewport rect + window screen offset) */
+/* element origin in page coords, the screen of a wasm app */
 EM_JS(void, iupwasmJsElemScreen, (int id, int ptr), {
   var a;
   if (typeof document === 'undefined') a = globalThis.__iupReadSync({ op: 'elemscreen', id: id });
   else {
     var el = globalThis.__iup.els[id];
     var r = el ? el.getBoundingClientRect() : { left: 0, top: 0 };
-    a = [Math.round(r.left + (window.screenX || 0)), Math.round(r.top + (window.screenY || 0))];
+    a = [Math.round(r.left), Math.round(r.top)];
   }
   HEAP32[ptr >> 2] = a[0];
   HEAP32[(ptr >> 2) + 1] = a[1];

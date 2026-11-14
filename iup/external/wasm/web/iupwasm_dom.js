@@ -3734,7 +3734,7 @@ globalThis.__iupMediaPick = function (kind, index) {
       case 'elemscreen': {
         if (!el) return [0, 0];
         var rs = el.getBoundingClientRect();
-        return [Math.round(rs.left + (window.screenX || 0)), Math.round(rs.top + (window.screenY || 0))];
+        return [Math.round(rs.left), Math.round(rs.top)];
       } break;
       case 'measuremarkup': {
         var mm = globalThis.__iupMarkupProbe;
@@ -3815,7 +3815,7 @@ globalThis.__iupMediaPick = function (kind, index) {
       } break;
       case 'cursorpos': {
         var cm = globalThis.__iupMouse || [0, 0];
-        return [Math.round(cm[0] + (window.screenX || 0)), Math.round(cm[1] + (window.screenY || 0))];
+        return [Math.round(cm[0]), Math.round(cm[1])];
       } break;
       case 'keystate': {
         return globalThis.__iupMods || 0;

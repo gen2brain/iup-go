@@ -33,6 +33,26 @@ static Display* x11_get_xdisplay(void)
   return NULL;
 }
 
+static int x11_surface_scale(GdkSurface* surface)
+{
+  int scale = surface ? gdk_surface_get_scale_factor(surface) : 0;
+  return scale > 0 ? scale : 1;
+}
+
+static int x11_display_scale(void)
+{
+  GdkDisplay* display = gdk_display_get_default();
+  GListModel* monitors = display ? gdk_display_get_monitors(display) : NULL;
+  GdkMonitor* monitor = (monitors && g_list_model_get_n_items(monitors) > 0) ? GDK_MONITOR(g_list_model_get_item(monitors, 0)) : NULL;
+  int scale = 1;
+  if (monitor)
+  {
+    scale = gdk_monitor_get_scale_factor(monitor);
+    g_object_unref(monitor);
+  }
+  return scale > 0 ? scale : 1;
+}
+
 /* Backend detection */
 
 IUP_DRV_API int iupgtk4X11IsBackend(void)
@@ -96,6 +116,8 @@ IUP_DRV_API int iupgtk4X11MoveWindow(GdkSurface* surface, int x, int y)
 #endif
 
   xwindow = gdk_x11_surface_get_xid(surface);
+  x *= x11_surface_scale(surface);
+  y *= x11_surface_scale(surface);
 
   memset(&hints, 0, sizeof(XSizeHints));
   XGetWMNormalHints(xdisplay, xwindow, &hints, &supplied);
@@ -126,7 +148,7 @@ IUP_DRV_API int iupgtk4X11ResizeWindow(GdkSurface* surface, int width, int heigh
     return 0;
 #endif
 
-  XResizeWindow(xdisplay, gdk_x11_surface_get_xid(surface), (unsigned int)width, (unsigned int)height);
+  XResizeWindow(xdisplay, gdk_x11_surface_get_xid(surface), (unsigned int)(width * x11_surface_scale(surface)), (unsigned int)(height * x11_surface_scale(surface)));
   return 1;
 }
 
@@ -151,6 +173,8 @@ IUP_DRV_API int iupgtk4X11GetWindowPosition(GdkSurface* surface, int* x, int* y)
   xwindow = gdk_x11_surface_get_xid(surface);
   screen = XDefaultScreen(xdisplay);
   XTranslateCoordinates(xdisplay, xwindow, XRootWindow(xdisplay, screen), 0, 0, x, y, &child);
+  *x /= x11_surface_scale(surface);
+  *y /= x11_surface_scale(surface);
   return 1;
 }
 
@@ -180,10 +204,11 @@ IUP_DRV_API int iupgtk4X11GetFrameExtents(GdkSurface* surface, int* left, int* t
     if (type == XA_CARDINAL && format == 32 && nitems == 4 && data)
     {
       long* extents = (long*)data;
-      *left = (int)extents[0];
-      *top = (int)extents[2];
-      if (right) *right = (int)extents[1];
-      if (bottom) *bottom = (int)extents[3];
+      int scale = x11_surface_scale(surface);
+      *left = (int)extents[0] / scale;
+      *top = (int)extents[2] / scale;
+      if (right) *right = (int)extents[1] / scale;
+      if (bottom) *bottom = (int)extents[3] / scale;
       found = 1;
     }
     if (data)
@@ -289,6 +314,15 @@ IUP_DRV_API int iupgtk4X11SetSizeHints(GdkSurface* surface, int base_w, int base
 #endif
 
   xwindow = gdk_x11_surface_get_xid(surface);
+  {
+    int scale = x11_surface_scale(surface);
+    base_w *= scale;
+    base_h *= scale;
+    if (inc_w > 1) inc_w *= scale;
+    if (inc_h > 1) inc_h *= scale;
+    max_w *= scale;
+    max_h *= scale;
+  }
 
   memset(&hints, 0, sizeof(XSizeHints));
   XGetWMNormalHints(xdisplay, xwindow, &hints, &supplied);
@@ -337,8 +371,8 @@ IUP_DRV_API int iupgtk4X11QueryPointer(int* x, int* y)
   screen = XDefaultScreen(xdisplay);
   XQueryPointer(xdisplay, XRootWindow(xdisplay, screen), &root, &child, &root_x, &root_y, &win_x, &win_y, &mask);
 
-  *x = root_x;
-  *y = root_y;
+  *x = root_x / x11_display_scale();
+  *y = root_y / x11_display_scale();
   return 1;
 }
 
@@ -357,7 +391,7 @@ IUP_DRV_API int iupgtk4X11WarpPointer(int x, int y)
 #endif
 
   screen = XDefaultScreen(xdisplay);
-  XWarpPointer(xdisplay, None, XRootWindow(xdisplay, screen), 0, 0, 0, 0, x, y);
+  XWarpPointer(xdisplay, None, XRootWindow(xdisplay, screen), 0, 0, 0, 0, x * x11_display_scale(), y * x11_display_scale());
 
   return 1;
 }

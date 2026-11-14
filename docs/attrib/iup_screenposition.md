@@ -8,6 +8,7 @@ For the dialog, it is the position of the top-left corner of the window, **NOT t
 It is the same position used in [IupShowXY](../func/iup_showxy.md) and [IupPopup](../func/iup_popup.md).
 In GTK, if the dialog is hidden the values can be outdated.
 In Wayland, the dialog returns 0,0 and the other elements return their position relative to the top-left corner of the dialog contents, below the title bar.
+In WebAssembly, the main screen is the page.
 
 ### Value
 

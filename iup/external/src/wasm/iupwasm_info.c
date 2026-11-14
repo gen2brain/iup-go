@@ -165,12 +165,12 @@ EM_JS(int, iupwasmKeyMods, (void), {
 EM_JS(int, iupwasmCursorX, (void), {
   if (typeof window === 'undefined') return globalThis.__iupReadSync({ op: 'cursorpos' })[0];
   var m = globalThis.__iupMouse || [0, 0];
-  return Math.round(m[0] + (window.screenX || 0));
+  return Math.round(m[0]);
 })
 EM_JS(int, iupwasmCursorY, (void), {
   if (typeof window === 'undefined') return globalThis.__iupReadSync({ op: 'cursorpos' })[1];
   var m = globalThis.__iupMouse || [0, 0];
-  return Math.round(m[1] + (window.screenY || 0));
+  return Math.round(m[1]);
 })
 
 IUP_SDK_API void iupdrvGetKeyState(char* key)

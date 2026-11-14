@@ -68,6 +68,7 @@ function serve(dir) {
   const page = await browser.newPage({
     viewport: { width: 1280, height: 960 },
     colorScheme: process.env.IUP_DARK ? 'dark' : 'light',
+    deviceScaleFactor: +process.env.IUP_DPR || 1,
     hasTouch: wantTouch,
   });
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:' + port }).catch(() => {});

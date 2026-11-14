@@ -682,11 +682,28 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
   Efl_VG* shape;
   IupDrawStroke stroke;
   int r, g, b, a;
+  double fx1, fy1, fx2, fy2;
 
   if (!eflDrawClipLine(&x1, &y1, &x2, &y2))
     return;
 
   iupDrawGetStroke(dc->ih, style, &stroke);
+
+  fx1 = x1; fy1 = y1; fx2 = x2; fy2 = y2;
+  if (line_width <= 1 && x1 == x2)
+  {
+    iupDrawCheckSwapCoord(y1, y2);
+    fx1 = fx2 = x1 + 0.5;
+    fy1 = y1;
+    fy2 = y2 + 1;
+  }
+  else if (line_width <= 1 && y1 == y2)
+  {
+    iupDrawCheckSwapCoord(x1, x2);
+    fx1 = x1;
+    fx2 = x2 + 1;
+    fy1 = fy2 = y1 + 0.5;
+  }
 
   if (!stroke.dash_count && iupDrawAlpha(color) == 255 && dc->batch_shape && iDrawIsIdentity(dc) &&
       dc->batch_root == dc->root && dc->batch_color == color && dc->batch_width == line_width &&
@@ -694,16 +711,16 @@ IUP_SDK_API void iupdrvDrawLine(IdrawCanvas* dc, int x1, int y1, int x2, int y2,
       efl_gfx_shape_stroke_cap_get(dc->batch_shape) == iDrawStrokeCap(stroke.cap) &&
       efl_gfx_shape_stroke_join_get(dc->batch_shape) == iDrawStrokeJoin(stroke.join))
   {
-    efl_gfx_path_append_move_to(dc->batch_shape, x1, y1);
-    efl_gfx_path_append_line_to(dc->batch_shape, x2, y2);
+    efl_gfx_path_append_move_to(dc->batch_shape, fx1, fy1);
+    efl_gfx_path_append_line_to(dc->batch_shape, fx2, fy2);
     return;
   }
 
   iDrawGetColor(color, &r, &g, &b, &a);
 
   shape = efl_add(EFL_CANVAS_VG_SHAPE_CLASS, dc->root,
-    efl_gfx_path_append_move_to(efl_added, x1, y1),
-    efl_gfx_path_append_line_to(efl_added, x2, y2),
+    efl_gfx_path_append_move_to(efl_added, fx1, fy1),
+    efl_gfx_path_append_line_to(efl_added, fx2, fy2),
     efl_gfx_shape_stroke_color_set(efl_added, r, g, b, a),
     efl_gfx_shape_stroke_width_set(efl_added, line_width > 0 ? line_width : 1));
   iDrawSetStroke(dc, shape, style);
