@@ -204,8 +204,7 @@ Also provides information on the changed item:
 **state**: Equal to 1 if the option was selected or to 0 if the option was deselected.
 
 The state=0 is simulated internally by IUP in all systems.
-In single selection, a user change calls it with state=0 for the previous item, then with state=1 for the new one, then calls VALUECHANGED_CB.
-Setting VALUE or VALUESTRING does not generate it.
+Setting VALUE does not generate it.
 
 [BUTTON_CB](../call/iup_button_cb.md): Action generated when any mouse button is pressed or released inside the list.
 Called only when DROPDOWN=NO. If the list has an editbox, the message is called when cursor is at the listbox only (ignored at the editbox).
@@ -221,8 +220,7 @@ Use [IupConvertXYToPos](../func/iup_convertxytopos.md) to convert (x,y) coordina
 
 For lists **lin** is always 1, and **pos** is always "**col**-1".
 
-Called only when the user moves the caret; setting CARET, CARETPOS, SELECTION, VALUE or any other attribute does not generate it.
-When an edit moves the caret, it is called after VALUECHANGED_CB.
+Setting an attribute does not generate it.
 
 This is the same CARET_CB callback definition as for the [IupText](iup_text.md).
 

@@ -269,7 +269,7 @@ The menu is destroyed when the control is unmapped or destroyed, so a menu canno
 
 [ACTION](../call/iup_action.md): Action generated when the text is edited, but before its value is actually changed.
 Can be generated when using the keyboard, undo system or from the clipboard.
-Setting VALUE, INSERT, APPEND, SELECTEDTEXT or CLIPBOARD does not generate it.
+Setting an attribute does not generate it.
 
     int function(Ihandle *ih, int c, char *new_value);
 
@@ -295,8 +295,7 @@ Use [IupConvertXYToPos](../func/iup_convertxytopos.md) to convert (x,y) coordina
 
 For single line controls, **lin** is always 1, and **pos** is always "**col**-1".
 
-Called only when the user moves the caret; setting CARET, CARETPOS, SELECTION, VALUE or any other attribute does not generate it.
-When an edit moves the caret, it is called after VALUECHANGED_CB.
+Setting an attribute does not generate it.
 
 [DROPFILES_CB](../call/iup_dropfiles_cb.md): Action generated when one or more files are dropped in the element.
 
@@ -359,8 +358,7 @@ So the "DEFAULTENTER" button will not be processed when the element has the keyb
 
 In Windows, a Ctrl+key combination not supported by the control sounds a beep.
 
-All positions (CARET, CARETPOS, SELECTION, SELECTIONPOS, COUNT, SCROLLTO, SCROLLTOPOS, the format tag SELECTION and SELECTIONPOS, the CARET_CB parameters and [IupConvertXYToPos](../func/iup_convertxytopos.md)) count characters, not bytes, on every driver.
-A character outside the Basic Multilingual Plane, such as an emoji, counts as one character, and a line break counts as one character.
+All positions count characters, not bytes. A line break is one character.
 
 Internal Drag&Drop support is enabled by default.
 But in Windows, the internal Drag&Drop is enabled only if FORMATTING=YES.

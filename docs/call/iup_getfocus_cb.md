@@ -2,7 +2,7 @@
 
 Action generated when an element is given keyboard focus.
 This callback is called after the KILLFOCUS_CB of the element that lost the focus.
-IupGetFocus returns the element only after the callback; during it IupGetFocus returns NULL.
+During the callback IupGetFocus returns NULL.
 
 ### Callback
 
