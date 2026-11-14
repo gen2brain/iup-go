@@ -184,6 +184,9 @@ IUP_DRV_API void iupqtAddToParent(Ihandle* ih)
   if (!widget)
     widget = reinterpret_cast<QWidget*>(ih->handle);
 
+  if (ih->handle)
+    reinterpret_cast<QWidget*>(ih->handle)->setProperty("_iup_ih", QVariant::fromValue(reinterpret_cast<quintptr>(ih)));
+
   if (parent && widget)
   {
     /* a QMenuBar goes on the QMainWindow via setMenuBar(); the parent here may be its central widget */

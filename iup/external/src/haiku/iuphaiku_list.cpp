@@ -301,7 +301,7 @@ public:
       int code = iuphaikuKeyDecode(static_cast<int>(static_cast<unsigned char>(bytes[0])), static_cast<int>(raw_char), static_cast<int>(raw_key), static_cast<unsigned>(mods));
       if (code)
       {
-        int r = (mods & B_COMMAND_KEY) ? IUP_DEFAULT : iupKeyCallKeyCb(fIhandle, code);
+        int r = ((mods & B_COMMAND_KEY) || iuphaikuKeyMarked(Window() ? Window()->CurrentMessage() : nullptr)) ? IUP_DEFAULT : iupKeyCallKeyCb(fIhandle, code);
         if (r == IUP_CLOSE) { IupExitLoop(); return; }
         if (r == IUP_IGNORE) return;
       }

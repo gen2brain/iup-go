@@ -18,6 +18,8 @@ The value returned by **IupGetFocus** will be updated only after the main loop r
 When **IupGetFocus** is called right after **IupSetFocus**, the return value will be different.
 Calling **IupFlush** between the two functions obtains the same value in both calls.
 
+In iOS, only text inputs, edit box lists and canvases can have the keyboard focus; other controls report CANFOCUS=NO after they are mapped.
+
 ### See Also
 
 [IupGetFocus](iup_getfocus.md).

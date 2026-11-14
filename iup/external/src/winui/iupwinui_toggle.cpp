@@ -240,13 +240,19 @@ static void winuiToggleSetImageContent(Ihandle* ih, const char* name, int make_i
   winuiToggleSetImageTextContent(ih, tb, image, iupAttribGet(ih, "TITLE"));
 }
 
-static IInspectable winuiToggleMakeContent(Ihandle* ih, const char* value)
+static IInspectable winuiToggleMakeContent(Ihandle* ih, const char* value, UIElement const& owner)
 {
   TextBlock tb;
+  char c = 0;
   if (iupAttribGetBoolean(ih, "MARKUP"))
     iupwinuiApplyMarkupToTextBlock(tb, value);
   else
-    iupwinuiSetMnemonicText(tb, value, nullptr);
+    iupwinuiSetMnemonicText(tb, value, &c);
+  if (owner)
+  {
+    auto wc = static_cast<wchar_t>(c);
+    owner.AccessKey(c ? hstring(&wc, 1) : hstring());
+  }
   return tb;
 }
 
@@ -262,7 +268,7 @@ static int winuiToggleSetTitleAttrib(Ihandle* ih, const char* value)
     return 1;
   }
 
-  IInspectable content = winuiToggleMakeContent(ih, value);
+  IInspectable content = winuiToggleMakeContent(ih, value, winuiGetHandle<UIElement>(ih));
 
   switch (aux->controlType)
   {
@@ -665,7 +671,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
     rb.GroupName(iupwinuiStringToHString(groupName));
 
     if (title)
-      rb.Content(winuiToggleMakeContent(ih, title));
+      rb.Content(winuiToggleMakeContent(ih, title, rb));
 
     aux->checkedToken = rb.Checked([ih, radio](IInspectable const&, RoutedEventArgs const&) {
       if (radio)
@@ -718,7 +724,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
     cb.MinHeight(0);
 
     if (title)
-      cb.Content(winuiToggleMakeContent(ih, title));
+      cb.Content(winuiToggleMakeContent(ih, title, cb));
 
     aux->checkedToken = cb.Checked([ih](IInspectable const&, RoutedEventArgs const&) {
       winuiToggleCallAction(ih, 1);

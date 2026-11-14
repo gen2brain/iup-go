@@ -703,6 +703,8 @@ static int eflCanvasMapMethod(Ihandle* ih)
   iupeflKeySetTarget(vg, ih);
   efl_event_callback_add(vg, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
   efl_event_callback_add(vg, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
+  efl_event_callback_add(vg, EFL_EVENT_FOCUS_IN, iupeflFocusInEvent, ih);
+  efl_event_callback_add(vg, EFL_EVENT_FOCUS_OUT, iupeflFocusOutEvent, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
   efl_event_callback_add(vg, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
 
@@ -792,6 +794,8 @@ static void eflCanvasUnMapMethod(Ihandle* ih)
     efl_event_callback_del(vg, EFL_EVENT_POINTER_WHEEL, eflCanvasWheelCallback, ih);
     efl_event_callback_del(vg, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
     efl_event_callback_del(vg, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
+    efl_event_callback_del(vg, EFL_EVENT_FOCUS_IN, iupeflFocusInEvent, ih);
+    efl_event_callback_del(vg, EFL_EVENT_FOCUS_OUT, iupeflFocusOutEvent, ih);
 
     efl_del(vg);
   }

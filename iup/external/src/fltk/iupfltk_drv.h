@@ -104,6 +104,8 @@ IUP_DRV_API void iupfltkTipsRemove(Ihandle* ih);
 IUP_DRV_API void iupfltkTipsEvent(int event);
 IUP_DRV_API void iupfltkEventDispatchInstall(void);
 IUP_DRV_API void iupfltkSetReleaseTarget(Fl_Widget* widget, Ihandle* ih);
+IUP_DRV_API int iupfltkListInputKey(Fl_Input* input);
+IUP_DRV_API int iupfltkTextSpinInputKey(Fl_Input* input);
 IUP_DRV_API void iupfltkListInputCaret(Fl_Input* input, int caret_before);
 
 /****************************************************************************

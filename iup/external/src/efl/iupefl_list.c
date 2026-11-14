@@ -1876,7 +1876,7 @@ static int eflListMapMethod(Ihandle* ih)
     efl_event_callback_add(list, EFL_EVENT_POINTER_MOVE, iupeflPointerMoveEvent, ih);
     efl_event_callback_add(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
     iupeflKeySetTarget(list, ih);
-    efl_event_callback_add(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
+    efl_event_callback_priority_add(list, EFL_EVENT_KEY_DOWN, EFL_CALLBACK_PRIORITY_BEFORE, iupeflKeyDownEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_DOWN, eflListNavKeyDownCallback, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
 
@@ -1965,6 +1965,10 @@ static int eflListMapMethod(Ihandle* ih)
     efl_gfx_entity_visible_set(dropdown_list, EINA_FALSE);
 
     efl_event_callback_add(button, EFL_INPUT_EVENT_CLICKED, eflDropdownButtonClickedCallback, ih);
+    iupeflKeySetTarget(button, ih);
+    efl_event_callback_add(button, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
+    efl_event_callback_add(button, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
+    efl_event_callback_add(button, EFL_UI_FOCUS_OBJECT_EVENT_FOCUS_CHANGED, iupeflFocusChangedEvent, ih);
     efl_event_callback_add(dropdown_list, EFL_UI_SELECTABLE_EVENT_SELECTION_CHANGED, eflDropdownListSelectionChangedCallback, ih);
     efl_event_callback_add(win, EFL_EVENT_POINTER_DOWN, eflDropdownWindowPointerDownCallback, ih);
 
@@ -2027,7 +2031,7 @@ static int eflListMapMethod(Ihandle* ih)
     efl_event_callback_add(list, EFL_EVENT_POINTER_MOVE, iupeflPointerMoveEvent, ih);
     efl_event_callback_add(list, EFL_UI_FOCUS_MANAGER_EVENT_MANAGER_FOCUS_CHANGED, iupeflManagerFocusChangedEvent, ih);
     iupeflKeySetTarget(list, ih);
-    efl_event_callback_add(list, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
+    efl_event_callback_priority_add(list, EFL_EVENT_KEY_DOWN, EFL_CALLBACK_PRIORITY_BEFORE, iupeflKeyDownEvent, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_DOWN, eflListNavKeyDownCallback, ih);
     efl_event_callback_add(list, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
 
@@ -2174,6 +2178,9 @@ static void eflListUnMapMethod(Ihandle* ih)
       if (button)
       {
         efl_event_callback_del(button, EFL_INPUT_EVENT_CLICKED, eflDropdownButtonClickedCallback, ih);
+        efl_event_callback_del(button, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
+        efl_event_callback_del(button, EFL_EVENT_KEY_UP, iupeflKeyUpEvent, ih);
+        efl_event_callback_del(button, EFL_UI_FOCUS_OBJECT_EVENT_FOCUS_CHANGED, iupeflFocusChangedEvent, ih);
         efl_del(button);
       }
     }
@@ -2314,6 +2321,8 @@ IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
     {
       eflListApplyItemSpacing(ih, item);
       efl_event_callback_priority_add(item, EFL_INPUT_EVENT_UNPRESSED, EFL_CALLBACK_PRIORITY_AFTER, eflListItemUnpressedCallback, NULL);
+      iupeflKeySetTarget(item, ih);
+      efl_event_callback_priority_add(item, EFL_EVENT_KEY_DOWN, EFL_CALLBACK_PRIORITY_BEFORE, iupeflKeyDownEvent, ih);
     }
     if (iupAttribGetBoolean(ih, "SORT"))
       eflListPackAt(list, item, eflListSortPos(list, value));
@@ -2346,6 +2355,8 @@ IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
     {
       eflListApplyItemSpacing(ih, item);
       efl_event_callback_priority_add(item, EFL_INPUT_EVENT_UNPRESSED, EFL_CALLBACK_PRIORITY_AFTER, eflListItemUnpressedCallback, NULL);
+      iupeflKeySetTarget(item, ih);
+      efl_event_callback_priority_add(item, EFL_EVENT_KEY_DOWN, EFL_CALLBACK_PRIORITY_BEFORE, iupeflKeyDownEvent, ih);
     }
 
     if (iupAttribGetBoolean(ih, "SORT"))

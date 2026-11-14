@@ -248,7 +248,53 @@ static BOOL cocoaDialogIsMaximized(NSWindow* the_window)
           fabs(window_frame.size.height - visible_frame.size.height) < 2.0);
 }
 
+static Ihandle* cocoaDialogFocusedIhandle(NSWindow* window)
+{
+  id first_responder = [window firstResponder];
+
+  if ([first_responder isKindOfClass:[NSTextView class]] && [(NSTextView*)first_responder isFieldEditor])
+  {
+    id editor_delegate = [(NSTextView*)first_responder delegate];
+    if ([editor_delegate isKindOfClass:[NSCell class]])
+      editor_delegate = [(NSCell*)editor_delegate controlView];
+    if (editor_delegate)
+      first_responder = editor_delegate;
+  }
+
+  for (NSView* view = [first_responder isKindOfClass:[NSView class]] ? (NSView*)first_responder : nil; view; view = [view superview])
+  {
+    Ihandle* view_ih = (Ihandle*)objc_getAssociatedObject(view, IHANDLE_ASSOCIATED_OBJ_KEY);
+    if (iupObjectCheck(view_ih))
+      return view_ih;
+  }
+  return NULL;
+}
+
 @implementation IupCocoaWindow
+
+- (void)selectKeyViewFollowingView:(NSView*)view
+{
+  if (!iupcocoaKeyEventConsumed([NSApp currentEvent]))
+    [super selectKeyViewFollowingView:view];
+}
+
+- (void)selectKeyViewPrecedingView:(NSView*)view
+{
+  if (!iupcocoaKeyEventConsumed([NSApp currentEvent]))
+    [super selectKeyViewPrecedingView:view];
+}
+
+- (void)selectNextKeyView:(id)sender
+{
+  if (!iupcocoaKeyEventConsumed([NSApp currentEvent]))
+    [super selectNextKeyView:sender];
+}
+
+- (void)selectPreviousKeyView:(id)sender
+{
+  if (!iupcocoaKeyEventConsumed([NSApp currentEvent]))
+    [super selectPreviousKeyView:sender];
+}
 
 - (BOOL)performKeyEquivalent:(NSEvent*)event
 {
@@ -257,13 +303,7 @@ static BOOL cocoaDialogIsMaximized(NSWindow* the_window)
     Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
     if (iupObjectCheck(ih))
     {
-      NSResponder* first_responder = [self firstResponder];
-      Ihandle* focused_ih = nil;
-
-      if (first_responder && [first_responder isKindOfClass:[NSView class]])
-      {
-        focused_ih = (Ihandle*)objc_getAssociatedObject(first_responder, IHANDLE_ASSOCIATED_OBJ_KEY);
-      }
+      Ihandle* focused_ih = cocoaDialogFocusedIhandle(self);
 
       if (!iupObjectCheck(focused_ih))
       {
@@ -314,6 +354,9 @@ static BOOL cocoaDialogIsMaximized(NSWindow* the_window)
   if (ih)
   {
     int mac_key_code = [event keyCode];
+    Ihandle* focused_ih = cocoaDialogFocusedIhandle(self);
+    if (focused_ih)
+      ih = focused_ih;
     BOOL handled = iupcocoaKeyEvent(ih, event, mac_key_code, true);
     if (!handled)
     {

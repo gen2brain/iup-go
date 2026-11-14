@@ -79,6 +79,8 @@ IUP_DRV_API int iupeflIsX11(void);
  ****************************************************************************/
 
 IUP_DRV_API void iupeflFocusChangedEvent(void* data, const Efl_Event* ev);
+IUP_DRV_API void iupeflFocusInEvent(void* data, const Efl_Event* ev);
+IUP_DRV_API void iupeflFocusOutEvent(void* data, const Efl_Event* ev);
 IUP_DRV_API void iupeflKeyDownEvent(void* data, const Efl_Event* ev);
 IUP_DRV_API void iupeflKeyUpEvent(void* data, const Efl_Event* ev);
 IUP_DRV_API void iupeflKeyImfDestroy(Ihandle* ih);

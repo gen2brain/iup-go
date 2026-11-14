@@ -104,6 +104,8 @@ public:
       }
       case FL_KEYBOARD:
       {
+        if (iupfltkKeyPressEvent(this, iup_handle))
+          return 1;
         int key = Fl::event_key();
         if (key == ' ' || key == FL_Enter || key == FL_KP_Enter)
         {
@@ -156,6 +158,10 @@ public:
       case FL_ENTER:
       case FL_LEAVE:
         iupfltkEnterLeaveEvent(this, iup_handle, event);
+        break;
+      case FL_KEYBOARD:
+        if (iupfltkKeyPressEvent(this, iup_handle))
+          return 1;
         break;
     }
     return Fl_Check_Button::handle(event);
@@ -223,6 +229,10 @@ public:
         redraw();
         break;
       }
+      case FL_KEYBOARD:
+        if (iupfltkKeyPressEvent(this, iup_handle))
+          return 1;
+        break;
     }
     return Fl_Button::handle(event);
   }

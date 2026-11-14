@@ -232,7 +232,7 @@ bool iuphaikuCanvasOnKeyDown(Ihandle* ih, BView* view, const char* bytes, int nu
   if (code == 0) return false;
 
   int ret_press = iupKeyCallKeyPressCb(ih, code, 1);
-  int ret_any   = iupKeyCallKeyCb(ih, code);
+  int ret_any   = iuphaikuKeyMarked(msg) ? IUP_DEFAULT : iupKeyCallKeyCb(ih, code);
   if (ret_press == IUP_CLOSE || ret_any == IUP_CLOSE)
     IupExitLoop();
   return true;

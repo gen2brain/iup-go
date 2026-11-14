@@ -63,19 +63,18 @@ IUP_DRV_API int iupfltkFocusInOutEvent(Fl_Widget* widget, Ihandle* ih, int event
     if (dialog && ih != dialog)
       iupAttribSet(dialog, "_IUPFLTK_LASTFOCUS", reinterpret_cast<char*>(ih));
 
+    Ihandle* old_focus = IupGetFocus();
+    if (old_focus && old_focus != ih && iupObjectCheck(old_focus))
+    {
+      iupCallKillFocusCb(old_focus);
+      if (!iupObjectCheck(ih))
+        return 1;
+    }
+
     iupCallGetFocusCb(ih);
   }
   else if (event == FL_UNFOCUS)
-  {
-    if (ih == IupGetFocus())
-      iupCallKillFocusCb(ih);
-    else
-    {
-      /* FLTK sends the new widget's FL_FOCUS before this FL_UNFOCUS, so the core guard drops KILLFOCUS_CB; fire it directly. */
-      Icallback cb = IupGetCallback(ih, "KILLFOCUS_CB");
-      if (cb) cb(ih);
-    }
-  }
+    iupCallKillFocusCb(ih);
 
   return 0;
 }

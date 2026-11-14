@@ -727,6 +727,16 @@ public:
   }
 };
 
+IUP_DRV_API int iupfltkTextSpinInputKey(Fl_Input* input)
+{
+  auto* spinner = dynamic_cast<IupFltkSpinner*>(input->parent());
+  if (!spinner || !iupObjectCheck(spinner->iup_handle))
+    return 0;
+  Ihandle* ih = spinner->iup_handle;
+  int ret = iupfltkKeyPressEvent(input, ih);
+  return iupObjectCheck(ih) ? ret : 1;
+}
+
 static void fltkSpinCallback(Fl_Widget* w, void* data)
 {
   auto* ih = static_cast<Ihandle*>(data);
@@ -1903,6 +1913,7 @@ static int fltkTextMapMethod(Ihandle* ih)
   {
     auto* spinner = new IupFltkSpinner(0, 0, 10, 10, ih);
     ih->handle = reinterpret_cast<InativeHandle*>(spinner);
+    iupfltkEventDispatchInstall();
 
     spinner->minimum(iupAttribGetInt(ih, "SPINMIN"));
     spinner->maximum(iupAttribGetInt(ih, "SPINMAX"));

@@ -50,6 +50,7 @@ IUP_SDK_API void iupAndroidUpdateGlobalColors(void);
 
 IUP_SDK_API int iupandroidKeyDecode(int keycode, int meta_state);
 void iupandroidFocusInOutEvent(Ihandle* ih, int focus_in);
+int iupandroidKeyToIup(int keyCode);
 
 void iupTableCallMultiSelectionCb(Ihandle* ih);
 

@@ -127,6 +127,40 @@ private:
 };
 
 
+static bool haikuDialogKeyDown(Ihandle* dialog, BMessage* msg)
+{
+  int32 mods = 0, raw_char = 0, raw_key = 0;
+  const char* bytes = nullptr;
+  if (msg->FindString("bytes", &bytes) != B_OK || !bytes)
+    return false;
+  msg->FindInt32("modifiers", &mods);
+  if (mods & B_COMMAND_KEY)
+    return false;
+  msg->FindInt32("raw_char", &raw_char);
+  msg->FindInt32("key", &raw_key);
+
+  int code = iuphaikuKeyDecode(static_cast<unsigned char>(bytes[0]), static_cast<int>(raw_char), static_cast<int>(raw_key), static_cast<unsigned>(mods));
+  if (!code)
+    return false;
+
+  Ihandle* ih = IupGetFocus();
+  if (!iupObjectCheck(ih) || IupGetDialog(ih) != dialog)
+    ih = dialog;
+
+  if (!iuphaikuKeyMarked(msg))
+  {
+    int ret = iupKeyCallKeyCb(ih, code);
+    iuphaikuKeyMark(msg);
+    if (ret == IUP_CLOSE) { IupExitLoop(); return true; }
+    if (ret == IUP_IGNORE) return true;
+    if (!iupObjectCheck(ih)) return true;
+  }
+
+  if ((mods & B_CONTROL_KEY) && iup_XkeyBase(code) == K_TAB)
+    code = iup_XkeyCtrl(K_TAB);
+  return iupKeyProcessNavigation(ih, code, (mods & B_SHIFT_KEY) ? 1 : 0) != 0;
+}
+
 class IupHaikuCommandKeyFilter : public BMessageFilter
 {
 public:
@@ -390,9 +424,15 @@ public:
         if (raw >= 'A' && raw <= 'Z' && iupKeyProcessMnemonic(fIhandle, raw))
           return;
       }
+      if (haikuDialogKeyDown(fIhandle, msg))
+      {
+        CheckFocus();
+        return;
+      }
     }
 
     BWindow::DispatchMessage(msg, target);
+    CheckFocus();
   }
 
   void FrameMoved(BPoint where) override
@@ -450,6 +490,20 @@ public:
   void ClearFullScreen() { fIsFullScreen = false; }
 
 private:
+  void CheckFocus()
+  {
+    if (!iupObjectCheck(fIhandle))
+      return;
+    BView* focus = CurrentFocus();
+    if (focus == fLastFocusView)
+      return;
+    fLastFocusView = focus;
+    Ihandle* focus_ih = iuphaikuViewIhandle(focus);
+    if (focus_ih && IupGetDialog(focus_ih) == fIhandle)
+      iuphaikuFocusInOutEvent(focus_ih, 1);
+  }
+
+  BView* fLastFocusView = nullptr;
   Ihandle* fIhandle;
   BView* fRootView;
   window_look fSavedLook;

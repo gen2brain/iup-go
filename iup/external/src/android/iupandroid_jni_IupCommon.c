@@ -77,6 +77,29 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_dispatchFocus(JN
   iupandroidFocusInOutEvent(ih, has_focus ? 1 : 0);
 }
 
+JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupCommon_dispatchKeyDown(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint key_code, jint meta_state)
+{
+  Ihandle* ih = (Ihandle*)(intptr_t)ihandle_ptr;
+  int code, ret;
+  (void)jni_env; (void)cls;
+
+  if (!ih || !iupObjectCheck(ih))
+    return JNI_FALSE;
+
+  code = iupandroidKeyToIup((int)key_code);
+  if (!code)
+    return JNI_FALSE;
+  if (meta_state & 0x0001) code = iup_XkeyShift(code);
+  if (meta_state & 0x1000) code = iup_XkeyCtrl(code);
+  if (meta_state & 0x0002) code = iup_XkeyAlt(code);
+
+  ret = iupKeyCallKeyCb(ih, code);
+  if (ret == IUP_CLOSE) { IupExitLoop(); return JNI_TRUE; }
+  if (ret == IUP_IGNORE || !iupObjectCheck(ih)) return JNI_TRUE;
+
+  return iupKeyProcessNavigation(ih, code, (meta_state & 0x0001) ? 1 : 0) ? JNI_TRUE : JNI_FALSE;
+}
+
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCommon_RetainIhandle(JNIEnv* jni_env, jclass cls, jobject the_widget, jlong ihandle_ptr)
 {
   (void)cls;

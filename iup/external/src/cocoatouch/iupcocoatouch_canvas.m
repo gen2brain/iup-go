@@ -461,7 +461,7 @@ static void cocoaTouchFireGesture(Ihandle* ih, int gesture, int state, int x, in
 	BOOL ok = [super becomeFirstResponder];
 	if (ok && _ihandle)
 	{
-		iupCallGetFocusCb(_ihandle);
+		iupCocoaTouchFocusIn(_ihandle);
 		IFni cb = (IFni)IupGetCallback(_ihandle, "FOCUS_CB");
 		if (cb && cb(_ihandle, 1) == IUP_CLOSE)
 		{

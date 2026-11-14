@@ -113,6 +113,8 @@ static int fltkEventDispatch(int event, Fl_Window* window)
 
   Fl_Input* input = event == FL_KEYBOARD ? dynamic_cast<Fl_Input*>(Fl::focus()) : nullptr;
   int caret_before = input ? input->insert_position() : 0;
+  if (input && (iupfltkListInputKey(input) || iupfltkTextSpinInputKey(input)))
+    return 1;
 
   int ret = Fl::handle_(event, window);
   iupfltkTipsEvent(event);

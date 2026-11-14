@@ -54,6 +54,8 @@ EM_JS(void, iupwasmJsDestroy, (int id), { globalThis.__iupApply({ op: 'destroy',
 
 EM_JS(void, iupwasmJsAddToBody, (int id), { globalThis.__iupApply({ op: 'addbody', id: id }); })
 
+EM_JS(void, iupwasmJsSetCanFocus, (int id, int can), { globalThis.__iupApply({ op: 'canfocus', id: id, can: can }); })
+
 EM_JS(void, iupwasmJsAddChild, (int parent, int child), {
   globalThis.__iupApply({ op: 'addchild', pid: parent, id: child });
 })
@@ -391,6 +393,9 @@ EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKey(int id, int code)
   if (iupStrEqual(IupGetClassName(ih), "table") && iupwasmTableKeyNav(ih, code))
     return 1;
 
+  if (iupKeyProcessNavigation(ih, code, 0))
+    return 1;
+
   if (code == K_CR || code == K_ESC)
   {
     Ihandle* dlg = IupGetDialog(ih);
@@ -537,6 +542,8 @@ void iupwasmAddToParent(Ihandle* ih)
   int cid = iupwasmIdOf(ih);
   if (pid > 0 && cid)
     iupwasmJsAddChild(pid, cid);
+  if (cid && ih->iclass->is_interactive && !iupAttribGetBoolean(ih, "CANFOCUS"))
+    iupwasmJsSetCanFocus(cid, 0);
 }
 
 static void iupwasmMenuItemToggle(Ihandle* ih)

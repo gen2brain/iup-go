@@ -50,13 +50,35 @@ static void eflFocusReport(Ihandle* ih, int focused)
 
   if (focused)
   {
+    Ihandle* old_focus;
+
     if (!iupdrvIsActive(ih))
       return;
+
+    old_focus = IupGetFocus();
+    if (old_focus && old_focus != ih && iupObjectCheck(old_focus))
+    {
+      iupCallKillFocusCb(old_focus);
+      if (!iupObjectCheck(ih))
+        return;
+    }
 
     iupCallGetFocusCb(ih);
   }
   else
     iupCallKillFocusCb(ih);
+}
+
+IUP_DRV_API void iupeflFocusInEvent(void* data, const Efl_Event* ev)
+{
+  (void)ev;
+  eflFocusReport((Ihandle*)data, 1);
+}
+
+IUP_DRV_API void iupeflFocusOutEvent(void* data, const Efl_Event* ev)
+{
+  (void)ev;
+  eflFocusReport((Ihandle*)data, 0);
 }
 
 IUP_DRV_API void iupeflFocusChangedEvent(void* data, const Efl_Event* ev)

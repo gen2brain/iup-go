@@ -37,6 +37,18 @@ static UIView* cocoaTouchFocusViewFromHandle(Ihandle* ih)
 	return nil;
 }
 
+IUP_DRV_API void iupCocoaTouchFocusIn(Ihandle* ih)
+{
+	Ihandle* old_focus = IupGetFocus();
+	if (old_focus && old_focus != ih && iupObjectCheck(old_focus))
+	{
+		iupCallKillFocusCb(old_focus);
+		if (!iupObjectCheck(ih))
+			return;
+	}
+	iupCallGetFocusCb(ih);
+}
+
 static Ihandle* cocoaTouchFocusFirstFocusable(Ihandle* ih)
 {
 	if (!ih) return NULL;
@@ -81,7 +93,7 @@ static void cocoaTouchSetFocus(Ihandle* ih)
 	}
 
 	if ([view becomeFirstResponder])
-		iupCallGetFocusCb(ih);
+		iupCocoaTouchFocusIn(ih);
 }
 
 IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)

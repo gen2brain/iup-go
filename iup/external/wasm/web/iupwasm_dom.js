@@ -1864,6 +1864,16 @@
       case 'textsetvalue': {
         if (el) el.value = c.value;
       } break;
+      case 'canfocus': {
+        if (el) {
+          var cf = [el].concat(Array.prototype.slice.call(el.querySelectorAll('input,select,textarea,button,[tabindex]')));
+          for (var cfi = 0; cfi < cf.length; cfi++) {
+            var cn = cf[cfi];
+            if (c.can) { if (cn.__iupTabSaved !== undefined) { cn.tabIndex = cn.__iupTabSaved; delete cn.__iupTabSaved; } }
+            else { if (cn.__iupTabSaved === undefined) cn.__iupTabSaved = cn.tabIndex; cn.tabIndex = -1; }
+          }
+        }
+      } break;
       case 'texteditdone': {
         if (el && el.__iupVal) el = el.__iupVal;
         if (el && el.__iupRender && c.fix && el.__iupFmtUndo) {
@@ -4147,6 +4157,12 @@ globalThis.__iupMediaPick = function (kind, index) {
         }
         // the driver moves the tree focus itself, the div must not also scroll
         if (ae && (ae.__iupTreeFocus !== undefined || ae.__iupCellNav) && NAVK[k]) e.preventDefault();
+        if (k === 'Tab' && !e.altKey && !e.metaKey) {
+          var tabVetoed = e.defaultPrevented;
+          e.preventDefault();
+          if (!tabVetoed && !e.ctrlKey && !e.shiftKey && ae && (ae.tagName === 'TEXTAREA' || ae.__iupRender))
+            document.execCommand('insertText', false, '\t');
+        }
         if (k === 'F1') { e.preventDefault(); D('iupwasmDispatchHelp', id); }
       });
       document.addEventListener('focusin', function (e) { var id = iupId(e.target); if (id) D('iupwasmDispatchFocus', id, 1); });

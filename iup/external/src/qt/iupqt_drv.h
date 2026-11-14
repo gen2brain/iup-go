@@ -110,6 +110,7 @@ IUP_DRV_API void iupqtDialogSetFocus(Ihandle* ih);
  ****************************************************************************/
 
 IUP_DRV_API int iupqtKeyPressEvent(QWidget* widget, QKeyEvent* evt, Ihandle* ih);
+IUP_DRV_API bool iupqtKeyRouteTab(QObject* receiver, QKeyEvent* evt);
 IUP_DRV_API int iupqtKeyReleaseEvent(QWidget* widget, QKeyEvent* evt, Ihandle* ih);
 
 #ifdef __cplusplus

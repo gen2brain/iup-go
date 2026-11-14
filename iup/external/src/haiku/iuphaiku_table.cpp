@@ -284,7 +284,7 @@ protected:
     int code = iuphaikuKeyDecode(static_cast<int>(static_cast<unsigned char>(bytes[0])), static_cast<int>(raw_char), static_cast<int>(raw_key), static_cast<unsigned>(mods));
     if (code)
     {
-      int ret = (mods & B_COMMAND_KEY) ? IUP_DEFAULT : iupKeyCallKeyCb(fIhandle, code);
+      int ret = ((mods & B_COMMAND_KEY) || iuphaikuKeyMarked(msg)) ? IUP_DEFAULT : iupKeyCallKeyCb(fIhandle, code);
       if (ret == IUP_CLOSE) IupExitLoop();
       if (ret == IUP_IGNORE) return;
     }

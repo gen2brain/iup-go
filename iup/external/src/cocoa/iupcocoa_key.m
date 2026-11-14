@@ -352,7 +352,47 @@ static bool cocoaKeyIsMenuAccel(Ihandle* ih, int code)
   return false;
 }
 
+static bool cocoaKeyDownProcess(Ihandle* ih, NSEvent* ns_event, int mac_key_code);
+
+static NSTimeInterval consumed_timestamp = -1;
+static int consumed_key_code = -1;
+static NSTimeInterval seen_timestamp = -1;
+static int seen_key_code = -1;
+static bool seen_result = false;
+static bool key_cb_called = false;
+
+IUP_DRV_API bool iupcocoaKeyEventConsumed(NSEvent* ns_event)
+{
+  return ns_event && [ns_event type] == NSEventTypeKeyDown &&
+         [ns_event timestamp] == consumed_timestamp && [ns_event keyCode] == consumed_key_code;
+}
+
 bool iupCocoaKeyDownEvent(Ihandle* ih, NSEvent* ns_event, int mac_key_code)
+{
+  bool result;
+
+  if ([ns_event timestamp] == consumed_timestamp && mac_key_code == consumed_key_code)
+    return true;
+  if ([ns_event timestamp] == seen_timestamp && mac_key_code == seen_key_code)
+    return seen_result;
+
+  key_cb_called = false;
+  result = cocoaKeyDownProcess(ih, ns_event, mac_key_code);
+  if (key_cb_called)
+  {
+    seen_timestamp = [ns_event timestamp];
+    seen_key_code = mac_key_code;
+    seen_result = result;
+  }
+  if (!result)
+    return false;
+
+  consumed_timestamp = [ns_event timestamp];
+  consumed_key_code = mac_key_code;
+  return true;
+}
+
+static bool cocoaKeyDownProcess(Ihandle* ih, NSEvent* ns_event, int mac_key_code)
 {
   int result;
   int iup_key_code;
@@ -396,6 +436,7 @@ bool iupCocoaKeyDownEvent(Ihandle* ih, NSEvent* ns_event, int mac_key_code)
   }
 
   result = iupKeyCallKeyCb(ih, iup_key_code);
+  key_cb_called = true;
   if (result == IUP_CLOSE)
   {
     IupExitLoop();

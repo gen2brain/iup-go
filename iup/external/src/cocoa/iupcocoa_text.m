@@ -724,10 +724,33 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
   }
 }
 
+static BOOL cocoaTextTabCommand(Ihandle* ih, SEL command)
+{
+  NSEvent* current_event;
+
+  if (!iupObjectCheck(ih) ||
+      (command != @selector(insertTab:) && command != @selector(insertBacktab:) && command != @selector(insertTabIgnoringFieldEditor:)))
+    return NO;
+
+  current_event = [NSApp currentEvent];
+  if (!current_event || [current_event type] != NSEventTypeKeyDown)
+    return NO;
+
+  if (iupcocoaKeyEvent(ih, current_event, [current_event keyCode], true))
+    return YES;
+  return (command == @selector(insertBacktab:) && ih->data->is_multiline) ? YES : NO;
+}
+
 @interface IupCocoaTextFieldDelegate : NSObject <NSControlTextEditingDelegate, NSTextFieldDelegate>
 @end
 
 @implementation IupCocoaTextFieldDelegate
+
+- (BOOL) control:(NSControl*)control textView:(NSTextView*)text_view doCommandBySelector:(SEL)command
+{
+  (void)text_view;
+  return cocoaTextTabCommand((Ihandle*)objc_getAssociatedObject(control, IHANDLE_ASSOCIATED_OBJ_KEY), command);
+}
 
 - (void) controlTextDidChange:(NSNotification*)the_notification
 {
@@ -836,6 +859,11 @@ static void cocoaTextCallCaretCb(Ihandle* ih)
 @end
 
 @implementation IupCocoaTextViewDelegate
+
+- (BOOL) textView:(NSTextView*)text_view doCommandBySelector:(SEL)command
+{
+  return cocoaTextTabCommand((Ihandle*)objc_getAssociatedObject(text_view, IHANDLE_ASSOCIATED_OBJ_KEY), command);
+}
 
 - (instancetype) init
 {
@@ -4310,14 +4338,14 @@ static char* cocoaTextGetActiveAttrib(Ihandle* ih)
     case IUPCOCOATEXTSUBTYPE_FIELD:
       {
         NSTextField* text_field = cocoaTextGetTextField(ih);
-        is_active = [text_field isSelectable];
+        is_active = [text_field isEnabled];
         break;
       }
     case IUPCOCOATEXTSUBTYPE_STEPPER:
       {
         NSTextField* text_field = cocoaTextGetStepperTextField(ih);
         NSStepper* stepper_view = cocoaTextGetStepperView(ih);
-        is_active = [text_field isSelectable] && [stepper_view isEnabled];
+        is_active = [text_field isEnabled] && [stepper_view isEnabled];
         break;
       }
     default:

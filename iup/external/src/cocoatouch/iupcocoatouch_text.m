@@ -308,6 +308,21 @@ static CGFloat cocoaTouchSpinStepperWidth(UIStepper* stepper);
 
 @implementation IupCocoaTouchSpinView
 
+- (BOOL)canBecomeFirstResponder
+{
+	return _field ? [_field canBecomeFirstResponder] : NO;
+}
+
+- (BOOL)becomeFirstResponder
+{
+	return _field ? [_field becomeFirstResponder] : NO;
+}
+
+- (BOOL)isFirstResponder
+{
+	return _field ? [_field isFirstResponder] : NO;
+}
+
 - (instancetype)initWithFrame:(CGRect)frame ihandle:(Ihandle*)ih
 {
 	self = [super initWithFrame:frame];
@@ -1238,7 +1253,7 @@ static void cocoaTouchTextEditDone(Ihandle* ih, NSString* text, NSUInteger unit)
 - (void)textFieldDidBeginEditing:(UITextField*)textField
 {
 	(void)textField;
-	if (_ihandle) iupCallGetFocusCb(_ihandle);
+	if (_ihandle) iupCocoaTouchFocusIn(_ihandle);
 }
 
 /* soft-keyboard Return -> K_ANY chain, then DEFAULTENTER if unclaimed */
@@ -1319,7 +1334,7 @@ static void cocoaTouchTextEditDone(Ihandle* ih, NSString* text, NSUInteger unit)
 - (void)textViewDidBeginEditing:(UITextView*)textView
 {
 	(void)textView;
-	if (_ihandle) iupCallGetFocusCb(_ihandle);
+	if (_ihandle) iupCocoaTouchFocusIn(_ihandle);
 }
 
 - (void)textViewDidEndEditing:(UITextView*)textView

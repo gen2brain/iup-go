@@ -1018,7 +1018,19 @@ public final class IupTextHelper
 
         tv.setOnKeyListener((v, keyCode, ev) -> {
             if (ev.getAction() != KeyEvent.ACTION_DOWN) return false;
-            return dispatchKAny(tv.ihandlePtr, keyCode, ev.getMetaState(), ev.getUnicodeChar(ev.getMetaState()));
+            if (dispatchKAny(tv.ihandlePtr, keyCode, ev.getMetaState(), ev.getUnicodeChar(ev.getMetaState()))) return true;
+            if (keyCode != KeyEvent.KEYCODE_TAB || ev.isCtrlPressed() || ev.isAltPressed() ||
+                (tv.getInputType() & InputType.TYPE_TEXT_FLAG_MULTI_LINE) == 0)
+                return false;
+            Editable e = tv.getText();
+            if (e != null && !ev.isShiftPressed())
+            {
+                int a = Math.min(tv.getSelectionStart(), tv.getSelectionEnd());
+                int b = Math.max(tv.getSelectionStart(), tv.getSelectionEnd());
+                if (a < 0) a = b = e.length();
+                e.replace(a, b, "\t");
+            }
+            return true;
         });
 
         /* IME Done/Go/Send/Next -> AKEYCODE_ENTER so DEFAULTENTER fires; multiline uses native Enter */

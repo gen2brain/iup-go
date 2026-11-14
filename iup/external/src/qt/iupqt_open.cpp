@@ -463,13 +463,17 @@ public:
 
   bool eventFilter(QObject* obj, QEvent* event) override
   {
-    (void)obj;
     switch (event->type())
     {
     case QEvent::KeyPress:
+      if (iupqtKeyRouteTab(obj, static_cast<QKeyEvent*>(event)))
+        return true;
+      if (static_cast<QKeyEvent*>(event)->key() == Qt::Key_Alt)
+        setAltDown(true);
+      break;
     case QEvent::KeyRelease:
       if (static_cast<QKeyEvent*>(event)->key() == Qt::Key_Alt)
-        setAltDown(event->type() == QEvent::KeyPress);
+        setAltDown(false);
       break;
     case QEvent::ApplicationStateChange:
       setAltDown(false);

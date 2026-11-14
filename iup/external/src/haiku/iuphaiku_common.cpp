@@ -4,6 +4,8 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <map>
+
 #include <Bitmap.h>
 #include <Control.h>
 #include <ControlLook.h>
@@ -53,10 +55,29 @@ IUP_DRV_API void iuphaikuNativeContainerAdd(BView* container, BView* widget)
   container->AddChild(widget);
 }
 
+static std::map<BView*, Ihandle*> haiku_view_ihandles;
+
+IUP_DRV_API Ihandle* iuphaikuViewIhandle(BView* view)
+{
+  for (; view; view = view->Parent())
+  {
+    auto it = haiku_view_ihandles.find(view);
+    if (it == haiku_view_ihandles.end())
+      continue;
+    Ihandle* ih = it->second;
+    if (iupObjectCheck(ih) && reinterpret_cast<BView*>(ih->handle) == view)
+      return ih;
+    haiku_view_ihandles.erase(it);
+  }
+  return nullptr;
+}
+
 IUP_DRV_API void iuphaikuAddToParent(Ihandle* ih)
 {
   if (!ih || !ih->handle)
     return;
+
+  haiku_view_ihandles[reinterpret_cast<BView*>(ih->handle)] = ih;
 
   auto* widget = reinterpret_cast<BView*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
   if (!widget) widget = reinterpret_cast<BView*>(ih->handle);
@@ -605,6 +626,8 @@ extern "C" IUP_SDK_API void iupdrvBaseUnMapMethod(Ihandle* ih)
 {
   if (!ih || !ih->handle)
     return;
+
+  haiku_view_ihandles.erase(reinterpret_cast<BView*>(ih->handle));
 
   auto* view = reinterpret_cast<BView*>(iupAttribGet(ih, "_IUP_EXTRAPARENT"));
   if (!view) view = reinterpret_cast<BView*>(ih->handle);

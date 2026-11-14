@@ -26,6 +26,7 @@
 #include "iup_image.h"
 #include "iup_key.h"
 #include "iup_list.h"
+#include "iup_focus.h"
 
 #include "iupcocoatouch_drv.h"
 
@@ -405,10 +406,18 @@ static NSUInteger cocoaTouchListFieldCaretUnit(UITextField* field)
 	[self callCaret:field];
 }
 
+- (void)textFieldDidBeginEditing:(UITextField*)field
+{
+	(void)field;
+	if (_ihandle && iupObjectCheck(_ihandle)) iupCocoaTouchFocusIn(_ihandle);
+}
+
 - (void)textFieldDidEndEditing:(UITextField*)field
 {
 	(void)field;
-	if (_ihandle) iupAttribSet(_ihandle, "_IUPCOCOATOUCH_USER_EDIT", NULL);
+	if (!_ihandle || !iupObjectCheck(_ihandle)) return;
+	iupAttribSet(_ihandle, "_IUPCOCOATOUCH_USER_EDIT", NULL);
+	iupCallKillFocusCb(_ihandle);
 }
 
 - (void)handleDoubleTap:(UITapGestureRecognizer*)gr
@@ -1513,11 +1522,52 @@ static int cocoaTouchListSetPaddingAttrib(Ihandle* ih, const char* value)
 	return 1;
 }
 
+@interface IupCocoaTouchListField : UITextField
+@property(nonatomic, assign) Ihandle* ihandle;
+@end
+
+@implementation IupCocoaTouchListField
+
+- (NSArray<UIKeyCommand*>*)keyCommands
+{
+	return iupCocoaTouchKeyCommands();
+}
+
+- (BOOL)canPerformAction:(SEL)action withSender:(id)sender
+{
+	if (action == @selector(iupCocoaTouchKeyCommand:))
+		return iupCocoaTouchKeyCommandAllowed(self);
+	return [super canPerformAction:action withSender:sender];
+}
+
+- (void)iupCocoaTouchKeyCommand:(UIKeyCommand*)command
+{
+	iupCocoaTouchKeyCommandEvent(_ihandle, command, self);
+}
+
+- (void)pressesBegan:(NSSet<UIPress*>*)presses withEvent:(UIPressesEvent*)event
+{
+	BOOL handled = NO;
+	for (UIPress* p in presses)
+		if (iupCocoaTouchKeyEvent(_ihandle, p, true)) handled = YES;
+	if (!handled) [super pressesBegan:presses withEvent:event];
+}
+
+- (void)pressesEnded:(NSSet<UIPress*>*)presses withEvent:(UIPressesEvent*)event
+{
+	BOOL handled = NO;
+	for (UIPress* p in presses)
+		if (iupCocoaTouchKeyEvent(_ihandle, p, false)) handled = YES;
+	if (!handled) [super pressesEnded:presses withEvent:event];
+}
+
+@end
+
 /* +1 retained EDITBOX entry; caller owns the ref. */
 static UITextField* cocoaTouchListBuildEditField(Ihandle* ih, IupCocoaTouchListController* ctrl)
 {
-	(void)ih;
-	UITextField* field = [[UITextField alloc] initWithFrame:CGRectZero];
+	IupCocoaTouchListField* field = [[IupCocoaTouchListField alloc] initWithFrame:CGRectZero];
+	field.ihandle = ih;
 	field.borderStyle = UITextBorderStyleRoundedRect;
 	field.delegate = ctrl;
 	field.clearButtonMode = UITextFieldViewModeWhileEditing;

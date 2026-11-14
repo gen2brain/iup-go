@@ -239,3 +239,14 @@ extern "C" IUP_SDK_API void iupdrvKeyEncode(int key, unsigned int* keyval, unsig
   if (iup_isAltXkey(key))   *state |= B_CONTROL_KEY;
   if (iup_isSysXkey(key))   *state |= B_OPTION_KEY;
 }
+
+IUP_DRV_API bool iuphaikuKeyMarked(BMessage* msg)
+{
+  return msg && msg->HasBool("_iup_k");
+}
+
+IUP_DRV_API void iuphaikuKeyMark(BMessage* msg)
+{
+  if (msg && !msg->HasBool("_iup_k"))
+    msg->AddBool("_iup_k", true);
+}

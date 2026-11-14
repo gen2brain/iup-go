@@ -160,10 +160,26 @@ public final class IupCommon
         if (!(widget instanceof View view))
             return;
 
+        viewIhandles.put(view, ihandlePtr);
         resolveFocusView(view).setOnFocusChangeListener((v, hasFocus) -> dispatchFocus(ihandlePtr, hasFocus));
     }
 
+    private static final java.util.WeakHashMap<View, Long> viewIhandles = new java.util.WeakHashMap<>();
+
+    static long ihandleOfView(View view)
+    {
+        while (view != null)
+        {
+            Long ih = viewIhandles.get(view);
+            if (ih != null)
+                return ih;
+            view = (view.getParent() instanceof View parent) ? parent : null;
+        }
+        return 0;
+    }
+
     public native static void dispatchFocus(long ihandlePtr, boolean hasFocus);
+    public native static boolean dispatchKeyDown(long ihandlePtr, int keyCode, int metaState);
 
     @Keep
     public static void removeWidgetFromParent(long ihandlePtr)

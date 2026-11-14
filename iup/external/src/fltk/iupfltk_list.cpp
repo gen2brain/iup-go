@@ -937,6 +937,15 @@ static void fltkListEditCallback(Fl_Widget* w, void* data)
   iupBaseCallValueChangedCb(ih);
 }
 
+IUP_DRV_API int iupfltkListInputKey(Fl_Input* input)
+{
+  if (input->callback() != fltkListEditCallback || dynamic_cast<IupFltkListInput*>(input))
+    return 0;
+  auto* ih = static_cast<Ihandle*>(input->user_data());
+  int ret = iupfltkKeyPressEvent(input, ih);
+  return iupObjectCheck(ih) ? ret : 1;
+}
+
 IUP_DRV_API void iupfltkListInputCaret(Fl_Input* input, int caret_before)
 {
   if (input->callback() == fltkListEditCallback && !dynamic_cast<IupFltkListInput*>(input))
@@ -1975,6 +1984,7 @@ static int fltkListMapMethod(Ihandle* ih)
     {
       auto* input_choice = new IupFltkInputChoice(0, 0, 10, 10, ih);
       ih->handle = reinterpret_cast<InativeHandle*>(input_choice);
+      input_choice->menubutton()->clear_visible_focus();
 
       iupfltkUpdateWidgetFont(ih, input_choice);
       fltkListInitTextFont(ih);

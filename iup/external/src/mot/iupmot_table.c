@@ -2134,6 +2134,7 @@ static int motTableMapMethod(Ihandle* ih)
   XtOverrideTranslations(mot_data->drawing_area,
                          XtParseTranslationTable("#override c<Btn1Down>: DrawingAreaInput() ManagerGadgetTraverseCurrent()"));
 
+  XtAddEventHandler(mot_data->drawing_area, KeyPressMask, False, (XtEventHandler)iupmotKeyPressEvent, (XtPointer)ih);
   XtAddEventHandler(mot_data->drawing_area, KeyPressMask, False, (XtEventHandler)motTableKeyPressCallback, (XtPointer)ih);
   XtAddEventHandler(mot_data->drawing_area, Button1MotionMask, False, (XtEventHandler)motTableRowDragMotion, (XtPointer)ih);
   XtAddEventHandler(mot_data->drawing_area, PointerMotionMask, False, (XtEventHandler)motTableHeaderPointerMotion, (XtPointer)ih);

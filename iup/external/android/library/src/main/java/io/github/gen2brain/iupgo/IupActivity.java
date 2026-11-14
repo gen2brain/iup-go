@@ -143,6 +143,14 @@ public class IupActivity extends AppCompatActivity
         return super.dispatchTouchEvent(ev);
     }
 
+    private static boolean insideWebView(android.view.View view)
+    {
+        for (android.view.View v = view; v != null; v = (v.getParent() instanceof android.view.View parent) ? parent : null)
+            if (v instanceof android.webkit.WebView)
+                return true;
+        return false;
+    }
+
     @Override
     public boolean dispatchKeyEvent(android.view.KeyEvent ev)
     {
@@ -152,6 +160,16 @@ public class IupActivity extends AppCompatActivity
         {
             int press = (ev.getAction() == android.view.KeyEvent.ACTION_DOWN) ? 1 : 0;
             IupCommon.dispatchGlobalKey(ev.getKeyCode(), ev.getMetaState(), press);
+        }
+        if (ev.getAction() == android.view.KeyEvent.ACTION_DOWN)
+        {
+            android.view.View focus = getCurrentFocus();
+            if (focus != null && !(focus instanceof IupTextHelper.IupEditText) && !(focus instanceof IupAndroidCanvas) && !insideWebView(focus))
+            {
+                long ih = IupCommon.ihandleOfView(focus);
+                if (ih != 0 && IupCommon.dispatchKeyDown(ih, ev.getKeyCode(), ev.getMetaState()))
+                    return true;
+            }
         }
         return super.dispatchKeyEvent(ev);
     }
@@ -397,6 +415,13 @@ public class IupActivity extends AppCompatActivity
             installInsetHandler(content);
             content.setBackgroundColor(IupCommon.paletteDlgBg);
             setContentView(content);
+            content.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> {
+                long oldIh = IupCommon.ihandleOfView(oldFocus);
+                long newIh = IupCommon.ihandleOfView(newFocus);
+                if (oldIh == newIh) return;
+                if (oldIh != 0) IupCommon.dispatchFocus(oldIh, false);
+                if (newIh != 0) IupCommon.dispatchFocus(newIh, true);
+            });
             setSupportActionBar(toolbar);
             applySystemBarAppearance();
 

@@ -367,7 +367,7 @@ IUP_DRV_API void iupmotKeyPressEvent(Widget w, Ihandle* ih, XEvent* evt, Boolean
     IupExitLoop();
     return;
   }
-  if (result == IUP_IGNORE)
+  if (result == IUP_IGNORE || !iupObjectCheck(ih))
   {
     *cont = False;
     return;

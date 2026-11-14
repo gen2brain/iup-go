@@ -35,7 +35,7 @@ static int androidTextIsTypedKey(int c)
 }
 
 /* AKEYCODE -> IUP key; printable keys use the typed character instead */
-static int androidTextAndroidKeyToIup(jint keyCode)
+int iupandroidKeyToIup(int keyCode)
 {
   switch (keyCode)
   {
@@ -135,8 +135,14 @@ JNIEXPORT jboolean JNICALL Java_io_github_gen2brain_iupgo_IupTextHelper_dispatch
   if (!ih || !iupObjectCheck(ih)) return JNI_FALSE;
   iupAttribSet(ih, "_IUPANDROID_KEYTYPED", NULL);
 
-  int iup_key = androidTextAndroidKeyToIup(android_key_code);
-  if (iup_key == 0 && !(meta_state & (AMETA_ALT_ON | AMETA_CTRL_ON | AMETA_META_ON)) && androidTextIsTypedKey(unicode_char))
+  int iup_key = iupandroidKeyToIup(android_key_code);
+  if (iup_key)
+  {
+    if (meta_state & AMETA_SHIFT_ON) iup_key = iup_XkeyShift(iup_key);
+    if (meta_state & AMETA_CTRL_ON) iup_key = iup_XkeyCtrl(iup_key);
+    if (meta_state & AMETA_ALT_ON) iup_key = iup_XkeyAlt(iup_key);
+  }
+  else if (!(meta_state & (AMETA_ALT_ON | AMETA_CTRL_ON | AMETA_META_ON)) && androidTextIsTypedKey(unicode_char))
     iup_key = (int)unicode_char;
   if (iup_key == 0) return JNI_FALSE;
 

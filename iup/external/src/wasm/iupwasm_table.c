@@ -1151,15 +1151,6 @@ int iupwasmTableKeyNav(Ihandle* ih, int code)
     case K_END:   new_col = ih->data->num_col; break;
     case K_PGUP:  new_lin = 1; break;
     case K_PGDN:  new_lin = ih->data->num_lin; break;
-    case K_TAB:
-      if (col < ih->data->num_col)
-        new_col = col + 1;
-      else if (lin < ih->data->num_lin)
-      {
-        new_lin = lin + 1;
-        new_col = 1;
-      }
-      break;
     case K_CR:
     case K_F2:
       if (wasmTableCellEditable(ih, col))

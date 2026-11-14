@@ -36,7 +36,15 @@ IUP_DRV_API void iuphaikuFocusInOutEvent(Ihandle* ih, int focus_in)
 {
   if (!ih) return;
   if (focus_in)
+  {
+    Ihandle* old_focus = IupGetFocus();
+    if (old_focus && old_focus != ih && iupObjectCheck(old_focus))
+    {
+      iupCallKillFocusCb(old_focus);
+      if (!iupObjectCheck(ih)) return;
+    }
     iupCallGetFocusCb(ih);
+  }
   else
     iupCallKillFocusCb(ih);
 }

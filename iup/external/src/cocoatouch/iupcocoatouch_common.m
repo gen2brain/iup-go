@@ -118,6 +118,9 @@ IUP_DRV_API void iupCocoaTouchAddToParent(Ihandle* ih)
 	{
 		[parent_view addSubview:child_view];
 	}
+
+	if (ih->iclass->is_interactive && ih->iclass->childtype == IUP_CHILDNONE && ![child_view canBecomeFirstResponder])
+		iupAttribSet(ih, "CANFOCUS", "NO");
 }
 
 IUP_DRV_API void iupCocoaTouchRemoveFromParent(Ihandle* ih)

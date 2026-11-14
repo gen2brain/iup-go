@@ -1492,7 +1492,7 @@ static void eflTableEditKeyDownCallback(void* data, const Efl_Event* ev)
   if (!keyname)
     return;
 
-  if (!strcmp(keyname, "Return") || !strcmp(keyname, "KP_Enter"))
+  if (!strcmp(keyname, "Return") || !strcmp(keyname, "KP_Enter") || !strcmp(keyname, "Tab") || !strcmp(keyname, "ISO_Left_Tab"))
     eflTableEndCellEdit(ih, 1);
   else if (!strcmp(keyname, "Escape"))
     eflTableEndCellEdit(ih, 0);
@@ -3320,13 +3320,12 @@ static void eflTableKeyDownCallback(void* data, const Efl_Event* ev)
   int lin, col;
   int new_lin, new_col;
   IFnii enteritem_cb;
-  IFni kany_cb;
   int key = 0;
   int is_editing;
 
   keyname = efl_input_key_name_get(key_ev);
 
-  if (!table_data || !keyname)
+  if (!table_data || !keyname || efl_input_processed_get(key_ev))
     return;
 
   is_editing = (table_data->editing_lin > 0);
@@ -3384,19 +3383,6 @@ static void eflTableKeyDownCallback(void* data, const Efl_Event* ev)
     key = K_RIGHT;
     if (!is_editing && col < ih->data->num_col)
       new_col = col + 1;
-  }
-  else if (!strcmp(keyname, "Tab"))
-  {
-    key = K_TAB;
-    if (is_editing)
-      eflTableEndCellEdit(ih, 1);
-    if (col < ih->data->num_col)
-      new_col = col + 1;
-    else if (lin < ih->data->num_lin)
-    {
-      new_lin = lin + 1;
-      new_col = 1;
-    }
   }
   else if (!strcmp(keyname, "Return") || !strcmp(keyname, "KP_Enter"))
   {
@@ -3487,25 +3473,9 @@ static void eflTableKeyDownCallback(void* data, const Efl_Event* ev)
 
   /* Mark navigation keys as handled to prevent EFL focus navigation */
   if (key == K_UP || key == K_DOWN || key == K_LEFT || key == K_RIGHT ||
-      key == K_TAB || key == K_HOME || key == K_END || key == K_PGUP || key == K_PGDN)
+      key == K_HOME || key == K_END || key == K_PGUP || key == K_PGDN)
   {
     efl_input_processed_set(key_ev, EINA_TRUE);
-  }
-
-  if (key != 0)
-  {
-    kany_cb = (IFni)IupGetCallback(ih, "K_ANY");
-    if (kany_cb)
-    {
-      int ret = kany_cb(ih, key);
-      if (ret == IUP_IGNORE)
-        return;
-      if (ret == IUP_CLOSE)
-      {
-        IupExitLoop();
-        return;
-      }
-    }
   }
 
   if (new_lin != lin || new_col != col)
@@ -3577,6 +3547,8 @@ static int eflTableMapMethod(Ihandle* ih)
     efl_gfx_hint_align_set(scroller, EVAS_HINT_FILL, EVAS_HINT_FILL);
 
     elm_object_focus_allow_set(scroller, EINA_TRUE);
+    iupeflKeySetTarget(scroller, ih);
+    efl_event_callback_add(scroller, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
     efl_event_callback_add(scroller, EFL_EVENT_KEY_DOWN, eflTableKeyDownCallback, ih);
     efl_event_callback_add(scroller, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflTableResizeCallback, ih);
     evas_object_smart_callback_add(scroller, "focused", eflTableFocusInCallback, ih);
@@ -3639,6 +3611,8 @@ static int eflTableMapMethod(Ihandle* ih)
     efl_gfx_hint_align_set(scroller, EVAS_HINT_FILL, EVAS_HINT_FILL);
 
     elm_object_focus_allow_set(scroller, EINA_TRUE);
+    iupeflKeySetTarget(scroller, ih);
+    efl_event_callback_add(scroller, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
     efl_event_callback_add(scroller, EFL_EVENT_KEY_DOWN, eflTableKeyDownCallback, ih);
     efl_event_callback_add(scroller, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflTableResizeCallback, ih);
     evas_object_smart_callback_add(scroller, "focused", eflTableFocusInCallback, ih);
@@ -3755,6 +3729,7 @@ static void eflTableUnMapMethod(Ihandle* ih)
 
     if (data->scroller)
     {
+      efl_event_callback_del(data->scroller, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);
       efl_event_callback_del(data->scroller, EFL_EVENT_KEY_DOWN, eflTableKeyDownCallback, ih);
       efl_event_callback_del(data->scroller, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflTableResizeCallback, ih);
       evas_object_smart_callback_del(data->scroller, "focused", eflTableFocusInCallback);

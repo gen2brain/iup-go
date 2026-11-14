@@ -89,6 +89,7 @@ public:
     if (code)
     {
       int r = (mods & B_COMMAND_KEY) ? IUP_DEFAULT : iupKeyCallKeyCb(fIhandle, code);
+      iuphaikuKeyMark(msg);
       if (r == IUP_CLOSE) { IupExitLoop(); return B_SKIP_MESSAGE; }
       if (r == IUP_IGNORE) return B_SKIP_MESSAGE;
     }

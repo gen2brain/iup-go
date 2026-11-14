@@ -6,6 +6,8 @@
 
 #include <Qt>
 #include <QKeyEvent>
+#include <QWidget>
+#include <QVariant>
 #include <QApplication>
 
 extern "C" {
@@ -223,6 +225,8 @@ static int qtKeyDecode(QKeyEvent* evt)
 {
   int key = evt->key();
   Qt::KeyboardModifiers modifiers = evt->modifiers();
+  if (key == Qt::Key_Backtab)
+    modifiers |= Qt::ShiftModifier;
 
   if (modifiers & Qt::KeypadModifier)
   {
@@ -291,10 +295,55 @@ static int qtKeyTextInput(QKeyEvent* evt, Ihandle* ih)
   return iupKeyCallTextInputCb(ih, text.toUtf8().constData()) == IUP_IGNORE;
 }
 
+static QKeyEvent* qt_routed_tab = nullptr;
+static quint64 qt_routed_tab_time = 0;
+static int qt_routed_tab_key = 0;
+
+static bool qtKeyIsRoutedTab(QKeyEvent* evt)
+{
+  return evt == qt_routed_tab && evt->timestamp() == qt_routed_tab_time && evt->key() == qt_routed_tab_key;
+}
+
+IUP_DRV_API bool iupqtKeyRouteTab(QObject* receiver, QKeyEvent* evt)
+{
+  if (!qtKeyIsRoutedTab(evt))
+    qt_routed_tab = nullptr;
+
+  if ((evt->key() != Qt::Key_Tab && evt->key() != Qt::Key_Backtab) ||
+      (evt->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) ||
+      !receiver->isWidgetType() || qtKeyIsRoutedTab(evt))
+    return false;
+
+  for (QWidget* widget = static_cast<QWidget*>(receiver); widget; widget = widget->parentWidget())
+  {
+    QVariant v = widget->property("_iup_ih");
+    if (!v.isValid())
+      continue;
+
+    auto* ih = reinterpret_cast<Ihandle*>(v.value<quintptr>());
+    if (!iupObjectCheck(ih))
+      return false;
+
+    if (iupqtKeyPressEvent(widget, evt, ih) || !iupObjectCheck(ih))
+      return true;
+    qt_routed_tab = evt;
+    qt_routed_tab_time = evt->timestamp();
+    qt_routed_tab_key = evt->key();
+    return false;
+  }
+  return false;
+}
+
 IUP_DRV_API int iupqtKeyPressEvent(QWidget* widget, QKeyEvent* evt, Ihandle* ih)
 {
   int result;
   int code;
+
+  if (qtKeyIsRoutedTab(evt))
+  {
+    qt_routed_tab = nullptr;
+    return 0;
+  }
 
   if (qtKeyTextInput(evt, ih))
     return 1;
