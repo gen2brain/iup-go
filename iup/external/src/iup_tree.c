@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "iup.h"
+#include "iupcbs.h"
 
 #include "iup_object.h"
 #include "iup_attrib.h"
@@ -205,6 +206,42 @@ void iupTreeIncCacheMem(Ihandle* ih)
   }
 }
 
+static void iTreeMarksInsert(Ihandle* ih, int id)
+{
+  char* last = iupAttribGet(ih, "_IUPTREE_LASTMARKS");
+  int len;
+  char* marks;
+  if (!last)
+    return;
+  len = (int)strlen(last);
+  if (id > len)
+    id = len;
+  marks = (char*)malloc(len + 2);
+  memcpy(marks, last, id);
+  marks[id] = '-';
+  memcpy(marks + id + 1, last + id, len - id + 1);
+  iupAttribSetStr(ih, "_IUPTREE_LASTMARKS", marks);
+  free(marks);
+}
+
+static void iTreeMarksRemove(Ihandle* ih, int id, int count)
+{
+  char* last = iupAttribGet(ih, "_IUPTREE_LASTMARKS");
+  char* marks;
+  int len;
+  if (!last)
+    return;
+  len = (int)strlen(last);
+  if (id >= len)
+    return;
+  if (id + count > len)
+    count = len - id;
+  marks = iupStrDup(last);
+  memmove(marks + id, marks + id + count, len - id - count + 1);
+  iupAttribSetStr(ih, "_IUPTREE_LASTMARKS", marks);
+  free(marks);
+}
+
 void iupTreeAddToCache(Ihandle* ih, int add, int kindPrev, InodeHandle* prevNode, InodeHandle* node_handle)
 {
   int new_id = 0;
@@ -234,6 +271,7 @@ void iupTreeAddToCache(Ihandle* ih, int add, int kindPrev, InodeHandle* prevNode
 
   iTreeAddToCache(ih, new_id, node_handle);
   iupAttribSetInt(ih, "LASTADDNODE", new_id);
+  iTreeMarksInsert(ih, new_id);
 }
 
 void iupTreeDelFromCache(Ihandle* ih, int id, int count)
@@ -260,6 +298,8 @@ void iupTreeDelFromCache(Ihandle* ih, int id, int count)
 
   /* clear the remaining space */
   memset(ih->data->node_cache+ih->data->node_count, 0, count*sizeof(InodeData));
+
+  iTreeMarksRemove(ih, id, count);
 }
 
 void iupTreeCopyMoveCache(Ihandle* ih, int id_src, int id_new, int count, int is_copy)
@@ -856,4 +896,64 @@ Iclass* iupTreeNewClass(void)
   iupdrvTreeInitClass(ic);
 
   return ic;
+}
+
+static void iTreeCallSelectionRange(Ihandle* ih, int* ids, int n, int status)
+{
+  IFnIi cb_multi = (IFnIi)IupGetCallback(ih, status ? "MULTISELECTION_CB" : "MULTIUNSELECTION_CB");
+  IFnii cb = (IFnii)IupGetCallback(ih, "SELECTION_CB");
+  int i, contiguous = 1;
+
+  for (i = 1; i < n; i++)
+  {
+    if (ids[i] != ids[i - 1] + 1)
+      contiguous = 0;
+  }
+
+  if (n > 1 && cb_multi && (contiguous || !status))
+  {
+    if (cb_multi(ih, ids, n) == IUP_CLOSE)
+      IupExitLoop();
+    return;
+  }
+
+  for (i = 0; i < n && cb && iupObjectCheck(ih); i++)
+  {
+    if (cb(ih, ids[i], status) == IUP_CLOSE)
+      IupExitLoop();
+  }
+}
+
+IUP_SDK_API void iupTreeReportMarks(Ihandle* ih, int report)
+{
+  char* marks = iupStrDup(IupGetAttribute(ih, "MARKEDNODES"));
+  char* last = iupAttribGet(ih, "_IUPTREE_LASTMARKS");
+  int i, n = marks ? (int)strlen(marks) : 0;
+
+  if (report && last && (int)strlen(last) == n && n > 0)
+  {
+    int* on = (int*)malloc(sizeof(int) * n);
+    int* off = (int*)malloc(sizeof(int) * n);
+    int n_on = 0, n_off = 0;
+
+    for (i = 0; i < n; i++)
+    {
+      if (marks[i] == '+' && last[i] != '+') on[n_on++] = i;
+      else if (marks[i] != '+' && last[i] == '+') off[n_off++] = i;
+    }
+
+    iupAttribSetStr(ih, "_IUPTREE_LASTMARKS", marks);
+
+    if (n_off)
+      iTreeCallSelectionRange(ih, off, n_off, 0);
+    if (n_on && iupObjectCheck(ih))
+      iTreeCallSelectionRange(ih, on, n_on, 1);
+
+    free(on);
+    free(off);
+  }
+  else
+    iupAttribSetStr(ih, "_IUPTREE_LASTMARKS", marks);
+
+  free(marks);
 }

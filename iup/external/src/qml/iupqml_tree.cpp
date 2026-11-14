@@ -1355,7 +1355,18 @@ static char* qmlTreeGetMarkedAttrib(Ihandle* ih, int id)
   return iupStrReturnBoolean(qmlTreeIsSelected(data, node));
 }
 
+static int qmlTreeSetMarkAttribRaw(Ihandle* ih, const char* value);
+
 static int qmlTreeSetMarkAttrib(Ihandle* ih, const char* value)
+{
+  char* ignore = iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB");
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
+  int ret = qmlTreeSetMarkAttribRaw(ih, value);
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", ignore);
+  return ret;
+}
+
+static int qmlTreeSetMarkAttribRaw(Ihandle* ih, const char* value)
 {
   IupQmlTreeData* data = qmlTreeGetData(ih);
   if (!data)

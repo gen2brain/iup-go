@@ -949,7 +949,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTreeSelect(int treeId, int rowId, int ctrl, int
 int iupwasmTreeKeyNav(Ihandle* ih, int code)
 {
   int treeId = iupwasmIdOf(ih);
-  int cur, id, rowId, expanded;
+  int cur, id, rowId, expanded, shift;
   InodeHandle* focus;
 
   if (!treeId)
@@ -967,8 +967,9 @@ int iupwasmTreeKeyNav(Ihandle* ih, int code)
     cur = 0;
   rowId = (int)(intptr_t)iupTreeGetNode(ih, cur);
   expanded = rowId ? iupwasmJsTreeGetState(rowId) : -1;
+  shift = ih->data->mark_mode == ITREE_MARK_MULTIPLE && iup_isShiftXkey(code);
 
-  switch (code)
+  switch (shift ? iup_XkeyBase(code) : code)
   {
     case K_UP:   id = wasmTreeStepFocus(ih, cur, -1, 1); break;
     case K_DOWN: id = wasmTreeStepFocus(ih, cur, 1, 1); break;
@@ -1000,8 +1001,10 @@ int iupwasmTreeKeyNav(Ihandle* ih, int code)
     return 1;
 
   rowId = (int)(intptr_t)iupTreeGetNode(ih, id);
+  if (shift && !iupAttribGet(ih, "_IUPWASM_MARKSTART"))
+    iupAttribSetInt(ih, "_IUPWASM_MARKSTART", cur);
   if (rowId)
-    iupwasmTreeSelect(treeId, rowId, 0, 0);
+    iupwasmTreeSelect(treeId, rowId, 0, shift);
   return 1;
 }
 

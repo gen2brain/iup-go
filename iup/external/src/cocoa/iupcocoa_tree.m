@@ -3904,7 +3904,7 @@ static int cocoaTreeSetMarkAttrib(Ihandle* ih, const char* value)
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
     NSIndexSet* index_set = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(start_row, number_of_rows)];
-    [outline_view selectRowIndexes:index_set byExtendingSelection:NO];
+    [outline_view selectRowIndexes:index_set byExtendingSelection:YES];
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", NULL);
   }
 

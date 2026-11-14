@@ -2567,6 +2567,7 @@ static int winTreeMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* 
       else if (wp == VK_UP || wp == VK_DOWN)
       {
         HTREEITEM hItemFocus = iupdrvTreeGetFocusNode(ih);
+        HTREEITEM hItemPrevFocus = hItemFocus;
         if (wp == VK_UP)
           hItemFocus = (HTREEITEM)SendMessage(ih->handle, TVM_GETNEXTITEM, TVGN_PREVIOUSVISIBLE, (LPARAM)hItemFocus);
         else
@@ -2585,6 +2586,11 @@ static int winTreeMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* 
         else if (GetKeyState(VK_SHIFT) & 0x8000)
         {
           HTREEITEM hItemFirstSel = (HTREEITEM)iupAttribGet(ih, "_IUPTREE_FIRSTSELITEM");
+          if (!hItemFirstSel && ih->data->mark_mode == ITREE_MARK_MULTIPLE && hItemPrevFocus)
+          {
+            hItemFirstSel = hItemPrevFocus;
+            iupAttribSet(ih, "_IUPTREE_FIRSTSELITEM", (char*)hItemFirstSel);
+          }
           if (hItemFirstSel)
           {
             winTreeSelectRange(ih, hItemFirstSel, hItemFocus, 1);

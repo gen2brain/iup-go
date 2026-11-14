@@ -207,6 +207,7 @@ When setting this value, if the number of specified symbols is smaller than the 
 Can be set only when MARKMODE=MULTIPLE, can also be get when MARKMODE=SINGLE.
 
 **MARKMODE**: defines how the nodes can be selected. Can be: SINGLE or MULTIPLE. Default: SINGLE.
+In WinUI, MULTIPLE shows a check box on each node and marking a node marks its descendants.
 
 **MARKSTART** (non-inheritable): Defines the initial node for the block marking, used when MARK=BLOCK.
 The value must be the node identifier. Default: 0 (first node).

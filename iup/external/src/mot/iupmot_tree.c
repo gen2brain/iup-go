@@ -2281,11 +2281,9 @@ static void motTreeKeyReleaseEvent(Widget w, Ihandle* ih, XKeyEvent* evt, Boolea
     return;
 
   motcode = iupmotKeycodeToKeysym(evt);
-  if (motcode == XK_Down || motcode == XK_U || motcode == XK_Home || motcode == XK_End)
-  {
-    if (ih->data->mark_mode==ITREE_MARK_MULTIPLE && (evt->state & ShiftMask))
-      motTreeCallMultiSelectionCb(ih);
-  }
+  if (ih->data->mark_mode == ITREE_MARK_MULTIPLE && !(evt->state & ControlMask) &&
+      (motcode == XK_Down || motcode == XK_Up || motcode == XK_Home || motcode == XK_End))
+    iupTreeReportMarks(ih, 1);
 
   if (ih->data->mark_mode == ITREE_MARK_SINGLE && !(evt->state & ControlMask) &&
       (motcode == XK_Down || motcode == XK_Up || motcode == XK_Home || motcode == XK_End || motcode == XK_Prior || motcode == XK_Next))
@@ -2329,8 +2327,31 @@ static void motTreeKeyPressEvent(Widget w, Ihandle* ih, XKeyEvent* evt, Boolean*
     return;
 
   motcode = iupmotKeycodeToKeysym(evt);
+  if (ih->data->mark_mode == ITREE_MARK_MULTIPLE && !(evt->state & ControlMask) &&
+      (motcode == XK_Down || motcode == XK_Up || motcode == XK_Home || motcode == XK_End))
+    iupTreeReportMarks(ih, 0);
+
   if (motcode == XK_F2)
     motTreeSetRenameAttrib(ih, NULL);
+  else if ((motcode == XK_Down || motcode == XK_Up) && !(evt->state & ControlMask) && ih->data->mark_mode == ITREE_MARK_MULTIPLE)
+  {
+    Widget wItemFocus = iupdrvTreeGetFocusNode(ih);
+    Widget wItem = (motcode == XK_Down) ? motTreeGetNextVisibleNode(ih, wItemFocus, 1) : motTreeGetPreviousVisibleNode(ih, wItemFocus, 1);
+
+    if (wItem && wItem != wItemFocus)
+    {
+      if (evt->state & ShiftMask)
+        motTreeSelectRange(ih, wItemFocus, wItem, 1);
+      else
+      {
+        XtVaSetValues(ih->handle, XmNselectedObjects, NULL, NULL);
+        XtVaSetValues(ih->handle, XmNselectedObjectCount, 0, NULL);
+        XtVaSetValues(wItem, XmNvisualEmphasis, XmSELECTED, NULL);
+      }
+      motTreeSetFocusNode(ih, wItem);
+    }
+    *cont = False;
+  }
   else if (motcode == XK_F1)
     iupmotHelpCallback(w, ih, NULL);
   else if ((motcode == XK_Down || motcode == XK_Up) && (evt->state & ControlMask))

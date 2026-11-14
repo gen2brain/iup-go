@@ -458,9 +458,8 @@ static void winuiListSelectionChanged(Ihandle* ih)
         auto selectedItems = listBox.SelectedItems();
         int sel_count = static_cast<int>(selectedItems.Size());
 
-        if (sel_count > 0)
         {
-          int* pos_array = static_cast<int*>(malloc(sel_count * sizeof(int)));
+          int* pos_array = static_cast<int*>(malloc((sel_count > 0 ? sel_count : 1) * sizeof(int)));
           if (pos_array)
           {
             for (int i = 0; i < sel_count; i++)
@@ -468,7 +467,7 @@ static void winuiListSelectionChanged(Ihandle* ih)
               auto item = selectedItems.GetAt(i);
               uint32_t index;
               if (listBox.Items().IndexOf(item, index))
-                pos_array[i] = static_cast<int>(index) + 1;
+                pos_array[i] = static_cast<int>(index);
               else
                 pos_array[i] = 0;
             }
@@ -518,6 +517,8 @@ static void winuiListDoubleTapped(Ihandle* ih)
       iupListSingleCallDblClickCb(ih, cb, pos + 1);
   }
 }
+
+static char* winuiListGetValueAttrib(Ihandle* ih);
 
 static int winuiListSetValueAttrib(Ihandle* ih, const char* value)
 {
@@ -648,6 +649,7 @@ static int winuiListSetValueAttrib(Ihandle* ih, const char* value)
             listBox.SelectedItems().Append(listBox.Items().GetAt(i));
         }
       }
+      iupAttribSetStr(ih, "_IUPLIST_OLDVALUE", winuiListGetValueAttrib(ih));
     }
   }
 

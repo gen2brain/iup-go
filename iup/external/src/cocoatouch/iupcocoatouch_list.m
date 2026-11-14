@@ -1171,6 +1171,7 @@ static int cocoaTouchListSetValueAttrib(Ihandle* ih, const char* value)
 				             scrollPosition:UITableViewScrollPositionNone];
 			}
 		}
+		iupAttribSetStr(ih, "_IUPLIST_OLDVALUE", cocoaTouchListGetValueAttrib(ih));
 		return 0;
 	}
 

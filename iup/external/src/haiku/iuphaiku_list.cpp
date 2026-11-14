@@ -1346,6 +1346,8 @@ extern "C" IUP_SDK_API void iupdrvListAddItemSpace(Ihandle* ih, int* h)
 }
 
 
+static char* haikuListGetValueAttrib(Ihandle* ih);
+
 static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (ih->data->is_dropdown && !ih->data->has_editbox)
@@ -1404,6 +1406,7 @@ static int haikuListSetValueAttrib(Ihandle* ih, const char* value)
       for (int i = 0; i < n && value[i]; ++i)
         if (value[i] == '+') lv->Select(i, true);
     }
+    iupAttribSetStr(ih, "_IUPLIST_OLDVALUE", haikuListGetValueAttrib(ih));
   }
   iupAttribSet(ih, "_IUPHAIKU_LIST_IGNORESELECT", nullptr);
   return 0;

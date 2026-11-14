@@ -493,6 +493,7 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 
 	if (_ihandle->data->mark_mode == ITREE_MARK_MULTIPLE)
 	{
+		iupTreeReportMarks(_ihandle, 0);
 		NSMutableArray<NSIndexPath*>* stale = [NSMutableArray array];
 		for (NSUInteger r = 0; r < _flatNodes.count; r++)
 		{
@@ -506,6 +507,8 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 		}
 		if (stale.count)
 			[tableView reloadRowsAtIndexPaths:stale withRowAnimation:UITableViewRowAnimationNone];
+		iupTreeReportMarks(_ihandle, 1);
+		return;
 	}
 
 	IFnii cb = (IFnii)IupGetCallback(_ihandle, "SELECTION_CB");
@@ -516,6 +519,8 @@ static int cocoaTouchTreeIndexInParent(IupCocoaTouchTreeNode* node)
 {
 	(void)tableView;
 	if ((NSUInteger)indexPath.row >= _flatNodes.count) return;
+
+	if (_ihandle->data->mark_mode == ITREE_MARK_MULTIPLE) return;
 
 	IupCocoaTouchTreeNode* node = _flatNodes[indexPath.row];
 	int id_ = iupTreeFindNodeId(_ihandle, (InodeHandle*)node);

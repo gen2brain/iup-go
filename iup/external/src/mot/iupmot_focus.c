@@ -11,11 +11,21 @@
 #include "iup_object.h"
 #include "iup_focus.h"
 #include "iup_drv.h"
+#include "iup_tree.h"
 
 #include "iupmot_drv.h"
 
 IUP_SDK_API void iupdrvSetFocus(Ihandle* ih)
 {
+  if (IupClassMatch(ih, "tree"))
+  {
+    Widget wItem = (Widget)iupdrvTreeGetFocusNode(ih);
+    if (wItem)
+    {
+      XmProcessTraversal(wItem, XmTRAVERSE_CURRENT);
+      return;
+    }
+  }
   XmProcessTraversal(ih->handle, XmTRAVERSE_CURRENT);
 }
 

@@ -1227,3 +1227,13 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttribute(ic, "RENAME", NULL, androidTreeSetRenameAttrib, NULL, NULL, IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOWDRAGDROP", NULL, androidTreeSetShowDragDropAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 }
+
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTreeHelper_dispatchReportMarks(
+    JNIEnv* env, jclass cls, jlong ihandle_ptr, jint report)
+{
+  (void)env;
+  (void)cls;
+  Ihandle* ih = (Ihandle*)ihandle_ptr;
+  if (!ih) return;
+  iupTreeReportMarks(ih, (int)report);
+}

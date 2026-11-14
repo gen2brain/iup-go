@@ -430,6 +430,8 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDispatchListMulti(int id, const char* sel, int 
   free(pos);
 }
 
+static char* wasmListGetValueAttrib(Ihandle* ih);
+
 static int wasmListSetValueAttrib(Ihandle* ih, const char* value)
 {
   int id = iupwasmIdOf(ih);
@@ -446,7 +448,10 @@ static int wasmListSetValueAttrib(Ihandle* ih, const char* value)
   if (ih->data->has_editbox)
     iupwasmJsListSetText(id, value ? value : "");
   else if (ih->data->is_multiple)
+  {
     iupwasmJsListSetMulti(id, value ? value : "");
+    iupAttribSetStr(ih, "_IUPLIST_OLDVALUE", wasmListGetValueAttrib(ih));
+  }
   else
   {
     int pos = 0;

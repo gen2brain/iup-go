@@ -346,7 +346,11 @@ public:
     int32 cur_idx = CurrentSelection(0);
     BListItem* current = cur_idx >= 0 ? ItemAt(cur_idx) : nullptr;
     iupAttribSet(fIhandle, "_IUPHAIKU_TREE_LASTSEL", reinterpret_cast<char*>(current));
-    if (iupAttribGet(fIhandle, "_IUPTREE_IGNORE_SELECTION_CB")) return;
+    if (iupAttribGet(fIhandle, "_IUPTREE_IGNORE_SELECTION_CB"))
+    {
+      if (fIhandle->data->mark_mode == ITREE_MARK_MULTIPLE) iupTreeReportMarks(fIhandle, 0);
+      return;
+    }
     if (!iupdrvIsActive(fIhandle))
     {
       iupAttribSet(fIhandle, "_IUPTREE_IGNORE_SELECTION_CB", const_cast<char*>("1"));
@@ -356,23 +360,23 @@ public:
     }
 
     int32 idx = CurrentSelection(0);
-    if (idx < 0) return;
-    BListItem* item = ItemAt(idx);
-    if (!item) return;
-    int id = iupTreeFindNodeId(fIhandle, reinterpret_cast<InodeHandle*>(item));
-    if (id < 0) return;
+    BListItem* item = idx >= 0 ? ItemAt(idx) : nullptr;
+    int id = item ? iupTreeFindNodeId(fIhandle, reinterpret_cast<InodeHandle*>(item)) : -1;
+    if (id >= 0) haikuTreeSetFocus(fIhandle, id);
 
-    haikuTreeSetFocus(fIhandle, id);
+    if (fIhandle->data->mark_mode == ITREE_MARK_MULTIPLE)
+    {
+      iupTreeReportMarks(fIhandle, 1);
+      return;
+    }
+    if (id < 0) return;
 
     auto cb = reinterpret_cast<IFnii>(IupGetCallback(fIhandle, "SELECTION_CB"));
     if (!cb) return;
-    if (fIhandle->data->mark_mode == ITREE_MARK_SINGLE)
-    {
-      if (item == last) return;
-      int last_id = last ? iupTreeFindNodeId(fIhandle, reinterpret_cast<InodeHandle*>(last)) : -1;
-      if (last_id >= 0 && cb(fIhandle, last_id, 0) == IUP_CLOSE) { IupExitLoop(); return; }
-      if (!iupObjectCheck(fIhandle)) return;
-    }
+    if (item == last) return;
+    int last_id = last ? iupTreeFindNodeId(fIhandle, reinterpret_cast<InodeHandle*>(last)) : -1;
+    if (last_id >= 0 && cb(fIhandle, last_id, 0) == IUP_CLOSE) { IupExitLoop(); return; }
+    if (!iupObjectCheck(fIhandle)) return;
     if (cb(fIhandle, id, 1) == IUP_CLOSE) IupExitLoop();
   }
 
@@ -1011,6 +1015,8 @@ static int haikuTreeMapMethod(Ihandle* ih)
 
   if (iupAttribGetInt(ih, "ADDROOT"))
     iupdrvTreeAddNode(ih, -1, ITREE_BRANCH, "", 0);
+
+  iupTreeReportMarks(ih, 0);
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", reinterpret_cast<Icallback>(haikuTreeConvertXYToPos));
   return IUP_NOERROR;

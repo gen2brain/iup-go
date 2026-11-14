@@ -403,8 +403,8 @@ public:
         int ret = Fl_Tree::handle(event);
 
         Fl_Tree_Item* focus_after = get_item_focus();
-        if (iup_handle->data->mark_mode == ITREE_MARK_SINGLE && focus_after && focus_after != focus_before &&
-            !focus_after->is_selected() && !(Fl::event_state() & (FL_CTRL | FL_SHIFT | FL_ALT | FL_META)))
+        if (focus_after && focus_after != focus_before && !(Fl::event_state() & (FL_CTRL | FL_SHIFT | FL_ALT | FL_META)) &&
+            (iup_handle->data->mark_mode == ITREE_MARK_MULTIPLE || !focus_after->is_selected()))
           select_only(focus_after, when());
 
         return ret;
@@ -1259,6 +1259,25 @@ static int fltkTreeSetMarkAttrib(Ihandle* ih, const char* value)
         if (item->is_selected())
           tree->deselect(item, 0);
         else
+          tree->select(item, 0);
+      }
+    }
+  }
+  else
+  {
+    int id1 = 0, id2 = 0;
+    if (iupStrToIntInt(value, &id1, &id2, '-') == 2)
+    {
+      if (id1 > id2)
+      {
+        int tmp = id1;
+        id1 = id2;
+        id2 = tmp;
+      }
+      for (int i = id1; i <= id2; i++)
+      {
+        Fl_Tree_Item* item = fltkTreeGetItemFromId(ih, i);
+        if (item)
           tree->select(item, 0);
       }
     }

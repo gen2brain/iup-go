@@ -294,7 +294,29 @@ public:
         iupfltkMouseMoveEvent(this, iup_handle);
         break;
     }
-    return Fl_Multi_Browser::handle(event);
+    Ihandle* ih = iup_handle;
+    int ret = Fl_Multi_Browser::handle(event);
+    if (event == FL_KEYBOARD && iupObjectCheck(ih) && !(Fl::event_state() & (FL_SHIFT | FL_CTRL)))
+    {
+      int key = Fl::event_key();
+      if (key == FL_Up || key == FL_Down || key == FL_Home || key == FL_End || key == FL_Page_Up || key == FL_Page_Down)
+      {
+        int line = value();
+        if (line > 0)
+        {
+          int others = 0;
+          for (int i = 1; i <= size() && !others; i++)
+            if (i != line && selected(i)) others = 1;
+          if (others || !selected(line))
+          {
+            deselect();
+            select(line, 1);
+            do_callback();
+          }
+        }
+      }
+    }
+    return ret;
   }
 };
 
@@ -863,7 +885,7 @@ static void fltkListBrowserNotify(Ihandle* ih, B* browser)
         for (int i = 1; i <= count; i++)
         {
           if (browser->selected(i))
-            pos[j++] = i;
+            pos[j++] = i - 1;
         }
 
         iupListMultipleCallActionCb(ih, action_cb, multi_cb, pos, sel_count);
@@ -1402,7 +1424,7 @@ static void fltkListBrowserSetValue(Ihandle* ih, B* browser, const char* value)
       }
     }
 
-    iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
+    iupAttribSetStr(ih, "_IUPLIST_OLDVALUE", fltkListBrowserGetValue(ih, browser));
   }
 
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);

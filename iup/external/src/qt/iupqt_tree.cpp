@@ -1470,7 +1470,20 @@ static char* qtTreeGetMarkedAttrib(Ihandle* ih, int id)
   return iupStrReturnBoolean(item->isSelected());
 }
 
+static int qtTreeSetMarkAttribRaw(Ihandle* ih, const char* value);
+
 static int qtTreeSetMarkAttrib(Ihandle* ih, const char* value)
+{
+  char* saved = iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB");
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", "1");
+  int ret = qtTreeSetMarkAttribRaw(ih, value);
+  iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", saved);
+  if (ih->data->mark_mode == ITREE_MARK_MULTIPLE)
+    iupTreeReportMarks(ih, 0);
+  return ret;
+}
+
+static int qtTreeSetMarkAttribRaw(Ihandle* ih, const char* value)
 {
   auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
 
@@ -2053,12 +2066,7 @@ static void qtTreeSelectionChanged(Ihandle* ih)
       cb(ih, qtTreeFindNodeId(ih, current), 1);
   }
   else
-  {
-    if (iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB"))
-      return;
-    if (cb && selected.count() > 0)
-      cb(ih, qtTreeFindNodeId(ih, selected.first()), 1);
-  }
+    iupTreeReportMarks(ih, !iupAttribGet(ih, "_IUPTREE_IGNORE_SELECTION_CB"));
 }
 
 static void qtTreeItemExpanded(Ihandle* ih, QTreeWidgetItem* item)
@@ -2249,6 +2257,8 @@ static int qtTreeMapMethod(Ihandle* ih)
 
   if (IupGetCallback(ih, "DROPFILES_CB"))
     iupAttribSet(ih, "DROPFILESTARGET", "YES");
+
+  iupTreeReportMarks(ih, 0);
 
   return IUP_NOERROR;
 }

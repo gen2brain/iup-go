@@ -908,6 +908,7 @@ static void gtkTreeCallMultiSelectionCb(Ihandle* ih)
   int i = 0, countItems;
   gtkTreeSelectMinMax minmax;
 
+  iupAttribSet(ih, "_IUPTREE_SHIFTSELECT", NULL);
   minmax.ih = ih;
   minmax.id1 = ih->data->node_count;
   minmax.id2 = -1;
@@ -2480,7 +2481,10 @@ static void gtkTreeSelectionChanged(GtkTreeSelection* selection, Ihandle* ih)
     char key[5];
     iupdrvGetKeyState(key);
     if (key[0] == 'S')
+    {
+      iupAttribSet(ih, "_IUPTREE_SHIFTSELECT", "1");
       return;
+    }
     else if (key[1] == 'C')
       is_ctrl = 1;
 
@@ -2801,11 +2805,8 @@ static gboolean gtkTreeButtonEvent(GtkWidget* treeview, GdkEventButton* evt, Iha
 
 static gboolean gtkTreeKeyReleaseEvent(GtkWidget* widget, GdkEventKey* evt, Ihandle* ih)
 {
-  if (ih->data->mark_mode==ITREE_MARK_MULTIPLE && (evt->state & GDK_SHIFT_MASK))
-  {
-    if (evt->keyval == GDK_KEY_Up || evt->keyval == GDK_KEY_Down || evt->keyval == GDK_KEY_Home || evt->keyval == GDK_KEY_End)
-      gtkTreeCallMultiSelectionCb(ih); /* Multi Selection Callback */
-  }
+  if (ih->data->mark_mode == ITREE_MARK_MULTIPLE && iupAttribGet(ih, "_IUPTREE_SHIFTSELECT"))
+    gtkTreeCallMultiSelectionCb(ih);
 
   (void)widget;
   return TRUE;

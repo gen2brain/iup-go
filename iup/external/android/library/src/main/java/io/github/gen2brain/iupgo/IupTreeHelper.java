@@ -88,6 +88,13 @@ public final class IupTreeHelper
             return super.dispatchTouchEvent(ev);
         }
 
+        @Override
+        public boolean onKeyDown(int keyCode, android.view.KeyEvent event)
+        {
+            if (isEnabled() && keyDown(this, keyCode, event.isShiftPressed())) return true;
+            return super.onKeyDown(keyCode, event);
+        }
+
         final ArrayList<TreeNode> roots = new ArrayList<>();
         final ArrayList<TreeNode> visible = new ArrayList<>();
         final HashSet<TreeNode> marked = new HashSet<>();
@@ -139,6 +146,8 @@ public final class IupTreeHelper
             this.iconSizePx = Math.round(20 * d);
             this.iconPaddingPx = Math.round(4 * d);
             applyThemeColors();
+            setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
+            setFocusable(true);
             setLayoutManager(new LinearLayoutManager(ctx));
             this.adapter = new NodeAdapter(this);
             setAdapter(adapter);
@@ -457,24 +466,7 @@ public final class IupTreeHelper
                 {
                     int pos = h.getBindingAdapterPosition();
                     if (pos == RecyclerView.NO_POSITION) return true;
-                    int old = tree.focusIdx;
-                    tree.focusIdx = pos;
-                    if (tree.markMultiple)
-                    {
-                        TreeNode tapped = tree.visible.get(pos);
-                        boolean changed = tree.marked.size() != 1 || !tree.marked.contains(tapped);
-                        tree.marked.clear();
-                        tree.marked.add(tapped);
-                        if (changed) tree.adapter.notifyDataSetChanged();
-                    }
-                    if (old != pos)
-                    {
-                        if (old >= 0) tree.adapter.notifyItemChanged(old);
-                        tree.adapter.notifyItemChanged(pos);
-                        if (!tree.markMultiple && old >= 0 && old < tree.visible.size())
-                            dispatchSelection(tree.ihandlePtr, idOfNode(tree, tree.visible.get(old)), 0);
-                        dispatchSelection(tree.ihandlePtr, idOfNode(tree, tree.visible.get(pos)), 1);
-                    }
+                    selectRow(tree, pos, false);
                     return true;
                 }
 
@@ -635,6 +627,83 @@ public final class IupTreeHelper
                 float y = child.getBottom();
                 c.drawLine(0, y, parent.getWidth(), y, p);
             }
+        }
+    }
+
+    static void selectRow(IupTreeView tree, int pos, boolean extend)
+    {
+        if (pos < 0 || pos >= tree.visible.size()) return;
+        int old = tree.focusIdx;
+        tree.focusIdx = pos;
+        tree.scrollToPosition(pos);
+        TreeNode node = tree.visible.get(pos);
+        if (tree.markMultiple)
+        {
+            dispatchReportMarks(tree.ihandlePtr, 0);
+            int anchor = tree.markStart != null ? tree.visible.indexOf(tree.markStart) : -1;
+            if (extend && anchor < 0 && old >= 0 && old < tree.visible.size())
+            {
+                anchor = old;
+                tree.markStart = tree.visible.get(old);
+            }
+            tree.marked.clear();
+            if (extend && anchor >= 0)
+            {
+                for (int i = Math.min(anchor, pos); i <= Math.max(anchor, pos); i++)
+                    tree.marked.add(tree.visible.get(i));
+            }
+            else
+            {
+                tree.marked.add(node);
+                tree.markStart = node;
+            }
+            tree.adapter.notifyDataSetChanged();
+            dispatchReportMarks(tree.ihandlePtr, 1);
+            return;
+        }
+        if (old == pos) return;
+        if (old >= 0) tree.adapter.notifyItemChanged(old);
+        tree.adapter.notifyItemChanged(pos);
+        if (old >= 0 && old < tree.visible.size())
+            dispatchSelection(tree.ihandlePtr, idOfNode(tree, tree.visible.get(old)), 0);
+        dispatchSelection(tree.ihandlePtr, idOfNode(tree, node), 1);
+    }
+
+    static boolean keyDown(IupTreeView tree, int keyCode, boolean shift)
+    {
+        int n = tree.visible.size();
+        if (n == 0) return false;
+        int cur = (tree.focusIdx >= 0 && tree.focusIdx < n) ? tree.focusIdx : 0;
+        TreeNode node = tree.visible.get(cur);
+        switch (keyCode)
+        {
+            case android.view.KeyEvent.KEYCODE_DPAD_UP:
+                if (cur > 0) selectRow(tree, cur - 1, shift);
+                return true;
+            case android.view.KeyEvent.KEYCODE_DPAD_DOWN:
+                if (cur < n - 1) selectRow(tree, cur + 1, shift);
+                return true;
+            case android.view.KeyEvent.KEYCODE_MOVE_HOME:
+                selectRow(tree, 0, shift);
+                return true;
+            case android.view.KeyEvent.KEYCODE_MOVE_END:
+                selectRow(tree, n - 1, shift);
+                return true;
+            case android.view.KeyEvent.KEYCODE_DPAD_RIGHT:
+                if (node.kind == 0 && !node.expanded) toggleExpand(tree, node);
+                else if (node.kind == 0 && !node.children.isEmpty()) selectRow(tree, cur + 1, false);
+                return true;
+            case android.view.KeyEvent.KEYCODE_DPAD_LEFT:
+                if (node.kind == 0 && node.expanded) toggleExpand(tree, node);
+                else if (node.parent != null) selectRow(tree, tree.visible.indexOf(node.parent), false);
+                return true;
+            case android.view.KeyEvent.KEYCODE_ENTER:
+            case android.view.KeyEvent.KEYCODE_DPAD_CENTER:
+                if (node.kind == 0) toggleExpand(tree, node);
+                else dispatchExecuteLeaf(tree.ihandlePtr, idOfNode(tree, node));
+                return true;
+            default:
+                return false;
         }
     }
 
@@ -1597,6 +1666,7 @@ public final class IupTreeHelper
     public static native void dispatchBranchOpen(long ihandlePtr, int id);
     public static native void dispatchBranchClose(long ihandlePtr, int id);
     public static native void dispatchSelection(long ihandlePtr, int id, int status);
+    public static native void dispatchReportMarks(long ihandlePtr, int report);
     public static native int  dispatchRightClick(long ihandlePtr, int id);
     public static native int  dispatchShowRename(long ihandlePtr, int id);
     public static native int  dispatchRename(long ihandlePtr, int id, String title);

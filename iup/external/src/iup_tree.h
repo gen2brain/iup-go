@@ -67,6 +67,7 @@ IUP_SDK_API void iupdrvTreeDragDropCopyNode(Ihandle* src, Ihandle* dst, InodeHan
 /** @} */
 
 void iupTreeSelectLastCollapsedBranch(Ihandle* ih, int* last_id);
+IUP_SDK_API void iupTreeReportMarks(Ihandle* ih, int report);
 void iupTreeDelFromCache(Ihandle* ih, int id, int count);
 void iupTreeIncCacheMem(Ihandle* ih);
 void iupTreeAddToCache(Ihandle* ih, int add, int kindPrev, InodeHandle* prevNode, InodeHandle* node_handle);

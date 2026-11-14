@@ -339,6 +339,8 @@ static int androidListSetBgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static char* androidListGetValueAttrib(Ihandle* ih);
+
 static int androidListSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle) return 1;
@@ -363,6 +365,7 @@ static int androidListSetValueAttrib(Ihandle* ih, const char* value)
     (*jni_env)->CallStaticVoidMethod(jni_env, java_class, method_id, ih->handle, j_mask);
     iupAndroid_CheckException(jni_env, "IupListHelper.setMultipleSelection");
     (*jni_env)->DeleteLocalRef(jni_env, j_mask);
+    iupAttribSetStr(ih, "_IUPLIST_OLDVALUE", androidListGetValueAttrib(ih));
   }
   else
   {
