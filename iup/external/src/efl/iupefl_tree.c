@@ -260,6 +260,8 @@ static void eflTreeSelectedCallback(void* data, Evas_Object* obj, void* event_in
   iupAttribSet(ih, "_IUP_EFL_PENDING_RENAME_ITEM", NULL);
 
   id = iupTreeFindNodeId(ih, (InodeHandle*)item);
+  if (ih->data->mark_mode == ITREE_MARK_MULTIPLE && id >= 0)
+    iupAttribSetInt(ih, "_IUPEFL_TREE_ANCHOR", id);
 
   cb = (IFnii)IupGetCallback(ih, "SELECTION_CB");
   if (cb)
@@ -509,7 +511,44 @@ static void eflTreeSelectFocusedJob(void* data)
     return;
 
   item = elm_object_focused_item_get(tree);
-  if (item && !elm_genlist_item_selected_get(item))
+  if (!item)
+    return;
+
+  if (ih->data->mark_mode == ITREE_MARK_MULTIPLE)
+  {
+    int pos = iupTreeFindNodeId(ih, (InodeHandle*)item);
+    int anchor = iupAttribGetInt(ih, "_IUPEFL_TREE_ANCHOR");
+    int first, last, i;
+
+    if (pos < 0)
+      return;
+    if (!iupAttribGet(ih, "_IUPEFL_TREE_EXTEND") || !iupAttribGet(ih, "_IUPEFL_TREE_ANCHOR"))
+    {
+      anchor = pos;
+      iupAttribSetInt(ih, "_IUPEFL_TREE_ANCHOR", pos);
+    }
+    iupAttribSet(ih, "_IUPEFL_TREE_EXTEND", NULL);
+
+    first = anchor < pos ? anchor : pos;
+    last = anchor < pos ? pos : anchor;
+    iupTreeReportMarks(ih, 0);
+    iupAttribSet(ih, "_IUP_EFL_IGNORE_SELECTION", "1");
+    for (i = 0; i < ih->data->node_count; i++)
+    {
+      Elm_Object_Item* it = (Elm_Object_Item*)ih->data->node_cache[i].node_handle;
+      Eina_Bool sel = (i >= first && i <= last) ? EINA_TRUE : EINA_FALSE;
+      IeflTreeNode* node = it ? (IeflTreeNode*)elm_object_item_data_get(it) : NULL;
+      if (it && elm_genlist_item_selected_get(it) != sel)
+        elm_genlist_item_selected_set(it, sel);
+      if (node)
+        node->selected = sel;
+    }
+    iupAttribSet(ih, "_IUP_EFL_IGNORE_SELECTION", NULL);
+    iupTreeReportMarks(ih, 1);
+    return;
+  }
+
+  if (!elm_genlist_item_selected_get(item))
     elm_genlist_item_selected_set(item, EINA_TRUE);
 }
 
@@ -517,6 +556,15 @@ static int eflIsNavigationKey(Efl_Input_Key* key, const char* keyname)
 {
   if (efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_SHIFT, NULL) ||
       efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_CONTROL, NULL) ||
+      efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_ALT, NULL))
+    return 0;
+  return strcmp(keyname, "Up") == 0 || strcmp(keyname, "Down") == 0 || strcmp(keyname, "Home") == 0 ||
+         strcmp(keyname, "End") == 0 || strcmp(keyname, "Prior") == 0 || strcmp(keyname, "Next") == 0;
+}
+
+static int eflIsTreeRangeKey(Efl_Input_Key* key, const char* keyname)
+{
+  if (efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_CONTROL, NULL) ||
       efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_ALT, NULL))
     return 0;
   return strcmp(keyname, "Up") == 0 || strcmp(keyname, "Down") == 0 || strcmp(keyname, "Home") == 0 ||
@@ -545,6 +593,21 @@ static void eflTreeKeyDownCallback(void* data, const Efl_Event* ev)
       eflTreeStartRenameEdit(ih, item);
       efl_input_processed_set(key, EINA_TRUE);
     }
+  }
+  else if (ih->data->mark_mode == ITREE_MARK_MULTIPLE && eflIsTreeRangeKey(key, keyname))
+  {
+    Ecore_Job* job = (Ecore_Job*)iupAttribGet(ih, "_IUPEFL_TREE_SELFOCUS_JOB");
+    if (efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_SHIFT, NULL))
+    {
+      Elm_Object_Item* focused = elm_object_focused_item_get(ev->object);
+      iupAttribSet(ih, "_IUPEFL_TREE_EXTEND", "1");
+      if (!iupAttribGet(ih, "_IUPEFL_TREE_ANCHOR") && focused)
+        iupAttribSetInt(ih, "_IUPEFL_TREE_ANCHOR", iupTreeFindNodeId(ih, (InodeHandle*)focused));
+    }
+    else
+      iupAttribSet(ih, "_IUPEFL_TREE_EXTEND", NULL);
+    if (job) ecore_job_del(job);
+    iupAttribSet(ih, "_IUPEFL_TREE_SELFOCUS_JOB", (char*)ecore_job_add(eflTreeSelectFocusedJob, ih));
   }
   else if (ih->data->mark_mode == ITREE_MARK_SINGLE && eflIsNavigationKey(key, keyname))
   {
@@ -1120,6 +1183,8 @@ static int eflTreeSetValueAttrib(Ihandle* ih, const char* value)
   Elm_Object_Item* cur;
   int i;
 
+  iupAttribSet(ih, "_IUPEFL_TREE_ANCHOR", NULL);
+
   if (!tree)
     return 0;
 
@@ -1607,6 +1672,8 @@ static int eflTreeSetMarkAttrib(Ihandle* ih, const char* value)
   Eo* tree = iupeflGetWidget(ih);
   Elm_Object_Item* item;
 
+  iupAttribSet(ih, "_IUPEFL_TREE_ANCHOR", NULL);
+
   if (!tree)
     return 0;
 
@@ -1759,6 +1826,8 @@ static int eflTreeSetMarkedNodesAttrib(Ihandle* ih, const char* value)
 {
   Eo* tree = iupeflGetWidget(ih);
   int count, i;
+
+  iupAttribSet(ih, "_IUPEFL_TREE_ANCHOR", NULL);
 
   if (!tree || !value)
     return 0;

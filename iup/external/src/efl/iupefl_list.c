@@ -366,6 +366,9 @@ static void eflListItemPressedCallback(void* data, const Efl_Event* ev)
   Ihandle* ih = (Ihandle*)data;
   Efl_Ui_Item_Clickable_Pressed* pressed = ev->info;
 
+  if (ih->data->is_multiple && pressed && pressed->button == 1 && pressed->item)
+    iupAttribSetInt(ih, "_IUPEFL_LIST_ANCHOR", efl_ui_item_index_get(pressed->item));
+
   if (ih->data->is_multiple || !pressed || pressed->button != 1 || !pressed->item)
     return;
 
@@ -428,7 +431,36 @@ static void eflListSelectFocusedJob(void* data)
     return;
 
   item = efl_ui_focus_manager_focus_get(list);
-  if (item && efl_isa(item, EFL_UI_ITEM_CLASS) && !efl_ui_selectable_selected_get(item))
+  if (!item || !efl_isa(item, EFL_UI_ITEM_CLASS))
+    return;
+
+  if (ih->data->is_multiple)
+  {
+    int count = efl_content_count(list);
+    int pos = efl_ui_item_index_get(item);
+    int anchor = iupAttribGetInt(ih, "_IUPEFL_LIST_ANCHOR");
+    int first, last, i;
+
+    if (!iupAttribGet(ih, "_IUPEFL_LIST_EXTEND") || !iupAttribGet(ih, "_IUPEFL_LIST_ANCHOR"))
+    {
+      anchor = pos;
+      iupAttribSetInt(ih, "_IUPEFL_LIST_ANCHOR", pos);
+    }
+    iupAttribSet(ih, "_IUPEFL_LIST_EXTEND", NULL);
+
+    first = anchor < pos ? anchor : pos;
+    last = anchor < pos ? pos : anchor;
+    efl_ui_multi_selectable_all_select(list);
+    for (i = 0; i < count; i++)
+    {
+      Eo* it = efl_pack_content_get(list, i);
+      if (it && (i < first || i > last))
+        efl_ui_selectable_selected_set(it, EINA_FALSE);
+    }
+    return;
+  }
+
+  if (!efl_ui_selectable_selected_get(item))
     efl_ui_selectable_selected_set(item, EINA_TRUE);
 }
 
@@ -439,15 +471,29 @@ static void eflListNavKeyDownCallback(void* data, const Efl_Event* ev)
   const char* keyname = efl_input_key_name_get(key);
   Ecore_Job* job;
 
-  if (!keyname || ih->data->is_multiple)
+  if (!keyname)
     return;
-  if (efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_SHIFT, NULL) ||
+  if ((!ih->data->is_multiple && efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_SHIFT, NULL)) ||
       efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_CONTROL, NULL) ||
       efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_ALT, NULL))
     return;
   if (strcmp(keyname, "Up") && strcmp(keyname, "Down") && strcmp(keyname, "Home") &&
       strcmp(keyname, "End") && strcmp(keyname, "Prior") && strcmp(keyname, "Next"))
     return;
+
+  if (ih->data->is_multiple)
+  {
+    Eo* list = iupeflGetWidget(ih);
+    Eo* focused = list ? efl_ui_focus_manager_focus_get(list) : NULL;
+    if (efl_input_modifier_enabled_get(key, EFL_INPUT_MODIFIER_SHIFT, NULL))
+    {
+      iupAttribSet(ih, "_IUPEFL_LIST_EXTEND", "1");
+      if (!iupAttribGet(ih, "_IUPEFL_LIST_ANCHOR") && focused && efl_isa(focused, EFL_UI_ITEM_CLASS))
+        iupAttribSetInt(ih, "_IUPEFL_LIST_ANCHOR", efl_ui_item_index_get(focused));
+    }
+    else
+      iupAttribSet(ih, "_IUPEFL_LIST_EXTEND", NULL);
+  }
 
   job = (Ecore_Job*)iupAttribGet(ih, "_IUPEFL_LIST_SELFOCUS_JOB");
   if (job) ecore_job_del(job);
@@ -1154,6 +1200,8 @@ static int eflListSetImageAttrib(Ihandle* ih, int id, const char* value)
   return 0;
 }
 
+static char* eflListGetValueAttrib(Ihandle* ih);
+
 static int eflListSetValueAttrib(Ihandle* ih, const char* value)
 {
   Eo* list;
@@ -1200,14 +1248,26 @@ static int eflListSetValueAttrib(Ihandle* ih, const char* value)
   {
     int count = efl_content_count(list);
     int len = (int)strlen(value);
-    int i;
-    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
+    int i, changes = 0;
     for (i = 0; i < count; i++)
     {
       Eo* item = efl_pack_content_get(list, i);
-      if (item)
-        efl_ui_selectable_selected_set(item, (i < len && value[i] == '+') ? EINA_TRUE : EINA_FALSE);
+      if (item && (!efl_ui_selectable_selected_get(item) || i >= len || value[i] != '+'))
+        changes = 1;
     }
+    if (changes)
+    {
+      iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
+      efl_ui_multi_selectable_all_select(list);
+      for (i = 0; i < count; i++)
+      {
+        Eo* item = efl_pack_content_get(list, i);
+        if (item && (i >= len || value[i] != '+'))
+          efl_ui_selectable_selected_set(item, EINA_FALSE);
+      }
+    }
+    iupAttribSetStr(ih, "_IUPLIST_OLDVALUE", eflListGetValueAttrib(ih));
+    iupAttribSet(ih, "_IUPEFL_LIST_ANCHOR", NULL);
     return 0;
   }
 
