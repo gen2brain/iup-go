@@ -136,10 +136,7 @@ public:
     fPressed = true;
     Invalidate();
 
-    int btn = 0;
-    if      (buttons & B_PRIMARY_MOUSE_BUTTON)   btn = IUP_BUTTON1;
-    else if (buttons & B_SECONDARY_MOUSE_BUTTON) btn = IUP_BUTTON3;
-    else if (buttons & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
+    int btn = iuphaikuMouseButtonChanged(fIhandle, buttons, 1);
 
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
     iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, clicks == 2 ? 1 : 0);
@@ -157,14 +154,18 @@ public:
     Invalidate();
 
     BMessage* msg = Looper() ? Looper()->CurrentMessage() : nullptr;
-    int32 mods = 0;
-    if (msg) msg->FindInt32("modifiers", &mods);
+    int32 mods = 0, buttons = 0;
+    if (msg)
+    {
+      msg->FindInt32("modifiers", &mods);
+      msg->FindInt32("buttons", &buttons);
+    }
 
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
     iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), 0, 0, status, 0);
 
     auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(fIhandle, "BUTTON_CB"));
-    if (cb) cb(fIhandle, IUP_BUTTON1, 0, static_cast<int>(where.x), static_cast<int>(where.y), status);
+    if (cb) cb(fIhandle, iuphaikuMouseButtonChanged(fIhandle, buttons, 0), 0, static_cast<int>(where.x), static_cast<int>(where.y), status);
 
     if (wasPressed && fEnabled && Bounds().Contains(where))
     {
@@ -352,10 +353,7 @@ public:
       msg->FindInt32("clicks", &clicks);
     }
 
-    int btn = 0;
-    if      (buttons & B_PRIMARY_MOUSE_BUTTON)   btn = IUP_BUTTON1;
-    else if (buttons & B_SECONDARY_MOUSE_BUTTON) btn = IUP_BUTTON3;
-    else if (buttons & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
+    int btn = iuphaikuMouseButtonChanged(fIhandle, buttons, 1);
 
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
     iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, clicks == 2 ? 1 : 0);
@@ -370,14 +368,18 @@ public:
     if (!fIhandle) return;
 
     BMessage* msg = Looper() ? Looper()->CurrentMessage() : nullptr;
-    int32 mods = 0;
-    if (msg) msg->FindInt32("modifiers", &mods);
+    int32 mods = 0, buttons = 0;
+    if (msg)
+    {
+      msg->FindInt32("modifiers", &mods);
+      msg->FindInt32("buttons", &buttons);
+    }
 
     char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
     iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), 0, 0, status, 0);
 
     auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(fIhandle, "BUTTON_CB"));
-    if (cb) cb(fIhandle, IUP_BUTTON1, 0, static_cast<int>(where.x), static_cast<int>(where.y), status);
+    if (cb) cb(fIhandle, iuphaikuMouseButtonChanged(fIhandle, buttons, 0), 0, static_cast<int>(where.x), static_cast<int>(where.y), status);
   }
 
 private:

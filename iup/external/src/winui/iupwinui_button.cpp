@@ -565,65 +565,7 @@ static int winuiButtonMapMethod(Ihandle* ih)
     });
   }
 
-  aux->buttonPressedToken = contentBorder.PointerPressed([ih](IInspectable const&, Input::PointerRoutedEventArgs const& args) {
-    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
-    if (cb)
-    {
-      auto b = winuiGetHandle<Button>(ih);
-      auto point = args.GetCurrentPoint(b);
-      auto props = point.Properties();
-      int button = iupwinuiGetPointerButton(props);
-      int x, y;
-      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
-      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
-      int ret = cb(ih, button, 1, x, y, status);
-      if (ret == IUP_CLOSE)
-        IupExitLoop();
-      else if (ret == IUP_IGNORE)
-        args.Handled(true);
-    }
-  });
-
-  aux->buttonReleasedToken = btn.PointerReleased([ih](IInspectable const&, Input::PointerRoutedEventArgs const& args) {
-    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
-    if (cb)
-    {
-      auto b = winuiGetHandle<Button>(ih);
-      auto point = args.GetCurrentPoint(b);
-      auto props = point.Properties();
-      int button = iupwinuiGetPointerReleasedButton(props);
-      int x, y;
-      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
-      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
-      int ret = cb(ih, button, 0, x, y, status);
-      if (ret == IUP_CLOSE)
-        IupExitLoop();
-      else if (ret == IUP_IGNORE)
-        args.Handled(true);
-    }
-  });
-
-  aux->buttonCaptureLostToken = btn.PointerCaptureLost([ih](IInspectable const&, Input::PointerRoutedEventArgs const& args) {
-    auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
-    if (cb)
-    {
-      auto b = winuiGetHandle<Button>(ih);
-      auto point = args.GetCurrentPoint(b);
-      auto props = point.Properties();
-      int button = iupwinuiGetPointerReleasedButton(props);
-      int x, y;
-      iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
-      char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
-      int ret = cb(ih, button, 0, x, y, status);
-      if (ret == IUP_CLOSE)
-        IupExitLoop();
-      else if (ret == IUP_IGNORE)
-        args.Handled(true);
-    }
-  });
+  iupwinuiAttachPointerEvents(ih, btn, &aux->pointerHandlers);
 
   aux->keyDownToken = btn.PreviewKeyDown([ih](IInspectable const&, Input::KeyRoutedEventArgs const& args) {
     if (!iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
@@ -681,13 +623,8 @@ static void winuiButtonUnMapMethod(Ihandle* ih)
       {
         if (aux->pointerPressedToken)
           contentBorder.PointerPressed(aux->pointerPressedToken);
-        if (aux->buttonPressedToken)
-          contentBorder.PointerPressed(aux->buttonPressedToken);
       }
-      if (aux->buttonReleasedToken)
-        btn.PointerReleased(aux->buttonReleasedToken);
-      if (aux->buttonCaptureLostToken)
-        btn.PointerCaptureLost(aux->buttonCaptureLostToken);
+      iupwinuiDetachPointerEvents(btn, &aux->pointerHandlers);
       if (aux->captureLostToken)
         btn.PointerCaptureLost(aux->captureLostToken);
     }

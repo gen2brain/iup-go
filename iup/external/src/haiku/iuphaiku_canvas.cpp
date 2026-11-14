@@ -120,10 +120,7 @@ void iuphaikuCanvasOnMouseDown(Ihandle* ih, BView* view, BPoint where)
 
   view->SetMouseEventMask(B_POINTER_EVENTS, B_LOCK_WINDOW_FOCUS);
 
-  int btn = 0;
-  if      (buttons & B_PRIMARY_MOUSE_BUTTON)   btn = IUP_BUTTON1;
-  else if (buttons & B_SECONDARY_MOUSE_BUTTON) btn = IUP_BUTTON3;
-  else if (buttons & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
+  int btn = iuphaikuMouseButtonChanged(ih, buttons, 1);
 
   char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
   iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, clicks == 2 ? 1 : 0);
@@ -140,12 +137,16 @@ void iuphaikuCanvasOnMouseUp(Ihandle* ih, BView* view, BPoint where)
 
   BMessage* msg = nullptr;
   if (view->Looper()) msg = view->Looper()->CurrentMessage();
-  int32 mods = 0;
-  if (msg) msg->FindInt32("modifiers", &mods);
+  int32 mods = 0, buttons = 0;
+  if (msg)
+  {
+    msg->FindInt32("modifiers", &mods);
+    msg->FindInt32("buttons", &buttons);
+  }
 
   iuphaikuDnDMouseUp(ih);
 
-  int btn = IUP_BUTTON1;
+  int btn = iuphaikuMouseButtonChanged(ih, buttons, 0);
   char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
   iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), 0, 0, status, 0);
 

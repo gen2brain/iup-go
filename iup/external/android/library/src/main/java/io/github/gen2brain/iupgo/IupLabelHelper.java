@@ -89,6 +89,7 @@ public final class IupLabelHelper
             {
                 @Override public void onLongPress(@NonNull MotionEvent e) { view.performLongClick(); }
             });
+        final IupCanvasHelper.DoubleTap doubleTap = new IupCanvasHelper.DoubleTap();
         view.setOnTouchListener((v, ev) -> {
             if (v instanceof TextView text && text.isTextSelectable())
                 return false;
@@ -96,13 +97,21 @@ public final class IupLabelHelper
             int a = ev.getActionMasked();
             final int x = (int)ev.getX();
             final int y = (int)ev.getY();
+            final int mods = ev.getMetaState();
             if (a == MotionEvent.ACTION_DOWN)
-                v.post(() -> IupButtonHelper.dispatchButton(ihandlePtr, 1, 1, x, y));
+            {
+                final boolean dbl = doubleTap.press(v, ev);
+                v.post(() -> IupCanvasHelper.dispatchButton(ihandlePtr, 1, 1, x, y, mods, dbl));
+            }
+            else if (a == MotionEvent.ACTION_MOVE)
+                v.post(() -> IupCanvasHelper.dispatchMotion(ihandlePtr, x, y, mods, 1));
             else if (a == MotionEvent.ACTION_UP || a == MotionEvent.ACTION_CANCEL)
             {
                 final boolean wasUp = (a == MotionEvent.ACTION_UP);
+                if (wasUp) doubleTap.release(ev);
+                else doubleTap.reset();
                 v.post(() -> {
-                    IupButtonHelper.dispatchButton(ihandlePtr, 1, 0, wasUp ? x : -1, wasUp ? y : -1);
+                    IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, wasUp ? x : -1, wasUp ? y : -1, mods, false);
                     if (wasUp) v.performClick();
                 });
             }

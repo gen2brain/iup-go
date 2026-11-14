@@ -121,6 +121,7 @@ public final class IupButtonHelper
         button.setOnClickListener(v -> v.post(() -> IupCommon.handleIupCallback(ihandlePtr, "ACTION")));
 
         /* BUTTON_CB; return false so ACTION click still fires via OnClickListener. */
+        final IupCanvasHelper.DoubleTap doubleTap = new IupCanvasHelper.DoubleTap();
         button.setOnTouchListener(new View.OnTouchListener()
         {
             @Override
@@ -130,12 +131,22 @@ public final class IupButtonHelper
                 int a = ev.getActionMasked();
                 final int x = (int)ev.getX();
                 final int y = (int)ev.getY();
+                final int mods = ev.getMetaState();
                 if (a == MotionEvent.ACTION_DOWN)
-                    v.post(() -> dispatchButton(ihandlePtr, 1, 1, x, y));
+                {
+                    final boolean dbl = doubleTap.press(v, ev);
+                    v.post(() -> IupCanvasHelper.dispatchButton(ihandlePtr, 1, 1, x, y, mods, dbl));
+                }
                 else if (a == MotionEvent.ACTION_UP)
-                    v.post(() -> dispatchButton(ihandlePtr, 1, 0, x, y));
+                {
+                    doubleTap.release(ev);
+                    v.post(() -> IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, x, y, mods, false));
+                }
                 else if (a == MotionEvent.ACTION_CANCEL)
-                    v.post(() -> dispatchButton(ihandlePtr, 1, 0, -1, -1));
+                {
+                    doubleTap.reset();
+                    v.post(() -> IupCanvasHelper.dispatchButton(ihandlePtr, 1, 0, -1, -1, mods, false));
+                }
                 return false;
             }
         });
@@ -512,6 +523,4 @@ public final class IupButtonHelper
         return new BitmapDrawable(v.getResources(), bmp);
     }
 
-
-    public static native void dispatchButton(long ihandlePtr, int button, int pressed, int x, int y);
 }

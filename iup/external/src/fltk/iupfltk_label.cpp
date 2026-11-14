@@ -115,6 +115,10 @@ public:
           return 1;
         }
         break;
+      case FL_MOVE:
+      case FL_DRAG:
+        iupfltkMouseMoveEvent(this, iup_handle);
+        return 1;
     }
     return Fl_Box::handle(event);
   }

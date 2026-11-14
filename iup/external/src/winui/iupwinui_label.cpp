@@ -409,43 +409,7 @@ static int winuiLabelMapMethod(Ihandle* ih)
 
     auto* aux = new IupWinUILabelAux();
 
-    aux->pointerPressedToken = border.PointerPressed([ih](IInspectable const&, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& args) {
-      auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
-      if (cb)
-      {
-        auto point = args.GetCurrentPoint(winuiGetHandle<Border>(ih));
-        auto props = point.Properties();
-        int button = iupwinuiGetPointerButton(props);
-        int x, y;
-        iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
-        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-        iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
-        int ret = cb(ih, button, 1, x, y, status);
-        if (ret == IUP_CLOSE)
-          IupExitLoop();
-        else if (ret == IUP_IGNORE)
-          args.Handled(true);
-      }
-    });
-
-    aux->pointerReleasedToken = border.PointerReleased([ih](IInspectable const&, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& args) {
-      auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
-      if (cb)
-      {
-        auto point = args.GetCurrentPoint(winuiGetHandle<Border>(ih));
-        auto props = point.Properties();
-        int button = iupwinuiGetPointerReleasedButton(props);
-        int x, y;
-        iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
-        char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-        iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
-        int ret = cb(ih, button, 0, x, y, status);
-        if (ret == IUP_CLOSE)
-          IupExitLoop();
-        else if (ret == IUP_IGNORE)
-          args.Handled(true);
-      }
-    });
+    iupwinuiAttachPointerEvents(ih, border, &aux->pointerHandlers);
 
     aux->pointerEnteredToken = border.PointerEntered([ih](IInspectable const&, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const&) {
       Icallback cb = IupGetCallback(ih, "ENTERWINDOW_CB");
@@ -500,10 +464,7 @@ static void winuiLabelUnMapMethod(Ihandle* ih)
     auto border = winuiGetHandle<Border>(ih);
     if (border)
     {
-      if (aux->pointerPressedToken)
-        border.PointerPressed(aux->pointerPressedToken);
-      if (aux->pointerReleasedToken)
-        border.PointerReleased(aux->pointerReleasedToken);
+      iupwinuiDetachPointerEvents(border, &aux->pointerHandlers);
       if (aux->pointerEnteredToken)
         border.PointerEntered(aux->pointerEnteredToken);
       if (aux->pointerExitedToken)

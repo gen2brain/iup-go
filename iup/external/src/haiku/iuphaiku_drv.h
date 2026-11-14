@@ -95,6 +95,7 @@ IUP_DRV_API Ihandle* iuphaikuViewIhandle(BView* view);
 IUP_DRV_API void iuphaikuKeyMark(BMessage* msg);
 IUP_DRV_API int  iuphaikuKeyPadScanCode(int code, int* byte_val);
 IUP_DRV_API void iuphaikuButtonKeySetStatus(unsigned int modifiers, unsigned int buttons, int button, char* status, int doubleclick);
+IUP_DRV_API int iuphaikuMouseButtonChanged(Ihandle* ih, int32 buttons, int pressed);
 IUP_DRV_API void iuphaikuMouseButtonEvent(Ihandle* ih, BMessage* msg, BPoint where, int pressed);
 IUP_DRV_API void iuphaikuMouseMoveEvent(Ihandle* ih, BMessage* msg, BPoint where, uint32 transit);
 

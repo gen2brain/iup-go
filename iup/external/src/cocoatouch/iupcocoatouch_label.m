@@ -37,8 +37,22 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 	CGPoint p = touch ? [touch locationInView:view] : CGPointMake(-1, -1);
 	UIKeyModifierFlags mods = event ? [event modifierFlags] : 0;
 	char status[IUPKEY_STATUS_SIZE];
-	iupCocoaTouchButtonKeySetStatus(event, mods, pressed ? 1 : 0, 0, status);
+	iupCocoaTouchButtonKeySetStatus(event, mods, pressed ? 1 : 0, pressed && touch && touch.tapCount % 2 == 0, status);
 	if (cb(ih, IUP_BUTTON1, pressed, (int)p.x, (int)p.y, status) == IUP_CLOSE)
+		IupExitLoop();
+}
+
+static void cocoaTouchLabelFireMotionCb(UIView* view, UITouch* touch, UIEvent* event)
+{
+	Ihandle* ih = (Ihandle*)objc_getAssociatedObject(view, IHANDLE_ASSOCIATED_OBJ_KEY);
+	if (!ih || !iupObjectCheck(ih)) return;
+	if (!iupdrvIsActive(ih)) return;
+	IFniis cb = (IFniis)IupGetCallback(ih, "MOTION_CB");
+	if (!cb) return;
+	CGPoint p = [touch locationInView:view];
+	char status[IUPKEY_STATUS_SIZE];
+	iupCocoaTouchButtonKeySetStatus(event, event ? [event modifierFlags] : 0, 1, 0, status);
+	if (cb(ih, (int)p.x, (int)p.y, status) == IUP_CLOSE)
 		IupExitLoop();
 }
 
@@ -123,6 +137,13 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 	cocoaTouchLabelFireButtonCb(self, touches, event, 1);
 }
 
+- (void)touchesMoved:(NSSet<UITouch*>*)touches withEvent:(UIEvent*)event
+{
+	[super touchesMoved:touches withEvent:event];
+	if (_activeTouch && [touches containsObject:_activeTouch])
+		cocoaTouchLabelFireMotionCb(self, _activeTouch, event);
+}
+
 - (void)touchesEnded:(NSSet<UITouch*>*)touches withEvent:(UIEvent*)event
 {
 	[super touchesEnded:touches withEvent:event];
@@ -154,6 +175,13 @@ static void cocoaTouchLabelFireButtonCb(UIView* view, NSSet<UITouch*>* touches, 
 	if (_activeTouch) return;
 	_activeTouch = [touches anyObject];
 	cocoaTouchLabelFireButtonCb(self, touches, event, 1);
+}
+
+- (void)touchesMoved:(NSSet<UITouch*>*)touches withEvent:(UIEvent*)event
+{
+	[super touchesMoved:touches withEvent:event];
+	if (_activeTouch && [touches containsObject:_activeTouch])
+		cocoaTouchLabelFireMotionCb(self, _activeTouch, event);
 }
 
 - (void)touchesEnded:(NSSet<UITouch*>*)touches withEvent:(UIEvent*)event

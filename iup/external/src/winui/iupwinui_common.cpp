@@ -1583,7 +1583,7 @@ IUP_DRV_API void iupwinuiSetAccelCueAlt(int down)
 IUP_DRV_API void iupwinuiAttachPointerEvents(Ihandle* ih, UIElement const& widget, IupWinUIPointerHandlers* handlers)
 {
   handlers->pressed = winrt::box_value(Microsoft::UI::Xaml::Input::PointerEventHandler(
-    [ih](IInspectable const& sender, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& args) {
+    [ih, handlers](IInspectable const& sender, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& args) {
       auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
       if (!cb)
         return;
@@ -1594,11 +1594,20 @@ IUP_DRV_API void iupwinuiAttachPointerEvents(Ihandle* ih, UIElement const& widge
       int button = iupwinuiGetPointerButton(props);
       int x, y;
       iupwinuiPointerToPixel(ih, point.Position(), &x, &y);
+      DWORD now = GetTickCount();
+      int doubleclick = handlers->lastClickButton == button && now - handlers->lastClickTime <= GetDoubleClickTime() &&
+                        abs(x - handlers->lastClickX) <= GetSystemMetrics(SM_CXDOUBLECLK) && abs(y - handlers->lastClickY) <= GetSystemMetrics(SM_CYDOUBLECLK);
+      handlers->lastClickTime = doubleclick ? 0 : now;
+      handlers->lastClickX = x;
+      handlers->lastClickY = y;
+      handlers->lastClickButton = button;
       char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, 0);
+      iupwinuiButtonKeySetStatus(iupwinuiGetModifierKeys(), button, status, doubleclick);
       int ret = cb(ih, button, 1, x, y, status);
       if (ret == IUP_CLOSE)
         IupExitLoop();
+      else if (ret == IUP_IGNORE)
+        args.Handled(true);
     }));
   widget.AddHandler(UIElement::PointerPressedEvent(), handlers->pressed, true);
 
@@ -1619,6 +1628,8 @@ IUP_DRV_API void iupwinuiAttachPointerEvents(Ihandle* ih, UIElement const& widge
       int ret = cb(ih, button, 0, x, y, status);
       if (ret == IUP_CLOSE)
         IupExitLoop();
+      else if (ret == IUP_IGNORE)
+        args.Handled(true);
     }));
   widget.AddHandler(UIElement::PointerReleasedEvent(), handlers->released, true);
 

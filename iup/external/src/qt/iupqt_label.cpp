@@ -47,6 +47,7 @@ public:
     : QWidget(), iup_handle(ih), child_widget(nullptr), ht_transparent(false)
   {
     setAttribute(Qt::WA_TransparentForMouseEvents, false);
+    setMouseTracking(true);
   }
 
   void setChildWidget(QWidget* child)
@@ -56,6 +57,7 @@ public:
     {
       child->setParent(this);
       child->move(0, 0);
+      child->setMouseTracking(true);
     }
   }
 
@@ -117,6 +119,15 @@ protected:
     {
       QWidget::mouseReleaseEvent(event);
       iupqtMouseButtonEvent(this, event, iup_handle);
+    }
+  }
+
+  void mouseMoveEvent(QMouseEvent* event) override
+  {
+    if (!ht_transparent)
+    {
+      QWidget::mouseMoveEvent(event);
+      iupqtMouseMoveEvent(this, event, iup_handle);
     }
   }
 

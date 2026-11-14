@@ -48,9 +48,7 @@ static void haikuLabelFireMouseCb(Ihandle* ih, BView* view, BPoint where, int pr
     msg->FindInt32("modifiers", &mods);
     msg->FindInt32("clicks", &clicks);
   }
-  int btn = IUP_BUTTON1;
-  if      (buttons & B_SECONDARY_MOUSE_BUTTON) btn = IUP_BUTTON3;
-  else if (buttons & B_TERTIARY_MOUSE_BUTTON)  btn = IUP_BUTTON2;
+  int btn = iuphaikuMouseButtonChanged(ih, buttons, pressed);
   char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
   iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), static_cast<unsigned>(buttons), 0, status, clicks == 2 ? 1 : 0);
   auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));

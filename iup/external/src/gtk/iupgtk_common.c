@@ -868,7 +868,7 @@ IUP_DRV_API gboolean iupgtkMotionNotifyEvent(GtkWidget* widget, GdkEventMotion* 
   if (evt->is_hint)
   {
     int x, y;
-    iupgtkWindowGetPointer(iupgtkGetWindow(widget), &x, &y, NULL);
+    iupgtkWindowGetPointer(evt->window, &x, &y, NULL);
     evt->x = x;
     evt->y = y;
   }

@@ -215,38 +215,30 @@ static const void* IUP_COCOA_BUTTON_RECEIVER_OBJ_KEY = @"IUP_COCOA_BUTTON_RECEIV
 
 - (void)rightMouseDown:(NSEvent*)event
 {
-  [super rightMouseDown:event];
-
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih)
-    iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true);
+  if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true))
+    [super rightMouseDown:event];
 }
 
 - (void)rightMouseUp:(NSEvent*)event
 {
-  [super rightMouseUp:event];
-
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih)
-    iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, false);
+  if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, false))
+    [super rightMouseUp:event];
 }
 
 - (void)otherMouseDown:(NSEvent*)event
 {
-  [super otherMouseDown:event];
-
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih)
-    iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true);
+  if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, true))
+    [super otherMouseDown:event];
 }
 
 - (void)otherMouseUp:(NSEvent*)event
 {
-  [super otherMouseUp:event];
-
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
-  if (ih)
-    iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, false);
+  if (!ih || !iupcocoaCommonBaseHandleMouseButtonCallback(ih, event, self, false))
+    [super otherMouseUp:event];
 }
 
 - (void)scrollWheel:(NSEvent*)event

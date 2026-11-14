@@ -10,6 +10,7 @@
 #include <QUrl>
 #include <QColor>
 #include <QKeyEvent>
+#include <QMouseEvent>
 #include <QQuickStyle>
 #include <QQmlEngine>
 #include <QMetaObject>
@@ -807,14 +808,21 @@ static int qmlButtonSetShowAsDefaultAttrib(Ihandle* ih, const char* value)
  * Events
  ****************************************************************************/
 
-class IupQmlButtonKeyFilter : public QObject
+class IupQmlButtonEventFilter : public QObject
 {
 public:
   Ihandle* ih;
-  IupQmlButtonKeyFilter(QObject* parent, Ihandle* handle) : QObject(parent), ih(handle) {}
+  IupQmlButtonEventFilter(QObject* parent, Ihandle* handle) : QObject(parent), ih(handle) {}
 
   bool eventFilter(QObject* obj, QEvent* event) override
   {
+    if ((event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonRelease ||
+         event->type() == QEvent::MouseButtonDblClick) &&
+        static_cast<QMouseEvent*>(event)->button() != Qt::LeftButton)
+    {
+      event->accept();
+      return true;
+    }
     if (event->type() == QEvent::KeyPress && iupObjectCheck(ih))
     {
       auto* key = static_cast<QKeyEvent*>(event);
@@ -883,7 +891,8 @@ static int qmlButtonMapMethod(Ihandle* ih)
   }
 
   iupqmlAddToParent(ih);
-  button->installEventFilter(new IupQmlButtonKeyFilter(button, ih));
+  button->setAcceptedMouseButtons(Qt::AllButtons);
+  button->installEventFilter(new IupQmlButtonEventFilter(button, ih));
   iupqmlInstallFilter(ih, button);
 
   if (!iupAttribGetBoolean(ih, "CANFOCUS"))

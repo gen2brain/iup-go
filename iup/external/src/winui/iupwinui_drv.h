@@ -295,6 +295,10 @@ struct IupWinUIPointerHandlers
   winrt::Windows::Foundation::IInspectable pressed{nullptr};
   winrt::Windows::Foundation::IInspectable released{nullptr};
   winrt::Windows::Foundation::IInspectable moved{nullptr};
+  DWORD lastClickTime = 0;
+  int lastClickX = 0;
+  int lastClickY = 0;
+  int lastClickButton = 0;
 };
 
 IUP_DRV_API void iupwinuiAttachPointerEvents(Ihandle* ih, winrt::Microsoft::UI::Xaml::UIElement const& widget, IupWinUIPointerHandlers* handlers);
@@ -347,14 +351,12 @@ struct IupWinUIButtonAux
   winrt::event_token clickToken;
   winrt::event_token pointerPressedToken;
   winrt::event_token captureLostToken;
-  winrt::event_token buttonPressedToken;
-  winrt::event_token buttonReleasedToken;
-  winrt::event_token buttonCaptureLostToken;
   winrt::event_token keyDownToken;
   winrt::event_token gotFocusToken;
   winrt::event_token lostFocusToken;
+  IupWinUIPointerHandlers pointerHandlers;
 
-  IupWinUIButtonAux() : clickToken{}, pointerPressedToken{}, captureLostToken{}, buttonPressedToken{}, buttonReleasedToken{}, buttonCaptureLostToken{}, keyDownToken{}, gotFocusToken{}, lostFocusToken{} {}
+  IupWinUIButtonAux() : clickToken{}, pointerPressedToken{}, captureLostToken{}, keyDownToken{}, gotFocusToken{}, lostFocusToken{} {}
 };
 
 enum IupWinUIToggleType
@@ -567,13 +569,11 @@ struct IupWinUITableAux
 
 struct IupWinUILabelAux
 {
-  winrt::event_token pointerPressedToken;
-  winrt::event_token pointerReleasedToken;
   winrt::event_token pointerEnteredToken;
   winrt::event_token pointerExitedToken;
+  IupWinUIPointerHandlers pointerHandlers;
 
-  IupWinUILabelAux() : pointerPressedToken{}, pointerReleasedToken{},
-                        pointerEnteredToken{}, pointerExitedToken{} {}
+  IupWinUILabelAux() : pointerEnteredToken{}, pointerExitedToken{} {}
 };
 
 struct IupWinUIPopoverAux

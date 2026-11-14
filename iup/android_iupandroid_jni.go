@@ -9,7 +9,6 @@ package iup
 #include "external/src/android/iupandroid_jnicacheglobals.c"
 #include "external/src/android/iupandroid_jni_IupActivity.c"
 #include "external/src/android/iupandroid_jni_IupApplication.c"
-#include "external/src/android/iupandroid_jni_IupButton.c"
 #include "external/src/android/iupandroid_jni_IupCalendar.c"
 #include "external/src/android/iupandroid_jni_IupCanvas.c"
 #include "external/src/android/iupandroid_jni_IupCommon.c"

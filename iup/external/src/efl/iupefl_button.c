@@ -43,7 +43,6 @@ static void eflButtonClickedCallback(void* data, const Efl_Event* ev)
 static void eflButtonPressedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-  IFniiiis cb;
 
   (void)ev;
 
@@ -59,20 +58,11 @@ static void eflButtonPressedCallback(void* data, const Efl_Event* ev)
         iupeflImageUpdateImage(btn_img, name, ih, 0);
     }
   }
-
-  cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
-  if (cb)
-  {
-    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    iupKEY_SETBUTTON1(status);
-    cb(ih, IUP_BUTTON1, 1, 0, 0, status);
-  }
 }
 
 static void eflButtonUnpressedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
-  IFniiiis cb;
 
   (void)ev;
 
@@ -91,13 +81,6 @@ static void eflButtonUnpressedCallback(void* data, const Efl_Event* ev)
           iupeflImageUpdateImage(btn_img, name, ih, 0);
       }
     }
-  }
-
-  cb = (IFniiiis)IupGetCallback(ih, "BUTTON_CB");
-  if (cb)
-  {
-    char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
-    cb(ih, IUP_BUTTON1, 0, 0, 0, status);
   }
 }
 
@@ -516,6 +499,8 @@ static int eflButtonMapMethod(Ihandle* ih)
 
   efl_event_callback_add(btn, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
   efl_event_callback_add(btn, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
+  efl_event_callback_add(btn, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
+  efl_event_callback_add(btn, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
   efl_event_callback_add(btn, EFL_EVENT_POINTER_IN, eflButtonHoverInCallback, ih);
   efl_event_callback_add(btn, EFL_EVENT_POINTER_OUT, eflButtonHoverOutCallback, ih);
   iupAttribSet(ih, "_IUP_EFL_HOVER", NULL);
@@ -548,6 +533,8 @@ static void eflButtonUnMapMethod(Ihandle* ih)
 
     efl_event_callback_del(btn, EFL_EVENT_POINTER_IN, iupeflPointerInEvent, ih);
     efl_event_callback_del(btn, EFL_EVENT_POINTER_OUT, iupeflPointerOutEvent, ih);
+    efl_event_callback_del(btn, EFL_EVENT_POINTER_DOWN, iupeflPointerDownEvent, ih);
+    efl_event_callback_del(btn, EFL_EVENT_POINTER_UP, iupeflPointerUpEvent, ih);
     efl_event_callback_del(btn, EFL_EVENT_POINTER_IN, eflButtonHoverInCallback, ih);
     efl_event_callback_del(btn, EFL_EVENT_POINTER_OUT, eflButtonHoverOutCallback, ih);
     efl_event_callback_del(btn, EFL_EVENT_KEY_DOWN, iupeflKeyDownEvent, ih);

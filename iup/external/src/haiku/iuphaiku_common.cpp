@@ -891,6 +891,23 @@ IUP_DRV_API const char* iuphaikuGetNativeFontIdName()
   return "BFONT";
 }
 
+IUP_DRV_API int iuphaikuMouseButtonChanged(Ihandle* ih, int32 buttons, int pressed)
+{
+  int32 held = iupAttribGetInt(ih, "_IUPHAIKU_HELD_BUTTONS");
+  int32 changed = pressed ? (buttons & ~held) : (held & ~buttons);
+  if (!changed)
+    changed = pressed ? buttons : held;
+  iupAttribSetInt(ih, "_IUPHAIKU_HELD_BUTTONS", buttons);
+
+  if (changed & B_PRIMARY_MOUSE_BUTTON)
+    return IUP_BUTTON1;
+  if (changed & B_SECONDARY_MOUSE_BUTTON)
+    return IUP_BUTTON3;
+  if (changed & B_TERTIARY_MOUSE_BUTTON)
+    return IUP_BUTTON2;
+  return IUP_BUTTON1;
+}
+
 IUP_DRV_API void iuphaikuMouseButtonEvent(Ihandle* ih, BMessage* msg, BPoint where, int pressed)
 {
   auto cb = reinterpret_cast<IFniiiis>(IupGetCallback(ih, "BUTTON_CB"));
@@ -905,14 +922,7 @@ IUP_DRV_API void iuphaikuMouseButtonEvent(Ihandle* ih, BMessage* msg, BPoint whe
     msg->FindInt32("modifiers", &mods);
   }
 
-  int btn = IUP_BUTTON1;
-  if (pressed)
-  {
-    if (buttons & B_SECONDARY_MOUSE_BUTTON)
-      btn = IUP_BUTTON3;
-    else if (buttons & B_TERTIARY_MOUSE_BUTTON)
-      btn = IUP_BUTTON2;
-  }
+  int btn = iuphaikuMouseButtonChanged(ih, buttons, pressed);
 
   char status[IUPKEY_STATUS_SIZE] = IUPKEY_STATUS_INIT;
   iuphaikuButtonKeySetStatus(static_cast<unsigned>(mods), pressed ? static_cast<unsigned>(buttons) : 0, 0, status, (pressed && clicks == 2) ? 1 : 0);

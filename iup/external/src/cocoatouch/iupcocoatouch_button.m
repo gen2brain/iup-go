@@ -52,7 +52,7 @@
 	CGPoint p = touch ? [touch locationInView:self] : CGPointMake(-1, -1);
 	UIKeyModifierFlags mods = event ? [event modifierFlags] : 0;
 	char status[IUPKEY_STATUS_SIZE];
-	iupCocoaTouchButtonKeySetStatus(event, mods, pressed ? 1 : 0, 0, status);
+	iupCocoaTouchButtonKeySetStatus(event, mods, pressed ? 1 : 0, pressed && touch && touch.tapCount % 2 == 0, status);
 	if (cb(_ihandle, IUP_BUTTON1, pressed, (int)p.x, (int)p.y, status) == IUP_CLOSE)
 		IupExitLoop();
 }

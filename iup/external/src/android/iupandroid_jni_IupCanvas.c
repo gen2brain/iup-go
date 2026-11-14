@@ -63,7 +63,8 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchBu
 
   /* IUP button codes are the ASCII digits '1'..'5', not integer indices. */
   int iup_button = '0' + button;
-  cb(ih, iup_button, pressed, x < 0 ? -1 : iupAndroid_PxToDpRound(x), y < 0 ? -1 : iupAndroid_PxToDpRound(y), status);
+  if (cb(ih, iup_button, pressed, x < 0 ? -1 : iupAndroid_PxToDpRound(x), y < 0 ? -1 : iupAndroid_PxToDpRound(y), status) == IUP_CLOSE)
+    IupExitLoop();
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchMotion(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint x, jint y, jint meta_state, jint button_state)
@@ -86,7 +87,8 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchMo
   if (button_state & 8) iupKEY_SETBUTTON4(status);
   if (button_state & 16) iupKEY_SETBUTTON5(status);
 
-  cb(ih, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y), status);
+  if (cb(ih, iupAndroid_PxToDpRound(x), iupAndroid_PxToDpRound(y), status) == IUP_CLOSE)
+    IupExitLoop();
 }
 
 JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupCanvasHelper_dispatchAction(JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint x1, jint y1, jint x2, jint y2)
