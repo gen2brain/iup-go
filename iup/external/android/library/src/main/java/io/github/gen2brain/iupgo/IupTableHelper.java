@@ -66,6 +66,19 @@ public final class IupTableHelper
             return super.dispatchTouchEvent(ev);
         }
 
+        @Override
+        public boolean onKeyDown(int keyCode, android.view.KeyEvent event)
+        {
+            if (isEnabled() && (keyCode == android.view.KeyEvent.KEYCODE_ENTER || keyCode == android.view.KeyEvent.KEYCODE_NUMPAD_ENTER ||
+                                keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER || keyCode == android.view.KeyEvent.KEYCODE_F2) &&
+                focusLin >= 1 && focusLin <= numLin && focusCol >= 1 && focusCol <= numCol && isCellEditable(this, focusCol))
+            {
+                startEditCell(this, focusLin, focusCol);
+                return true;
+            }
+            return super.onKeyDown(keyCode, event);
+        }
+
         int numCol;
         int numLin;
         int[] colWidths;
@@ -588,6 +601,29 @@ public final class IupTableHelper
                 t.recyclerView.post(() -> dispatchEditEnd(t.ihandlePtr, lin, col, cur, 0));
             })
             .create();
+        input.setOnEditorActionListener((v, actionId, ev) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE || (ev != null && ev.getAction() == android.view.KeyEvent.ACTION_DOWN &&
+                ev.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER))
+            {
+                dlg.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+                return true;
+            }
+            return false;
+        });
+        input.setOnKeyListener((v, keyCode, ev) -> {
+            if (ev.getAction() != android.view.KeyEvent.ACTION_DOWN) return false;
+            if (keyCode == android.view.KeyEvent.KEYCODE_TAB)
+            {
+                dlg.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+                return true;
+            }
+            if (keyCode == android.view.KeyEvent.KEYCODE_ESCAPE)
+            {
+                dlg.cancel();
+                return true;
+            }
+            return false;
+        });
         dlg.show();
         input.requestFocus();
     }
@@ -1212,6 +1248,8 @@ public final class IupTableHelper
     {
         ContextThemeWrapper ctx = IupCommon.getContextThemeWrapper();
         final IupTableView table = new IupTableView(ctx, ihandlePtr);
+        table.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        table.setFocusable(true);
 
         table.headerScroll = new SyncScrollView(ctx);
         table.headerScroll.owner = table;

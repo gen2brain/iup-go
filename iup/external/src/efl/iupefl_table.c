@@ -1480,6 +1480,12 @@ static int eflTableIsCellEditable(Ihandle* ih, int col)
 
 static void eflTableEndCellEdit(Ihandle* ih, int apply);
 
+static Eo* eflTableEditKeyTarget(Eo* entry)
+{
+  Eo* text_obj = efl_text_cursor_object_text_object_get(efl_text_interactive_main_cursor_get(entry));
+  return text_obj ? text_obj : entry;
+}
+
 static void eflTableEditKeyDownCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
@@ -1493,9 +1499,15 @@ static void eflTableEditKeyDownCallback(void* data, const Efl_Event* ev)
     return;
 
   if (!strcmp(keyname, "Return") || !strcmp(keyname, "KP_Enter") || !strcmp(keyname, "Tab") || !strcmp(keyname, "ISO_Left_Tab"))
+  {
+    efl_input_processed_set(ev->info, EINA_TRUE);
     eflTableEndCellEdit(ih, 1);
+  }
   else if (!strcmp(keyname, "Escape"))
+  {
+    efl_input_processed_set(ev->info, EINA_TRUE);
     eflTableEndCellEdit(ih, 0);
+  }
 }
 
 static void eflTableEditReport(Ihandle* ih, Eo* entry)
@@ -1624,7 +1636,7 @@ static void eflTableStartCellEdit(Ihandle* ih, int lin, int col)
   elm_object_focus_set(entry, EINA_TRUE);
   efl_text_interactive_all_select(entry);
 
-  efl_event_callback_add(entry, EFL_EVENT_KEY_DOWN, eflTableEditKeyDownCallback, ih);
+  efl_event_callback_priority_add(eflTableEditKeyTarget(entry), EFL_EVENT_KEY_DOWN, EFL_CALLBACK_PRIORITY_BEFORE, eflTableEditKeyDownCallback, ih);
   efl_event_callback_add(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflTableEditChangedCallback, ih);
 }
 
@@ -1673,16 +1685,11 @@ static void eflTableEndCellEdit(Ihandle* ih, int apply)
   editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
   if (editend_cb)
   {
-    int ret = editend_cb(ih, lin, col, new_text, apply);
-    if (ret == IUP_IGNORE && apply)
-    {
-      if (new_text)
-        free(new_text);
-      return;
-    }
+    if (editend_cb(ih, lin, col, new_text, apply) == IUP_IGNORE)
+      apply = 0;
   }
 
-  efl_event_callback_del(entry, EFL_EVENT_KEY_DOWN, eflTableEditKeyDownCallback, ih);
+  efl_event_callback_del(eflTableEditKeyTarget(entry), EFL_EVENT_KEY_DOWN, eflTableEditKeyDownCallback, ih);
   efl_event_callback_del(entry, EFL_TEXT_INTERACTIVE_EVENT_CHANGED_USER, eflTableEditChangedCallback, ih);
 
   if (apply)

@@ -1362,7 +1362,7 @@ static void motTableEditKeyPressCallback(Widget w, XtPointer client_data, XEvent
 
   keysym = XkbKeycodeToKeysym(iupmot_display, ((XKeyEvent*)event)->keycode, 0, 0);
 
-  if (keysym == XK_Return || keysym == XK_KP_Enter)
+  if (keysym == XK_Return || keysym == XK_KP_Enter || keysym == XK_Tab || keysym == XK_ISO_Left_Tab || keysym == XK_KP_Tab)
   {
     motTableEndCellEdit(ih, 1);
     *cont = False;  /* Stop event propagation */

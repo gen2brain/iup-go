@@ -191,6 +191,26 @@ static const void* IUP_COCOATOUCH_TABLE_CTRL_OBJ_KEY = "IUP_COCOATOUCH_TABLE_CTR
 
 static char kIupTableEditLinKey;
 static char kIupTableEditColKey;
+static char kIupTableEditAlertKey;
+static char kIupTableEditOkKey;
+static char kIupTableEditCancelKey;
+
+@interface UIAlertController (IupTableEdit)
+- (void)iupTableEditFinish:(BOOL)accept;
+@end
+
+@implementation UIAlertController (IupTableEdit)
+- (void)iupTableEditFinish:(BOOL)accept
+{
+	void* key = accept ? &kIupTableEditOkKey : &kIupTableEditCancelKey;
+	void (^handler)(UIAlertAction*) = [[objc_getAssociatedObject(self, key) retain] autorelease];
+	if (!handler) return;
+	objc_setAssociatedObject(self, &kIupTableEditOkKey, nil, OBJC_ASSOCIATION_COPY_NONATOMIC);
+	objc_setAssociatedObject(self, &kIupTableEditCancelKey, nil, OBJC_ASSOCIATION_COPY_NONATOMIC);
+	[self dismissViewControllerAnimated:YES completion:^{ handler(nil); }];
+}
+
+@end
 
 @interface IupCocoaTouchTableController : NSObject <UICollectionViewDataSource, UICollectionViewDelegate, UIGestureRecognizerDelegate, UITextFieldDelegate>
 @property(nonatomic, assign) Ihandle* ihandle;
@@ -627,6 +647,13 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 
 - (BOOL)textField:(UITextField*)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString*)string
 {
+	UIAlertController* alert = objc_getAssociatedObject(textField, &kIupTableEditAlertKey);
+	if (alert && [string isEqualToString:@"\t"])
+	{
+		[alert iupTableEditFinish:YES];
+		return NO;
+	}
+
 	NSNumber* lin = objc_getAssociatedObject(textField, &kIupTableEditLinKey);
 	NSNumber* col = objc_getAssociatedObject(textField, &kIupTableEditColKey);
 	IFniis cb = _ihandle ? (IFniis)IupGetCallback(_ihandle, "EDITCHANGED_CB") : NULL;
@@ -634,6 +661,21 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 
 	NSString* text = [(textField.text ?: @"") stringByReplacingCharactersInRange:range withString:string];
 	return cb(_ihandle, [lin intValue], [col intValue], (char*)[text UTF8String]) != IUP_IGNORE;
+}
+
+- (void)textFieldDidEndEditing:(UITextField*)textField
+{
+	UIAlertController* alert = objc_getAssociatedObject(textField, &kIupTableEditAlertKey);
+	if (alert && !alert.isBeingDismissed && alert.presentingViewController)
+		[alert iupTableEditFinish:NO];
+}
+
+- (BOOL)textFieldShouldReturn:(UITextField*)textField
+{
+	UIAlertController* alert = objc_getAssociatedObject(textField, &kIupTableEditAlertKey);
+	if (!alert) return YES;
+	[alert iupTableEditFinish:YES];
+	return NO;
 }
 
 - (void)beginEditAtLin:(NSInteger)lin col:(NSInteger)col fromView:(UIView*)source
@@ -655,18 +697,21 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 		tf.clearButtonMode = UITextFieldViewModeWhileEditing;
 	}];
 	IupCocoaTouchTableController* ctrl_ref = self;
+	__block UIAlertController* alert_ref = alert;
 	UITextField* edit_field = alert.textFields.firstObject;
 	edit_field.delegate = self;
 	objc_setAssociatedObject(edit_field, &kIupTableEditLinKey, @(lin), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 	objc_setAssociatedObject(edit_field, &kIupTableEditColKey, @(col), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-	[alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction* a) {
+	void (^cancel_handler)(UIAlertAction*) = ^(UIAlertAction* a) {
 		(void)a;
+		NSString* cur_text = alert_ref.textFields.firstObject.text ?: @"";
 		IFniisi end_cb = (IFniisi)IupGetCallback(ctrl_ref.ihandle, "EDITEND_CB");
-		if (end_cb) end_cb(ctrl_ref.ihandle, (int)lin, (int)col, (char*)"", 0);
-	}]];
-	[alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* a) {
+		if (end_cb) end_cb(ctrl_ref.ihandle, (int)lin, (int)col, (char*)[cur_text UTF8String], 0);
+	};
+	[alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:cancel_handler]];
+	void (^ok_handler)(UIAlertAction*) = ^(UIAlertAction* a) {
 		(void)a;
-		NSString* new_text = alert.textFields.firstObject.text ?: @"";
+		NSString* new_text = alert_ref.textFields.firstObject.text ?: @"";
 		const char* new_c = [new_text UTF8String];
 		IFniisi end_cb = (IFniisi)IupGetCallback(ctrl_ref.ihandle, "EDITEND_CB");
 		int rc = IUP_DEFAULT;
@@ -680,13 +725,19 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 			IFnii vc_cb = (IFnii)IupGetCallback(ctrl_ref.ihandle, "VALUECHANGED_CB");
 			if (vc_cb && vc_cb(ctrl_ref.ihandle, (int)lin, (int)col) == IUP_CLOSE) IupExitLoop();
 		}
-	}]];
+	};
+	UIAlertAction* ok_action = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:ok_handler];
+	[alert addAction:ok_action];
+	alert.preferredAction = ok_action;
+	objc_setAssociatedObject(edit_field, &kIupTableEditAlertKey, alert, OBJC_ASSOCIATION_ASSIGN);
+	objc_setAssociatedObject(alert, &kIupTableEditOkKey, ok_handler, OBJC_ASSOCIATION_COPY_NONATOMIC);
+	objc_setAssociatedObject(alert, &kIupTableEditCancelKey, cancel_handler, OBJC_ASSOCIATION_COPY_NONATOMIC);
 	if (alert.popoverPresentationController)
 	{
 		alert.popoverPresentationController.sourceView = source;
 		alert.popoverPresentationController.sourceRect = source.bounds;
 	}
-	[host presentViewController:alert animated:YES completion:nil];
+	[host presentViewController:alert animated:YES completion:^{ [edit_field becomeFirstResponder]; }];
 }
 
 - (void)sortByCol:(NSInteger)col1 ascending:(BOOL)asc

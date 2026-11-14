@@ -327,7 +327,7 @@ Called only when SHOWDRAGDROP=YES.
 **lin**: line number (1-based).\
 **col**: column number (1-based).\
 **new_value**: the new text value entered by the user.\
-**apply**: 1 if the user accepted the edit (Enter), 0 if cancelled (Escape).
+**apply**: 1 if the user accepted the edit (Enter or Tab), 0 if cancelled (Escape).
 
 **Returns**: IUP_IGNORE to reject the edit and keep the old value.
 

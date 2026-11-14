@@ -2540,7 +2540,7 @@ static LRESULT CALLBACK winTableEditWndProc(HWND hwnd, UINT msg, WPARAM wp, LPAR
       return DLGC_WANTALLKEYS;
 
     case WM_KEYDOWN:
-      if (wp == VK_RETURN)
+      if (wp == VK_RETURN || wp == VK_TAB)
       {
         data->edit_ending = TRUE;
         winTableEndEdit(ih, TRUE);

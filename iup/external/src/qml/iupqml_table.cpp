@@ -947,6 +947,9 @@ static void qmlTableEditCommit(Ihandle* ih, int row, int column, const QString& 
   int lin = row + 1;
   int col = column + 1;
 
+  if (data->edit_lin != lin || data->edit_col != col)
+    return;
+
   data->edit_lin = 0;
   data->edit_col = 0;
 
@@ -1423,6 +1426,7 @@ static const char* qmlTableQml =
   "        onTextEdited: root.iupEditChanged(editor)\n"
   "        Component.onDestruction: root.iupEditClosed(cell.row, cell.column, editor.text)\n"
   "        TableView.onCommit: root.iupEditCommit(cell.row, cell.column, editor.text)\n"
+  "        Keys.onShortcutOverride: function(event) { if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) { root.iupEditCommit(cell.row, cell.column, editor.text); view.closeEditor() } }\n"
   "      }\n"
   "    }\n"
   "  }\n"

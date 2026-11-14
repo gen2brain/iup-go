@@ -523,6 +523,8 @@ static void gtk4TableEditorChanged(GtkEditable* editable, Ihandle* ih)
   g_object_set_data_full(G_OBJECT(editable), "_iup_edit_text", g_strdup(text), g_free);
 }
 
+static void on_edit_done(GtkEditable* editable, gpointer user_data);
+
 static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_data)
 {
   IupCellFactoryData* data = (IupCellFactoryData*)user_data;
@@ -579,6 +581,7 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
       int ret = editbegin_cb(ih, lin, col + 1);
       if (ret == IUP_IGNORE)
       {
+        g_object_set_data(object, "edit_ignored", GINT_TO_POINTER(1));
         gtk_editable_label_stop_editing(label, FALSE);
         return;
       }
@@ -604,6 +607,25 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
     if (delegate)
       g_object_set_data(G_OBJECT(delegate), "_iup_edit_active", NULL);
 
+    GtkEventController* key_controller = g_object_get_data(object, "key_controller");
+    if (key_controller)
+    {
+      if (delegate)
+        gtk_widget_remove_controller(delegate, key_controller);
+      g_object_set_data(object, "key_controller", NULL);
+    }
+
+    if (currently_editing_label == GTK_WIDGET(object))
+      currently_editing_label = NULL;
+
+    if (g_object_get_data(object, "edit_ignored"))
+    {
+      g_object_set_data(object, "edit_ignored", NULL);
+      g_object_set_data(object, "edit_canceled", NULL);
+      g_object_set_data(object, "original_value", NULL);
+      return;
+    }
+
     GtkListItem* list_item = g_object_get_data(object, "list_item");
     if (!list_item)
       return;
@@ -620,19 +642,15 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
     int edit_canceled = GPOINTER_TO_INT(g_object_get_data(object, "edit_canceled"));
     int apply = edit_canceled ? 0 : 1;
 
-    GtkEventController* key_controller = g_object_get_data(object, "key_controller");
-    if (key_controller)
-    {
-      GtkEditable* editable = GTK_EDITABLE(object);
-      GtkWidget* delegate = GTK_WIDGET(gtk_editable_get_delegate(editable));
-      if (delegate)
-        gtk_widget_remove_controller(delegate, key_controller);
-      g_object_set_data(object, "key_controller", NULL);
-    }
-
     IFniisi editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
-    if (editend_cb)
-      editend_cb(ih, lin, col + 1, (char*)current_text, apply);
+    if (editend_cb && editend_cb(ih, lin, col + 1, (char*)current_text, apply) == IUP_IGNORE && apply)
+    {
+      g_signal_handlers_block_by_func(object, G_CALLBACK(on_edit_done), data);
+      gtk_editable_set_text(GTK_EDITABLE(label), old_text ? old_text : "");
+      g_signal_handlers_unblock_by_func(object, G_CALLBACK(on_edit_done), data);
+      iup_table_row_set_value(row, col, old_text ? old_text : "");
+      apply = 0;
+    }
 
     if (apply)
     {
@@ -654,9 +672,6 @@ static void on_editing_notify(GObject* object, GParamSpec* pspec, gpointer user_
 
     g_object_set_data(object, "edit_canceled", NULL);
     g_object_set_data(object, "original_value", NULL);
-
-    if (currently_editing_label == GTK_WIDGET(object))
-      currently_editing_label = NULL;
   }
 
   (void)pspec;

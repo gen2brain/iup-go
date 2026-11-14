@@ -485,6 +485,34 @@ static void gtkTableEditorChanged(GtkEditable* editable, Ihandle* ih)
   g_object_set_data_full(G_OBJECT(editable), "_iup_edit_text", g_strdup(text), g_free);
 }
 
+static gboolean gtkTableEditorKeyPress(GtkWidget* widget, GdkEventKey* evt, gpointer user_data)
+{
+  (void)user_data;
+  if (evt->keyval == GDK_KEY_Tab || evt->keyval == GDK_KEY_ISO_Left_Tab || evt->keyval == GDK_KEY_KP_Tab)
+  {
+    gtk_cell_editable_editing_done(GTK_CELL_EDITABLE(widget));
+    gtk_cell_editable_remove_widget(GTK_CELL_EDITABLE(widget));
+    return TRUE;
+  }
+  return FALSE;
+}
+
+static gboolean gtkTableCancelIgnoredEdit(gpointer data)
+{
+  GtkCellEditable* editable = GTK_CELL_EDITABLE(data);
+  GtkCellRenderer* renderer = (GtkCellRenderer*)g_object_get_data(G_OBJECT(editable), "_iup_edit_renderer");
+  if (gtk_widget_get_parent(GTK_WIDGET(editable)))
+  {
+    g_object_set(editable, "editing-canceled", TRUE, NULL);
+    gtk_cell_editable_editing_done(editable);
+    gtk_cell_editable_remove_widget(editable);
+  }
+  if (renderer)
+    g_object_set_data(G_OBJECT(renderer), "_iup_edit_ignored", NULL);
+  g_object_unref(editable);
+  return FALSE;
+}
+
 static void gtkTableCellEditingStarted(GtkCellRenderer* renderer, GtkCellEditable* editable, gchar* path_string, gpointer user_data)
 {
   Ihandle* ih = (Ihandle*)user_data;
@@ -522,7 +550,9 @@ static void gtkTableCellEditingStarted(GtkCellRenderer* renderer, GtkCellEditabl
     int ret = editbegin_cb(ih, lin, col);
     if (ret == IUP_IGNORE)
     {
-      gtk_cell_renderer_stop_editing(renderer, TRUE);
+      g_object_set_data(G_OBJECT(renderer), "_iup_edit_ignored", GINT_TO_POINTER(1));
+      g_object_set_data(G_OBJECT(editable), "_iup_edit_renderer", renderer);
+      g_idle_add_full(G_PRIORITY_HIGH_IDLE, gtkTableCancelIgnoredEdit, g_object_ref(editable), NULL);
       return;
     }
   }
@@ -534,6 +564,7 @@ static void gtkTableCellEditingStarted(GtkCellRenderer* renderer, GtkCellEditabl
     g_object_set_data_full(G_OBJECT(editable), "_iup_edit_text", g_strdup(gtk_entry_get_text(GTK_ENTRY(editable))), g_free);
     g_signal_connect(G_OBJECT(editable), "delete-text", G_CALLBACK(gtkTableEditorDeleteText), ih);
     g_signal_connect(G_OBJECT(editable), "changed", G_CALLBACK(gtkTableEditorChanged), ih);
+    g_signal_connect(G_OBJECT(editable), "key-press-event", G_CALLBACK(gtkTableEditorKeyPress), ih);
   }
 }
 
@@ -541,6 +572,12 @@ static void gtkTableCellEditingCanceled(GtkCellRenderer* renderer, gpointer user
 {
   Ihandle* ih = (Ihandle*)user_data;
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+
+  if (g_object_get_data(G_OBJECT(renderer), "_iup_edit_ignored"))
+  {
+    g_object_set_data(G_OBJECT(renderer), "_iup_edit_ignored", NULL);
+    return;
+  }
 
   GtkTreePath* path;
   GtkTreeViewColumn* column;
@@ -574,6 +611,9 @@ static void gtkTableCellEdited(GtkCellRendererText* renderer, gchar* path_string
 {
   Ihandle* ih = (Ihandle*)user_data;
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+
+  if (g_object_get_data(G_OBJECT(renderer), "_iup_edit_ignored"))
+    return;
 
   GtkTreePath* path = gtk_tree_path_new_from_string(path_string);
   int* indices = gtk_tree_path_get_indices(path);
