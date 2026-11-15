@@ -244,6 +244,9 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
     gtkSetGlobalColorAttrib("ACCENTCOLOR", &color);
   }
 
+  if (gtk_style_context_lookup_color(context, "error_color", &color))
+    gtkSetGlobalColorAttrib("ERRORCOLOR", &color);
+
   if (gtk_style_context_lookup_color(context, "link_color", &color) ||
       gtk_style_context_lookup_color(context, "theme_link_color", &color))
   {

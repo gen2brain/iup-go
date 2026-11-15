@@ -283,6 +283,9 @@ static void iGlobalSet(const char* name, const char* value, int store)
   if (env && (!value || !iupStrEqual(value, env)))
     return;
 
+  if (iupStrEqual(name, "ERRORCOLOR"))
+    return;
+
   if (iupStrEqual(name, "DEFAULTFONTSIZE"))
   {
     iupSetDefaultFontSizeGlobalAttrib(value);
@@ -588,6 +591,13 @@ IUP_API char* IupGetGlobal(const char* name)
     return iupdrvExeFileName();
   if (iupStrEqual(name, "SCROLLBARSIZE"))
     return iupStrReturnInt(iupdrvGetScrollbarSize());
+  if (iupStrEqual(name, "ERRORCOLOR"))
+  {
+    value = (char*)iupTableGet(iglobal_table, name);
+    if (value)
+      return value;
+    return iupGlobalIsDarkMode() ? "255 153 164" : "196 43 28";
+  }
   if (iupStrEqual(name, "TOUCHREADY"))
   {
     /* driver answers if it detects touch; otherwise it is definitively No */

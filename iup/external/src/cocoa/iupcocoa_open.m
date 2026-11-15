@@ -244,6 +244,11 @@ static void cocoaUpdateGlobalColors(void)
     if (cocoaGetByteRGBAFromNSColor(accent, &r, &g, &b, &a))
       iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", r, g, b);
   }
+
+#ifndef GNUSTEP
+  if (cocoaGetByteRGBAFromNSColor([NSColor systemRedColor], &r, &g, &b, &a))
+    iupGlobalSetDefaultColorAttrib("ERRORCOLOR", r, g, b);
+#endif
 #ifdef GNUSTEP
   iupUnixPortalSetAccentColor();
 #endif

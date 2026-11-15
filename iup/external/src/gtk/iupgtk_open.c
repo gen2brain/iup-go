@@ -545,6 +545,9 @@ static void gtkUpdateGlobalColors(GtkWidget* dialog, GtkWidget* text)
     gtkSetGlobalColorAttrib("ACCENTCOLOR", &color);
   }
 
+  if (gtk_style_context_lookup_color(context, "error_color", &color))
+    gtkSetGlobalColorAttrib("ERRORCOLOR", &color);
+
   context = gtk_widget_get_style_context(dialog);
 
   gtk_style_context_get_color(context, GTK_STATE_FLAG_NORMAL, &color);

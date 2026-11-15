@@ -184,6 +184,9 @@ IUP_DRV_API void iuphaikuSetGlobalColors()
   iupGlobalSetDefaultColorAttrib("TXTHLCOLOR", c.red, c.green, c.blue);
   iupGlobalSetDefaultColorAttrib("ACCENTCOLOR", c.red, c.green, c.blue);
 
+  c = ui_color(B_FAILURE_COLOR);
+  iupGlobalSetDefaultColorAttrib("ERRORCOLOR", c.red, c.green, c.blue);
+
   c = ui_color(B_MENU_BACKGROUND_COLOR);
   iupGlobalSetDefaultColorAttrib("MENUBGCOLOR", c.red, c.green, c.blue);
 

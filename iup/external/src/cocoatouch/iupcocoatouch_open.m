@@ -93,6 +93,7 @@ static void cocoaTouchUpdateGlobalColors(void)
 	UIColor* txt_bg   = [[UIColor secondarySystemBackgroundColor] resolvedColorWithTraitCollection:trait];
 	UIColor* menu_bg  = [[UIColor tertiarySystemBackgroundColor]  resolvedColorWithTraitCollection:trait];
 	UIColor* link_fg  = [[UIColor linkColor]                      resolvedColorWithTraitCollection:trait];
+	UIColor* error_fg = [[UIColor systemRedColor]                 resolvedColorWithTraitCollection:trait];
 
 	if (fg_color)  cocoaTouchGlobalSetFromUIColor("DLGFGCOLOR",  fg_color);
 	else           iupGlobalSetDefaultColorAttrib("DLGFGCOLOR",    0,   0,   0);
@@ -114,6 +115,8 @@ static void cocoaTouchUpdateGlobalColors(void)
 
 	if (link_fg)   cocoaTouchGlobalSetFromUIColor("LINKFGCOLOR", link_fg);
 	else           iupGlobalSetDefaultColorAttrib("LINKFGCOLOR",   0,  88, 208);
+
+	cocoaTouchGlobalSetFromUIColor("ERRORCOLOR", error_fg);
 }
 
 static const void* IUP_COCOATOUCH_THEME_REFRESH_KEY = @"IupCocoaTouchThemeRefresh";

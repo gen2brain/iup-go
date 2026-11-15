@@ -74,6 +74,7 @@ static const iGlobalRegEntry registry[] = {
   { "EFLTHEMEDATA",           0,    E },
   { "EFLTHEMEDATALEN",        0,    E },
   { "EFLVERSION",             R,    E },
+  { "ERRORCOLOR",             R,    ALL },
   { "EXEFILENAME",            R,    ALL },
   { "EXITLOOP",               0,    ALL },
   { "FLTKTHEME",              0,    F },
