@@ -500,32 +500,8 @@ IUP_SDK_API int iupdrvNotifyIsAvailable(void)
 	return NSClassFromString(@"UNUserNotificationCenter") ? 1 : 0;
 }
 
-IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
+static void cocoaTouchNotifyPost(Ihandle* ih)
 {
-	if (!ih) return 0;
-
-	const char* style = IupGetAttribute(ih, "STYLE");
-	if (style && iupStrEqualNoCase(style, "TOAST"))
-		return cocoaTouchToastShow(ih);
-
-	if (!iupdrvNotifyIsAvailable())
-	{
-		cocoaTouchNotifyFireError(ih, @"Notifications unavailable on this iOS runtime");
-		return 0;
-	}
-
-	UNAuthorizationStatus status = cocoaTouchNotifyQueryStatus();
-	if (status == UNAuthorizationStatusDenied)
-	{
-		cocoaTouchNotifyFireError(ih, @"Notification permission denied. Enable in Settings.");
-		return 0;
-	}
-	if (status == UNAuthorizationStatusNotDetermined)
-	{
-		cocoaTouchNotifyFireError(ih, @"Notification permission not requested. Set REQUESTPERMISSION=YES at launch.");
-		return 0;
-	}
-
 	IupCocoaTouchNotify* n = cocoaTouchNotifyGet(ih);
 	if (!n) n = cocoaTouchNotifyCreate(ih);
 
@@ -583,6 +559,36 @@ IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
 				cocoaTouchNotifyFireError(ih_ref, [error localizedDescription]);
 			});
 		}
+	}];
+}
+
+IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
+{
+	if (!ih) return 0;
+
+	const char* style = IupGetAttribute(ih, "STYLE");
+	if (style && iupStrEqualNoCase(style, "TOAST"))
+		return cocoaTouchToastShow(ih);
+
+	if (!iupdrvNotifyIsAvailable())
+	{
+		cocoaTouchNotifyFireError(ih, @"Notifications unavailable on this iOS runtime");
+		return 0;
+	}
+
+	Ihandle* ih_ref = ih;
+	[[UNUserNotificationCenter currentNotificationCenter]
+	    getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings) {
+		UNAuthorizationStatus status = settings.authorizationStatus;
+		iupCocoaTouchRunLater(^{
+			if (!ih_ref || !iupObjectCheck(ih_ref)) return;
+			if (status == UNAuthorizationStatusDenied)
+				cocoaTouchNotifyFireError(ih_ref, @"Notification permission denied. Enable in Settings.");
+			else if (status == UNAuthorizationStatusNotDetermined)
+				cocoaTouchNotifyFireError(ih_ref, @"Notification permission not requested. Set REQUESTPERMISSION=YES at launch.");
+			else
+				cocoaTouchNotifyPost(ih_ref);
+		});
 	}];
 	return 1;
 }

@@ -97,7 +97,6 @@ typedef struct _IupCocoaNotify {
   Ihandle* ih;
   NSString* identifier;
   IupCocoaNotifyDelegate* delegate;
-  int permission_status;
   NSString* tempImagePath;
 } IupCocoaNotify;
 
@@ -269,7 +268,6 @@ static IupCocoaNotify* cocoaNotifyCreate(Ihandle* ih)
   notify->ih = ih;
   notify->delegate = [[IupCocoaNotifyDelegate alloc] init];
   notify->delegate.ih = ih;
-  notify->permission_status = -1;
 
   UNUserNotificationCenter* center = [UNUserNotificationCenter currentNotificationCenter];
   center.delegate = notify->delegate;
@@ -346,6 +344,23 @@ static char* cocoaNotifyGetPermissionAttrib(Ihandle* ih)
     return "PROMPT";
 }
 
+static void cocoaNotifyFireError(Ihandle* ih, const char* msg)
+{
+  IFns error_cb = (IFns)IupGetCallback(ih, "ERROR_CB");
+  if (error_cb)
+    error_cb(ih, (char*)msg);
+}
+
+static void cocoaNotifyFireErrorLater(Ihandle* ih, NSString* msg)
+{
+  NSString* copy = [msg copy];
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if (iupObjectCheck(ih))
+      cocoaNotifyFireError(ih, [copy UTF8String]);
+    [copy release];
+  });
+}
+
 static int cocoaNotifySetRequestPermissionAttrib(Ihandle* ih, const char* value)
 {
   if (!iupStrBoolean(value))
@@ -359,84 +374,16 @@ static int cocoaNotifySetRequestPermissionAttrib(Ihandle* ih, const char* value)
                                        UNAuthorizationOptionSound |
                                        UNAuthorizationOptionBadge)
                     completionHandler:^(BOOL granted, NSError* error) {
-    IupCocoaNotify* notify = (IupCocoaNotify*)iupAttribGet(ih, "_IUPCOCOA_NOTIFY");
-    if (notify)
-      notify->permission_status = granted ? 1 : 0;
+    (void)granted;
+    if (error)
+      cocoaNotifyFireErrorLater(ih, [error localizedDescription]);
   }];
 
   return 0;
 }
 
-IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
+static void cocoaNotifyPost(Ihandle* ih, IupCocoaNotify* notify)
 {
-  IupCocoaNotify* notify;
-  __block UNAuthorizationStatus authStatus = UNAuthorizationStatusNotDetermined;
-  dispatch_semaphore_t sem;
-
-  if (!iupCocoaNotifyIsSupported())
-  {
-    IFns error_cb = (IFns)IupGetCallback(ih, "ERROR_CB");
-    if (error_cb)
-      error_cb(ih, (char*)"Notifications require macOS 10.15+ and a bundled application with bundle identifier");
-    return 0;
-  }
-
-  notify = (IupCocoaNotify*)iupAttribGet(ih, "_IUPCOCOA_NOTIFY");
-
-  if (!notify)
-    notify = cocoaNotifyCreate(ih);
-
-  sem = dispatch_semaphore_create(0);
-
-  [[UNUserNotificationCenter currentNotificationCenter]
-      getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings) {
-    authStatus = settings.authorizationStatus;
-    dispatch_semaphore_signal(sem);
-  }];
-
-  dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC));
-
-  if (authStatus == UNAuthorizationStatusNotDetermined)
-  {
-    __block BOOL granted = NO;
-    __block NSString* errorMsg = nil;
-    sem = dispatch_semaphore_create(0);
-
-    [[UNUserNotificationCenter currentNotificationCenter]
-        requestAuthorizationWithOptions:(UNAuthorizationOptionAlert |
-                                         UNAuthorizationOptionSound |
-                                         UNAuthorizationOptionBadge)
-                      completionHandler:^(BOOL g, NSError* error) {
-      granted = g;
-      if (error)
-        errorMsg = [[error localizedDescription] copy];
-      dispatch_semaphore_signal(sem);
-    }];
-
-    dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
-
-    if (!granted)
-    {
-      IFns error_cb = (IFns)IupGetCallback(ih, "ERROR_CB");
-      if (error_cb)
-      {
-        if (errorMsg)
-          error_cb(ih, (char*)[errorMsg UTF8String]);
-        else
-          error_cb(ih, (char*)"Notification permission denied by user");
-      }
-      [errorMsg release];
-      return 0;
-    }
-  }
-  else if (authStatus == UNAuthorizationStatusDenied)
-  {
-    IFns error_cb = (IFns)IupGetCallback(ih, "ERROR_CB");
-    if (error_cb)
-      error_cb(ih, (char*)"Notification permission denied. Enable in System Preferences.");
-    return 0;
-  }
-
   cocoaNotifyRegisterCategory(ih);
 
   UNMutableNotificationContent* content = [[UNMutableNotificationContent alloc] init];
@@ -551,31 +498,74 @@ IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
                                            content:content
                                            trigger:nil];
 
-  __block BOOL success = NO;
-  dispatch_semaphore_t showSem = dispatch_semaphore_create(0);
-
   [[UNUserNotificationCenter currentNotificationCenter]
       addNotificationRequest:request
        withCompletionHandler:^(NSError* error) {
     if (error)
-    {
-      IFns error_cb = (IFns)IupGetCallback(ih, "ERROR_CB");
-      if (error_cb)
-        error_cb(ih, (char*)[[error localizedDescription] UTF8String]);
-      success = NO;
-    }
-    else
-    {
-      success = YES;
-    }
-    dispatch_semaphore_signal(showSem);
+      cocoaNotifyFireErrorLater(ih, [error localizedDescription]);
   }];
 
-  dispatch_semaphore_wait(showSem, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC));
-
   [content release];
+}
 
-  return success ? 1 : 0;
+static void cocoaNotifyPostAuthorized(Ihandle* ih)
+{
+  IupCocoaNotify* notify = (IupCocoaNotify*)iupAttribGet(ih, "_IUPCOCOA_NOTIFY");
+  if (notify)
+    cocoaNotifyPost(ih, notify);
+}
+
+IUP_SDK_API int iupdrvNotifyShow(Ihandle* ih)
+{
+  if (!iupCocoaNotifyIsSupported())
+  {
+    cocoaNotifyFireError(ih, "Notifications require macOS 10.15+ and a bundled application with bundle identifier");
+    return 0;
+  }
+
+  if (!iupAttribGet(ih, "_IUPCOCOA_NOTIFY"))
+    cocoaNotifyCreate(ih);
+
+  [[UNUserNotificationCenter currentNotificationCenter]
+      getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings) {
+    UNAuthorizationStatus status = settings.authorizationStatus;
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (!iupObjectCheck(ih))
+        return;
+
+      if (status == UNAuthorizationStatusDenied)
+      {
+        cocoaNotifyFireError(ih, "Notification permission denied. Enable in System Preferences.");
+        return;
+      }
+
+      if (status != UNAuthorizationStatusNotDetermined)
+      {
+        cocoaNotifyPostAuthorized(ih);
+        return;
+      }
+
+      [[UNUserNotificationCenter currentNotificationCenter]
+          requestAuthorizationWithOptions:(UNAuthorizationOptionAlert |
+                                           UNAuthorizationOptionSound |
+                                           UNAuthorizationOptionBadge)
+                        completionHandler:^(BOOL granted, NSError* error) {
+        NSString* msg = granted ? nil : [(error ? [error localizedDescription] : @"Notification permission denied by user") copy];
+        dispatch_async(dispatch_get_main_queue(), ^{
+          if (iupObjectCheck(ih))
+          {
+            if (msg)
+              cocoaNotifyFireError(ih, [msg UTF8String]);
+            else
+              cocoaNotifyPostAuthorized(ih);
+          }
+          [msg release];
+        });
+      }];
+    });
+  }];
+
+  return 1;
 }
 
 IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
