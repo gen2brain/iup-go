@@ -5,12 +5,16 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "iup.h"
 #include "iupcbs.h"
 
 
 #include "iup_object.h"
 #include "iup_attrib.h"
+#include "iup_hashtable.h"
 #include "iup_stdcontrols.h"
 #include "iup_controls.h"
 
@@ -244,6 +248,113 @@ void iupMatrixAuxUpdateLast(ImatLinColData* p)
   }
 }
 
+static int iMatrixAuxCompareInt(const void* a, const void* b)
+{
+  return *(const int*)a - *(const int*)b;
+}
+
+static int iMatrixAuxLineIdFromName(const char* name)
+{
+  int id = 0;
+  if (strncmp(name, "RASTERHEIGHT", 12) == 0)
+    name += 12;
+  else if (strncmp(name, "HEIGHT", 6) == 0)
+    name += 6;
+  else
+    return -1;
+
+  if (*name < '0' || *name > '9')
+    return -1;
+
+  while (*name >= '0' && *name <= '9')
+  {
+    id = id * 10 + (*name - '0');
+    name++;
+  }
+
+  return *name ? -1 : id;
+}
+
+static int* iMatrixAuxGetCustomLines(Ihandle* ih, int* count)
+{
+  int* ids = NULL;
+  int n = 0, alloc = 0;
+  char* name = iupTableFirst(ih->attrib);
+  while (name)
+  {
+    int id = iMatrixAuxLineIdFromName(name);
+    if (id > 0 && id < ih->data->lines.num)
+    {
+      if (n == alloc)
+      {
+        int* new_ids;
+        alloc = alloc ? alloc * 2 : 16;
+        new_ids = (int*)realloc(ids, alloc * sizeof(int));
+        if (!new_ids)
+        {
+          free(ids);
+          *count = -1;
+          return NULL;
+        }
+        ids = new_ids;
+      }
+      ids[n++] = id;
+    }
+    name = iupTableNext(ih->attrib);
+  }
+
+  if (n > 1)
+    qsort(ids, n, sizeof(int), iMatrixAuxCompareInt);
+
+  *count = n;
+  return ids;
+}
+
+static void iMatrixAuxFillLineSizes(Ihandle* ih)
+{
+  ImatLinColData* p = &(ih->data->lines);
+  int i, c = 0, count, def_size = 0, has_def = 0;
+  int* custom = NULL;
+
+  if (ih->data->use_title_size)
+    count = -1;
+  else
+    custom = iMatrixAuxGetCustomLines(ih, &count);
+
+  for (i = 0; i < p->num; i++)
+  {
+    int is_custom = 0;
+
+    if (count > 0)
+    {
+      while (c < count && custom[c] < i)
+        c++;
+      if (c < count && custom[c] == i)
+        is_custom = 1;
+    }
+
+    if (i == 0 || count < 0 || is_custom)
+      p->dt[i].size = iupMatrixGetLineHeight(ih, i, 1);
+    else
+    {
+      if (!has_def)
+      {
+        def_size = iupMatrixGetLineHeight(ih, i, 1);
+        has_def = 1;
+      }
+      p->dt[i].size = def_size;
+    }
+
+    if (i >= p->num_noscroll)
+      p->total_visible_size += p->dt[i].size;
+
+    p->total_size += p->dt[i].size;
+  }
+
+  if (count > 0)
+    free(custom);
+}
+
 /* Fill the sizes array with the width/heigh of all the columns/lines.
    Calculate the value of total_visible_size */
 static void iMatrixAuxFillSizeVec(Ihandle* ih, int m)
@@ -259,12 +370,16 @@ static void iMatrixAuxFillSizeVec(Ihandle* ih, int m)
   /* Calculate total width/height of the matrix and the width/height of each column */
   p->total_visible_size = 0;
   p->total_size = 0;
+
+  if (m == IMAT_PROCESS_LIN)
+  {
+    iMatrixAuxFillLineSizes(ih);
+    return;
+  }
+
   for (i = 0; i < p->num; i++)
   {
-    if (m == IMAT_PROCESS_LIN)
-      p->dt[i].size = iupMatrixGetLineHeight(ih, i, 1);
-    else
-      p->dt[i].size = iupMatrixGetColumnWidth(ih, i, 1);
+    p->dt[i].size = iupMatrixGetColumnWidth(ih, i, 1);
 
     if (i >= p->num_noscroll)
       p->total_visible_size += p->dt[i].size;
