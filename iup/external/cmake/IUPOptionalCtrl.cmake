@@ -34,6 +34,12 @@ target_include_directories(iupctrl
 target_compile_definitions(iupctrl PRIVATE IUPCONTROLS_BUILD_LIBRARY)
 target_link_libraries(iupctrl PUBLIC IUP::iup)
 
+include(CheckLibraryExists)
+check_library_exists(m ceil "" IUP_HAVE_LIBM)
+if(IUP_HAVE_LIBM)
+  target_link_libraries(iupctrl PRIVATE m)
+endif()
+
 set_target_properties(iupctrl PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION ${PROJECT_VERSION_MAJOR}

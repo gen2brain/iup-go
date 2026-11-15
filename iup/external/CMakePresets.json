@@ -156,6 +156,15 @@
       }
     },
     {
+      "name": "gnustep",
+      "displayName": "GNUstep backend (Linux and BSD)",
+      "inherits": "default",
+      "cacheVariables": {
+        "IUP_BACKEND": "gnustep",
+        "CMAKE_OBJC_COMPILER": "clang"
+      }
+    },
+    {
       "name": "gtk3-full",
       "displayName": "GTK3 with all optional libraries",
       "inherits": "gtk3",
@@ -339,6 +348,18 @@
       "name": "fltk-full",
       "displayName": "FLTK with all optional libraries",
       "inherits": "fltk",
+      "cacheVariables": {
+        "IUP_BUILD_GL": "ON",
+        "IUP_BUILD_WEB": "ON",
+        "IUP_BUILD_CTRL": "ON",
+        "IUP_BUILD_PLOT": "ON",
+        "IUP_BUILD_MEDIA": "ON"
+      }
+    },
+    {
+      "name": "gnustep-full",
+      "displayName": "GNUstep with all optional libraries",
+      "inherits": "gnustep",
       "cacheVariables": {
         "IUP_BUILD_GL": "ON",
         "IUP_BUILD_WEB": "ON",

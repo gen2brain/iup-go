@@ -134,8 +134,9 @@ package iup
 
 #cgo gnustep CFLAGS: -Iexternal/src/cocoa -Iexternal/src/unix -x objective-c -DIUP_USE_COCOA -DGNUSTEP
 #cgo gnustep,web CFLAGS: -DIUPWEB_USE_DLOPEN -DIUPWEB_HOSTED
-#cgo gnustep CFLAGS: -fno-strict-aliasing -fPIC -fblocks -Wno-import -Wno-incompatible-pointer-types -Wno-protocol
+#cgo gnustep CFLAGS: -fno-strict-aliasing -fPIC -fblocks -Wno-import -Wno-protocol
 #cgo gnustep LDFLAGS: -lgnustep-gui -lgnustep-base -l:libobjc.so -lBlocksRuntime -ldispatch -lopal -lgnustep-corebase
+#cgo gnustep,gl LDFLAGS: -lGL
 
 #cgo android CFLAGS: -Iexternal/src/android -DIUP_USE_ANDROID
 #cgo android CXXFLAGS: -Iexternal/src/android -DIUP_USE_ANDROID

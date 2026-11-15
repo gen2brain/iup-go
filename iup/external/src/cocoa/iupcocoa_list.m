@@ -1495,7 +1495,7 @@ static void cocoaListFieldSelectionChanged(NSTextField* field)
       image_item = nil;
   }
 
-  IupCocoaListTableCellView* cell_view = [table_view makeViewWithIdentifier:@"IupCocoaListTableCellView" owner:self];
+  IupCocoaListTableCellView* cell_view = (IupCocoaListTableCellView*)[table_view makeViewWithIdentifier:@"IupCocoaListTableCellView" owner:self];
 
   if (nil == cell_view)
   {

@@ -1327,7 +1327,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
 
   if(ih->data->show_toggle > 0)
   {
-    table_cell_view = [outline_view makeViewWithIdentifier:@"IupCocoaTreeToggleTableCellView" owner:self];
+    table_cell_view = (NSTableCellView*)[outline_view makeViewWithIdentifier:@"IupCocoaTreeToggleTableCellView" owner:self];
     if(nil == table_cell_view)
     {
       table_cell_view = [[[IupCocoaTreeToggleTableCellView alloc] initWithFrame:NSZeroRect] autorelease];
@@ -1412,7 +1412,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   }
   else
   {
-    table_cell_view = [outline_view makeViewWithIdentifier:@"IupCocoaTreeTableCellView" owner:self];
+    table_cell_view = (NSTableCellView*)[outline_view makeViewWithIdentifier:@"IupCocoaTreeTableCellView" owner:self];
     if(nil == table_cell_view)
     {
       table_cell_view = [[[IupCocoaTreeTableCellView alloc] initWithFrame:NSZeroRect] autorelease];
@@ -1683,7 +1683,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
 - (NSTableRowView*)outlineView:(NSOutlineView*)outlineView rowViewForItem:(id)item
 {
   IupCocoaOutlineView* iup_outline_view = (IupCocoaOutlineView*)outlineView;
-  IupCocoaTreeRowView* row_view = [outlineView makeViewWithIdentifier:@"IupTreeRow" owner:self];
+  IupCocoaTreeRowView* row_view = (IupCocoaTreeRowView*)[outlineView makeViewWithIdentifier:@"IupTreeRow" owner:self];
   if (!row_view) {
     row_view = [[[IupCocoaTreeRowView alloc] init] autorelease];
     row_view.identifier = @"IupTreeRow";
@@ -1784,7 +1784,7 @@ static NSImage* helperGetActiveImageForTreeItem(IupCocoaTreeItem* tree_item, Iup
   if (!title)
     return nil;
 
-  NSTableCellView* cellView = [outlineView viewAtColumn:[outlineView columnWithIdentifier:@"MainColumn"] row:[outlineView rowForItem:item] makeIfNecessary:NO];
+  NSTableCellView* cellView = (NSTableCellView*)[outlineView viewAtColumn:[outlineView columnWithIdentifier:@"MainColumn"] row:[outlineView rowForItem:item] makeIfNecessary:NO];
   if (!cellView)
     return title;
 

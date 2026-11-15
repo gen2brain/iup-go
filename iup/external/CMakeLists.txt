@@ -68,9 +68,9 @@ else()
 endif()
 
 set(IUP_BACKEND "${_IUP_BACKEND_DEFAULT}" CACHE STRING
-  "GUI backend: gtk3, gtk4, gtk2, win32, winui, cocoa, cocoatouch, motif, qt6, qt5, qml, efl, fltk, android, haiku, wasm")
+  "GUI backend: gtk3, gtk4, gtk2, win32, winui, cocoa, cocoatouch, gnustep, motif, qt6, qt5, qml, efl, fltk, android, haiku, wasm")
 set_property(CACHE IUP_BACKEND PROPERTY STRINGS
-  gtk3 gtk4 gtk2 win32 winui cocoa cocoatouch motif qt6 qt5 qml efl fltk android haiku wasm)
+  gtk3 gtk4 gtk2 win32 winui cocoa cocoatouch gnustep motif qt6 qt5 qml efl fltk android haiku wasm)
 
 option(IUP_BUILD_GL        "Build iupgl (OpenGL canvas)"     OFF)
 option(IUP_BUILD_WEB       "Build iupweb (Web browser)"      OFF)
@@ -85,7 +85,7 @@ option(IUP_BUILD_FRAMEWORK "Build iup as a .framework bundle (requires IUP_BACKE
 option(IUP_EMBED_MANIFEST  "Embed the IUP application manifest into built executables (Windows)" ON)
 set(IUP_FRAMEWORK_BUILD "1" CACHE STRING "CFBundleVersion for the framework bundle")
 
-if(APPLE)
+if(APPLE OR IUP_BACKEND STREQUAL "gnustep")
   enable_language(OBJC)
 endif()
 
@@ -141,6 +141,8 @@ elseif(IUP_BACKEND STREQUAL "cocoa")
   include(IUPDriverCocoa)
 elseif(IUP_BACKEND STREQUAL "cocoatouch")
   include(IUPDriverCocoaTouch)
+elseif(IUP_BACKEND STREQUAL "gnustep")
+  include(IUPDriverGNUstep)
 elseif(IUP_BACKEND STREQUAL "motif")
   include(IUPDriverMotif)
 elseif(IUP_BACKEND STREQUAL "qt6" OR IUP_BACKEND STREQUAL "qt5")

@@ -808,7 +808,7 @@ static void cocoaTableApplyCellFont(Ihandle* ih, NSTextField* textField, int lin
 static void cocoaTableBeginEdit(NSTableView* tableView, NSInteger col, NSInteger row, NSEvent* event)
 {
 #ifdef GNUSTEP
-  NSTableCellView* cellView = [tableView viewAtColumn:col row:row makeIfNecessary:NO];
+  NSTableCellView* cellView = (NSTableCellView*)[tableView viewAtColumn:col row:row makeIfNecessary:NO];
   [cellView.textField setEditable:YES];
   [[tableView window] makeFirstResponder:cellView.textField];
   (void)event;
@@ -2001,7 +2001,7 @@ static NSInteger cocoaTableRowOfField(Ihandle* ih, NSTableView* tableView, NSVie
   NSColor* bgcolor = cocoaTableGetRowBackgroundColor(ih, (int)row);
 
   static NSString* const kRowViewIdentifier = @"IupCocoaTableRowView";
-  IupCocoaTableRowView* rowView = [tableView makeViewWithIdentifier:kRowViewIdentifier owner:self];
+  IupCocoaTableRowView* rowView = (IupCocoaTableRowView*)[tableView makeViewWithIdentifier:kRowViewIdentifier owner:self];
 
   if (!rowView)
   {

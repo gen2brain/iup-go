@@ -24,6 +24,15 @@ elseif(APPLE)
   )
   set(_GL_LIBS "-framework OpenGL")
 
+elseif(IUP_BACKEND STREQUAL "gnustep")
+  list(APPEND _GL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_cocoa.m")
+  set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_cocoa.m"
+    PROPERTIES LANGUAGE OBJC
+  )
+  find_package(OpenGL REQUIRED)
+  set(_GL_LIBS OpenGL::GL)
+
 elseif(IUP_BACKEND STREQUAL "gtk2" OR IUP_BACKEND STREQUAL "motif")
   list(APPEND _GL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_x.c")
   find_package(OpenGL REQUIRED)
@@ -120,7 +129,7 @@ elseif(APPLE AND IUP_BACKEND STREQUAL "cocoatouch")
   set(IUPGL_PC_LIBS_PRIVATE "-framework QuartzCore -framework OpenGLES")
 elseif(APPLE)
   set(IUPGL_PC_LIBS_PRIVATE "-framework OpenGL")
-elseif(IUP_BACKEND STREQUAL "gtk2" OR IUP_BACKEND STREQUAL "motif")
+elseif(IUP_BACKEND STREQUAL "gtk2" OR IUP_BACKEND STREQUAL "motif" OR IUP_BACKEND STREQUAL "gnustep")
   set(IUPGL_PC_LIBS_PRIVATE "-lGL")
 elseif(IUP_BACKEND STREQUAL "android")
   set(IUPGL_PC_LIBS_PRIVATE "-lEGL -lGLESv3 -landroid")

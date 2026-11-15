@@ -71,7 +71,7 @@ typedef struct _GtkWidget InativeHandle;
 typedef struct _WidgetRec InativeHandle;
 #elif defined(WINVER)
 typedef struct HWND__ InativeHandle;
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(IUP_USE_COCOA)
 typedef void InativeHandle;
 #elif defined(__ANDROID__)
 struct _jobject;
