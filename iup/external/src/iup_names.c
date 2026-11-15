@@ -53,113 +53,84 @@ static int iNameCheckArray(Ihandle** ih_array, int count, Ihandle* ih)
   return 1;
 }
 
-void iupNamesDestroyHandles(void)
+static Ihandle* iNamesFindTopParent(Ihandle** done, int done_count, const char* attrib_name, void* attrib_value)
 {
-  char* name;
-  Ihandle** ih_array, *ih;
-  int count, i = 0;
+  char* name = iupTableFirst(inames_strtable);
+  while (name)
+  {
+    Ihandle* ih = (Ihandle*)iupTableGetCurr(inames_strtable);
+    if (iupObjectCheck(ih) &&
+        (!attrib_name || (attrib_value && iupAttribGet(ih, attrib_name) == attrib_value) || (!attrib_value && iupAttribGet(ih, attrib_name))))
+    {
+      ih = iNameGetTopParent(ih);
+      if (iNameCheckArray(done, done_count, ih))
+        return ih;
+    }
+    name = iupTableNext(inames_strtable);
+  }
+  return NULL;
+}
+
+static void iNamesDestroyTopParents(const char* attrib_name, void* attrib_value)
+{
+  Ihandle** done;
+  Ihandle* ih;
+  int count, done_count = 0;
 
   count = iupTableCount(inames_strtable);
   if (!count)
     return;
 
-  ih_array = (Ihandle**)malloc(count * sizeof(Ihandle*));
-  if (!ih_array)
+  done = (Ihandle**)malloc(count * sizeof(Ihandle*));
+  if (!done)
     return;
-  memset(ih_array, 0, count * sizeof(Ihandle*));
 
-  /* store the handles before updating so we can remove elements in the loop */
-  name = iupTableFirst(inames_strtable);
-  while (name)
+  while (done_count < count && (ih = iNamesFindTopParent(done, done_count, attrib_name, attrib_value)) != NULL)
   {
-    ih = (Ihandle*)iupTableGetCurr(inames_strtable);
-    if (iupObjectCheck(ih))   /* here must be a handle */
-    {
-      /* only need to destroy the top parent handle */
-      ih = iNameGetTopParent(ih);
-
-      /* check if already in the array */
-      if (iNameCheckArray(ih_array, i, ih))
-      {
-        ih_array[i] = ih;
-        i++;
-      }
-    }
-    name = iupTableNext(inames_strtable);
+    done[done_count++] = ih;
+    IupDestroy(ih);
   }
 
-  count = i;
-  for (i = 0; i < count; i++)
-  {
-    if (iupObjectCheck(ih_array[i]))  /* here must be a handle */
-      IupDestroy(ih_array[i]);
-  }
+  free(done);
+}
 
-  free(ih_array);
+void iupNamesDestroyHandles(void)
+{
+  iNamesDestroyTopParents(NULL, NULL);
 }
 
 IUP_SDK_API void iupNamesDestroyHandlesSelected(const char* attrib_name, void* attrib_value)
 {
-  char* name;
-  Ihandle** ih_array, *ih;
-  int count, i = 0;
-
-  count = iupTableCount(inames_strtable);
-  if (!count)
-    return;
-
-  ih_array = (Ihandle**)malloc(count * sizeof(Ihandle*));
-  if (!ih_array)
-    return;
-  memset(ih_array, 0, count * sizeof(Ihandle*));
-
-  /* store the handles before updating so we can remove elements in the loop */
-  name = iupTableFirst(inames_strtable);
-  while (name)
-  {
-    ih = (Ihandle*)iupTableGetCurr(inames_strtable);
-    if (iupObjectCheck(ih) && ((attrib_value && iupAttribGet(ih, attrib_name) == attrib_value) || (!attrib_value && iupAttribGet(ih, attrib_name))))
-    {
-      /* only need to destroy the top parent handle */
-      ih = iNameGetTopParent(ih);
-
-      /* check if already in the array */
-      if (iNameCheckArray(ih_array, i, ih))
-      {
-        ih_array[i] = ih;
-        i++;
-      }
-    }
-    name = iupTableNext(inames_strtable);
-  }
-
-  count = i;
-  for (i = 0; i < count; i++)
-  {
-    if (iupObjectCheck(ih_array[i]))  /* here must be a handle */
-      IupDestroy(ih_array[i]);
-  }
-
-  free(ih_array);
+  iNamesDestroyTopParents(attrib_name, attrib_value);
 }
 
 void iupRemoveNames(Ihandle* ih)
 {
-  /* called from IupDestroy */
-  char* name;
+  if (iupAttribGet(ih, "HANDLENAME"))
+  {
+    int i, count = iupNamesFindAll(ih, NULL, -1);
+    if (count > 0)
+    {
+      char** names = (char**)malloc(count * sizeof(char*));
+      if (names)
+      {
+        iupNamesFindAll(ih, names, count);
+        for (i = 0; i < count; i++)
+          names[i] = iupStrDup(names[i]);
+        for (i = 0; i < count; i++)
+        {
+          if (names[i])
+          {
+            iupTableRemove(inames_strtable, names[i]);
+            free(names[i]);
+          }
+        }
+        free(names);
+      }
+    }
+  }
 
-  /* ih here is an Ihandle* */
-
-  /* check for at least one name (the last one set) */
-  name = iupAttribGetHandleName(ih);
-  if (name)
-    iupTableRemove(inames_strtable, name);
-
-  /* clear also the NAME attribute */
   iupBaseSetNameAttrib(ih, NULL);
-
-  /* Do NOT search for other names, this would imply in checking in all store names.
-     So, some names may have left invalid on the handle names database. */
 }
 
 IUP_API Ihandle* IupGetHandle(const char* name)

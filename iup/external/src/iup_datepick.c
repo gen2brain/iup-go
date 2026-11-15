@@ -499,6 +499,22 @@ static Ihandle* iDatePickCreateText(void)
   return txt;
 }
 
+static IattribSetFunc iDatePickFrameSetBackColor = NULL;
+
+static int iDatePickSetBackColorAttrib(Ihandle* ih, const char* value)
+{
+  char* txtbgcolor = IupGetGlobal("TXTBGCOLOR");
+  int stored;
+
+  if (!value)
+    value = txtbgcolor;
+
+  iupAttribSet(ih, "_IUPFRAME_HAS_BGCOLOR", "1");
+  stored = iDatePickFrameSetBackColor ? iDatePickFrameSetBackColor(ih, value) : 1;
+
+  return iupStrEqual(value, txtbgcolor) ? 0 : stored;
+}
+
 static int iDatePickCreateMethod(Ihandle* ih, void** params)
 {
   Ihandle* box, *tgl;
@@ -525,8 +541,6 @@ static int iDatePickCreateMethod(Ihandle* ih, void** params)
 
   iDatePickSetOrderAttrib(ih, "DMY");
   iDatePickSetValueAttrib(ih, iDatePickGetTodayAttrib(ih));
-
-  IupSetAttribute(ih, "BACKCOLOR", IupGetGlobal("TXTBGCOLOR"));
 
   return IUP_NOERROR;
 }
@@ -560,6 +574,10 @@ Iclass* iupDatePickNewClass(void)
 
   /* Callbacks */
   iupClassRegisterCallback(ic, "VALUECHANGED_CB", "");
+
+  iupClassRegisterGetAttribute(ic, "BACKCOLOR", NULL, &iDatePickFrameSetBackColor, NULL, NULL, NULL);
+  iupClassRegisterReplaceAttribFunc(ic, "BACKCOLOR", NULL, iDatePickSetBackColorAttrib);
+  iupClassRegisterReplaceAttribDef(ic, "BACKCOLOR", "TXTBGCOLOR", NULL);
 
   iupClassRegisterAttribute(ic, "VALUE", iDatePickGetValueAttrib, iDatePickSetValueAttrib, IUPAF_SAMEASSYSTEM, "TODAY", IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TODAY", iDatePickGetTodayAttrib, NULL, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_READONLY | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
