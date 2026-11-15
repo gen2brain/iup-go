@@ -142,7 +142,7 @@ Can be "YES" or "NO". Default: "NO".
 
 **EVENROWCOLOR** (non-inheritable): Background color for even-numbered rows.
 Only used when ALTERNATEROWS=YES. Default: BGCOLOR 6% darker, or 6% lighter when BGCOLOR is dark.
-In macOS and GNUstep, when EVENROWCOLOR and ODDROWCOLOR are not defined, the system alternating colors are used.
+In macOS, when EVENROWCOLOR and ODDROWCOLOR are not defined, the system alternating colors are used.
 
 **ODDROWCOLOR** (non-inheritable): Background color for odd-numbered rows.
 Only used when ALTERNATEROWS=YES. Default: BGCOLOR.

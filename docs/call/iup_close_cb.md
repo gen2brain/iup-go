@@ -2,6 +2,7 @@
 
 Called just before a dialog is closed when the user clicks the close button of the title bar or an equivalent action.
 In Android, the Back button is the equivalent action; while the dialog's navigation drawer is open, Back closes the drawer instead.
+In macOS, the application menu Quit calls it for every visible dialog; IUP_IGNORE cancels the quit, otherwise the dialogs are hidden and the main loop ends.
 
 ### Callback
 

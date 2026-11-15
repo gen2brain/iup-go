@@ -4,6 +4,7 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "iup.h"
@@ -11,17 +12,18 @@
 #include "iup_drvinfo.h"
 #include "iup_globalattrib.h"
 #include "iup_object.h"
+#include "iup_dlglist.h"
 
 #include "iupcocoa_drv.h"
 #ifdef GNUSTEP
 #include "iupunix_portal.h"
 #endif
 
-#ifdef GNUSTEP
-@interface IupGnustepApplicationDelegate : NSObject
+@interface IupCocoaApplicationDelegate : NSObject <NSApplicationDelegate>
 @end
 
-@implementation IupGnustepApplicationDelegate
+@implementation IupCocoaApplicationDelegate
+#ifdef GNUSTEP
 - (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename
 {
   (void)sender;
@@ -34,9 +36,59 @@
   (void)sender;
   (void)filenames;
 }
+#else
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication*)sender
+{
+  Ihandle** dialogs;
+  Ihandle* ih;
+  int i, count = 0;
+  (void)sender;
+
+  if (IupMainLoopLevel() == 0)
+    return NSTerminateNow;
+
+  for (ih = iupDlgListFirst(); ih; ih = iupDlgListNext())
+    count++;
+
+  dialogs = (Ihandle**)malloc((count + 1) * sizeof(Ihandle*));
+  if (!dialogs)
+    return NSTerminateNow;
+
+  count = 0;
+  for (ih = iupDlgListFirst(); ih; ih = iupDlgListNext())
+  {
+    if (ih->handle && iupdrvIsVisible(ih))
+      dialogs[count++] = ih;
+  }
+
+  for (i = 0; i < count; i++)
+  {
+    Icallback cb;
+    ih = dialogs[i];
+    if (!iupObjectCheck(ih) || !ih->handle || !iupdrvIsVisible(ih))
+      continue;
+
+    cb = IupGetCallback(ih, "CLOSE_CB");
+    if (cb && cb(ih) == IUP_IGNORE)
+    {
+      free(dialogs);
+      return NSTerminateCancel;
+    }
+
+    if (iupObjectCheck(ih))
+      IupHide(ih);
+  }
+
+  free(dialogs);
+  IupExitLoop();
+  return NSTerminateCancel;
+}
+#endif
 @end
 
-static IupGnustepApplicationDelegate* cocoa_gnustep_app_delegate = nil;
+static IupCocoaApplicationDelegate* cocoa_app_delegate = nil;
+
+#ifdef GNUSTEP
 
 @interface IupGnustepPortalSettings : NSObject
 {
@@ -301,13 +353,11 @@ static int cocoaOpen(void)
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
   }
 
-#ifdef GNUSTEP
   if (![NSApp delegate])
   {
-    cocoa_gnustep_app_delegate = [[IupGnustepApplicationDelegate alloc] init];
-    [NSApp setDelegate:cocoa_gnustep_app_delegate];
+    cocoa_app_delegate = [[IupCocoaApplicationDelegate alloc] init];
+    [NSApp setDelegate:cocoa_app_delegate];
   }
-#endif
 
   /* [NSApp run] would do this, but IUP runs its own event loop */
   [NSApp finishLaunching];
@@ -411,13 +461,13 @@ IUP_SDK_API void iupdrvClose(void)
     cocoa_gnustep_portal_settings = nil;
   }
   iupUnixPortalSettingsClose();
-
-  if (cocoa_gnustep_app_delegate)
-  {
-    if ([NSApp delegate] == cocoa_gnustep_app_delegate)
-      [NSApp setDelegate:nil];
-    [cocoa_gnustep_app_delegate release];
-    cocoa_gnustep_app_delegate = nil;
-  }
 #endif
+
+  if (cocoa_app_delegate)
+  {
+    if ([NSApp delegate] == cocoa_app_delegate)
+      [NSApp setDelegate:nil];
+    [cocoa_app_delegate release];
+    cocoa_app_delegate = nil;
+  }
 }

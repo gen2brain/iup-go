@@ -780,6 +780,22 @@ static int cocoaToggleSetRightButtonAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+static SEL cocoaToggleRadioAction(Ihandle* radio)
+{
+  char name[64];
+  SEL sel;
+  Class cls = [IupCocoaToggleReceiver class];
+
+  snprintf(name, sizeof(name), "iupRadioAction%p:", (void*)radio);
+  sel = sel_registerName(name);
+  if (!class_getInstanceMethod(cls, sel))
+  {
+    Method method = class_getInstanceMethod(cls, @selector(myToggleClickAction:));
+    class_addMethod(cls, sel, method_getImplementation(method), method_getTypeEncoding(method));
+  }
+  return sel;
+}
+
 static int cocoaToggleMapMethod(Ihandle* ih)
 {
   Ihandle* radio = iupRadioFindToggleParent(ih);
@@ -884,7 +900,7 @@ static int cocoaToggleMapMethod(Ihandle* ih)
 
   IupCocoaToggleReceiver* toggle_receiver = [[IupCocoaToggleReceiver alloc] init];
   [the_toggle setTarget:toggle_receiver];
-  [the_toggle setAction:@selector(myToggleClickAction:)];
+  [the_toggle setAction:radio ? cocoaToggleRadioAction(radio) : @selector(myToggleClickAction:)];
   objc_setAssociatedObject(the_toggle, IUP_COCOA_TOGGLE_RECEIVER_OBJ_KEY, (id)toggle_receiver, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   [toggle_receiver release];
 

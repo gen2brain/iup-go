@@ -104,10 +104,31 @@ static void cocoaTextSetCorrections(NSTextView* text_view, BOOL enable)
 #endif
 }
 
+static NSRect cocoaTextCellCenterVertically(NSCell* cell, NSRect bounds, NSRect drawing_rect, BOOL* measuring)
+{
+  CGFloat natural, extra;
+
+  if (*measuring)
+    return drawing_rect;
+
+  *measuring = YES;
+  natural = [cell cellSizeForBounds:NSMakeRect(0, 0, bounds.size.width, 10000.0)].height;
+  *measuring = NO;
+
+  extra = floor((bounds.size.height - natural) / 2.0);
+  if (extra > 0)
+  {
+    drawing_rect.origin.y += extra;
+    drawing_rect.size.height -= extra;
+  }
+  return drawing_rect;
+}
+
 @interface IupCocoaTextFieldCell : NSTextFieldCell
 {
   CGFloat _horizPadding;
   CGFloat _vertPadding;
+  BOOL _measuring;
   BOOL _autoCorrect;
 }
 - (void)setIupPaddingHoriz:(CGFloat)horiz vert:(CGFloat)vert;
@@ -172,7 +193,7 @@ static void cocoaTextSetCorrections(NSTextView* text_view, BOOL enable)
   drawingRect.origin.y += adjustmentY;
   drawingRect.size.height -= (2.0 * adjustmentY);
 
-  return drawingRect;
+  return cocoaTextCellCenterVertically(self, rect, drawingRect, &_measuring);
 }
 
 @end
@@ -407,6 +428,7 @@ IUPCOCOA_TEXTFIELD_MOUSE_METHODS
 {
   CGFloat _horizPadding;
   CGFloat _vertPadding;
+  BOOL _measuring;
 }
 - (void)setIupPaddingHoriz:(CGFloat)horiz vert:(CGFloat)vert;
 @end
@@ -455,7 +477,7 @@ IUPCOCOA_TEXTFIELD_MOUSE_METHODS
   drawingRect.origin.y += adjustmentY;
   drawingRect.size.height -= (2.0 * adjustmentY);
 
-  return drawingRect;
+  return cocoaTextCellCenterVertically(self, rect, drawingRect, &_measuring);
 }
 
 @end

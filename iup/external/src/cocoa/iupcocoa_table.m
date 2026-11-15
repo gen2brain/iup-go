@@ -147,6 +147,30 @@ static void cocoaTableDrawFocusRect(IupCocoaTableCellView* cellView, NSRect boun
 @end
 #endif
 
+static CGFloat cocoaTableTextFieldHeight(NSTextField* textField)
+{
+  static NSFont* cached_font = nil;
+  static CGFloat cached_height = 0;
+  NSFont* font = [textField font];
+  NSString* text = [textField stringValue];
+  BOOL single_line = [text rangeOfCharacterFromSet:[NSCharacterSet newlineCharacterSet]].location == NSNotFound;
+  CGFloat height;
+
+  if (single_line && font && font == cached_font)
+    return cached_height;
+
+  height = [textField intrinsicContentSize].height;
+
+  if (single_line && font)
+  {
+    [cached_font release];
+    cached_font = [font retain];
+    cached_height = height;
+  }
+
+  return height;
+}
+
 @implementation IupCocoaTableCellView
 
 @synthesize isFocusedCell;
@@ -195,7 +219,7 @@ static void cocoaTableDrawFocusRect(IupCocoaTableCellView* cellView, NSRect boun
 
   if (self.textField)
   {
-    CGFloat textHeight = [self.textField intrinsicContentSize].height;
+    CGFloat textHeight = cocoaTableTextFieldHeight(self.textField);
 #ifdef GNUSTEP
     /* GNUstep NSTextField inherits NSView's (-1,-1) intrinsicContentSize; fill the cell. */
     if (textHeight <= 0 || textHeight > cellHeight) textHeight = cellHeight;
@@ -562,11 +586,20 @@ static void cocoaTableSetCellValue(Ihandle* ih, int lin, int col, const char* va
   [row replaceObjectAtIndex:col withObject:str];
 }
 
+static BOOL cocoaTableUsesSystemRowColors(Ihandle* ih)
+{
+#ifdef GNUSTEP
+  (void)ih;
+  return NO;
+#else
+  return iupAttribGetBoolean(ih, "ALTERNATEROWS") &&
+         !iupAttribGet(ih, "EVENROWCOLOR") && !iupAttribGet(ih, "ODDROWCOLOR");
+#endif
+}
+
 static void cocoaTableUpdateAlternatingRows(Ihandle* ih, NSTableView* tableView)
 {
-  BOOL system_colors = iupAttribGetBoolean(ih, "ALTERNATEROWS") &&
-                       !iupAttribGet(ih, "EVENROWCOLOR") && !iupAttribGet(ih, "ODDROWCOLOR");
-  [tableView setUsesAlternatingRowBackgroundColors:system_colors];
+  [tableView setUsesAlternatingRowBackgroundColors:cocoaTableUsesSystemRowColors(ih)];
 }
 
 static NSColor* cocoaTableGetRowBackgroundColor(Ihandle* ih, int row)
@@ -576,8 +609,12 @@ static NSColor* cocoaTableGetRowBackgroundColor(Ihandle* ih, int row)
 
   char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
 
-  if (!bgcolor && (iupAttribGet(ih, "EVENROWCOLOR") || iupAttribGet(ih, "ODDROWCOLOR")))
+  if (!bgcolor && !cocoaTableUsesSystemRowColors(ih) && iupAttribGetBoolean(ih, "ALTERNATEROWS"))
+  {
     bgcolor = iupTableGetAlternateColor(ih, lin);
+    if (!bgcolor)
+      bgcolor = iupAttribGetStr(ih, "BGCOLOR");
+  }
 
   if (bgcolor && *bgcolor)
   {
@@ -1874,8 +1911,8 @@ static NSInteger cocoaTableRowOfField(Ihandle* ih, NSTableView* tableView, NSVie
   [cellView.textField setEditable:cocoaTableIsCellEditable(ih, col_1based)];
 #endif
 
-  /* Set delegate every time due to cell reuse */
-  [cellView.textField setDelegate:self];
+  if ([cellView.textField delegate] != self)
+    [cellView.textField setDelegate:self];
 
   IcocoaTableData* table_data = cocoaTableGetData(ih);
   NSNumber* colKey = @(col);
@@ -1932,7 +1969,7 @@ static NSInteger cocoaTableRowOfField(Ihandle* ih, NSTableView* tableView, NSVie
     xStart += imgSize + 4.0;
   }
 
-  CGFloat textHeight = [cellView.textField intrinsicContentSize].height;
+  CGFloat textHeight = cocoaTableTextFieldHeight(cellView.textField);
 #ifdef GNUSTEP
   if (textHeight <= 0 || textHeight > cellFrame.size.height) textHeight = cellFrame.size.height;
 #endif
@@ -3162,7 +3199,12 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (tableView)
   {
-    [tableView reloadData];
+    NSRange visible = [tableView rowsInRect:[tableView visibleRect]];
+    if ([tableView numberOfRows] != ih->data->num_lin || visible.length == 0)
+      [tableView reloadData];
+    else
+      [tableView reloadDataForRowIndexes:[NSIndexSet indexSetWithIndexesInRange:visible]
+                           columnIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, [tableView numberOfColumns])]];
   }
   cocoaTableQueueAutoSize(ih);
 }
