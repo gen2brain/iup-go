@@ -682,7 +682,7 @@ func goIupListValueCB(ih unsafe.Pointer, pos C.int) *C.char {
 	if result == "" {
 		return nil
 	}
-	return C.CString(result)
+	return cReturnStr(result)
 }
 
 // setListValueFunc for List VALUE_CB callback.
@@ -704,7 +704,7 @@ func goIupListImageCB(ih unsafe.Pointer, pos C.int) *C.char {
 	if result == "" {
 		return nil
 	}
-	return C.CString(result)
+	return cReturnStr(result)
 }
 
 // setListImageFunc for List IMAGE_CB callback.
@@ -1364,7 +1364,7 @@ func goIupCellCB(ih unsafe.Pointer, cell C.int) *C.char {
 	if result == "" {
 		return nil
 	}
-	return C.CString(result)
+	return cReturnStr(result)
 }
 
 // setCellFunc for CELL_CB.
@@ -1942,7 +1942,7 @@ func goIupTableValueCB(ih unsafe.Pointer, lin, col C.int) *C.char {
 	if result == "" {
 		return nil
 	}
-	return C.CString(result)
+	return cReturnStr(result)
 }
 
 // setTableValueFunc for VALUE_CB (Table version).
@@ -1964,7 +1964,7 @@ func goIupTableImageCB(ih unsafe.Pointer, lin, col C.int) *C.char {
 	if result == "" {
 		return nil
 	}
-	return C.CString(result)
+	return cReturnStr(result)
 }
 
 // setTableImageFunc for IMAGE_CB (Table version).

@@ -78,3 +78,21 @@ func cStrFree(p *C.char) {
 		C.free(unsafe.Pointer(p))
 	}
 }
+
+const cReturnPoolSize = 16
+
+var (
+	cReturnPool [cReturnPoolSize]*C.char
+	cReturnIdx  int
+)
+
+func cReturnStr(s string) *C.char {
+	if s == "" {
+		return nil
+	}
+	cStrFree(cReturnPool[cReturnIdx])
+	p := C.CString(s)
+	cReturnPool[cReturnIdx] = p
+	cReturnIdx = (cReturnIdx + 1) % cReturnPoolSize
+	return p
+}

@@ -762,7 +762,7 @@ func goIupMatrixFontCB(ih unsafe.Pointer, lin, col C.int) *C.char {
 	if result == "" {
 		return nil
 	}
-	return C.CString(result)
+	return cReturnStr(result)
 }
 
 // setMatrixFontFunc for FONT_CB.
@@ -817,7 +817,7 @@ func goIupMatrixTypeCB(ih unsafe.Pointer, lin, col C.int) *C.char {
 	if result == "" {
 		return nil
 	}
-	return C.CString(result)
+	return cReturnStr(result)
 }
 
 // setMatrixTypeFunc for TYPE_CB.
@@ -839,7 +839,7 @@ func goIupMatrixValueCB(ih unsafe.Pointer, lin, col C.int) *C.char {
 	if result == "" {
 		return nil
 	}
-	return C.CString(result)
+	return cReturnStr(result)
 }
 
 // setMatrixValueFunc for VALUE_CB.
@@ -926,7 +926,7 @@ func goIupTranslateValueCB(ih unsafe.Pointer, lin, col C.int, value *C.char) *C.
 	if result == "" {
 		return nil
 	}
-	return C.CString(result)
+	return cReturnStr(result)
 }
 
 // setTranslateValueFunc for TRANSLATEVALUE_CB.
