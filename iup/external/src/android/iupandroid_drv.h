@@ -97,6 +97,8 @@ IUP_SDK_API void  iupAndroidListDispatchDragDrop(Ihandle* ih, int drag_id, int d
 IUP_SDK_API int   iupAndroidTableRowDragDrop(Ihandle* ih, int from, int to);
 IUP_SDK_API void  iupAndroidTableSortOrder(Ihandle* ih, const int* order, int count);
 IUP_SDK_API void  iupAndroidTableCellsCollapse(Ihandle* ih);
+IUP_SDK_API void  iupAndroidTableNotifyScroll(Ihandle* ih);
+IUP_SDK_API void  iupAndroidTableScrollDone(Ihandle* ih);
 IUP_SDK_API void  iupAndroidTableCellsExtendTo(Ihandle* ih, int lin, int col);
 IUP_SDK_API int   iupAndroidTableReorder(Ihandle* ih, int from_col, int to_col);
 

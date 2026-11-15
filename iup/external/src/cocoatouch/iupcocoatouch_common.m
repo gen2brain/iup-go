@@ -467,7 +467,7 @@ static void cocoaTouchClientToScreen(Ihandle* ih, int* x, int* y)
 	UIWindow* win = view.window ?: iupCocoaTouchFindCurrentWindow();
 	if (!view || !win || !x || !y) return;
 
-	CGPoint window_pt = [view convertPoint:CGPointMake(*x, *y) toView:nil];
+	CGPoint window_pt = [view convertPoint:CGPointMake(view.bounds.origin.x + *x, view.bounds.origin.y + *y) toView:nil];
 	CGPoint screen_pt = [win convertPoint:window_pt toWindow:nil];
 	*x = iupROUND(screen_pt.x);
 	*y = iupROUND(screen_pt.y);

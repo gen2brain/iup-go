@@ -91,6 +91,27 @@ func main() {
 		return fmt.Sprintf("cat%d", (lin-1)%10)
 	}))
 
+	// Set BGCOLOR_CB and FGCOLOR_CB to color the prices under $10 on demand (virtual mode)
+	cheap := func(lin, col int) bool {
+		if col != 4 || lin <= 0 || lin > len(dataset) {
+			return false
+		}
+		price, _ := strconv.ParseFloat(dataset[lin-1][3][1:], 64)
+		return price < 10
+	}
+	iup.SetCallback(table, "BGCOLOR_CB", iup.BgColorFunc(func(ih iup.Ihandle, lin, col int) (int, int, int, int) {
+		if !cheap(lin, col) {
+			return 0, 0, 0, iup.IGNORE
+		}
+		return 46, 139, 87, iup.DEFAULT
+	}))
+	iup.SetCallback(table, "FGCOLOR_CB", iup.FgColorFunc(func(ih iup.Ihandle, lin, col int) (int, int, int, int) {
+		if !cheap(lin, col) {
+			return 0, 0, 0, iup.IGNORE
+		}
+		return 255, 255, 255, iup.DEFAULT
+	}))
+
 	// Set SORT_CB callback for virtual mode sorting
 	// In virtual mode, the application is responsible for sorting the data
 	iup.SetCallback(table, "SORT_CB", iup.TableSortFunc(func(ih iup.Ihandle, col int) int {

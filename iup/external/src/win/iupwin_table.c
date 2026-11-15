@@ -22,6 +22,7 @@
 #include "iup_key.h"
 #include "iup_table.h"
 #include "iup_image.h"
+#include "iup_hashtable.h"
 
 #include "iupwin_drv.h"
 #include "iupwin_darkmode.h"
@@ -80,6 +81,8 @@ typedef struct _IwinTableData {
   BOOL laid_out;
   int scroll_lin;              /* scroll requested before the first layout */
   int scroll_col;
+  int origin_lin;
+  int origin_col;
 
   /* Column reorder drag state */
   int drag_source_col;
@@ -853,23 +856,65 @@ IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
   }
 }
 
-static void winTableFitRowToImage(Ihandle* ih, HWND list_view, HBITMAP hBitmap)
+static void winTableGrowRowHeight(HWND list_view, int height)
 {
-  HIMAGELIST list;
-  int bmp_w, bmp_h, bpp, cx, cy;
+  HIMAGELIST list = ListView_GetImageList(list_view, LVSIL_SMALL);
+  RECT item;
+  int cx, cy;
 
-  if (ih->data->fit_image || !list_view || !hBitmap)
+  if (list && ImageList_GetIconSize(list, &cx, &cy) && cy >= height)
+    return;
+  if (!list && ListView_GetItemCount(list_view) > 0 && ListView_GetItemRect(list_view, 0, &item, LVIR_BOUNDS) && item.bottom - item.top >= height)
     return;
 
-  list = ListView_GetImageList(list_view, LVSIL_SMALL);
-  iupdrvImageGetInfo(hBitmap, &bmp_w, &bmp_h, &bpp);
-  if (!list || !ImageList_GetIconSize(list, &cx, &cy) || cy >= bmp_h + 4)
-    return;
-
-  list = ListView_SetImageList(list_view, ImageList_Create(1, bmp_h + 4, ILC_COLOR, 1, 0), LVSIL_SMALL);
+  list = ListView_SetImageList(list_view, ImageList_Create(1, height, ILC_COLOR, 1, 0), LVSIL_SMALL);
   if (list)
     ImageList_Destroy(list);
   InvalidateRect(list_view, NULL, FALSE);
+}
+
+static void winTableFitRowToImage(Ihandle* ih, HWND list_view, HBITMAP hBitmap)
+{
+  int bmp_w, bmp_h, bpp;
+
+  if (ih->data->fit_image || !list_view || !hBitmap || !ListView_GetImageList(list_view, LVSIL_SMALL))
+    return;
+
+  iupdrvImageGetInfo(hBitmap, &bmp_w, &bmp_h, &bpp);
+  winTableGrowRowHeight(list_view, bmp_h + 4);
+}
+
+static void winTableFitRowToFont(Ihandle* ih, HWND list_view, const char* font)
+{
+  HFONT hFont, hOldFont;
+  TEXTMETRIC tm;
+  HDC hdc;
+
+  if (!list_view || !font || !font[0])
+    return;
+
+  hFont = iupwinGetHFont(ih, font);
+  if (!hFont)
+    return;
+
+  hdc = GetDC(list_view);
+  hOldFont = (HFONT)SelectObject(hdc, hFont);
+  GetTextMetrics(hdc, &tm);
+  SelectObject(hdc, hOldFont);
+  ReleaseDC(list_view, hdc);
+
+  winTableGrowRowHeight(list_view, tm.tmHeight + 4);
+}
+
+static void winTableFitRowToFonts(Ihandle* ih, HWND list_view)
+{
+  char* name = iupTableFirst(ih->attrib);
+  while (name)
+  {
+    if (iupStrEqualPartial(name, "FONT") && name[4] >= '0' && name[4] <= '9')
+      winTableFitRowToFont(ih, list_view, (const char*)iupTableGetCurr(ih->attrib));
+    name = iupTableNext(ih->attrib);
+  }
 }
 
 IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const char* image)
@@ -1149,6 +1194,8 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
     {
       data->scroll_lin = lin;
       data->scroll_col = col;
+      if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+        iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
       return;
     }
   }
@@ -1169,6 +1216,73 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
   }
 }
 
+IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
+{
+  HWND list_view = winTableGetListView(ih);
+  int top, c;
+
+  *lin = 0;
+  *col = 0;
+  if (!list_view || ih->data->num_lin < 1 || ih->data->num_col < 1)
+    return;
+
+  top = ListView_GetTopIndex(list_view);
+  if (top < 0)
+    top = 0;
+  if (top >= ih->data->num_lin)
+    top = ih->data->num_lin - 1;
+  *lin = top + 1;
+
+  *col = 1;
+  for (c = 1; c <= ih->data->num_col; c++)
+  {
+    RECT cell;
+    if (ListView_GetSubItemRect(list_view, top, c, LVIR_BOUNDS, &cell) && cell.right > 0)
+    {
+      *col = c;
+      break;
+    }
+  }
+}
+
+static void winTableApplyOrigin(Ihandle* ih, HWND list_view, int lin, int col)
+{
+  RECT cell;
+  int top = ListView_GetTopIndex(list_view);
+
+  if (lin > 0 && lin <= ih->data->num_lin && ListView_GetItemRect(list_view, top, &cell, LVIR_BOUNDS))
+    ListView_Scroll(list_view, 0, (lin - 1 - top) * (cell.bottom - cell.top));
+
+  if (col > 0 && col <= ih->data->num_col && ih->data->num_lin > 0)
+  {
+    top = ListView_GetTopIndex(list_view);
+    if (ListView_GetSubItemRect(list_view, top, col, LVIR_BOUNDS, &cell) && cell.left != 0)
+      ListView_Scroll(list_view, cell.left, 0);
+  }
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  HWND list_view = winTableGetListView(ih);
+  IwinTableData* data = IWIN_TABLE_DATA(ih);
+
+  if (!list_view || !data)
+    return;
+
+  if (!data->laid_out)
+  {
+    if (lin)
+      data->origin_lin = lin;
+    if (col)
+      data->origin_col = col;
+    if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+      iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
+    return;
+  }
+
+  winTableApplyOrigin(ih, list_view, lin, col);
+}
+
 /****************************************************************************
  * Display
  ****************************************************************************/
@@ -1184,9 +1298,10 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
 {
   HWND list_view = winTableGetListView(ih);
-  (void)col;
   if (!list_view)
     return;
+
+  winTableFitRowToFont(ih, list_view, iupAttribGetId2(ih, "FONT", lin, col));
 
   if (lin > 0)
     ListView_RedrawItems(list_view, lin - 1, lin - 1);
@@ -2131,11 +2246,9 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
           int cells_selected = iupTableCellsIsSelected(ih, lin, col);
 
           /* Background color: per-cell > per-column > per-row > alternating */
-          char* bgcolor = cells_selected ? iupTableCellsBgColor() : iupAttribGetId2(ih, "BGCOLOR", lin, col);
+          char* bgcolor = cells_selected ? iupTableCellsBgColor() : NULL;
           if (!bgcolor)
-            bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
-          if (!bgcolor)
-            bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+            bgcolor = iupTableGetCellBgColor(ih, lin, col);
 
           if (!bgcolor)
             bgcolor = iupTableGetAlternateColor(ih, lin);
@@ -2146,11 +2259,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             fgcolor = iupTableCellsFgColor();
           else if (!is_row_selected)
           {
-            fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
-            if (!fgcolor)
-              fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
-            if (!fgcolor)
-              fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+            fgcolor = iupTableGetCellFgColor(ih, lin, col);
           }
 
           /* Font: per-cell > per-column > per-row */
@@ -2169,7 +2278,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
               font_changed = 1;
           }
 
-          if (ih->data->show_image)
+          if (ih->data->show_image || is_row_selected)
           {
             HDC hdc = lplvcd->nmcd.hdc;
             RECT rc = lplvcd->nmcd.rc;
@@ -2222,11 +2331,13 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             int img_offset = 0;
 
             char* image_name = NULL;
-            char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
-            if (iupStrBoolean(virtualmode))
-              image_name = iupTableGetCellImageCb(ih, lin, col);
-            else
-              image_name = iupAttribGetId2(ih, "_IUPWIN_CELLIMAGE", lin, col);
+            if (ih->data->show_image)
+            {
+              if (iupStrBoolean(iupAttribGet(ih, "VIRTUALMODE")))
+                image_name = iupTableGetCellImageCb(ih, lin, col);
+              else
+                image_name = iupAttribGetId2(ih, "_IUPWIN_CELLIMAGE", lin, col);
+            }
 
             if (image_name)
             {
@@ -2266,8 +2377,10 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
             {
               UINT align = winTableGetColAlignment(ih, col);
               RECT textRc = rc;
-              textRc.left += img_offset + 4;
-              textRc.right -= 4;
+              int pad = ih->data->show_image ? 4 : 6;
+              UINT ellipsis = ih->data->show_image ? 0 : DT_END_ELLIPSIS;
+              textRc.left += img_offset + pad;
+              textRc.right -= pad;
 
               HFONT hDrawFont = hFont;
               if (!hDrawFont)
@@ -2277,7 +2390,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
 
               SetBkMode(hdc, TRANSPARENT);
               SetTextColor(hdc, fg_color);
-              DrawText(hdc, iupwinStrToSystem(value), -1, &textRc, align | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+              DrawText(hdc, iupwinStrToSystem(value), -1, &textRc, align | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | ellipsis);
 
               SelectObject(hdc, hOldFont);
             }
@@ -2412,11 +2525,7 @@ static int winTableNotifyCallback(Ihandle* ih, void* msg_info, int* result)
                 focus_bg = GetSysColor(COLOR_HIGHLIGHT);
               else
               {
-                char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, data->current_col);
-                if (!bgcolor)
-                  bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, data->current_col);
-                if (!bgcolor)
-                  bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+                char* bgcolor = iupTableGetCellBgColor(ih, lin, data->current_col);
 
                 if (bgcolor && *bgcolor)
                 {
@@ -2979,6 +3088,14 @@ static LRESULT CALLBACK winTableListViewWndProc(HWND hwnd, UINT msg, WPARAM wp, 
   if (winTableKeyProc(ih, hwnd, msg, wp, lp, &result))
     return result;
 
+  if (msg == WM_PAINT)
+  {
+    result = CallWindowProc(oldProc, hwnd, msg, wp, lp);
+    if (iupObjectCheck(ih))
+      iupTableNotifyScroll(ih);
+    return result;
+  }
+
   return CallWindowProc(oldProc, hwnd, msg, wp, lp);
 }
 
@@ -3064,6 +3181,8 @@ static int winTableMapMethod(Ihandle* ih)
   lvc_dummy.mask = LVCF_WIDTH;
   lvc_dummy.cx = 0;
   ListView_InsertColumn(data->list_view, 0, &lvc_dummy);
+
+  winTableFitRowToFonts(ih, data->list_view);
 
   for (int i = 0; i < num_col; i++)
   {
@@ -3162,7 +3281,13 @@ static void winTableLayoutUpdateMethod(Ihandle* ih)
         data->laid_out = TRUE;
         if (data->scroll_lin)
           iupdrvTableScrollToCell(ih, data->scroll_lin, data->scroll_col);
+        if (data->origin_lin || data->origin_col)
+          winTableApplyOrigin(ih, list_view, data->origin_lin, data->origin_col);
         data->scroll_lin = 0;
+        data->origin_lin = 0;
+        data->origin_col = 0;
+        if (iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+          iupTableScrollDone(ih);
       }
     }
 

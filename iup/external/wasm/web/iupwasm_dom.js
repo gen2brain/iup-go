@@ -2276,6 +2276,36 @@
         twr.__iupHead = thr; twr.__iupBody = ttbody; twr.__iupGrid = 1;
         els[c.id] = twr; twr.dataset.iupId = c.id;
         var tcid = c.id;
+        twr.__iupRowAt = function (lin, rowH) {
+          if (twr.__iupVirtual) { var vh = twr.__iupRowH || rowH; return [tthead.offsetHeight + (lin - 1) * vh, vh]; }
+          var tr = ttbody.children[lin - 1]; return tr ? [tr.offsetTop, tr.offsetHeight] : null;
+        };
+        twr.__iupColAt = function (col) { var th = thr.children[col - 1]; return th ? [th.offsetLeft, th.offsetWidth] : null; };
+        twr.__iupOrigin = function (rowH) {
+          var lin = 1, col = 1, ths = thr.children, i;
+          if (twr.__iupVirtual) lin = Math.floor(twr.scrollTop / (twr.__iupRowH || rowH)) + 1;
+          else {
+            var rows = ttbody.children, top = twr.scrollTop + tthead.offsetHeight, lo = 0, hi = rows.length - 1;
+            while (lo < hi) { var mid = (lo + hi) >> 1, r = rows[mid]; if (r.offsetTop + r.offsetHeight > top) hi = mid; else lo = mid + 1; }
+            lin = lo + 1;
+          }
+          col = ths.length;
+          for (i = 0; i < ths.length; i++) if (ths[i].offsetLeft + ths[i].offsetWidth > twr.scrollLeft) { col = i + 1; break; }
+          return lin * 65536 + col;
+        };
+        twr.__iupShow = function (lin, col, rowH, origin) {
+          var headH = tthead.offsetHeight, x = twr.scrollLeft, y = twr.scrollTop;
+          var r = lin ? twr.__iupRowAt(lin, rowH) : null, cg = col ? twr.__iupColAt(col) : null;
+          if (origin) { if (r) y = r[0] - headH; if (cg) x = cg[0]; }
+          else {
+            if (r) { if (r[0] - headH < y) y = r[0] - headH; else if (r[0] + r[1] > y + twr.clientHeight) y = r[0] + r[1] - twr.clientHeight; }
+            if (cg) { if (cg[0] < x) x = cg[0]; else if (cg[0] + cg[1] > x + twr.clientWidth) x = Math.min(cg[0], cg[0] + cg[1] - twr.clientWidth); }
+          }
+          twr.scrollTop = y; twr.scrollLeft = x;
+        };
+        var tscrollpending = false;
+        twr.addEventListener('scroll', function () { if (tscrollpending) return; tscrollpending = true; requestAnimationFrame(function () { tscrollpending = false; D('iupwasmTableScrolled', tcid); }); });
+        if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { if (twr.clientHeight > 0) D('iupwasmTableResized', tcid); }).observe(twr);
         ttable.addEventListener('click', function (e) {
           var th = e.target.closest('th'); if (th && th.dataset.col) { D('iupwasmTableHeaderClick', tcid, +th.dataset.col); return; }
           var td = e.target.closest('td'); if (!td || td.dataset.lin === undefined) return;
@@ -2532,7 +2562,7 @@
           var tvspacer = function () { var tr = document.createElement('tr'); var td = document.createElement('td'); td.style.padding = '0'; td.style.border = '0'; tr.appendChild(td); return tr; };
           el.__iupTopSpacer = tvspacer(); el.__iupBotSpacer = tvspacer();
           tvbody.appendChild(el.__iupTopSpacer); tvbody.appendChild(el.__iupBotSpacer);
-          el.__iupVRows = []; el.__iupVirtual = true;
+          el.__iupVRows = []; el.__iupVirtual = true; el.style.overflowAnchor = 'none';
           var tvpending = false;
           el.addEventListener('scroll', function () { if (tvpending) return; tvpending = true; requestAnimationFrame(function () { tvpending = false; D('iupwasmTableVScroll', tvid); }); });
           if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { D('iupwasmTableVScroll', tvid); }).observe(el);
@@ -2543,10 +2573,11 @@
           var tvwbody = el.__iupBody, tvwrows = el.__iupVRows, tvwgrid = el.__iupGrid;
           el.__iupTopSpacer.firstChild.style.height = c.top + 'px'; el.__iupTopSpacer.firstChild.colSpan = c.numCol;
           el.__iupBotSpacer.firstChild.style.height = c.bot + 'px'; el.__iupBotSpacer.firstChild.colSpan = c.numCol;
+          el.__iupRowH = c.rowH;
           var tvmk = function () { var td = document.createElement('td'); td.style.padding = '2px 6px'; td.style.whiteSpace = 'nowrap'; td.style.border = tvwgrid ? '1px solid var(--iup-bd-faint)' : 'none'; return td; };
           while (tvwrows.length < c.count) { var tvtr = document.createElement('tr'); for (var cc = 0; cc < c.numCol; cc++) tvtr.appendChild(tvmk()); tvwbody.insertBefore(tvtr, el.__iupBotSpacer); tvwrows.push(tvtr); }
           while (tvwrows.length > c.count) tvwbody.removeChild(tvwrows.pop());
-          for (var i = 0; i < tvwrows.length; i++) { var tvr = tvwrows[i]; while (tvr.children.length > c.numCol) tvr.removeChild(tvr.lastChild); while (tvr.children.length < c.numCol) tvr.appendChild(tvmk()); }
+          for (var i = 0; i < tvwrows.length; i++) { var tvr = tvwrows[i]; tvr.style.height = c.rowH + 'px'; while (tvr.children.length > c.numCol) tvr.removeChild(tvr.lastChild); while (tvr.children.length < c.numCol) tvr.appendChild(tvmk()); }
         }
       } break;
       case 'tablevcell': {
@@ -2565,7 +2596,7 @@
           var tfprev = el.__iupFocusTd; if (tfprev) tfprev.style.outline = '';
           var tftr = el.__iupBody.children[c.lin - 1];
           var tftd = tftr ? tftr.children[c.col - 1] : null;
-          if (tftd) { if (c.focusrect) { tftd.style.outline = '1px dotted ' + (c.select ? 'HighlightText' : 'var(--iup-accent)'); tftd.style.outlineOffset = '-1px'; } el.__iupFocusTd = c.focusrect ? tftd : null; tftd.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+          if (tftd) { if (c.focusrect) { tftd.style.outline = '1px dotted ' + (c.select ? 'HighlightText' : 'var(--iup-accent)'); tftd.style.outlineOffset = '-1px'; } el.__iupFocusTd = c.focusrect ? tftd : null; el.__iupShow(c.lin, c.col, 0, 0); }
         }
       } break;
       case 'tableselect': {
@@ -2579,7 +2610,7 @@
         }
       } break;
       case 'tablescrollto': {
-        if (el) { var tstr2 = el.__iupBody.children[c.lin - 1]; var tstd2 = tstr2 ? tstr2.children[c.col - 1] : null; if (tstd2) tstd2.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+        if (el && el.__iupShow) el.__iupShow(c.lin, c.col, c.rowH, c.origin);
       } break;
       case 'createcanvascontainer': {
         var ccdiv = document.createElement('div');
@@ -4005,8 +4036,8 @@ globalThis.__iupMediaPick = function (kind, index) {
       case 'tablevscrolltop': {
         return el ? (el.scrollTop | 0) : 0;
       } break;
-      case 'tablevclienth': {
-        return el ? (el.clientHeight | 0) : 0;
+      case 'tableorigin': {
+        return el && el.__iupOrigin ? el.__iupOrigin(req.rowH) : 0;
       } break;
       case 'canvasclientw': {
         return el ? (el.clientWidth || el.width || 0) : 0;

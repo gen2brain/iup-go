@@ -241,11 +241,9 @@ public:
 
     case IUPQML_TABLE_ROLE_BGCOLOR:
       {
-        char* bgcolor = iupTableCellsIsSelected(ih, lin, col) ? iupTableCellsBgColor() : iupAttribGetId2(ih, "BGCOLOR", lin, col);
+        char* bgcolor = iupTableCellsIsSelected(ih, lin, col) ? iupTableCellsBgColor() : NULL;
         if (!bgcolor)
-          bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
-        if (!bgcolor)
-          bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+          bgcolor = iupTableGetCellBgColor(ih, lin, col);
         if (!bgcolor)
           bgcolor = iupTableGetAlternateColor(ih, lin);
         if (!bgcolor)
@@ -259,11 +257,9 @@ public:
 
     case IUPQML_TABLE_ROLE_FGCOLOR:
       {
-        char* fgcolor = iupTableCellsIsSelected(ih, lin, col) ? iupTableCellsFgColor() : iupAttribGetId2(ih, "FGCOLOR", lin, col);
+        char* fgcolor = iupTableCellsIsSelected(ih, lin, col) ? iupTableCellsFgColor() : NULL;
         if (!fgcolor)
-          fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
-        if (!fgcolor)
-          fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+          fgcolor = iupTableGetCellFgColor(ih, lin, col);
         if (!fgcolor)
           fgcolor = iupAttribGet(ih, "FGCOLOR");
 
@@ -1275,7 +1271,9 @@ static const char* qmlTableQml =
   "  signal iupEditClosed(int row, int column, string text)\n"
   "  signal iupHeaderClicked(int column)\n"
   "  signal iupRowDropped(int row, point pos)\n"
-  "  function iupScrollTo(row, column) { view.forceLayout(); view.positionViewAtCell(Qt.point(column, row), TableView.Contain) }\n"
+  "  signal iupScrolled()\n"
+  "  function iupScrollTo(row, column) { view.forceLayout(); var a = view.animate; view.animate = false; view.positionViewAtCell(Qt.point(column, row), TableView.Contain); view.forceLayout(); view.animate = a }\n"
+  "  function iupSetOrigin(row, column) { view.forceLayout(); var a = view.animate; view.animate = false; if (row >= 0) view.positionViewAtRow(row, TableView.AlignTop); if (column >= 0) view.positionViewAtColumn(column, TableView.AlignLeft); view.forceLayout(); view.animate = a }\n"
   "  function iupScrollVisible() { return (view.ScrollBar.horizontal.visible ? 1 : 0) + (view.ScrollBar.vertical.visible ? 2 : 0) }\n"
   "  function iupHeaderHeight() { return header.leftColumn >= 0 ? header.height : 0 }\n"
   "  Rectangle {\n"
@@ -1333,6 +1331,8 @@ static const char* qmlTableQml =
   "    height: parent.height - header.height - 2\n"
   "    clip: true\n"
   "    boundsBehavior: Flickable.StopAtBounds\n"
+  "    onTopRowChanged: root.iupScrolled()\n"
+  "    onLeftColumnChanged: root.iupScrolled()\n"
   "    selectionBehavior: TableView.SelectRows\n"
   "    pointerNavigationEnabled: false\n"
   "    keyNavigationEnabled: true\n"
@@ -1490,6 +1490,10 @@ static int qmlTableMapMethod(Ihandle* ih)
     qmlTableCurrentChanged(ih, current);
   });
 
+  iupqmlConnect(root, "iupScrolled()", [ih](void** args) {
+    (void)args;
+    iupTableNotifyScroll(ih);
+  });
   iupqmlConnect(root, "iupPressed(int,int,int,int)", [ih](void** args) {
     qmlTablePressed(ih, *static_cast<int*>(args[1]), *static_cast<int*>(args[2]), *static_cast<int*>(args[3]), *static_cast<int*>(args[4]));
   });
@@ -2001,6 +2005,30 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
     return;
 
   iupqmlCallMethod(data->root, "iupScrollTo", QVariant(lin - 1), QVariant(col - 1));
+}
+
+IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
+{
+  IupQmlTableData* data = qmlTableGetData(ih);
+
+  *lin = 0;
+  *col = 0;
+  if (!data || !data->view)
+    return;
+
+  int row = data->view->property("topRow").toInt();
+  int column = data->view->property("leftColumn").toInt();
+  *lin = row >= 0 ? row + 1 : 0;
+  *col = column >= 0 ? column + 1 : 0;
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  IupQmlTableData* data = qmlTableGetData(ih);
+  if (!data)
+    return;
+
+  iupqmlCallMethod(data->root, "iupSetOrigin", QVariant(lin > 0 ? lin - 1 : -1), QVariant(col > 0 ? col - 1 : -1));
 }
 
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)

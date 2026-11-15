@@ -962,16 +962,18 @@ static void cocoaClientToScreen(Ihandle* ih, int* x, int* y)
   NSView* main_view = iupcocoaGetMainView(ih);
   if (!main_view) return;
 
+  NSScrollView* scroll_view = [main_view enclosingScrollView];
+  if (scroll_view && [scroll_view documentView] == main_view)
+    main_view = [scroll_view contentView];
+
   NSWindow* the_window = [main_view window];
   if (!the_window) return;
 
-  NSPoint start_point = { *x, *y };
+  NSRect view_bounds = [main_view bounds];
+  NSPoint start_point = { view_bounds.origin.x + *x, view_bounds.origin.y + *y };
 
   if (![main_view isFlipped])
-  {
-    NSRect view_bounds = [main_view bounds];
-    start_point.y = view_bounds.size.height - *y;
-  }
+    start_point.y = view_bounds.origin.y + view_bounds.size.height - *y;
 
   NSPoint window_point = [main_view convertPoint:start_point toView:nil];
 

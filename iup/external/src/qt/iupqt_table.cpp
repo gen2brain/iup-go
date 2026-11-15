@@ -119,11 +119,9 @@ public:
     int col = index.column() + 1;
     int cells_selected = iupTableCellsIsSelected(ih, lin, col);
 
-    char* bgcolor = cells_selected ? iupTableCellsBgColor() : iupAttribGetId2(ih, "BGCOLOR", lin, col);
+    char* bgcolor = cells_selected ? iupTableCellsBgColor() : NULL;
     if (!bgcolor)
-      bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
-    if (!bgcolor)
-      bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+      bgcolor = iupTableGetCellBgColor(ih, lin, col);
     if (!bgcolor)
       bgcolor = iupTableGetAlternateColor(ih, lin);
 
@@ -134,11 +132,9 @@ public:
         option->backgroundBrush = QBrush(QColor(r, g, b));
     }
 
-    char* fgcolor = cells_selected ? iupTableCellsFgColor() : iupAttribGetId2(ih, "FGCOLOR", lin, col);
+    char* fgcolor = cells_selected ? iupTableCellsFgColor() : NULL;
     if (!fgcolor)
-      fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
-    if (!fgcolor)
-      fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+      fgcolor = iupTableGetCellFgColor(ih, lin, col);
 
     if (fgcolor && *fgcolor)
     {
@@ -875,6 +871,8 @@ private:
     connect(this, &QTableWidget::currentCellChanged, this, &IupQtTableWidget::onCurrentCellChanged);
     connect(this, &QTableWidget::cellChanged, this, &IupQtTableWidget::onCellChanged);
     connect(this, &QTableWidget::itemSelectionChanged, this, &IupQtTableWidget::onSelectionChanged);
+    connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this](int) { iupTableNotifyScroll(ih); });
+    connect(horizontalScrollBar(), &QScrollBar::valueChanged, this, [this](int) { iupTableNotifyScroll(ih); });
   }
 
   void onSelectionChanged()
@@ -1038,11 +1036,7 @@ static void qtTableEnsureItem(QTableWidget* table, int row, int col)
 
 static void qtTableApplyCellColors(Ihandle* ih, QTableWidgetItem* item, int lin, int col)
 {
-  char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
-  if (!bgcolor)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);  /* Per-column */
-  if (!bgcolor)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);  /* Per-row */
+  char* bgcolor = iupTableGetCellBgColor(ih, lin, col);
 
   if (!bgcolor)
     bgcolor = iupTableGetAlternateColor(ih, lin);
@@ -1060,11 +1054,7 @@ static void qtTableApplyCellColors(Ihandle* ih, QTableWidgetItem* item, int lin,
     item->setData(Qt::BackgroundRole, QVariant());
   }
 
-  char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
-  if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);  /* Per-column */
-  if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);  /* Per-row */
+  char* fgcolor = iupTableGetCellFgColor(ih, lin, col);
 
   if (fgcolor && *fgcolor)
   {
@@ -1937,6 +1927,41 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
       table->scrollToItem(item);
     }
   }
+}
+
+IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+
+  *lin = 0;
+  *col = 0;
+  if (!table || table->rowCount() == 0 || table->columnCount() == 0)
+    return;
+
+  int row = table->rowAt(0);
+  int column = table->columnAt(0);
+  *lin = row >= 0 ? row + 1 : 0;
+  *col = column >= 0 ? column + 1 : 0;
+}
+
+static void qtTableScrollToSection(QAbstractItemView::ScrollMode mode, QHeaderView* header, QScrollBar* bar, int section)
+{
+  if (mode == QAbstractItemView::ScrollPerItem)
+    bar->setValue(header->visualIndex(section));
+  else
+    bar->setValue(header->sectionPosition(section));
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+  if (!table)
+    return;
+
+  if (lin > 0 && lin <= table->rowCount())
+    qtTableScrollToSection(table->verticalScrollMode(), table->verticalHeader(), table->verticalScrollBar(), lin - 1);
+  if (col > 0 && col <= table->columnCount())
+    qtTableScrollToSection(table->horizontalScrollMode(), table->horizontalHeader(), table->horizontalScrollBar(), col - 1);
 }
 
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)

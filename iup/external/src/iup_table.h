@@ -47,6 +47,8 @@ struct _IcontrolData
 int iupTableIsValid(Ihandle* ih);
 int iupTableCheckCellPos(Ihandle* ih, int lin, int col);
 char* iupTableGetCellImageCb(Ihandle* ih, int lin, int col);
+char* iupTableGetCellBgColor(Ihandle* ih, int lin, int col);  /* BGCOLOR_CB in VIRTUALMODE, then L:C, 0:C, L:0 */
+char* iupTableGetCellFgColor(Ihandle* ih, int lin, int col);
 
 int iupTableCallDragDropCb(Ihandle* ih, int drag_id, int drop_id, int* is_ctrl);
 void iupTableCallMultiSelectionCb(Ihandle* ih);
@@ -69,6 +71,8 @@ void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin);
 void iupTableSortLinAttribs(Ihandle* ih, const int* order);
 void iupTableMoveColAttribs(Ihandle* ih, int from_col, int to_col);
 int iupTableMoveColPos(int col, int from_col, int to_col);
+void iupTableNotifyScroll(Ihandle* ih);  /* the visible area scrolled */
+void iupTableScrollDone(Ihandle* ih);    /* an asynchronous ORIGIN or SHOW was applied, see _IUPTABLE_SCROLL_PENDING */
 
 /* ========================================================================= */
 /* Driver Functions                                                         */
@@ -109,6 +113,8 @@ IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count);  /* malloc
 
 /* Scrolling */
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col);
+IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col);
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col);  /* 0 keeps the current lin or col */
 
 /* Display */
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih);

@@ -55,11 +55,7 @@ static void fltkTableGetCellBgColor(Ihandle* ih, int lin, int col, unsigned char
   if (iupTableCellsIsSelected(ih, lin, col) && iupStrToRGB(iupTableCellsBgColor(), r, g, b))
     return;
 
-  char* bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);  /* L:C per-cell */
-  if (!bgcolor)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);  /* :C per-column */
-  if (!bgcolor)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);  /* L:* per-row */
+  char* bgcolor = iupTableGetCellBgColor(ih, lin, col);
 
   if (!bgcolor)
     bgcolor = iupTableGetAlternateColor(ih, lin);
@@ -80,11 +76,7 @@ static void fltkTableGetCellFgColor(Ihandle* ih, int lin, int col, unsigned char
   if (iupTableCellsIsSelected(ih, lin, col) && iupStrToRGB(iupTableCellsFgColor(), r, g, b))
     return;
 
-  char* fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);  /* L:C per-cell */
-  if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);  /* :C per-column */
-  if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);  /* L:* per-row */
+  char* fgcolor = iupTableGetCellFgColor(ih, lin, col);
 
   if (!fgcolor)
     fgcolor = iupAttribGet(ih, "FGCOLOR");
@@ -294,6 +286,9 @@ public:
     selection_color(FL_SELECTION_COLOR);
   }
 
+  int originRow() const { return toprow; }
+  int originCol() const { return leftcol; }
+
   void draw() override
   {
     if (pending_scroll_lin > 0)
@@ -301,8 +296,11 @@ public:
       int lin = pending_scroll_lin;
       pending_scroll_lin = 0;
       iupdrvTableScrollToCell(iup_handle, lin, pending_scroll_col);
+      if (iupAttribGet(iup_handle, "_IUPTABLE_SCROLL_PENDING"))
+        iupTableScrollDone(iup_handle);
     }
     Fl_Table_Row::draw();
+    iupTableNotifyScroll(iup_handle);
   }
 
   void fitRowToImages(int R)
@@ -2168,6 +2166,8 @@ extern "C" IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int co
   {
     table->pending_scroll_lin = lin;
     table->pending_scroll_col = col;
+    if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+      iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
     return;
   }
 
@@ -2177,6 +2177,31 @@ extern "C" IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int co
     table->row_position(r < r1 ? r : r - (r2 - r1) + 1);
   if (c >= 0 && c < table->cols() && (c < c1 || c >= c2))
     table->col_position(c < c1 ? c : c - (c2 - c1) + 1);
+}
+
+extern "C" IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
+{
+  IupFltkTable* table = fltkTableGetWidget(ih);
+
+  *lin = 0;
+  *col = 0;
+  if (!table || table->rows() < 1 || table->cols() < 1)
+    return;
+
+  *lin = table->originRow() + 1;
+  *col = table->originCol() + 1;
+}
+
+extern "C" IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  IupFltkTable* table = fltkTableGetWidget(ih);
+  if (!table)
+    return;
+
+  if (lin > 0 && lin <= table->rows())
+    table->row_position(lin - 1);
+  if (col > 0 && col <= table->cols())
+    table->col_position(col - 1);
 }
 
 extern "C" IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)

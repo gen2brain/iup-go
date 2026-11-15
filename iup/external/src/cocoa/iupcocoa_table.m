@@ -640,10 +640,9 @@ static void cocoaTableApplyCellColors(Ihandle* ih, NSTableCellView* cellView, in
 
   if (!isSelected)
   {
-    /* Background color - hierarchy: L:C > :C > L:0 */
-    char* bgcolor = cells_selected ? iupTableCellsBgColor() : iupAttribGetId2(ih, "BGCOLOR", lin, col);
+    char* bgcolor = cells_selected ? iupTableCellsBgColor() : NULL;
     if (!bgcolor)
-      bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
+      bgcolor = iupTableGetCellBgColor(ih, lin, col);
 
     if (bgcolor && *bgcolor)
     {
@@ -670,11 +669,9 @@ static void cocoaTableApplyCellColors(Ihandle* ih, NSTableCellView* cellView, in
   [iupCellView setNeedsDisplay:YES];
 
   /* Foreground color - hierarchy: L:C > :C > L:0 */
-  char* fgcolor = cells_selected ? iupTableCellsFgColor() : iupAttribGetId2(ih, "FGCOLOR", lin, col);
+  char* fgcolor = cells_selected ? iupTableCellsFgColor() : NULL;
   if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
-  if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+    fgcolor = iupTableGetCellFgColor(ih, lin, col);
 
   if (fgcolor && *fgcolor)
   {
@@ -1803,6 +1800,13 @@ static NSInteger cocoaTableRowOfField(Ihandle* ih, NSTableView* tableView, NSVie
 {
   [[NSNotificationCenter defaultCenter] removeObserver:self];
   [super dealloc];
+}
+
+- (void)clipViewBoundsDidChange:(NSNotification*)notification
+{
+  (void)notification;
+  if (ih && ih->handle)
+    iupTableNotifyScroll(ih);
 }
 
 - (void)tableViewColumnDidResize:(NSNotification*)notification
@@ -3191,7 +3195,67 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
     [tableView scrollColumnToVisible:column];
   }
   else
+  {
     iupAttribSetStrf(ih, "_IUPCOCOA_TABLE_SCROLLTO", "%d:%d", row, column);
+    if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+      iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
+  }
+}
+
+static CGFloat cocoaTableTopInset(NSTableView* tableView)
+{
+#ifndef GNUSTEP
+  NSClipView* clip = [[tableView enclosingScrollView] contentView];
+  if (clip)
+    return [clip contentInsets].top;
+#endif
+  (void)tableView;
+  return 0;
+}
+
+static void cocoaTableApplyOrigin(NSTableView* tableView, int lin, int col)
+{
+  NSPoint origin = [tableView visibleRect].origin;
+  if (lin > 0 && lin <= [tableView numberOfRows])
+    origin.y = [tableView rectOfRow:lin - 1].origin.y - cocoaTableTopInset(tableView);
+  if (col > 0 && col <= [tableView numberOfColumns])
+    origin.x = [tableView rectOfColumn:col - 1].origin.x;
+  [tableView scrollPoint:origin];
+}
+
+IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  NSPoint origin;
+  NSInteger row, column;
+
+  *lin = 0;
+  *col = 0;
+  if (!tableView || [tableView numberOfRows] < 1 || [tableView numberOfColumns] < 1)
+    return;
+
+  origin = [tableView visibleRect].origin;
+  origin.y += cocoaTableTopInset(tableView);
+  row = [tableView rowAtPoint:origin];
+  column = [tableView columnAtPoint:origin];
+  *lin = row >= 0 ? (int)row + 1 : 1;
+  *col = column >= 0 ? (int)column + 1 : 1;
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  NSTableView* tableView = cocoaTableGetTableView(ih);
+  if (!tableView)
+    return;
+
+  if (iupAttribGet(ih, "_IUPCOCOA_TABLE_LAIDOUT"))
+    cocoaTableApplyOrigin(tableView, lin, col);
+  else
+  {
+    iupAttribSetStrf(ih, "_IUPCOCOA_TABLE_ORIGIN", "%d:%d", lin, col);
+    if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+      iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
+  }
 }
 
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
@@ -3515,6 +3579,11 @@ static int cocoaTableMapMethod(Ihandle* ih)
   [delegate release];
 
   [scrollView setDocumentView:tableView];
+  [[scrollView contentView] setPostsBoundsChangedNotifications:YES];
+  [[NSNotificationCenter defaultCenter] addObserver:delegate
+                                           selector:@selector(clipViewBoundsDidChange:)
+                                               name:NSViewBoundsDidChangeNotification
+                                             object:[scrollView contentView]];
   [tableView release];
 
   /* Set handles BEFORE calling iupcocoaSetAssociatedViews */
@@ -3547,6 +3616,7 @@ static void cocoaTableUnMapMethod(Ihandle* ih)
 {
   iupAttribSet(ih, "_IUPCOCOA_TABLE_LAIDOUT", NULL);
   iupAttribSet(ih, "_IUPCOCOA_TABLE_SCROLLTO", NULL);
+  iupAttribSet(ih, "_IUPCOCOA_TABLE_ORIGIN", NULL);
 
   cocoaSourceDragDestroyAssociatedData(ih);
   cocoaTargetDropDestroyAssociatedData(ih);
@@ -3566,6 +3636,9 @@ static void cocoaTableUnMapMethod(Ihandle* ih)
     if (tableView)
     {
       [tableView abortEditing];
+      [[NSNotificationCenter defaultCenter] removeObserver:objc_getAssociatedObject(tableView, IUP_COCOA_TABLE_DELEGATE_KEY)
+                                                      name:NSViewBoundsDidChangeNotification
+                                                    object:[scroll_view contentView]];
       [tableView setTarget:nil];
       [tableView setDataSource:nil];
       [tableView setDelegate:nil];
@@ -3620,7 +3693,8 @@ static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
 
     NSRect newDocumentVisibleRect = [scroll_view documentVisibleRect];
     NSRect tableFrame = [tableView frame];
-    tableFrame.size.width = newDocumentVisibleRect.size.width;
+    CGFloat columns_right = [columns count] > 0 ? NSMaxX([tableView rectOfColumn:(NSInteger)[columns count] - 1]) : 0;
+    tableFrame.size.width = MAX(newDocumentVisibleRect.size.width, columns_right);
     [tableView setFrame:tableFrame];
 
     int scroll_row, scroll_col;
@@ -3629,8 +3703,13 @@ static void cocoaTableLayoutUpdateMethod(Ihandle* ih)
       [tableView scrollRowToVisible:scroll_row];
       [tableView scrollColumnToVisible:scroll_col];
     }
+    if (iupStrToIntInt(iupAttribGet(ih, "_IUPCOCOA_TABLE_ORIGIN"), &scroll_row, &scroll_col, ':') == 2)
+      cocoaTableApplyOrigin(tableView, scroll_row, scroll_col);
     iupAttribSet(ih, "_IUPCOCOA_TABLE_SCROLLTO", NULL);
+    iupAttribSet(ih, "_IUPCOCOA_TABLE_ORIGIN", NULL);
     iupAttribSet(ih, "_IUPCOCOA_TABLE_LAIDOUT", "1");
+    if (iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+      iupTableScrollDone(ih);
   }
 
   iupcocoaUpdateTip(ih);

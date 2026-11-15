@@ -329,15 +329,42 @@ IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
   return lins;
 }
 
-IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+static void androidTableScroll(Ihandle* ih, const char* method, int lin, int col)
 {
   if (!ih->handle) return;
   JNIEnv* env = iupAndroid_GetEnvThreadSafe();
   jclass cls = androidTableFindClass(env);
-  jmethodID m = (*env)->GetStaticMethodID(env, cls, "scrollToCell", "(Landroid/view/View;II)V");
-  (*env)->CallStaticVoidMethod(env, cls, m, ih->handle, (jint)lin, (jint)col);
-  iupAndroid_CheckException(env, "IupTableHelper.scrollToCell");
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, method, "(Landroid/view/View;II)Z");
+  jboolean pending = (*env)->CallStaticBooleanMethod(env, cls, m, ih->handle, (jint)lin, (jint)col);
+  iupAndroid_CheckException(env, method);
   (*env)->DeleteLocalRef(env, cls);
+  if (pending && iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+    iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
+}
+
+IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+{
+  androidTableScroll(ih, "scrollToCell", lin, col);
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  androidTableScroll(ih, "setOrigin", lin, col);
+}
+
+IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
+{
+  *lin = 0;
+  *col = 0;
+  if (!ih->handle) return;
+  JNIEnv* env = iupAndroid_GetEnvThreadSafe();
+  jclass cls = androidTableFindClass(env);
+  jmethodID m = (*env)->GetStaticMethodID(env, cls, "getOrigin", "(Landroid/view/View;)I");
+  jint v = (*env)->CallStaticIntMethod(env, cls, m, ih->handle);
+  iupAndroid_CheckException(env, "IupTableHelper.getOrigin");
+  (*env)->DeleteLocalRef(env, cls);
+  *lin = (int)(v >> 16);
+  *col = (int)(v & 0xFFFF);
 }
 
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
@@ -642,6 +669,16 @@ int iupAndroidTableReorder(Ihandle* ih, int from_col, int to_col)
 
   iupTableMoveColAttribs(ih, from_col, to_col);
   return 1;
+}
+
+void iupAndroidTableNotifyScroll(Ihandle* ih)
+{
+  iupTableNotifyScroll(ih);
+}
+
+void iupAndroidTableScrollDone(Ihandle* ih)
+{
+  iupTableScrollDone(ih);
 }
 
 void iupAndroidTableCellsCollapse(Ihandle* ih)

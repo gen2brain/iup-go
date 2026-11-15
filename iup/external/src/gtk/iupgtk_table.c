@@ -1179,11 +1179,9 @@ static void gtkTableCellDataFunc(GtkTreeViewColumn* column, GtkCellRenderer* ren
 
   int cells_selected = iupTableCellsIsSelected(ih, lin, col);
 
-  char* bgcolor = cells_selected ? iupTableCellsBgColor() : iupAttribGetId2(ih, "BGCOLOR", lin, col);
+  char* bgcolor = cells_selected ? iupTableCellsBgColor() : NULL;
   if (!bgcolor)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
-  if (!bgcolor)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+    bgcolor = iupTableGetCellBgColor(ih, lin, col);
 
   if (!bgcolor)
     bgcolor = iupTableGetAlternateColor(ih, lin);
@@ -1203,11 +1201,9 @@ static void gtkTableCellDataFunc(GtkTreeViewColumn* column, GtkCellRenderer* ren
   else
     g_object_set(renderer, "background-set", FALSE, NULL);
 
-  char* fgcolor = cells_selected ? iupTableCellsFgColor() : iupAttribGetId2(ih, "FGCOLOR", lin, col);
+  char* fgcolor = cells_selected ? iupTableCellsFgColor() : NULL;
   if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
-  if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+    fgcolor = iupTableGetCellFgColor(ih, lin, col);
 
   if (fgcolor && iupStrToRGB(fgcolor, &r, &g, &b))
   {
@@ -2088,6 +2084,12 @@ static void gtkTableRebuildColumns(Ihandle* ih, int old_num_col, int add_pos, in
     free(selected);
 }
 
+static void gtkTableAdjustmentValueChanged(GtkAdjustment* adjustment, Ihandle* ih)
+{
+  (void)adjustment;
+  iupTableNotifyScroll(ih);
+}
+
 static int gtkTableMapMethod(Ihandle* ih)
 {
   GtkListStore* store;
@@ -2149,6 +2151,8 @@ static int gtkTableMapMethod(Ihandle* ih)
   gtkTableCreateColumns(ih);
 
   gtk_container_add(GTK_CONTAINER(gtk_data->scrolled_win), gtk_data->tree_view);
+  g_signal_connect(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), "value-changed", G_CALLBACK(gtkTableAdjustmentValueChanged), ih);
+  g_signal_connect(gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), "value-changed", G_CALLBACK(gtkTableAdjustmentValueChanged), ih);
 
   ih->handle = gtk_data->tree_view;
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)gtk_data->scrolled_win);
@@ -2893,16 +2897,91 @@ IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  GtkTreeView* tree_view = GTK_TREE_VIEW(gtk_data->tree_view);
+  GtkAdjustment* hadj = gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win));
+  GtkAdjustment* vadj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win));
+  GdkRectangle rect, visible;
+  GtkTreePath* path;
+  int tx, ty;
 
   if (lin < 1 || lin > ih->data->num_lin || col < 1 || col > ih->data->num_col)
     return;
 
-  GtkTreePath* path = gtk_tree_path_new_from_indices(lin - 1, -1);
-  GtkTreeViewColumn* column = gtk_tree_view_get_column(GTK_TREE_VIEW(gtk_data->tree_view), col - 1);
-
-  gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(gtk_data->tree_view), path, column, FALSE, 0.0, 0.0);
-
+  path = gtk_tree_path_new_from_indices(lin - 1, -1);
+  gtk_tree_view_get_background_area(tree_view, path, gtk_tree_view_get_column(tree_view, col - 1), &rect);
   gtk_tree_path_free(path);
+  gtk_tree_view_convert_bin_window_to_tree_coords(tree_view, rect.x, rect.y, &tx, &ty);
+  gtk_tree_view_get_visible_rect(tree_view, &visible);
+
+  if (ty < visible.y)
+    gtk_adjustment_set_value(vadj, ty);
+  else if (ty + rect.height > visible.y + visible.height)
+    gtk_adjustment_set_value(vadj, ty + rect.height - visible.height);
+
+  if (tx < visible.x)
+    gtk_adjustment_set_value(hadj, tx);
+  else if (tx + rect.width > visible.x + visible.width)
+    gtk_adjustment_set_value(hadj, tx + rect.width - visible.width);
+}
+
+IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  GtkTreeView* tree_view = GTK_TREE_VIEW(gtk_data->tree_view);
+  GtkTreePath* start = NULL;
+  double left;
+  int c;
+
+  *lin = 0;
+  *col = 0;
+
+  if (!gtk_tree_view_get_visible_range(tree_view, &start, NULL))
+    return;
+
+  *lin = gtk_tree_path_get_indices(start)[0] + 1;
+
+  left = gtk_adjustment_get_value(gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)));
+  *col = ih->data->num_col;
+  for (c = 1; c <= ih->data->num_col; c++)
+  {
+    GtkTreeViewColumn* column = gtk_tree_view_get_column(tree_view, c - 1);
+    GdkRectangle rect;
+    if (!column || !gtk_tree_view_column_get_visible(column))
+      continue;
+    gtk_tree_view_get_background_area(tree_view, start, column, &rect);
+    if (rect.x + rect.width > left)
+    {
+      *col = c;
+      break;
+    }
+  }
+  gtk_tree_path_free(start);
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  GtkTreeView* tree_view = GTK_TREE_VIEW(gtk_data->tree_view);
+  GtkTreePath* path;
+  GtkTreeViewColumn* column = NULL;
+  GdkRectangle rect;
+  int tx, ty;
+  int set_lin = (lin > 0 && lin <= ih->data->num_lin);
+
+  if (!set_lin)
+    lin = 1;
+  if (col > 0 && col <= ih->data->num_col)
+    column = gtk_tree_view_get_column(tree_view, col - 1);
+
+  path = gtk_tree_path_new_from_indices(lin - 1, -1);
+  gtk_tree_view_get_background_area(tree_view, path, column, &rect);
+  gtk_tree_view_convert_bin_window_to_tree_coords(tree_view, rect.x, rect.y, &tx, &ty);
+  gtk_tree_path_free(path);
+
+  if (column)
+    gtk_adjustment_set_value(gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), tx);
+  if (set_lin)
+    gtk_adjustment_set_value(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), ty);
 }
 
 /* ========================================================================= */

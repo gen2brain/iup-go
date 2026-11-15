@@ -19,6 +19,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
@@ -220,6 +221,11 @@ public final class IupTableHelper
 
     static int resolveBg(IupTableView t, int lin, int col)
     {
+        if (t.virtualMode)
+        {
+            long cb = dispatchColorRequest(t.ihandlePtr, lin, col, false);
+            if (cb != 0) return (int) cb;
+        }
         Integer v = t.cellBg.get(cellKey(lin, col));
         if (v != null) return v;
         int idx = t.colBg.indexOfKey(col);
@@ -233,6 +239,11 @@ public final class IupTableHelper
 
     static int resolveFg(IupTableView t, int lin, int col)
     {
+        if (t.virtualMode)
+        {
+            long cb = dispatchColorRequest(t.ihandlePtr, lin, col, true);
+            if (cb != 0) return (int) cb;
+        }
         Integer v = t.cellFg.get(cellKey(lin, col));
         if (v != null) return v;
         int idx = t.colFg.indexOfKey(col);
@@ -292,7 +303,9 @@ public final class IupTableHelper
         protected void onScrollChanged(int l, int t, int oldl, int oldt)
         {
             super.onScrollChanged(l, t, oldl, oldt);
-            if (owner == null || owner.syncing) return;
+            if (owner == null) return;
+            if (!isHeader && l != oldl) dispatchScroll(owner.ihandlePtr);
+            if (owner.syncing) return;
             SyncScrollView other = isHeader ? owner.bodyScroll : owner.headerScroll;
             if (other == null) return;
             owner.syncing = true;
@@ -1280,6 +1293,14 @@ public final class IupTableHelper
         table.adapter = new RowAdapter(table);
         table.recyclerView.setAdapter(table.adapter);
         table.bodyScroll.addView(table.recyclerView);
+        table.recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener()
+        {
+            @Override
+            public void onScrolled(@NonNull RecyclerView rv, int dx, int dy)
+            {
+                dispatchScroll(table.ihandlePtr);
+            }
+        });
 
         new ItemTouchHelper(new RowDragCallback(table)).attachToRecyclerView(table.recyclerView);
 
@@ -1974,28 +1995,87 @@ public final class IupTableHelper
     }
 
     @Keep
-    public static void scrollToCell(View v, int lin, int col)
+    public static boolean scrollToCell(View v, int lin, int col)
     {
-        if (!(v instanceof IupTableView t)) return;
-        final int lin0 = lin - 1;
-        if (lin0 >= 0 && lin0 < t.numLin)
-            t.recyclerView.post(() -> t.recyclerView.smoothScrollToPosition(lin0));
+        if (!(v instanceof IupTableView t)) return false;
+        LinearLayoutManager lm = (LinearLayoutManager) t.recyclerView.getLayoutManager();
+        if (lm == null) return false;
+        if (lin >= 1 && lin <= t.numLin)
+            lm.scrollToPosition(lin - 1);
+        final int fcol = col;
+        return afterLayout(t, () -> {
+            if (fcol < 1 || fcol > t.numCol) return;
+            int fx = columnLeft(t, fcol), fw = columnWidth(t, fcol);
+            int sx = t.bodyScroll.getScrollX(), w = t.bodyScroll.getWidth();
+            if (fx < sx)
+                t.bodyScroll.scrollTo(fx, 0);
+            else if (fx + fw > sx + w)
+                t.bodyScroll.scrollTo(Math.min(fx, fx + fw - w), 0);
+        });
+    }
 
-        if (col >= 1 && col <= t.numCol)
+    @Keep
+    public static boolean setOrigin(View v, int lin, int col)
+    {
+        if (!(v instanceof IupTableView t)) return false;
+        LinearLayoutManager lm = (LinearLayoutManager) t.recyclerView.getLayoutManager();
+        if (lm == null) return false;
+        if (lin >= 1 && lin <= t.numLin)
+            lm.scrollToPositionWithOffset(lin - 1, 0);
+        final int fcol = col;
+        return afterLayout(t, () -> {
+            if (fcol >= 1 && fcol <= t.numCol)
+                t.bodyScroll.scrollTo(columnLeft(t, fcol), 0);
+        });
+    }
+
+    @Keep
+    public static int getOrigin(View v)
+    {
+        if (!(v instanceof IupTableView t) || t.numLin < 1 || t.numCol < 1) return 0;
+        LinearLayoutManager lm = (LinearLayoutManager) t.recyclerView.getLayoutManager();
+        int first = lm != null ? lm.findFirstVisibleItemPosition() : -1;
+        int lin = first >= 0 ? first + 1 : 1;
+        int sx = t.bodyScroll.getScrollX(), col = t.numCol;
+        for (int c = 1; c <= t.numCol; c++)
         {
-            int x = 0;
-            for (int c = 0; c < col - 1; c++)
-                x += (t.colWidths[c] > 0 ? t.colWidths[c] : t.defaultColWidth);
-            final int fx = x;
-            final int fw = (t.colWidths[col - 1] > 0 ? t.colWidths[col - 1] : t.defaultColWidth);
-            t.bodyScroll.post(() -> {
-                int sx = t.bodyScroll.getScrollX(), w = t.bodyScroll.getWidth();
-                if (fx < sx)
-                    t.bodyScroll.smoothScrollTo(fx, 0);
-                else if (fx + fw > sx + w)
-                    t.bodyScroll.smoothScrollTo(Math.min(fx, fx + fw - w), 0);
-            });
+            if (columnLeft(t, c) + columnWidth(t, c) > sx)
+            {
+                col = c;
+                break;
+            }
         }
+        return (lin << 16) | col;
+    }
+
+    private static int columnWidth(IupTableView t, int col)
+    {
+        return t.colWidths[col - 1] > 0 ? t.colWidths[col - 1] : t.defaultColWidth;
+    }
+
+    private static int columnLeft(IupTableView t, int col)
+    {
+        int x = 0;
+        for (int c = 1; c < col; c++)
+            x += columnWidth(t, c);
+        return x;
+    }
+
+    private static boolean afterLayout(IupTableView t, Runnable horizontal)
+    {
+        ViewTreeObserver vto = t.recyclerView.getViewTreeObserver();
+        vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener()
+        {
+            @Override
+            public void onGlobalLayout()
+            {
+                t.recyclerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                horizontal.run();
+                dispatchScrollDone(t.ihandlePtr);
+            }
+        });
+        t.recyclerView.requestLayout();
+        return true;
     }
 
 
@@ -2096,4 +2176,7 @@ public final class IupTableHelper
     public static native boolean dispatchReorder(long ihandlePtr, int fromCol, int toCol);
     public static native int dispatchRowDragDrop(long ihandlePtr, int fromLin, int toLin);
     public static native String dispatchValueRequest(long ihandlePtr, int lin, int col);
+    public static native long dispatchColorRequest(long ihandlePtr, int lin, int col, boolean fg);
+    public static native void dispatchScroll(long ihandlePtr);
+    public static native void dispatchScrollDone(long ihandlePtr);
 }

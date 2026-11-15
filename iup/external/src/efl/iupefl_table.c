@@ -138,12 +138,10 @@ static void eflTableGetCellBgColor(Ihandle* ih, int lin, int col, unsigned char*
     return;
 
   if (lin > 0 && col > 0)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
-
-  if (!bgcolor && col > 0)
+    bgcolor = iupTableGetCellBgColor(ih, lin, col);
+  else if (col > 0)
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
-
-  if (!bgcolor && lin > 0)
+  else if (lin > 0)
     bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
 
   if (!bgcolor && lin > 0)
@@ -185,12 +183,10 @@ static void eflTableGetCellFgColor(Ihandle* ih, int lin, int col, unsigned char*
     return;
 
   if (lin > 0 && col > 0)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
-
-  if (!fgcolor && col > 0)
+    fgcolor = iupTableGetCellFgColor(ih, lin, col);
+  else if (col > 0)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
-
-  if (!fgcolor && lin > 0)
+  else if (lin > 0)
     fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
 
   if (!fgcolor)
@@ -2335,6 +2331,8 @@ static void eflTableVirtualScrollCallback(void* cb_data, Evas_Object* obj, void*
 
   if (!data->scroll_job)
     data->scroll_job = ecore_job_add(eflTableScrollJobCallback, ih);
+
+  iupTableNotifyScroll(ih);
 }
 
 
@@ -2363,8 +2361,6 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
 
   row_height = data->row_height > 0 ? data->row_height : DEFAULT_ROW_HEIGHT;
 
-  visible_rows = iupAttribGetInt(ih, "VISIBLELINES");
-  if (visible_rows <= 0)
   {
     int screen_width = 0, screen_height = 0;
     iupdrvGetScreenSize(&screen_width, &screen_height);
@@ -2622,6 +2618,7 @@ static void eflTableUpdateVisibleRows(Ihandle* ih, int force)
   int pool_row, col;
   sIFnii value_cb;
   int row_height;
+  int row_pad;
   int scroll_y = 0;
 
   if (!data || !data->is_virtual)
@@ -2635,12 +2632,17 @@ static void eflTableUpdateVisibleRows(Ihandle* ih, int force)
 
   value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
   row_height = data->row_height > 0 ? data->row_height : DEFAULT_ROW_HEIGHT;
+  {
+    Evas_Coord pad_h = 0, pad_v = 0;
+    elm_table_padding_get(data->table, &pad_h, &pad_v);
+    row_pad = pad_v;
+  }
 
   if (data->scroller)
   {
     int scroll_x;
     elm_scroller_region_get(data->scroller, &scroll_x, &scroll_y, NULL, NULL);
-    first_data_row = (scroll_y / row_height) + 1;
+    first_data_row = (scroll_y - data->header_height - 2 * row_pad) / (row_height + row_pad) + 1;
   }
   else
     first_data_row = 1;
@@ -2657,12 +2659,12 @@ static void eflTableUpdateVisibleRows(Ihandle* ih, int force)
 
   if (data->top_spacer)
   {
-    int top_height = (first_data_row - 1) * row_height;
+    int top_height = (first_data_row - 1) * (row_height + row_pad);
     efl_gfx_hint_size_min_set(data->top_spacer, EINA_SIZE2D(1, top_height));
   }
   if (data->bottom_spacer)
   {
-    int bottom_height = (num_lin - first_data_row - data->alloc_num_lin + 1) * row_height;
+    int bottom_height = (num_lin - first_data_row - data->alloc_num_lin + 1) * (row_height + row_pad);
     if (bottom_height < 0)
       bottom_height = 0;
     efl_gfx_hint_size_min_set(data->bottom_spacer, EINA_SIZE2D(1, bottom_height));
@@ -3202,28 +3204,198 @@ IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
   return lins;
 }
 
+static Evas_Object* eflTableCellBg(IeflTableData* data, int num_col, int lin, int col)
+{
+  int pool_lin = eflTablePoolRow(data, lin);
+  if (!data->cell_bgs || pool_lin < 1 || col < 1 || col > num_col)
+    return NULL;
+  return data->cell_bgs[(pool_lin - 1) * num_col + (col - 1)];
+}
+
+static int eflTableRowStep(Ihandle* ih, IeflTableData* data, int* ref_lin, int* ref_top)
+{
+  int num_col = ih->data->num_col;
+  int first = data->is_virtual ? data->first_visible_row : 1;
+  Evas_Object* a = eflTableCellBg(data, num_col, first, 1);
+  Evas_Object* b = eflTableCellBg(data, num_col, first + 1, 1);
+  Eina_Rect tg = efl_gfx_entity_geometry_get(data->table);
+  Eina_Rect ga;
+
+  if (!a)
+    return 0;
+
+  ga = efl_gfx_entity_geometry_get(a);
+  *ref_lin = first;
+  *ref_top = ga.y - tg.y;
+
+  if (b)
+  {
+    Eina_Rect gb = efl_gfx_entity_geometry_get(b);
+    if (gb.y > ga.y)
+      return gb.y - ga.y;
+  }
+  return ga.h;
+}
+
+static int eflTableColLeft(Ihandle* ih, IeflTableData* data, int col, int* width)
+{
+  int num_col = ih->data->num_col;
+  int first = data->is_virtual ? data->first_visible_row : 1;
+  Evas_Object* bg = eflTableCellBg(data, num_col, first, col);
+  Eina_Rect tg = efl_gfx_entity_geometry_get(data->table);
+  Eina_Rect g;
+
+  if (!bg)
+    return -1;
+  g = efl_gfx_entity_geometry_get(bg);
+  *width = g.w;
+  return g.x - tg.x;
+}
+
+static void eflTableShowRegion(IeflTableData* data, int x, int y, int set_x, int set_y)
+{
+  int rx, ry, rw, rh;
+  elm_scroller_region_get(data->scroller, &rx, &ry, &rw, &rh);
+  if (set_x)
+    rx = x < 0 ? 0 : x;
+  if (set_y)
+    ry = y < 0 ? 0 : y;
+  elm_scroller_region_show(data->scroller, rx, ry, rw, rh);
+}
+
+IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int num_col = ih->data->num_col;
+  int num_lin = ih->data->num_lin;
+  int first, last, c;
+  Eina_Rect sg;
+
+  *lin = 0;
+  *col = 0;
+  if (!data || !data->scroller || !data->cell_bgs || num_col < 1 || num_lin < 1)
+    return;
+
+  sg = efl_gfx_entity_geometry_get(data->scroller);
+
+  if (data->is_virtual)
+  {
+    first = data->first_visible_row;
+    last = data->first_visible_row + data->alloc_num_lin - 1;
+    if (last > num_lin)
+      last = num_lin;
+    *lin = last;
+    for (int l = first; l <= last; l++)
+    {
+      Evas_Object* bg = eflTableCellBg(data, num_col, l, 1);
+      if (bg)
+      {
+        Eina_Rect g = efl_gfx_entity_geometry_get(bg);
+        if (g.y + g.h > sg.y)
+        {
+          *lin = l;
+          break;
+        }
+      }
+    }
+  }
+  else
+  {
+    int lo = 1, hi = num_lin;
+    while (lo < hi)
+    {
+      int mid = (lo + hi) / 2;
+      Evas_Object* bg = eflTableCellBg(data, num_col, mid, 1);
+      Eina_Rect g = bg ? efl_gfx_entity_geometry_get(bg) : (Eina_Rect)EINA_RECT(0, 0, 0, 0);
+      if (bg && g.y + g.h > sg.y)
+        hi = mid;
+      else
+        lo = mid + 1;
+    }
+    *lin = lo;
+  }
+
+  *col = num_col;
+  for (c = 1; c <= num_col; c++)
+  {
+    Evas_Object* bg = eflTableCellBg(data, num_col, *lin, c);
+    if (bg)
+    {
+      Eina_Rect g = efl_gfx_entity_geometry_get(bg);
+      if (g.x + g.w > sg.x)
+      {
+        *col = c;
+        break;
+      }
+    }
+  }
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int ref_lin = 0, ref_top = 0, step, x = 0, y = 0, w = 0;
+  int set_y = 0, set_x = 0;
+
+  if (!data || !data->scroller || !data->table)
+    return;
+
+  step = eflTableRowStep(ih, data, &ref_lin, &ref_top);
+  if (lin > 0 && lin <= ih->data->num_lin && step > 0)
+  {
+    y = ref_top + (lin - ref_lin) * step;
+    set_y = 1;
+  }
+  if (col > 0 && col <= ih->data->num_col)
+  {
+    x = eflTableColLeft(ih, data, col, &w);
+    set_x = x >= 0;
+  }
+
+  if (set_x || set_y)
+    eflTableShowRegion(data, x, y, set_x, set_y);
+}
+
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
-  int x, y, w, h;
-  int total_x = 0;
-  int i;
+  int ref_lin = 0, ref_top = 0, step, x, y, w = 0, rx, ry, rw, rh;
+  int set_x = 0, set_y = 0;
 
-  if (!data || !data->scroller)
+  if (!data || !data->scroller || !data->table)
     return;
 
-  if (data->col_widths)
+  elm_scroller_region_get(data->scroller, &rx, &ry, &rw, &rh);
+
+  step = eflTableRowStep(ih, data, &ref_lin, &ref_top);
+  if (lin > 0 && lin <= ih->data->num_lin && step > 0)
   {
-    for (i = 0; i < col - 1 && i < ih->data->num_col; i++)
-      total_x += data->col_widths[i] + CELL_PADDING;
+    y = ref_top + (lin - ref_lin) * step;
+    if (y < ry)
+      set_y = 1;
+    else if (y + step > ry + rh)
+    {
+      y = y + step - rh;
+      set_y = 1;
+    }
+  }
+  else
+    y = ry;
+
+  x = (col > 0 && col <= ih->data->num_col) ? eflTableColLeft(ih, data, col, &w) : -1;
+  if (x >= 0)
+  {
+    if (x < rx)
+      set_x = 1;
+    else if (x + w > rx + rw)
+    {
+      x = x + w - rw;
+      set_x = 1;
+    }
   }
 
-  y = data->header_height + (lin - 1) * (data->row_height + CELL_PADDING);
-  x = total_x;
-  w = (col <= ih->data->num_col && data->col_widths) ? data->col_widths[col - 1] : DEFAULT_COL_WIDTH;
-  h = data->row_height;
-
-  elm_scroller_region_bring_in(data->scroller, x, y, w, h);
+  if (set_x || set_y)
+    eflTableShowRegion(data, x, y, set_x, set_y);
 }
 
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
@@ -3278,6 +3450,8 @@ IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
     elm_table_padding_set(data->table, 1, 1);
   else
     elm_table_padding_set(data->table, 0, 0);
+
+  eflTableUpdateVisibleRows(ih, 1);
 }
 
 IUP_SDK_API int iupdrvTableGetRowHeight(Ihandle* ih)

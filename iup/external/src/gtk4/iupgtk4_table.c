@@ -1078,11 +1078,9 @@ static void gtk4TableApplyCellStyle(Ihandle* ih, GtkWidget* box, GtkWidget* widg
 
   int cells_selected = iupTableCellsIsSelected(ih, lin, col + 1);
 
-  char* fgcolor = cells_selected ? iupTableCellsFgColor() : iupAttribGetId2(ih, "FGCOLOR", lin, col + 1);
+  char* fgcolor = cells_selected ? iupTableCellsFgColor() : NULL;
   if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col + 1);
-  if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+    fgcolor = iupTableGetCellFgColor(ih, lin, col + 1);
 
   unsigned char r, g, b;
   if (fgcolor && iupStrToRGB(fgcolor, &r, &g, &b))
@@ -1099,11 +1097,7 @@ static void gtk4TableApplyCellStyle(Ihandle* ih, GtkWidget* box, GtkWidget* widg
     bgcolor = iupTableCellsBgColor();
   else if (!is_selected)
   {
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col + 1);
-    if (!bgcolor)
-      bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col + 1);
-    if (!bgcolor)
-      bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+    bgcolor = iupTableGetCellBgColor(ih, lin, col + 1);
 
     if (!bgcolor)
       bgcolor = iupTableGetAlternateColor(ih, lin);
@@ -2406,6 +2400,12 @@ static void gtk4TableRebuildColumns(Ihandle* ih, int old_num_col, int add_pos, i
   free(src);
 }
 
+static void gtk4TableAdjustmentValueChanged(GtkAdjustment* adjustment, Ihandle* ih)
+{
+  (void)adjustment;
+  iupTableNotifyScroll(ih);
+}
+
 static int gtk4TableMapMethod(Ihandle* ih)
 {
   Igtk4TableData* gtk_data = (Igtk4TableData*)calloc(1, sizeof(Igtk4TableData));
@@ -2523,6 +2523,8 @@ static int gtk4TableMapMethod(Ihandle* ih)
   gtk_data->scrolled_win = gtk_scrolled_window_new();
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
   gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win), gtk_data->column_view);
+  g_signal_connect(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), "value-changed", G_CALLBACK(gtk4TableAdjustmentValueChanged), ih);
+  g_signal_connect(gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), "value-changed", G_CALLBACK(gtk4TableAdjustmentValueChanged), ih);
 
   ih->handle = gtk_data->column_view;
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)gtk_data->scrolled_win);
@@ -3190,33 +3192,106 @@ IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
 /* Driver Functions - Scrolling                                             */
 /* ========================================================================= */
 
+static double gtk4TableRowStep(Igtk4TableData* gtk_data, GtkAdjustment* vadj)
+{
+  guint n_items = g_list_model_get_n_items(G_LIST_MODEL(gtk_data->selection_model));
+  double upper = gtk_adjustment_get_upper(vadj);
+  if (n_items == 0 || upper <= 0)
+    return 0;
+  return upper / n_items;
+}
+
+static int gtk4TableColumnX(Ihandle* ih, int col)
+{
+  int x = 0, c;
+  for (c = 1; c < col; c++)
+  {
+    int w = iupdrvTableGetColWidth(ih, c);
+    if (w > 0)
+      x += w;
+  }
+  return x;
+}
+
+static void gtk4TableScrollAdjustment(GtkAdjustment* adj, double pos, double size, int align)
+{
+  double value = gtk_adjustment_get_value(adj);
+  double page = gtk_adjustment_get_page_size(adj);
+
+  if (align || pos < value)
+    gtk_adjustment_set_value(adj, pos);
+  else if (pos + size > value + page)
+    gtk_adjustment_set_value(adj, pos + size - page);
+}
+
+IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  GtkAdjustment* vadj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win));
+  GtkAdjustment* hadj = gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win));
+  guint n_items = g_list_model_get_n_items(G_LIST_MODEL(gtk_data->selection_model));
+  double step = gtk4TableRowStep(gtk_data, vadj);
+  double hvalue = gtk_adjustment_get_value(hadj);
+  guint pos;
+  int c, x = 0;
+
+  *lin = 0;
+  *col = 0;
+  if (n_items == 0 || step <= 0 || ih->data->num_col < 1)
+    return;
+
+  pos = (guint)(gtk_adjustment_get_value(vadj) / step);
+  if (pos >= n_items)
+    pos = n_items - 1;
+  *lin = gtk4TableLinFromViewPos(gtk_data, pos);
+
+  *col = ih->data->num_col;
+  for (c = 1; c <= ih->data->num_col; c++)
+  {
+    x += iupdrvTableGetColWidth(ih, c);
+    if (x > hvalue)
+    {
+      *col = c;
+      break;
+    }
+  }
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+
+  if (lin > 0 && lin <= ih->data->num_lin)
+  {
+    GtkAdjustment* vadj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win));
+    guint pos = gtk4TableViewPos(gtk_data, lin);
+    double step = gtk4TableRowStep(gtk_data, vadj);
+    if (pos != GTK_INVALID_LIST_POSITION && step > 0)
+      gtk4TableScrollAdjustment(vadj, pos * step, step, 1);
+  }
+
+  if (col > 0 && col <= ih->data->num_col)
+    gtk4TableScrollAdjustment(gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), gtk4TableColumnX(ih, col), iupdrvTableGetColWidth(ih, col), 1);
+}
+
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  GtkAdjustment* vadj;
+  guint pos;
+  double step;
+
   if (lin < 1 || lin > ih->data->num_lin)
     return;
 
-#if GTK_CHECK_VERSION(4, 12, 0)
-  {
-    Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
-    GtkColumnView* column_view = GTK_COLUMN_VIEW(gtk_data->column_view);
-    GListModel* columns = gtk_column_view_get_columns(column_view);
-    GtkColumnViewColumn* column = NULL;
+  vadj = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win));
+  pos = gtk4TableViewPos(gtk_data, lin);
+  step = gtk4TableRowStep(gtk_data, vadj);
+  if (pos != GTK_INVALID_LIST_POSITION && step > 0)
+    gtk4TableScrollAdjustment(vadj, pos * step, step, 0);
 
-    if (columns && col >= 1 && (guint)col <= g_list_model_get_n_items(columns))
-      column = GTK_COLUMN_VIEW_COLUMN(g_list_model_get_item(columns, col - 1));
-
-    guint pos = gtk4TableViewPos(gtk_data, lin);
-
-    if (pos != GTK_INVALID_LIST_POSITION)
-      gtk_column_view_scroll_to(column_view, pos, column, GTK_LIST_SCROLL_NONE, NULL);
-
-    if (column)
-      g_object_unref(column);
-  }
-#else
-  /* the scroll action belongs to the GtkListView inside, which is private before 4.12 */
-  (void)col;
-#endif
+  if (col >= 1 && col <= ih->data->num_col)
+    gtk4TableScrollAdjustment(gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), gtk4TableColumnX(ih, col), iupdrvTableGetColWidth(ih, col), 0);
 }
 
 /* ========================================================================= */

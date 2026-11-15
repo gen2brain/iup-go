@@ -118,6 +118,7 @@ static void haikuTableUserSort(Ihandle* ih, IupHaikuTableView* tv, int col);
 #define IUPHAIKU_TABLE_AUTOSIZE 'IupA'
 #define IUPHAIKU_TABLE_COLMOVE 'IupM'
 #define IUPHAIKU_TABLE_SCROLL 'IupS'
+#define IUPHAIKU_TABLE_SCROLLED 'IupT'
 #define IUPHAIKU_TABLE_SORTCLICK 'IupO'
 
 class IupHaikuTableEditor : public BTextView
@@ -348,7 +349,17 @@ protected:
     if (msg->what == IUPHAIKU_TABLE_SCROLL)
     {
       if (fPendingScrollLin > 0)
-        ScrollToLine(fPendingScrollLin);
+        ShowCell(fPendingScrollLin, fPendingScrollCol);
+      if (fPendingOriginLin > 0 || fPendingOriginCol > 0)
+        SetOrigin(fPendingOriginLin, fPendingOriginCol);
+      if (iupAttribGet(fIhandle, "_IUPTABLE_SCROLL_PENDING") && fPendingScrollLin == 0 && fPendingOriginLin == 0 && fPendingOriginCol == 0)
+        iupTableScrollDone(fIhandle);
+      return;
+    }
+
+    if (msg->what == IUPHAIKU_TABLE_SCROLLED)
+    {
+      iupTableNotifyScroll(fIhandle);
       return;
     }
 
@@ -518,10 +529,16 @@ public:
   void DrawAfterChildren(BRect /*updateRect*/) override
   {
     if (!fIhandle) return;
-    if (fPendingScrollLin > 0 && Looper())
+    if ((fPendingScrollLin > 0 || fPendingOriginLin > 0 || fPendingOriginCol > 0) && Looper())
       Looper()->PostMessage(IUPHAIKU_TABLE_SCROLL, this);
     BView* outline = ScrollView();
     if (!outline) return;
+
+    if (outline->Bounds().LeftTop() != fLastScroll && Looper())
+    {
+      fLastScroll = outline->Bounds().LeftTop();
+      Looper()->PostMessage(IUPHAIKU_TABLE_SCROLLED, this);
+    }
 
     BRect of = outline->Frame();
     float scroll_y = outline->Bounds().top;
@@ -562,7 +579,7 @@ public:
         bool stretch_last = fIhandle->data->stretch_last;
         const char* cs = nullptr;
         if (stretch_last)
-          cs = haikuTableLookupId2(fIhandle, "BGCOLOR", i + 1, nc);
+          cs = iupTableGetCellBgColor(fIhandle, i + 1, nc);
         if (!cs)
           cs = iupTableGetAlternateColor(fIhandle, i + 1);
         if (cs && iupStrToRGB(cs, &r, &g, &b))
@@ -764,18 +781,106 @@ public:
     RepositionTrail();
   }
 
-  void ScrollToLine(int lin)
+  void ScrollToLine(int lin) { ShowCell(lin, 0); }
+
+  bool CanScroll()
   {
-    BView* outline = ScrollView();
+    return ScrollView() && Window() && !Window()->IsHidden();
+  }
+
+  void MarkScrollPending()
+  {
+    if (iupAttribGet(fIhandle, "_IUPTABLE_IGNORE_SCROLL"))
+      iupAttribSet(fIhandle, "_IUPTABLE_SCROLL_PENDING", "1");
+  }
+
+  float ColumnLeft(int col)
+  {
+    float x = LatchWidth() > 15.0f ? LatchWidth() : 15.0f;
+    for (int i = 0; i < col - 1 && i < CountColumns(); i++)
+    {
+      BColumn* c = ColumnAt(i);
+      if (c && c->IsVisible()) x += c->Width();
+    }
+    return x;
+  }
+
+  void SetScrollValue(const char* name, float value)
+  {
+    auto* sb = dynamic_cast<BScrollBar*>(FindView(name));
+    if (!sb) return;
+    float min, max;
+    sb->GetRange(&min, &max);
+    if (value > max) value = max;
+    if (value < min) value = min;
+    sb->SetValue(value);
+  }
+
+  void ShowCell(int lin, int col)
+  {
     BRow* r = RowAt(lin - 1, nullptr);
     if (!r) return;
-    if (!outline || !Window() || Window()->IsHidden())
+    if (!CanScroll())
     {
       fPendingScrollLin = lin;
+      fPendingScrollCol = col;
+      MarkScrollPending();
       return;
     }
     fPendingScrollLin = 0;
     ScrollTo(r);
+    if (col > 0 && col <= CountColumns())
+    {
+      BRect b = ScrollView()->Bounds();
+      float left = ColumnLeft(col);
+      float right = left + ColumnAt(col - 1)->Width();
+      float x = b.left;
+      if (left < x) x = left;
+      else if (right > b.right) x = (right - b.Width() < left) ? right - b.Width() : left;
+      if (x != b.left) SetScrollValue("horizontal_scroll_bar", x);
+    }
+  }
+
+  void SetOrigin(int lin, int col)
+  {
+    if (!CanScroll())
+    {
+      if (lin) fPendingOriginLin = lin;
+      if (col) fPendingOriginCol = col;
+      MarkScrollPending();
+      return;
+    }
+    fPendingOriginLin = 0;
+    fPendingOriginCol = 0;
+    if (lin > 0)
+      SetScrollValue("vertical_scroll_bar", (lin - 1) * (haikuTableRowHeight(this) + 1.0f));
+    if (col > 0 && col <= CountColumns())
+      SetScrollValue("horizontal_scroll_bar", ColumnLeft(col) - ColumnLeft(1));
+  }
+
+  void GetOrigin(int* lin, int* col)
+  {
+    BView* outline = ScrollView();
+    *lin = 0;
+    *col = 0;
+    if (!outline || CountRows() < 1 || CountColumns() < 1) return;
+    BRect b = outline->Bounds();
+    *lin = static_cast<int>(b.top / (haikuTableRowHeight(this) + 1.0f)) + 1;
+    if (*lin > CountRows()) *lin = CountRows();
+    float margin = LatchWidth() > 15.0f ? LatchWidth() : 15.0f;
+    float edge = margin;
+    *col = CountColumns();
+    for (int i = 0; i < CountColumns(); i++)
+    {
+      BColumn* c = ColumnAt(i);
+      if (!c || !c->IsVisible()) continue;
+      edge += c->Width();
+      if (edge > b.left + margin)
+      {
+        *col = i + 1;
+        break;
+      }
+    }
   }
 
   bool NeedsAutoSize() const { return fNeedsAutoSize; }
@@ -812,6 +917,10 @@ private:
   int fFocusCol = 1;
   BMessageFilter* fSortFilter = nullptr;
   int fPendingScrollLin = 0;
+  int fPendingScrollCol = 0;
+  int fPendingOriginLin = 0;
+  int fPendingOriginCol = 0;
+  BPoint fLastScroll;
   IupHaikuTableEditor* fEditor = nullptr;
   BView* fTrail = nullptr;
   int fDragSourceRow = -1;
@@ -1419,7 +1528,7 @@ public:
       bool drew = false;
       unsigned char r, g, b;
       bool cells_selected = cells_mode && iupTableCellsIsSelected(fIhandle, lin, col);
-      const char* bg = cells_selected ? iupTableCellsBgColor() : (fIhandle ? haikuTableLookupId2(fIhandle, "BGCOLOR", lin, col) : nullptr);
+      const char* bg = cells_selected ? iupTableCellsBgColor() : (fIhandle ? iupTableGetCellBgColor(fIhandle, lin, col) : nullptr);
       if (bg && iupStrToRGB(bg, &r, &g, &b))
       {
         rgb_color c = { r, g, b, 255 };
@@ -1465,7 +1574,7 @@ public:
     if (fIhandle)
     {
       unsigned char r, g, b;
-      const char* fg = (cells_mode && iupTableCellsIsSelected(fIhandle, lin, col)) ? iupTableCellsFgColor() : haikuTableLookupId2(fIhandle, "FGCOLOR", lin, col);
+      const char* fg = (cells_mode && iupTableCellsIsSelected(fIhandle, lin, col)) ? iupTableCellsFgColor() : iupTableGetCellFgColor(fIhandle, lin, col);
       if (fg && iupStrToRGB(fg, &r, &g, &b))
       {
         rgb_color c = { r, g, b, 255 };
@@ -2192,7 +2301,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int co
   if (select) tv->DeselectAll();
   tv->SetFocusRow(lin - 1, select);
   iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", nullptr);
-  tv->ScrollToLine(lin);
+  tv->ShowCell(lin, col);
   if (BView* outline = tv->ScrollView()) outline->Invalidate();
 }
 
@@ -2257,12 +2366,30 @@ extern "C" IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
   return lins;
 }
 
-extern "C" IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int /*col*/)
+extern "C" IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   IupHaikuTableView* tv = haikuTableGetView(ih);
   if (!tv) return;
   LooperLockGuard guard(tv->Looper());
-  tv->ScrollToLine(lin);
+  tv->ShowCell(lin, col);
+}
+
+extern "C" IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
+{
+  IupHaikuTableView* tv = haikuTableGetView(ih);
+  *lin = 0;
+  *col = 0;
+  if (!tv) return;
+  LooperLockGuard guard(tv->Looper());
+  tv->GetOrigin(lin, col);
+}
+
+extern "C" IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  IupHaikuTableView* tv = haikuTableGetView(ih);
+  if (!tv) return;
+  LooperLockGuard guard(tv->Looper());
+  tv->SetOrigin(lin, col);
 }
 
 extern "C" IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)

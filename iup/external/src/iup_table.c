@@ -431,6 +431,39 @@ static int iTableSetIdValueAttrib(Ihandle* ih, int lin, int col, const char* val
 /* Image Support                                                             */
 /* ========================================================================= */
 
+static char* iTableGetCellColor(Ihandle* ih, const char* name, const char* cb_name, int lin, int col)
+{
+  char* color;
+
+  if (lin > 0 && col > 0 && iupAttribGetBoolean(ih, "VIRTUALMODE"))
+  {
+    IFniiIII cb = (IFniiIII)IupGetCallback(ih, cb_name);
+    if (cb)
+    {
+      int r = 0, g = 0, b = 0;
+      if (cb(ih, lin, col, &r, &g, &b) == IUP_DEFAULT)
+        return iupStrReturnRGB((unsigned char)r, (unsigned char)g, (unsigned char)b);
+    }
+  }
+
+  color = iupAttribGetId2(ih, name, lin, col);
+  if (!color)
+    color = iupAttribGetId2(ih, name, 0, col);
+  if (!color)
+    color = iupAttribGetId2(ih, name, lin, 0);
+  return color;
+}
+
+char* iupTableGetCellBgColor(Ihandle* ih, int lin, int col)
+{
+  return iTableGetCellColor(ih, "BGCOLOR", "BGCOLOR_CB", lin, col);
+}
+
+char* iupTableGetCellFgColor(Ihandle* ih, int lin, int col)
+{
+  return iTableGetCellColor(ih, "FGCOLOR", "FGCOLOR_CB", lin, col);
+}
+
 char* iupTableGetCellImageCb(Ihandle* ih, int lin, int col)
 {
   sIFnii image_cb = (sIFnii)IupGetCallback(ih, "IMAGE_CB");
@@ -1133,6 +1166,51 @@ static int iTableSetValueAttrib(Ihandle* ih, const char* value)
 /* Scrolling Attributes                                                      */
 /* ========================================================================= */
 
+static void iTableStoreOrigin(Ihandle* ih)
+{
+  int lin = 0, col = 0;
+  iupdrvTableGetOrigin(ih, &lin, &col);
+  iupAttribSetInt(ih, "_IUPTABLE_ORIGIN_LIN", lin);
+  iupAttribSetInt(ih, "_IUPTABLE_ORIGIN_COL", col);
+}
+
+void iupTableScrollDone(Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", NULL);
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SCROLL", NULL);
+  iTableStoreOrigin(ih);
+}
+
+void iupTableNotifyScroll(Ihandle* ih)
+{
+  IFnii cb;
+  int lin = 0, col = 0;
+
+  if (!ih->handle || iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+    return;
+
+  iupdrvTableGetOrigin(ih, &lin, &col);
+  if (lin < 1 || col < 1)
+    return;
+
+  if (!iupAttribGet(ih, "_IUPTABLE_ORIGIN_LIN"))
+  {
+    iupAttribSetInt(ih, "_IUPTABLE_ORIGIN_LIN", lin);
+    iupAttribSetInt(ih, "_IUPTABLE_ORIGIN_COL", col);
+    return;
+  }
+
+  if (lin == iupAttribGetInt(ih, "_IUPTABLE_ORIGIN_LIN") && col == iupAttribGetInt(ih, "_IUPTABLE_ORIGIN_COL"))
+    return;
+
+  iupAttribSetInt(ih, "_IUPTABLE_ORIGIN_LIN", lin);
+  iupAttribSetInt(ih, "_IUPTABLE_ORIGIN_COL", col);
+
+  cb = (IFnii)IupGetCallback(ih, "SCROLLTOP_CB");
+  if (cb && cb(ih, lin, col) == IUP_CLOSE)
+    IupExitLoop();
+}
+
 static int iTableSetShowAttrib(Ihandle* ih, const char* value)
 {
   int lin, col;
@@ -1146,8 +1224,51 @@ static int iTableSetShowAttrib(Ihandle* ih, const char* value)
   if (!iupTableCheckCellPos(ih, lin, col))
     return 0;
 
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SCROLL", "1");
   iupdrvTableScrollToCell(ih, lin, col);
+  if (!iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+    iupTableScrollDone(ih);
   return 0;
+}
+
+static int iTableSetOriginAttrib(Ihandle* ih, const char* value)
+{
+  int lin = 0, col = 0;
+  const char* sep;
+
+  if (!ih->handle || !value)
+    return 0;
+
+  sep = strchr(value, ':');
+  if (!sep)
+    return 0;
+
+  if (value[0] != '*' && (!iupStrToInt(value, &lin) || lin < 1 || lin > ih->data->num_lin))
+    return 0;
+  if (sep[1] != '*' && (!iupStrToInt(sep + 1, &col) || col < 1 || col > ih->data->num_col))
+    return 0;
+  if (lin == 0 && col == 0)
+    return 0;
+
+  iupAttribSet(ih, "_IUPTABLE_IGNORE_SCROLL", "1");
+  iupdrvTableSetOrigin(ih, lin, col);
+  if (!iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+    iupTableScrollDone(ih);
+  return 0;
+}
+
+static char* iTableGetOriginAttrib(Ihandle* ih)
+{
+  int lin = 0, col = 0;
+
+  if (!ih->handle)
+    return NULL;
+
+  iupdrvTableGetOrigin(ih, &lin, &col);
+  if (lin < 1 || col < 1)
+    return NULL;
+
+  return iupStrReturnIntInt(lin, col, ':');
 }
 
 static int iTableSetRedrawAttrib(Ihandle* ih, const char* value)
@@ -1548,6 +1669,9 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterCallback(ic, "DRAGDROP_CB", "iiii");
   iupClassRegisterCallback(ic, "MULTISELECTION_CB", "Ii");
   iupClassRegisterCallback(ic, "CELLSELECTION_CB", "iiii");
+  iupClassRegisterCallback(ic, "SCROLLTOP_CB", "ii");
+  iupClassRegisterCallback(ic, "BGCOLOR_CB", "iiIII");
+  iupClassRegisterCallback(ic, "FGCOLOR_CB", "iiIII");
 
   /* Common Callbacks */
   iupBaseRegisterCommonCallbacks(ic);
@@ -1575,6 +1699,7 @@ Iclass* iupTableNewClass(void)
   iupClassRegisterAttribute(ic, "ADDCOL", NULL, iTableSetAddColAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DELCOL", NULL, iTableSetDelColAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SHOW", NULL, iTableSetShowAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ORIGIN", iTableGetOriginAttrib, iTableSetOriginAttrib, NULL, NULL, IUPAF_NO_SAVE | IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "REDRAW", NULL, iTableSetRedrawAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
 
   /* Cell value (L:C notation) */

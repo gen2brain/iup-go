@@ -223,6 +223,10 @@ static char kIupTableEditCancelKey;
 @property(nonatomic, retain) NSMutableIndexSet* selectedLins;
 @property(nonatomic, assign) BOOL showGrid;
 @property(nonatomic, assign) CGFloat lastKnownContainerWidth;
+@property(nonatomic, assign) NSInteger pendingShowLin;
+@property(nonatomic, assign) NSInteger pendingShowCol;
+@property(nonatomic, assign) NSInteger pendingOriginLin;
+@property(nonatomic, assign) NSInteger pendingOriginCol;
 @property(nonatomic, assign) NSInteger sortCol;
 @property(nonatomic, assign) BOOL sortAscending;
 
@@ -280,6 +284,13 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 }
 
 @implementation IupCocoaTouchTableController
+
+- (void)scrollViewDidScroll:(UIScrollView*)sv
+{
+	(void)sv;
+	if (_ihandle)
+		iupTableNotifyScroll(_ihandle);
+}
 
 - (instancetype)init
 {
@@ -608,9 +619,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 		UIColor* fg = nil;
 		if (_ihandle)
 		{
-			const char* bg_str = iupAttribGetId2(_ihandle, "BGCOLOR", (int)lin + 1, (int)col + 1);  /* L:C per-cell */
-			if (!bg_str) bg_str = iupAttribGetId2(_ihandle, "BGCOLOR", 0, (int)col + 1);  /* :C per-column */
-			if (!bg_str) bg_str = iupAttribGetId2(_ihandle, "BGCOLOR", (int)lin + 1, 0);  /* L:* per-row */
+			const char* bg_str = iupTableGetCellBgColor(_ihandle, (int)lin + 1, (int)col + 1);
 			if (bg_str) bg = iupCocoaTouchToNativeColor(bg_str);
 			else
 			{
@@ -618,9 +627,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 				if (color_str) bg = iupCocoaTouchToNativeColor(color_str);
 			}
 
-			const char* fg_str = iupAttribGetId2(_ihandle, "FGCOLOR", (int)lin + 1, (int)col + 1);  /* L:C per-cell */
-			if (!fg_str) fg_str = iupAttribGetId2(_ihandle, "FGCOLOR", 0, (int)col + 1);  /* :C per-column */
-			if (!fg_str) fg_str = iupAttribGetId2(_ihandle, "FGCOLOR", (int)lin + 1, 0);  /* L:* per-row */
+			const char* fg_str = iupTableGetCellFgColor(_ihandle, (int)lin + 1, (int)col + 1);
 			if (fg_str) fg = iupCocoaTouchToNativeColor(fg_str);
 
 			if (cells_mode && iupTableCellsIsSelected(_ihandle, (int)lin + 1, (int)col + 1))
@@ -1260,17 +1267,139 @@ IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
 	return lins;
 }
 
+static BOOL cocoaTouchTableLaidOut(UICollectionView* view)
+{
+	if (view.bounds.size.width <= 0 || view.bounds.size.height <= 0)
+		return NO;
+	[view layoutIfNeeded];
+	return view.contentSize.height > 0;
+}
+
+static CGRect cocoaTouchTableCellFrame(IupCocoaTouchTableController* ctrl, UICollectionView* view, NSInteger lin, NSInteger col)
+{
+	NSInteger num_col = [ctrl numberOfColumns];
+	NSIndexPath* ip = [NSIndexPath indexPathForItem:(lin - 1) * num_col + (col - 1)
+	                                      inSection:IUPCOCOATOUCH_TABLE_BODY_SECTION];
+	UICollectionViewLayoutAttributes* attr = [view.collectionViewLayout layoutAttributesForItemAtIndexPath:ip];
+	return attr ? attr.frame : CGRectZero;
+}
+
+static void cocoaTouchTableMarkPending(Ihandle* ih)
+{
+	if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+		iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
+}
+
+static void cocoaTouchTableApplyOrigin(IupCocoaTouchTableController* ctrl, UICollectionView* view, NSInteger lin, NSInteger col)
+{
+	UIEdgeInsets inset = view.adjustedContentInset;
+	CGPoint off = view.contentOffset;
+	CGFloat max_x = view.contentSize.width + inset.right - view.bounds.size.width;
+	CGFloat max_y = view.contentSize.height + inset.bottom - view.bounds.size.height;
+
+	if (lin >= 1 && lin <= [ctrl numberOfLines])
+		off.y = CGRectGetMinY(cocoaTouchTableCellFrame(ctrl, view, lin, 1)) - inset.top;
+	if (col >= 1 && col <= [ctrl numberOfColumns])
+		off.x = CGRectGetMinX(cocoaTouchTableCellFrame(ctrl, view, 1, col)) - inset.left;
+
+	if (off.x > max_x) off.x = max_x;
+	if (off.y > max_y) off.y = max_y;
+	if (off.x < -inset.left) off.x = -inset.left;
+	if (off.y < -inset.top) off.y = -inset.top;
+	[view setContentOffset:off animated:NO];
+}
+
+static void cocoaTouchTableShowCell(IupCocoaTouchTableController* ctrl, UICollectionView* view, NSInteger lin, NSInteger col)
+{
+	if (col < 1 || col > [ctrl numberOfColumns]) col = 1;
+	[view scrollRectToVisible:cocoaTouchTableCellFrame(ctrl, view, lin, col) animated:NO];
+}
+
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
 	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
 	UICollectionView* view = cocoaTouchTableGet(ih);
 	if (!ctrl || !view || lin < 1 || lin > [ctrl numberOfLines]) return;
-	NSInteger num_col = [ctrl numberOfColumns];
-	if (col < 1 || col > num_col) col = 1;
-	NSIndexPath* ip = [NSIndexPath indexPathForItem:(lin - 1) * num_col + (col - 1)
-	                                      inSection:IUPCOCOATOUCH_TABLE_BODY_SECTION];
-	[view scrollToItemAtIndexPath:ip
-	             atScrollPosition:UICollectionViewScrollPositionCenteredVertically animated:NO];
+
+	if (!cocoaTouchTableLaidOut(view))
+	{
+		ctrl.pendingShowLin = lin;
+		ctrl.pendingShowCol = col;
+		cocoaTouchTableMarkPending(ih);
+		return;
+	}
+
+	cocoaTouchTableShowCell(ctrl, view, lin, col);
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
+	UICollectionView* view = cocoaTouchTableGet(ih);
+	if (!ctrl || !view) return;
+
+	if (!cocoaTouchTableLaidOut(view))
+	{
+		if (lin) ctrl.pendingOriginLin = lin;
+		if (col) ctrl.pendingOriginCol = col;
+		cocoaTouchTableMarkPending(ih);
+		return;
+	}
+
+	cocoaTouchTableApplyOrigin(ctrl, view, lin, col);
+}
+
+IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
+{
+	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
+	UICollectionView* view = cocoaTouchTableGet(ih);
+	NSInteger num_lin, num_col, c;
+	CGFloat top, left, body_top;
+
+	*lin = 0;
+	*col = 0;
+	if (!ctrl || !view) return;
+	num_lin = [ctrl numberOfLines];
+	num_col = [ctrl numberOfColumns];
+	if (num_lin < 1 || num_col < 1) return;
+
+	top = view.contentOffset.y + view.adjustedContentInset.top;
+	left = view.contentOffset.x + view.adjustedContentInset.left;
+	body_top = CGRectGetMinY(cocoaTouchTableCellFrame(ctrl, view, 1, 1));
+
+	*lin = top > body_top ? (int)((top - body_top) / IUPCOCOATOUCH_TABLE_ROW_HEIGHT) + 1 : 1;
+	if (*lin > num_lin) *lin = (int)num_lin;
+
+	*col = (int)num_col;
+	for (c = 1; c <= num_col; c++)
+	{
+		if (CGRectGetMaxX(cocoaTouchTableCellFrame(ctrl, view, 1, c)) > left)
+		{
+			*col = (int)c;
+			break;
+		}
+	}
+}
+
+static void cocoaTouchTableLayoutUpdateMethod(Ihandle* ih)
+{
+	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
+	UICollectionView* view = cocoaTouchTableGet(ih);
+
+	iupdrvBaseLayoutUpdateMethod(ih);
+
+	if (!ctrl || !view || (!ctrl.pendingShowLin && !ctrl.pendingOriginLin && !ctrl.pendingOriginCol) || !cocoaTouchTableLaidOut(view))
+		return;
+
+	if (ctrl.pendingShowLin)
+		cocoaTouchTableShowCell(ctrl, view, ctrl.pendingShowLin, ctrl.pendingShowCol);
+	if (ctrl.pendingOriginLin || ctrl.pendingOriginCol)
+		cocoaTouchTableApplyOrigin(ctrl, view, ctrl.pendingOriginLin, ctrl.pendingOriginCol);
+	ctrl.pendingShowLin = ctrl.pendingShowCol = 0;
+	ctrl.pendingOriginLin = ctrl.pendingOriginCol = 0;
+
+	if (iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+		iupTableScrollDone(ih);
 }
 
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
@@ -1728,6 +1857,7 @@ IUP_SDK_API void iupdrvTableInitClass(Iclass* ic)
 {
 	ic->Map   = cocoaTouchTableMapMethod;
 	ic->UnMap = cocoaTouchTableUnMapMethod;
+	ic->LayoutUpdate = cocoaTouchTableLayoutUpdateMethod;
 
 	iupClassRegisterAttribute(ic, "ALTERNATEROWS", NULL, cocoaTouchTableSetReloadAttrib, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "EVENROWCOLOR",   NULL, cocoaTouchTableSetReloadAttrib, NULL, NULL, IUPAF_NO_INHERIT);

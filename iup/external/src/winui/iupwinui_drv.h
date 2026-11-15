@@ -551,6 +551,13 @@ struct IupWinUITableAux
   winrt::event_token gotFocusToken{};
   winrt::event_token lostFocusToken{};
 
+  winrt::Microsoft::UI::Xaml::Controls::ScrollViewer scrollViewer{nullptr};
+  winrt::event_token loadedToken{};
+  winrt::event_token viewChangedToken{};
+  winrt::event_token viewChangingToken{};
+  int pending_show_lin = 0, pending_show_col = 0;
+  int pending_origin_lin = 0, pending_origin_col = 0;
+
   IupWinUITableAux() : col_widths(nullptr), col_width_set(nullptr),
                         col_titles(nullptr), cell_values(nullptr),
                         sort_column(0), sort_ascending(0),

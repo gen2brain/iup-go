@@ -10,6 +10,7 @@
 
 #include <cstring>
 #include <cmath>
+#include <algorithm>
 #include <cstdio>
 #include <vector>
 #include <string>
@@ -1974,6 +1975,144 @@ extern "C" IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col)
  * Selection and Focus
  ****************************************************************************/
 
+static double winuiTableRowHeight(Ihandle* ih, ScrollViewer const& sv)
+{
+  if (ih->data->num_lin < 1)
+    return 0;
+  return sv.ExtentHeight() / ih->data->num_lin;
+}
+
+static double winuiTableColumnLeft(Ihandle* ih, int col)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  double x = 0;
+  for (int c = 0; c < col - 1 && c < ih->data->num_col; c++)
+    x += aux->col_widths[c] / iupwinuiGetScale(ih);
+  return x;
+}
+
+static bool winuiTableChangeView(Ihandle* ih, double x, double y)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  ScrollViewer sv = aux->scrollViewer;
+
+  x = std::max(0.0, std::min(x, sv.ScrollableWidth()));
+  y = std::max(0.0, std::min(y, sv.ScrollableHeight()));
+  if (std::fabs(x - sv.HorizontalOffset()) < 0.5 && std::fabs(y - sv.VerticalOffset()) < 0.5)
+    return true;
+
+  sv.ChangeView(IReference<double>(x), IReference<double>(y), nullptr, true);
+  sv.UpdateLayout();
+  if (std::fabs(x - sv.HorizontalOffset()) < 0.5 && std::fabs(y - sv.VerticalOffset()) < 0.5)
+    return true;
+
+  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+    iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
+  return false;
+}
+
+static bool winuiTableApplyOrigin(Ihandle* ih, int lin, int col)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  ScrollViewer sv = aux->scrollViewer;
+  double x = sv.HorizontalOffset();
+  double y = sv.VerticalOffset();
+
+  if (lin > 0 && lin <= ih->data->num_lin)
+    y = (lin - 1) * winuiTableRowHeight(ih, sv);
+  if (col > 0 && col <= ih->data->num_col)
+    x = winuiTableColumnLeft(ih, col);
+
+  return winuiTableChangeView(ih, x, y);
+}
+
+static bool winuiTableShowCell(Ihandle* ih, int lin, int col)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  if (!aux)
+    return true;
+
+  if (!aux->scrollViewer)
+  {
+    aux->pending_show_lin = lin;
+    aux->pending_show_col = col;
+    if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+      iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
+    return false;
+  }
+
+  ScrollViewer sv = aux->scrollViewer;
+  double x = sv.HorizontalOffset();
+  double y = sv.VerticalOffset();
+
+  if (lin > 0 && lin <= ih->data->num_lin)
+  {
+    double row_height = winuiTableRowHeight(ih, sv);
+    double top = (lin - 1) * row_height;
+    if (top < y)
+      y = top;
+    else if (top + row_height > y + sv.ViewportHeight())
+      y = top + row_height - sv.ViewportHeight();
+  }
+
+  if (col > 0 && col <= ih->data->num_col)
+  {
+    double left = winuiTableColumnLeft(ih, col);
+    double right = left + aux->col_widths[col - 1] / iupwinuiGetScale(ih);
+    if (left < x)
+      x = left;
+    else if (right > x + sv.ViewportWidth())
+      x = std::min(left, right - sv.ViewportWidth());
+  }
+
+  return winuiTableChangeView(ih, x, y);
+}
+
+static void winuiTableSyncHeader(Ihandle* ih, double offset)
+{
+  StackPanel header = winuiTableGetHeader(ih);
+  if (header)
+    Canvas::SetLeft(header, -offset);
+}
+
+static void winuiTableAttachScrollViewer(Ihandle* ih)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  ListView listView = winuiTableGetListView(ih);
+  if (!aux || !listView || aux->scrollViewer)
+    return;
+
+  aux->scrollViewer = iupwinuiFindScrollViewer(listView);
+  if (!aux->scrollViewer)
+    return;
+
+  aux->viewChangingToken = aux->scrollViewer.ViewChanging([ih](IInspectable const&, ScrollViewerViewChangingEventArgs const& args) {
+    winuiTableSyncHeader(ih, args.NextView().HorizontalOffset());
+  });
+
+  aux->viewChangedToken = aux->scrollViewer.ViewChanged([ih](IInspectable const&, ScrollViewerViewChangedEventArgs const& args) {
+    IupWinUITableAux* a = winuiTableGetAux(ih);
+    if (!a || !a->scrollViewer)
+      return;
+    winuiTableSyncHeader(ih, a->scrollViewer.HorizontalOffset());
+    if (!args.IsIntermediate() && iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+      iupTableScrollDone(ih);
+    else
+      iupTableNotifyScroll(ih);
+  });
+
+  bool done = true;
+  if (aux->pending_show_lin)
+    done = winuiTableShowCell(ih, aux->pending_show_lin, aux->pending_show_col) && done;
+  if (aux->pending_origin_lin || aux->pending_origin_col)
+    done = winuiTableApplyOrigin(ih, aux->pending_origin_lin, aux->pending_origin_col) && done;
+  aux->pending_show_lin = aux->pending_show_col = 0;
+  aux->pending_origin_lin = aux->pending_origin_col = 0;
+
+  if (done && iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+    iupTableScrollDone(ih);
+}
+
 extern "C" IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
 {
   IupWinUITableAux* aux = winuiTableGetAux(ih);
@@ -2004,7 +2143,7 @@ extern "C" IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int co
     aux->suppress_callbacks = false;
   }
 
-  listView.ScrollIntoView(listView.Items().GetAt(lin - 1));
+  winuiTableShowCell(ih, lin, col);
 
   winuiTableSetFocusVisual(ih, lin, col);
 }
@@ -2106,15 +2245,57 @@ extern "C" IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
 
 extern "C" IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
-  (void)col;
-  ListView listView = winuiTableGetListView(ih);
-  if (!listView)
-    return;
-
   if (lin < 1 || lin > ih->data->num_lin)
     return;
 
-  listView.ScrollIntoView(listView.Items().GetAt(lin - 1));
+  winuiTableShowCell(ih, lin, col);
+}
+
+extern "C" IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  double row_height, x = 0;
+
+  *lin = 0;
+  *col = 0;
+  if (!aux || !aux->scrollViewer || ih->data->num_lin < 1 || ih->data->num_col < 1)
+    return;
+
+  row_height = winuiTableRowHeight(ih, aux->scrollViewer);
+  *lin = row_height > 0 ? static_cast<int>(aux->scrollViewer.VerticalOffset() / row_height) + 1 : 1;
+  if (*lin > ih->data->num_lin)
+    *lin = ih->data->num_lin;
+
+  *col = ih->data->num_col;
+  for (int c = 0; c < ih->data->num_col; c++)
+  {
+    x += aux->col_widths[c] / iupwinuiGetScale(ih);
+    if (x > aux->scrollViewer.HorizontalOffset() + 0.5)
+    {
+      *col = c + 1;
+      break;
+    }
+  }
+}
+
+extern "C" IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  if (!aux)
+    return;
+
+  if (!aux->scrollViewer)
+  {
+    if (lin)
+      aux->pending_origin_lin = lin;
+    if (col)
+      aux->pending_origin_col = col;
+    if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+      iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
+    return;
+  }
+
+  winuiTableApplyOrigin(ih, lin, col);
 }
 
 /****************************************************************************
@@ -2707,11 +2888,9 @@ static void winuiTableApplyCellStyle(Ihandle* ih, int lin, int col, Border borde
     return;
   }
 
-  char* bgcolor = cells_selected ? iupTableCellsBgColor() : iupAttribGetId2(ih, "BGCOLOR", lin, col);
+  char* bgcolor = cells_selected ? iupTableCellsBgColor() : NULL;
   if (!bgcolor)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
-  if (!bgcolor)
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+    bgcolor = iupTableGetCellBgColor(ih, lin, col);
 
   if (!bgcolor)
     bgcolor = iupTableGetAlternateColor(ih, lin);
@@ -2729,11 +2908,9 @@ static void winuiTableApplyCellStyle(Ihandle* ih, int lin, int col, Border borde
     border.ClearValue(Border::BackgroundProperty());
   }
 
-  char* fgcolor = cells_selected ? iupTableCellsFgColor() : iupAttribGetId2(ih, "FGCOLOR", lin, col);
+  char* fgcolor = cells_selected ? iupTableCellsFgColor() : NULL;
   if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
-  if (!fgcolor)
-    fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+    fgcolor = iupTableGetCellFgColor(ih, lin, col);
 
   if (fgcolor && *fgcolor)
   {
@@ -3071,7 +3248,11 @@ static void winuiTableLayoutUpdateMethod(Ihandle* ih)
 
   StackPanel headerPanel = winuiTableGetHeader(ih);
   if (headerPanel)
+  {
     headerPanel.Height(header_height / scale);
+    if (auto headerHost = headerPanel.Parent().try_as<Canvas>())
+      headerHost.Height(header_height / scale);
+  }
 
   winuiTableAdjustColumnWidths(ih);
 }
@@ -3305,6 +3486,8 @@ static int winuiTableMapMethod(Ihandle* ih)
   ListView listView;
   listView.HorizontalAlignment(HorizontalAlignment::Left);
   listView.VerticalAlignment(VerticalAlignment::Top);
+  ScrollViewer::SetHorizontalScrollMode(listView, ScrollMode::Auto);
+  ScrollViewer::SetHorizontalScrollBarVisibility(listView, ScrollBarVisibility::Auto);
   listView.SelectionMode(ListViewSelectionMode::Single);
 
   char* selmode = iupAttribGet(ih, "SELECTIONMODE");
@@ -3563,6 +3746,10 @@ static int winuiTableMapMethod(Ihandle* ih)
     winuiTableAdjustColumnWidths(ih);
   });
 
+  aux->loadedToken = listView.Loaded([ih](IInspectable const&, RoutedEventArgs const&) {
+    winuiTableAttachScrollViewer(ih);
+  });
+
   if (ih->data->show_dragdrop && !aux->isVirtual)
   {
     listView.CanReorderItems(true);
@@ -3596,8 +3783,10 @@ static int winuiTableMapMethod(Ihandle* ih)
   dataRow.Height(GridLength{1, GridUnitType::Star});
   containerGrid.RowDefinitions().Append(dataRow);
 
-  Grid::SetRow(headerPanel, 0);
-  containerGrid.Children().Append(headerPanel);
+  Canvas headerHost;
+  headerHost.Children().Append(headerPanel);
+  Grid::SetRow(headerHost, 0);
+  containerGrid.Children().Append(headerHost);
 
   Grid::SetRow(listView, 1);
   containerGrid.Children().Append(listView);
@@ -3678,6 +3867,14 @@ static void winuiTableUnMapMethod(Ihandle* ih)
     if (aux->lostFocusToken)
       listView.LostFocus(aux->lostFocusToken);
     listView.SizeChanged(aux->sizeChangedToken);
+    if (aux->loadedToken)
+      listView.Loaded(aux->loadedToken);
+    if (aux->scrollViewer)
+    {
+      aux->scrollViewer.ViewChanged(aux->viewChangedToken);
+      aux->scrollViewer.ViewChanging(aux->viewChangingToken);
+      aux->scrollViewer = nullptr;
+    }
     if (aux->isVirtual)
       listView.ContainerContentChanging(aux->containerContentChangingToken);
     if (aux->itemsChangedToken)

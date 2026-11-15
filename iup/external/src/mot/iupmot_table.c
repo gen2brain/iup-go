@@ -883,11 +883,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
   /* Get background color with hierarchy: per-cell > per-column > per-row > alternating > default */
   if (!is_header)
   {
-    bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, col);
-    if (!bgcolor)
-      bgcolor = iupAttribGetId2(ih, "BGCOLOR", 0, col);
-    if (!bgcolor)
-      bgcolor = iupAttribGetId2(ih, "BGCOLOR", lin, 0);
+    bgcolor = iupTableGetCellBgColor(ih, lin, col);
 
     if (!bgcolor)
       bgcolor = iupTableGetAlternateColor(ih, lin);
@@ -927,11 +923,7 @@ static void motTableDrawCell(Ihandle* ih, int lin, int col, int is_header)
     /* Get foreground color with hierarchy: per-cell > per-column > per-row > default */
     if (!is_header)
     {
-      fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, col);
-      if (!fgcolor)
-        fgcolor = iupAttribGetId2(ih, "FGCOLOR", 0, col);
-      if (!fgcolor)
-        fgcolor = iupAttribGetId2(ih, "FGCOLOR", lin, 0);
+      fgcolor = iupTableGetCellFgColor(ih, lin, col);
       if (!fgcolor && !is_focused_row)
         fgcolor = iupAttribGetStr(ih, "FGCOLOR");
       if (cells_selected)
@@ -1254,6 +1246,7 @@ static void motTableRedraw(Ihandle* ih)
   if (mot_data && mot_data->drawing_area && XtWindow(mot_data->drawing_area))
   {
     motTableDrawTable(ih);
+    iupTableNotifyScroll(ih);
   }
 }
 
@@ -1451,6 +1444,8 @@ static void motTableExposeCallback(Widget w, XtPointer client_data, XtPointer ca
     int lin = mot_data->pending_scroll_lin;
     mot_data->pending_scroll_lin = 0;
     iupdrvTableScrollToCell(ih, lin, mot_data->pending_scroll_col);
+    if (iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+      iupTableScrollDone(ih);
     return;
   }
 
@@ -1868,7 +1863,7 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
 
     iupTableCallMultiSelectionCb(ih);
 
-    motTableRedraw(ih);
+    iupdrvTableScrollToCell(ih, mot_data->current_row, mot_data->current_col);
   }
 
   (void)w;
@@ -2877,6 +2872,8 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
   {
     mot_data->pending_scroll_lin = lin;
     mot_data->pending_scroll_col = col;
+    if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+      iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
     return;
   }
 
@@ -2904,6 +2901,54 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 
   if (mot_data->scroll_x < 0)
     mot_data->scroll_x = 0;
+
+  motTableUpdateScrollbars(ih);
+  motTableRedraw(ih);
+}
+
+IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  int c, x = 0;
+
+  *lin = 0;
+  *col = 0;
+  if (!mot_data || !mot_data->col_widths || mot_data->row_height <= 0 || ih->data->num_lin < 1 || ih->data->num_col < 1)
+    return;
+
+  *lin = mot_data->scroll_y / mot_data->row_height + 1;
+  if (*lin > ih->data->num_lin)
+    *lin = ih->data->num_lin;
+
+  *col = ih->data->num_col;
+  for (c = 0; c < ih->data->num_col; c++)
+  {
+    x += mot_data->col_widths[c];
+    if (x > mot_data->scroll_x)
+    {
+      *col = c + 1;
+      break;
+    }
+  }
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  ImotTableData* mot_data = IMOT_TABLE_DATA(ih);
+  int c;
+
+  if (!mot_data || !mot_data->col_widths || mot_data->row_height <= 0)
+    return;
+
+  if (lin > 0 && lin <= ih->data->num_lin)
+    mot_data->scroll_y = (lin - 1) * mot_data->row_height;
+
+  if (col > 0 && col <= ih->data->num_col)
+  {
+    mot_data->scroll_x = 0;
+    for (c = 0; c < col - 1; c++)
+      mot_data->scroll_x += mot_data->col_widths[c];
+  }
 
   motTableUpdateScrollbars(ih);
   motTableRedraw(ih);

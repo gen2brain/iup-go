@@ -233,6 +233,20 @@ JNIEXPORT jstring JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatch
   return v ? iupAndroid_NewStringUTF(jni_env, v) : NULL;
 }
 
+JNIEXPORT jlong JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchColorRequest(
+    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint lin, jint col, jboolean fg)
+{
+  (void)jni_env;
+  (void)cls;
+  Ihandle* ih = (Ihandle*)ihandle_ptr;
+  if (!ih) return 0;
+
+  IFniiIII cb = (IFniiIII)IupGetCallback(ih, fg ? "FGCOLOR_CB" : "BGCOLOR_CB");
+  int r = 0, g = 0, b = 0;
+  if (!cb || cb(ih, (int)lin, (int)col, &r, &g, &b) != IUP_DEFAULT) return 0;
+  return (jlong)(((jlong)1 << 32) | (0xFF000000u | ((unsigned)(r & 0xFF) << 16) | ((unsigned)(g & 0xFF) << 8) | (unsigned)(b & 0xFF)));
+}
+
 JNIEXPORT jobject JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchImageRequest(
     JNIEnv* jni_env, jclass cls, jlong ihandle_ptr, jint lin, jint col)
 {
@@ -246,4 +260,24 @@ JNIEXPORT jobject JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatch
   char* name = cb(ih, (int)lin, (int)col);
   if (!name) return NULL;
   return (jobject)iupImageGetImage(name, ih, 0, NULL);
+}
+
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchScroll(
+    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
+{
+  (void)jni_env;
+  (void)cls;
+  Ihandle* ih = (Ihandle*)ihandle_ptr;
+  if (ih && iupObjectCheck(ih))
+    iupAndroidTableNotifyScroll(ih);
+}
+
+JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupTableHelper_dispatchScrollDone(
+    JNIEnv* jni_env, jclass cls, jlong ihandle_ptr)
+{
+  (void)jni_env;
+  (void)cls;
+  Ihandle* ih = (Ihandle*)ihandle_ptr;
+  if (ih && iupObjectCheck(ih) && iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+    iupAndroidTableScrollDone(ih);
 }
