@@ -21,7 +21,7 @@
 #include "iupgtk4_drv.h"
 
 
-static void gtk4CanvasUpdateChildLayout(Ihandle* ih, int flush)
+static void gtk4CanvasUpdateChildLayout(Ihandle* ih)
 {
   iupGtk4Fixed* sb_win = (iupGtk4Fixed*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   GtkWidget* sb_horiz = (GtkWidget*)iupAttribGet(ih, "_IUPGTK4_SBHORIZ");
@@ -52,9 +52,6 @@ static void gtk4CanvasUpdateChildLayout(Ihandle* ih, int flush)
     gtk_widget_insert_before(sb_vert, GTK_WIDGET(sb_win), NULL);
   if (sb_horiz)
     gtk_widget_insert_before(sb_horiz, GTK_WIDGET(sb_win), NULL);
-
-  if (flush)
-    IupFlush();
 }
 
 static void gtk4CanvasUpdateContentSize(Ihandle* ih)
@@ -86,7 +83,7 @@ static gboolean gtk4CanvasDeferredScrollbarLayout(gpointer data)
   Ihandle* ih = (Ihandle*)data;
   iupAttribSet(ih, "_IUPGTK4_SB_LAYOUT_ID", NULL);
   gtk4CanvasUpdateContentSize(ih);
-  gtk4CanvasUpdateChildLayout(ih, 0);
+  gtk4CanvasUpdateChildLayout(ih);
   return G_SOURCE_REMOVE;
 }
 
@@ -100,7 +97,7 @@ static void gtk4CanvasScrollbarToggled(Ihandle* ih)
   else
   {
     gtk4CanvasUpdateContentSize(ih);
-    gtk4CanvasUpdateChildLayout(ih, 1);
+    gtk4CanvasUpdateChildLayout(ih);
   }
 }
 
@@ -541,7 +538,7 @@ static void gtk4CanvasSizeAllocate(GtkDrawingArea* drawing_area, int width, int 
     ih->data->inside_resize = 0;
   }
 
-  gtk4CanvasUpdateChildLayout(ih, 0);
+  gtk4CanvasUpdateChildLayout(ih);
 
   (void)drawing_area;
 }
@@ -858,7 +855,7 @@ static void gtk4CanvasLayoutUpdateMethod(Ihandle* ih)
   iupdrvBaseLayoutUpdateMethod(ih);
 
   if (ih->data->sb)
-    gtk4CanvasUpdateChildLayout(ih, 0);
+    gtk4CanvasUpdateChildLayout(ih);
 }
 
 static void gtk4CanvasFireGesture(Ihandle* ih, int gesture, int state, int x, int y, double v1, double v2)

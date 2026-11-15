@@ -32,7 +32,7 @@
 #include "iupgtk_drv.h"
 
 
-static void gtkCanvasUpdateChildLayout(Ihandle* ih, int flush)
+static void gtkCanvasUpdateChildLayout(Ihandle* ih)
 {
   GtkContainer* sb_win = (GtkContainer*)iupAttribGet(ih, "_IUP_EXTRAPARENT");
   GtkWidget* sb_horiz = (GtkWidget*)iupAttribGet(ih, "_IUPGTK_SBHORIZ");
@@ -53,16 +53,13 @@ static void gtkCanvasUpdateChildLayout(Ihandle* ih, int flush)
     iupgtkSetPosSize(sb_win, sb_horiz, border, height-sb_horiz_height-border, width-sb_vert_width-2*border, sb_horiz_height);
 
   iupgtkSetPosSize(sb_win, ih->handle, border, border, width-sb_vert_width-2*border, height-sb_horiz_height-2*border);
-
-  if (flush)
-    IupFlush();
 }
 
 static gboolean gtkCanvasDeferredChildLayout(gpointer data)
 {
   Ihandle* ih = (Ihandle*)data;
   iupAttribSet(ih, "_IUPGTK_SB_LAYOUT_ID", NULL);
-  gtkCanvasUpdateChildLayout(ih, 0);
+  gtkCanvasUpdateChildLayout(ih);
   return FALSE;
 }
 
@@ -74,7 +71,7 @@ static void gtkCanvasScrollbarToggled(Ihandle* ih)
       iupAttribSetInt(ih, "_IUPGTK_SB_LAYOUT_ID", (int)g_idle_add(gtkCanvasDeferredChildLayout, ih));
   }
   else
-    gtkCanvasUpdateChildLayout(ih, 1);
+    gtkCanvasUpdateChildLayout(ih);
 }
 
 static int gtkCanvasScroll2Iup(GtkScrollType scroll, int vert)
@@ -544,7 +541,7 @@ static void gtkCanvasLayoutUpdateMethod(Ihandle* ih)
       gdk_window_resize(window, ih->currentwidth, ih->currentheight);
   }
 
-  gtkCanvasUpdateChildLayout(ih, 0);
+  gtkCanvasUpdateChildLayout(ih);
 }
 
 static void gtkCanvasSizeAllocate(GtkWidget* widget, GdkRectangle* allocation, Ihandle* ih)
