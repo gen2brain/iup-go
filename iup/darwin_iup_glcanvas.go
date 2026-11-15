@@ -1,4 +1,4 @@
-//go:build darwin && !ios && gl
+//go:build (darwin && !ios && gl) || (gnustep && gl)
 
 package iup
 

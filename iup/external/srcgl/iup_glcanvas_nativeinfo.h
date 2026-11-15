@@ -168,7 +168,7 @@ static void iupGLDestroyChildWindow(HWND child)
  * macOS/Cocoa: Child NSView creation for GL rendering
  * ====================================================================== */
 
-#if defined(__APPLE__) && defined(__OBJC__)
+#if (defined(__APPLE__) || defined(GNUSTEP)) && defined(__OBJC__)
 #import <Cocoa/Cocoa.h>
 
 static NSView* iupGLCreateChildView(NSView* parent, int x, int y, int w, int h)
@@ -177,7 +177,9 @@ static NSView* iupGLCreateChildView(NSView* parent, int x, int y, int w, int h)
   NSRect frame = NSMakeRect(x, parent_frame.size.height - y - h, w, h);
   NSView* child = [[NSView alloc] initWithFrame:frame];
   [child setAutoresizesSubviews:NO];
+#ifndef GNUSTEP
   [child setWantsLayer:NO];
+#endif
   [parent addSubview:child positioned:NSWindowAbove relativeTo:nil];
   return child;
 }
@@ -199,7 +201,7 @@ static void iupGLDestroyChildView(NSView* child)
   [child release];
 }
 
-#endif /* __APPLE__ && __OBJC__ */
+#endif /* (__APPLE__ || GNUSTEP) && __OBJC__ */
 
 /* ======================================================================
  * Wayland: Subsurface creation for GL rendering

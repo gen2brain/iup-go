@@ -11,8 +11,14 @@
 #include <dlfcn.h>
 
 #import <Cocoa/Cocoa.h>
+#ifdef GNUSTEP
+#include <GL/gl.h>
+#include <GL/glx.h>
+#include <GNUstepGUI/GSDisplayServer.h>
+#else
 #import <OpenGL/gl.h>
 #import <OpenGL/CGLRenderers.h>
+#endif
 
 #include "iup.h"
 #include "iupgl.h"
@@ -47,13 +53,12 @@
 
 - (void)scheduleUpdate
 {
-  OSAtomicIncrement32Barrier(&dirty);
+  __atomic_fetch_add(&dirty, 1, __ATOMIC_SEQ_CST);
 }
 
 - (void)updateIfNeeded
 {
-  int32_t value = OSAtomicCompareAndSwap32Barrier(dirty, 0, &dirty) ? dirty : 0;
-  if (value > 0) {
+  if (__atomic_exchange_n(&dirty, 0, __ATOMIC_SEQ_CST) > 0) {
     [self explicitUpdate];
   }
 }
@@ -83,7 +88,56 @@ typedef struct _IGlControlData
   IupGLContext* context;
   NSOpenGLPixelFormat* pixel_format;
   int owns_view;
+  int attached;
+  int swap_interval;
 } IGlControlData;
+
+static void cocoaGLApplySwapInterval(IGlControlData* gldata)
+{
+#ifdef GNUSTEP
+  typedef int (*SwapIntervalFunc)(int);
+  SwapIntervalFunc swap = (SwapIntervalFunc)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalMESA");
+  if (!swap)
+    swap = (SwapIntervalFunc)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalSGI");
+  if (swap)
+    swap(gldata->swap_interval);
+#else
+  GLint value = gldata->swap_interval;
+  [gldata->context setValues:&value forParameter:NSOpenGLCPSwapInterval];
+#endif
+}
+
+#ifdef GNUSTEP
+static Display* cocoaGLDisplay(void)
+{
+  return (Display*)[GSCurrentServer() performSelector:@selector(xDisplay)];
+}
+
+static GLXContext cocoaGLXContext(IGlControlData* gldata)
+{
+  return (GLXContext)[gldata->context performSelector:@selector(glxcontext)];
+}
+#endif
+
+static int cocoaGLAttachView(IGlControlData* gldata)
+{
+  if (gldata->attached)
+    return 1;
+  if (!gldata->canvas_view)
+    return 0;
+#ifdef GNUSTEP
+  /* the X sub-window needs a window and a non-empty size */
+  if (![gldata->canvas_view window] || NSWidth([gldata->canvas_view frame]) < 1 || NSHeight([gldata->canvas_view frame]) < 1)
+    return 0;
+#endif
+  [gldata->context setView:gldata->canvas_view];
+  gldata->attached = 1;
+#ifdef GNUSTEP
+  [gldata->context makeCurrentContext];
+#endif
+  cocoaGLApplySwapInterval(gldata);
+  return 1;
+}
 
 static int cocoaGLCanvasDefaultResize_CB(Ihandle* ih, int width, int height)
 {
@@ -129,6 +183,7 @@ static void buildSoftwareAttributes(Ihandle* ih, NSOpenGLPixelFormatAttribute* a
     attrs[n++] = NSOpenGLPFARendererID;
     attrs[n++] = rendererID;
   }
+#ifndef GNUSTEP
   attrs[n++] = NSOpenGLPFAOpenGLProfile;
   if (request_core)
   {
@@ -159,6 +214,9 @@ static void buildSoftwareAttributes(Ihandle* ih, NSOpenGLPixelFormatAttribute* a
   {
     attrs[n++] = NSOpenGLProfileVersionLegacy;
   }
+#else
+  (void)request_core;
+#endif
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "COLOR"), "INDEX"))
   {
     iupAttribSet(ih, "ERROR", "WARNING: Indexed color mode not supported on macOS. Using RGBA instead.");
@@ -229,9 +287,11 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormatSoftware(Ihandle* ih)
 
   if (core_requested)
   {
+#ifndef GNUSTEP
     buildSoftwareAttributes(ih, attrs, &n, YES, (NSOpenGLPixelFormatAttribute)kCGLRendererGenericFloatID);
     pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     if (pixelFormat) return pixelFormat;
+#endif
     buildSoftwareAttributes(ih, attrs, &n, YES, 0);
     pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     if (pixelFormat) return pixelFormat;
@@ -248,9 +308,11 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormatSoftware(Ihandle* ih)
     pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     if (pixelFormat) return pixelFormat;
 #endif
+#ifndef GNUSTEP
     buildSoftwareAttributes(ih, attrs, &n, NO, (NSOpenGLPixelFormatAttribute)kCGLRendererGenericFloatID);
     pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     if (pixelFormat) return pixelFormat;
+#endif
     buildSoftwareAttributes(ih, attrs, &n, NO, 0);
     pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     if (pixelFormat) return pixelFormat;
@@ -301,6 +363,7 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
     request_core = YES;
   }
 
+#ifndef GNUSTEP
   attrs[n++] = NSOpenGLPFAOpenGLProfile;
   if (request_core)
   {
@@ -317,6 +380,7 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
   {
     attrs[n++] = NSOpenGLProfileVersionLegacy;
   }
+#endif
 
   attrs[n++] = NSOpenGLPFAAccelerated;
   attrs[n++] = NSOpenGLPFAAllowOfflineRenderers;
@@ -481,13 +545,10 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
     }
   }
 
+#ifndef GNUSTEP
   if (gldata->canvas_view)
-  {
-    if ([gldata->canvas_view respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
-    {
-      [gldata->canvas_view setWantsBestResolutionOpenGLSurface:YES];
-    }
-  }
+    [gldata->canvas_view setWantsBestResolutionOpenGLSurface:YES];
+#endif
 
   gldata->pixel_format = cocoaGLCreatePixelFormat(ih);
 
@@ -510,16 +571,18 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
     [pool drain];
     return IUP_NOERROR;
   }
-  if (gldata->canvas_view)
-    [gldata->context setView:gldata->canvas_view];
+  gldata->swap_interval = 1;
+  if (iupAttribGetStr(ih, "VSYNC"))
+    gldata->swap_interval = iupAttribGetBoolean(ih, "VSYNC") ? 1 : 0;
 
+#ifndef GNUSTEP
+  if (!cocoaGLAttachView(gldata))
+    cocoaGLApplySwapInterval(gldata);
   [gldata->context makeCurrentContext];
-  GLint swapInt = 1;
-  char* vsync = iupAttribGetStr(ih, "VSYNC");
-  if (vsync)
-    swapInt = iupStrBoolean(vsync) ? 1 : 0;
-
-  [gldata->context setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
+#else
+  if (cocoaGLAttachView(gldata))
+    [gldata->context makeCurrentContext];
+#endif
   iupAttribSet(ih, "CONTEXT", (char*)gldata->context);
 
   [pool drain];
@@ -606,7 +669,11 @@ IUPGL_API int IupGLIsCurrent(Ihandle* ih)
     return 0;
 
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+#ifdef GNUSTEP
+  int result = (glXGetCurrentContext() == cocoaGLXContext(gldata)) ? 1 : 0;
+#else
   int result = ([NSOpenGLContext currentContext] == gldata->context) ? 1 : 0;
+#endif
   [pool drain];
 
   return result;
@@ -652,20 +719,32 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     }
     if (gldata->canvas_view)
     {
-      if ([gldata->canvas_view respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
-        [gldata->canvas_view setWantsBestResolutionOpenGLSurface:YES];
-      [gldata->context setView:gldata->canvas_view];
+#ifndef GNUSTEP
+      [gldata->canvas_view setWantsBestResolutionOpenGLSurface:YES];
+#endif
     }
   }
 
-  if (!gldata->canvas_view)
-    return;
-
-  if (gldata->owns_view)
+  if (gldata->owns_view && gldata->canvas_view)
   {
     iupGLMoveChildView(gldata->canvas_view, ih->x, ih->y, ih->currentwidth, ih->currentheight);
-    [gldata->context clearDrawable];
-    [gldata->context setView:gldata->canvas_view];
+    if (gldata->attached)
+    {
+      [gldata->context clearDrawable];
+      gldata->attached = 0;
+    }
+  }
+
+  if (!cocoaGLAttachView(gldata))
+  {
+#ifdef GNUSTEP
+    /* until the view has a size there is no X sub-window, the context is made current without a drawable */
+    if (glXMakeContextCurrent(cocoaGLDisplay(), None, None, cocoaGLXContext(gldata)))
+      iupAttribSet(ih, "ERROR", NULL);
+    else
+      iupAttribSet(ih, "ERROR", "Failed to make context current.");
+#endif
+    return;
   }
 
   [gldata->context update];
