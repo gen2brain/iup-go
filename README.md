@@ -125,6 +125,10 @@ Requires FLTK 1.4.x.
 * Debian/Ubuntu: `apt-get install libfltk1.4-dev`
 * RedHat/Fedora: `dnf install fltk-devel`
 
+FLTK does not ship a pkg-config file. On Debian/Ubuntu pass the compiler flags from `fltk-config`:
+
+    CGO_CXXFLAGS="$(fltk-config --cxxflags)" go build -tags fltk
+
 For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
 
 [<img src="examples/sample/sample_fltk.png" width="700"/>](examples/sample/sample_fltk.png)
