@@ -84,6 +84,7 @@ static void eflTableRefreshHeaders(Ihandle* ih);
 static void eflTableDoSort(Ihandle* ih, int col);
 static int eflTableFindTargetColumn(Ihandle* ih, int x);
 static void eflTableMoveColumn(Ihandle* ih, int from_col, int to_col, int attribs);
+static void eflTableSyncColumnsJob(void* cb_data);
 static void eflTableUpdateDragIndicator(Ihandle* ih, int target);
 static void eflTableHideDragIndicator(Ihandle* ih);
 static void eflTableDragPointerMove(void* cb_data, const Efl_Event* ev);
@@ -892,10 +893,10 @@ static void eflTableMoveColumn(Ihandle* ih, int from_col, int to_col, int attrib
   {
     int step = (from_col < to_col) ? 1 : -1;
     int c;
-    char* title = iupStrDup(iupAttribGetId(ih, "_IUPEFL_COLTITLE", from_col));
+    char* title = iupStrDup(iupAttribGetId(ih, "COLTITLE", from_col));
     for (c = from_col; c != to_col; c += step)
-      iupAttribSetStrId(ih, "_IUPEFL_COLTITLE", c, iupAttribGetId(ih, "_IUPEFL_COLTITLE", c + step));
-    iupAttribSetStrId(ih, "_IUPEFL_COLTITLE", to_col, title);
+      iupAttribSetStrId(ih, "COLTITLE", c, iupAttribGetId(ih, "COLTITLE", c + step));
+    iupAttribSetStrId(ih, "COLTITLE", to_col, title);
     if (title)
       free(title);
   }
@@ -919,6 +920,16 @@ static void eflTableMoveColumn(Ihandle* ih, int from_col, int to_col, int attrib
       for (c = from_col - 1; c != to_col - 1; c += step)
         data->col_widths[c] = data->col_widths[c + step];
       data->col_widths[to_col - 1] = w;
+
+      if (ih->handle && data->alloc_num_col == ih->data->num_col)
+      {
+        int first = from_col < to_col ? from_col : to_col;
+        int last = from_col < to_col ? to_col : from_col;
+        for (c = first; c <= last; c++)
+          iupdrvTableSetColWidth(ih, c, data->col_widths[c - 1]);
+        if (!data->colsync_job)
+          data->colsync_job = ecore_job_add(eflTableSyncColumnsJob, ih);
+      }
     }
 
     if (data->sort_column > 0)
@@ -2230,6 +2241,7 @@ static void eflTableRebuildCells(Ihandle* ih)
 
           image = efl_add(EFL_CANVAS_IMAGE_CLASS, box);
           efl_gfx_hint_align_set(image, 0.0, 0.5);
+          efl_gfx_hint_weight_set(image, 0.0, 0.0);
           efl_gfx_entity_visible_set(image, EINA_FALSE);
           elm_box_pack_end(box, image);
 
@@ -2589,6 +2601,7 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
 
           image = efl_add(EFL_CANVAS_IMAGE_CLASS, box);
           efl_gfx_hint_align_set(image, 0.0, 0.5);
+          efl_gfx_hint_weight_set(image, 0.0, 0.0);
           efl_gfx_entity_visible_set(image, EINA_FALSE);
           elm_box_pack_end(box, image);
 
@@ -2828,7 +2841,7 @@ IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
     int col, lin;
     for (col = num_col + 1; col <= old_num_col; col++)
     {
-      iupAttribSetId(ih, "_IUPEFL_COLTITLE", col, NULL);
+      iupAttribSetId(ih, "COLTITLE", col, NULL);
       for (lin = 1; lin <= ih->data->num_lin; lin++)
         eflTableClearCell(ih, lin, col);
     }
