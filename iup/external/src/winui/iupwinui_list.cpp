@@ -220,6 +220,9 @@ static hstring winuiListGetItemText(IInspectable const& content)
   if (!content)
     return hstring{};
 
+  if (auto control = content.try_as<ContentControl>())
+    return winuiListGetItemText(control.Content());
+
   TextBlock tb = content.try_as<TextBlock>();
   if (tb)
     return tb.Text();
@@ -681,8 +684,7 @@ static char* winuiListGetValueAttrib(Ihandle* ih)
       else
       {
         int pos = comboBox.SelectedIndex();
-        if (pos >= 0)
-          return iupStrReturnInt(pos + 1);
+        return iupStrReturnInt(pos >= 0 ? pos + 1 : 0);
       }
     }
   }

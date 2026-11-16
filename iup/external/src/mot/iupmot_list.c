@@ -373,6 +373,8 @@ static char* motListGetValueAttrib(Ihandle* ih)
     if (ih->data->is_dropdown)
     {
       int pos;
+      if (iupdrvListGetCount(ih) == 0)
+        return "0";
       XtVaGetValues(ih->handle, XmNselectedPosition, &pos, NULL);
       return iupStrReturnInt(pos+1);  /* IUP starts at 1 */
     }

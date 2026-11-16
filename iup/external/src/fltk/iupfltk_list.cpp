@@ -1442,8 +1442,7 @@ static char* fltkListGetValueAttrib(Ihandle* ih)
   {
     auto* choice = reinterpret_cast<Fl_Choice*>(ih->handle);
     int val = choice->value();
-    if (val >= 0)
-      return iupStrReturnInt(val + 1);
+    return iupStrReturnInt(val >= 0 ? val + 1 : 0);
   }
   else if (ih->data->is_virtual)
   {

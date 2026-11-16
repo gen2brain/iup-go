@@ -28,12 +28,18 @@
 /* Used by List and Text, implemented in Text
    Can NOT use ih->data
 */
-int iupEditCheckNewValueKey(Ihandle* ih, IFnis cb, int key, const char* new_value, void* mask, int nc)
+static int iEditCharCount(const char* str, int utf8)
+{
+  int len = (int)strlen(str);
+  return utf8 ? iupStrUtf8ByteToChar(str, len) : len;
+}
+
+int iupEditCheckNewValueKey(Ihandle* ih, IFnis cb, int key, const char* new_value, void* mask, int nc, int utf8)
 {
   if (!new_value)
     return 1;
 
-  if (nc && (int)strlen(new_value) > nc)
+  if (nc && iEditCharCount(new_value, utf8) > nc)
     return 0;
 
   if (mask && iupMaskCheck((Imask*)mask, new_value)==0)
@@ -58,21 +64,23 @@ int iupEditCheckNewValueKey(Ihandle* ih, IFnis cb, int key, const char* new_valu
   return 1;
 }
 
-int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void* mask, int nc)
+int iupEditCheckNewValue(Ihandle* ih, IFnis cb, const char* new_value, void* mask, int nc, int utf8)
 {
-  return iupEditCheckNewValueKey(ih, cb, 0, new_value, mask, nc);
+  return iupEditCheckNewValueKey(ih, cb, 0, new_value, mask, nc, utf8);
 }
 
 int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int start, int end, void* mask, int nc, int remove_dir, int utf8)
 {
   char* new_value, *value;
   int ret = -1, /* normal processing */
-      key = 0;
+      key = 0, old_count = 0;
 
-  if (!cb && !mask)
+  if (!cb && !mask && !nc)
     return ret;
 
   value = IupGetAttribute(ih, "VALUE");  /* it will return a non-NULL internal buffer */
+  if (nc)
+    old_count = iEditCharCount(value, utf8);
 
   if (!insert_value)
   {
@@ -93,10 +101,14 @@ int iupEditCallActionCb(Ihandle* ih, IFnis cb, const char* insert_value, int sta
   if (!new_value)
     return ret;
 
-  if (nc && (int)strlen(new_value) > nc)
+  if (nc)
   {
-    if (new_value != value) free(new_value);
-    return 0; /* abort */
+    int new_count = iEditCharCount(new_value, utf8);
+    if (new_count > nc && new_count > old_count)
+    {
+      if (new_value != value) free(new_value);
+      return 0; /* abort */
+    }
   }
 
   if (mask && iupMaskCheck((Imask*)mask, new_value)==0)

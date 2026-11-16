@@ -1975,10 +1975,29 @@ extern "C" IUP_SDK_API int iupdrvTableGetColWidth(Ihandle* ih, int col)
  * Selection and Focus
  ****************************************************************************/
 
-static double winuiTableRowHeight(Ihandle* ih, ScrollViewer const& sv)
+static double winuiTableRowHeight(Ihandle* ih, ScrollViewer const& sv, double* first_top)
 {
+  ListView listView = winuiTableGetListView(ih);
+  auto content = sv.Content().try_as<UIElement>();
+
+  *first_top = 0;
   if (ih->data->num_lin < 1)
     return 0;
+
+  if (listView && content)
+  {
+    auto panel = listView.ItemsPanelRoot().try_as<ItemsStackPanel>();
+    int index = panel ? panel.FirstCacheIndex() : -1;
+    auto container = index >= 0 ? listView.ContainerFromIndex(index).try_as<FrameworkElement>() : nullptr;
+    if (container && container.ActualHeight() > 0)
+    {
+      double step = container.ActualHeight();
+      double y = container.TransformToVisual(content).TransformPoint(Point{0, 0}).Y;
+      *first_top = y - index * step;
+      return step;
+    }
+  }
+
   return sv.ExtentHeight() / ih->data->num_lin;
 }
 
@@ -2019,7 +2038,11 @@ static bool winuiTableApplyOrigin(Ihandle* ih, int lin, int col)
   double y = sv.VerticalOffset();
 
   if (lin > 0 && lin <= ih->data->num_lin)
-    y = (lin - 1) * winuiTableRowHeight(ih, sv);
+  {
+    double first_top;
+    double row_height = winuiTableRowHeight(ih, sv, &first_top);
+    y = first_top + (lin - 1) * row_height;
+  }
   if (col > 0 && col <= ih->data->num_col)
     x = winuiTableColumnLeft(ih, col);
 
@@ -2047,8 +2070,9 @@ static bool winuiTableShowCell(Ihandle* ih, int lin, int col)
 
   if (lin > 0 && lin <= ih->data->num_lin)
   {
-    double row_height = winuiTableRowHeight(ih, sv);
-    double top = (lin - 1) * row_height;
+    double first_top;
+    double row_height = winuiTableRowHeight(ih, sv, &first_top);
+    double top = first_top + (lin - 1) * row_height;
     if (top < y)
       y = top;
     else if (top + row_height > y + sv.ViewportHeight())
@@ -2101,16 +2125,31 @@ static void winuiTableAttachScrollViewer(Ihandle* ih)
       iupTableNotifyScroll(ih);
   });
 
-  bool done = true;
-  if (aux->pending_show_lin)
-    done = winuiTableShowCell(ih, aux->pending_show_lin, aux->pending_show_col) && done;
-  if (aux->pending_origin_lin || aux->pending_origin_col)
-    done = winuiTableApplyOrigin(ih, aux->pending_origin_lin, aux->pending_origin_col) && done;
-  aux->pending_show_lin = aux->pending_show_col = 0;
-  aux->pending_origin_lin = aux->pending_origin_col = 0;
+  if (!aux->pending_show_lin && !aux->pending_origin_lin && !aux->pending_origin_col)
+    return;
 
-  if (done && iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
-    iupTableScrollDone(ih);
+  auto dq = Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread();
+  if (!dq)
+    return;
+
+  dq.TryEnqueue(Microsoft::UI::Dispatching::DispatcherQueuePriority::Low, [ih]() {
+    if (!iupObjectCheck(ih))
+      return;
+    IupWinUITableAux* a = winuiTableGetAux(ih);
+    if (!a || !a->scrollViewer)
+      return;
+
+    bool done = true;
+    if (a->pending_show_lin)
+      done = winuiTableShowCell(ih, a->pending_show_lin, a->pending_show_col) && done;
+    if (a->pending_origin_lin || a->pending_origin_col)
+      done = winuiTableApplyOrigin(ih, a->pending_origin_lin, a->pending_origin_col) && done;
+    a->pending_show_lin = a->pending_show_col = 0;
+    a->pending_origin_lin = a->pending_origin_col = 0;
+
+    if (done && iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+      iupTableScrollDone(ih);
+  });
 }
 
 extern "C" IUP_SDK_API void iupdrvTableSetFocusCell(Ihandle* ih, int lin, int col)
@@ -2261,8 +2300,11 @@ extern "C" IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col
   if (!aux || !aux->scrollViewer || ih->data->num_lin < 1 || ih->data->num_col < 1)
     return;
 
-  row_height = winuiTableRowHeight(ih, aux->scrollViewer);
-  *lin = row_height > 0 ? static_cast<int>(aux->scrollViewer.VerticalOffset() / row_height) + 1 : 1;
+  double first_top;
+  row_height = winuiTableRowHeight(ih, aux->scrollViewer, &first_top);
+  *lin = row_height > 0 ? static_cast<int>(std::floor((aux->scrollViewer.VerticalOffset() - first_top) / row_height + 1e-6)) + 1 : 1;
+  if (*lin < 1)
+    *lin = 1;
   if (*lin > ih->data->num_lin)
     *lin = ih->data->num_lin;
 

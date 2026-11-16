@@ -883,15 +883,13 @@ static char* gtk4ListGetValueAttrib(Ihandle* ih)
   }
   else
   {
-    GListStore* store = gtk4ListGetGListStore(ih);
-
-    if (store)
+    if (gtk4ListGetListModel(ih))
     {
       if (ih->data->is_dropdown)
       {
         guint pos = gtk_drop_down_get_selected(GTK_DROP_DOWN(ih->handle));
         if (pos == GTK_INVALID_LIST_POSITION)
-          return NULL;
+          return "0";
         return iupStrReturnInt((int)pos + 1);
       }
       else
@@ -942,9 +940,7 @@ static int gtk4ListSetValueAttrib(Ihandle* ih, const char* value)
   }
   else
   {
-    GListStore* store = gtk4ListGetGListStore(ih);
-
-    if (store)
+    if (gtk4ListGetListModel(ih))
     {
       if (ih->data->is_dropdown)
       {
@@ -2695,7 +2691,10 @@ static void gtk4ListUnMapMethod(Ihandle* ih)
     IupGtk4VirtualListModel* model = (IupGtk4VirtualListModel*)iupAttribGet(ih, "_IUPGTK4_VIRTUAL_MODEL");
     if (model)
     {
-      model->count = 0;
+      iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
+      iup_gtk4_virtual_list_model_set_count(model, 0);
+      iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
+      model->ih = NULL;
       g_object_unref(model);
       iupAttribSet(ih, "_IUPGTK4_VIRTUAL_MODEL", NULL);
     }

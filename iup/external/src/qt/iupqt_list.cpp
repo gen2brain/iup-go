@@ -1020,7 +1020,15 @@ static char* qtListGetIdValueAttrib(Ihandle* ih, int id)
         return iupStrReturnStr(text.toUtf8().constData());
       }
     }
-    else if (!ih->data->is_virtual)
+    else if (ih->data->is_virtual)
+    {
+      if (pos < ih->data->item_count)
+      {
+        char* text = iupListGetItemValueCb(ih, pos + 1);
+        return text ? iupStrReturnStr(text) : nullptr;
+      }
+    }
+    else
     {
       QListWidget* list;
       if (ih->data->has_editbox)
@@ -1068,6 +1076,33 @@ static char* qtListGetValueAttrib(Ihandle* ih)
     auto* combo = reinterpret_cast<QComboBox*>(ih->handle);
     int pos = combo->currentIndex();
     return iupStrReturnInt(pos + 1);  /* IUP starts at 1 */
+  }
+  else if (ih->data->is_virtual)
+  {
+    auto* view = reinterpret_cast<QListView*>(ih->handle);
+    QItemSelectionModel* sel = view->selectionModel();
+    if (!sel)
+      return nullptr;
+
+    if (!ih->data->is_multiple)
+    {
+      QModelIndex current = sel->currentIndex();
+      if (current.isValid() && sel->isSelected(current))
+        return iupStrReturnInt(current.row() + 1);
+    }
+    else
+    {
+      int count = ih->data->item_count;
+      char* str = iupStrGetMemory(count + 1);
+      memset(str, '-', count);
+      str[count] = 0;
+      for (const QModelIndex& index : sel->selectedIndexes())
+      {
+        if (index.row() >= 0 && index.row() < count)
+          str[index.row()] = '+';
+      }
+      return str;
+    }
   }
   else
   {
@@ -1138,6 +1173,49 @@ static int qtListSetValueAttrib(Ihandle* ih, const char* value)
     else
     {
       combo->setCurrentIndex(-1);
+      iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
+    }
+
+    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);
+  }
+  else if (ih->data->is_virtual)
+  {
+    auto* view = reinterpret_cast<QListView*>(ih->handle);
+    QAbstractItemModel* model = view->model();
+    QItemSelectionModel* sel = view->selectionModel();
+    int pos;
+
+    if (!model || !sel)
+      return 0;
+
+    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
+
+    if (!ih->data->is_multiple)
+    {
+      if (iupStrToInt(value, &pos) == 1 && pos > 0 && pos <= model->rowCount())
+      {
+        QModelIndex index = model->index(pos - 1, 0);
+        sel->setCurrentIndex(index, QItemSelectionModel::ClearAndSelect);
+        view->scrollTo(index);
+        iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos);
+      }
+      else
+      {
+        sel->clear();
+        iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
+      }
+    }
+    else
+    {
+      QItemSelection selection;
+      int len = value ? static_cast<int>(strlen(value)) : 0;
+      int count = model->rowCount();
+      for (int i = 0; i < len && i < count; i++)
+      {
+        if (value[i] == '+')
+          selection.select(model->index(i, 0), model->index(i, 0));
+      }
+      sel->select(selection, QItemSelectionModel::ClearAndSelect);
       iupAttribSet(ih, "_IUPLIST_OLDVALUE", nullptr);
     }
 
@@ -1851,7 +1929,7 @@ static void qtListEditTextChanged(QLineEdit* edit, Ihandle* ih)
 
   auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "EDIT_CB"));
   if ((cb || ih->data->mask || ih->data->nc) && !iupAttribGet(ih, "_IUPQT_LIST_KEYCHECKED"))
-    iupEditCheckNewValue(ih, cb, edit->text().toUtf8().constData(), ih->data->mask, ih->data->nc);
+    iupEditCheckNewValue(ih, cb, edit->text().toUtf8().constData(), ih->data->mask, ih->data->nc, 1);
 
   iupBaseCallValueChangedCb(ih);
 }

@@ -155,7 +155,7 @@ static void fltkTextArbitrateHistory(Ihandle* ih, Fl_Input_* input, Fl_Text_Buff
   char* value = iupStrDup(IupGetAttribute(ih, "VALUE"));
 
   if (value && !iupStrEqual(before, value) && (cb || ih->data->mask || ih->data->nc) &&
-      !iupEditCheckNewValue(ih, cb, value, ih->data->mask, ih->data->nc))
+      !iupEditCheckNewValue(ih, cb, value, ih->data->mask, ih->data->nc, 1))
   {
     ih->data->disable_callbacks = 1;
     if (buf)
@@ -1329,6 +1329,10 @@ static int fltkTextSetSpinValueAttrib(Ihandle* ih, const char* value)
     auto* spinner = reinterpret_cast<IupFltkSpinner*>(ih->handle);
     int val = 0;
     iupStrToInt(value, &val);
+    if (val < spinner->minimum())
+      val = static_cast<int>(spinner->minimum());
+    else if (val > spinner->maximum())
+      val = static_cast<int>(spinner->maximum());
 
     if (spinner->noauto)
     {

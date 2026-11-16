@@ -1094,6 +1094,30 @@ static char* haikuTreeGetDepthAttrib(Ihandle* ih, int id)
   return iupStrReturnInt(static_cast<int>(it->OutlineLevel()));
 }
 
+static char* haikuTreeGetNextAttrib(Ihandle* ih, int id)
+{
+  int brother = iupTreeGetBrother(ih, id, "NEXT");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
+}
+
+static char* haikuTreeGetPreviousAttrib(Ihandle* ih, int id)
+{
+  int brother = iupTreeGetBrother(ih, id, "PREVIOUS");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
+}
+
+static char* haikuTreeGetFirstAttrib(Ihandle* ih, int id)
+{
+  int brother = iupTreeGetBrother(ih, id, "FIRST");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
+}
+
+static char* haikuTreeGetLastAttrib(Ihandle* ih, int id)
+{
+  int brother = iupTreeGetBrother(ih, id, "LAST");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
+}
+
 static char* haikuTreeGetParentAttrib(Ihandle* ih, int id)
 {
   IupHaikuTreeView* tv = haikuTreeGetView(ih);
@@ -1423,6 +1447,7 @@ static int haikuTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     LooperLockGuard guard(tv->Looper());
     int prev_count = ih->data->node_count;
     haikuTreeRemoveAndDeleteAll(tv);
+    ih->data->node_count = 0;
     iupTreeDelFromCache(ih, 0, prev_count);
     return 0;
   }
@@ -1438,7 +1463,11 @@ static int haikuTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
         int sub = 1 + iupdrvTreeTotalChildCount(ih, reinterpret_cast<InodeHandle*>(fi));
         int fid = iupTreeFindNodeId(ih, reinterpret_cast<InodeHandle*>(fi));
         haikuTreeRemoveAndDeleteSubtree(tv, fi);
-        if (fid >= 0) iupTreeDelFromCache(ih, fid, sub);
+        if (fid >= 0)
+        {
+          ih->data->node_count -= sub;
+          iupTreeDelFromCache(ih, fid, sub);
+        }
       }
     }
     return 0;
@@ -1458,12 +1487,14 @@ static int haikuTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       BListItem* c = tv->ItemUnderAt(it, true, i);
       if (c) haikuTreeRemoveAndDeleteSubtree(tv, c);
     }
+    ih->data->node_count -= total;
     iupTreeDelFromCache(ih, id + 1, total);
   }
   else /* SELECTED or default */
   {
     int total = 1 + haikuTreeChildCountRec(tv, it);
     haikuTreeRemoveAndDeleteSubtree(tv, it);
+    ih->data->node_count -= total;
     iupTreeDelFromCache(ih, id, total);
   }
 
@@ -1606,6 +1637,10 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "DEPTH", haikuTreeGetDepthAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "KIND", haikuTreeGetKindAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "PARENT", haikuTreeGetParentAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "NEXT", haikuTreeGetNextAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "PREVIOUS", haikuTreeGetPreviousAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "FIRST", haikuTreeGetFirstAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "LAST", haikuTreeGetLastAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "CHILDCOUNT", haikuTreeGetChildCountAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TITLE", haikuTreeGetTitleAttrib, haikuTreeSetTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "COLOR", nullptr, haikuTreeSetColorAttrib, IUPAF_NO_INHERIT);

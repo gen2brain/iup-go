@@ -388,17 +388,22 @@ static int wasmTextSetAppendAttrib(Ihandle* ih, const char* value)
 static int wasmTextSetSpinValueAttrib(Ihandle* ih, const char* value)
 {
   int id = iupwasmIdOf(ih);
-  int pos = 0;
+  int pos = 0, min, max;
 
   if (!id || !iupAttribGetBoolean(ih, "SPIN"))
     return 1;
 
   iupStrToInt(value, &pos);
+  min = iupAttribGetInt(ih, "SPINMIN");
+  max = iupAttribGetInt(ih, "SPINMAX");
+  if (max < min) max = min;
+  if (pos < min) pos = min;
+  else if (pos > max) pos = max;
   iupwasmJsTextSpinPos(id, pos);
 
   /* SPINAUTO=NO keeps the counter apart from the text, which the application owns */
   if (iupAttribGetBoolean(ih, "SPINAUTO"))
-    iupwasmJsTextSetValue(id, value ? value : "0");
+    iupwasmJsTextSetValue(id, iupStrReturnInt(pos));
   return 1;
 }
 
@@ -549,7 +554,10 @@ static char* wasmTextGetCaretAttrib(Ihandle* ih)
   char* p, *r;
   if (!id) return NULL;
   p = (char*)(intptr_t)iupwasmJsTextGetCaretLC(id);
-  r = iupStrReturnStr(p);
+  if (!ih->data->is_multiline && p && strchr(p, ','))
+    r = iupStrReturnStr(strchr(p, ',') + 1);
+  else
+    r = iupStrReturnStr(p);
   free(p);
   return r;
 }

@@ -499,6 +499,11 @@ static char* wasmListGetIdValueAttrib(Ihandle* ih, int id)
   char* p, *r;
   if (!handleId || pos < 0)
     return NULL;
+  if (ih->data->is_virtual && !ih->data->is_dropdown && !ih->data->has_editbox)
+  {
+    p = pos < ih->data->item_count ? iupListGetItemValueCb(ih, pos + 1) : NULL;
+    return p ? iupStrReturnStr(p) : NULL;
+  }
   p = iupwasmJsListItemText(handleId, pos);
   r = iupStrReturnStr(p);
   free(p);
@@ -605,21 +610,49 @@ static int wasmListMapMethod(Ihandle* ih)
 
 IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
 {
+  if (wasmListIsVirtual(ih))
+    return ih->data->item_count;
   return iupwasmJsListCount(iupwasmIdOf(ih));
+}
+
+static int wasmListSortedPos(Ihandle* ih, int id, const char* value)
+{
+  int i, count = iupwasmJsListCount(id);
+  for (i = 0; i < count; i++)
+  {
+    char* text = iupwasmJsListItemText(id, i);
+    int after = iupStrCompare(text ? text : "", value, 0, 1) > 0;
+    free(text);
+    if (after)
+      return i;
+  }
+  return count;
 }
 
 IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
 {
   int id = iupwasmIdOf(ih);
-  if (id)
-    iupwasmJsListAppend(id, value ? value : "");
+  if (!value)
+    value = "";
+  if (!id)
+    return;
+  if (iupAttribGetBoolean(ih, "SORT"))
+    iupwasmJsListInsert(id, wasmListSortedPos(ih, id, value), value);
+  else
+    iupwasmJsListAppend(id, value);
 }
 
 IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
 {
   int id = iupwasmIdOf(ih);
+  if (!value)
+    value = "";
   if (id)
-    iupwasmJsListInsert(id, pos, value ? value : "");
+  {
+    if (iupAttribGetBoolean(ih, "SORT"))
+      pos = wasmListSortedPos(ih, id, value);
+    iupwasmJsListInsert(id, pos, value);
+  }
   iupListUpdateOldValue(ih, pos, 0);
 }
 

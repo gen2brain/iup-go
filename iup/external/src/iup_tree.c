@@ -109,6 +109,50 @@ int iupTreeForEach(Ihandle* ih, iupTreeNodeFunc func, void* userdata)
   return 1;
 }
 
+int iupTreeGetBrother(Ihandle* ih, int id, const char* which)
+{
+  int count = ih->data->node_count;
+  int depth, i, found;
+
+  if (id < 0 || id >= count)
+    return -1;
+
+  depth = IupGetIntId(ih, "DEPTH", id);
+
+  if (iupStrEqual(which, "NEXT") || iupStrEqual(which, "LAST"))
+  {
+    found = iupStrEqual(which, "LAST") ? id : -1;
+    for (i = id + 1; i < count; i++)
+    {
+      int d = IupGetIntId(ih, "DEPTH", i);
+      if (d < depth)
+        break;
+      if (d == depth)
+      {
+        found = i;
+        if (iupStrEqual(which, "NEXT"))
+          break;
+      }
+    }
+    return found;
+  }
+
+  found = iupStrEqual(which, "FIRST") ? id : -1;
+  for (i = id - 1; i >= 0; i--)
+  {
+    int d = IupGetIntId(ih, "DEPTH", i);
+    if (d < depth)
+      break;
+    if (d == depth)
+    {
+      found = i;
+      if (iupStrEqual(which, "PREVIOUS"))
+        break;
+    }
+  }
+  return found;
+}
+
 int iupTreeFindNodeId(Ihandle* ih, InodeHandle* node_handle)
 {
   /* Unoptimized version:

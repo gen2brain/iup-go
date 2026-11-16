@@ -370,7 +370,7 @@ static void winTreeSelectNode(Ihandle* ih, HTREEITEM hItem, int select)
    item without changing anything else. */
 static void winTreeSetFocusNode(Ihandle* ih, HTREEITEM hItem)
 {
-  HTREEITEM hItemFocus = iupdrvTreeGetFocusNode(ih);
+  HTREEITEM hItemFocus = (HTREEITEM)SendMessage(ih->handle, TVM_GETNEXTITEM, TVGN_CARET, 0);
   if (hItem != hItemFocus)
   {
     /* remember the selection state of the item */

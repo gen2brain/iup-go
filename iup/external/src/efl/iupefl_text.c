@@ -510,7 +510,11 @@ static int eflTextSetSpinValueAttrib(Ihandle* ih, const char* value)
 
   if (value)
   {
-    int val = 0; iupStrToInt(value, &val);
+    int val = 0, min = iupAttribGetInt(ih, "SPINMIN"), max = iupAttribGetInt(ih, "SPINMAX");
+    iupStrToInt(value, &val);
+    if (max < min) max = min;
+    if (val < min) val = min;
+    else if (val > max) val = max;
     ih->data->disable_callbacks = 1;
     efl_ui_range_value_set(widget, (double)val);
     ih->data->disable_callbacks = 0;

@@ -1581,16 +1581,9 @@ static int gtkTextSetPaddingAttrib(Ihandle* ih, const char* value)
 static int gtkTextSetNCAttrib(Ihandle* ih, const char* value)
 {
   if (!iupStrToInt(value, &ih->data->nc))
-    ih->data->nc = INT_MAX;
+    ih->data->nc = 0;
 
-  if (ih->handle)
-  {
-    if (!ih->data->is_multiline)
-      gtk_entry_set_max_length(GTK_ENTRY(ih->handle), ih->data->nc);
-    return 0;
-  }
-  else
-    return 1; /* store until not mapped, when mapped will be set again */
+  return ih->handle ? 0 : 1;
 }
 
 static int gtkTextSetClipboardAttrib(Ihandle* ih, const char* value)

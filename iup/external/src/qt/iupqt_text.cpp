@@ -663,7 +663,7 @@ static void qtTextArbitrateHistory(Ihandle* ih, int redo)
   auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "ACTION"));
   QString value;
 
-  if (!cb && !ih->data->mask && !ih->data->nc)
+  if (!cb && !ih->data->mask)
     return;
 
   if (ih->data->is_multiline)
@@ -671,7 +671,7 @@ static void qtTextArbitrateHistory(Ihandle* ih, int redo)
   else
     value = (qtTextGetLineEdit(ih))->text();
 
-  if (iupEditCheckNewValue(ih, cb, value.toUtf8().constData(), ih->data->mask, ih->data->nc))
+  if (iupEditCheckNewValue(ih, cb, value.toUtf8().constData(), ih->data->mask, 0, 1))
     return;
 
   ih->data->disable_callbacks = 1;
@@ -934,7 +934,7 @@ static char* qtTextGetSelectedTextAttrib(Ihandle* ih)
     auto* text = reinterpret_cast<IupQtTextEdit*>(ih->handle);
     QTextCursor cursor = text->textCursor();
     has_selection = cursor.hasSelection();
-    value = cursor.selectedText();
+    value = cursor.selectedText().replace(QChar::ParagraphSeparator, QLatin1Char('\n'));
   }
   else
   {
@@ -1402,12 +1402,6 @@ static int qtTextSetNCAttrib(Ihandle* ih, const char* value)
   if (!iupStrToInt(value, &ih->data->nc))
     ih->data->nc = 0;
 
-  if (ih->handle && !ih->data->is_multiline)
-  {
-    auto* edit = qtTextGetLineEdit(ih);
-    edit->setMaxLength(ih->data->nc > 0 ? ih->data->nc : 32767);
-  }
-
   return 0;
 }
 
@@ -1604,7 +1598,7 @@ static char* qtTextGetLineCountAttrib(Ihandle* ih)
     return iupStrReturnInt(text->document()->blockCount());
   }
 
-  return nullptr;
+  return iupStrReturnInt(1);
 }
 
 static int qtTextSetCueBannerAttrib(Ihandle* ih, const char* value)

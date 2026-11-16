@@ -293,7 +293,7 @@ static void winuiTextRichTextChanged(Ihandle* ih)
       key = 0;
     iupAttribSet(ih, "_IUPWINUI_RICH_KEY", nullptr);
 
-    if (!iupEditCheckNewValueKey(ih, cb, key, new_value, ih->data->mask, ih->data->nc))
+    if (!iupEditCheckNewValueKey(ih, cb, key, new_value, ih->data->mask, ih->data->nc, 1))
     {
       free(new_value);
       IupSetStrAttribute(ih, "VALUE", saved);
@@ -3323,8 +3323,14 @@ static int winuiTextSetInsertAttrib(Ihandle* ih, const char* value)
 static char* winuiTextGetCountAttrib(Ihandle* ih)
 {
   auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
-  if (!aux || aux->isSpin || aux->isPassword)
+  if (!aux)
     return nullptr;
+
+  if (aux->isSpin || aux->isPassword)
+  {
+    char* value = IupGetAttribute(ih, "VALUE");
+    return iupStrReturnInt(value ? iupStrUtf8ByteToChar(value, static_cast<int>(strlen(value))) : 0);
+  }
 
   int count;
 

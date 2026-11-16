@@ -58,6 +58,7 @@ int iupTreeForEach(Ihandle* ih, iupTreeNodeFunc func, void* userdata);
 InodeHandle* iupTreeGetNode(Ihandle* ih, int id);
 InodeHandle* iupTreeGetNodeFromString(Ihandle* ih, const char* name_id);
 int iupTreeFindNodeId(Ihandle* ih, InodeHandle* node_handle);
+int iupTreeGetBrother(Ihandle* ih, int id, const char* which);  /* NEXT, PREVIOUS, FIRST or LAST by node order and DEPTH, -1 if none */
 
 /** \addtogroup drvtree
  * @{ */

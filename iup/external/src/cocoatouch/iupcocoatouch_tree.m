@@ -821,6 +821,30 @@ static char* cocoaTouchTreeGetChildCountIdAttrib(Ihandle* ih, int id_)
 	return iupStrReturnInt((int)node.children.count);
 }
 
+static char* cocoaTouchTreeGetNextAttrib(Ihandle* ih, int id)
+{
+	int brother = iupTreeGetBrother(ih, id, "NEXT");
+	return brother >= 0 ? iupStrReturnInt(brother) : NULL;
+}
+
+static char* cocoaTouchTreeGetPreviousAttrib(Ihandle* ih, int id)
+{
+	int brother = iupTreeGetBrother(ih, id, "PREVIOUS");
+	return brother >= 0 ? iupStrReturnInt(brother) : NULL;
+}
+
+static char* cocoaTouchTreeGetFirstAttrib(Ihandle* ih, int id)
+{
+	int brother = iupTreeGetBrother(ih, id, "FIRST");
+	return brother >= 0 ? iupStrReturnInt(brother) : NULL;
+}
+
+static char* cocoaTouchTreeGetLastAttrib(Ihandle* ih, int id)
+{
+	int brother = iupTreeGetBrother(ih, id, "LAST");
+	return brother >= 0 ? iupStrReturnInt(brother) : NULL;
+}
+
 static char* cocoaTouchTreeGetParentIdAttrib(Ihandle* ih, int id_)
 {
 	IupCocoaTouchTreeNode* node = cocoaTouchTreeNodeFromId(ih, id_);
@@ -1804,6 +1828,10 @@ IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
 	iupClassRegisterAttributeId(ic, "DEPTH", cocoaTouchTreeGetDepthIdAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttributeId(ic, "CHILDCOUNT", cocoaTouchTreeGetChildCountIdAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttributeId(ic, "PARENT", cocoaTouchTreeGetParentIdAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttributeId(ic, "NEXT", cocoaTouchTreeGetNextAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttributeId(ic, "PREVIOUS", cocoaTouchTreeGetPreviousAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttributeId(ic, "FIRST", cocoaTouchTreeGetFirstAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
+	iupClassRegisterAttributeId(ic, "LAST", cocoaTouchTreeGetLastAttrib, NULL, IUPAF_READONLY|IUPAF_NO_INHERIT);
 
 	iupClassRegisterAttributeId(ic, "MOVENODE", NULL, cocoaTouchTreeSetMoveNodeAttrib, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);
 	iupClassRegisterAttributeId(ic, "COPYNODE", NULL, cocoaTouchTreeSetCopyNodeAttrib, IUPAF_NOT_MAPPED|IUPAF_WRITEONLY|IUPAF_NO_INHERIT);

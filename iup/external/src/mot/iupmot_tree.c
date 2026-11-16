@@ -928,24 +928,13 @@ static int motTreeSetImageLeafAttrib(Ihandle* ih, const char* value)
 
 static char* motTreeGetStateAttrib(Ihandle* ih, int id)
 {
-  int hasChildren;
   unsigned char itemState;
   Widget wItem = iupTreeGetNode(ih, id);
-  if (!wItem)
-    return 0;
+  if (!wItem || iupStrEqual(IupGetAttributeId(ih, "KIND", id), "LEAF"))
+    return NULL;
 
-  XtVaGetValues(wItem, XmNnumChildren, &hasChildren, NULL);
   XtVaGetValues(wItem, XmNoutlineState, &itemState, NULL);
-
-  if (hasChildren)
-  {
-    if(itemState == XmEXPANDED)
-      return "EXPANDED";
-    else
-      return "COLLAPSED";
-  }
-
-  return NULL;
+  return itemState == XmEXPANDED ? "EXPANDED" : "COLLAPSED";
 }
 
 static int motTreeSetStateAttrib(Ihandle* ih, int id, const char* value)

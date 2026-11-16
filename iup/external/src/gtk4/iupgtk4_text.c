@@ -1439,12 +1439,6 @@ static int gtk4TextSetNCAttrib(Ihandle* ih, const char* value)
   if (!iupStrToInt(value, &ih->data->nc))
     ih->data->nc = 0;
 
-  if (!ih->handle)
-    return 0;
-
-  if (!ih->data->is_multiline)
-    gtk_entry_set_max_length(GTK_ENTRY(ih->handle), ih->data->nc > 0 ? ih->data->nc : 0);
-
   return 0;
 }
 
@@ -1783,7 +1777,11 @@ static int gtk4TextSetSpinValueAttrib(Ihandle* ih, const char* value)
   {
     int pos;
     if (iupStrToInt(value, &pos))
+    {
+      ih->data->disable_callbacks = 1;
       gtk_spin_button_set_value((GtkSpinButton*)ih->handle, (double)pos);
+      ih->data->disable_callbacks = 0;
+    }
   }
   return 0;
 }

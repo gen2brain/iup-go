@@ -734,6 +734,12 @@ But it can be used for drawing selected areas in custom controls.
 
 The default foreground color for linked text. In GTK and Motif, it is "0 0 238".
 
+### ERRORCOLOR (read-only)
+
+The color for error text and indicators, following the light or dark appearance.
+In GTK it is the theme error color, in macOS and iOS the system red, in Android the theme error color and in Haiku the failure color.
+In the other platforms it is "196 43 28", or "255 153 164" when the appearance is dark.
+
 ### ACCENTCOLOR
 
 The accent color, used for primary buttons, toggles, progress bars, focus indicators, and similar UI elements.

@@ -662,7 +662,22 @@ public final class IupListHelper
     {
         ArrayAdapter<String> a = adapterOf(widget);
         if (a == null || pos < 0 || pos >= a.getCount()) return;
-        a.remove(a.getItem(pos));
+        ArrayList<String> items = new ArrayList<>();
+        for (int i = 0; i < a.getCount(); i++)
+            if (i != pos) items.add(a.getItem(i));
+        a.setNotifyOnChange(false);
+        a.clear();
+        a.addAll(items);
+        a.notifyDataSetChanged();
+
+        IupDropdownView dropdown = dropdownOf(widget);
+        if (dropdown != null && !dropdown.editbox)
+        {
+            if (dropdown.currentPosition == pos + 1)
+                clearDropdown(dropdown);
+            else if (dropdown.currentPosition > pos + 1)
+                dropdown.currentPosition--;
+        }
     }
 
     @Keep
@@ -670,6 +685,26 @@ public final class IupListHelper
     {
         ArrayAdapter<String> a = adapterOf(widget);
         if (a != null) a.clear();
+
+        IupDropdownView dropdown = dropdownOf(widget);
+        if (dropdown != null && !dropdown.editbox)
+            clearDropdown(dropdown);
+    }
+
+    private static IupDropdownView dropdownOf(View widget)
+    {
+        if (widget instanceof TextInputLayout til && til.getTag() instanceof IupDropdownView actv)
+            return actv;
+        return null;
+    }
+
+    private static void clearDropdown(IupDropdownView dropdown)
+    {
+        boolean old = dropdown.suppress;
+        dropdown.suppress = true;
+        dropdown.currentPosition = 0;
+        dropdown.setText("", false);
+        dropdown.suppress = old;
     }
 
     @Keep

@@ -3268,70 +3268,40 @@ IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int num_col = ih->data->num_col;
   int num_lin = ih->data->num_lin;
-  int first, last, c;
-  Eina_Rect sg;
+  int ref_lin = 0, ref_top = 0, step, rx, ry, rw, rh, c, offset;
 
   *lin = 0;
   *col = 0;
-  if (!data || !data->scroller || !data->cell_bgs || num_col < 1 || num_lin < 1)
+  if (!data || !data->scroller || !data->table || !data->cell_bgs || num_col < 1 || num_lin < 1)
     return;
 
-  sg = efl_gfx_entity_geometry_get(data->scroller);
+  step = eflTableRowStep(ih, data, &ref_lin, &ref_top);
+  if (step <= 0)
+    return;
 
-  if (data->is_virtual)
-  {
-    first = data->first_visible_row;
-    last = data->first_visible_row + data->alloc_num_lin - 1;
-    if (last > num_lin)
-      last = num_lin;
-    *lin = last;
-    for (int l = first; l <= last; l++)
-    {
-      Evas_Object* bg = eflTableCellBg(data, num_col, l, 1);
-      if (bg)
-      {
-        Eina_Rect g = efl_gfx_entity_geometry_get(bg);
-        if (g.y + g.h > sg.y)
-        {
-          *lin = l;
-          break;
-        }
-      }
-    }
-  }
-  else
-  {
-    int lo = 1, hi = num_lin;
-    while (lo < hi)
-    {
-      int mid = (lo + hi) / 2;
-      Evas_Object* bg = eflTableCellBg(data, num_col, mid, 1);
-      Eina_Rect g = bg ? efl_gfx_entity_geometry_get(bg) : (Eina_Rect)EINA_RECT(0, 0, 0, 0);
-      if (bg && g.y + g.h > sg.y)
-        hi = mid;
-      else
-        lo = mid + 1;
-    }
-    *lin = lo;
-  }
+  elm_scroller_region_get(data->scroller, &rx, &ry, &rw, &rh);
+
+  offset = ry - ref_top;
+  *lin = ref_lin + (offset >= 0 ? offset / step : -((-offset + step - 1) / step));
+  if (*lin < 1)
+    *lin = 1;
+  if (*lin > num_lin)
+    *lin = num_lin;
 
   *col = num_col;
   for (c = 1; c <= num_col; c++)
   {
-    Evas_Object* bg = eflTableCellBg(data, num_col, *lin, c);
-    if (bg)
+    int w = 0;
+    int x = eflTableColLeft(ih, data, c, &w);
+    if (x >= 0 && x + w > rx)
     {
-      Eina_Rect g = efl_gfx_entity_geometry_get(bg);
-      if (g.x + g.w > sg.x)
-      {
-        *col = c;
-        break;
-      }
+      *col = c;
+      break;
     }
   }
 }
 
-IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+static void eflTableApplyOrigin(Ihandle* ih, int lin, int col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int ref_lin = 0, ref_top = 0, step, x = 0, y = 0, w = 0;
@@ -3356,7 +3326,7 @@ IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
     eflTableShowRegion(data, x, y, set_x, set_y);
 }
 
-IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+static void eflTableApplyShow(Ihandle* ih, int lin, int col)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int ref_lin = 0, ref_top = 0, step, x, y, w = 0, rx, ry, rw, rh;
@@ -3396,6 +3366,87 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 
   if (set_x || set_y)
     eflTableShowRegion(data, x, y, set_x, set_y);
+}
+
+static int eflTableLaidOut(Ihandle* ih)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int ref_lin = 0, ref_top = 0;
+  if (!data || !data->scroller || !data->table)
+    return 0;
+  if (efl_gfx_entity_geometry_get(data->scroller).h <= 0)
+    return 0;
+  return eflTableRowStep(ih, data, &ref_lin, &ref_top) > 0;
+}
+
+static void eflTableRenderPost(void* cb_data, Evas* evas, void* event_info)
+{
+  Ihandle* ih = (Ihandle*)cb_data;
+  int lin, col;
+  (void)event_info;
+
+  if (!iupObjectCheck(ih) || !eflTableLaidOut(ih))
+    return;
+
+  evas_event_callback_del_full(evas, EVAS_CALLBACK_RENDER_POST, eflTableRenderPost, ih);
+  iupAttribSet(ih, "_IUPEFL_TABLE_RENDER_POST", NULL);
+
+  if (iupStrToIntInt(iupAttribGet(ih, "_IUPEFL_TABLE_SHOW"), &lin, &col, ':') == 2)
+    eflTableApplyShow(ih, lin, col);
+  if (iupStrToIntInt(iupAttribGet(ih, "_IUPEFL_TABLE_ORIGIN"), &lin, &col, ':') == 2)
+    eflTableApplyOrigin(ih, lin, col);
+  iupAttribSet(ih, "_IUPEFL_TABLE_SHOW", NULL);
+  iupAttribSet(ih, "_IUPEFL_TABLE_ORIGIN", NULL);
+
+  if (iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+    iupTableScrollDone(ih);
+}
+
+static void eflTableDropPending(Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPEFL_TABLE_SHOW", NULL);
+  iupAttribSet(ih, "_IUPEFL_TABLE_ORIGIN", NULL);
+  iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", NULL);
+}
+
+static void eflTableDefer(Ihandle* ih)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+
+  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+    iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
+
+  if (data && data->scroller && !iupAttribGet(ih, "_IUPEFL_TABLE_RENDER_POST"))
+  {
+    evas_event_callback_add(evas_object_evas_get(data->scroller), EVAS_CALLBACK_RENDER_POST, eflTableRenderPost, ih);
+    iupAttribSet(ih, "_IUPEFL_TABLE_RENDER_POST", "1");
+  }
+}
+
+IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+{
+  if (!eflTableLaidOut(ih))
+  {
+    iupAttribSetStrf(ih, "_IUPEFL_TABLE_SHOW", "%d:%d", lin, col);
+    eflTableDefer(ih);
+    return;
+  }
+  eflTableDropPending(ih);
+  eflTableApplyShow(ih, lin, col);
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  if (!eflTableLaidOut(ih))
+  {
+    int old_lin = 0, old_col = 0;
+    iupStrToIntInt(iupAttribGet(ih, "_IUPEFL_TABLE_ORIGIN"), &old_lin, &old_col, ':');
+    iupAttribSetStrf(ih, "_IUPEFL_TABLE_ORIGIN", "%d:%d", lin ? lin : old_lin, col ? col : old_col);
+    eflTableDefer(ih);
+    return;
+  }
+  eflTableDropPending(ih);
+  eflTableApplyOrigin(ih, lin, col);
 }
 
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
@@ -3866,6 +3917,12 @@ static void eflTableUnMapMethod(Ihandle* ih)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   Ecore_Job* job = (Ecore_Job*)iupAttribGet(ih, "_IUP_EFL_FOCUSRECT_JOB");
+
+  if (iupAttribGet(ih, "_IUPEFL_TABLE_RENDER_POST") && data && data->scroller)
+  {
+    evas_event_callback_del_full(evas_object_evas_get(data->scroller), EVAS_CALLBACK_RENDER_POST, eflTableRenderPost, ih);
+    iupAttribSet(ih, "_IUPEFL_TABLE_RENDER_POST", NULL);
+  }
 
   if (job)
   {

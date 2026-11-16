@@ -858,7 +858,7 @@ static int fltkTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
 static char* fltkTreeGetStateAttrib(Ihandle* ih, int id)
 {
   Fl_Tree_Item* item = fltkTreeGetItemFromId(ih, id);
-  if (!item)
+  if (!item || iupStrEqual(IupGetAttributeId(ih, "KIND", id), "LEAF"))
     return nullptr;
 
   if (item->is_open())
@@ -1202,12 +1202,14 @@ static char* fltkTreeGetValueAttrib(Ihandle* ih)
 {
   auto* tree = reinterpret_cast<IupFltkTree*>(ih->handle);
   Fl_Tree_Item* item = tree->get_item_focus();
+  if (ih->data->node_count == 0)
+    return const_cast<char*>("-1");
   if (!item)
-    return nullptr;
+    return const_cast<char*>("0");
 
   int id = fltkTreeGetIdFromItem(ih, item);
   if (id < 0)
-    return nullptr;
+    return const_cast<char*>("0");
 
   return iupStrReturnInt(id);
 }
@@ -1387,7 +1389,9 @@ static int fltkTreeSetMoveNodeAttrib(Ihandle* ih, int id, const char* value)
     src->move_below(dst);
   }
 
+  ih->data->node_count += count;
   iupTreeCopyMoveCache(ih, id_src, id_new, count, 0);
+  ih->data->node_count -= count;
   fltkTreeRebuildEntireCache(ih);
 
   (reinterpret_cast<IupFltkTree*>(ih->handle))->redraw();
@@ -1418,7 +1422,9 @@ static int fltkTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     if (tree->root())
       tree->clear_children(tree->root());
 
-    iupTreeDelFromCache(ih, 0, ih->data->node_count);
+    int count = ih->data->node_count;
+    ih->data->node_count = 0;
+    iupTreeDelFromCache(ih, 0, count);
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
     return 0;
@@ -1604,50 +1610,26 @@ static int fltkTreeSetShowRenameAttrib(Ihandle* ih, const char* value)
 
 static char* fltkTreeGetNextAttrib(Ihandle* ih, int id)
 {
-  if (id + 1 < ih->data->node_count)
-    return iupStrReturnInt(id + 1);
-  return nullptr;
+  int brother = iupTreeGetBrother(ih, id, "NEXT");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
 }
 
 static char* fltkTreeGetPreviousAttrib(Ihandle* ih, int id)
 {
-  if (id > 0)
-    return iupStrReturnInt(id - 1);
-  return nullptr;
+  int brother = iupTreeGetBrother(ih, id, "PREVIOUS");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
 }
 
 static char* fltkTreeGetFirstAttrib(Ihandle* ih, int id)
 {
-  Fl_Tree_Item* item = fltkTreeGetItemFromId(ih, id);
-  if (!item || item->children() == 0)
-    return nullptr;
-
-  Fl_Tree_Item* child = item->child(0);
-  int child_id = fltkTreeGetIdFromItem(ih, child);
-  if (child_id < 0)
-    return nullptr;
-
-  return iupStrReturnInt(child_id);
+  int brother = iupTreeGetBrother(ih, id, "FIRST");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
 }
 
 static char* fltkTreeGetLastAttrib(Ihandle* ih, int id)
 {
-  Fl_Tree_Item* item = fltkTreeGetItemFromId(ih, id);
-  if (!item)
-    return nullptr;
-
-  Fl_Tree_Item* last = item;
-  while (last->children() > 0)
-    last = last->child(last->children() - 1);
-
-  if (last == item)
-    return nullptr;
-
-  int last_id = fltkTreeGetIdFromItem(ih, last);
-  if (last_id < 0)
-    return nullptr;
-
-  return iupStrReturnInt(last_id);
+  int brother = iupTreeGetBrother(ih, id, "LAST");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
 }
 
 static char* fltkTreeGetRootCountAttrib(Ihandle* ih)

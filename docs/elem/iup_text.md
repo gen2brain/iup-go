@@ -141,7 +141,7 @@ When set to YES will also reset the SCROLLBAR attribute to YES.
 **NC**: Maximum number of **characters** allowed for keyboard input, a larger text can still be set using attributes.
 The maximum value is the limit of the VALUE attribute. The "0" value is the same as maximum.
 Default: maximum.
-A paste that would exceed the limit is refused. It is truncated instead in Win32, Motif and WebAssembly, and in single line texts in GTK, Qt, WinUI, FLTK and Haiku.
+A paste that would exceed the limit is refused. It is truncated instead in Win32, Motif and WebAssembly, and in single line texts in WinUI, FLTK and Haiku.
 
 **NOHIDESEL** [Windows Only]: do not hide the selection when the control loses its focus.
 Default: YES.

@@ -2448,7 +2448,7 @@ static int winTextMsgProc(Ihandle* ih, UINT msg, WPARAM wp, LPARAM lp, LRESULT* 
         WNDPROC oldProc = (WNDPROC)IupGetCallback(ih, "_IUPWIN_OLDWNDPROC_CB");
         CallWindowProc(oldProc, ih->handle, WM_UNDO, 0, 0);
 
-        if (!iupEditCheckNewValue(ih, cb, winTextGetValueAttrib(ih), ih->data->mask, ih->data->nc))
+        if (!iupEditCheckNewValue(ih, cb, winTextGetValueAttrib(ih), ih->data->mask, ih->data->nc, iupwinStrGetUTF8Mode()))
           CallWindowProc(oldProc, ih->handle, WM_UNDO, 0, 0);
 
         ret = 1;

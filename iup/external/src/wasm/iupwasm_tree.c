@@ -489,8 +489,12 @@ static int wasmTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
 
 static char* wasmTreeGetValueAttrib(Ihandle* ih)
 {
-  InodeHandle* focus = iupdrvTreeGetFocusNode(ih);
-  int id = focus ? iupTreeFindNodeId(ih, focus) : -1;
+  InodeHandle* focus;
+  int id;
+  if (ih->data->node_count == 0)
+    return "-1";
+  focus = iupdrvTreeGetFocusNode(ih);
+  id = focus ? iupTreeFindNodeId(ih, focus) : -1;
   return iupStrReturnInt(id < 0 ? 0 : id);
 }
 

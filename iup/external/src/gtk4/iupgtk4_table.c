@@ -2400,6 +2400,8 @@ static void gtk4TableRebuildColumns(Ihandle* ih, int old_num_col, int add_pos, i
   free(src);
 }
 
+static void gtk4TableAdjustmentChanged(GtkAdjustment* adjustment, Ihandle* ih);
+
 static void gtk4TableAdjustmentValueChanged(GtkAdjustment* adjustment, Ihandle* ih)
 {
   (void)adjustment;
@@ -2525,6 +2527,8 @@ static int gtk4TableMapMethod(Ihandle* ih)
   gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win), gtk_data->column_view);
   g_signal_connect(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), "value-changed", G_CALLBACK(gtk4TableAdjustmentValueChanged), ih);
   g_signal_connect(gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), "value-changed", G_CALLBACK(gtk4TableAdjustmentValueChanged), ih);
+  g_signal_connect(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), "changed", G_CALLBACK(gtk4TableAdjustmentChanged), ih);
+  g_signal_connect(gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), "changed", G_CALLBACK(gtk4TableAdjustmentChanged), ih);
 
   ih->handle = gtk_data->column_view;
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)gtk_data->scrolled_win);
@@ -3257,7 +3261,7 @@ IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
   }
 }
 
-IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+static void gtk4TableApplyOrigin(Ihandle* ih, int lin, int col)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
 
@@ -3274,7 +3278,7 @@ IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
     gtk4TableScrollAdjustment(gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), gtk4TableColumnX(ih, col), iupdrvTableGetColWidth(ih, col), 1);
 }
 
-IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+static void gtk4TableApplyShow(Ihandle* ih, int lin, int col)
 {
   Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
   GtkAdjustment* vadj;
@@ -3292,6 +3296,85 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 
   if (col >= 1 && col <= ih->data->num_col)
     gtk4TableScrollAdjustment(gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), gtk4TableColumnX(ih, col), iupdrvTableGetColWidth(ih, col), 0);
+}
+
+static int gtk4TableLaidOut(Ihandle* ih)
+{
+  Igtk4TableData* gtk_data = IGTK4_TABLE_DATA(ih);
+  return gtk_adjustment_get_page_size(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win))) > 0;
+}
+
+static void gtk4TableDropPending(Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPGTK4_TABLE_SHOW", NULL);
+  iupAttribSet(ih, "_IUPGTK4_TABLE_ORIGIN", NULL);
+  iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", NULL);
+}
+
+static void gtk4TableMarkPending(Ihandle* ih)
+{
+  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+    iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
+}
+
+IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+{
+  if (!gtk4TableLaidOut(ih))
+  {
+    iupAttribSetStrf(ih, "_IUPGTK4_TABLE_SHOW", "%d:%d", lin, col);
+    gtk4TableMarkPending(ih);
+    return;
+  }
+  gtk4TableDropPending(ih);
+  gtk4TableApplyShow(ih, lin, col);
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  if (!gtk4TableLaidOut(ih))
+  {
+    int old_lin = 0, old_col = 0;
+    iupStrToIntInt(iupAttribGet(ih, "_IUPGTK4_TABLE_ORIGIN"), &old_lin, &old_col, ':');
+    iupAttribSetStrf(ih, "_IUPGTK4_TABLE_ORIGIN", "%d:%d", lin ? lin : old_lin, col ? col : old_col);
+    gtk4TableMarkPending(ih);
+    return;
+  }
+  gtk4TableDropPending(ih);
+  gtk4TableApplyOrigin(ih, lin, col);
+}
+
+static gboolean gtk4TableApplyPending(gpointer data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  int lin, col;
+
+  if (!iupObjectCheck(ih))
+    return G_SOURCE_REMOVE;
+
+  iupAttribSet(ih, "_IUPGTK4_TABLE_PENDING_IDLE", NULL);
+
+  if (iupStrToIntInt(iupAttribGet(ih, "_IUPGTK4_TABLE_SHOW"), &lin, &col, ':') == 2)
+    gtk4TableApplyShow(ih, lin, col);
+  if (iupStrToIntInt(iupAttribGet(ih, "_IUPGTK4_TABLE_ORIGIN"), &lin, &col, ':') == 2)
+    gtk4TableApplyOrigin(ih, lin, col);
+  iupAttribSet(ih, "_IUPGTK4_TABLE_SHOW", NULL);
+  iupAttribSet(ih, "_IUPGTK4_TABLE_ORIGIN", NULL);
+
+  if (iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+    iupTableScrollDone(ih);
+  return G_SOURCE_REMOVE;
+}
+
+static void gtk4TableAdjustmentChanged(GtkAdjustment* adjustment, Ihandle* ih)
+{
+  (void)adjustment;
+
+  if (!gtk4TableLaidOut(ih) || iupAttribGet(ih, "_IUPGTK4_TABLE_PENDING_IDLE") ||
+      (!iupAttribGet(ih, "_IUPGTK4_TABLE_SHOW") && !iupAttribGet(ih, "_IUPGTK4_TABLE_ORIGIN")))
+    return;
+
+  iupAttribSet(ih, "_IUPGTK4_TABLE_PENDING_IDLE", "1");
+  g_idle_add_full(G_PRIORITY_LOW, gtk4TableApplyPending, ih, NULL);
 }
 
 /* ========================================================================= */

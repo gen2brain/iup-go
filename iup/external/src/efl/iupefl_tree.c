@@ -1249,17 +1249,20 @@ static char* eflTreeGetValueAttrib(Ihandle* ih)
   if (!tree)
     return NULL;
 
+  if (ih->data->node_count == 0)
+    return "-1";
+
   item = elm_object_focused_item_get(tree);
   if (!item)
     item = elm_genlist_selected_item_get(tree);
   if (!item)
     item = elm_genlist_first_item_get(tree);
   if (!item)
-    return NULL;
+    return "0";
 
   id = iupTreeFindNodeId(ih, (InodeHandle*)item);
   if (id < 0)
-    return NULL;
+    return "0";
 
   return iupStrReturnInt(id);
 }
@@ -1449,116 +1452,26 @@ static char* eflTreeGetParentAttrib(Ihandle* ih, int id)
 
 static char* eflTreeGetNextAttrib(Ihandle* ih, int id)
 {
-  InodeHandle* node_handle = iupTreeGetNode(ih, id);
-  Elm_Object_Item* item;
-  Elm_Object_Item* next;
-  Elm_Object_Item* parent;
-  int next_id;
-
-  if (!node_handle)
-    return NULL;
-
-  item = (Elm_Object_Item*)node_handle;
-  parent = elm_genlist_item_parent_get(item);
-  next = elm_genlist_item_next_get(item);
-
-  while (next)
-  {
-    if (elm_genlist_item_parent_get(next) == parent)
-    {
-      next_id = iupTreeFindNodeId(ih, (InodeHandle*)next);
-      if (next_id >= 0)
-        return iupStrReturnInt(next_id);
-    }
-    next = elm_genlist_item_next_get(next);
-  }
-
-  return NULL;
+  int brother = iupTreeGetBrother(ih, id, "NEXT");
+  return brother >= 0 ? iupStrReturnInt(brother) : NULL;
 }
 
 static char* eflTreeGetPreviousAttrib(Ihandle* ih, int id)
 {
-  InodeHandle* node_handle = iupTreeGetNode(ih, id);
-  Elm_Object_Item* item;
-  Elm_Object_Item* prev;
-  Elm_Object_Item* parent;
-  int prev_id;
-
-  if (!node_handle)
-    return NULL;
-
-  item = (Elm_Object_Item*)node_handle;
-  parent = elm_genlist_item_parent_get(item);
-  prev = elm_genlist_item_prev_get(item);
-
-  while (prev)
-  {
-    if (elm_genlist_item_parent_get(prev) == parent)
-    {
-      prev_id = iupTreeFindNodeId(ih, (InodeHandle*)prev);
-      if (prev_id >= 0)
-        return iupStrReturnInt(prev_id);
-    }
-    prev = elm_genlist_item_prev_get(prev);
-  }
-
-  return NULL;
+  int brother = iupTreeGetBrother(ih, id, "PREVIOUS");
+  return brother >= 0 ? iupStrReturnInt(brother) : NULL;
 }
 
 static char* eflTreeGetFirstAttrib(Ihandle* ih, int id)
 {
-  IeflTreeNode* node = eflTreeGetNodeFromId(ih, id);
-  const Eina_List* subitems;
-  Elm_Object_Item* first_child;
-  int first_id;
-
-  if (!node || !node->item)
-    return NULL;
-
-  if (node->kind != ITREE_BRANCH)
-    return NULL;
-
-  subitems = elm_genlist_item_subitems_get(node->item);
-  if (!subitems)
-    return NULL;
-
-  first_child = (Elm_Object_Item*)eina_list_data_get(subitems);
-  if (!first_child)
-    return NULL;
-
-  first_id = iupTreeFindNodeId(ih, (InodeHandle*)first_child);
-  if (first_id < 0)
-    return NULL;
-
-  return iupStrReturnInt(first_id);
+  int brother = iupTreeGetBrother(ih, id, "FIRST");
+  return brother >= 0 ? iupStrReturnInt(brother) : NULL;
 }
 
 static char* eflTreeGetLastAttrib(Ihandle* ih, int id)
 {
-  IeflTreeNode* node = eflTreeGetNodeFromId(ih, id);
-  const Eina_List* subitems;
-  Elm_Object_Item* last_child;
-  int last_id;
-
-  if (!node || !node->item)
-    return NULL;
-
-  if (node->kind != ITREE_BRANCH)
-    return NULL;
-
-  subitems = elm_genlist_item_subitems_get(node->item);
-  if (!subitems)
-    return NULL;
-
-  last_child = (Elm_Object_Item*)eina_list_last_data_get(subitems);
-  if (!last_child)
-    return NULL;
-
-  last_id = iupTreeFindNodeId(ih, (InodeHandle*)last_child);
-  if (last_id < 0)
-    return NULL;
-
-  return iupStrReturnInt(last_id);
+  int brother = iupTreeGetBrother(ih, id, "LAST");
+  return brother >= 0 ? iupStrReturnInt(brother) : NULL;
 }
 
 static char* eflTreeGetChildCountAttrib(Ihandle* ih, int id)
@@ -1640,9 +1553,9 @@ static char* eflTreeGetMarkedAttrib(Ihandle* ih, int id)
   item = (Elm_Object_Item*)node_handle;
 
   if (elm_genlist_item_selected_get(item))
-    return "Yes";
+    return "YES";
   else
-    return "No";
+    return "NO";
 }
 
 static int eflTreeSetMarkedAttrib(Ihandle* ih, int id, const char* value)

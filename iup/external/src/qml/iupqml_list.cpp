@@ -192,6 +192,7 @@ struct IupQmlListData
   QQuickItem* view;
   QQuickItem* edit;
   int anchor;
+  int expected_current = -1;
 };
 
 static IupQmlListData* qmlListGetData(Ihandle* ih)
@@ -326,9 +327,13 @@ extern "C" IUP_SDK_API void iupdrvListAppendItem(Ihandle* ih, const char* value)
     return;
 
   int sort = iupAttribGetBoolean(ih, "SORT");
+  int at = sort ? qmlListSortPos(data->model, value) : data->model->texts.size();
+  int expected = data->expected_current;
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
-  data->model->insertText(sort ? qmlListSortPos(data->model, value) : data->model->texts.size(), QString::fromUtf8(value));
+  data->model->insertText(at, QString::fromUtf8(value));
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);
+  if (data->expected_current == expected && at <= expected)
+    data->expected_current++;
 }
 
 extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const char* value)
@@ -338,9 +343,13 @@ extern "C" IUP_SDK_API void iupdrvListInsertItem(Ihandle* ih, int pos, const cha
     return;
 
   int sort = iupAttribGetBoolean(ih, "SORT");
+  int at = sort ? qmlListSortPos(data->model, value) : pos;
+  int expected = data->expected_current;
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
-  data->model->insertText(sort ? qmlListSortPos(data->model, value) : pos, QString::fromUtf8(value));
+  data->model->insertText(at, QString::fromUtf8(value));
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);
+  if (data->expected_current == expected && at <= expected)
+    data->expected_current++;
   iupListUpdateOldValue(ih, pos, 0);
 }
 
@@ -367,8 +376,14 @@ extern "C" IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
       data->view->setProperty("currentIndex", curpos);
     }
   }
+  int expected = data->expected_current;
   data->model->removeAt(pos);
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);
+
+  if (data->expected_current == expected && pos < expected)
+    data->expected_current--;
+  if (data->expected_current >= data->model->count())
+    data->expected_current = data->model->count() - 1;
 
   iupListUpdateOldValue(ih, pos, 1);
 }
@@ -384,6 +399,7 @@ extern "C" IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
   if (ih->data->is_dropdown)
     data->view->setProperty("currentIndex", -1);
   iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", nullptr);
+  data->expected_current = -1;
 }
 
 extern "C" IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* hImage)
@@ -842,7 +858,14 @@ static char* qmlListGetIdValueAttrib(Ihandle* ih, int id)
 {
   IupQmlListData* data = qmlListGetData(ih);
   int pos = iupListGetPosAttrib(ih, id);
-  if (data && pos >= 0 && !ih->data->is_virtual && pos < data->model->texts.size())
+  if (pos < 0)
+    return nullptr;
+  if (ih->data->is_virtual)
+  {
+    char* text = pos < ih->data->item_count ? iupListGetItemValueCb(ih, pos + 1) : nullptr;
+    return text ? iupStrReturnStr(text) : nullptr;
+  }
+  if (data && pos < data->model->texts.size())
     return iupStrReturnStr(data->model->texts.at(pos).toUtf8().constData());
   return nullptr;
 }
@@ -1580,9 +1603,15 @@ static int qmlListMapMethod(Ihandle* ih)
 
     iupqmlConnect(view, "currentIndexChanged()", [ih](void**) {
       IupQmlListData* d = qmlListGetData(ih);
-      if (!d || iupAttribGet(ih, "_IUPQML_IGNORE_CURRENT") || iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
+      if (!d)
         return;
       int pos = d->view->property("currentIndex").toInt();
+      if (iupAttribGet(ih, "_IUPQML_IGNORE_CURRENT") || iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION") || pos == d->expected_current)
+      {
+        d->expected_current = pos;
+        return;
+      }
+      d->expected_current = pos;
       if (pos < 0)
         return;
       if (!ih->data->is_multiple)

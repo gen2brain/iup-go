@@ -2708,6 +2708,16 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
   else
     iupTreeAddToCache(ih, 0, 0, nullptr, static_cast<InodeHandle*>(nodePtr));
 
+  if (ih->data->node_count == 1 && ih->data->mark_mode == ITREE_MARK_SINGLE)
+  {
+    auto* aux = winuiGetAux<IupWinUITreeAux>(ih, IUPWINUI_TREE_AUX);
+    if (aux)
+      aux->ignoreChange = true;
+    treeView.SelectedNodes().Append(newNode);
+    if (aux)
+      aux->ignoreChange = false;
+  }
+
   winuiTreeMarkAutomationNames(ih);
   winuiTreeSyncCurrent(ih, treeView);
 }

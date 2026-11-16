@@ -429,6 +429,8 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableHeaderClick(int id, int col)
   }
 }
 
+static void wasmTableScroll(Ihandle* ih, int lin, int col, int origin);
+
 static void wasmTableUpdateFocus(Ihandle* ih, int lin, int col)
 {
   int id = iupwasmIdOf(ih);
@@ -436,6 +438,8 @@ static void wasmTableUpdateFocus(Ihandle* ih, int lin, int col)
   int focusrect = iupAttribGetBoolean(ih, "FOCUSFEEDBACK");
   if (id && !iupAttribGetBoolean(ih, "VIRTUALMODE"))  /* virtual rows aren't lin-indexed in the DOM */
     iupwasmJsTableFocus(id, lin, col, select, focusrect);
+  else if (id && lin > 0)
+    wasmTableScroll(ih, lin, col, 0);
 }
 
 /* the selected rows are kept as per-row attributes, the bounds keep a virtual table off a full scan */

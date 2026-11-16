@@ -5,6 +5,8 @@ It inherits from [IupGLCanvas](iup_glcanvas.md).
 
 Identical to the IupBackgroundBox element, but with OpenGL enabled.
 
+In GNUstep, the child elements are not visible: the OpenGL surface is an X window that covers the controls drawn in the dialog.
+
 ### Initialization and Usage
 
 The **IupGLCanvasOpen** function must be called after **IupOpen**.

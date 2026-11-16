@@ -78,7 +78,7 @@ static void eflGenlistItemSelectedCb(void* data, Evas_Object* obj, void* event_i
 
   (void)obj;
 
-  if (!item)
+  if (!item || iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
     return;
 
   pos = (int)(uintptr_t)elm_object_item_data_get(item);
@@ -1228,10 +1228,12 @@ static int eflListSetValueAttrib(Ihandle* ih, const char* value)
     pos = 0; iupStrToInt(value, &pos);
     {
       Elm_Object_Item* item = pos > 0 ? elm_genlist_nth_item_get(vlist, pos - 1) : NULL;
+      iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
       if (item)
         elm_genlist_item_selected_set(item, EINA_TRUE);
       else if ((item = elm_genlist_selected_item_get(vlist)) != NULL)
         elm_genlist_item_selected_set(item, EINA_FALSE);
+      iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
     }
     return 0;
   }
@@ -2461,6 +2463,18 @@ IUP_SDK_API void iupdrvListRemoveItem(Ihandle* ih, int pos)
     efl_pack_unpack(list, item);
     efl_del(item);
     iupListUpdateOldValue(ih, pos, 1);
+
+    if (is_dropdown)
+    {
+      int value = iupAttribGetInt(ih, "_IUPEFL_LIST_VALUE");
+      if (value == pos + 1)
+      {
+        iupAttribSet(ih, "_IUPEFL_LIST_VALUE", NULL);
+        eflDropdownSetText(ih, "");
+      }
+      else if (value > pos + 1)
+        iupAttribSetInt(ih, "_IUPEFL_LIST_VALUE", value - 1);
+    }
   }
 }
 
@@ -2495,6 +2509,13 @@ IUP_SDK_API void iupdrvListRemoveAllItems(Ihandle* ih)
   }
 
   efl_pack_clear(list);
+
+  iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
+  if (is_dropdown)
+  {
+    iupAttribSet(ih, "_IUPEFL_LIST_VALUE", NULL);
+    eflDropdownSetText(ih, "");
+  }
 }
 
 static int efl_list_item_space = -1;

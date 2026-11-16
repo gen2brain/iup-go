@@ -155,6 +155,7 @@ public final class IupTextHelper
         int maxChars;
         /* Set during programmatic mutation; the TextWatcher skips dispatch while true. */
         boolean suppressVC;
+        int lastCaret;
         /* FILTER mode: 0=none, 1=LOWERCASE, 2=UPPERCASE, 3=NUMBER. */
         int filterMode;
         boolean overwrite;
@@ -182,8 +183,14 @@ public final class IupTextHelper
         protected void onSelectionChanged(int selStart, int selEnd)
         {
             super.onSelectionChanged(selStart, selEnd);
-            if (suppressVC) return;
-            dispatchCaret(ihandlePtr, unitToChar(getText(), selStart));
+            int pos = unitToChar(getText(), selStart);
+            if (suppressVC || pos == lastCaret)
+            {
+                lastCaret = pos;
+                return;
+            }
+            lastCaret = pos;
+            dispatchCaret(ihandlePtr, pos);
         }
     }
 
@@ -926,9 +933,12 @@ public final class IupTextHelper
     private static void setReadOnly(IupEditText tv, boolean readOnly)
     {
         /* setInputType(TYPE_NULL) would wipe MULTI_LINE; swap the KeyListener instead. */
+        boolean saved = tv.suppressVC;
+        tv.suppressVC = true;
         tv.setTextIsSelectable(true);
         tv.setKeyListener(readOnly ? null : tv.savedKeyListener);
         if (!readOnly) tv.setInputType(tv.editInputType);
+        tv.suppressVC = saved;
     }
 
     /* setInputType installs a KeyListener, so a read-only field only records the type */
@@ -936,7 +946,13 @@ public final class IupTextHelper
     {
         tv.editInputType = type;
         if (tv.getKeyListener() == null) return;
+        boolean saved = tv.suppressVC;
+        tv.suppressVC = true;
+        InputFilter[] filters = tv.getFilters();
+        tv.setFilters(new InputFilter[0]);
         tv.setInputType(type);
+        tv.setFilters(filters);
+        tv.suppressVC = saved;
         tv.savedKeyListener = tv.getKeyListener();
     }
 

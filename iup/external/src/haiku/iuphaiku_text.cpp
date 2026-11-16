@@ -178,7 +178,7 @@ static void haikuTextUndo(Ihandle* ih, BTextView* tv, bool want_redo)
   if ((action_cb || ih->data->mask || ih->data->nc) && !iupStrEqual(before, tv->Text()))
   {
     char* value = iupStrDup(tv->Text());
-    if (!iupEditCheckNewValue(ih, action_cb, value, ih->data->mask, ih->data->nc))
+    if (!iupEditCheckNewValue(ih, action_cb, value, ih->data->mask, ih->data->nc, 1))
     {
       ih->data->disable_callbacks = 1;
       tv->Undo(be_clipboard);
@@ -947,6 +947,7 @@ public:
   void SetButtonsEnabled(bool e) { if (fUp) fUp->SetEnabled(e); if (fDown) fDown->SetEnabled(e); }
   int32 Value() const { return fValue; }
   void SetSpinValue(int32 v) { fValue = v; }
+  int32 Clamp(int32 v) const { return v < fMin ? fMin : (v > fMax ? fMax : v); }
 
   bool IsSpinAuto() const
   {
@@ -2176,7 +2177,10 @@ static int haikuTextMapMethod(Ihandle* ih)
   }
 
   if (BTextView* editor = haikuTextGetEditor(ih))
+  {
     editor->AddFilter(new IupHaikuTextMouseFilter(ih));
+    haikuTextRecordCaret(ih, editor);
+  }
   IupSetCallback(ih, "_IUP_XY2POS_CB", reinterpret_cast<Icallback>(haikuTextConvertXYToPos));
 
   return IUP_NOERROR;
@@ -2356,13 +2360,14 @@ static int haikuTextSetSpinValueAttrib(Ihandle* ih, const char* value)
   if (!sw || !value) return 1;
   int n = 0;
   if (!iupStrToInt(value, &n)) return 1;
+  n = sw->Clamp(n);
   sw->SetSpinValue(n);
   if (!sw->IsSpinAuto()) return 1;  /* SPINAUTO=NO: caller manages text via SPIN_CB */
   IupHaikuTextControl* tc = sw->TextControl();
   if (!tc) return 1;
   LooperLockGuard guard(tc->Looper());
   tc->MuteBegin();
-  tc->SetText(value);
+  tc->SetText(iupStrReturnInt(n));
   tc->MuteEnd();
   return 1;
 }

@@ -324,6 +324,8 @@ static void qtTableSetFullIcon(QTableWidget* table, QTableWidgetItem* item, int 
     table->setRowHeight(row, height);
 }
 
+static void qtTableApplyPending(Ihandle* ih);
+
 class IupQtTableWidget : public QTableWidget
 {
 private:
@@ -448,6 +450,7 @@ protected:
     QTableWidget::showEvent(event);
 
     updateVirtualCells();
+    schedulePending();
   }
 
   void focusInEvent(QFocusEvent* event) override
@@ -476,6 +479,16 @@ protected:
   {
     QTableWidget::resizeEvent(event);
     updateVirtualCells();
+    schedulePending();
+  }
+
+  void schedulePending()
+  {
+    if (iupAttribGet(ih, "_IUPQT_TABLE_SHOW") || iupAttribGet(ih, "_IUPQT_TABLE_ORIGIN"))
+    {
+      Ihandle* table_ih = ih;
+      QTimer::singleShot(0, this, [table_ih]() { qtTableApplyPending(table_ih); });
+    }
   }
 
   QColor rowFillerColor(int row)  /* 0-based */
@@ -1908,7 +1921,7 @@ IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
   return result;
 }
 
-IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+static void qtTableApplyShow(Ihandle* ih, int lin, int col)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1952,7 +1965,7 @@ static void qtTableScrollToSection(QAbstractItemView::ScrollMode mode, QHeaderVi
     bar->setValue(header->sectionPosition(section));
 }
 
-IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+static void qtTableApplyOrigin(Ihandle* ih, int lin, int col)
 {
   QTableWidget* table = qtTableGetWidget(ih);
   if (!table)
@@ -1962,6 +1975,69 @@ IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
     qtTableScrollToSection(table->verticalScrollMode(), table->verticalHeader(), table->verticalScrollBar(), lin - 1);
   if (col > 0 && col <= table->columnCount())
     qtTableScrollToSection(table->horizontalScrollMode(), table->horizontalHeader(), table->horizontalScrollBar(), col - 1);
+}
+
+static int qtTableLaidOut(Ihandle* ih)
+{
+  QTableWidget* table = qtTableGetWidget(ih);
+  return table && table->isVisible() && table->viewport()->height() > 0;
+}
+
+static void qtTableDropPending(Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPQT_TABLE_SHOW", nullptr);
+  iupAttribSet(ih, "_IUPQT_TABLE_ORIGIN", nullptr);
+  iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", nullptr);
+}
+
+static void qtTableMarkPending(Ihandle* ih)
+{
+  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+    iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
+}
+
+IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+{
+  if (!qtTableLaidOut(ih))
+  {
+    iupAttribSetStrf(ih, "_IUPQT_TABLE_SHOW", "%d:%d", lin, col);
+    qtTableMarkPending(ih);
+    return;
+  }
+  qtTableDropPending(ih);
+  qtTableApplyShow(ih, lin, col);
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  if (!qtTableLaidOut(ih))
+  {
+    int old_lin = 0, old_col = 0;
+    iupStrToIntInt(iupAttribGet(ih, "_IUPQT_TABLE_ORIGIN"), &old_lin, &old_col, ':');
+    iupAttribSetStrf(ih, "_IUPQT_TABLE_ORIGIN", "%d:%d", lin ? lin : old_lin, col ? col : old_col);
+    qtTableMarkPending(ih);
+    return;
+  }
+  qtTableDropPending(ih);
+  qtTableApplyOrigin(ih, lin, col);
+}
+
+static void qtTableApplyPending(Ihandle* ih)
+{
+  int lin, col;
+
+  if (!iupObjectCheck(ih) || !qtTableLaidOut(ih))
+    return;
+
+  if (iupStrToIntInt(iupAttribGet(ih, "_IUPQT_TABLE_SHOW"), &lin, &col, ':') == 2)
+    qtTableApplyShow(ih, lin, col);
+  if (iupStrToIntInt(iupAttribGet(ih, "_IUPQT_TABLE_ORIGIN"), &lin, &col, ':') == 2)
+    qtTableApplyOrigin(ih, lin, col);
+  iupAttribSet(ih, "_IUPQT_TABLE_SHOW", nullptr);
+  iupAttribSet(ih, "_IUPQT_TABLE_ORIGIN", nullptr);
+
+  if (iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+    iupTableScrollDone(ih);
 }
 
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)

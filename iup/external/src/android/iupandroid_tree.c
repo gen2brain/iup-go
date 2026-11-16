@@ -202,7 +202,9 @@ static int androidTreeCopyMoveCommon(Ihandle* ih, int id, const char* value, int
   }
   else
   {
-    iupTreeCopyMoveCache(ih, id, new_id, count, 0);
+    ih->data->node_count += count;
+    iupTreeCopyMoveCache(ih, id, new_id > id ? new_id + count : new_id, count, 0);
+    ih->data->node_count -= count;
   }
   return 0;
 }

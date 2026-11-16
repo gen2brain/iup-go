@@ -1549,7 +1549,11 @@ IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
 
   model = (IupGtkVirtualListModel*)iupAttribGet(ih, "_IUPGTK_VIRTUAL_MODEL");
   if (model)
+  {
+    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
     iup_gtk_virtual_list_model_notify_count_changed(model, ih, count);
+    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
+  }
 }
 
 /*********************************************************************************/

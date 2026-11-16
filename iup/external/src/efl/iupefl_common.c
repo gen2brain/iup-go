@@ -1470,7 +1470,6 @@ IUP_SDK_API void iupdrvSetAccessibleDescription(Ihandle* ih, const char* descrip
 static void eflGetWidgetScreenPos(Ihandle* ih, int* widget_x, int* widget_y)
 {
   Eo* widget = iupeflGetWidget(ih);
-  Eo* win;
 
   *widget_x = 0;
   *widget_y = 0;
@@ -1484,20 +1483,15 @@ static void eflGetWidgetScreenPos(Ihandle* ih, int* widget_x, int* widget_y)
     *widget_y = geometry.y;
   }
 
-  win = iupeflGetMainWindow();
-  if (win)
   {
-    Evas* evas = evas_object_evas_get(win);
-    if (evas)
+    Evas* evas = evas_object_evas_get(widget);
+    Ecore_Evas* ee = evas ? ecore_evas_ecore_evas_get(evas) : NULL;
+    if (ee)
     {
-      Ecore_Evas* ee = ecore_evas_ecore_evas_get(evas);
-      if (ee)
-      {
-        int screen_x = 0, screen_y = 0;
-        ecore_evas_geometry_get(ee, &screen_x, &screen_y, NULL, NULL);
-        *widget_x += screen_x;
-        *widget_y += screen_y;
-      }
+      int screen_x = 0, screen_y = 0;
+      ecore_evas_geometry_get(ee, &screen_x, &screen_y, NULL, NULL);
+      *widget_x += screen_x;
+      *widget_y += screen_y;
     }
   }
 }

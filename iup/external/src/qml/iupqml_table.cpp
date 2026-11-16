@@ -546,6 +546,7 @@ struct IupQmlTableData
   QList<int> move_new;
 };
 
+static void qmlTableApplyPending(Ihandle* ih);
 static IupQmlTableData* qmlTableGetData(Ihandle* ih)
 {
   return reinterpret_cast<IupQmlTableData*>(iupAttribGet(ih, "_IUPQML_TABLE"));
@@ -1468,6 +1469,11 @@ static int qmlTableMapMethod(Ihandle* ih)
   ih->handle = reinterpret_cast<InativeHandle*>(root);
   iupAttribSet(ih, "_IUPQML_TABLE", reinterpret_cast<char*>(data));
 
+  QObject::connect(view, &QQuickItem::heightChanged, view, [ih, view]() {
+    if (view->height() > 0 && (iupAttribGet(ih, "_IUPQML_TABLE_SHOW") || iupAttribGet(ih, "_IUPQML_TABLE_ORIGIN")))
+      QTimer::singleShot(0, view, [ih]() { qmlTableApplyPending(ih); });
+  });
+
   view->setProperty("model", QVariant::fromValue<QObject*>(data->model));
   view->setProperty("selectionModel", QVariant::fromValue<QItemSelectionModel*>(data->selection));
 
@@ -1995,6 +2001,24 @@ IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
   return result;
 }
 
+static int qmlTableLaidOut(IupQmlTableData* data)
+{
+  return data && data->view && data->view->height() > 0;
+}
+
+static void qmlTableDropPending(Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPQML_TABLE_SHOW", nullptr);
+  iupAttribSet(ih, "_IUPQML_TABLE_ORIGIN", nullptr);
+  iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", nullptr);
+}
+
+static void qmlTableMarkPending(Ihandle* ih)
+{
+  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+    iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
+}
+
 IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
 {
   IupQmlTableData* data = qmlTableGetData(ih);
@@ -2004,6 +2028,14 @@ IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
   if (lin < 1 || lin > data->model->num_lin || col < 1 || col > data->model->num_col)
     return;
 
+  if (!qmlTableLaidOut(data))
+  {
+    iupAttribSetStrf(ih, "_IUPQML_TABLE_SHOW", "%d:%d", lin, col);
+    qmlTableMarkPending(ih);
+    return;
+  }
+
+  qmlTableDropPending(ih);
   iupqmlCallMethod(data->root, "iupScrollTo", QVariant(lin - 1), QVariant(col - 1));
 }
 
@@ -2028,7 +2060,39 @@ IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
   if (!data)
     return;
 
+  if (!qmlTableLaidOut(data))
+  {
+    int old_lin = 0, old_col = 0;
+    iupStrToIntInt(iupAttribGet(ih, "_IUPQML_TABLE_ORIGIN"), &old_lin, &old_col, ':');
+    iupAttribSetStrf(ih, "_IUPQML_TABLE_ORIGIN", "%d:%d", lin ? lin : old_lin, col ? col : old_col);
+    qmlTableMarkPending(ih);
+    return;
+  }
+
+  qmlTableDropPending(ih);
   iupqmlCallMethod(data->root, "iupSetOrigin", QVariant(lin > 0 ? lin - 1 : -1), QVariant(col > 0 ? col - 1 : -1));
+}
+
+static void qmlTableApplyPending(Ihandle* ih)
+{
+  IupQmlTableData* data;
+  int lin, col;
+
+  if (!iupObjectCheck(ih))
+    return;
+  data = qmlTableGetData(ih);
+  if (!qmlTableLaidOut(data))
+    return;
+
+  if (iupStrToIntInt(iupAttribGet(ih, "_IUPQML_TABLE_SHOW"), &lin, &col, ':') == 2)
+    iupqmlCallMethod(data->root, "iupScrollTo", QVariant(lin - 1), QVariant(col - 1));
+  if (iupStrToIntInt(iupAttribGet(ih, "_IUPQML_TABLE_ORIGIN"), &lin, &col, ':') == 2)
+    iupqmlCallMethod(data->root, "iupSetOrigin", QVariant(lin > 0 ? lin - 1 : -1), QVariant(col > 0 ? col - 1 : -1));
+  iupAttribSet(ih, "_IUPQML_TABLE_SHOW", nullptr);
+  iupAttribSet(ih, "_IUPQML_TABLE_ORIGIN", nullptr);
+
+  if (iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+    iupTableScrollDone(ih);
 }
 
 IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)

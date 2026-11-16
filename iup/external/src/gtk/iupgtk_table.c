@@ -2084,6 +2084,8 @@ static void gtkTableRebuildColumns(Ihandle* ih, int old_num_col, int add_pos, in
     free(selected);
 }
 
+static void gtkTableAdjustmentChanged(GtkAdjustment* adjustment, Ihandle* ih);
+
 static void gtkTableAdjustmentValueChanged(GtkAdjustment* adjustment, Ihandle* ih)
 {
   (void)adjustment;
@@ -2153,6 +2155,8 @@ static int gtkTableMapMethod(Ihandle* ih)
   gtk_container_add(GTK_CONTAINER(gtk_data->scrolled_win), gtk_data->tree_view);
   g_signal_connect(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), "value-changed", G_CALLBACK(gtkTableAdjustmentValueChanged), ih);
   g_signal_connect(gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), "value-changed", G_CALLBACK(gtkTableAdjustmentValueChanged), ih);
+  g_signal_connect(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), "changed", G_CALLBACK(gtkTableAdjustmentChanged), ih);
+  g_signal_connect(gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), "changed", G_CALLBACK(gtkTableAdjustmentChanged), ih);
 
   ih->handle = gtk_data->tree_view;
   iupAttribSet(ih, "_IUP_EXTRAPARENT", (char*)gtk_data->scrolled_win);
@@ -2894,7 +2898,7 @@ IUP_SDK_API int* iupdrvTableGetSelectedLins(Ihandle* ih, int* count)
 /* Driver Functions - Scrolling                                             */
 /* ========================================================================= */
 
-IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+static void gtkTableApplyShow(Ihandle* ih, int lin, int col)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
   GtkTreeView* tree_view = GTK_TREE_VIEW(gtk_data->tree_view);
@@ -2958,7 +2962,7 @@ IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
   gtk_tree_path_free(start);
 }
 
-IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+static void gtkTableApplyOrigin(Ihandle* ih, int lin, int col)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
   GtkTreeView* tree_view = GTK_TREE_VIEW(gtk_data->tree_view);
@@ -2982,6 +2986,86 @@ IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
     gtk_adjustment_set_value(gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), tx);
   if (set_lin)
     gtk_adjustment_set_value(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win)), ty);
+}
+
+static int gtkTableLaidOut(Ihandle* ih)
+{
+  IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
+  return gtk_adjustment_get_page_size(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(gtk_data->scrolled_win))) > 0;
+}
+
+static void gtkTableDropPending(Ihandle* ih)
+{
+  iupAttribSet(ih, "_IUPGTK_TABLE_SHOW", NULL);
+  iupAttribSet(ih, "_IUPGTK_TABLE_ORIGIN", NULL);
+  iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", NULL);
+}
+
+static void gtkTableMarkPending(Ihandle* ih)
+{
+  if (iupAttribGet(ih, "_IUPTABLE_IGNORE_SCROLL"))
+    iupAttribSet(ih, "_IUPTABLE_SCROLL_PENDING", "1");
+}
+
+IUP_SDK_API void iupdrvTableScrollToCell(Ihandle* ih, int lin, int col)
+{
+  if (!gtkTableLaidOut(ih))
+  {
+    iupAttribSetStrf(ih, "_IUPGTK_TABLE_SHOW", "%d:%d", lin, col);
+    gtkTableMarkPending(ih);
+    return;
+  }
+  gtkTableDropPending(ih);
+  gtkTableApplyShow(ih, lin, col);
+}
+
+IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
+{
+  if (!gtkTableLaidOut(ih))
+  {
+    int old_lin = 0, old_col = 0;
+    iupStrToIntInt(iupAttribGet(ih, "_IUPGTK_TABLE_ORIGIN"), &old_lin, &old_col, ':');
+    iupAttribSetStrf(ih, "_IUPGTK_TABLE_ORIGIN", "%d:%d", lin ? lin : old_lin, col ? col : old_col);
+    gtkTableMarkPending(ih);
+    return;
+  }
+  gtkTableDropPending(ih);
+  gtkTableApplyOrigin(ih, lin, col);
+}
+
+static gboolean gtkTableApplyPending(gpointer data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  int lin, col;
+
+  if (!iupObjectCheck(ih))
+    return G_SOURCE_REMOVE;
+
+  iupAttribSet(ih, "_IUPGTK_TABLE_PENDING_IDLE", NULL);
+
+  if (iupStrToIntInt(iupAttribGet(ih, "_IUPGTK_TABLE_SHOW"), &lin, &col, ':') == 2)
+    gtkTableApplyShow(ih, lin, col);
+  if (iupStrToIntInt(iupAttribGet(ih, "_IUPGTK_TABLE_ORIGIN"), &lin, &col, ':') == 2)
+    gtkTableApplyOrigin(ih, lin, col);
+  iupAttribSet(ih, "_IUPGTK_TABLE_SHOW", NULL);
+  iupAttribSet(ih, "_IUPGTK_TABLE_ORIGIN", NULL);
+
+  if (iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
+    iupTableScrollDone(ih);
+  return G_SOURCE_REMOVE;
+}
+
+static void gtkTableAdjustmentChanged(GtkAdjustment* adjustment, Ihandle* ih)
+{
+  (void)adjustment;
+
+  if (!gtkTableLaidOut(ih) || iupAttribGet(ih, "_IUPGTK_TABLE_PENDING_IDLE") ||
+      (!iupAttribGet(ih, "_IUPGTK_TABLE_SHOW") && !iupAttribGet(ih, "_IUPGTK_TABLE_ORIGIN")))
+    return;
+
+  /* low priority runs after the tree view has validated its rows, so the scroll range is final */
+  iupAttribSet(ih, "_IUPGTK_TABLE_PENDING_IDLE", "1");
+  g_idle_add_full(G_PRIORITY_LOW, gtkTableApplyPending, ih, NULL);
 }
 
 /* ========================================================================= */

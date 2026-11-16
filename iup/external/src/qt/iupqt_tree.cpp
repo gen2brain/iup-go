@@ -880,11 +880,11 @@ static int qtTreeSetMoveNodeAttrib(Ihandle* ih, int id_src, const char* name_dst
     }
 
     int count = 1 + iupdrvTreeTotalChildCount(ih, reinterpret_cast<InodeHandle*>(src));
-    if (id_new > id_src)
-      id_new -= count;
 
+    ih->data->node_count += count;
     iupTreeCopyMoveCache(ih, id_src, id_new, count, 0);
-    qtTreeRebuildNodeCache(ih, id_new, src);
+    ih->data->node_count -= count;
+    qtTreeRebuildEntireCache(ih);
   }
 
   return 1;
@@ -1247,7 +1247,7 @@ static int qtTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
 static char* qtTreeGetStateAttrib(Ihandle* ih, int id)
 {
   QTreeWidgetItem* item = qtTreeFindNode(ih, id);
-  if (!item)
+  if (!item || iupStrEqual(IupGetAttributeId(ih, "KIND", id), "LEAF"))
     return nullptr;
 
   if (item->isExpanded())
@@ -1302,53 +1302,26 @@ static char* qtTreeGetParentAttrib(Ihandle* ih, int id)
 
 static char* qtTreeGetNextAttrib(Ihandle* ih, int id)
 {
-  QTreeWidgetItem* item = qtTreeFindNode(ih, id);
-  if (!item)
-    return nullptr;
-
-  QTreeWidgetItem* next = qtTreeGetNextItem(ih, item, 0);
-  if (!next)
-    return nullptr;
-
-  return iupStrReturnInt(qtTreeFindNodeId(ih, next));
+  int brother = iupTreeGetBrother(ih, id, "NEXT");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
 }
 
 static char* qtTreeGetPreviousAttrib(Ihandle* ih, int id)
 {
-  QTreeWidgetItem* item = qtTreeFindNode(ih, id);
-  if (!item)
-    return nullptr;
-
-  QTreeWidgetItem* prev = qtTreeGetPreviousItem(ih, item);
-  if (!prev)
-    return nullptr;
-
-  return iupStrReturnInt(qtTreeFindNodeId(ih, prev));
+  int brother = iupTreeGetBrother(ih, id, "PREVIOUS");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
 }
 
 static char* qtTreeGetFirstAttrib(Ihandle* ih, int id)
 {
-  QTreeWidgetItem* item = qtTreeFindNode(ih, id);
-  if (!item || item->childCount() == 0)
-    return nullptr;
-
-  return iupStrReturnInt(qtTreeFindNodeId(ih, item->child(0)));
+  int brother = iupTreeGetBrother(ih, id, "FIRST");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
 }
 
 static char* qtTreeGetLastAttrib(Ihandle* ih, int id)
 {
-  QTreeWidgetItem* item = qtTreeFindNode(ih, id);
-  if (!item)
-    return nullptr;
-
-  QTreeWidgetItem* last = item;
-  while (last->childCount() > 0)
-    last = last->child(last->childCount() - 1);
-
-  if (last == item)
-    return nullptr;
-
-  return iupStrReturnInt(qtTreeFindNodeId(ih, last));
+  int brother = iupTreeGetBrother(ih, id, "LAST");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
 }
 
 static char* qtTreeGetChildCountAttrib(Ihandle* ih, int id)
@@ -1444,8 +1417,10 @@ static char* qtTreeGetValueAttrib(Ihandle* ih)
   auto* tree = reinterpret_cast<IupQtTree*>(ih->handle);
   QTreeWidgetItem* item = tree->currentItem();
 
+  if (ih->data->node_count == 0)
+    return const_cast<char*>("-1");
   if (!item)
-    return nullptr;
+    return const_cast<char*>("0");
 
   int id = qtTreeFindNodeId(ih, item);
   return iupStrReturnInt(id);
@@ -1814,7 +1789,9 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     }
 
     tree->clear();
-    iupTreeDelFromCache(ih, 0, ih->data->node_count);
+    int count = ih->data->node_count;
+    ih->data->node_count = 0;
+    iupTreeDelFromCache(ih, 0, count);
 
     iupAttribSet(ih, "_IUPTREE_IGNORE_SELECTION_CB", nullptr);
     return 0;
@@ -1858,6 +1835,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     }
 
     delete item;
+    ih->data->node_count -= count;
     iupTreeDelFromCache(ih, id, count);
 
     qtTreeRebuildEntireCache(ih);
@@ -1898,6 +1876,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       qtTreeClearMarkStartIfNeeded(tree, child);
       item->removeChild(child);
       delete child;
+      ih->data->node_count -= count;
       iupTreeDelFromCache(ih, child_id, count);
     }
 
@@ -1974,6 +1953,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
       }
 
       delete item;
+      ih->data->node_count -= count;
       iupTreeDelFromCache(ih, item_id, count);
     }
 
@@ -2016,6 +1996,7 @@ static int qtTreeSetDelNodeAttrib(Ihandle* ih, int id, const char* value)
     }
 
     delete item;
+    ih->data->node_count -= count;
     iupTreeDelFromCache(ih, id, count);
 
     qtTreeRebuildEntireCache(ih);

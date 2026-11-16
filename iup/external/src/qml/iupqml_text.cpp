@@ -441,11 +441,11 @@ static void qmlTextArbitrateHistory(Ihandle* ih, int redo)
   auto cb = reinterpret_cast<IFnis>(IupGetCallback(ih, "ACTION"));
   QQuickItem* edit = qmlTextGetEdit(ih);
 
-  if (!edit || (!cb && !ih->data->mask && !ih->data->nc))
+  if (!edit || (!cb && !ih->data->mask))
     return;
 
   QString value = qmlTextGetText(ih);
-  if (iupEditCheckNewValue(ih, cb, value.toUtf8().constData(), ih->data->mask, ih->data->nc))
+  if (iupEditCheckNewValue(ih, cb, value.toUtf8().constData(), ih->data->mask, 0, 1))
     return;
 
   ih->data->disable_callbacks = 1;
@@ -936,10 +936,6 @@ static int qmlTextSetNCAttrib(Ihandle* ih, const char* value)
   if (!iupStrToInt(value, &ih->data->nc))
     ih->data->nc = 0;
 
-  QQuickItem* edit = qmlTextGetEdit(ih);
-  if (edit && !ih->data->is_multiline)
-    edit->setProperty("maximumLength", ih->data->nc > 0 ? ih->data->nc : 32767);
-
   return 0;
 }
 
@@ -1099,6 +1095,9 @@ static char* qmlTextGetCountAttrib(Ihandle* ih)
 
 static char* qmlTextGetLineCountAttrib(Ihandle* ih)
 {
+  if (!ih->data->is_multiline)
+    return iupStrReturnInt(1);
+
   QTextDocument* doc = qmlTextGetDocument(ih);
   if (doc)
     return iupStrReturnInt(doc->blockCount());

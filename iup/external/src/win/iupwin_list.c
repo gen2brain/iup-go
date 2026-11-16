@@ -521,6 +521,7 @@ static int winListSetValueAttrib(Ihandle* ih, const char* value)
   {
     int pos;
     int old_pos = (int)SendMessage(ih->handle, LVM_GETNEXTITEM, (WPARAM)-1, LVNI_SELECTED);
+    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", "1");
     if (old_pos >= 0)
       ListView_SetItemState(ih->handle, old_pos, 0, LVIS_SELECTED | LVIS_FOCUSED);
 
@@ -532,6 +533,7 @@ static int winListSetValueAttrib(Ihandle* ih, const char* value)
     }
     else
       iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
+    iupAttribSet(ih, "_IUPLIST_IGNORE_ACTION", NULL);
   }
   else
   {
@@ -1951,7 +1953,8 @@ static int winListVirtualNotifyCallback(Ihandle* ih, void* msg_info, int* result
 
       if ((pnmv->uChanged & LVIF_STATE) &&
           (pnmv->uNewState & LVIS_SELECTED) &&
-          !(pnmv->uOldState & LVIS_SELECTED))
+          !(pnmv->uOldState & LVIS_SELECTED) &&
+          !iupAttribGet(ih, "_IUPLIST_IGNORE_ACTION"))
       {
         IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
         if (cb)

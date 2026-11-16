@@ -1168,55 +1168,26 @@ static char* qmlTreeGetParentAttrib(Ihandle* ih, int id)
 
 static char* qmlTreeGetNextAttrib(Ihandle* ih, int id)
 {
-  IupQmlTreeData* data = qmlTreeGetData(ih);
-  IupQmlTreeNode* node = qmlTreeFindNode(ih, id);
-  if (!data || !node)
-    return nullptr;
-
-  IupQmlTreeNode* next = qmlTreeNextNode(data, node);
-  if (!next)
-    return nullptr;
-
-  return iupStrReturnInt(qmlTreeFindNodeId(ih, next));
+  int brother = iupTreeGetBrother(ih, id, "NEXT");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
 }
 
 static char* qmlTreeGetPreviousAttrib(Ihandle* ih, int id)
 {
-  IupQmlTreeData* data = qmlTreeGetData(ih);
-  IupQmlTreeNode* node = qmlTreeFindNode(ih, id);
-  if (!data || !node)
-    return nullptr;
-
-  IupQmlTreeNode* prev = qmlTreePreviousNode(data, node);
-  if (!prev)
-    return nullptr;
-
-  return iupStrReturnInt(qmlTreeFindNodeId(ih, prev));
+  int brother = iupTreeGetBrother(ih, id, "PREVIOUS");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
 }
 
 static char* qmlTreeGetFirstAttrib(Ihandle* ih, int id)
 {
-  IupQmlTreeNode* node = qmlTreeFindNode(ih, id);
-  if (!node || node->children.isEmpty())
-    return nullptr;
-
-  return iupStrReturnInt(qmlTreeFindNodeId(ih, node->children.first()));
+  int brother = iupTreeGetBrother(ih, id, "FIRST");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
 }
 
 static char* qmlTreeGetLastAttrib(Ihandle* ih, int id)
 {
-  IupQmlTreeNode* node = qmlTreeFindNode(ih, id);
-  if (!node)
-    return nullptr;
-
-  IupQmlTreeNode* last = node;
-  while (!last->children.isEmpty())
-    last = last->children.last();
-
-  if (last == node)
-    return nullptr;
-
-  return iupStrReturnInt(qmlTreeFindNodeId(ih, last));
+  int brother = iupTreeGetBrother(ih, id, "LAST");
+  return brother >= 0 ? iupStrReturnInt(brother) : nullptr;
 }
 
 static char* qmlTreeGetChildCountAttrib(Ihandle* ih, int id)

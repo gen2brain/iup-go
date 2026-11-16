@@ -5,7 +5,7 @@ It inherits from [IupCanvas](../elem/iup_canvas.md).
 
 **Windows:** The implementation uses WGL (Win32 OpenGL) for all backends (Win32, WinUI, GTK3, GTK4, Qt, FLTK).
 
-**Unix:** GTK3, GTK4, Qt, QML, EFL, and FLTK use EGL with native window integration. Both X11 and Wayland display servers are supported. Motif and GTK2 use GLX (X11 OpenGL extension).
+**Unix:** GTK3, GTK4, Qt, QML, EFL, and FLTK use EGL with native window integration. Both X11 and Wayland display servers are supported. Motif and GTK2 use GLX (X11 OpenGL extension). GNUstep uses NSOpenGLContext, which GNUstep implements with GLX.
 
 **macOS:** The implementation uses NSOpenGLContext (Cocoa OpenGL) for all backends (Cocoa, GTK3, Qt, FLTK).
 
@@ -21,7 +21,7 @@ The program must be linked to the GL library (iupgl) and the OpenGL library.
 
 To link with the OpenGL libraries in Windows, add: opengl32.lib.
 In Unix with EGL (GTK3, GTK4, Qt, QML, EFL, FLTK), add: -lEGL -lGL.
-In Unix with GLX (Motif, GTK2), add: -lGL.
+In Unix with GLX (Motif, GTK2, GNUstep), add: -lGL.
 In macOS, add: -framework OpenGL.
 In Haiku, add: -lGL.
 In WebAssembly, no GL library is linked.
@@ -74,6 +74,7 @@ In Windows/GLX, used only when ARBCONTEXT=YES. In EGL and macOS, can be used ind
 
 **CONTEXTVERSION** (non-inheritable): Context version number in the format "major.minor".
 In Windows/GLX, used only when ARBCONTEXT=YES. In EGL and macOS, can be used independently.
+In GNUstep, ARBCONTEXT, CONTEXTFLAGS, CONTEXTPROFILE and CONTEXTVERSION are ignored; the context is the default GLX context, a compatibility profile context.
 
 **DEPTH_SIZE**: Indicates the number of bits for representing the *z* coordinate in the z-buffer.
 Value 0 means the z-buffer is not necessary.
@@ -106,8 +107,8 @@ That canvas must be mapped before this canvas.
 
 **VISUAL** (read-only): Returns the platform visual handle.
 
-**VSYNC** [macOS and Haiku Only]: Enable or disable vertical synchronization.
-Can be "YES" or "NO". Default: "YES". In macOS, this is creation-only; in Haiku, it may be changed at runtime and affects subsequent **IupGLSwapBuffers** calls.
+**VSYNC** [macOS, GNUstep and Haiku Only]: Enable or disable vertical synchronization.
+Can be "YES" or "NO". Default: "YES". In macOS and GNUstep, this is creation-only; in Haiku, it may be changed at runtime and affects subsequent **IupGLSwapBuffers** calls.
 
 ### Callbacks
 
