@@ -991,8 +991,9 @@ static int cocoaTouchTreeSetFontAttrib(Ihandle* ih, const char* value)
 static char* cocoaTouchTreeGetValueAttrib(Ihandle* ih)
 {
 	IupCocoaTouchTreeView* view = cocoaTouchTreeGetView(ih);
+	if (ih->data->node_count == 0) return "-1";
 	if (!view) return iupStrReturnInt(0);
-	return iupStrReturnInt(view.focusNodeId < 0 ? 0 : view.focusNodeId);
+	return iupStrReturnInt(view.focusNodeId < 0 || view.focusNodeId >= ih->data->node_count ? 0 : view.focusNodeId);
 }
 
 static int cocoaTouchTreeSetValueAttrib(Ihandle* ih, const char* value)
