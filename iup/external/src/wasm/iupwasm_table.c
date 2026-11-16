@@ -135,8 +135,8 @@ EM_JS(void, iupwasmJsTableVStripe, (int id, int rowIdx, int lin), {
   globalThis.__iupApply({ op: 'tablevstripe', id: id, rowIdx: rowIdx, lin: lin });
 })
 
-EM_JS(void, iupwasmJsTableFocus, (int id, int lin, int col, int select, int focusrect), {
-  globalThis.__iupApply({ op: 'tablefocus', id: id, lin: lin, col: col, select: select, focusrect: focusrect });
+EM_JS(void, iupwasmJsTableFocus, (int id, int lin, int col, int select, int focusrect, int show), {
+  globalThis.__iupApply({ op: 'tablefocus', id: id, lin: lin, col: col, select: select, focusrect: focusrect, show: show });
 })
 
 EM_JS(void, iupwasmJsTableSelect, (int id, int lin, int select), {
@@ -272,6 +272,14 @@ static void wasmTableVirtualRender(Ihandle* ih)
       iupwasmJsTableVCell(id, i, c - 1, lin, v ? v : "", imgId, bgcss, fgcss, fontcss);
     }
     iupwasmJsTableVStripe(id, i, lin);
+    iupwasmJsTableSelect(id, lin, iupAttribGetId(ih, "_IUPWASM_TABLESEL", lin) != NULL);
+  }
+
+  {
+    int flin = iupAttribGetInt(ih, "_IUPWASM_FOCUSLIN");
+    int fcol = iupAttribGetInt(ih, "_IUPWASM_FOCUSCOL");
+    int select = !iupStrEqualNoCase(IupGetAttribute(ih, "SELECTIONMODE"), "NONE") && !iupTableCellsMode(ih);
+    iupwasmJsTableFocus(id, flin, fcol, select, iupAttribGetBoolean(ih, "FOCUSFEEDBACK"), 0);
   }
 }
 
@@ -436,10 +444,16 @@ static void wasmTableUpdateFocus(Ihandle* ih, int lin, int col)
   int id = iupwasmIdOf(ih);
   int select = !iupStrEqualNoCase(IupGetAttribute(ih, "SELECTIONMODE"), "NONE") && !iupTableCellsMode(ih);
   int focusrect = iupAttribGetBoolean(ih, "FOCUSFEEDBACK");
-  if (id && !iupAttribGetBoolean(ih, "VIRTUALMODE"))  /* virtual rows aren't lin-indexed in the DOM */
-    iupwasmJsTableFocus(id, lin, col, select, focusrect);
-  else if (id && lin > 0)
-    wasmTableScroll(ih, lin, col, 0);
+  if (!id)
+    return;
+  if (!iupAttribGetBoolean(ih, "VIRTUALMODE"))
+    iupwasmJsTableFocus(id, lin, col, select, focusrect, 1);
+  else
+  {
+    iupwasmJsTableFocus(id, lin, col, select, focusrect, 0);
+    if (lin > 0)
+      wasmTableScroll(ih, lin, col, 0);
+  }
 }
 
 /* the selected rows are kept as per-row attributes, the bounds keep a virtual table off a full scan */
@@ -463,7 +477,7 @@ static void wasmTableSelectRow(Ihandle* ih, int lin, int select)
       iupAttribSetInt(ih, "_IUPWASM_TABLESELLAST", lin);
   }
 
-  if (id && !iupAttribGetBoolean(ih, "VIRTUALMODE"))
+  if (id)
     iupwasmJsTableSelect(id, lin, select);
 }
 

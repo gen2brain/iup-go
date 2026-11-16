@@ -188,7 +188,7 @@ static TextBlock winuiTableGetCellTextBlock(Grid rowGrid, int col)
   if (tb)
     return tb;
 
-  auto panel = child.try_as<StackPanel>();
+  auto panel = child.try_as<Panel>();
   if (panel)
   {
     for (uint32_t i = 0; i < panel.Children().Size(); i++)
@@ -207,7 +207,7 @@ static Controls::Image winuiTableGetCellImage(Grid rowGrid, int col)
   if (!border)
     return nullptr;
 
-  auto panel = border.Child().try_as<StackPanel>();
+  auto panel = border.Child().try_as<Panel>();
   if (panel)
   {
     for (uint32_t i = 0; i < panel.Children().Size(); i++)
@@ -439,17 +439,21 @@ static Grid winuiTableCreateRowGrid(Ihandle* ih, int num_col, bool show_grid)
 
     if (ih->data->show_image)
     {
-      StackPanel panel;
-      panel.Orientation(Orientation::Horizontal);
-      panel.Spacing(4);
+      Grid panel;
+      ColumnDefinition imgCol;
+      imgCol.Width(GridLength{0, GridUnitType::Auto});
+      panel.ColumnDefinitions().Append(imgCol);
+      panel.ColumnDefinitions().Append(ColumnDefinition{});
 
       Controls::Image img;
       img.Stretch(Stretch::Uniform);
       img.VerticalAlignment(VerticalAlignment::Center);
+      img.Margin(ThicknessHelper::FromLengths(0, 0, 4, 0));
       img.Visibility(Visibility::Collapsed);
       panel.Children().Append(img);
 
       tb.VerticalAlignment(VerticalAlignment::Center);
+      Grid::SetColumn(tb, 1);
       panel.Children().Append(tb);
 
       border.Child(panel);

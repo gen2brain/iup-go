@@ -27,6 +27,9 @@
 
 typedef struct _IeflTableData
 {
+  Evas_Object* box;
+  Evas_Object* header_scroller;
+  Evas_Object* header_table;
   Evas_Object* scroller;       /* elm_scroller - main scrollable container (normal mode) */
   Evas_Object* table;          /* elm_table - grid layout (normal mode) */
   Evas_Object* top_spacer;     /* Spacer above visible cells (virtual mode) */
@@ -58,6 +61,7 @@ typedef struct _IeflTableData
   int first_visible_row;       /* First visible row (1-based) in virtual mode */
   int visible_row_count;
   Ecore_Job* scroll_job;
+  Ecore_Job* colsync_job;
   int sort_column;             /* Currently sorted column (1-based, 0=none) */
   int sort_ascending;          /* 1=ascending, 0=descending */
 } IeflTableData;
@@ -403,6 +407,8 @@ static void eflTableUpdateCellImage(Ihandle* ih, Evas_Object* image_widget, cons
     efl_gfx_entity_visible_set(image_widget, EINA_FALSE);
 }
 
+static char* eflTableGetHeaderText(Ihandle* ih, int col);
+
 static int eflTableCalculateColumnWidth(Ihandle* ih, int col)
 {
   int max_width = 0;
@@ -410,14 +416,12 @@ static int eflTableCalculateColumnWidth(Ihandle* ih, int col)
   int title_width;
   int image_extra = 0;
   int lin;
-  char name[50];
   char* title;
   char* value;
 
   max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;
 
-  snprintf(name, sizeof(name), "COLTITLE%d", col);
-  title = iupAttribGet(ih, name);
+  title = eflTableGetHeaderText(ih, col);
   if (title)
   {
     title_width = iupdrvFontGetStringWidth(ih, title);
@@ -472,6 +476,11 @@ static char* eflTableGetHeaderText(Ihandle* ih, int col)
   if (!title)
   {
     snprintf(name, sizeof(name), "%d:0", col);
+    title = iupAttribGet(ih, name);
+  }
+  if (!title)
+  {
+    snprintf(name, sizeof(name), "TITLE%d", col);
     title = iupAttribGet(ih, name);
   }
   return title;
@@ -2065,6 +2074,13 @@ static void eflTableClearCells(Ihandle* ih)
     data->cell_bgs = NULL;
   }
 
+  if (data->header_table)
+    elm_table_clear(data->header_table, EINA_TRUE);
+  if (data->table)
+    elm_table_clear(data->table, EINA_TRUE);
+  data->top_spacer = NULL;
+  data->bottom_spacer = NULL;
+
   data->alloc_num_col = 0;
   data->alloc_num_lin = 0;
 }
@@ -2145,13 +2161,13 @@ static void eflTableRebuildCells(Ihandle* ih)
     efl_gfx_hint_weight_set(bg, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
     efl_gfx_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
     efl_gfx_entity_visible_set(bg, EINA_TRUE);
-    elm_table_pack(data->table, bg, col, 0, 1, 1);
+    elm_table_pack(data->header_table, bg, col, 0, 1, 1);
     data->header_bgs[col] = bg;
 
-    label = eflTableCreateCellWidget(ih, data->table, text, 1, 0, col + 1);
+    label = eflTableCreateCellWidget(ih, data->header_table, text, 1, 0, col + 1);
     efl_gfx_hint_size_min_set(label, EINA_SIZE2D(col_width, data->header_height));
     efl_gfx_hint_weight_set(label, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
-    elm_table_pack(data->table, label, col, 0, 1, 1);
+    elm_table_pack(data->header_table, label, col, 0, 1, 1);
     data->header_labels[col] = label;
     efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableHeaderClickCallback, ih);
     efl_event_callback_add(label, EFL_EVENT_POINTER_MOVE, eflTableDragPointerMove, ih);
@@ -2277,7 +2293,7 @@ static void eflTableRebuildCells(Ihandle* ih)
       efl_gfx_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
       efl_gfx_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
       efl_gfx_entity_visible_set(dummy, EINA_TRUE);
-      elm_table_pack(data->table, dummy, num_col, 0, 1, 1);
+      elm_table_pack(data->header_table, dummy, num_col, 0, 1, 1);
 
       for (lin = 1; lin <= num_lin; lin++)
       {
@@ -2314,6 +2330,67 @@ static void eflTableScrollJobCallback(void* data)
   eflTableUpdateFocusCell(ih);
 }
 
+static void eflTableSyncHeader(IeflTableData* data)
+{
+  int x, y, w, h;
+  if (!data->header_scroller || !data->scroller)
+    return;
+  elm_scroller_region_get(data->scroller, &x, &y, &w, &h);
+  elm_scroller_region_show(data->header_scroller, x, 0, w, data->header_height);
+}
+
+static void eflTableSyncColumns(Ihandle* ih)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  int num_col = ih->data->num_col;
+  int col;
+
+  if (!data || !data->header_bgs || !data->cell_bgs || data->alloc_num_lin < 1 || data->alloc_num_col != num_col)
+    return;
+
+  for (col = 1; col <= num_col; col++)
+  {
+    int hw, dw;
+    if (col == num_col && ih->data->stretch_last && !eflTableColHasExplicitWidth(ih, col))
+      continue;
+    if (!data->header_bgs[col - 1] || !data->cell_bgs[col - 1])
+      continue;
+    hw = efl_gfx_entity_geometry_get(data->header_bgs[col - 1]).w;
+    dw = efl_gfx_entity_geometry_get(data->cell_bgs[col - 1]).w;
+    if (hw > 0 && dw > 0 && hw != dw)
+      iupdrvTableSetColWidth(ih, col, hw > dw ? hw : dw);
+  }
+
+  eflTableSyncHeader(data);
+}
+
+static void eflTableSyncColumnsJob(void* cb_data)
+{
+  Ihandle* ih = (Ihandle*)cb_data;
+  IeflTableData* data;
+
+  if (!ih || !iupObjectCheck(ih))
+    return;
+  data = IEFL_TABLE_DATA(ih);
+  if (!data)
+    return;
+  data->colsync_job = NULL;
+  eflTableSyncColumns(ih);
+}
+
+static void eflTableColumnsChanged(void* cb_data, const Efl_Event* ev)
+{
+  Ihandle* ih = (Ihandle*)cb_data;
+  IeflTableData* data;
+
+  (void)ev;
+  if (!ih || !iupObjectCheck(ih))
+    return;
+  data = IEFL_TABLE_DATA(ih);
+  if (data && !data->colsync_job)
+    data->colsync_job = ecore_job_add(eflTableSyncColumnsJob, ih);
+}
+
 static void eflTableVirtualScrollCallback(void* cb_data, Evas_Object* obj, void* event_info)
 {
   Ihandle* ih = (Ihandle*)cb_data;
@@ -2332,6 +2409,7 @@ static void eflTableVirtualScrollCallback(void* cb_data, Evas_Object* obj, void*
   if (!data->scroll_job)
     data->scroll_job = ecore_job_add(eflTableScrollJobCallback, ih);
 
+  eflTableSyncHeader(data);
   iupTableNotifyScroll(ih);
 }
 
@@ -2430,13 +2508,13 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
     efl_gfx_hint_weight_set(bg, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
     efl_gfx_hint_align_set(bg, EVAS_HINT_FILL, EVAS_HINT_FILL);
     efl_gfx_entity_visible_set(bg, EINA_TRUE);
-    elm_table_pack(table, bg, col, 0, 1, 1);
+    elm_table_pack(data->header_table, bg, col, 0, 1, 1);
     data->header_bgs[col] = bg;
 
-    label = eflTableCreateCellWidget(ih, table, text, 1, 0, col + 1);
+    label = eflTableCreateCellWidget(ih, data->header_table, text, 1, 0, col + 1);
     efl_gfx_hint_size_min_set(label, EINA_SIZE2D(col_width, data->header_height));
     efl_gfx_hint_weight_set(label, should_stretch ? EVAS_HINT_EXPAND : 0.0, 0.0);
-    elm_table_pack(table, label, col, 0, 1, 1);
+    elm_table_pack(data->header_table, label, col, 0, 1, 1);
     data->header_labels[col] = label;
     efl_event_callback_add(label, EFL_EVENT_POINTER_DOWN, eflTableHeaderClickCallback, ih);
     efl_event_callback_add(label, EFL_EVENT_POINTER_MOVE, eflTableDragPointerMove, ih);
@@ -2569,7 +2647,7 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
       efl_gfx_hint_weight_set(dummy, EVAS_HINT_EXPAND, 0.0);
       efl_gfx_hint_align_set(dummy, EVAS_HINT_FILL, EVAS_HINT_FILL);
       efl_gfx_entity_visible_set(dummy, EINA_TRUE);
-      elm_table_pack(table, dummy, num_col, 0, 1, 1);
+      elm_table_pack(data->header_table, dummy, num_col, 0, 1, 1);
 
       dummy = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
       efl_gfx_color_set(dummy, bg_r, bg_g, bg_b, 255);
@@ -2640,9 +2718,11 @@ static void eflTableUpdateVisibleRows(Ihandle* ih, int force)
 
   if (data->scroller)
   {
-    int scroll_x;
+    int scroll_x, rows_top = 0;
     elm_scroller_region_get(data->scroller, &scroll_x, &scroll_y, NULL, NULL);
-    first_data_row = (scroll_y - data->header_height - 2 * row_pad) / (row_height + row_pad) + 1;
+    if (data->top_spacer)
+      rows_top = efl_gfx_entity_geometry_get(data->top_spacer).y - efl_gfx_entity_geometry_get(data->table).y;
+    first_data_row = (scroll_y - rows_top - row_pad) / (row_height + row_pad) + 1;
   }
   else
     first_data_row = 1;
@@ -3004,6 +3084,13 @@ IUP_SDK_API void iupdrvTableSetColTitle(Ihandle* ih, int col, const char* title)
       Evas_Object* label = data->header_labels[col - 1];
       if (label)
         efl_text_set(label, title ? title : "");
+
+      if (data->col_widths && !eflTableColHasExplicitWidth(ih, col))
+      {
+        int width = eflTableCalculateColumnWidth(ih, col);
+        if (width > data->col_widths[col - 1])
+          iupdrvTableSetColWidth(ih, col, width);
+      }
     }
   }
 }
@@ -3498,9 +3585,15 @@ IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 
   /* Use table padding to simulate grid lines */
   if (show)
+  {
     elm_table_padding_set(data->table, 1, 1);
+    elm_table_padding_set(data->header_table, 1, 0);
+  }
   else
+  {
     elm_table_padding_set(data->table, 0, 0);
+    elm_table_padding_set(data->header_table, 0, 0);
+  }
 
   eflTableUpdateVisibleRows(ih, 1);
 }
@@ -3721,6 +3814,46 @@ static void eflTableKeyDownCallback(void* data, const Efl_Event* ev)
   }
 }
 
+static Evas_Object* eflTableCreateBox(IeflTableData* data, Evas_Object* parent)
+{
+  Evas_Object* box = elm_box_add(parent);
+  Evas_Object* hs;
+  Evas_Object* ht;
+
+  if (!box)
+    return NULL;
+
+  elm_box_horizontal_set(box, EINA_FALSE);
+  elm_box_padding_set(box, 0, 0);
+  efl_gfx_hint_weight_set(box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+  efl_gfx_hint_align_set(box, EVAS_HINT_FILL, EVAS_HINT_FILL);
+
+  hs = elm_scroller_add(box);
+  elm_scroller_policy_set(hs, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_OFF);
+  elm_scroller_bounce_set(hs, EINA_FALSE, EINA_FALSE);
+  elm_scroller_movement_block_set(hs, ELM_SCROLLER_MOVEMENT_BLOCK_HORIZONTAL | ELM_SCROLLER_MOVEMENT_BLOCK_VERTICAL);
+  elm_scroller_wheel_disabled_set(hs, EINA_TRUE);
+  elm_scroller_content_min_limit(hs, EINA_FALSE, EINA_TRUE);
+  elm_object_focus_allow_set(hs, EINA_FALSE);
+  efl_gfx_hint_weight_set(hs, EVAS_HINT_EXPAND, 0.0);
+  efl_gfx_hint_align_set(hs, EVAS_HINT_FILL, 0.0);
+
+  ht = elm_table_add(hs);
+  elm_table_homogeneous_set(ht, EINA_FALSE);
+  efl_gfx_hint_weight_set(ht, EVAS_HINT_EXPAND, 0.0);
+  efl_gfx_hint_align_set(ht, EVAS_HINT_FILL, 0.0);
+  efl_gfx_entity_visible_set(ht, EINA_TRUE);
+  elm_object_content_set(hs, ht);
+
+  elm_box_pack_end(box, hs);
+  efl_gfx_entity_visible_set(hs, EINA_TRUE);
+
+  data->box = box;
+  data->header_scroller = hs;
+  data->header_table = ht;
+  return box;
+}
+
 static int eflTableMapMethod(Ihandle* ih)
 {
   Evas_Object* parent;
@@ -3766,9 +3899,17 @@ static int eflTableMapMethod(Ihandle* ih)
     /*
      * Layout: scroller -> table -> [top_spacer, header, visible_cells, bottom_spacer]
      */
-    scroller = elm_scroller_add(parent);
+    if (!eflTableCreateBox(data, parent))
+    {
+      free(data);
+      ih->data->native_data = NULL;
+      return IUP_ERROR;
+    }
+
+    scroller = elm_scroller_add(data->box);
     if (!scroller)
     {
+      efl_del(data->box);
       free(data);
       ih->data->native_data = NULL;
       return IUP_ERROR;
@@ -3792,7 +3933,7 @@ static int eflTableMapMethod(Ihandle* ih)
     table = elm_table_add(scroller);
     if (!table)
     {
-      efl_del(scroller);
+      efl_del(data->box);
       free(data);
       ih->data->native_data = NULL;
       return IUP_ERROR;
@@ -3801,7 +3942,10 @@ static int eflTableMapMethod(Ihandle* ih)
     elm_table_homogeneous_set(table, EINA_FALSE);
 
     if (iupAttribGetBoolean(ih, "SHOWGRID"))
+    {
       elm_table_padding_set(table, 1, 1);
+      elm_table_padding_set(data->header_table, 1, 0);
+    }
     else
       elm_table_padding_set(table, 0, 0);
 
@@ -3816,10 +3960,15 @@ static int eflTableMapMethod(Ihandle* ih)
     data->focus_cell_lin = 0;
     data->focus_cell_col = 0;
 
-    ih->handle = (void*)scroller;
+    elm_box_pack_end(data->box, scroller);
+    efl_event_callback_add(table, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflTableColumnsChanged, ih);
+    efl_event_callback_add(data->header_table, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflTableColumnsChanged, ih);
+    ih->handle = (void*)data->box;
+    iupAttribSet(ih, "_IUPEFL_ENTRY", (char*)scroller);
 
     iupeflAddToParent(ih);
     efl_gfx_entity_visible_set(scroller, EINA_TRUE);
+    efl_gfx_entity_visible_set(data->box, EINA_TRUE);
 
     data->first_visible_row = 1;
     data->visible_row_count = 0;
@@ -3830,9 +3979,17 @@ static int eflTableMapMethod(Ihandle* ih)
   }
   else
   {
-    scroller = elm_scroller_add(parent);
+    if (!eflTableCreateBox(data, parent))
+    {
+      free(data);
+      ih->data->native_data = NULL;
+      return IUP_ERROR;
+    }
+
+    scroller = elm_scroller_add(data->box);
     if (!scroller)
     {
+      efl_del(data->box);
       free(data);
       ih->data->native_data = NULL;
       return IUP_ERROR;
@@ -3856,7 +4013,7 @@ static int eflTableMapMethod(Ihandle* ih)
     table = elm_table_add(scroller);
     if (!table)
     {
-      efl_del(scroller);
+      efl_del(data->box);
       free(data);
       ih->data->native_data = NULL;
       return IUP_ERROR;
@@ -3865,7 +4022,10 @@ static int eflTableMapMethod(Ihandle* ih)
     elm_table_homogeneous_set(table, EINA_FALSE);
 
     if (iupAttribGetBoolean(ih, "SHOWGRID"))
+    {
       elm_table_padding_set(table, 1, 1);
+      elm_table_padding_set(data->header_table, 1, 0);
+    }
     else
       elm_table_padding_set(table, 0, 0);
 
@@ -3880,10 +4040,15 @@ static int eflTableMapMethod(Ihandle* ih)
     data->focus_cell_lin = 0;
     data->focus_cell_col = 0;
 
-    ih->handle = (void*)scroller;
+    elm_box_pack_end(data->box, scroller);
+    efl_event_callback_add(table, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflTableColumnsChanged, ih);
+    efl_event_callback_add(data->header_table, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflTableColumnsChanged, ih);
+    ih->handle = (void*)data->box;
+    iupAttribSet(ih, "_IUPEFL_ENTRY", (char*)scroller);
 
     iupeflAddToParent(ih);
     efl_gfx_entity_visible_set(scroller, EINA_TRUE);
+    efl_gfx_entity_visible_set(data->box, EINA_TRUE);
 
     eflTableRebuildCells(ih);
   }
@@ -3949,6 +4114,11 @@ static void eflTableUnMapMethod(Ihandle* ih)
       ecore_job_del(data->scroll_job);
       data->scroll_job = NULL;
     }
+    if (data->colsync_job)
+    {
+      ecore_job_del(data->colsync_job);
+      data->colsync_job = NULL;
+    }
 
     eflTableClearCells(ih);
 
@@ -3972,9 +4142,12 @@ static void eflTableUnMapMethod(Ihandle* ih)
       efl_event_callback_del(data->scroller, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflTableResizeCallback, ih);
       evas_object_smart_callback_del(data->scroller, "focused", eflTableFocusInCallback);
       evas_object_smart_callback_del(data->scroller, "unfocused", eflTableFocusOutCallback);
-      if (data->is_virtual)
-        evas_object_smart_callback_del(data->scroller, "scroll", eflTableVirtualScrollCallback);
-      efl_del(data->scroller);
+      evas_object_smart_callback_del(data->scroller, "scroll", eflTableVirtualScrollCallback);
+      iupAttribSet(ih, "_IUPEFL_ENTRY", NULL);
+      efl_del(data->box);
+      data->box = NULL;
+      data->header_scroller = NULL;
+      data->header_table = NULL;
       data->scroller = NULL;
       data->table = NULL;
       data->top_spacer = NULL;
