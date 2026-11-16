@@ -15,6 +15,7 @@ extern "C" {
 #include "iup_attrib.h"
 #include "iup_drv.h"
 #include "iup_focus.h"
+#include "iup_tree.h"
 }
 
 #include "iupwinui_drv.h"
@@ -102,6 +103,20 @@ static UIElement winuiGetFocusableElement(Ihandle* ih)
       return winuiGetHandle<ComboBox>(ih);
     else
       return winuiGetHandle<ListBox>(ih);
+  }
+  else if (IupClassMatch(ih, "tree"))
+  {
+    TreeView treeView = winuiGetHandle<TreeView>(ih);
+    InodeHandle* handle = iupdrvTreeGetFocusNode(ih);
+    if (treeView && handle)
+    {
+      TreeViewNode node{nullptr};
+      winrt::copy_from_abi(node, handle);
+      DependencyObject container = treeView.ContainerFromNode(node);
+      if (container)
+        return container.try_as<UIElement>();
+    }
+    return treeView;
   }
   else if (IupClassMatch(ih, "table"))
   {
