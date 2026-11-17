@@ -82,6 +82,13 @@ IUP_SDK_API char* iupGetFontValue(Ihandle* ih);
  *\ingroup drvfont */
 IUP_SDK_API void iupFontGetMultiLineStringSize(Ihandle* ih, const char* str, int* w, int* h);
 
+/** Width of count (1 to 20) "0" characters, cached per font and character size.
+ *\ingroup drvfont */
+IUP_SDK_API int iupFontGetZerosWidth(Ihandle* ih, int count);
+
+/* Releases the iupFontGetZerosWidth cache. */
+void iupFontFinish(void);
+
 /** Parse the font format description.
  * Returns a non zero value if successful.
  * \ingroup drvfont */

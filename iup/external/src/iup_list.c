@@ -1024,13 +1024,13 @@ static void iListGetNaturalItemsSize(Ihandle* ih, int* w, int* h)
   visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
   if (visiblecolumns)
   {
-    *w = iupdrvFontGetStringWidth(ih, "0000000000");
+    *w = iupFontGetZerosWidth(ih, 10);
     *w = (visiblecolumns*(*w))/10;
   }
   else if (ih->data->is_virtual)
   {
     /* Virtual mode: don't iterate items, use default width */
-    *w = iupdrvFontGetStringWidth(ih, "00000000000000000000");  /* 20 columns default */
+    *w = iupFontGetZerosWidth(ih, 20);  /* 20 columns default */
   }
   else
   {
@@ -1050,7 +1050,7 @@ static void iListGetNaturalItemsSize(Ihandle* ih, int* w, int* h)
     }
 
     if (*w == 0) /* default is 5 characters in 1 item */
-      *w = iupdrvFontGetStringWidth(ih, "00000");
+      *w = iupFontGetZerosWidth(ih, 5);
   }
 
   if (ih->data->show_image)

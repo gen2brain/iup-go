@@ -120,6 +120,7 @@ IUP_API void IupClose(void)
   iupRegisterFinish();  /* release native classes */
 
   iupdrvFontFinish();   /* release font cache */
+  iupFontFinish();
   iupdrvClose();        /* release native handles and allocated memory */
 
   iupGlobalAttribFinish();  /* release global hash table */

@@ -207,6 +207,71 @@ IUP_SDK_API void iupFontGetMultiLineStringSize(Ihandle* ih, const char* str, int
   }
 }
 
+#define IFONT_ZEROS_MAX 20
+#define IFONT_ZEROS_CACHE 32
+
+typedef struct _IfontZeros
+{
+  char* font;
+  int charwidth, charheight;
+  int width[IFONT_ZEROS_MAX + 1];
+} IfontZeros;
+
+static IfontZeros ifont_zeros[IFONT_ZEROS_CACHE];
+static int ifont_zeros_count = 0;
+
+void iupFontFinish(void)
+{
+  int i;
+  for (i = 0; i < ifont_zeros_count; i++)
+    free(ifont_zeros[i].font);
+  ifont_zeros_count = 0;
+}
+
+IUP_SDK_API int iupFontGetZerosWidth(Ihandle* ih, int count)
+{
+  static const char zeros[IFONT_ZEROS_MAX + 1] = "00000000000000000000";
+  char* font = iupGetFontValue(ih);
+  int charwidth = 0, charheight = 0, i;
+  IfontZeros* entry = NULL;
+
+  if (count < 1)
+    return 0;
+  if (count > IFONT_ZEROS_MAX)
+    count = IFONT_ZEROS_MAX;
+
+  if (!font)
+    return iupdrvFontGetStringWidth(ih, zeros + IFONT_ZEROS_MAX - count);
+
+  iupdrvFontGetCharSize(ih, &charwidth, &charheight);
+
+  for (i = 0; i < ifont_zeros_count; i++)
+  {
+    if (ifont_zeros[i].charwidth == charwidth && ifont_zeros[i].charheight == charheight && iupStrEqual(ifont_zeros[i].font, font))
+    {
+      entry = &ifont_zeros[i];
+      break;
+    }
+  }
+
+  if (!entry)
+  {
+    if (ifont_zeros_count == IFONT_ZEROS_CACHE)
+      iupFontFinish();
+
+    entry = &ifont_zeros[ifont_zeros_count++];
+    memset(entry, 0, sizeof(IfontZeros));
+    entry->font = iupStrDup(font);
+    entry->charwidth = charwidth;
+    entry->charheight = charheight;
+  }
+
+  if (!entry->width[count])
+    entry->width[count] = iupdrvFontGetStringWidth(ih, zeros + IFONT_ZEROS_MAX - count);
+
+  return entry->width[count];
+}
+
 IUP_SDK_API int iupGetFontInfo(const char* font, char* typeface, int typeface_size, int* size, int* is_bold, int* is_italic, int* is_underline, int* is_strikeout)
 {
   *size = 0;

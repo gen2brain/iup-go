@@ -2091,7 +2091,7 @@ static void gtk4ListUpdateMinSize(Ihandle* ih)
         int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
         if (visiblecolumns)
         {
-          natural_w = iupdrvFontGetStringWidth(ih, "0000000000");
+          natural_w = iupFontGetZerosWidth(ih, 10);
           natural_w = (visiblecolumns * natural_w) / 10;
         }
         else
@@ -2109,7 +2109,7 @@ static void gtk4ListUpdateMinSize(Ihandle* ih)
           }
 
           if (natural_w == 0)
-            natural_w = iupdrvFontGetStringWidth(ih, "00000");
+            natural_w = iupFontGetZerosWidth(ih, 5);
         }
 
         natural_w += 2 * ih->data->spacing;
@@ -2147,7 +2147,7 @@ static void gtk4ListUpdateMinSize(Ihandle* ih)
     visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
     if (visiblecolumns)
     {
-      natural_w = iupdrvFontGetStringWidth(ih, "0000000000");
+      natural_w = iupFontGetZerosWidth(ih, 10);
       natural_w = (visiblecolumns * natural_w) / 10;
     }
     else
@@ -2165,7 +2165,7 @@ static void gtk4ListUpdateMinSize(Ihandle* ih)
       }
 
       if (natural_w == 0)
-        natural_w = iupdrvFontGetStringWidth(ih, "00000");
+        natural_w = iupFontGetZerosWidth(ih, 5);
     }
 
     natural_h = char_height;
@@ -2306,7 +2306,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
       visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
       if (visiblecolumns)
       {
-        natural_w = iupdrvFontGetStringWidth(ih, "0000000000");
+        natural_w = iupFontGetZerosWidth(ih, 10);
         natural_w = (visiblecolumns * natural_w) / 10;
       }
       else
@@ -2324,7 +2324,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
         }
 
         if (natural_w == 0)
-          natural_w = iupdrvFontGetStringWidth(ih, "00000");
+          natural_w = iupFontGetZerosWidth(ih, 5);
       }
 
       natural_h = char_height;

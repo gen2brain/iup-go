@@ -5453,7 +5453,7 @@ static void cocoaTextComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* 
   int single_char_width;
 
   iupdrvFontGetCharSize(ih, NULL, &natural_h);
-  natural_w = iupdrvFontGetStringWidth(ih, "0000000000");
+  natural_w = iupFontGetZerosWidth(ih, 10);
 
   single_char_width = natural_w / 10;
 
