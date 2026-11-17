@@ -109,6 +109,7 @@ static int gtkValSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->val)))
   {
+    iupValCropValue(ih);
     double fval;
     {
       double range = ih->data->vmax - ih->data->vmin;

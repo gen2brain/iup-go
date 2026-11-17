@@ -73,13 +73,22 @@ static void eflToggleUpdateImage(Ihandle* ih, int check)
                      Callbacks
 ****************************************************************/
 
+static int eflToggleIgnored(Ihandle* ih)
+{
+  Ihandle* radio;
+  if (iupAttribGet(ih, "_IUP_EFL_IGNORE_TOGGLE"))
+    return 1;
+  radio = ih->data->is_radio ? iupRadioFindToggleParent(ih) : NULL;
+  return radio && iupAttribGet(radio, "_IUP_EFL_IGNORE_TOGGLE");
+}
+
 static void eflToggleSelectedChangedCallback(void* data, const Efl_Event* ev)
 {
   Ihandle* ih = (Ihandle*)data;
   IFni cb;
   int check;
 
-  if (iupAttribGet(ih, "_IUP_EFL_IGNORE_TOGGLE"))
+  if (eflToggleIgnored(ih))
     return;
 
   check = efl_ui_selectable_selected_get(ev->object);
@@ -189,7 +198,7 @@ static void eflRadioGroupValueChangedCallback(void* data, const Efl_Event* ev)
     {
       IFni cb;
 
-      if (iupAttribGet(child, "_IUP_EFL_IGNORE_TOGGLE"))
+      if (eflToggleIgnored(child))
         return;
 
       if (child->data->type == IUP_TOGGLE_IMAGE)
@@ -272,7 +281,9 @@ static int eflToggleSetValueAttrib(Ihandle* ih, const char* value)
       Eo* radio_group = (Eo*)iupAttribGet(radio, "_IUP_EFL_RADIO_GROUP");
       int radio_value = (intptr_t)iupAttribGet(ih, "_IUP_EFL_RADIO_VALUE");
       eflRadioDeactivateImageToggle(radio, ih);
+      iupAttribSet(radio, "_IUP_EFL_IGNORE_TOGGLE", "1");
       efl_ui_radio_group_selected_value_set(radio_group, radio_value);
+      iupAttribSet(radio, "_IUP_EFL_IGNORE_TOGGLE", NULL);
       iupAttribSet(radio, "_IUP_EFL_RADIO_IMAGE_ACTIVE", (char*)ih);
     }
   }

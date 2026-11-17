@@ -42,6 +42,10 @@ static void winuiToggleCallAction(Ihandle* ih, int checked, bool valuechanged = 
   if (iupAttribGet(ih, "_IUPWINUI_IGNORE_TOGGLE"))
     return;
 
+  Ihandle* radio = ih->data->is_radio ? iupRadioFindToggleParent(ih) : nullptr;
+  if (radio && iupAttribGet(radio, "_IUPWINUI_IGNORE_TOGGLE"))
+    return;
+
   IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "ACTION"));
   if (cb)
   {
@@ -84,7 +88,10 @@ static int winuiToggleGetChecked(Ihandle* ih)
     {
       auto rb = winuiGetHandle<RadioButton>(ih);
       if (rb)
-        return rb.IsChecked() ? 1 : 0;
+      {
+        auto isChecked = rb.IsChecked();
+        return (isChecked && isChecked.Value()) ? 1 : 0;
+      }
     }
     break;
   case IUPWINUI_TOGGLE_CHECKBOX:
@@ -106,15 +113,19 @@ static int winuiToggleGetChecked(Ihandle* ih)
   return 0;
 }
 
-static int winuiToggleSetValueAttrib(Ihandle* ih, const char* value)
+static int winuiToggleApplyValue(Ihandle* ih, const char* value)
 {
   auto* aux = winuiGetAux<IupWinUIToggleAux>(ih, IUPWINUI_TOGGLE_AUX);
   if (!aux)
     return 0;
 
-  bool checked = iupStrBoolean(value);
+  bool checked = iupStrEqualNoCase(value, "TOGGLE") ? winuiToggleGetChecked(ih) != 1 : iupStrBoolean(value);
+
+  Ihandle* radio = ih->data->is_radio ? iupRadioFindToggleParent(ih) : nullptr;
 
   iupAttribSet(ih, "_IUPWINUI_IGNORE_TOGGLE", "1");
+  if (radio)
+    iupAttribSet(radio, "_IUPWINUI_IGNORE_TOGGLE", "1");
 
   switch (aux->controlType)
   {
@@ -155,8 +166,29 @@ static int winuiToggleSetValueAttrib(Ihandle* ih, const char* value)
   }
 
   iupAttribSet(ih, "_IUPWINUI_IGNORE_TOGGLE", nullptr);
+  if (radio)
+    iupAttribSet(radio, "_IUPWINUI_IGNORE_TOGGLE", nullptr);
 
   return 0;
+}
+
+static int winuiToggleSetValueAttrib(Ihandle* ih, const char* value)
+{
+  Ihandle* radio = ih->data->is_radio ? iupRadioFindToggleParent(ih) : nullptr;
+  if (radio)
+  {
+    bool checked = iupStrEqualNoCase(value, "TOGGLE") ? winuiToggleGetChecked(ih) != 1 : iupStrBoolean(value);
+    if (!checked)
+      return 0;
+
+    auto* last_ih = reinterpret_cast<Ihandle*>(iupAttribGet(radio, "_IUPWINUI_RADIO_ACTIVE"));
+    if (last_ih && last_ih != ih && iupObjectCheck(last_ih) && last_ih->data->type == IUP_TOGGLE_IMAGE)
+      winuiToggleApplyValue(last_ih, "OFF");
+    iupAttribSet(radio, "_IUPWINUI_RADIO_ACTIVE", reinterpret_cast<char*>(ih));
+    value = "ON";
+  }
+
+  return winuiToggleApplyValue(ih, value);
 }
 
 static char* winuiToggleGetValueAttrib(Ihandle* ih)
@@ -607,7 +639,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
             auto* last_ih = reinterpret_cast<Ihandle*>(iupAttribGet(radio, "_IUPWINUI_RADIO_ACTIVE"));
             if (last_ih && last_ih != ih && iupObjectCheck(last_ih))
             {
-              winuiToggleSetValueAttrib(last_ih, "OFF");
+              winuiToggleApplyValue(last_ih, "OFF");
               if (last_ih->data->type == IUP_TOGGLE_IMAGE)
                 winuiToggleCallAction(last_ih, 0, false);
             }
@@ -679,7 +711,7 @@ static int winuiToggleMapMethod(Ihandle* ih)
         auto* last_ih = reinterpret_cast<Ihandle*>(iupAttribGet(radio, "_IUPWINUI_RADIO_ACTIVE"));
         if (last_ih && last_ih != ih && iupObjectCheck(last_ih) && last_ih->data->type == IUP_TOGGLE_IMAGE)
         {
-          winuiToggleSetValueAttrib(last_ih, "OFF");
+          winuiToggleApplyValue(last_ih, "OFF");
           winuiToggleCallAction(last_ih, 0, false);
         }
 

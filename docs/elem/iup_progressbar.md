@@ -48,6 +48,7 @@ Horizontal goes from left to right, and vertical from bottom to top.
 Set to NULL to allow the use of smaller values in the layout computation.
 
 **VALUE** (non-inheritable): Contains a number between "MIN" and "MAX", controlling the current position.
+A value outside MIN and MAX, set in VALUE or current when they are set, is changed to the nearest of them.
 
 > 
 >

@@ -97,6 +97,7 @@ static int androidValSetMinAttrib(Ihandle* ih, const char* value)
   double d;
   if (!iupStrToDouble(value, &d)) return 0;
   ih->data->vmin = d;
+  iupValCropValue(ih);
   androidValSyncRange(ih);
   return 1;
 }
@@ -106,6 +107,7 @@ static int androidValSetMaxAttrib(Ihandle* ih, const char* value)
   double d;
   if (!iupStrToDouble(value, &d)) return 0;
   ih->data->vmax = d;
+  iupValCropValue(ih);
   androidValSyncRange(ih);
   return 1;
 }

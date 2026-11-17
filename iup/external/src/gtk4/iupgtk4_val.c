@@ -73,6 +73,7 @@ static int gtk4ValSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->val)))
   {
+    iupValCropValue(ih);
     double range = ih->data->vmax - ih->data->vmin;
     if (range != 0)
     {

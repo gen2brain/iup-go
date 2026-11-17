@@ -307,6 +307,12 @@ static int gtk4ToggleSetValueAttrib(Ihandle* ih, const char* value)
     else
       check = iupStrBoolean(value);
 
+    if (!check && radio)
+    {
+      iupAttribSet(ih, "_IUPGTK4_IGNORE_TOGGLE", NULL);
+      return 0;
+    }
+
     if (check && radio)
       gtk4ToggleRadioDeactivatePrevious(radio, ih);
 
@@ -344,6 +350,12 @@ static int gtk4ToggleSetValueAttrib(Ihandle* ih, const char* value)
     }
     else
       check = iupStrBoolean(value);
+
+    if (!check && radio)
+    {
+      iupAttribSet(ih, "_IUPGTK4_IGNORE_TOGGLE", NULL);
+      return 0;
+    }
 
     if (check && radio)
       gtk4ToggleRadioDeactivatePrevious(radio, ih);

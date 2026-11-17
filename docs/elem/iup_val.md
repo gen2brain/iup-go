@@ -57,6 +57,7 @@ Vertical valuators are bottom to up, and horizontal valuators are left to right 
 Default: "HORIZONTAL".
 
 **VALUE** (non-inheritable): Contains a number between MIN and MAX, indicating the valuator position.
+A value outside MIN and MAX, set in VALUE or current when they are set, is changed to the nearest of them.
 Default: "0.0".
 
 > 

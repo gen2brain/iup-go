@@ -95,6 +95,7 @@ public final class IupValHelper
         float current = s.getValue();
         if (max < current) { s.setValueFrom(min); s.setValueTo(max); }
         else { s.setValueTo(max); s.setValueFrom(min); }
+        if (current < min || current > max) s.setValue(Math.max(min, Math.min(max, current)));
     }
 
     @Keep

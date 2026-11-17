@@ -1483,9 +1483,8 @@
           var rp = tw.__iupPages.splice(c.pos, 1)[0];
           if (rt) rt.remove();
           if (rp) rp.remove();
-          if (c.pos < tw.__iupCurrent) tw.__iupCurrent--;
-          if (tw.__iupCurrent >= tw.__iupTabs.length) tw.__iupCurrent = tw.__iupTabs.length - 1;
-          if (tw.__iupCurrent >= 0) D('iupwasmTabsSetCurrent', c.id, tw.__iupCurrent);
+          if (c.pos === tw.__iupCurrent) tw.__iupCurrent = -1;
+          else if (c.pos < tw.__iupCurrent) tw.__iupCurrent--;
         }
       } break;
       case 'tabsreorderdom': {

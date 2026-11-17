@@ -99,9 +99,11 @@ static void cocoaTouchDatePickUpdateRange(Ihandle* ih, const char* min_date, con
 	UIDatePicker* picker = cocoaTouchDatePickGet(ih);
 	if (!picker) return;
 
+	picker.minimumDate = nil;
+	picker.maximumDate = nil;
+	[picker setDate:cocoaTouchDatePickClampDate(ih, min_date, max_date, [picker date]) animated:NO];
 	picker.minimumDate = min_date ? cocoaTouchDatePickParseDate(min_date) : nil;
 	picker.maximumDate = max_date ? cocoaTouchDatePickParseDate(max_date) : nil;
-	[picker setDate:cocoaTouchDatePickClampDate(ih, min_date, max_date, [picker date]) animated:NO];
 }
 
 static int cocoaTouchDatePickSetMinDateAttrib(Ihandle* ih, const char* value)

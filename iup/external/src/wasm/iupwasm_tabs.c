@@ -203,17 +203,39 @@ static void wasmTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
   char* title;
   char* image;
   char* tip;
-  if (!ih->handle || iupAttribGet(ih, "_IUPTABS_REORDERING"))
+  int count;
+  Ihandle* c;
+  if (iupAttribGet(ih, "_IUPTABS_REORDERING"))
+    return;
+
+  if (!iupAttribGetHandleName(child))
+    iupAttribSetHandleName(child);
+
+  if (!ih->handle)
     return;
 
   tabsId = iupwasmIdOf(ih);
   pos = IupGetChildPos(ih, child);
-  title = iupAttribGetId(ih, "TABTITLE", pos);
-  if (!title) title = iupAttribGet(child, "TABTITLE");
+  title = iupAttribGet(child, "TABTITLE");
+  if (!title)
+  {
+    title = iupAttribGetId(ih, "TABTITLE", pos);
+    if (title)
+      iupAttribSetStr(child, "TABTITLE", title);
+  }
   if (!title) title = "";
 
   pageId = iupwasmJsTabsAddPage(tabsId, title);
   iupAttribSet(child, "_IUPTAB_CONTAINER", (char*)(intptr_t)pageId);
+
+  count = 0;
+  for (c = ih->firstchild; c; c = c->brother)
+  {
+    if (iupAttribGet(c, "_IUPTAB_CONTAINER"))
+      count++;
+  }
+  if (pos < count - 1)
+    iupwasmJsTabsReorderDom(tabsId, count - 1, pos);
 
   image = iupAttribGetId(ih, "TABIMAGE", pos);
   if (!image) image = iupAttribGet(child, "TABIMAGE");
@@ -271,9 +293,12 @@ static int wasmTabsMapMethod(Ihandle* ih)
 static int wasmTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
 {
   int id = iupwasmIdOf(ih);
+  Ihandle* child = IupGetChild(ih, pos);
+  if (child)
+    iupAttribSetStr(child, "TABTITLE", value);
   if (id)
     iupwasmJsTabsSetTitle(id, pos, value ? value : "");
-  return 1;
+  return 0;
 }
 
 static int wasmTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
@@ -480,7 +505,7 @@ IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   ic->ChildAdded = wasmTabsChildAddedMethod;
   ic->ChildRemoved = wasmTabsChildRemovedMethod;
 
-  iupClassRegisterAttributeId(ic, "TABTITLE", NULL, wasmTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, wasmTabsSetTabTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, wasmTabsSetTabImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", NULL, wasmTabsSetTabVisibleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABTYPE", NULL, wasmTabsSetTypeAttrib, IUPAF_SAMEASSYSTEM, "TOP", IUPAF_NO_INHERIT);

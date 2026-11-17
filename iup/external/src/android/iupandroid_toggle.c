@@ -27,6 +27,8 @@
 
 IUPJNI_DECLARE_CLASS_STATIC(IupToggleHelper);
 
+static void androidTogglePushState(Ihandle* ih, int state);
+
 /* radio exclusivity tracked via an attribute; toggles live in IupAndroidFixed, not RadioGroup */
 static void androidToggleDeactivatePrevious(Ihandle* ih)
 {
@@ -36,7 +38,7 @@ static void androidToggleDeactivatePrevious(Ihandle* ih)
   Ihandle* previous = (Ihandle*)iupAttribGet(radio, "_IUPANDROID_RADIO_ACTIVE");
   if (previous && previous != ih && iupObjectCheck(previous))
   {
-    IupSetAttribute(previous, "VALUE", "OFF");
+    androidTogglePushState(previous, 0);
   }
   iupAttribSet(radio, "_IUPANDROID_RADIO_ACTIVE", (char*)ih);
 }
@@ -182,6 +184,9 @@ static int androidToggleSetValueAttrib(Ihandle* ih, const char* value)
   }
   else
     target = iupStrBoolean(value) ? 1 : 0;
+
+  if (ih->data->is_radio && target != 1)
+    return 0;
 
   if (target == 1 && ih->data->is_radio)
     androidToggleDeactivatePrevious(ih);
@@ -334,6 +339,8 @@ static int androidToggleMapMethod(Ihandle* ih)
   if (radio)
   {
     ih->data->is_radio = 1;
+    if (!iupAttribGetHandleName(ih))
+      iupAttribSetHandleName(ih);
     if (!iupAttribGet(radio, "_IUPANDROID_RADIO_FIRST_SEEN"))
     {
       iupAttribSet(radio, "_IUPANDROID_RADIO_FIRST_SEEN", "1");

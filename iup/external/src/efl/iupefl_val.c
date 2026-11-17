@@ -26,9 +26,19 @@ static void eflValChangedCallback(void* data, const Efl_Event* ev)
 
   ih->data->val = efl_ui_range_value_get(ev->object);
 
+  if (iupAttribGet(ih, "_IUP_EFL_IGNORE_VAL"))
+    return;
+
   cb = (IFn)IupGetCallback(ih, "VALUECHANGED_CB");
   if (cb)
     cb(ih);
+}
+
+static void eflValSetNative(Ihandle* ih, Eo* slider)
+{
+  iupAttribSet(ih, "_IUP_EFL_IGNORE_VAL", "1");
+  efl_ui_range_value_set(slider, ih->data->val);
+  iupAttribSet(ih, "_IUP_EFL_IGNORE_VAL", NULL);
 }
 
 static int eflValSetValueAttrib(Ihandle* ih, const char* value)
@@ -43,7 +53,7 @@ static int eflValSetValueAttrib(Ihandle* ih, const char* value)
   {
     ih->data->val = val;
     iupValCropValue(ih);
-    efl_ui_range_value_set(slider, ih->data->val);
+    eflValSetNative(ih, slider);
   }
 
   return 0;
@@ -60,8 +70,10 @@ static int eflValSetMinAttrib(Ihandle* ih, const char* value)
     iupValCropValue(ih);
     if (slider)
     {
+      iupAttribSet(ih, "_IUP_EFL_IGNORE_VAL", "1");
       efl_ui_range_limits_set(slider, min, ih->data->vmax);
       efl_ui_range_value_set(slider, ih->data->val);
+      iupAttribSet(ih, "_IUP_EFL_IGNORE_VAL", NULL);
     }
   }
 
@@ -79,8 +91,10 @@ static int eflValSetMaxAttrib(Ihandle* ih, const char* value)
     iupValCropValue(ih);
     if (slider)
     {
+      iupAttribSet(ih, "_IUP_EFL_IGNORE_VAL", "1");
       efl_ui_range_limits_set(slider, ih->data->vmin, max);
       efl_ui_range_value_set(slider, ih->data->val);
+      iupAttribSet(ih, "_IUP_EFL_IGNORE_VAL", NULL);
     }
   }
 

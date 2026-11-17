@@ -640,6 +640,10 @@ static int qtToggleSetValueAttrib(Ihandle* ih, const char* value)
   if (!button)
     return 0;
 
+  Ihandle* radio = ih->data->is_radio ? iupRadioFindToggleParent(ih) : nullptr;
+  if (radio)
+    iupAttribSet(radio, "_IUPQT_IGNORE_TOGGLE", "1");
+
   button->blockSignals(true);
 
   if (iupStrEqualNoCase(value, "NOTDEF"))
@@ -665,6 +669,9 @@ static int qtToggleSetValueAttrib(Ihandle* ih, const char* value)
   }
 
   button->blockSignals(false);
+
+  if (radio)
+    iupAttribSet(radio, "_IUPQT_IGNORE_TOGGLE", nullptr);
 
   if (ih->data->type == IUP_TOGGLE_TEXT && !ih->data->is_radio && iupAttribGetBoolean(ih, "SWITCH"))
   {
@@ -933,6 +940,10 @@ static int qtToggleSetActiveAttrib(Ihandle* ih, const char* value)
 static void qtToggleToggled(Ihandle* ih, bool checked)
 {
   if (iupAttribGet(ih, "_IUPQT_IGNORE_TOGGLE"))
+    return;
+
+  Ihandle* radio = ih->data->is_radio ? iupRadioFindToggleParent(ih) : nullptr;
+  if (radio && iupAttribGet(radio, "_IUPQT_IGNORE_TOGGLE"))
     return;
 
   int check = checked ? 1 : 0;

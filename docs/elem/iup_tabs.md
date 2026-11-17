@@ -209,6 +209,7 @@ Its children automatically receive a name when the child is appended or inserted
 Differently from **IupZbox**, **IupTabs** does NOT depend on the VISIBLE attribute.
 
 When the current tab is removed or hidden, the nearest visible tab to its right becomes the current tab, or the nearest visible tab to its left when there is none to the right.
+Appending or inserting a tab does not change the current tab.
 
 In GTK, when the tabs buttons are scrolled, the current tab is also changed.
 

@@ -297,6 +297,17 @@ extern "C" IUP_SDK_API void iupdrvToggleAddCheckBox(Ihandle* ih, int* x, int* y,
   (void)y;
 }
 
+static void fltkToggleRadioClearOthers(Ihandle* parent, Ihandle* ih)
+{
+  for (Ihandle* child = parent->firstchild; child; child = child->brother)
+  {
+    if (child != ih && child->handle && IupClassMatch(child, "toggle") && child->data->is_radio)
+      reinterpret_cast<Fl_Button*>(child->handle)->value(0);
+    else
+      fltkToggleRadioClearOthers(child, ih);
+  }
+}
+
 static int fltkToggleSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupAttribGetBoolean(ih, "SWITCH"))
@@ -304,7 +315,7 @@ static int fltkToggleSetValueAttrib(Ihandle* ih, const char* value)
     auto* sw = reinterpret_cast<IupFltkSwitch*>(ih->handle);
     if (sw)
     {
-      sw->checked = iupStrBoolean(value);
+      sw->checked = iupStrEqualNoCase(value, "TOGGLE") ? !sw->checked : iupStrBoolean(value);
       sw->redraw();
     }
     return 0;
@@ -314,12 +325,19 @@ static int fltkToggleSetValueAttrib(Ihandle* ih, const char* value)
   if (!button)
     return 0;
 
-  if (iupStrEqualNoCase(value, "NOTDEF"))
-    button->value(0);
-  else if (iupStrBoolean(value))
-    button->value(1);
-  else
-    button->value(0);
+  int check = iupStrEqualNoCase(value, "TOGGLE") ? !button->value() : iupStrBoolean(value);
+
+  if (ih->data->is_radio)
+  {
+    if (!check)
+      return 0;
+
+    Ihandle* radio = iupRadioFindToggleParent(ih);
+    if (radio)
+      fltkToggleRadioClearOthers(radio, ih);
+  }
+
+  button->value(check);
 
   return 0;
 }
@@ -588,6 +606,9 @@ static int fltkToggleMapMethod(Ihandle* ih)
   }
 
   ih->handle = reinterpret_cast<InativeHandle*>(button);
+
+  if (ih->data->is_radio && !iupAttribGetHandleName(ih))
+    iupAttribSetHandleName(ih);
 
   if (ih->data->type == IUP_TOGGLE_IMAGE)
   {

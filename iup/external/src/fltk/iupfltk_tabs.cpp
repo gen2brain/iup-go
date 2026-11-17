@@ -487,15 +487,17 @@ extern "C" IUP_SDK_API int iupdrvTabsIsTabVisible(Ihandle* child, int pos)
 
 static int fltkTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
 {
-  auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
-  if (!tabs) return 0;
+  Ihandle* child = IupGetChild(ih, pos);
+  if (!child)
+    return 0;
 
-  if (pos >= 0 && pos < tabs->children())
+  iupAttribSetStr(child, "TABTITLE", value);
+
+  auto* page = reinterpret_cast<Fl_Group*>(iupAttribGet(child, "_IUPTAB_CONTAINER"));
+  if (page)
   {
-    Fl_Widget* page = tabs->child(pos);
     page->copy_label(value ? value : "");
-    tabs->redraw();
-    return 1;
+    reinterpret_cast<IupFltkTabs*>(ih->handle)->redraw();
   }
   return 0;
 }
@@ -819,6 +821,7 @@ static void fltkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     auto* tabs = reinterpret_cast<IupFltkTabs*>(ih->handle);
     int pos = IupGetChildPos(ih, child);
     int tab_h = fltkTabsGetTabHeight(ih);
+    Fl_Widget* current = tabs->value();
 
     tabs->begin();
 
@@ -877,17 +880,21 @@ static void fltkTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     iupAttribSetStr(child, "_IUPFLTK_TABTIP", tabtip);
 
     tabs->end();
+    tabs->insert(*page, fltkTabsPosToIndex(ih, pos));
 
     iupAttribSet(child, "_IUPTAB_CONTAINER", reinterpret_cast<char*>(page));
     iupAttribSet(child, "_IUPTAB_PAGE", reinterpret_cast<char*>(page));
 
-    if (pos != iupdrvTabsGetCurrentTab(ih))
+    if (current)
+    {
+      tabs->value(current);
+      tabs->prev_index = tabs->find(current);
       page->hide();
-
-    if (tabs->children() == 1)
+    }
+    else
     {
       tabs->value(page);
-      tabs->prev_index = 0;
+      tabs->prev_index = tabs->find(page);
     }
   }
 }

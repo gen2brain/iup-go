@@ -216,6 +216,8 @@ static UIButton* cocoaTouchToggleGetImageButton(Ihandle* ih)
 	return nil;
 }
 
+static void cocoaTouchToggleApplyValue(Ihandle* ih, IupCocoaTouchToggleValue value);
+
 /* previous "on" toggle is parked on the IupRadio parent for O(1) deactivation */
 static void cocoaTouchToggleDeactivatePrevious(Ihandle* ih)
 {
@@ -224,7 +226,7 @@ static void cocoaTouchToggleDeactivatePrevious(Ihandle* ih)
 	Ihandle* previous = (Ihandle*)iupAttribGet(radio, "_IUPCOCOATOUCH_RADIO_ACTIVE");
 	if (previous && previous != ih && iupObjectCheck(previous))
 	{
-		IupSetAttribute(previous, "VALUE", "OFF");
+		cocoaTouchToggleApplyValue(previous, IupCocoaTouchToggleOff);
 	}
 	iupAttribSet(radio, "_IUPCOCOATOUCH_RADIO_ACTIVE", (char*)ih);
 }
@@ -407,6 +409,8 @@ static int cocoaTouchToggleSetValueAttrib(Ihandle* ih, const char* value)
 	BOOL three_state = iupAttribGetBoolean(ih, "3STATE") ? YES : NO;
 	IupCocoaTouchToggleValue current = cocoaTouchToggleReadValue(ih);
 	IupCocoaTouchToggleValue new_value = cocoaTouchToggleValueFromStr(value, current, three_state);
+	if (ih->data->is_radio && new_value != IupCocoaTouchToggleOn)
+		return 0;
 	cocoaTouchToggleApplyValue(ih, new_value);
 
 	if (new_value == IupCocoaTouchToggleOn && ih->data->is_radio
@@ -603,6 +607,8 @@ static int cocoaTouchToggleMapMethod(Ihandle* ih)
 {
 	Ihandle* radio = iupRadioFindToggleParent(ih);
 	ih->data->is_radio = radio ? 1 : 0;
+	if (radio && !iupAttribGetHandleName(ih))
+		iupAttribSetHandleName(ih);
 	if (radio && !iupAttribGet(radio, "_IUPCOCOATOUCH_RADIO_FIRST_SEEN"))
 	{
 		iupAttribSet(radio, "_IUPCOCOATOUCH_RADIO_FIRST_SEEN", "1");

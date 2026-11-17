@@ -632,6 +632,21 @@ static void motTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
     Arg args[30];
     char* tabtitle, *tabimage, *background;
     Pixel color;
+    Ihandle* current = NULL;
+    Ihandle* c;
+    int cur_pos = iupdrvTabsGetCurrentTab(ih), i = 0;
+
+    for (c = ih->firstchild; c; c = c->brother)
+    {
+      if (c == child)
+        continue;
+      if (i == cur_pos)
+      {
+        current = c;
+        break;
+      }
+      i++;
+    }
 
     /* open space for new tab number */
     motTabsUpdatePageNumber(ih);
@@ -827,6 +842,9 @@ static void motTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
     XtRealizeWidget(child_manager);
     XtRealizeWidget(tab_button);
+
+    if (current && IupGetChildPos(ih, current) != iupdrvTabsGetCurrentTab(ih))
+      XtVaSetValues(ih->handle, XmNcurrentPageNumber, IupGetChildPos(ih, current), NULL);
 
     if (pos != iupdrvTabsGetCurrentTab(ih))
       XtUnmapWidget(child_manager);

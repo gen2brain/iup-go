@@ -126,7 +126,7 @@ func main() {
 
 	selectAmber := iup.Button("Select Amber by handle")
 	selectAmber.SetCallback("ACTION", iup.ActionFunc(func(iup.Ihandle) int {
-		tabs.SetAttributeHandle("VALUE_HANDLE", amber)
+		tabs.SetAttribute("VALUE_HANDLE", amber)
 		return iup.DEFAULT
 	}))
 

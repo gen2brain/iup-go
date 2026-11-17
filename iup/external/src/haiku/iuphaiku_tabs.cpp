@@ -694,6 +694,10 @@ static void haikuTabsUpdateStripHeight(Ihandle* ih)
 static void haikuTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 {
   if (iupAttribGet(ih, "_IUPTABS_REORDERING")) return;
+
+  if (!iupAttribGetHandleName(child))
+    iupAttribSetHandleName(child);
+
   if (!ih->handle) return;
 
   auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
@@ -709,8 +713,12 @@ static void haikuTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
   auto* tab = new IupHaikuTab();
   tab->SetView(page);
 
-  char* title = iupAttribGetId(ih, "TABTITLE", pos);
-  if (!title) title = iupAttribGet(child, "TABTITLE");
+  char* title = iupAttribGet(child, "TABTITLE");
+  if (!title)
+  {
+    title = iupAttribGetId(ih, "TABTITLE", pos);
+    if (title) iupAttribSetStr(child, "TABTITLE", title);
+  }
   if (title) haikuTabsSetTabLabel(ih, tab, pos, title);
 
   char* image = iupAttribGetId(ih, "TABIMAGE", pos);
@@ -883,7 +891,9 @@ static int haikuTabsSetTabTitleAttribId(Ihandle* ih, int i, const char* value)
   auto* tabs = reinterpret_cast<IupHaikuTabView*>(ih->handle);
   if (!tabs) return 1;
   LooperLockGuard guard(tabs->Looper());
-  BTab* tab = haikuTabsChildTab(ih, IupGetChild(ih, i));
+  Ihandle* child = IupGetChild(ih, i);
+  if (child) iupAttribSetStr(child, "TABTITLE", value);
+  BTab* tab = haikuTabsChildTab(ih, child);
   if (tab) { haikuTabsSetTabLabel(ih, tab, i, value); tabs->Invalidate(); }
   return 1;
 }

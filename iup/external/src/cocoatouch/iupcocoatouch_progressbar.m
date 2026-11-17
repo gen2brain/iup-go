@@ -287,12 +287,6 @@ static int cocoaTouchProgressBarMapMethod(Ihandle* ih)
 	return IUP_NOERROR;
 }
 
-static char* cocoaTouchProgressBarGetValueAttrib(Ihandle* ih)
-{
-	IupCocoaTouchProgressView* bar = cocoaTouchProgressBarGetBar(ih);
-	return iupStrReturnDouble([bar progress]);
-}
-
 static int cocoaTouchProgressBarSetValueAttrib(Ihandle* ih, const char* value)
 {
 	IupCocoaTouchProgressView* bar = cocoaTouchProgressBarGetBar(ih);
@@ -443,7 +437,7 @@ IUP_SDK_API void iupdrvProgressBarInitClass(Iclass* ic)
 
 	iupClassRegisterAttribute(ic, "BGCOLOR", cocoaTouchProgressBarGetBgColorAttrib, cocoaTouchProgressBarSetBgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGBGCOLOR", IUPAF_DEFAULT);
 	iupClassRegisterAttribute(ic, "FGCOLOR", cocoaTouchProgressBarGetFgColorAttrib, cocoaTouchProgressBarSetFgColorAttrib, IUPAF_SAMEASSYSTEM, "DLGFGCOLOR", IUPAF_DEFAULT);
-	iupClassRegisterAttribute(ic, "VALUE", cocoaTouchProgressBarGetValueAttrib, cocoaTouchProgressBarSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
+	iupClassRegisterAttribute(ic, "VALUE", iProgressBarGetValueAttrib, cocoaTouchProgressBarSetValueAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE|IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "ORIENTATION", cocoaTouchProgressBarGetOrientationAttrib, NULL, IUPAF_SAMEASSYSTEM, "HORIZONTAL", IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "MARQUEE", cocoaTouchProgressBarGetMarqueeAttrib, cocoaTouchProgressBarSetMarqueeAttrib, NULL, NULL, IUPAF_NO_INHERIT);
 	iupClassRegisterAttribute(ic, "DASHED", NULL, cocoaTouchProgressBarSetDashedAttrib, NULL, NULL, IUPAF_NO_INHERIT);

@@ -152,6 +152,7 @@ static int fltkValSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->val)))
   {
+    iupValCropValue(ih);
     auto* slider = reinterpret_cast<IupFltkSlider*>(ih->handle);
     if (slider)
     {

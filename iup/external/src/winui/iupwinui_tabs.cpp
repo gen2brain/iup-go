@@ -300,7 +300,27 @@ static void winuiTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 
   iupAttribSetHandleName(child);
 
-  tabView.TabItems().Append(item);
+  {
+    auto* aux = winuiGetAux<IupWinUITabsAux>(ih, IUPWINUI_TABS_AUX);
+    int cur = tabView.SelectedIndex();
+    IInspectable curItem = (cur >= 0 && cur < static_cast<int>(tabView.TabItems().Size())) ? tabView.TabItems().GetAt(cur) : nullptr;
+
+    if (aux)
+      aux->ignoreChange = 1;
+
+    tabView.TabItems().InsertAt(pos, item);
+
+    uint32_t index;
+    if (curItem && tabView.TabItems().IndexOf(curItem, index) && static_cast<int>(index) != tabView.SelectedIndex())
+    {
+      tabView.SelectedIndex(static_cast<int>(index));
+      if (aux)
+        aux->previousIndex = static_cast<int>(index);
+    }
+
+    if (aux)
+      aux->ignoreChange = 0;
+  }
 
   event_token rightToken = item.RightTapped([ih](IInspectable const& sender, Input::RightTappedRoutedEventArgs const&) {
     auto tappedItem = sender.try_as<TabViewItem>();
@@ -336,7 +356,15 @@ static int winuiTabsSetTabVisibleAttrib(Ihandle* ih, int pos, const char* value)
 
   TabViewItem item = winuiTabsGetTabViewItem(child);
   if (item)
-    item.Visibility(iupStrBoolean(value) ? Visibility::Visible : Visibility::Collapsed);
+  {
+    if (iupStrBoolean(value))
+      item.Visibility(Visibility::Visible);
+    else if (item.Visibility() == Visibility::Visible)
+    {
+      iupTabsCheckCurrentTab(ih, pos, 0);
+      item.Visibility(Visibility::Collapsed);
+    }
+  }
 
   return 0;
 }
@@ -557,6 +585,8 @@ static int winuiTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
   Ihandle* child = IupGetChild(ih, pos);
   if (!child)
     return 1;
+
+  iupAttribSetStr(child, "TABTITLE", value);
 
   TextBlock tabLabel = winuiTabsGetTabLabel(child);
   if (tabLabel)

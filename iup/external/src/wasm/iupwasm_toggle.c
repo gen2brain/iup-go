@@ -60,7 +60,12 @@ static int wasmToggleSetValueAttrib(Ihandle* ih, const char* value)
     if (iupStrEqualNoCase(value, "NOTDEF"))
       iupwasmJsToggleSetValue(id, -1);
     else
-      iupwasmJsToggleSetValue(id, iupStrBoolean(value));
+    {
+      int check = iupStrEqualNoCase(value, "TOGGLE") ? iupwasmJsToggleGetValue(id) != 1 : iupStrBoolean(value);
+      if (ih->data->is_radio && !check)
+        return 0;
+      iupwasmJsToggleSetValue(id, check);
+    }
   }
   return 1;
 }
@@ -162,6 +167,8 @@ static int wasmToggleMapMethod(Ihandle* ih)
   Ihandle* radio = iupRadioFindToggleParent(ih);
 
   ih->data->is_radio = (radio != NULL);
+  if (radio && !iupAttribGetHandleName(ih))
+    iupAttribSetHandleName(ih);
   image = iupAttribGet(ih, "IMAGE");
   ih->data->type = image ? IUP_TOGGLE_IMAGE : IUP_TOGGLE_TEXT;
 

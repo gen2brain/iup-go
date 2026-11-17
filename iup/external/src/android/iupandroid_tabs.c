@@ -115,8 +115,12 @@ static int androidTabsAppendChild(Ihandle* ih, Ihandle* child, int pos)
   jclass java_class = androidTabsFindHelper(jni_env);
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "addTab", "(Landroid/view/View;ILjava/lang/String;Landroid/graphics/Bitmap;I)Landroid/view/View;");
 
-  const char* title = iupAttribGetId(ih, "TABTITLE", pos);
-  if (!title) title = iupAttribGet(child, "TABTITLE");
+  const char* title = iupAttribGet(child, "TABTITLE");
+  if (!title)
+  {
+    title = iupAttribGetId(ih, "TABTITLE", pos);
+    if (title) iupAttribSetStr(child, "TABTITLE", title);
+  }
   char* stripped_title = title ? iupStrProcessMnemonic(title, NULL, 0) : NULL;
   jstring j_title = stripped_title ? iupAndroid_NewStringUTF(jni_env, stripped_title) : NULL;
 
@@ -142,8 +146,9 @@ static int androidTabsAppendChild(Ihandle* ih, Ihandle* child, int pos)
 
 static void androidTabsChildAddedMethod(Ihandle* ih, Ihandle* child)
 {
-  if (!ih->handle) return;
   if (iupAttribGet(ih, "_IUPTABS_REORDERING")) return;
+  if (!iupAttribGetHandleName(child)) iupAttribSetHandleName(child);
+  if (!ih->handle) return;
   int pos = IupGetChildPos(ih, child);
   androidTabsAppendChild(ih, child, pos);
 }
@@ -407,7 +412,7 @@ IUP_SDK_API void iupdrvTabsInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "TABTIP", NULL, androidTabsSetTabTipAttribId, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TABORIENTATION", NULL, NULL, NULL, NULL, IUPAF_NOT_SUPPORTED|IUPAF_NO_INHERIT);
 
-  iupClassRegisterAttributeId(ic, "TABTITLE", NULL, androidTabsSetTabTitleAttribId, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TABTITLE", iupTabsGetTitleAttrib, androidTabsSetTabTitleAttribId, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABIMAGE", NULL, androidTabsSetTabImageAttribId, IUPAF_IHANDLENAME|IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TABVISIBLE", NULL, androidTabsSetTabVisibleAttribId, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "SHOWCLOSE", NULL, androidTabsSetShowCloseAttribId, IUPAF_NO_INHERIT);

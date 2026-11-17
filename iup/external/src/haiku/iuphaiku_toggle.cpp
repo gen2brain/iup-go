@@ -49,7 +49,7 @@ static void  haikuToggleNativeSetEnabled(BView* v, bool enabled);
 static void  haikuToggleNativeSetLabel(BView* v, const char* s);
 
 /* Radio mutex: BRadioButton's native auto-uncheck ignores BButton siblings. */
-static void haikuToggleApplyCheck(Ihandle* ih, int check)
+static void haikuToggleApplyCheck(Ihandle* ih, int check, int notify)
 {
   if (!ih || !iupObjectCheck(ih)) return;
   BView* self;
@@ -68,12 +68,15 @@ static void haikuToggleApplyCheck(Ihandle* ih, int check)
           LooperLockGuard g(lastV->Looper());
           haikuToggleNativeSetValue(lastV, B_CONTROL_OFF);
         }
-        IFni acb = reinterpret_cast<IFni>(IupGetCallback(last, "ACTION"));
-        if (acb && acb(last, 0) == IUP_CLOSE) IupExitLoop();
-        Icallback vcb = IupGetCallback(last, "VALUECHANGED_CB");
-        if (vcb && vcb(last) == IUP_CLOSE) IupExitLoop();
-        /* Peer callbacks may have destroyed ih/radio. */
-        if (!iupObjectCheck(ih) || !iupObjectCheck(radio)) return;
+        if (notify)
+        {
+          IFni acb = reinterpret_cast<IFni>(IupGetCallback(last, "ACTION"));
+          if (acb && acb(last, 0) == IUP_CLOSE) IupExitLoop();
+          Icallback vcb = IupGetCallback(last, "VALUECHANGED_CB");
+          if (vcb && vcb(last) == IUP_CLOSE) IupExitLoop();
+          /* Peer callbacks may have destroyed ih/radio. */
+          if (!iupObjectCheck(ih) || !iupObjectCheck(radio)) return;
+        }
       }
       iupAttribSet(radio, "_IUPHAIKU_LASTTOGGLE", reinterpret_cast<char*>(ih));
     }
@@ -127,7 +130,7 @@ static void haikuToggleDispatchClick(Ihandle* ih)
   }
 
   if (radio)
-    haikuToggleApplyCheck(ih, 1);
+    haikuToggleApplyCheck(ih, 1, 1);
 
   IFni cb = reinterpret_cast<IFni>(IupGetCallback(ih, "ACTION"));
   int ret = IUP_DEFAULT;
@@ -546,6 +549,9 @@ static int haikuToggleSetValueAttrib(Ihandle* ih, const char* value)
       want = (haikuToggleNativeValue(v) == B_CONTROL_ON) ? B_CONTROL_OFF : B_CONTROL_ON;
   }
 
+  if (ih->data->is_radio && want != B_CONTROL_ON)
+    return 0;
+
   if (want == B_CONTROL_PARTIALLY_ON)
   {
     /* 3STATE is BCheckBox-only. */
@@ -553,7 +559,7 @@ static int haikuToggleSetValueAttrib(Ihandle* ih, const char* value)
     if (auto* c = dynamic_cast<BControl*>(v)) c->SetValue(want);
   }
   else
-    haikuToggleApplyCheck(ih, want == B_CONTROL_ON);
+    haikuToggleApplyCheck(ih, want == B_CONTROL_ON, 0);
 
   if (three)
     iupAttribSetInt(ih, "_IUPHAIKU_TRISTATE", (want == B_CONTROL_PARTIALLY_ON) ? -1 : (want == B_CONTROL_ON) ? 1 : 0);
@@ -662,6 +668,13 @@ static int haikuToggleMapMethod(Ihandle* ih)
   Ihandle* radio = iupRadioFindToggleParent(ih);
   int is_switch = (ih->data->type == IUP_TOGGLE_TEXT) && !radio
                   && iupAttribGetBoolean(ih, "SWITCH");
+
+  if (radio)
+  {
+    ih->data->is_radio = 1;
+    if (!iupAttribGetHandleName(ih))
+      iupAttribSetHandleName(ih);
+  }
 
   BView* native = nullptr;
   if (ih->data->type == IUP_TOGGLE_IMAGE)

@@ -285,10 +285,13 @@ static int qmlToggleSetValueAttrib(Ihandle* ih, const char* value)
     if (iupAttribGetBoolean(ih, "3STATE"))
       qmlToggleSetChecked(ih, -1);
   }
-  else if (iupStrEqualNoCase(value, "TOGGLE"))
-    qmlToggleSetChecked(ih, !qmlToggleGetCheck(ih));
   else
-    qmlToggleSetChecked(ih, iupStrBoolean(value));
+  {
+    int check = iupStrEqualNoCase(value, "TOGGLE") ? !qmlToggleGetCheck(ih) : iupStrBoolean(value);
+    if (ih->data->is_radio && !check)
+      return 0;
+    qmlToggleSetChecked(ih, check);
+  }
 
   if (ih->data->is_radio && qmlToggleGetCheck(ih))
   {

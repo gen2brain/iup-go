@@ -103,9 +103,11 @@ static void cocoaTouchCalendarUpdateRange(Ihandle* ih, const char* min_date, con
 	UIDatePicker* picker = cocoaTouchCalendarGet(ih);
 	if (!picker) return;
 
+	picker.minimumDate = nil;
+	picker.maximumDate = nil;
+	[picker setDate:cocoaTouchCalendarClampDate(ih, min_date, max_date, [picker date]) animated:NO];
 	picker.minimumDate = cocoaTouchCalendarParseDate(min_date);
 	picker.maximumDate = cocoaTouchCalendarParseDate(max_date);
-	[picker setDate:cocoaTouchCalendarClampDate(ih, min_date, max_date, [picker date]) animated:NO];
 }
 
 static int cocoaTouchCalendarSetMinDateAttrib(Ihandle* ih, const char* value)

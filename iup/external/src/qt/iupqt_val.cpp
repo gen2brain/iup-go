@@ -273,6 +273,7 @@ static int qtValSetValueAttrib(Ihandle* ih, const char* value)
 {
   if (iupStrToDouble(value, &(ih->data->val)))
   {
+    iupValCropValue(ih);
     auto* slider = reinterpret_cast<IupQtSlider*>(ih->handle);
     if (slider)
     {
