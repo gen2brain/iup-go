@@ -394,21 +394,6 @@ IUP_API int IupGetChildPos(Ihandle* ih, Ihandle* child)
   return -1;
 }
 
-IUP_SDK_API Ihandle* iupChildTreeGetPrevBrother(Ihandle* ih)
-{
-  Ihandle* c, *prev = NULL;
-
-  for (c = ih->parent->firstchild; c; c = c->brother)
-  {
-    if (c == ih)
-      return prev;
-
-    prev = c;
-  }
-
-  return NULL;
-}
-
 IUP_API int IupGetChildCount(Ihandle* ih)
 {
   iupASSERT(iupObjectCheck(ih));

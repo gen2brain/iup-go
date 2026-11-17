@@ -551,14 +551,6 @@ int iupClassObjectAttribIsIhandle(Ihandle* ih, const char* name)
   return 0;
 }
 
-IUP_SDK_API int iupClassObjectAttribIsCallback(Ihandle* ih, const char* name)
-{
-  IattribFunc* afunc = (IattribFunc*)iupTableGet(ih->iclass->attrib_func, name);
-  if (afunc && (afunc->flags & IUPAF_CALLBACK))
-    return 1;
-  return 0;
-}
-
 int iupClassAttribIsRegistered(Iclass* ic, const char* name)
 {
   IattribFunc* afunc = NULL;
@@ -1120,7 +1112,7 @@ IUP_API void IupCopyClassAttributes(Ihandle* src_ih, Ihandle* dst_ih)
               if (value && value[0])  /* NOT NULL and not empty */
               {
                 if (!iupStrEqualNoCase(value, IupGetAttributeId2(dst_ih, name, lin, col)))     /* NOT already stored */
-                  IupStoreAttributeId2(dst_ih, name, lin, col, value);
+                  IupSetStrAttributeId2(dst_ih, name, lin, col, value);
               }
             }
           }
@@ -1134,7 +1126,7 @@ IUP_API void IupCopyClassAttributes(Ihandle* src_ih, Ihandle* dst_ih)
             if (value && value[0])  /* NOT NULL and not empty */
             {
               if (!iupStrEqualNoCase(value, IupGetAttributeId(dst_ih, name, id)))     /* NOT already stored */
-                IupStoreAttributeId(dst_ih, name, id, value);
+                IupSetStrAttributeId(dst_ih, name, id, value);
             }
           }
         }

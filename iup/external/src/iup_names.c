@@ -99,11 +99,6 @@ void iupNamesDestroyHandles(void)
   iNamesDestroyTopParents(NULL, NULL);
 }
 
-IUP_SDK_API void iupNamesDestroyHandlesSelected(const char* attrib_name, void* attrib_value)
-{
-  iNamesDestroyTopParents(attrib_name, attrib_value);
-}
-
 void iupRemoveNames(Ihandle* ih)
 {
   if (iupAttribGet(ih, "HANDLENAME"))

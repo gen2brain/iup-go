@@ -130,18 +130,6 @@ IUP_SDK_API void iupStrLower(char* dstr, const char* sstr)
   *dstr = 0;
 }
 
-IUP_SDK_API int iupStrHasSpace(const char* str)
-{
-  if (!str) return 0;
-  while (*str)
-  {
-    if (*str == ' ')
-      return 1;
-    str++;
-  }
-  return 0;
-}
-
 IUP_SDK_API char** iupStrSplitCommandLine(const char* filename, const char* parameters)
 {
   size_t len = parameters ? strlen(parameters) : 0;
@@ -704,13 +692,6 @@ IUP_SDK_API char* iupStrReturnChecked(int i)
     return "OFF";
 }
 
-IUP_SDK_API char* iupStrReturnUInt(unsigned int i)
-{
-  char* str = iupStrGetSmallMem();  /* 20 */
-  snprintf(str, 80, "%u", i);
-  return str;
-}
-
 IUP_SDK_API char* iupStrReturnInt(int i)
 {
   char* str = iupStrGetSmallMem();  /* 20 */
@@ -744,27 +725,6 @@ IUP_SDK_API char* iupStrReturnRGBA(unsigned char r, unsigned char g, unsigned ch
   char* str = iupStrGetSmallMem();  /* 4*20 */
   snprintf(str, 80, "%d %d %d %d", (int)r, (int)g, (int)b, (int)a);
   return str;
-}
-
-IUP_SDK_API char* iupStrReturnStrStr(const char* str1, const char* str2, char sep)
-{
-  if (str1 || str2)
-  {
-    char* ret_str;
-    int size1=0, size2=0;
-    if (str1) size1 = (int)strlen(str1);
-    if (str2) size2 = (int)strlen(str2);
-    ret_str = iupStrGetMemory(size1+size2+2);
-    if (!ret_str)
-      return NULL;
-    if (str1 && size1) memcpy(ret_str, str1, size1);
-    ret_str[size1] = sep;
-    if (str2 && size2) memcpy(ret_str+size1+1, str2, size2);
-    ret_str[size1+1+size2] = 0;
-    return ret_str;
-  }
-  else
-    return NULL;
 }
 
 IUP_SDK_API char* iupStrReturnIntInt(int i1, int i2, char sep)
@@ -846,17 +806,6 @@ IUP_SDK_API int iupStrToInt(const char* str, int* i)
   return 1;
 }
 
-IUP_SDK_API int iupStrToUInt(const char* str, unsigned int* i)
-{
-  char* endptr;
-  unsigned long val;
-  if (!str) return 0;
-  val = strtoul(str, &endptr, 10);
-  if (endptr == str) return 0;
-  *i = (unsigned int)val;
-  return 1;
-}
-
 IUP_SDK_API int iupStrToIntInt(const char* str, int* i1, int* i2, char sep)
 {
   char* endptr;
@@ -902,17 +851,6 @@ IUP_SDK_API int iupStrToIntInt(const char* str, int* i1, int* i2, char sep)
       return ret;
     }
   }
-}
-
-IUP_SDK_API int iupStrToFloatDef(const char* str, float* f, float def)
-{
-  char* endptr;
-  float val;
-  if (!str) { *f = def;  return 1; }
-  val = strtof(str, &endptr);
-  if (endptr == str) return 0;
-  *f = val;
-  return 1;
 }
 
 IUP_SDK_API int iupStrToFloat(const char* str, float* f)
@@ -988,53 +926,6 @@ IUP_SDK_API int iupStrToFloatFloat(const char* str, float* f1, float* f2, char s
       val = strtof(p_str, &endptr);
       if (endptr != p_str) { *f1 = val; ret++; }
       val = strtof(str, &endptr);
-      if (endptr != str) { *f2 = val; ret++; }
-      free(p_str);
-      return ret;
-    }
-  }
-}
-
-IUP_SDK_API int iupStrToDoubleDouble(const char* str, double* f1, double* f2, char sep)
-{
-  char* endptr;
-  double val;
-
-  if (!str) return 0;
-
-  if (iup_tolower(*str) == sep) /* no first value */
-  {
-    str++; /* skip separator */
-    val = strtod(str, &endptr);
-    if (endptr == str) return 0;
-    *f2 = val;
-    return 1;
-  }
-  else
-  {
-    char* p_str = iStrDupUntilNoCase((char**)&str, sep);
-
-    if (!p_str)   /* no separator means no second value */
-    {
-      val = strtod(str, &endptr);
-      if (endptr == str) return 0;
-      *f1 = val;
-      return 1;
-    }
-    else if (*str == 0)    /* separator exists, but second value empty, also means no second value */
-    {
-      val = strtod(p_str, &endptr);
-      free(p_str);
-      if (endptr == p_str) return 0;
-      *f1 = val;
-      return 1;
-    }
-    else
-    {
-      int ret = 0;
-      val = strtod(p_str, &endptr);
-      if (endptr != p_str) { *f1 = val; ret++; }
-      val = strtod(str, &endptr);
       if (endptr != str) { *f2 = val; ret++; }
       free(p_str);
       return ret;
@@ -1208,42 +1099,6 @@ IUP_SDK_API char* iupStrFileGetTitle(const char* filename)
   }
 }
 
-IUP_SDK_API char* iupStrFileGetExt(const char* filename)
-{
-  if (!filename)
-    return NULL;
-  else
-  {
-    /* Starts at the last character */
-    int len = (int)strlen(filename);
-    int offset = len - 1;
-    while (offset > 0)
-    {
-      /* if found a path separator stop. */
-      if (filename[offset] == '\\' || filename[offset] == '/')
-        return NULL;
-
-      if (filename[offset] == '.')
-      {
-        offset++;
-        break;
-      }
-
-      offset--;
-    }
-
-    if (offset <= 0)
-      return NULL;
-
-    {
-      int ext_size = len - offset + 1;
-      char* file_ext = (char*)malloc(ext_size);
-      memcpy(file_ext, filename + offset, ext_size);
-      return file_ext;
-    }
-  }
-}
-
 IUP_SDK_API char* iupStrFileMakeFileName(const char* path, const char* title)
 {
   if (!path || !title)
@@ -1328,21 +1183,6 @@ static int iStrIsReserved(char c)
     return 1;
 
   return 0;
-}
-
-IUP_SDK_API void iupStrReplaceReserved(char* str, char c)
-{
-  if (!str)
-    return;
-
-  while (*str)
-  {
-    if (iStrIsReserved(*str))
-    {
-      *str = c;
-    }
-    str++;
-  }
 }
 
 IUP_SDK_API void iupStrToUnix(char* str)
@@ -1432,61 +1272,6 @@ IUP_SDK_API char* iupStrToDos(const char* str)
 }
 
 #define IUP_ISRESERVED(_c) ((_c)=='\n' || (_c)=='\r' || (_c)=='\t' || (_c)=='\\')
-
-IUP_SDK_API char* iupStrConvertToC(const char* str)
-{
-  char* new_str, *p_new_str;
-  const char* p_str = str;
-  int len, count=0;
-
-  if (!str)
-    return NULL;
-
-  while(*p_str)
-  {
-    if (IUP_ISRESERVED(*p_str))
-      count++;
-    p_str++;
-  }
-  if (!count)
-    return (char*)str;
-
-  len = (int)(p_str-str);
-  new_str = malloc(len+count+1);
-  p_str = str;
-  p_new_str = new_str;
-  while(*p_str)
-  {
-    if (IUP_ISRESERVED(*p_str))
-    {
-      *p_new_str = '\\';
-      p_new_str++;
-
-      switch(*p_str)
-      {
-      case '\n':
-        *p_new_str = 'n';
-        break;
-      case '\r':
-        *p_new_str = 'r';
-        break;
-      case '\t':
-        *p_new_str = 't';
-        break;
-      case '\\':
-        *p_new_str = '\\';
-        break;
-      }
-    }
-    else
-      *p_new_str = *p_str;
-
-    p_new_str++;
-    p_str++;
-  }
-  *p_new_str = 0;
-  return new_str;
-}
 
 IUP_SDK_API char* iupStrProcessMnemonic(const char* str, char* c, int action)
 {
@@ -1988,26 +1773,6 @@ IUP_SDK_API void iupStrChangeCase(char* dstr, const char* sstr, int case_flag, i
   *dstr = 0;
 }
 
-IUP_SDK_API void iupStrAnsiToUtf8(char* dstr, const char* sstr)
-{
-  if (!sstr || sstr[0] == 0) return;
-  for (; *sstr; sstr++, dstr++)
-  {
-    dstr = iStrLatin1toUTF8(dstr, *sstr);
-  }
-  *dstr = 0;
-}
-
-IUP_SDK_API void iupStrUtf8ToAnsi(char* dstr, const char* sstr)
-{
-  if (!sstr || sstr[0] == 0) return;
-  for (; *sstr; sstr++, dstr++)
-  {
-    *dstr = iStrUTF8toLatin1(&sstr);
-  }
-  *dstr = 0;
-}
-
 static int iStrIncUTF8(const char* str)
 {
   if (*str >= 0)      /* ASCII */
@@ -2248,27 +2013,6 @@ IUP_SDK_API void iupStrPrintfDoubleLocale(char* str, const char* format, double 
 #else
 #include <unistd.h> /* for close */
 #endif
-
-IUP_SDK_API int iupStrTmpFileName(char* filename, const char* prefix)
-{
-#ifdef WIN32
-  char tmpPath[10240];
-  if (GetTempPathA(10240, tmpPath) == 0)
-    return 0;
-  if (GetTempFileNameA(tmpPath, prefix, 0, filename) == 0)
-    return 0;
-#else
-  char* dirname = getenv("TMPDIR");
-  if (!dirname) dirname = "/tmp";
-  if (snprintf(filename, 10240, "%s/%sXXXXXX", dirname, prefix) >= 10240)
-    return 0;
-  int fd = mkstemp(filename);
-  if (fd == -1)
-    return 0;
-  close(fd);
-#endif
-  return 1;
-}
 
 IUP_SDK_API char* iupStrFileMakeURL(const char* filename)
 {

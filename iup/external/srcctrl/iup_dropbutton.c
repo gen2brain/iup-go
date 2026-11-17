@@ -1046,8 +1046,6 @@ Iclass* iupDropButtonNewClass(void)
 
   iupClassRegisterAttribute(ic, "DROPCHILD", iDropButtonGetDropChildAttrib, iDropButtonSetDropChildAttrib, NULL, NULL, IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DROPCHILD_HANDLE", iDropButtonGetDropChildHandleAttrib, iDropButtonSetDropChildHandleAttrib, NULL, NULL, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT | IUPAF_IHANDLE | IUPAF_NO_STRING);
-  iupClassRegisterAttribute(ic, "FIRST_CONTROL_HANDLE", iDropButtonGetDropChildHandleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT | IUPAF_IHANDLE | IUPAF_NO_STRING);
-  iupClassRegisterAttribute(ic, "NEXT_CONTROL_HANDLE", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT | IUPAF_IHANDLE | IUPAF_NO_STRING);
 
   iupClassRegisterAttribute(ic, "ARROWIMAGES", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "ARROWSIZE", iDropButtonGetArrowSizeAttrib, iDropButtonSetArrowSizeAttrib, IUPAF_SAMEASSYSTEM, "24", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);

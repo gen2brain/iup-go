@@ -24,7 +24,6 @@ void        iupSvgDrawKillCanvas(iSvgCanvas* dc);
 void        iupSvgDrawSetTransform(iSvgCanvas* dc, const IupDrawMatrix* matrix);
 
 const char* iupSvgDrawGetString(iSvgCanvas* dc);
-int         iupSvgDrawGetStringLength(iSvgCanvas* dc);
 void        iupSvgDrawGetSize(iSvgCanvas* dc, int* w, int* h);
 
 /* color is passed as "r g b" or "r g b a" string */

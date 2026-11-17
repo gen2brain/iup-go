@@ -269,7 +269,6 @@ static int iPlayAction(FILE* file, int mode)
       if (mode == IUP_RECBINARY) iPlayReadByte(file, &eol, mode);
       if (ferror(file)) return -1;
 
-      /* IupSetfAttribute(NULL, "MOUSEBUTTON", "%dx%d %c %d", x, y, button, (int)status);*/
       iupdrvSendMouse(x, y, (int)button, (int)status);
 
       /* Process all messages between button press and release without interruption.
@@ -290,7 +289,6 @@ static int iPlayAction(FILE* file, int mode)
       if (mode == IUP_RECBINARY) iPlayReadByte(file, &eol, mode);
       if (ferror(file)) return -1;
 
-      /* IupSetfAttribute(NULL, "CURSORPOS", "%dx%d", x, y); */
       iupdrvSendMouse(x, y, (int)button, -1);
       break;
     }
@@ -304,10 +302,8 @@ static int iPlayAction(FILE* file, int mode)
       if (ferror(file)) return -1;
 
       if (pressed)
-        /* IupSetInt(NULL, "KEYPRESS", key); */
         iupdrvSendKey(key, 0x01);
       else
-        /* IupSetInt(NULL, "KEYRELEASE", key); */
         iupdrvSendKey(key, 0x02);
       break;
     }
@@ -321,7 +317,6 @@ static int iPlayAction(FILE* file, int mode)
       if (mode == IUP_RECBINARY) iPlayReadByte(file, &eol, mode);
       if (ferror(file)) return -1;
 
-      /* IupSetfAttribute(NULL, "MOUSEBUTTON", "%dx%d %c %d", x, y, 'W', (int)delta);*/
       iupdrvSendMouse(x, y, 'W', (int)delta);
       break;
     }

@@ -338,8 +338,6 @@ int iupImageStockGetSize(void)
     int size = 16;
     iupStrToInt(stock_size, &size);
 
-    /*  if (size <= 16)
-      return 16; */
     if (size <= 24)
       return 24;
     if (size <= 32)
@@ -349,8 +347,6 @@ int iupImageStockGetSize(void)
   else
   {
     int dpi = iupRound(iupdrvGetScreenDpi());
-    /*  if (dpi <= 96)
-      return 16; */
     if (dpi <= 144)
       return 24;
     if (dpi <= 192)
@@ -1290,7 +1286,6 @@ static int iImageSetIdValueAttrib(Ihandle* ih, int id, const char* value)
   (void)ih;
   (void)value;
   (void)id;
-  /*  iupAttribSetStrId(ih, "", id, value); */
   return 1;
 }
 

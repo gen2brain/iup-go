@@ -44,7 +44,6 @@ struct _IcontrolData
 /* Validation Functions (used by core and drivers)                          */
 /* ========================================================================= */
 
-int iupTableIsValid(Ihandle* ih);
 int iupTableCheckCellPos(Ihandle* ih, int lin, int col);
 char* iupTableGetCellImageCb(Ihandle* ih, int lin, int col);
 char* iupTableGetCellBgColor(Ihandle* ih, int lin, int col);  /* BGCOLOR_CB in VIRTUALMODE, then L:C, 0:C, L:0 */

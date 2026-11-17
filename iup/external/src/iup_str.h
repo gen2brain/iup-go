@@ -117,9 +117,6 @@ IUP_SDK_API void iupStrLower(char* dstr, const char* sstr);
  * \ingroup str */
 IUP_SDK_API void iupStrUpper(char* dstr, const char* sstr);
 
-/** Checks if the string has at least 1 space character.
- * \ingroup str */
-IUP_SDK_API int iupStrHasSpace(const char* str);
 
 /** Splits a parameter string into a NULL terminated argument vector with argv[0] set to filename,
  * using POSIX shell quoting. Returns NULL on an unmatched quote or a trailing backslash.
@@ -182,9 +179,6 @@ IUP_SDK_API char* iupStrReturnChecked(int i);
  * \ingroup str */
 IUP_SDK_API char* iupStrReturnInt(int i);
 
-/** Returns an unsigned int value in a string using \ref iupStrGetMemory.
-* \ingroup str */
-IUP_SDK_API char* iupStrReturnUInt(unsigned int i);
 
 /** round-trip safe float precision; drops trailing zeros via %g
 * \ingroup str */
@@ -210,9 +204,6 @@ IUP_SDK_API char* iupStrReturnRGB(unsigned char r, unsigned char g, unsigned cha
  * \ingroup str */
 IUP_SDK_API char* iupStrReturnRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 
-/** Returns two string values in a string using \ref iupStrGetMemory.
- * \ingroup str */
-IUP_SDK_API char* iupStrReturnStrStr(const char* str1, const char* str2, char sep);
 
 /** Returns two int values in a string using \ref iupStrGetMemory.
  * \ingroup str */
@@ -239,10 +230,6 @@ IUP_SDK_API int iupStrToRGBA(const char* str, unsigned char* r, unsigned char* g
  * \ingroup str */
 IUP_SDK_API int iupStrToInt(const char* str, int* i);
 
-/** Converts the string to an unsigned int. The string must contain only the integer value.
-* Returns a non-zero value if successful.
-* \ingroup str */
-IUP_SDK_API int iupStrToUInt(const char* str, unsigned int* i);
 
 /** Converts the string to two int. The string must contain two integer values in sequence,
  * separated by the given character (usually 'x' or ':').
@@ -255,7 +242,6 @@ IUP_SDK_API int iupStrToIntInt(const char* str, int* i1, int* i2, char sep);
  * Returns a non-zero value if successful.
  * \ingroup str */
 IUP_SDK_API int iupStrToFloat(const char* str, float* f);
-IUP_SDK_API int iupStrToFloatDef(const char* str, float* f, float def);
 
 /** Converts the string to a double. The string must contain only the real value.
  * Returns a non-zero value if successful.
@@ -277,13 +263,6 @@ IUP_SDK_API int iupStrToDoubleLocale(const char* str, double* d, const char* dec
  * \ingroup str */
 IUP_SDK_API int iupStrToFloatFloat(const char* str, float* f1, float* f2, char sep);
 
-/** Converts the string to two double. The string must contain two real values in sequence,
- * separated by the given character (usually 'x' or ':').
- * Returns the number of converted values.
- * Values not extracted are not changed.
- * ATENTION: AVOID DEFINING THIS TYPE OF ATTRIBUTE VALUE.
- * \ingroup str */
-IUP_SDK_API int iupStrToDoubleDouble(const char* str, double* f1, double* f2, char sep);
 
 /** Extract two strings from the string.
  * separated by the given character (usually 'x' or ':').
@@ -312,11 +291,6 @@ IUP_SDK_API int iupStrToDate(const char* str, int* year, int* month, int* day);
  * \ingroup str */
 IUP_SDK_API int iupStrDateClamp(const char* min_date, const char* max_date, int* year, int* month, int* day);
 
-/** Returns the file extension of a file name.
- * Supports UNIX and Windows directory separators.
- * Must free the returned string.
- * \ingroup str */
-IUP_SDK_API char* iupStrFileGetExt(const char* filename);
 
 /** Returns the file title of a file name.
  * Supports UNIX and Windows directory separators.
@@ -346,19 +320,12 @@ IUP_SDK_API char* iupStrFileMakeURL(const char* filename);
  * \ingroup str */
 IUP_SDK_API void iupStrFileNameSplit(const char* filename, char* path, int path_size, char* title, int title_size);
 
-/** Returns a filename for a temporary file.
- * A file with the result name is created and must be removed after use.
- * \ingroup str */
-IUP_SDK_API int iupStrTmpFileName(char* filename, const char* prefix);
 
 /** Replace a character in a string.
  * Returns the number of occurrences.
  * \ingroup str */
 IUP_SDK_API int iupStrReplace(char* str, char src, char dst);
 
-/** Replace reserved characters in a string.
- * \ingroup str */
-IUP_SDK_API void iupStrReplaceReserved(char* str, char c);
 
 /** Convert line ends to UNIX format in-place (one \n per line).
  * \ingroup str */
@@ -373,10 +340,6 @@ IUP_SDK_API void iupStrToMac(char* str);
  * \ingroup str */
 IUP_SDK_API char* iupStrToDos(const char* str);
 
-/** Convert string to C format. Process \\, \n, \r and \t.
- * If returned pointer different the input, it must be freed.
- * \ingroup str */
-IUP_SDK_API char* iupStrConvertToC(const char* str);
 
 /** Remove the interval from the string. Done in-place.
  * \ingroup str */

@@ -423,7 +423,6 @@ int   iupClassObjectAttribIsNotString(Ihandle* ih, const char* name);
 /* Used only in iupAttribIsIhandle */
 int   iupClassObjectAttribIsIhandle(Ihandle* ih, const char* name);
 
-IUP_SDK_API int iupClassObjectAttribIsCallback(Ihandle* ih, const char* name);
 
 /* Used only in iupAttribSetTheme */
 int   iupClassObjectAttribCanCopy(Ihandle* ih, const char* name);
@@ -449,8 +448,6 @@ void iupClassGetAttribNameInfo(Iclass* ic, const char* name, char* *def_value, i
 /* Used in iupClassRegisterAttribute and iGlobalChangingDefaultColor */
 int iupClassIsGlobalDefault(const char* name, int colors);
 
-IUP_SDK_API void iupClassInfoGetDesc(Iclass* ic, Ihandle* ih, const char* attrib_name);
-IUP_SDK_API void iupClassInfoShowHelp(const char* className);
 IUP_SDK_API char* iupClassInfoGetAttribFlags(int flags, const char* prefix);
 IUP_SDK_API char* iupClassInfoGetAttribDefault(Iclass* ic, const char* name);
 

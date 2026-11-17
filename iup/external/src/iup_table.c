@@ -26,13 +26,6 @@
 /* Validation Functions                                                      */
 /* ========================================================================= */
 
-int iupTableIsValid(Ihandle* ih)
-{
-  if (!ih->handle)
-    return 0;
-  return 1;
-}
-
 int iupTableCheckCellPos(Ihandle* ih, int lin, int col)
 {
   if (lin < 1 || col < 1)

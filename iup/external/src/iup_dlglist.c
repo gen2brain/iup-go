@@ -68,11 +68,6 @@ IUP_SDK_API void iupDlgListRemove(Ihandle* ih)
 
 static Idiallst* idlg_first = NULL;
 
-IUP_SDK_API int iupDlgListCount(void)
-{
-  return idlg_count;
-}
-
 IUP_SDK_API Ihandle* iupDlgListFirst(void)
 {
   idlg_first = idlglist;
@@ -141,7 +136,3 @@ void iupDlgListDestroyAll(void)
   iDlgListDestroy(NULL, NULL);
 }
 
-IUP_SDK_API void iupDlgListDestroySelected(const char* name, void* value)
-{
-  iDlgListDestroy(name, value);
-}

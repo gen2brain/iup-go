@@ -276,7 +276,7 @@ static const char* getChildType(int childtype)
   }
 }
 
-IUP_SDK_API void iupClassInfoGetDesc(Iclass* ic, Ihandle* ih, const char* attrib_name)
+static void iClassInfoGetDesc(Iclass* ic, Ihandle* ih, const char* attrib_name)
 {
   char constructor[50];
 
@@ -350,7 +350,7 @@ static int classesList_ActionCB (Ihandle* ih, char* className, int pos, int stat
 
     ic = iupRegisterFindClass(className);
 
-    iupClassInfoGetDesc(ic, txtInfo, "VALUE");
+    iClassInfoGetDesc(ic, txtInfo, "VALUE");
 
     free(attr_names);
   }
@@ -378,7 +378,7 @@ static void PopulateListOfClasses(Ihandle* ih)
   free(list);
 }
 
-IUP_SDK_API void iupClassInfoShowHelp(const char* className)
+static void iClassInfoShowHelp(const char* className)
 {
   char url[1024];
   char* folder = "elem";
@@ -414,7 +414,7 @@ static int button_help_CB(Ihandle* ih)
   if (!className)
     IupMessageError(IupGetDialog(ih), "Select a class from the list first!");
   else
-    iupClassInfoShowHelp(className);
+    iClassInfoShowHelp(className);
   return IUP_DEFAULT;
 }
 

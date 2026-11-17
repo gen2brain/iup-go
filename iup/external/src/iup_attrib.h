@@ -96,28 +96,12 @@ IUP_SDK_API void iupAttribSetIntId2(Ihandle* ih, const char* name, int lin, int 
  * \ingroup attrib */
 IUP_SDK_API void iupAttribSetFloat(Ihandle* ih, const char* name, float num);
 
-/** Same as \ref iupAttribSetFloat with an id.
- * \ingroup attrib */
-IUP_SDK_API void iupAttribSetFloatId(Ihandle* ih, const char* name, int id, float num);
-
-/** Same as \ref iupAttribSetFloat with lin and col.
- * \ingroup attrib */
-IUP_SDK_API void iupAttribSetFloatId2(Ihandle* ih, const char* name, int lin, int col, float num);
-
 
 /** Sets a floating point attribute only in the hash table. \n
 * It will be stored as a string. \n
 * It ignores children.
 * \ingroup attrib */
 IUP_SDK_API void iupAttribSetDouble(Ihandle* ih, const char* name, double num);
-
-/** Same as \ref iupAttribSetDouble with an id.
-* \ingroup attrib */
-IUP_SDK_API void iupAttribSetDoubleId(Ihandle* ih, const char* name, int id, double num);
-
-/** Same as \ref iupAttribSetDouble with lin and col.
-* \ingroup attrib */
-IUP_SDK_API void iupAttribSetDoubleId2(Ihandle* ih, const char* name, int lin, int col, double num);
 
 
 /** Returns the attribute from the hash table only.  \n
@@ -167,13 +151,6 @@ IUP_SDK_API int iupAttribGetIntId(Ihandle* ih, const char* name, int id);
  * \ingroup attrib */
 IUP_SDK_API int iupAttribGetBooleanId(Ihandle* ih, const char* name, int id);
 
-/** Same as \ref iupAttribGetFloat but with an id.
- * \ingroup attrib */
-IUP_SDK_API float iupAttribGetFloatId(Ihandle* ih, const char* name, int id);
-
-/** Same as \ref iupAttribGetDouble but with an id.
-* \ingroup attrib */
-IUP_SDK_API double iupAttribGetDoubleId(Ihandle* ih, const char* name, int id);
 
 /** Same as \ref iupAttribGet but with a lin and col.
  * \ingroup attrib */
@@ -182,18 +159,6 @@ IUP_SDK_API char* iupAttribGetId2(Ihandle* ih, const char* name, int lin, int co
 /** Same as \ref iupAttribGetInt but with lin and col.
  * \ingroup attrib */
 IUP_SDK_API int iupAttribGetIntId2(Ihandle* ih, const char* name, int lin, int col);
-
-/** Same as \ref iupAttribGetBoolean but with lin and col.
- * \ingroup attrib */
-IUP_SDK_API int iupAttribGetBooleanId2(Ihandle* ih, const char* name, int lin, int col);
-
-/** Same as \ref iupAttribGetFloat but with lin and col.
- * \ingroup attrib */
-IUP_SDK_API float iupAttribGetFloatId2(Ihandle* ih, const char* name, int lin, int col);
-
-/** Same as \ref iupAttribGetDouble but with lin and col.
-* \ingroup attrib */
-IUP_SDK_API double iupAttribGetDoubleId2(Ihandle* ih, const char* name, int lin, int col);
 
 
 /** Returns the attribute from the hash table only, 
@@ -235,11 +200,8 @@ IUP_SDK_API char* iupAttribGetHandleName(Ihandle* ih);
  * It ignores children.
  * \ingroup attrib */
 IUP_SDK_API void iupAttribSetClassObject(Ihandle* ih, const char* name, const char* value);
-IUP_SDK_API void iupAttribSetClassObjectId(Ihandle* ih, const char* name, int id, const char* value);
 IUP_SDK_API void iupAttribSetClassObjectId2(Ihandle* ih, const char* name, int lin, int col, const char* value);
 IUP_SDK_API char* iupAttribGetClassObject(Ihandle* ih, const char* name);
-IUP_SDK_API char* iupAttribGetClassObjectId(Ihandle* ih, const char* name, int id);
-IUP_SDK_API char* iupAttribGetClassObjectId2(Ihandle* ih, const char* name, int lin, int col);
 
 /* For all attributes in the environment, call the class SetAttribute only.
  * Called only after the element is mapped, but before the children are mapped. */

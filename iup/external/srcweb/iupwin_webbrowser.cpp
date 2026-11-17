@@ -2286,6 +2286,12 @@ static void winWebBrowserDestroyMethod(Ihandle* ih)
   }
 }
 
+static void winWebBrowserRelease(Iclass* ic)
+{
+  (void)ic;
+  IupWebView2LoaderCleanup();
+}
+
 Iclass* iupWebBrowserNewClass(void)
 {
   Iclass* ic = iupClassNew(nullptr);
@@ -2305,6 +2311,7 @@ Iclass* iupWebBrowserNewClass(void)
   ic->UnMap = winWebBrowserUnMapMethod;
   ic->LayoutUpdate = winWebBrowserLayoutUpdateMethod;
   ic->ComputeNaturalSize = winWebBrowserComputeNaturalSizeMethod;
+  ic->Release = winWebBrowserRelease;
 
   iupClassRegisterCallback(ic, "NEWWINDOW_CB", "s");
   iupClassRegisterCallback(ic, "NAVIGATE_CB", "s");

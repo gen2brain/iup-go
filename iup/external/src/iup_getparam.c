@@ -643,10 +643,10 @@ static Ihandle* iParamCreateCtrlBox(Ihandle* param, const char* type)
 
     while (*iupAttribGetId(param, "", i) != 0)
     {
-      IupStoreAttributeId(ctrl, "", i+1, iupAttribGetId(param, "", i));
+      IupSetStrAttributeId(ctrl, "", i+1, iupAttribGetId(param, "", i));
       i++;
     }
-    IupStoreAttributeId(ctrl, "", i+1, NULL);
+    IupSetStrAttributeId(ctrl, "", i+1, NULL);
 
     IupSetInt(ctrl, "VALUE", iupAttribGetInt(param, "VALUE") + 1);
 

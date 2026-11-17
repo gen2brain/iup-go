@@ -43,10 +43,6 @@ IUP_SDK_API void iupChildTreeAppend(Ihandle* parent, Ihandle* child);
  * \ingroup childtree */
 IUP_SDK_API int iupChildTreeIsParent(Ihandle* ih, Ihandle* parent);
 
-/** Returns the previous brother if any.
- * \ingroup childtree */
-IUP_SDK_API Ihandle* iupChildTreeGetPrevBrother(Ihandle* ih);
-
 
 /* Other functions declared in <iup.h> and implemented here. 
 IupGetDialog

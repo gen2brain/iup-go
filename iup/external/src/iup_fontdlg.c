@@ -42,7 +42,7 @@ static void iFontDlgInitFamilyList(Ihandle* ih)
 
   for (i = 0; i < count; i++)
   {
-    IupStoreAttributeId(list1, "", i + 1, families[i]);
+    IupSetStrAttributeId(list1, "", i + 1, families[i]);
     free(families[i]);
   }
   IupSetAttributeId(list1, "", count + 1, NULL);

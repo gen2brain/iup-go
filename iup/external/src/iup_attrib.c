@@ -310,11 +310,6 @@ IUP_API void IupSetAttributeId(Ihandle* ih, const char* name, int id, const char
 
 IUP_API void IupSetStrAttributeId(Ihandle* ih, const char* name, int id, const char* value)
 {
-  IupStoreAttributeId(ih, name, id, value);
-}
-
-IUP_API void IupStoreAttributeId(Ihandle* ih, const char* name, int id, const char* value)
-{
   int store = 1;
 
   iupASSERT(name!=NULL);
@@ -371,11 +366,6 @@ IUP_API void IupSetAttributeId2(Ihandle* ih, const char* name, int lin, int col,
 }
 
 IUP_API void IupSetStrAttributeId2(Ihandle* ih, const char* name, int lin, int col, const char* value)
-{
-  IupStoreAttributeId2(ih, name, lin, col, value);
-}
-
-IUP_API void IupStoreAttributeId2(Ihandle* ih, const char* name, int lin, int col, const char* value)
 {
   int store = 1;
 
@@ -457,7 +447,7 @@ IUP_API void IupSetStrfIdV(Ihandle* ih, const char* name, int id, const char* f,
   int size;
   char* value = iupStrGetLargeMem(&size);
   vsnprintf(value, size, f, arglist);
-  IupStoreAttributeId(ih, name, id, value);
+  IupSetStrAttributeId(ih, name, id, value);
 }
 
 IUP_API void IupSetStrfId(Ihandle* ih, const char* name, int id, const char* f, ...)
@@ -468,7 +458,7 @@ IUP_API void IupSetStrfId(Ihandle* ih, const char* name, int id, const char* f, 
   va_start(arglist, f);
   vsnprintf(value, size, f, arglist);
   va_end(arglist);
-  IupStoreAttributeId(ih, name, id, value);
+  IupSetStrAttributeId(ih, name, id, value);
 }
 
 IUP_API void IupSetfAttributeId(Ihandle* ih, const char* name, int id, const char* f, ...)
@@ -479,35 +469,35 @@ IUP_API void IupSetfAttributeId(Ihandle* ih, const char* name, int id, const cha
   va_start(arglist, f);
   vsnprintf(value, size, f, arglist);
   va_end(arglist);
-  IupStoreAttributeId(ih, name, id, value);
+  IupSetStrAttributeId(ih, name, id, value);
 }
 
 IUP_API void IupSetIntId(Ihandle* ih, const char* name, int id, int num)
 {
   char value[20];  /* +4,294,967,296 */
   snprintf(value, sizeof(value), "%d", num);
-  IupStoreAttributeId(ih, name, id, value);
+  IupSetStrAttributeId(ih, name, id, value);
 }
 
 IUP_API void IupSetFloatId(Ihandle* ih, const char* name, int id, float num)
 {
   char value[80];
   snprintf(value, sizeof(value), IUP_FLOAT2STR, num);
-  IupStoreAttributeId(ih, name, id, value);
+  IupSetStrAttributeId(ih, name, id, value);
 }
 
 IUP_API void IupSetDoubleId(Ihandle* ih, const char* name, int id, double num)
 {
   char value[80];
   snprintf(value, sizeof(value), IUP_DOUBLE2STR, num);
-  IupStoreAttributeId(ih, name, id, value);
+  IupSetStrAttributeId(ih, name, id, value);
 }
 
 IUP_API void IupSetRGBId(Ihandle* ih, const char* name, int id, unsigned char r, unsigned char g, unsigned char b)
 {
   char value[60];
   snprintf(value, sizeof(value), "%d %d %d", (int)r, (int)g, (int)b);
-  IupStoreAttributeId(ih, name, id, value);
+  IupSetStrAttributeId(ih, name, id, value);
 }
 
 IUP_API int IupGetIntId2(Ihandle* ih, const char* name, int lin, int col)
@@ -549,7 +539,7 @@ IUP_API void IupSetStrfId2V(Ihandle* ih, const char* name, int lin, int col, con
   int size;
   char* value = iupStrGetLargeMem(&size);
   vsnprintf(value, size, f, arglist);
-  IupStoreAttributeId2(ih, name, lin, col, value);
+  IupSetStrAttributeId2(ih, name, lin, col, value);
 }
 
 IUP_API void IupSetStrfId2(Ihandle* ih, const char* name, int lin, int col, const char* f, ...)
@@ -560,7 +550,7 @@ IUP_API void IupSetStrfId2(Ihandle* ih, const char* name, int lin, int col, cons
   va_start(arglist, f);
   vsnprintf(value, size, f, arglist);
   va_end(arglist);
-  IupStoreAttributeId2(ih, name, lin, col, value);
+  IupSetStrAttributeId2(ih, name, lin, col, value);
 }
 
 IUP_API void IupSetfAttributeId2(Ihandle* ih, const char* name, int lin, int col, const char* f, ...)
@@ -571,35 +561,35 @@ IUP_API void IupSetfAttributeId2(Ihandle* ih, const char* name, int lin, int col
   va_start(arglist, f);
   vsnprintf(value, size, f, arglist);
   va_end(arglist);
-  IupStoreAttributeId2(ih, name, lin, col, value);
+  IupSetStrAttributeId2(ih, name, lin, col, value);
 }
 
 IUP_API void IupSetIntId2(Ihandle* ih, const char* name, int lin, int col, int num)
 {
   char value[20];  /* +4,294,967,296 */
   snprintf(value, sizeof(value), "%d", num);
-  IupStoreAttributeId2(ih, name, lin, col, value);
+  IupSetStrAttributeId2(ih, name, lin, col, value);
 }
 
 IUP_API void IupSetFloatId2(Ihandle* ih, const char* name, int lin, int col, float num)
 {
   char value[80];
   snprintf(value, sizeof(value), IUP_FLOAT2STR, num);
-  IupStoreAttributeId2(ih, name, lin, col, value);
+  IupSetStrAttributeId2(ih, name, lin, col, value);
 }
 
 IUP_API void IupSetDoubleId2(Ihandle* ih, const char* name, int lin, int col, double num)
 {
   char value[80];
   snprintf(value, sizeof(value), IUP_DOUBLE2STR, num);
-  IupStoreAttributeId2(ih, name, lin, col, value);
+  IupSetStrAttributeId2(ih, name, lin, col, value);
 }
 
 IUP_API void IupSetRGBId2(Ihandle* ih, const char* name, int lin, int col, unsigned char r, unsigned char g, unsigned char b)
 {
   char value[60];
   snprintf(value, sizeof(value), "%d %d %d", (int)r, (int)g, (int)b);
-  IupStoreAttributeId2(ih, name, lin, col, value);
+  IupSetStrAttributeId2(ih, name, lin, col, value);
 }
 
 IUP_API void IupSetAttribute(Ihandle* ih, const char* name, const char* value)
@@ -1025,11 +1015,6 @@ IUP_SDK_API void iupAttribSetClassObject(Ihandle* ih, const char* name, const ch
   iupClassObjectSetAttribute(ih, name, value, &inherit);
 }
 
-IUP_SDK_API void iupAttribSetClassObjectId(Ihandle* ih, const char* name, int id, const char* value)
-{
-  iupClassObjectSetAttributeId(ih, name, id, value);
-}
-
 IUP_SDK_API void iupAttribSetClassObjectId2(Ihandle* ih, const char* name, int lin, int col, const char* value)
 {
   iupClassObjectSetAttributeId2(ih, name, lin, col, value);
@@ -1040,16 +1025,6 @@ IUP_SDK_API char* iupAttribGetClassObject(Ihandle* ih, const char* name)
   int inherit;
   char* def_value;
   return iupClassObjectGetAttribute(ih, name, &def_value, &inherit);
-}
-
-IUP_SDK_API char* iupAttribGetClassObjectId(Ihandle* ih, const char* name, int id)
-{
-  return iupClassObjectGetAttributeId(ih, name, id);
-}
-
-IUP_SDK_API char* iupAttribGetClassObjectId2(Ihandle* ih, const char* name, int lin, int col)
-{
-  return iupClassObjectGetAttributeId2(ih, name, lin, col);
 }
 
 IUP_SDK_API void iupAttribSet(Ihandle* ih, const char* name, const char* value)
@@ -1151,34 +1126,6 @@ IUP_SDK_API void iupAttribSetIntId2(Ihandle* ih, const char* name, int lin, int 
   iupAttribSetInt(ih, nameid, num);
 }
 
-IUP_SDK_API void iupAttribSetFloatId(Ihandle* ih, const char* name, int id, float num)
-{
-  char nameid[100];
-  iAttribSetNameId(nameid, sizeof(nameid), name, id);
-  iupAttribSetFloat(ih, nameid, num);
-}
-
-IUP_SDK_API void iupAttribSetDoubleId(Ihandle* ih, const char* name, int id, double num)
-{
-  char nameid[100];
-  iAttribSetNameId(nameid, sizeof(nameid), name, id);
-  iupAttribSetDouble(ih, nameid, num);
-}
-
-IUP_SDK_API void iupAttribSetFloatId2(Ihandle* ih, const char* name, int lin, int col, float num)
-{
-  char nameid[100];
-  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
-  iupAttribSetFloat(ih, nameid, num);
-}
-
-IUP_SDK_API void iupAttribSetDoubleId2(Ihandle* ih, const char* name, int lin, int col, double num)
-{
-  char nameid[100];
-  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
-  iupAttribSetDouble(ih, nameid, num);
-}
-
 IUP_SDK_API char* iupAttribGetId(Ihandle* ih, const char* name, int id)
 {
   char nameid[100];
@@ -1200,20 +1147,6 @@ IUP_SDK_API int iupAttribGetBooleanId(Ihandle* ih, const char* name, int id)
   return iupAttribGetBoolean(ih, nameid);
 }
 
-IUP_SDK_API float iupAttribGetFloatId(Ihandle* ih, const char* name, int id)
-{
-  char nameid[100];
-  iAttribSetNameId(nameid, sizeof(nameid), name, id);
-  return iupAttribGetFloat(ih, nameid);
-}
-
-IUP_SDK_API double iupAttribGetDoubleId(Ihandle* ih, const char* name, int id)
-{
-  char nameid[100];
-  iAttribSetNameId(nameid, sizeof(nameid), name, id);
-  return iupAttribGetDouble(ih, nameid);
-}
-
 IUP_SDK_API char* iupAttribGetId2(Ihandle* ih, const char* name, int lin, int col)
 {
   char nameid[100];
@@ -1226,27 +1159,6 @@ IUP_SDK_API int iupAttribGetIntId2(Ihandle* ih, const char* name, int lin, int c
   char nameid[100];
   iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
   return iupAttribGetInt(ih, nameid);
-}
-
-IUP_SDK_API int iupAttribGetBooleanId2(Ihandle* ih, const char* name, int lin, int col)
-{
-  char nameid[100];
-  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
-  return iupAttribGetBoolean(ih, nameid);
-}
-
-IUP_SDK_API float iupAttribGetFloatId2(Ihandle* ih, const char* name, int lin, int col)
-{
-  char nameid[100];
-  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
-  return iupAttribGetFloat(ih, nameid);
-}
-
-IUP_SDK_API double iupAttribGetDoubleId2(Ihandle* ih, const char* name, int lin, int col)
-{
-  char nameid[100];
-  iAttribSetNameId2(nameid, sizeof(nameid), name, lin, col);
-  return iupAttribGetDouble(ih, nameid);
 }
 
 IUP_SDK_API int iupAttribGetBoolean(Ihandle* ih, const char* name)

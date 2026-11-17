@@ -351,9 +351,7 @@ IUP_API int       IupConvertXYToPos(Ihandle* ih, int x, int y);
 IUP_API void      IupStoreGlobal(const char* name, const char* value);
 IUP_API void      IupStoreAttribute(Ihandle* ih, const char* name, const char* value);
 IUP_API void      IupSetfAttribute(Ihandle* ih, const char* name, const char* format, ...);
-IUP_API void      IupStoreAttributeId(Ihandle* ih, const char* name, int id, const char* value);
 IUP_API void      IupSetfAttributeId(Ihandle* ih, const char* name, int id, const char* f, ...);
-IUP_API void      IupStoreAttributeId2(Ihandle* ih, const char* name, int lin, int col, const char* value);
 IUP_API void      IupSetfAttributeId2(Ihandle* ih, const char* name, int lin, int col, const char* format, ...);
 
 /* IupTree and IupFlatTree utilities (work for both) */

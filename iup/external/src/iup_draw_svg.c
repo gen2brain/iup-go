@@ -285,11 +285,6 @@ const char* iupSvgDrawGetString(iSvgCanvas* dc)
   return dc->buf.data;
 }
 
-int iupSvgDrawGetStringLength(iSvgCanvas* dc)
-{
-  return dc->buf.len;
-}
-
 void iupSvgDrawGetSize(iSvgCanvas* dc, int* w, int* h)
 {
   if (w) *w = dc->w;

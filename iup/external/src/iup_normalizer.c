@@ -23,7 +23,6 @@ enum {NORMALIZE_NONE, NORMALIZE_WIDTH, NORMALIZE_HEIGHT};
 struct _IcontrolData
 {
   Iarray* ih_array;
-  int ret_control;  /* for first/next attributes */
 };
 
 int iupNormalizeGetNormalizeSize(const char* value)
@@ -143,30 +142,6 @@ static int iNormalizerSetDelControlAttrib(Ihandle* ih, const char* value)
   return iNormalizerSetDelControlHandleAttrib(ih, (char*)IupGetHandle(value));
 }
 
-static char* iNormalizerGetFirstControlHandleAttrib(Ihandle* ih)
-{
-  int count = iupArrayCount(ih->data->ih_array);
-  Ihandle** ih_list = (Ihandle**)iupArrayGetData(ih->data->ih_array);
-
-  if (count == 0)
-    return NULL;
-
-  ih->data->ret_control = 0;
-  return (char*)ih_list[ih->data->ret_control];
-}
-
-static char* iNormalizerGetNextControlHandleAttrib(Ihandle* ih)
-{
-  int count = iupArrayCount(ih->data->ih_array);
-  Ihandle** ih_list = (Ihandle**)iupArrayGetData(ih->data->ih_array);
-
-  if (count == 0 || ih->data->ret_control >= count - 1)
-    return NULL;
-
-  ih->data->ret_control++;
-  return (char*)ih_list[ih->data->ret_control];
-}
-
 /*******************************************************************************/
 
 static void iNormalizerComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
@@ -229,8 +204,6 @@ Iclass* iupNormalizerNewClass(void)
   iupClassRegisterAttribute(ic, "ADDCONTROL", NULL, iNormalizerSetAddControlAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DELCONTROL_HANDLE", NULL, iNormalizerSetDelControlHandleAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_IHANDLE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "DELCONTROL", NULL, iNormalizerSetDelControlAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_IHANDLENAME | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
-  iupClassRegisterAttribute(ic, "FIRST_CONTROL_HANDLE", iNormalizerGetFirstControlHandleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT | IUPAF_IHANDLE | IUPAF_NO_STRING);
-  iupClassRegisterAttribute(ic, "NEXT_CONTROL_HANDLE", iNormalizerGetNextControlHandleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT | IUPAF_IHANDLE | IUPAF_NO_STRING);
 
   return ic;
 }

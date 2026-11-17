@@ -165,17 +165,6 @@ IUP_SDK_API char* iupBaseGetClientSizeAttrib(Ihandle* ih)
   return iupStrReturnIntInt(width, height, 'x');
 }
 
-IUP_SDK_API char* iupBaseGetCurrentSizeAttrib(Ihandle* ih)
-{
-  int width = ih->currentwidth;
-  int height = ih->currentheight;
-  if (width < 0) width = 0;
-  if (height < 0) height = 0;
-  if (width == 0 && height == 0)
-    return NULL;
-  return iupStrReturnIntInt(width, height, 'x');
-}
-
 IUP_SDK_API char* iupBaseGetRasterSizeAttrib(Ihandle* ih)
 {
   int width, height;
