@@ -101,7 +101,8 @@ static void winListSetItemData(Ihandle* ih, int pos, const char* str, HBITMAP hB
   if (str)
   {
     itemdata->text_width = iupdrvFontGetStringWidth(ih, str);
-    winListUpdateScrollWidthItem(ih, itemdata->text_width, 1);
+    if (!iupAttribGet(ih, "_IUPWIN_LIST_INITIAL"))
+      winListUpdateScrollWidthItem(ih, itemdata->text_width, 1);
   }
   else
     itemdata->text_width = 0;
@@ -2385,7 +2386,11 @@ static int winListMapMethod(Ihandle* ih)
 
   IupSetCallback(ih, "_IUP_XY2POS_CB", (Icallback)winListConvertXYToPos);
 
+  iupAttribSet(ih, "_IUPWIN_LIST_INITIAL", "1");
   iupListSetInitialItems(ih);
+  iupAttribSet(ih, "_IUPWIN_LIST_INITIAL", NULL);
+  if (iupdrvListGetCount(ih) > 0)
+    winListUpdateScrollWidth(ih);
 
   return IUP_NOERROR;
 }

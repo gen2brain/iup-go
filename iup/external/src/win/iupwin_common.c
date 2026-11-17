@@ -1390,7 +1390,7 @@ IUP_DRV_API int iupwinCreateWindow(Ihandle* ih, LPCTSTR lpClassName, DWORD dwExS
   /* replace the WinProc to handle base callbacks */
   iupwinChangeWndProc(ih, iupwinBaseWndProc);
 
-  iupwinDarkModeApplyToWindow(ih->handle);
+  iupwinDarkModeApplyToNewWindow(ih->handle);
 
   return 1;
 }

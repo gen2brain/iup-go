@@ -15,7 +15,8 @@ IUP_DRV_API void iupwinDarkModeInit(void);     /* from iupdrvOpen, before iupwin
 IUP_DRV_API void iupwinDarkModeSetAppearance(int appearance);
 IUP_DRV_API int  iupwinDarkModeEnabled(void);  /* opt-in on, system dark, high contrast off */
 IUP_DRV_API void iupwinDarkModeRefresh(void);  /* on ImmersiveColorSet */
-IUP_DRV_API void iupwinDarkModeApplyToWindow(HWND hwnd);  /* per control, after creation */
+IUP_DRV_API void iupwinDarkModeApplyToNewWindow(HWND hwnd);  /* per control, after creation */
+IUP_DRV_API void iupwinDarkModeApplyToWindow(HWND hwnd);  /* per control, when its mode may have changed */
 IUP_DRV_API void iupwinDarkModeApplyToTree(HWND root);    /* on a live switch */
 IUP_DRV_API void iupwinDarkModeSetNoHover(HWND hwnd);     /* grid list views (IupTable) */
 IUP_DRV_API void iupwinDarkModeApplyTaskDialog(HWND root);  /* from TaskDialog TDN_CREATED */

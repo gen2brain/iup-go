@@ -1282,7 +1282,7 @@ static int winDialogMapMethod(Ihandle* ih)
     return IUP_ERROR;
 
   iupwinTitleBarThemeColor(ih->handle);
-  iupwinDarkModeApplyToWindow(ih->handle);
+  iupwinDarkModeApplyToNewWindow(ih->handle);
 
   /* associate HWND with Ihandle*, all Win32 controls must call this. */
   iupwinHandleAdd(ih, ih->handle);
