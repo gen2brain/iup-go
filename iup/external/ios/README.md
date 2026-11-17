@@ -26,7 +26,7 @@ Three build flows are supported:
 iOS 17+ requires a one-time persistent tunnel daemon for go-ios's developer services:
 
 ```sh
-sudo ios tunnel start &
+sudo go-ios tunnel start &
 ```
 
 ## Go flow
@@ -126,8 +126,8 @@ go-ios launch com.example.myapp --kill-existing
 
 ### Development helpers
 
-Two scripts in this directory are for iterating on an app on a device or simulator (build, bundle, sign, install, logs, screenshots)
-and for the C flow; for distribution use iupkg. They chain the steps above:
+Two scripts in this directory are for iterating on an app on a device or simulator (build, bundle, sign, install, logs, screenshots);
+for distribution use iupkg. They chain the steps above:
 
 ```sh
 # macOS native:

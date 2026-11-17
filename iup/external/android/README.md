@@ -4,7 +4,7 @@ This directory is the Android-side Gradle project that pairs with the IUP C driv
 
 Three build flows are supported:
 
-* **Packaging with iupkg** - one command from the Go program to a signed `.apk`, no SDK or Gradle needed, see [cmd/iupkg](../../../cmd/iupkg).
+* **Packaging with iupkg** - one command from the Go program to a signed `.apk` or `.aab`, no SDK or Gradle needed, see [cmd/iupkg](../../../cmd/iupkg).
 * **Go flow (primary)** - an IUP app is a Go program compiled as `-buildmode=c-shared`, producing a single `.so` that Gradle picks up from `jniLibs/`.
 * **C flow (optional)** - Gradle drives CMake via `externalNativeBuild` and builds the stock IUP C library (`libiup.so`) alongside the Java bridge. Enable with `-Piup.buildC`.
 
@@ -118,8 +118,8 @@ cd iup/external/android
 ./gradlew :iupapp:assembleDebug
 ```
 
-Repeat the Go build for additional ABIs (`armv7a-linux-androideabi21-clang` for `armeabi-v7a`, `i686-linux-android21-clang` for `x86`,
-`x86_64-linux-android21-clang` for `x86_64`) and drop each into the matching `jniLibs/<abi>/` subdirectory.
+Repeat the Go build for additional ABIs (`armv7a-linux-androideabi24-clang` for `armeabi-v7a`, `i686-linux-android24-clang` for `x86`,
+`x86_64-linux-android24-clang` for `x86_64`) and drop each into the matching `jniLibs/<abi>/` subdirectory.
 
 ### Development helper: `build-android.sh`
 
@@ -127,7 +127,7 @@ The script in this directory is for iterating on an app on a device (build, inst
 It wraps the Go c-shared build, `jniLibs` placement, Gradle invocation, and optional `adb install` / logcat / screenshot capture:
 
 ```sh
-./build-android.sh -f -l -i -s -n iupapp ../../../examples/mobile_sample 
+./build-android.sh -f -l -s ../../../examples/mobile_sample
 ```
 
 `-x <name>` must match `MyIupLaunchActivity.getLibraries()` / `getEntryPointLibraryName()` (`iupapp` for the bundled example app).
@@ -197,3 +197,4 @@ Add permissions to your app's `AndroidManifest.xml`, i.e.:
 ```
 
 The bundled `iupapp/` test declares all of them because the shipped examples exercise every feature.
+`cmd/iupkg` writes them from its `--permissions` flag.

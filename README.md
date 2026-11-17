@@ -211,6 +211,8 @@ Compiles the IUP C driver to WebAssembly and runs the Go app in the browser; eve
 
 See [iup/external/wasm/README.md](iup/external/wasm/README.md) for prerequisites, build flow, and serving.
 
+For a ready-to-serve site with the prebuilt IUP module and no Emscripten SDK, see [Packaging](#packaging).
+
 [<img src="examples/sample/sample_wasm.png" width="700"/>](examples/sample/sample_wasm.png)
 
 #### Mobile
@@ -225,7 +227,7 @@ Builds the Go program as a `c-shared` `.so` consumed by a Gradle library.
 
 See [iup/external/android/README.md](iup/external/android/README.md) for prerequisites, build flow, permissions, and packaging.
 
-For a one-command `.apk` without the Gradle project, see [Packaging](#packaging).
+For a one-command `.apk` or `.aab` without the Gradle project, see [Packaging](#packaging).
 
 [<img src="examples/mobile_sample/mobile_sample_android1.png" width="300"/>](examples/mobile_sample/mobile_sample_android1.png)
 [<img src="examples/mobile_sample/mobile_sample_android2.png" width="300"/>](examples/mobile_sample/mobile_sample_android2.png)
