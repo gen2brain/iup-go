@@ -47,7 +47,7 @@ iupkg staple <app>
  | `--data`                                             |                     | file or directory shipped with the application, repeatable; a directory keeps its name; found at the `RESOURCEDIR` global   |
  | `--tags`                                             |                     | Go build tags (`gl,ctrl,web,...`)                                                                                           |
  | `--ldflags`                                          |                     | extra linker flags                                                                                                          |
- | `--cgo`                                              |                     | build with cgo (default: `go env CGO_ENABLED` for the host platform, off when cross-compiling, always on with a driver tag) |
+ | `--cgo`                                              |                     | build with cgo (default: `go env CGO_ENABLED` for the host platform, off when cross-compiling, always on with a driver tag except `winui` on Windows and `qt6` on Linux) |
  | `--debug`                                            |                     | keep symbols, debug info and file paths; otherwise `-trimpath -ldflags "-s -w"`                                             |
  | `--console`                                          |                     | windows: console application                                                                                                |
  | `--format`                                           | linux: `targz`      | linux: comma list of `targz`, `deb`, `rpm`; windows: `msix`, written next to the `.exe`; android: `apk`, `aab`              |

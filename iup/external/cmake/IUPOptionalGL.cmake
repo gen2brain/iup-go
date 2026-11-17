@@ -57,16 +57,6 @@ else()
   # iup_glcanvas_egl.c is a unity file that #includes the correct backend .c
   list(APPEND _GL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_egl.c")
 
-  if(IUP_BACKEND MATCHES "^qt")
-    if(IUP_BACKEND STREQUAL "qt6")
-      find_package(Qt6 REQUIRED COMPONENTS GuiPrivate)
-      set(_GL_QT_PRIVATE Qt6::GuiPrivate)
-    else()
-      find_package(Qt5 REQUIRED COMPONENTS Gui)
-      set(_GL_QT_PRIVATE Qt5::GuiPrivate)
-    endif()
-  endif()
-
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(WAYLAND_EGL IMPORTED_TARGET wayland-egl)
   find_package(OpenGL REQUIRED COMPONENTS EGL)
@@ -100,10 +90,6 @@ target_include_directories(iupgl
 
 target_compile_definitions(iupgl PRIVATE IUPGL_BUILD_LIBRARY ${_GL_DEFS} ${IUP_DRIVER_COMPILE_DEFINITIONS})
 target_link_libraries(iupgl PUBLIC IUP::iup PRIVATE ${_GL_LIBS} ${IUP_DRIVER_LINK_LIBRARIES})
-
-if(_GL_QT_PRIVATE)
-  target_link_libraries(iupgl PRIVATE ${_GL_QT_PRIVATE})
-endif()
 
 set_target_properties(iupgl PROPERTIES
   VERSION ${PROJECT_VERSION}

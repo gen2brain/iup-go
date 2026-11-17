@@ -179,7 +179,7 @@ func newFlagSet(c *config) *flag.FlagSet {
 		return nil
 	})
 	fs.StringVar(&c.ldflags, "ldflags", "", "extra linker `flags`")
-	fs.BoolVar(&c.cgo, "cgo", false, "build with cgo (default: go env CGO_ENABLED for the host platform, off when cross-compiling, on with a driver tag)")
+	fs.BoolVar(&c.cgo, "cgo", false, "build with cgo (default: go env CGO_ENABLED for the host platform, off when cross-compiling, on with a driver tag except winui on windows and qt6 on linux)")
 	fs.BoolVar(&c.debug, "debug", false, "keep symbols, debug info and file paths")
 	fs.BoolVar(&c.console, "console", false, "windows: build a console application")
 	fs.BoolVar(&c.install, "install", false, "android, ios: install on the connected device")
@@ -248,7 +248,7 @@ func runPackage(args []string) error {
 		c.cgo = defaultCgo(c.goos, c.goarch)
 	}
 	for _, tag := range c.tags {
-		if slices.Contains(driverTags, tag) {
+		if slices.Contains(driverTags, tag) && !puregoDriver(c.goos, tag) {
 			c.cgo = true
 		}
 	}
@@ -485,6 +485,10 @@ func (c *config) pgpSigner() (pgp.Signer, error) {
 }
 
 var driverTags = []string{"winui", "gtk3", "gtk2", "gtk4", "qt6", "qt5", "qml", "motif", "fltk", "efl", "gnustep"}
+
+func puregoDriver(goos, tag string) bool {
+	return (tag == "winui" && goos == "windows") || (tag == "qt6" && goos == "linux")
+}
 
 func appleSigner(c *config) (*apple.Signer, error) {
 	if c.sign == "" {

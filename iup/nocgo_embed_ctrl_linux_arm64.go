@@ -1,4 +1,4 @@
-//go:build !cgo && !js && !extlib && ctrl && linux && arm64
+//go:build !cgo && !js && !extlib && !qt6 && ctrl && linux && arm64
 
 package iup
 
