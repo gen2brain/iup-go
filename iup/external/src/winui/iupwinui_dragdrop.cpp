@@ -78,25 +78,34 @@ static void winuiDropFilesDrop(Ihandle* ih, IInspectable const& sender, DragEven
   if (!view.Contains(StandardDataFormats::StorageItems()))
     return;
 
-  auto items = view.GetStorageItemsAsync().get();
-  if (!items)
-    return;
-
-  int count = static_cast<int>(items.Size());
   double scale = iupwinuiGetScale(ih);
   auto pos = e.GetPosition(sender.try_as<UIElement>());
+  int x = static_cast<int>(pos.X * scale);
+  int y = static_cast<int>(pos.Y * scale);
+  auto deferral = e.GetDeferral();
+  auto dq = Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread();
 
-  for (int i = 0; i < count; i++)
-  {
-    auto item = items.GetAt(i);
-    auto path = item.Path();
-    if (path.empty())
-      continue;
+  view.GetStorageItemsAsync().Completed([ih, x, y, deferral, dq](auto const& op, AsyncStatus status) {
+    dq.TryEnqueue([ih, x, y, deferral, op, status]() {
+      auto cb = iupObjectCheck(ih) ? reinterpret_cast<IFnsiii>(IupGetCallback(ih, "DROPFILES_CB")) : nullptr;
+      if (cb && status == AsyncStatus::Completed)
+      {
+        auto items = op.GetResults();
+        int count = items ? static_cast<int>(items.Size()) : 0;
+        for (int i = 0; i < count; i++)
+        {
+          auto path = items.GetAt(i).Path();
+          if (path.empty())
+            continue;
 
-    char* filename = iupwinuiHStringToString(path);
-    if (cb(ih, filename, count - i - 1, static_cast<int>(pos.X * scale), static_cast<int>(pos.Y * scale)) == IUP_IGNORE)
-      break;
-  }
+          char* filename = iupwinuiHStringToString(path);
+          if (cb(ih, filename, count - i - 1, x, y) == IUP_IGNORE)
+            break;
+        }
+      }
+      deferral.Complete();
+    });
+  });
 }
 
 static UIElement winuiGetDropFilesElement(Ihandle* ih)

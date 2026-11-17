@@ -8,6 +8,7 @@
 #include <cstring>
 
 #include <wincodec.h>
+#include <shcore.h>
 
 extern "C" {
 #include "iup.h"
@@ -20,7 +21,6 @@ extern "C" {
 #include "iupwinui_drv.h"
 
 #include <winrt/Windows.Storage.Streams.h>
-#include <winrt/Windows.Graphics.Imaging.h>
 
 using namespace winrt;
 using namespace Microsoft::UI::Xaml::Media::Imaging;
@@ -263,84 +263,72 @@ extern "C" IUP_SDK_API void* iupdrvImageCreateCursor(Ihandle* ih)
   return reinterpret_cast<void*>(winuiImageCreateCursorIcon(ih, 1));
 }
 
+static IWICImagingFactory* iWinUIGetWicFactory();
+
+static WICBitmapTransformOptions winuiImageExifTransform(IWICBitmapFrameDecode* frame)
+{
+  WICBitmapTransformOptions options = WICBitmapTransformRotate0;
+  com_ptr<IWICMetadataQueryReader> reader;
+  if (FAILED(frame->GetMetadataQueryReader(reader.put())))
+    return options;
+
+  PROPVARIANT value;
+  PropVariantInit(&value);
+  if (SUCCEEDED(reader->GetMetadataByName(L"/app1/ifd/{ushort=274}", &value)) && value.vt == VT_UI2)
+  {
+    switch (value.uiVal)
+    {
+    case 2: options = WICBitmapTransformFlipHorizontal; break;
+    case 3: options = WICBitmapTransformRotate180; break;
+    case 4: options = WICBitmapTransformFlipVertical; break;
+    case 5: options = static_cast<WICBitmapTransformOptions>(WICBitmapTransformRotate90 | WICBitmapTransformFlipHorizontal); break;
+    case 6: options = WICBitmapTransformRotate90; break;
+    case 7: options = static_cast<WICBitmapTransformOptions>(WICBitmapTransformRotate270 | WICBitmapTransformFlipHorizontal); break;
+    case 8: options = WICBitmapTransformRotate270; break;
+    }
+  }
+  PropVariantClear(&value);
+  return options;
+}
+
 static void* winuiLoadImageFile(const char* name)
 {
+  IWICImagingFactory* factory = iWinUIGetWicFactory();
+  if (!factory)
+    return nullptr;
+
   std::wstring wname = iupwinuiStringToWString(name);
-
-  HANDLE hFile = CreateFileW(wname.c_str(), GENERIC_READ, FILE_SHARE_READ,
-                             nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-  if (hFile == INVALID_HANDLE_VALUE)
+  com_ptr<IWICBitmapDecoder> decoder;
+  com_ptr<IWICBitmapFrameDecode> frame;
+  if (FAILED(factory->CreateDecoderFromFilename(wname.c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnLoad, decoder.put())) ||
+      FAILED(decoder->GetFrame(0, frame.put())))
     return nullptr;
 
-  DWORD fileSize = GetFileSize(hFile, nullptr);
-  if (fileSize == INVALID_FILE_SIZE || fileSize == 0)
-  {
-    CloseHandle(hFile);
+  com_ptr<IWICBitmapSource> source = frame.as<IWICBitmapSource>();
+  WICBitmapTransformOptions options = winuiImageExifTransform(frame.get());
+  com_ptr<IWICBitmapFlipRotator> rotator;
+  if (options != WICBitmapTransformRotate0 &&
+      SUCCEEDED(factory->CreateBitmapFlipRotator(rotator.put())) &&
+      SUCCEEDED(rotator->Initialize(source.get(), options)))
+    source = rotator.as<IWICBitmapSource>();
+
+  com_ptr<IWICBitmapSource> converted;
+  if (FAILED(WICConvertBitmapSource(GUID_WICPixelFormat32bppPBGRA, source.get(), converted.put())))
     return nullptr;
-  }
 
-  auto* fileData = static_cast<uint8_t*>(malloc(fileSize));
-  if (!fileData)
-  {
-    CloseHandle(hFile);
+  UINT width = 0, height = 0;
+  converted->GetSize(&width, &height);
+  if (!width || !height)
     return nullptr;
-  }
-
-  DWORD bytesRead;
-  BOOL readOk = ReadFile(hFile, fileData, fileSize, &bytesRead, nullptr);
-  CloseHandle(hFile);
-
-  if (!readOk || bytesRead != fileSize)
-  {
-    free(fileData);
-    return nullptr;
-  }
-
-  void* handle = nullptr;
-
-  InMemoryRandomAccessStream stream;
-  DataWriter writer(stream);
-  writer.WriteBytes(winrt::array_view<uint8_t const>(fileData, fileData + fileSize));
-
-  auto storeOp = writer.StoreAsync();
-  if (storeOp.Status() == AsyncStatus::Error)
-  {
-    free(fileData);
-    return nullptr;
-  }
-  storeOp.get();
-  writer.DetachStream();
-  free(fileData);
-
-  stream.Seek(0);
-
-  auto decoderOp = Windows::Graphics::Imaging::BitmapDecoder::CreateAsync(stream);
-  if (decoderOp.Status() == AsyncStatus::Error)
-    return nullptr;
-  auto decoder = decoderOp.get();
-
-  uint32_t width = decoder.PixelWidth();
-  uint32_t height = decoder.PixelHeight();
-
-  auto transform = Windows::Graphics::Imaging::BitmapTransform();
-  auto pixelDataOp = decoder.GetPixelDataAsync(
-    Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8,
-    Windows::Graphics::Imaging::BitmapAlphaMode::Premultiplied,
-    transform,
-    Windows::Graphics::Imaging::ExifOrientationMode::RespectExifOrientation,
-    Windows::Graphics::Imaging::ColorManagementMode::ColorManageToSRgb);
-  if (pixelDataOp.Status() == AsyncStatus::Error)
-    return nullptr;
-  auto pixelDataProvider = pixelDataOp.get();
-  auto pixelArray = pixelDataProvider.DetachPixelData();
 
   WriteableBitmap bitmap(width, height);
   IBuffer pixelBuffer = bitmap.PixelBuffer();
-  memcpy(pixelBuffer.data(), pixelArray.data(), static_cast<size_t>(width) * height * 4);
+  if (FAILED(converted->CopyPixels(nullptr, width * 4, pixelBuffer.Length(), pixelBuffer.data())))
+    return nullptr;
   bitmap.Invalidate();
 
+  void* handle = nullptr;
   winrt::copy_to_abi(bitmap, handle);
-
   return handle;
 }
 
@@ -429,6 +417,55 @@ static IWICImagingFactory* iWinUIGetWicFactory()
     CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
   }
   return factory;
+}
+
+IRandomAccessStream winuiBitmapToPngStream(WriteableBitmap const& bitmap, int width, int height)
+{
+  IWICImagingFactory* factory = iWinUIGetWicFactory();
+  if (!factory || !bitmap)
+    return nullptr;
+
+  int src_w = bitmap.PixelWidth();
+  int src_h = bitmap.PixelHeight();
+  IBuffer pixels = bitmap.PixelBuffer();
+
+  com_ptr<IWICBitmap> source;
+  if (FAILED(factory->CreateBitmapFromMemory(src_w, src_h, GUID_WICPixelFormat32bppPBGRA, src_w * 4, pixels.Length(), pixels.data(), source.put())))
+    return nullptr;
+
+  com_ptr<IWICBitmapSource> frame_source = source.as<IWICBitmapSource>();
+  com_ptr<IWICBitmapScaler> scaler;
+  if (width > 0 && height > 0 && (width != src_w || height != src_h) &&
+      SUCCEEDED(factory->CreateBitmapScaler(scaler.put())) &&
+      SUCCEEDED(scaler->Initialize(frame_source.get(), width, height, WICBitmapInterpolationModeFant)))
+    frame_source = scaler.as<IWICBitmapSource>();
+
+  UINT out_w = 0, out_h = 0;
+  frame_source->GetSize(&out_w, &out_h);
+
+  com_ptr<IStream> stream;
+  com_ptr<IWICBitmapEncoder> encoder;
+  com_ptr<IWICBitmapFrameEncode> frame;
+  WICPixelFormatGUID format = GUID_WICPixelFormat32bppBGRA;
+  if (FAILED(CreateStreamOnHGlobal(nullptr, TRUE, stream.put())) ||
+      FAILED(factory->CreateEncoder(GUID_ContainerFormatPng, nullptr, encoder.put())) ||
+      FAILED(encoder->Initialize(stream.get(), WICBitmapEncoderNoCache)) ||
+      FAILED(encoder->CreateNewFrame(frame.put(), nullptr)) ||
+      FAILED(frame->Initialize(nullptr)) ||
+      FAILED(frame->SetSize(out_w, out_h)) ||
+      FAILED(frame->SetPixelFormat(&format)) ||
+      FAILED(frame->WriteSource(frame_source.get(), nullptr)) ||
+      FAILED(frame->Commit()) ||
+      FAILED(encoder->Commit()))
+    return nullptr;
+
+  LARGE_INTEGER zero = {};
+  stream->Seek(zero, STREAM_SEEK_SET, nullptr);
+
+  IRandomAccessStream result{nullptr};
+  if (FAILED(CreateRandomAccessStreamOverStream(stream.get(), BSOS_DEFAULT, guid_of<IRandomAccessStream>(), put_abi(result))))
+    return nullptr;
+  return result;
 }
 
 static int winuiImageReadDib(void* handle, int* w, int* h, unsigned char* imgdata)

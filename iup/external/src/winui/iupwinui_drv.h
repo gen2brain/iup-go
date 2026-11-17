@@ -179,6 +179,7 @@ void winuiDragDataCleanup();
 void winuiDropTargetRemoveHandlers(Ihandle* ih, winrt::Microsoft::UI::Xaml::UIElement const& elem);
 
 winrt::Microsoft::UI::Xaml::Media::Imaging::WriteableBitmap winuiGetBitmapFromHandle(void* handle);
+winrt::Windows::Storage::Streams::IRandomAccessStream winuiBitmapToPngStream(winrt::Microsoft::UI::Xaml::Media::Imaging::WriteableBitmap const& bitmap, int width, int height);
 void winuiImageSetPixelSize(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Image const& img, int w, int h);
 void winuiImageSetSource(Ihandle* ih, winrt::Microsoft::UI::Xaml::Controls::Image const& img, winrt::Microsoft::UI::Xaml::Media::Imaging::WriteableBitmap const& bitmap);
 void winuiImageUpdateScale(winrt::Microsoft::UI::Xaml::DependencyObject const& root, double scale);

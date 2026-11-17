@@ -21,13 +21,11 @@ extern "C" {
 
 #include <winrt/Windows.ApplicationModel.DataTransfer.h>
 #include <winrt/Windows.Storage.Streams.h>
-#include <winrt/Windows.Graphics.Imaging.h>
 
 using namespace winrt;
 using namespace Windows::ApplicationModel::DataTransfer;
 using namespace Windows::Foundation;
 using namespace Windows::Storage::Streams;
-using namespace Windows::Graphics::Imaging;
 using namespace Microsoft::UI::Xaml::Media::Imaging;
 
 
@@ -190,27 +188,9 @@ static int winuiClipboardSetImageAttrib(Ihandle* ih, const char* value)
   if (!bitmap)
     return 0;
 
-  int width = bitmap.PixelWidth();
-  int height = bitmap.PixelHeight();
-  IBuffer pixelBuffer = bitmap.PixelBuffer();
-
-  InMemoryRandomAccessStream stream;
-
-  BitmapEncoder encoder = BitmapEncoder::CreateAsync(BitmapEncoder::PngEncoderId(), stream).get();
-
-  encoder.SetPixelData(
-    BitmapPixelFormat::Bgra8,
-    BitmapAlphaMode::Premultiplied,
-    width,
-    height,
-    96.0,
-    96.0,
-    array_view<uint8_t const>(pixelBuffer.data(), pixelBuffer.Length())
-  );
-
-  encoder.FlushAsync().get();
-
-  stream.Seek(0);
+  IRandomAccessStream stream = winuiBitmapToPngStream(bitmap, 0, 0);
+  if (!stream)
+    return 0;
 
   RandomAccessStreamReference streamRef = RandomAccessStreamReference::CreateFromStream(stream);
 

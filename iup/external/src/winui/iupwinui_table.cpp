@@ -1303,6 +1303,16 @@ static void winuiTableMoveColumn(Ihandle* ih, int source, int target, int attrib
     aux->current_col = iupTableMoveColPos(aux->current_col, source, target);
 }
 
+static void winuiTableSetHeaderRowHeight(Ihandle* ih)
+{
+  Grid containerGrid = winuiGetHandle<Grid>(ih);
+  if (containerGrid && containerGrid.RowDefinitions().Size() > 0)
+  {
+    double height = iupdrvTableGetHeaderHeight(ih) / iupwinuiGetScale(ih);
+    containerGrid.RowDefinitions().GetAt(0).Height(GridLength{height, GridUnitType::Pixel});
+  }
+}
+
 void winuiTableUpdateDpi(Ihandle* ih)
 {
   StackPanel header = winuiTableGetHeader(ih);
@@ -1316,6 +1326,7 @@ void winuiTableUpdateDpi(Ihandle* ih)
         border.Height(height);
     }
   }
+  winuiTableSetHeaderRowHeight(ih);
 
   IupWinUITableAux* aux = winuiTableGetAux(ih);
   ListView listView = winuiTableGetListView(ih);
@@ -3294,11 +3305,8 @@ static void winuiTableLayoutUpdateMethod(Ihandle* ih)
 
   StackPanel headerPanel = winuiTableGetHeader(ih);
   if (headerPanel)
-  {
     headerPanel.Height(header_height / scale);
-    if (auto headerHost = headerPanel.Parent().try_as<Canvas>())
-      headerHost.Height(header_height / scale);
-  }
+  winuiTableSetHeaderRowHeight(ih);
 
   winuiTableAdjustColumnWidths(ih);
 }
@@ -3844,6 +3852,7 @@ static int winuiTableMapMethod(Ihandle* ih)
   aux->lostFocusToken = listView.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 0); });
 
   winuiStoreHandle(ih, containerGrid);
+  winuiTableSetHeaderRowHeight(ih);
 
   iupwinuiAddToParent(ih);
 

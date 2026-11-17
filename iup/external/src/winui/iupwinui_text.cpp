@@ -33,7 +33,6 @@ extern "C" {
 
 #include <winrt/Microsoft.UI.Text.h>
 #include <winrt/Windows.Storage.Streams.h>
-#include <winrt/Windows.Graphics.Imaging.h>
 
 using namespace winrt;
 using namespace Microsoft::UI;
@@ -2687,31 +2686,12 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
         if (new_w <= 0) new_w = img_w;
         if (new_h <= 0) new_h = img_h;
 
-        int width = bitmap.PixelWidth();
-        int height = bitmap.PixelHeight();
-        IBuffer pixelBuffer = bitmap.PixelBuffer();
-        uint8_t* pixels = pixelBuffer.data();
-        uint32_t pixelDataSize = width * height * 4;
-
-        InMemoryRandomAccessStream pngStream;
-        auto encoder = Windows::Graphics::Imaging::BitmapEncoder::CreateAsync(
-            Windows::Graphics::Imaging::BitmapEncoder::PngEncoderId(), pngStream).get();
-        if (new_w != width || new_h != height)
+        auto pngStream = winuiBitmapToPngStream(bitmap, new_w, new_h);
+        if (pngStream)
         {
-          auto transform = encoder.BitmapTransform();
-          transform.ScaledWidth(new_w);
-          transform.ScaledHeight(new_h);
+          double scale = iupwinuiGetScale(ih);
+          sel.InsertImage(static_cast<int>(new_w / scale + 0.5), static_cast<int>(new_h / scale + 0.5), 0, VerticalCharacterAlignment::Baseline, iupwinuiStringToHString(image_name), pngStream);
         }
-        encoder.SetPixelData(
-            Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8,
-            Windows::Graphics::Imaging::BitmapAlphaMode::Premultiplied,
-            width, height, 96.0, 96.0,
-            winrt::array_view<uint8_t const>(pixels, pixels + pixelDataSize));
-        encoder.FlushAsync().get();
-        pngStream.Seek(0);
-
-        double scale = iupwinuiGetScale(ih);
-        sel.InsertImage(static_cast<int>(new_w / scale + 0.5), static_cast<int>(new_h / scale + 0.5), 0, VerticalCharacterAlignment::Baseline, iupwinuiStringToHString(image_name), pngStream);
       }
 
       sel.SetRange(save_start, save_end);

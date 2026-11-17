@@ -397,7 +397,7 @@ extern "C" IUP_SDK_API int iupdrvNotifyClose(Ihandle* ih)
         std::lock_guard<std::mutex> lock(winui_notify_map_mutex);
         winui_notify_map.erase(std::wstring(aux->tag.c_str()));
       }
-      AppNotificationManager::Default().RemoveByTagAsync(aux->tag).get();
+      AppNotificationManager::Default().RemoveByTagAsync(aux->tag);
     }
     return 1;
   }
