@@ -67,14 +67,7 @@ void iupImageSetHandleFromLoaded(const char* name, void* handle);
 void iupImageSetDrawHandleFromLoaded(const char* name, void* handle, int w, int h);
 Ihandle* iupImageGetImageFromName(const char* name);
 
-void iupImageStockInit(void);
-void iupImageStockFinish(void);
-typedef Ihandle* (*iupImageStockCreateFunc)(void);
-IUP_SDK_API void iupImageStockSet(const char* name, iupImageStockCreateFunc func, const char* native_name);
-IUP_SDK_API void iupImageStockSetNoResize(const char* name, iupImageStockCreateFunc func, const char* native_name);
-IUP_SDK_API void iupImageStockLoadAll(void);  /* Used only in IupView and IupVisualLED */
 int iupImageStockGetSize(void);
-void iupImageStockGet(const char* name, Ihandle* *ih, const char* *native_name);
 
 IUP_SDK_API int iupIsHighDpi(void);
 

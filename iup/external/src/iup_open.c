@@ -54,7 +54,6 @@ IUP_API int IupOpen(int* argc, char*** argv)
   iupGlobalAttribInit();
   iupRegisterInit();
   iupKeyInit();
-  iupImageStockInit();
 
   IupSetLanguage("ENGLISH");
   IupSetGlobal("VERSION", IupVersion());
@@ -117,7 +116,6 @@ IUP_API void IupClose(void)
 
   iupDlgListDestroyAll();    /* destroy all dialogs and their children */
   iupNamesDestroyHandles();  /* destroy everything that do not belong to a dialog */
-  iupImageStockFinish();     /* release stock images hash table and the images */
 
   iupRegisterFinish();  /* release native classes */
 

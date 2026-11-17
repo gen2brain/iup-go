@@ -167,7 +167,7 @@ Images are not changed.
 
 ### IMAGEAUTOSCALE
 
-If defined, automatically scale all images, except stock images, by a given real factor.
+If defined, automatically scale all IupImage elements by a given real factor.
 If "DPI" value is used, then the factor will be automatically calculated from the ratio between screen resolution and IMAGESDPI.
 The minimum resulted size when automatically resized is 24 pixels height.
 
@@ -176,16 +176,10 @@ The minimum resulted size when automatically resized is 24 pixels height.
 Defines the resolution of the images of the application. Common values are 96, 144, 192, and 288 DPI.
 Default: 96. Used when IMAGEAUTOSCALE=DPI.
 
-### IMAGESTOCKAUTOSCALE
+### IMAGESTOCKSIZE [GTK and GTK 4 Only]
 
-Stock images are automatically scaled by default. Default: YES.
-
-### IMAGESTOCKSIZE
-
-Force the size for stock images by controlling the image height.
-If that image size is not available, the stock image is resized to match the given size.
-By default, the size will be automatically calculated from the screen resolution: if res <= 144 DPI size = 24, if 192 DPI size = 32, else size = 48.
-The minimum resulted size when automatically resized is 24 pixels height.
+Height, in pixels, of the images loaded from the icon theme by name. Rounded up to 24, 32 or 48.
+By default, the size is calculated from the screen resolution: up to 144 DPI size = 24, up to 192 DPI size = 32, else size = 48.
 
 ### TREEIMAGE24
 

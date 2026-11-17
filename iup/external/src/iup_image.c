@@ -321,75 +321,6 @@ IUP_SDK_API double iupImageGetPixelScale(Ihandle* ih)
 
 /**************************************************************************************************/
 
-typedef struct _IimageStock
-{
-  iupImageStockCreateFunc func;
-  Ihandle* image;            /* cache image */
-  const char* native_name;   /* used to map to GTK stock images */
-  int can_resize;
-} IimageStock;
-
-static Itable* istock_table = NULL;   /* the image hash table indexed by the name string */
-
-void iupImageStockInit(void)
-{
-  istock_table = iupTableCreate(IUPTABLE_STRINGINDEXED);
-
-  IupSetGlobal("IMAGESTOCKAUTOSCALE", "Yes");
-}
-
-void iupImageStockFinish(void)
-{
-  char* name = iupTableFirst(istock_table);
-  while (name)
-  {
-    IimageStock* istock = (IimageStock*)iupTableGetCurr(istock_table);
-    if (iupObjectCheck(istock->image))
-      IupDestroy(istock->image);
-    memset(istock, 0, sizeof(IimageStock));
-    free(istock);
-    name = iupTableNext(istock_table);
-  }
-
-  iupTableDestroy(istock_table);
-  istock_table = NULL;
-}
-
-IUP_SDK_API void iupImageStockSet(const char* name, iupImageStockCreateFunc func, const char* native_name)
-{
-  IimageStock* istock = (IimageStock*)iupTableGet(istock_table, name);
-  if (istock)
-    free(istock);  /* overwrite a previous registration */
-
-  istock = (IimageStock*)malloc(sizeof(IimageStock));
-  if (!istock) return;
-  istock->func = func;
-  istock->image = NULL;
-  istock->native_name = native_name;
-  istock->can_resize = 1;
-
-  if (iupStrEqualNoCasePartial(name, "IUP_Logo") || iupStrEqualNoCasePartial(name, "IUP_Icon"))
-    istock->can_resize = 0;
-
-  iupTableSet(istock_table, name, (void*)istock, IUPTABLE_POINTER);
-}
-
-IUP_SDK_API void iupImageStockSetNoResize(const char* name, iupImageStockCreateFunc func, const char* native_name)
-{
-  IimageStock* istock = (IimageStock*)iupTableGet(istock_table, name);
-  if (istock)
-    free(istock);  /* overwrite a previous registration */
-
-  istock = (IimageStock*)malloc(sizeof(IimageStock));
-  if (!istock) return;
-  istock->func = func;
-  istock->image = NULL;
-  istock->native_name = native_name;
-  istock->can_resize = 0;
-
-  iupTableSet(istock_table, name, (void*)istock, IUPTABLE_POINTER);
-}
-
 IUP_SDK_API int iupIsHighDpi(void)
 {
   int dpi = iupRound(iupdrvGetScreenDpi());
@@ -428,49 +359,6 @@ int iupImageStockGetSize(void)
   }
 }
 
-void iupImageStockGet(const char* name, Ihandle* *ih, const char* *native_name)
-{
-  IimageStock* istock = (IimageStock*)iupTableGet(istock_table, name);
-  if (istock)
-  {
-    if (istock->image)
-      *ih = istock->image;
-    else if (istock->native_name)
-      *native_name = istock->native_name;
-    else if (istock->func)
-    {
-      int stock_size;
-      int autoscale = IupGetInt(NULL, "IMAGESTOCKAUTOSCALE");
-
-      istock->image = istock->func();
-
-      *ih = istock->image;
-
-      stock_size = iupImageStockGetSize();
-
-      if (autoscale && istock->can_resize && istock->image->currentheight != stock_size)
-      {
-        int new_height = stock_size;
-        int new_width = stock_size;
-        if (istock->image->currentwidth != istock->image->currentheight && istock->image->currentheight > 0)
-          new_width = (new_height * istock->image->currentwidth) / istock->image->currentheight;
-
-        iupAttribSet(istock->image, "SCALED", "Yes");
-        iupAttribSetStrf(istock->image, "ORIGINALSCALE", "%dx%d", istock->image->currentwidth, istock->image->currentheight);
-
-        iImageResize(istock->image, new_width, new_height);
-      }
-    }
-  }
-}
-
-static void iImageStockUnload(const char* name)
-{
-  IimageStock* istock = (IimageStock*)iupTableGet(istock_table, name);
-  if (istock)
-    istock->image = NULL;
-}
-
 static void* iImageLoad(const char* name, int type)
 {
   char path[10240];
@@ -485,46 +373,6 @@ static void* iImageLoad(const char* name, int type)
 
   snprintf(path, sizeof(path), "%s/%s", dir, name);
   return iupdrvImageLoad(path, type);
-}
-
-static void iImageStockLoad(const char* name)
-{
-  /* Used only in iupImageStockLoadAll */
-  const char* native_name = NULL;
-  Ihandle* ih = NULL;
-  iupImageStockGet(name, &ih, &native_name);
-  if (ih)
-  {
-    IupSetHandle(name, ih);
-    iupAttribSetStr(ih, "_IUPIMAGE_STOCK_LOAD", name);
-  }
-  else if (native_name)
-  {
-    /* dummy image to save the GTK stock name */
-    void* handle = iupdrvImageLoad(native_name, IUPIMAGE_IMAGE);
-    if (handle)
-      iupImageSetHandleFromLoaded(native_name, handle);  /* next time iupImageGetImageFromName will return the new handle */
-  }
-}
-
-static int iImageStockExtended(const char* name)
-{
-  int len = (int)strlen(name);
-  if (len > 2 && iup_isdigit(name[len - 1]) && iup_isdigit(name[len - 2]))
-    return 1;
-  return 0;
-}
-
-IUP_SDK_API void iupImageStockLoadAll(void)
-{
-  /* Used only in IupView and IupVisualLED */
-  char* name = iupTableFirst(istock_table);
-  while (name)
-  {
-    if (!iImageStockExtended(name))
-      iImageStockLoad(name);
-    name = iupTableNext(istock_table);
-  }
 }
 
 /**************************************************************************************************/
@@ -786,21 +634,10 @@ void* iupImageGetIcon(const char* name)
   ih = iupImageGetImageFromName(name);
   if (!ih)
   {
-    const char* native_name = NULL;
-
     /* Check in the system resources. */
     icon = iImageLoad(name, IUPIMAGE_ICON);
     if (icon)
       return icon;
-
-    /* Check in the stock images. */
-    iupImageStockGet(name, &ih, &native_name);
-    if (native_name)
-    {
-      icon = iupdrvImageLoad(native_name, IUPIMAGE_ICON);
-      if (icon)
-        return icon;
-    }
 
     return NULL;
   }
@@ -867,8 +704,6 @@ IUP_SDK_API void* iupImageGetImage(const char* name, Ihandle* ih_parent, int mak
   ih = iupImageGetImageFromName(name);
   if (!ih)
   {
-    const char* native_name = NULL;
-
     /* Check in the system resources. */
     handle = iImageLoad(name, IUPIMAGE_IMAGE);
     if (handle)
@@ -877,20 +712,7 @@ IUP_SDK_API void* iupImageGetImage(const char* name, Ihandle* ih_parent, int mak
       return handle;
     }
 
-    /* Check in the stock images. */
-    iupImageStockGet(name, &ih, &native_name);
-    if (native_name)
-    {
-      handle = iupdrvImageLoad(native_name, IUPIMAGE_IMAGE);
-      if (handle)
-      {
-        iupImageSetHandleFromLoaded(name, handle);  /* next time iupImageGetImageFromName will return the new handle */
-        return handle;
-      }
-    }
-
-    if (!ih)
-      return NULL;
+    return NULL;
   }
 
   handle = iupAttribGet(ih, "_IUPIMAGE_LOADED_HANDLE");
@@ -1097,7 +919,6 @@ IUP_SDK_API void iupImageGetInfo(const char* name, int* w, int* h, int* bpp)
   ih = iupImageGetImageFromName(name);
   if (!ih)
   {
-    const char* native_name = NULL;
     void* handle;
 
     /* Check in the system resources. */
@@ -1109,21 +930,7 @@ IUP_SDK_API void iupImageGetInfo(const char* name, int* w, int* h, int* bpp)
       return;
     }
 
-    /* Check in the stock images. */
-    iupImageStockGet(name, &ih, &native_name);
-    if (native_name)
-    {
-      handle = iupdrvImageLoad(native_name, IUPIMAGE_IMAGE);
-      if (handle)
-      {
-        iupdrvImageGetInfo(handle, w, h, bpp);
-        iupImageSetHandleFromLoaded(name, handle);  /* next time iupImageGetImageFromName will return the new handle */
-        return;
-      }
-    }
-
-    if (!ih)
-      return;
+    return;
   }
 
   if (w) *w = iupRound(ih->currentwidth / iupImageGetPixelScale(ih));
@@ -1174,7 +981,6 @@ IUP_API Ihandle* IupImageGetHandle(const char* name)
 {
   /* Used in additional controls where WID is mandatory - IupMatrix, IupGLControls and IupPlot */
   Ihandle* ih;
-  const char* native_name = NULL;
   void* handle;
 
   if (!name)
@@ -1197,32 +1003,6 @@ IUP_API Ihandle* IupImageGetHandle(const char* name)
     {
       IupSetHandle(name, ih);
       return ih;
-    }
-  }
-
-  /* Check in the stock images. */
-  iupImageStockGet(name, &ih, &native_name);
-  if (ih)
-  {
-    IupSetHandle(name, ih);
-    return ih;
-  }
-
-  if (native_name)
-  {
-    handle = iupdrvImageLoad(native_name, IUPIMAGE_IMAGE);
-    if (handle)
-    {
-      /* the loaded image is converted and destroyed */
-
-      ih = iImageGetHandleFromImage(handle);
-      iupdrvImageDestroy(handle, IUPIMAGE_IMAGE);
-
-      if (ih)
-      {
-        IupSetHandle(name, ih);
-        return ih;
-      }
     }
   }
 
@@ -1593,20 +1373,11 @@ static int iImageRGBACreateMethod(Ihandle* ih, void** params)
 
 static void iImageDestroyMethod(Ihandle* ih)
 {
-  char* stock_load;
-
   unsigned char* imgdata = (unsigned char*)iupAttribGet(ih, "WID");
   if (imgdata)
   {
     iupAttribSet(ih, "WID", NULL);
     free(imgdata);
-  }
-
-  stock_load = iupAttribGet(ih, "_IUPIMAGE_STOCK_LOAD");
-  if (stock_load)
-  {
-    iImageStockUnload(stock_load);
-    iupAttribSetStr(ih, "_IUPIMAGE_STOCK_LOAD", NULL);
   }
 
   iImageClearCache(ih);

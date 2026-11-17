@@ -97,7 +97,6 @@ static const iGlobalRegEntry registry[] = {
   { "ICON",                   0,    ALL },
   { "IMAGEAUTOSCALE",         0,    ALL },
   { "IMAGESDPI",              0,    ALL },
-  { "IMAGESTOCKAUTOSCALE",    0,    ALL },
   { "IMAGESTOCKSIZE",         0,    ALL },
   { "INPUTCALLBACKS",         0,    W|M|G|C|Q|QM|G4|E|WU|F|A|HK },
   { "KEEPAWAKE",              0,    ALL },

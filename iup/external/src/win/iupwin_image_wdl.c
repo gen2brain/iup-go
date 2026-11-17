@@ -324,8 +324,6 @@ IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_paren
   ih = iupImageGetImageFromName(name);
   if (!ih)
   {
-    const char* native_name = NULL;
-
     /* Check in the system resources. */
     handle = wdlImageLoad(name);
     if (handle)
@@ -334,20 +332,7 @@ IUP_DRV_API WD_HIMAGE iupwinWdlImageGetImage(const char* name, Ihandle* ih_paren
       return handle;
     }
 
-    /* Check in the stock images. */
-    iupImageStockGet(name, &ih, &native_name);
-    if (native_name)
-    {
-      handle = wdlImageLoad(native_name);
-      if (handle)
-      {
-        wdlImageSetHandleFromLoaded(name, handle);  /* next time iupImageGetImageFromName will return the new handle */
-        return handle;
-      }
-    }
-
-    if (!ih)
-      return NULL;
+    return NULL;
   }
 
   handle = (WD_HIMAGE)iupAttribGet(ih, "_IUPIMAGE_LOADED_DRAW_HANDLE");
