@@ -33,7 +33,7 @@ static int gtkMessageDlgPopup(Ihandle* ih, int x, int y)
   GtkWidget* dialog;
   char* icon, *buttons, *title;
   const char* ok, *cancel, *yes, *no, *help, *retry = IupGetLanguageString("IUP_RETRY");
-  int response, button_def;
+  int response, button_def, custom_count;
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);   /* used in iupDialogUpdatePosition */
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
@@ -76,7 +76,17 @@ static int gtkMessageDlgPopup(Ihandle* ih, int x, int y)
 #endif
 
   buttons = iupAttribGetStr(ih, "BUTTONS");
-  if (iupStrEqualNoCase(buttons, "OKCANCEL"))
+  custom_count = iupMessageDlgCustomCount(ih);
+  if (custom_count > 0)
+  {
+    int i;
+    for (i = 1; i <= custom_count; i++)
+    {
+      GtkWidget* button = gtk_dialog_add_button(GTK_DIALOG(dialog), "", i);
+      iupgtkSetMnemonicTitle(ih, GTK_LABEL(gtk_bin_get_child(GTK_BIN(button))), iupAttribGetId(ih, "BUTTONTITLE", i));
+    }
+  }
+  else if (iupStrEqualNoCase(buttons, "OKCANCEL"))
   {
     gtk_dialog_add_button(GTK_DIALOG(dialog),
                           ok,
@@ -126,7 +136,9 @@ static int gtkMessageDlgPopup(Ihandle* ih, int x, int y)
     gtk_dialog_add_button(GTK_DIALOG(dialog), help, IUP_RESPONSE_HELP);
 
   button_def = iupAttribGetInt(ih, "BUTTONDEFAULT");
-  if (button_def == 3)
+  if (custom_count > 0)
+    gtk_dialog_set_default_response(GTK_DIALOG(dialog), iupMessageDlgCustomDefault(ih));
+  else if (button_def == 3)
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), IUP_RESPONSE_3);
   else if (button_def == 2)
     gtk_dialog_set_default_response(GTK_DIALOG(dialog), IUP_RESPONSE_2);
@@ -148,18 +160,13 @@ static int gtkMessageDlgPopup(Ihandle* ih, int x, int y)
     {
       Icallback cb = IupGetCallback(ih, "HELP_CB");
       if (cb && cb(ih) == IUP_CLOSE)
-      {
-        if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
-          response = IUP_RESPONSE_3;
-        else if(iupStrEqualNoCase(buttons, "OK"))
-          response = IUP_RESPONSE_1;
-        else
-          response = IUP_RESPONSE_2;
-      }
+        response = GTK_RESPONSE_DELETE_EVENT;
     }
   } while (response == IUP_RESPONSE_HELP);
 
-  if (response == IUP_RESPONSE_3)
+  if (custom_count > 0 && response >= 1 && response <= custom_count)
+    iupAttribSetInt(ih, "BUTTONRESPONSE", response);
+  else if (response == IUP_RESPONSE_3)
     IupSetAttribute(ih, "BUTTONRESPONSE", "3");
   else if (response == IUP_RESPONSE_2)
     IupSetAttribute(ih, "BUTTONRESPONSE", "2");

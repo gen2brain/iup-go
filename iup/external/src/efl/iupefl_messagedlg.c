@@ -113,6 +113,8 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
   int win_w, win_h;
   int num_buttons = 1;
   int has_icon = 0;
+  int custom_count = iupMessageDlgCustomCount(ih);
+  Eo* custom_def = NULL;
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
@@ -205,7 +207,28 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
 
   buttons = iupAttribGetStr(ih, "BUTTONS");
 
-  if (iupStrEqualNoCase(buttons, "OKCANCEL"))
+  if (custom_count > 0)
+  {
+    int i, def = iupMessageDlgCustomDefault(ih);
+    num_buttons = custom_count;
+
+    for (i = 1; i <= custom_count; i++)
+    {
+      const char* button_title = iupAttribGetId(ih, "BUTTONTITLE", i);
+      char* str = iupStrProcessMnemonic(button_title, NULL, 0);
+      Eo* btn = efl_add(EFL_UI_BUTTON_CLASS, win,
+                        efl_text_set(efl_added, str),
+                        efl_gfx_hint_weight_set(efl_added, 1.0, 0.0),
+                        efl_gfx_hint_align_set(efl_added, -1.0, 0.5),
+                        efl_event_callback_add(efl_added, EFL_INPUT_EVENT_CLICKED, eflMessageDlgButtonCallback, (void*)(intptr_t)i),
+                        efl_pack(button_hbox, efl_added));
+      if (str != button_title)
+        free(str);
+      if (i == def)
+        custom_def = btn;
+    }
+  }
+  else if (iupStrEqualNoCase(buttons, "OKCANCEL"))
   {
     num_buttons = 2;
 
@@ -326,7 +349,9 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
   elm_win_activate(win);
 
   button_def = iupAttribGetInt(ih, "BUTTONDEFAULT");
-  if (button_def == 3 && btn3)
+  if (custom_def)
+    efl_ui_focus_util_focus(custom_def);
+  else if (button_def == 3 && btn3)
     efl_ui_focus_util_focus(btn3);
   else if (button_def == 2 && btn2)
     efl_ui_focus_util_focus(btn2);
@@ -343,25 +368,14 @@ static int eflMessageDlgPopup(Ihandle* ih, int x, int y)
     {
       Icallback cb = IupGetCallback(ih, "HELP_CB");
       if (cb && cb(ih) == IUP_CLOSE)
-      {
-        if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
-          efl_msgdlg_response = 3;
-        else if (iupStrEqualNoCase(buttons, "OK"))
-          efl_msgdlg_response = 1;
-        else
-          efl_msgdlg_response = 2;
-      }
+        efl_msgdlg_response = 0;
     }
   } while (efl_msgdlg_response == -1);
 
   if (efl_msgdlg_response == 0)
     iupMessageDlgSetCancelResponse(ih);
-  else if (efl_msgdlg_response == 3)
-    IupSetAttribute(ih, "BUTTONRESPONSE", "3");
-  else if (efl_msgdlg_response == 2)
-    IupSetAttribute(ih, "BUTTONRESPONSE", "2");
   else
-    IupSetAttribute(ih, "BUTTONRESPONSE", "1");
+    iupAttribSetInt(ih, "BUTTONRESPONSE", efl_msgdlg_response);
 
   efl_del(win);
 

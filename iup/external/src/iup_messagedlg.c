@@ -21,11 +21,131 @@
 #include "iup_varg.h"
 
 
+IUP_SDK_API int iupMessageDlgCustomCount(Ihandle* ih)
+{
+  int count = 0;
+
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "BUTTONS"), "CUSTOM"))
+    return 0;
+
+  while (iupAttribGetId(ih, "BUTTONTITLE", count + 1))
+    count++;
+
+  return count;
+}
+
+IUP_SDK_API int iupMessageDlgCustomDefault(Ihandle* ih)
+{
+  int count = iupMessageDlgCustomCount(ih);
+  int def = iupAttribGetInt(ih, "BUTTONDEFAULT");
+  if (def < 1 || def > count)
+    def = 1;
+  return def;
+}
+
+IUP_SDK_API int iupMessageDlgCustomCancel(Ihandle* ih)
+{
+  int count = iupMessageDlgCustomCount(ih);
+  int cancel = iupAttribGetInt(ih, "BUTTONCANCEL");
+  if (cancel < 1 || cancel > count)
+    cancel = count;
+  return cancel;
+}
+
+static int iMessageDlgCustomButton_CB(Ihandle* button)
+{
+  Ihandle* dlg = IupGetDialog(button);
+  Ihandle* ih = (Ihandle*)iupAttribGet(dlg, "_IUP_MESSAGEDLG");
+  int number = iupAttribGetInt(button, "_IUP_BUTTON_NUMBER");
+
+  if (number == 0)
+  {
+    Icallback cb = IupGetCallback(ih, "HELP_CB");
+    if (cb && cb(ih) == IUP_CLOSE)
+      return IUP_CLOSE;
+    return IUP_DEFAULT;
+  }
+
+  iupAttribSetInt(dlg, "_IUP_BUTTON_NUMBER", number);
+  return IUP_CLOSE;
+}
+
+IUP_SDK_API int iupMessageDlgCustomPopup(Ihandle* ih, int x, int y)
+{
+  Ihandle *dlg, *button_box, *button, *default_enter = NULL, *default_esc = NULL;
+  int i, count = iupMessageDlgCustomCount(ih);
+  int def = iupMessageDlgCustomDefault(ih);
+  int cancel = iupMessageDlgCustomCancel(ih);
+  char* value = iupAttribGet(ih, "VALUE");
+  int number;
+
+  button_box = IupHbox(NULL);
+  IupSetAttribute(button_box, "NORMALIZESIZE", "HORIZONTAL");
+  IupSetAttribute(button_box, "MARGIN", "0x0");
+
+  if (IupGetCallback(ih, "HELP_CB"))
+  {
+    button = IupButton("_@IUP_HELP");
+    IupSetStrAttribute(button, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
+    IupSetCallback(button, "ACTION", (Icallback)iMessageDlgCustomButton_CB);
+    IupAppend(button_box, button);
+  }
+
+  IupAppend(button_box, IupFill());
+
+  for (i = 1; i <= count; i++)
+  {
+    button = IupButton(iupAttribGetId(ih, "BUTTONTITLE", i));
+    iupAttribSetInt(button, "_IUP_BUTTON_NUMBER", i);
+    IupSetStrAttribute(button, "PADDING", IupGetGlobal("DEFAULTBUTTONPADDING"));
+    IupSetCallback(button, "ACTION", (Icallback)iMessageDlgCustomButton_CB);
+    IupAppend(button_box, button);
+
+    if (i == def)
+      default_enter = button;
+    if (i == cancel)
+      default_esc = button;
+  }
+
+  dlg = IupDialog(IupVbox(IupLabel(value ? value : ""), button_box, NULL));
+  IupSetAttribute(IupGetChild(dlg, 0), "MARGIN", "10x10");
+  IupSetAttribute(IupGetChild(dlg, 0), "GAP", "10");
+
+  IupSetStrAttribute(dlg, "TITLE", iupAttribGet(ih, "TITLE"));
+  IupSetAttribute(dlg, "DIALOGFRAME", "YES");
+  IupSetAttribute(dlg, "DIALOGHINT", "YES");
+  IupSetAttributeHandle(dlg, "DEFAULTENTER", default_enter);
+  IupSetAttributeHandle(dlg, "DEFAULTESC", default_esc);
+  IupSetAttributeHandle(dlg, "STARTFOCUS", default_enter);
+  IupSetStrAttribute(dlg, "PARENTDIALOG", iupAttribGet(ih, "PARENTDIALOG"));
+  IupSetStrAttribute(dlg, "ICON", IupGetGlobal("ICON"));
+  iupAttribSet(dlg, "_IUP_MESSAGEDLG", (char*)ih);
+
+  IupPopup(dlg, x, y);
+
+  number = iupAttribGetInt(dlg, "_IUP_BUTTON_NUMBER");
+  if (number > 0)
+    iupAttribSetInt(ih, "BUTTONRESPONSE", number);
+  else
+    iupMessageDlgSetCancelResponse(ih);
+
+  IupDestroy(dlg);
+
+  return IUP_NOERROR;
+}
+
 IUP_SDK_API void iupMessageDlgSetCancelResponse(Ihandle* ih)
 {
   char* buttons = iupAttribGetStr(ih, "BUTTONS");
 
-  if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
+  if (iupStrEqualNoCase(buttons, "CUSTOM"))
+  {
+    if (iupMessageDlgCustomCount(ih) > 0)
+      iupAttribSetInt(ih, "BUTTONRESPONSE", iupMessageDlgCustomCancel(ih));
+    else
+      iupAttribSet(ih, "BUTTONRESPONSE", "1");
+  }
+  else if (iupStrEqualNoCase(buttons, "YESNOCANCEL"))
     iupAttribSet(ih, "BUTTONRESPONSE", "3");
   else if (iupStrEqualNoCase(buttons, "OK"))
     iupAttribSet(ih, "BUTTONRESPONSE", "1");
@@ -62,6 +182,8 @@ Iclass* iupMessageDlgNewClass(void)
   iupClassRegisterAttribute(ic, "BUTTONS", NULL, NULL, IUPAF_SAMEASSYSTEM, "OK", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BUTTONDEFAULT", NULL, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "BUTTONRESPONSE", NULL, NULL, IUPAF_SAMEASSYSTEM, "1", IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "BUTTONCANCEL", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "BUTTONTITLE", NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "VALUE", NULL, NULL, NULL, NULL, IUPAF_NO_INHERIT);
 
   return ic;

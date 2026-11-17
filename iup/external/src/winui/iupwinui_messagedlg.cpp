@@ -127,9 +127,34 @@ static void winuiMsgDlgConfigureContent(ContentDialog& dialog, Ihandle* ih)
     dialog.Content(box_value(iupwinuiStringToHString(value)));
 }
 
+static hstring winuiMsgDlgCustomTitle(Ihandle* ih, int id)
+{
+  const char* title = iupAttribGetId(ih, "BUTTONTITLE", id);
+  char* str = iupStrProcessMnemonic(title, nullptr, 0);
+  hstring text = iupwinuiStringToHString(str);
+  if (str != title)
+    free(str);
+  return text;
+}
+
 static void winuiMsgDlgConfigureButtons(ContentDialog& dialog, Ihandle* ih)
 {
   char* buttons = iupAttribGetStr(ih, "BUTTONS");
+  int custom_count = iupMessageDlgCustomCount(ih);
+
+  if (custom_count > 0)
+  {
+    static const ContentDialogButton custom_buttons[3] = {ContentDialogButton::Primary, ContentDialogButton::Secondary, ContentDialogButton::Close};
+
+    dialog.PrimaryButtonText(winuiMsgDlgCustomTitle(ih, 1));
+    if (custom_count > 1)
+      dialog.SecondaryButtonText(winuiMsgDlgCustomTitle(ih, 2));
+    if (custom_count > 2)
+      dialog.CloseButtonText(winuiMsgDlgCustomTitle(ih, 3));
+
+    dialog.DefaultButton(custom_buttons[iupMessageDlgCustomDefault(ih) - 1]);
+    return;
+  }
 
   if (iupStrEqualNoCase(buttons, "OKCANCEL"))
   {
@@ -341,8 +366,9 @@ static int winuiMsgDlgShowStandalone(Ihandle* ih, HWND ownerHwnd)
 
 static int winuiMessageDlgPopup(Ihandle* ih, int x, int y)
 {
-  (void)x;
-  (void)y;
+  int custom_count = iupMessageDlgCustomCount(ih);
+  if (custom_count > 3 || (custom_count == 3 && iupMessageDlgCustomCancel(ih) != 3))
+    return iupMessageDlgCustomPopup(ih, x, y);
 
   Ihandle* parent = winuiMsgDlgFindParent(ih);
   HWND ownerHwnd = parent ? reinterpret_cast<HWND>(parent->handle) : nullptr;

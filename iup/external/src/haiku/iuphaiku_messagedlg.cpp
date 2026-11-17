@@ -5,15 +5,18 @@
  */
 
 #include <cstddef>
+#include <cstdlib>
 
 #include <Alert.h>
 #include <Button.h>
 
 extern "C" {
 #include "iup.h"
+#include "iup_object.h"
 #include "iup_class.h"
 #include "iup_attrib.h"
 #include "iup_str.h"
+#include "iup_dialog.h"
 }
 
 #include "iuphaiku_drv.h"
@@ -44,8 +47,46 @@ static int haikuRunAlert(const char* title, const char* text, alert_type type, c
   return r + 1;
 }
 
-static int haikuMessageDlgPopup(Ihandle* ih, int /*x*/, int /*y*/)
+static int haikuMessageDlgCustomPopup(Ihandle* ih, int count)
 {
+  char* titles[3] = {nullptr, nullptr, nullptr};
+  const char* sources[3] = {nullptr, nullptr, nullptr};
+  for (int i = 0; i < count; i++)
+  {
+    sources[i] = iupAttribGetId(ih, "BUTTONTITLE", i + 1);
+    titles[i] = iupStrProcessMnemonic(sources[i], nullptr, 0);
+  }
+
+  auto* alert = new BAlert(iupAttribGet(ih, "TITLE") ? iupAttribGet(ih, "TITLE") : "",
+                           iupAttribGet(ih, "VALUE") ? iupAttribGet(ih, "VALUE") : "",
+                           titles[0], titles[1], titles[2], B_WIDTH_AS_USUAL, haikuAlertType(iupAttribGet(ih, "DIALOGTYPE")));
+  if (BButton* btn = alert->ButtonAt(iupMessageDlgCustomDefault(ih) - 1))
+    btn->MakeDefault(true);
+  alert->SetShortcut(iupMessageDlgCustomCancel(ih) - 1, B_ESCAPE);
+
+  for (int i = 0; i < count; i++)
+    if (titles[i] != sources[i])
+      free(titles[i]);
+
+  iuphaikuModalBegin();
+  int32 r = alert->Go();
+  iuphaikuModalEnd();
+
+  if (r >= 0 && r < count)
+    iupAttribSetInt(ih, "BUTTONRESPONSE", r + 1);
+  else
+    iupMessageDlgSetCancelResponse(ih);
+  return IUP_NOERROR;
+}
+
+static int haikuMessageDlgPopup(Ihandle* ih, int x, int y)
+{
+  int custom_count = iupMessageDlgCustomCount(ih);
+  if (custom_count > 3)
+    return iupMessageDlgCustomPopup(ih, x, y);
+  if (custom_count > 0)
+    return haikuMessageDlgCustomPopup(ih, custom_count);
+
   const char* title = iupAttribGet(ih, "TITLE");
   const char* text  = iupAttribGet(ih, "VALUE");
   const char* dlgt  = iupAttribGet(ih, "DIALOGTYPE");

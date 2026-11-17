@@ -41,6 +41,9 @@ static int fltkMessageDlgPopup(Ihandle* ih, int x, int y)
   int response = 1;
   int dismissed = 0;
 
+  if (iupMessageDlgCustomCount(ih) > 0)
+    return iupMessageDlgCustomPopup(ih, x, y);
+
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
 

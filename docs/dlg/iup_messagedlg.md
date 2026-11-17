@@ -11,19 +11,27 @@ The dialog can be shown with the IupPopup function only.
 
 ### Attributes
 
+**BUTTONCANCEL**: Number of the button returned when the dialog is closed without pressing a button. Used only when BUTTONS=CUSTOM.
+Default: the last button.
+
 **BUTTONDEFAULT**: Number of the default button.
-Can be "1", "2" or "3". "2" is not valid for "OK". "3" is valid only for "YESNOCANCEL".
+Can be "1", "2" or "3". "2" is not valid for "OK". "3" is valid only for "YESNOCANCEL". When BUTTONS=CUSTOM, it can be the number of any button.
 Default: "1".
-Not supported in QML.
+Not supported in QML, except when BUTTONS=CUSTOM.
 
-**BUTTONRESPONSE**: Number of the pressed button. Can be "1", "2" or "3". Default: "1".
-When the dialog is closed without pressing a button, with Esc or with the window close button, it returns the cancel button: "3" for YESNOCANCEL, "2" for OKCANCEL, RETRYCANCEL and YESNO, and "1" for OK.
-In Haiku and Android, it can only be closed with a button. In macOS and iOS, Esc closes it only when the buttons include a Cancel.
+**BUTTONRESPONSE**: Number of the pressed button, starting at 1. Default: "1".
+When the dialog is closed without pressing a button, with Esc or with the window close button, it returns the cancel button: "3" for YESNOCANCEL, "2" for OKCANCEL, RETRYCANCEL and YESNO, "1" for OK, and BUTTONCANCEL for CUSTOM.
+In Haiku and Android, it can only be closed with a button. In macOS and iOS, Esc closes it only when the buttons include a Cancel, or BUTTONS=CUSTOM.
 
-**BUTTONS**: Buttons configuration. Can have values: "OK", "OKCANCEL", "RETRYCANCEL", "YESNO", or "YESNOCANCEL".
+**BUTTONS**: Buttons configuration. Can have values: "OK", "OKCANCEL", "RETRYCANCEL", "YESNO", "YESNOCANCEL" or "CUSTOM".
 Default: "OK". Additionally, the "Help" button is displayed if the HELP_CB callback is defined.
+CUSTOM shows the buttons defined by BUTTONTITLEid, in that order. In macOS and Android the first button is the rightmost, or the top one when the buttons are stacked, and in iOS the cancel button is placed last.
+When the native dialog cannot show those buttons, an IUP dialog with the same buttons and without the DIALOGTYPE icon is shown instead: in Haiku and GNUstep with more than three buttons, in WinUI with more than three buttons or when BUTTONCANCEL is not the third of three, and always in FLTK, QML and WebAssembly.
 
 **BUTTONSTYLE** [Android and iOS Only]: visual style applied to all buttons. Same values as [IupButton](../elem/iup_button.md)'s BUTTONSTYLE ("FILLED", "TONAL", "OUTLINED", "ELEVATED", "TEXT"). When unset, the default action gets a filled look and the rest a gray look (matching the platform's native alert).
+
+**BUTTONTITLEid**: Title of each button when BUTTONS=CUSTOM. id starts at 1, the buttons are the consecutive ids defined from 1. Without BUTTONTITLE1, CUSTOM behaves as OK.
+The "&" character defines a mnemonic in the drivers that support them, elsewhere it is removed. Use "&&" to show the "&" character.
 
 **CORNERSTYLE** [Android and iOS Only]: corner shape applied to all buttons. Same values as [IupButton](../elem/iup_button.md)'s CORNERSTYLE ("SMALL", "MEDIUM", "LARGE", "CAPSULE"). When unset, the platform's stock default is used (capsule on Material 3 and iOS 26 Liquid Glass).
 
@@ -88,6 +96,24 @@ The (x,y) position from IupPopup is ignored by the native widget on all drivers 
     printf("BUTTONRESPONSE(%s)\n", IupGetAttribute(dlg, "BUTTONRESPONSE"));
 
     IupDestroy(dlg);  
+
+With custom buttons:
+
+    Ihandle* dlg = IupMessageDlg();
+
+    IupSetAttribute(dlg, "DIALOGTYPE", "QUESTION");
+    IupSetAttribute(dlg, "VALUE", "Save changes to \"notes.txt\"?");
+    IupSetAttribute(dlg, "BUTTONS", "CUSTOM");
+    IupSetAttribute(dlg, "BUTTONTITLE1", "&Save");
+    IupSetAttribute(dlg, "BUTTONTITLE2", "&Discard");
+    IupSetAttribute(dlg, "BUTTONTITLE3", "Save &All");
+    IupSetAttribute(dlg, "BUTTONTITLE4", "&Cancel");
+
+    IupPopup(dlg, IUP_CENTERPARENT, IUP_CENTERPARENT);
+
+    int response = IupGetInt(dlg, "BUTTONRESPONSE");  /* 1 to 4, and 4 when closed */
+
+    IupDestroy(dlg);
 
 |                                       |                                     |                                      |                                      |
 |---------------------------------------|-------------------------------------|--------------------------------------|--------------------------------------|

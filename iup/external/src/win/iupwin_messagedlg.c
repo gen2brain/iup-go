@@ -19,6 +19,8 @@
 #include "iupwin_info.h"
 #include "iupwin_darkmode.h"
 
+#define IUPWIN_CUSTOM_BUTTON_ID 100
+
 
 static void CALLBACK winMessageDlgHelpCallback(HELPINFO* HelpInfo)
 {
@@ -83,6 +85,8 @@ static int winMessageDlgPopupTaskDialog(Ihandle* ih, InativeHandle* parent, char
   HRESULT hr;
   WCHAR* wszTitle = NULL;
   WCHAR* wszContent = NULL;
+  TASKDIALOG_BUTTON* custom_buttons = NULL;
+  int i, custom_count = iupMessageDlgCustomCount(ih);
 
   if (!initialized)
   {
@@ -118,7 +122,19 @@ static int winMessageDlgPopupTaskDialog(Ihandle* ih, InativeHandle* parent, char
 
   config.pszMainIcon = pszIcon;
 
-  if (iupStrEqualNoCase(buttons, "OKCANCEL"))
+  if (custom_count > 0)
+  {
+    custom_buttons = (TASKDIALOG_BUTTON*)calloc(custom_count, sizeof(TASKDIALOG_BUTTON));
+    for (i = 0; i < custom_count; i++)
+    {
+      custom_buttons[i].nButtonID = IUPWIN_CUSTOM_BUTTON_ID + i + 1;
+      custom_buttons[i].pszButtonText = iupwinStrChar2Wide(iupAttribGetId(ih, "BUTTONTITLE", i + 1));
+    }
+    config.pButtons = custom_buttons;
+    config.cButtons = custom_count;
+    config.nDefaultButton = IUPWIN_CUSTOM_BUTTON_ID + iupMessageDlgCustomDefault(ih);
+  }
+  else if (iupStrEqualNoCase(buttons, "OKCANCEL"))
     dwCommonButtons = TDCBF_OK_BUTTON | TDCBF_CANCEL_BUTTON;
   else if (iupStrEqualNoCase(buttons, "RETRYCANCEL"))
     dwCommonButtons = TDCBF_RETRY_BUTTON | TDCBF_CANCEL_BUTTON;
@@ -131,27 +147,30 @@ static int winMessageDlgPopupTaskDialog(Ihandle* ih, InativeHandle* parent, char
 
   config.dwCommonButtons = dwCommonButtons;
 
-  button_def = iupAttribGetInt(ih, "BUTTONDEFAULT");
-  if (button_def == 1)
+  if (custom_count == 0)
   {
-    if (dwCommonButtons & TDCBF_OK_BUTTON)
-      config.nDefaultButton = IDOK;
-    else if (dwCommonButtons & TDCBF_YES_BUTTON)
-      config.nDefaultButton = IDYES;
-    else if (dwCommonButtons & TDCBF_RETRY_BUTTON)
-      config.nDefaultButton = IDRETRY;
-  }
-  else if (button_def == 2)
-  {
-    if (dwCommonButtons & TDCBF_CANCEL_BUTTON)
-      config.nDefaultButton = IDCANCEL;
-    else if (dwCommonButtons & TDCBF_NO_BUTTON)
-      config.nDefaultButton = IDNO;
-  }
-  else if (button_def == 3)
-  {
-    if (dwCommonButtons & TDCBF_CANCEL_BUTTON)
-      config.nDefaultButton = IDCANCEL;
+    button_def = iupAttribGetInt(ih, "BUTTONDEFAULT");
+    if (button_def == 1)
+    {
+      if (dwCommonButtons & TDCBF_OK_BUTTON)
+        config.nDefaultButton = IDOK;
+      else if (dwCommonButtons & TDCBF_YES_BUTTON)
+        config.nDefaultButton = IDYES;
+      else if (dwCommonButtons & TDCBF_RETRY_BUTTON)
+        config.nDefaultButton = IDRETRY;
+    }
+    else if (button_def == 2)
+    {
+      if (dwCommonButtons & TDCBF_CANCEL_BUTTON)
+        config.nDefaultButton = IDCANCEL;
+      else if (dwCommonButtons & TDCBF_NO_BUTTON)
+        config.nDefaultButton = IDNO;
+    }
+    else if (button_def == 3)
+    {
+      if (dwCommonButtons & TDCBF_CANCEL_BUTTON)
+        config.nDefaultButton = IDCANCEL;
+    }
   }
 
   {
@@ -167,11 +186,19 @@ static int winMessageDlgPopupTaskDialog(Ihandle* ih, InativeHandle* parent, char
 
   if (wszTitle) free(wszTitle);
   if (wszContent) free(wszContent);
+  if (custom_buttons)
+  {
+    for (i = 0; i < custom_count; i++)
+      free((WCHAR*)custom_buttons[i].pszButtonText);
+    free(custom_buttons);
+  }
 
   if (FAILED(hr))
     return 0;
 
-  if (nButton == IDOK || nButton == IDYES || nButton == IDRETRY)
+  if (custom_count > 0 && nButton > IUPWIN_CUSTOM_BUTTON_ID && nButton <= IUPWIN_CUSTOM_BUTTON_ID + custom_count)
+    iupAttribSetInt(ih, "BUTTONRESPONSE", nButton - IUPWIN_CUSTOM_BUTTON_ID);
+  else if (nButton == IDOK || nButton == IDYES || nButton == IDRETRY)
     iupAttribSet(ih, "BUTTONRESPONSE", "1");
   else if (nButton == IDCANCEL)
     iupMessageDlgSetCancelResponse(ih);
@@ -185,8 +212,6 @@ static int winMessageDlgPopup(Ihandle* ih, int x, int y)
 {
   InativeHandle* parent = iupDialogGetNativeParent(ih);
   char* icon, *buttons;
-  (void)x;
-  (void)y;
 
   icon = iupAttribGetStr(ih, "DIALOGTYPE");
   buttons = iupAttribGetStr(ih, "BUTTONS");
@@ -196,6 +221,9 @@ static int winMessageDlgPopup(Ihandle* ih, int x, int y)
     if (winMessageDlgPopupTaskDialog(ih, parent, icon, buttons))
       return IUP_NOERROR;
   }
+
+  if (iupMessageDlgCustomCount(ih) > 0)
+    return iupMessageDlgCustomPopup(ih, x, y);
 
   {
     MSGBOXPARAMS MsgBoxParams;

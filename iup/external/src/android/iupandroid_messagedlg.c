@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <jni.h>
 
 #include "iup.h"
@@ -61,7 +62,7 @@ static int androidMessageDlgInvoke(Ihandle* ih, const char* buttons)
   JNIEnv* jni_env = iupAndroid_GetEnvThreadSafe();
   jclass java_class = IUPJNI_FindClass(IupMessageDialogHelper, jni_env, "io/github/gen2brain/iupgo/IupMessageDialogHelper");
   jmethodID method_id = (*jni_env)->GetStaticMethodID(jni_env, java_class, "showModal",
-    "(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I");
+    "(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)I");
 
   jobject parent    = androidMessageDlgResolveParent(ih);
   jstring j_title   = androidMessageDlgNewString(jni_env, title);
@@ -76,10 +77,30 @@ static int androidMessageDlgInvoke(Ihandle* ih, const char* buttons)
   jstring j_help    = androidMessageDlgNewString(jni_env, help);
   jstring j_style   = androidMessageDlgNewString(jni_env, btn_style);
   jstring j_corner  = androidMessageDlgNewString(jni_env, corner);
+  jobjectArray j_custom = NULL;
+  int i, custom_count = iupMessageDlgCustomCount(ih);
+
+  if (custom_count > 0)
+  {
+    jclass string_class = (*jni_env)->FindClass(jni_env, "java/lang/String");
+    j_custom = (*jni_env)->NewObjectArray(jni_env, custom_count, string_class, NULL);
+    for (i = 0; i < custom_count; i++)
+    {
+      const char* button_title = iupAttribGetId(ih, "BUTTONTITLE", i + 1);
+      char* str = iupStrProcessMnemonic(button_title, NULL, 0);
+      jstring j_str = androidMessageDlgNewString(jni_env, str);
+      (*jni_env)->SetObjectArrayElement(jni_env, j_custom, i, j_str);
+      (*jni_env)->DeleteLocalRef(jni_env, j_str);
+      if (str != button_title)
+        free(str);
+    }
+    (*jni_env)->DeleteLocalRef(jni_env, string_class);
+    button_def = iupMessageDlgCustomDefault(ih);
+  }
 
   jint response = (*jni_env)->CallStaticIntMethod(jni_env, java_class, method_id,
     parent, j_title, j_value, j_type, j_buttons, (jint)button_def, (jboolean)has_help,
-    j_ok, j_cancel, j_yes, j_no, j_retry, j_help, j_style, j_corner);
+    j_ok, j_cancel, j_yes, j_no, j_retry, j_help, j_style, j_corner, j_custom);
   iupAndroid_CheckException(jni_env, "IupMessageDialogHelper.showModal");
 
   if (j_title)   (*jni_env)->DeleteLocalRef(jni_env, j_title);
@@ -94,6 +115,7 @@ static int androidMessageDlgInvoke(Ihandle* ih, const char* buttons)
   if (j_help)    (*jni_env)->DeleteLocalRef(jni_env, j_help);
   if (j_style)   (*jni_env)->DeleteLocalRef(jni_env, j_style);
   if (j_corner)  (*jni_env)->DeleteLocalRef(jni_env, j_corner);
+  if (j_custom)  (*jni_env)->DeleteLocalRef(jni_env, j_custom);
   (*jni_env)->DeleteLocalRef(jni_env, java_class);
 
   return (int)response;

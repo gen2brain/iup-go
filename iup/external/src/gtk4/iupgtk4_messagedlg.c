@@ -4,6 +4,8 @@
  * See Copyright Notice in "iup.h"
  */
 
+#include <stdlib.h>
+
 #include "iup.h"
 
 #include "iup_object.h"
@@ -46,7 +48,9 @@ static int gtk4MessageDlgPopup(Ihandle* ih, int x, int y)
   GtkWindow* parent;
   char* buttons;
   const char* button_labels[5];
+  char** custom_labels = NULL;
   int num_buttons = 0;
+  int custom_count;
   int button_def;
   int cancel_button = -1;
   AlertDialogData data = {0};
@@ -63,7 +67,28 @@ static int gtk4MessageDlgPopup(Ihandle* ih, int x, int y)
   gtk_alert_dialog_set_modal(dialog, TRUE);
 
   buttons = iupAttribGetStr(ih, "BUTTONS");
-  if (iupStrEqualNoCase(buttons, "OKCANCEL"))
+  custom_count = iupMessageDlgCustomCount(ih);
+  if (custom_count > 0)
+  {
+    int i;
+    custom_labels = g_new0(char*, custom_count + 1);
+    for (i = 0; i < custom_count; i++)
+    {
+      const char* title = iupAttribGetId(ih, "BUTTONTITLE", i + 1);
+      char c = '_';
+      char* escaped = iupgtk4StrEscapeUnderline(title);
+      const char* source = escaped ? escaped : title;
+      char* str = iupStrProcessMnemonic(source, &c, 1);
+      custom_labels[i] = g_strdup(iupgtk4StrConvertToSystem(str));
+      if (str != source)
+        free(str);
+      free(escaped);
+    }
+    gtk_alert_dialog_set_buttons(dialog, (const char* const*)custom_labels);
+    gtk_alert_dialog_set_default_button(dialog, iupMessageDlgCustomDefault(ih) - 1);
+    gtk_alert_dialog_set_cancel_button(dialog, iupMessageDlgCustomCancel(ih) - 1);
+  }
+  else if (iupStrEqualNoCase(buttons, "OKCANCEL"))
   {
     button_labels[0] = "OK";
     button_labels[1] = "Cancel";
@@ -98,17 +123,20 @@ static int gtk4MessageDlgPopup(Ihandle* ih, int x, int y)
     num_buttons = 1;
   }
 
-  button_labels[num_buttons] = NULL;
-  gtk_alert_dialog_set_buttons(dialog, button_labels);
+  if (custom_count == 0)
+  {
+    button_labels[num_buttons] = NULL;
+    gtk_alert_dialog_set_buttons(dialog, button_labels);
 
-  button_def = iupAttribGetInt(ih, "BUTTONDEFAULT");
-  if (button_def >= 1 && button_def <= num_buttons)
-    gtk_alert_dialog_set_default_button(dialog, button_def - 1);
-  else
-    gtk_alert_dialog_set_default_button(dialog, 0);
+    button_def = iupAttribGetInt(ih, "BUTTONDEFAULT");
+    if (button_def >= 1 && button_def <= num_buttons)
+      gtk_alert_dialog_set_default_button(dialog, button_def - 1);
+    else
+      gtk_alert_dialog_set_default_button(dialog, 0);
 
-  if (cancel_button >= 0)
-    gtk_alert_dialog_set_cancel_button(dialog, cancel_button);
+    if (cancel_button >= 0)
+      gtk_alert_dialog_set_cancel_button(dialog, cancel_button);
+  }
 
   data.loop = g_main_loop_new(NULL, FALSE);
   data.button_response = -1;
@@ -124,6 +152,7 @@ static int gtk4MessageDlgPopup(Ihandle* ih, int x, int y)
     iupMessageDlgSetCancelResponse(ih);
 
   g_object_unref(dialog);
+  g_strfreev(custom_labels);
 
   return IUP_NOERROR;
 }

@@ -396,22 +396,6 @@ EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKey(int id, int code)
   if (iupKeyProcessNavigation(ih, code, 0))
     return 1;
 
-  if (code == K_CR || code == K_ESC)
-  {
-    Ihandle* dlg = IupGetDialog(ih);
-    char* name = dlg ? iupAttribGet(dlg, code == K_ESC ? "DEFAULTESC" : "DEFAULTENTER") : NULL;
-    if (name)
-    {
-      Ihandle* bt = IupGetHandle(name);
-      if (bt)
-      {
-        Icallback acb = IupGetCallback(bt, "ACTION");
-        if (acb && acb(bt) == IUP_CLOSE)
-          IupExitLoop();
-        return 1;
-      }
-    }
-  }
   return 0;
 }
 
@@ -577,10 +561,13 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDispatchAction(int id)
   }
 }
 
+EM_JS(void, iupwasmJsActivate, (int id), { globalThis.__iupApply({ op: 'activate', id: id }); })
 
 IUP_SDK_API void iupdrvActivate(Ihandle* ih)
 {
-  (void)ih;
+  int id = iupwasmIdOf(ih);
+  if (id)
+    iupwasmJsActivate(id);
 }
 
 IUP_SDK_API void iupdrvReparent(Ihandle* ih)

@@ -159,7 +159,7 @@ typedef struct
 	CGFloat button_gap  = 8.0;
 	CGFloat button_area_w = IUP_ALERT_WIDTH - 2 * side_pad;
 
-	int order[8];
+	int order[n_buttons > 0 ? n_buttons : 1];
 	int order_count = 0;
 	int cancel_idx = -1;
 	for (int i = 0; i < n_buttons; i++)
@@ -398,9 +398,27 @@ static int cocoaTouchMessageDlgPopup(Ihandle* ih, int x, int y)
 	int has_help            = IupGetCallback(ih, "HELP_CB") ? 1 : 0;
 	if (button_def < 1) button_def = 1;
 
-	cocoaTouchMessageDlgButton buttons[8];
-	int n_buttons = cocoaTouchMessageDlgFillButtons(buttons_str, buttons, 8);
-	if (has_help && n_buttons < 8)
+	int custom_count = iupMessageDlgCustomCount(ih);
+	int max_buttons = custom_count + 8;
+	cocoaTouchMessageDlgButton buttons[max_buttons];
+	int n_buttons;
+	if (custom_count > 0)
+	{
+		int cancel = iupMessageDlgCustomCancel(ih);
+		for (int i = 1; i <= custom_count; i++)
+		{
+			const char* button_title = iupAttribGetId(ih, "BUTTONTITLE", i);
+			char* str = iupStrProcessMnemonic(button_title, NULL, 0);
+			buttons[i - 1] = (cocoaTouchMessageDlgButton){ [iupCocoaTouchStrToNSString(str) retain], i, i == cancel };
+			if (str != button_title)
+				free(str);
+		}
+		n_buttons = custom_count;
+		button_def = iupMessageDlgCustomDefault(ih);
+	}
+	else
+		n_buttons = cocoaTouchMessageDlgFillButtons(buttons_str, buttons, max_buttons);
+	if (has_help && n_buttons < max_buttons)
 	{
 		const char* help = IupGetLanguageString("IUP_HELP");
 		buttons[n_buttons++] = (cocoaTouchMessageDlgButton){
@@ -419,10 +437,7 @@ static int cocoaTouchMessageDlgPopup(Ihandle* ih, int x, int y)
 
 		UIWindow* window = cocoaTouchMessageDlgResolveWindow(ih);
 		if (!window)
-		{
-			iupMessageDlgSetCancelResponse(ih);
-			return IUP_NOERROR;
-		}
+			break;
 
 		NSString* title_ns   = title_str ? iupCocoaTouchStrToNSString(title_str) : @"";
 		NSString* message_ns = value_str ? iupCocoaTouchStrToNSString(value_str) : @"";
@@ -478,11 +493,20 @@ static int cocoaTouchMessageDlgPopup(Ihandle* ih, int x, int y)
 			Icallback cb = IupGetCallback(ih, "HELP_CB");
 			if (cb && cb(ih) == IUP_CLOSE)
 			{
-				iupMessageDlgSetCancelResponse(ih);
-				return IUP_NOERROR;
+				response = IUPCOCOATOUCH_MSGDLG_PENDING;
+				break;
 			}
 			keep_showing = YES;
 		}
+	}
+
+	for (int i = 0; i < custom_count; i++)
+		[buttons[i].title release];
+
+	if (response == IUPCOCOATOUCH_MSGDLG_PENDING)
+	{
+		iupMessageDlgSetCancelResponse(ih);
+		return IUP_NOERROR;
 	}
 
 	char buf[16];

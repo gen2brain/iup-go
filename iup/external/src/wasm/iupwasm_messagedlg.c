@@ -15,6 +15,7 @@
 #include "iup_class.h"
 #include "iup_stdcontrols.h"
 #include "iup_predialogs.h"
+#include "iup_dialog.h"
 
 
 static int wasmMessageButton_CB(Ihandle* btn)
@@ -32,8 +33,9 @@ static int wasmMessageDlgPopup(Ihandle* ih, int x, int y)
   const char* labels[3];
   Ihandle* dlg, *dlg_box, *button_box, *bobj[3];
   int count = 1, i, bt, def;
-  (void)x;
-  (void)y;
+
+  if (iupMessageDlgCustomCount(ih) > 0)
+    return iupMessageDlgCustomPopup(ih, x, y);
 
   if (!value) value = (char*)"";
 

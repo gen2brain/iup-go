@@ -46,6 +46,9 @@ static int qmlMessageDlgPopup(Ihandle* ih, int x, int y)
   int flags = 0;
   int response;
 
+  if (iupMessageDlgCustomCount(ih) > 0)
+    return iupMessageDlgCustomPopup(ih, x, y);
+
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
 

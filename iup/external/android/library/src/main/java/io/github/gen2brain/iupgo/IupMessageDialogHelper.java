@@ -29,7 +29,7 @@ public final class IupMessageDialogHelper
                                 String buttons, int buttonDefault, boolean hasHelp,
                                 String okText, String cancelText, String yesText,
                                 String noText, String retryText, String helpText,
-                                String buttonStyle, String cornerStyle)
+                                String buttonStyle, String cornerStyle, String[] customTitles)
     {
         Activity activity = resolveActivity(parentHandle);
         if (activity == null) activity = IupApplication.getIupApplication().getCurrentActivity();
@@ -40,6 +40,7 @@ public final class IupMessageDialogHelper
 
         final int[] result = { RESP_CANCELED };
         final boolean[] done = { false };
+        final AlertDialog[] shown = { null };
 
         DialogInterface.OnClickListener click = (d, which) -> {
             int r = RESP_CANCELED;
@@ -75,7 +76,24 @@ public final class IupMessageDialogHelper
         }
 
         /* IUP 1/2/3 maps to Positive/Negative/Neutral. HELP only in 1-button mode. */
-        if ("OKCANCEL".equalsIgnoreCase(buttons))
+        if (customTitles != null && customTitles.length > 3)
+        {
+            b.setView(stackedButtons(ctx, customTitles, buttonDefault, buttonStyle, cornerStyle, which -> {
+                result[0] = which;
+                if (shown[0] != null) shown[0].dismiss();
+            }));
+        }
+        else if (customTitles != null && customTitles.length > 0)
+        {
+            b.setPositiveButton(customTitles[0], click);
+            if (customTitles.length > 1)
+                b.setNegativeButton(customTitles[1], click);
+            if (customTitles.length > 2)
+                b.setNeutralButton(customTitles[2], click);
+            else if (customTitles.length == 1 && hasHelp)
+                b.setNeutralButton(helpText, (d, which) -> result[0] = RESP_HELP);
+        }
+        else if ("OKCANCEL".equalsIgnoreCase(buttons))
         {
             b.setPositiveButton(okText, click);
             b.setNegativeButton(cancelText, click);
@@ -106,16 +124,54 @@ public final class IupMessageDialogHelper
         b.setCancelable(false);
 
         AlertDialog dialog = b.create();
+        shown[0] = dialog;
         dialog.setOnDismissListener(d -> done[0] = true);
         dialog.show();
 
-        styleActionButtons(dialog, buttonDefault, buttonStyle, cornerStyle);
+        if (customTitles == null || customTitles.length <= 3)
+            styleActionButtons(dialog, buttonDefault, buttonStyle, cornerStyle);
 
         IupCommon.pumpUntilDone(done);
 
         return result[0];
     }
 
+
+    private static View stackedButtons(Context ctx, String[] titles, int buttonDefault, String buttonStyle, String cornerStyle,
+                                       java.util.function.IntConsumer onClick)
+    {
+        float density = ctx.getResources().getDisplayMetrics().density;
+        int side = Math.round(24 * density);
+        int gap = Math.round(8 * density);
+
+        android.widget.LinearLayout box = new android.widget.LinearLayout(ctx);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        box.setPadding(side, gap, side, 0);
+
+        for (int i = 0; i < titles.length; i++)
+        {
+            final int which = i + 1;
+            MaterialButton button = new MaterialButton(ctx);
+            button.setText(titles[i]);
+            button.setInsetTop(0);
+            button.setInsetBottom(0);
+            if (buttonStyle != null && !buttonStyle.isEmpty())
+                IupButtonHelper.applyButtonStyle(button, buttonStyle.toUpperCase(java.util.Locale.ROOT));
+            else
+                IupButtonHelper.applyShowAsDefault(button, which == buttonDefault);
+            IupButtonHelper.setCornerStyle(button, cornerStyle);
+            button.setOnClickListener(v -> onClick.accept(which));
+
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.bottomMargin = gap;
+            box.addView(button, lp);
+
+            if (which == buttonDefault) button.requestFocus();
+        }
+
+        return box;
+    }
 
     private static Activity resolveActivity(Object handle)
     {

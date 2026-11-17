@@ -8,6 +8,7 @@
 #include <QPushButton>
 #include <QWidget>
 #include <QString>
+#include <QVector>
 
 extern "C" {
 #include "iup.h"
@@ -24,7 +25,7 @@ extern "C" {
 #define IUP_RESPONSE_2    2
 #define IUP_RESPONSE_3    3
 #define IUP_RESPONSE_CANCEL (-500)
-#define IUP_RESPONSE_HELP 4
+#define IUP_RESPONSE_HELP (-501)
 
 /****************************************************************************
  * AUTOMODAL Attribute
@@ -56,8 +57,10 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
   QPushButton* button2 = nullptr;
   QPushButton* button3 = nullptr;
   QPushButton* help_button = nullptr;
+  QVector<QPushButton*> custom_buttons;
   int response;
   int button_def;
+  int custom_count;
 
   iupAttribSetInt(ih, "_IUPDLG_X", x);
   iupAttribSetInt(ih, "_IUPDLG_Y", y);
@@ -90,7 +93,15 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
   const char* help_text = IupGetLanguageString("IUP_HELP");
 
   buttons = iupAttribGetStr(ih, "BUTTONS");
-  if (iupStrEqualNoCase(buttons, "OKCANCEL"))
+  custom_count = iupMessageDlgCustomCount(ih);
+  if (custom_count > 0)
+  {
+    for (int i = 1; i <= custom_count; i++)
+      custom_buttons.append(dialog->addButton(QString::fromUtf8(iupAttribGetId(ih, "BUTTONTITLE", i)), QMessageBox::ActionRole));
+    dialog->setDefaultButton(custom_buttons[iupMessageDlgCustomDefault(ih) - 1]);
+    dialog->setEscapeButton(custom_buttons[iupMessageDlgCustomCancel(ih) - 1]);
+  }
+  else if (iupStrEqualNoCase(buttons, "OKCANCEL"))
   {
     button1 = dialog->addButton(QString::fromUtf8(ok_text), QMessageBox::AcceptRole);
     button2 = dialog->addButton(QString::fromUtf8(cancel_text), QMessageBox::RejectRole);
@@ -151,6 +162,8 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
       if (cb && cb(ih) == IUP_CLOSE)
         response = IUP_RESPONSE_CANCEL;
     }
+    else if (custom_count > 0 && custom_buttons.contains((QPushButton*)clicked_button))
+      response = custom_buttons.indexOf((QPushButton*)clicked_button) + 1;
     else if (clicked_button == button1)
       response = IUP_RESPONSE_1;
     else if (clicked_button == button2)
@@ -162,7 +175,9 @@ static int qtMessageDlgPopup(Ihandle* ih, int x, int y)
 
   } while (response == IUP_RESPONSE_HELP);
 
-  if (response == IUP_RESPONSE_3)
+  if (custom_count > 0 && response > 0)
+    iupAttribSetInt(ih, "BUTTONRESPONSE", response);
+  else if (response == IUP_RESPONSE_3)
     IupSetAttribute(ih, "BUTTONRESPONSE", "3");
   else if (response == IUP_RESPONSE_2)
     IupSetAttribute(ih, "BUTTONRESPONSE", "2");

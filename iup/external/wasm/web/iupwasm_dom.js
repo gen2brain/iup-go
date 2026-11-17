@@ -693,6 +693,9 @@
       case 'focus': {
         if (el) { var ft = el.__iupInput || el.__iupVal || el; if (ft.focus) ft.focus(); }
       } break;
+      case 'activate': {
+        if (el) { var at = el.__iupInput || el; if (at.click) at.click(); }
+      } break;
       case 'tip': {
         if (el) { if (c.text) el.title = c.text; else el.removeAttribute('title'); }
       } break;

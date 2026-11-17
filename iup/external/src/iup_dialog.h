@@ -57,6 +57,12 @@ void iupDialogUpdatePosition(Ihandle* ih);
 /* Sets BUTTONRESPONSE of an IupMessageDlg closed without a button. */
 IUP_SDK_API void iupMessageDlgSetCancelResponse(Ihandle* ih);
 
+/* IupMessageDlg BUTTONS=CUSTOM: button count (0 when not CUSTOM), default, cancel, and the IUP dialog fallback. */
+IUP_SDK_API int iupMessageDlgCustomCount(Ihandle* ih);
+IUP_SDK_API int iupMessageDlgCustomDefault(Ihandle* ih);
+IUP_SDK_API int iupMessageDlgCustomCancel(Ihandle* ih);
+IUP_SDK_API int iupMessageDlgCustomPopup(Ihandle* ih, int x, int y);
+
 /* For external modal dialog stack control */
 void iupDialogLeaveModal(int popup_level);
 void iupDialogEnterModal(Ihandle* ih_popup, int popup_level);
