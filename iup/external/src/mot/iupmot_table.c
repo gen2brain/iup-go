@@ -1777,6 +1777,45 @@ static void motTableKeyPressCallback(Widget w, XtPointer client_data, XEvent* ev
     if (enteritem_cb)
       enteritem_cb(ih, mot_data->current_row, mot_data->current_col);
   }
+  else if ((keysym == XK_Prior || keysym == XK_Next || keysym == XK_Home || keysym == XK_End ||
+            keysym == XK_KP_Prior || keysym == XK_KP_Next || keysym == XK_KP_Home || keysym == XK_KP_End) &&
+           ih->data->num_lin > 0)
+  {
+    Dimension height = 0;
+    int page, row = mot_data->current_row < 1 ? 1 : mot_data->current_row;
+
+    XtVaGetValues(mot_data->drawing_area, XmNheight, &height, NULL);
+    page = ((int)height - mot_data->header_height) / mot_data->row_height;
+    if (page < 1)
+      page = 1;
+
+    if (keysym == XK_Prior || keysym == XK_KP_Prior)
+      row -= page;
+    else if (keysym == XK_Next || keysym == XK_KP_Next)
+      row += page;
+    else if (keysym == XK_Home || keysym == XK_KP_Home)
+      row = 1;
+    else
+      row = ih->data->num_lin;
+
+    if (row < 1)
+      row = 1;
+    if (row > ih->data->num_lin)
+      row = ih->data->num_lin;
+
+    if (row != mot_data->current_row)
+    {
+      mot_data->current_row = row;
+      if (mot_data->current_col < 1 && ih->data->num_col > 0)
+        mot_data->current_col = 1;
+      iupTableCellsCollapse(ih);
+      redraw = 1;
+
+      IFnii enteritem_cb = (IFnii)IupGetCallback(ih, "ENTERITEM_CB");
+      if (enteritem_cb)
+        enteritem_cb(ih, mot_data->current_row, mot_data->current_col);
+    }
+  }
   else if (keysym == XK_Return)
   {
     if (mot_data->current_row > 0 && mot_data->current_col > 0)
