@@ -233,8 +233,9 @@ static void winTableAutoSizeColumns(Ihandle* ih)
     if (max_width < 50)
       max_width = 50;
 
-    ListView_SetColumnWidth(list_view, iup_col, max_width);
     data->col_widths[i] = max_width;
+    if (!(ih->data->stretch_last && i == num_col - 1) && ListView_GetColumnWidth(list_view, iup_col) != max_width)
+      ListView_SetColumnWidth(list_view, iup_col, max_width);
   }
 
   SelectObject(hdc, hOldFont);
@@ -279,7 +280,8 @@ static void winTableAdjustColumnWidths(Ihandle* ih)
     int remaining = list_width - used_width;
     int last_width = (remaining > natural) ? remaining : natural;
 
-    ListView_SetColumnWidth(list_view, num_col, last_width);
+    if (ListView_GetColumnWidth(list_view, num_col) != last_width)
+      ListView_SetColumnWidth(list_view, num_col, last_width);
   }
 }
 
