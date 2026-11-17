@@ -636,7 +636,12 @@ static int wasmTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
 {
   int id = iupwasmIdOf(ih), pos = 0;
   if (id && iupStrToInt(value, &pos))
-    iupwasmJsTextScrollToPos(id, pos);
+  {
+    if (ih->data->is_multiline)
+      iupwasmJsTextScrollToPos(id, pos);
+    else
+      iupwasmJsTextSetCaret(id, pos < 0 ? 0 : pos);
+  }
   return 0;
 }
 
@@ -1037,6 +1042,12 @@ static int wasmTextSetScrollToAttrib(Ihandle* ih, const char* value)
   int id = iupwasmIdOf(ih), lin = 1, col = 1;
   if (id && value)
   {
+    if (!ih->data->is_multiline)
+    {
+      iupStrToInt(value, &col);
+      iupwasmJsTextSetCaret(id, col > 1 ? col - 1 : 0);
+      return 0;
+    }
     iupStrToIntInt(value, &lin, &col, ',');
     if (lin < 1) lin = 1;
     iupwasmJsTextScrollTo(id, lin);

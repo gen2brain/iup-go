@@ -938,6 +938,29 @@ static void eflTextScrollToCursor(Eo* entry, Efl_Text_Cursor_Object* cur)
   efl_ui_scrollable_scroll(entry, rect, EINA_FALSE);
 }
 
+static void eflTextScrollToPosition(Ihandle* ih, Eo* entry, int pos)
+{
+  Efl_Text_Cursor_Object* cur;
+
+  if (ih->data->is_multiline)
+  {
+    cur = efl_ui_textbox_cursor_create(entry);
+    if (!cur)
+      return;
+    efl_text_cursor_object_position_set(cur, pos);
+    eflTextScrollToCursor(entry, cur);
+    efl_del(cur);
+    return;
+  }
+
+  cur = efl_text_interactive_main_cursor_get(entry);
+  if (cur)
+  {
+    efl_text_cursor_object_position_set(cur, pos);
+    eflTextScrollToCursor(entry, cur);
+  }
+}
+
 static int eflTextSetScrollToAttrib(Ihandle* ih, const char* value)
 {
   Eo* entry = iupeflGetWidget(ih);
@@ -961,13 +984,7 @@ static int eflTextSetScrollToAttrib(Ihandle* ih, const char* value)
     if (pos < 0) pos = 0;
   }
 
-  Efl_Text_Cursor_Object* cur = efl_text_interactive_main_cursor_get(entry);
-  if (cur)
-  {
-    efl_text_cursor_object_position_set(cur, pos);
-    eflTextScrollToCursor(entry, cur);
-  }
-
+  eflTextScrollToPosition(ih, entry, pos);
   return 0;
 }
 
@@ -982,13 +999,7 @@ static int eflTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
 
-  Efl_Text_Cursor_Object* cur = efl_text_interactive_main_cursor_get(entry);
-  if (cur)
-  {
-    efl_text_cursor_object_position_set(cur, pos);
-    eflTextScrollToCursor(entry, cur);
-  }
-
+  eflTextScrollToPosition(ih, entry, pos);
   return 0;
 }
 

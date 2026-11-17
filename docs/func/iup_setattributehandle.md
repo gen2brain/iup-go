@@ -17,6 +17,9 @@ It is useful for associating images and menus.
 
 The function will not check for inheritance since all the attributes that associate handles are not inheritable.
 
+The attribute receives the name, so use it with attributes that take a handle name, such as IMAGE or the VALUE of an IupZbox.
+Attributes that take the handle itself, such as VALUE_HANDLE, are set with **IupSetAttribute** and the handle: `IupSetAttribute(zbox, "VALUE_HANDLE", (char*)child)`.
+
 ### See Also
 
 [IupGetAttributeHandle](iup_getattributehandle.md), [IupSetAttribute](iup_setattribute.md), [IupSetAttributes](iup_setattributes.md), [IupSetHandle](iup_sethandle.md)

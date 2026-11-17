@@ -502,6 +502,7 @@ static int motTextSetScrollToAttrib(Ihandle* ih, const char* value)
     iupStrToInt(value, &pos);
     if (pos < 1) pos = 1;
     pos--;  /* return to Motif reference */
+    XmTextSetInsertionPosition(ih->handle, (XmTextPosition)pos);
   }
 
   XmTextShowPosition(ih->handle, (XmTextPosition)pos);
@@ -519,7 +520,8 @@ static int motTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
 
-  XmTextSetInsertionPosition(ih->handle, (XmTextPosition)pos);
+  if (!ih->data->is_multiline)
+    XmTextSetInsertionPosition(ih->handle, (XmTextPosition)pos);
   XmTextShowPosition(ih->handle, (XmTextPosition)pos);
 
   return 0;

@@ -834,12 +834,16 @@ static int qmlTextSetScrollToAttrib(Ihandle* ih, const char* value)
   if (!value)
     return 0;
 
-  iupStrToIntInt(value, &lin, &col, ',');
+  if (ih->data->is_multiline)
+    iupStrToIntInt(value, &lin, &col, ',');
+  else
+    iupStrToInt(value, &col);
   if (lin < 1) lin = 1;
   if (col < 1) col = 1;
 
   qmlTextLinColToUnit(ih, lin, col, &pos);
-  qmlTextSetCursor(ih, pos);
+  if (!ih->data->is_multiline)
+    qmlTextSetCursor(ih, pos);
   qmlTextEnsureVisible(ih, pos);
   return 0;
 }
@@ -854,7 +858,8 @@ static int qmlTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
   pos = iupqmlStrCharToUnit(qmlTextGetText(ih), pos);
-  qmlTextSetCursor(ih, pos);
+  if (!ih->data->is_multiline)
+    qmlTextSetCursor(ih, pos);
   qmlTextEnsureVisible(ih, pos);
   return 0;
 }

@@ -1674,7 +1674,10 @@ static int fltkTextSetScrollToAttrib(Ihandle* ih, const char* value)
   if (!value)
     return 0;
 
-  iupStrToIntInt(value, &lin, &col, ',');
+  if (ih->data->is_multiline)
+    iupStrToIntInt(value, &lin, &col, ',');
+  else
+    iupStrToInt(value, &col);
   if (lin < 1) lin = 1;
   if (col < 1) col = 1;
 

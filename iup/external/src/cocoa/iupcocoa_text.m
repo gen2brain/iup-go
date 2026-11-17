@@ -4126,6 +4126,7 @@ static int cocoaTextSetScrollToAttrib(Ihandle* ih, const char* value)
   NSTextField* single_field = cocoaTextGetSingleLineField(ih);
   if (single_field)
   {
+    iupcocoaTextFieldSetCaret(single_field, value, 1);
     iupcocoaTextFieldScrollTo(single_field, value, 1);
     return 0;
   }
@@ -4151,6 +4152,7 @@ static int cocoaTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   NSTextField* single_field = cocoaTextGetSingleLineField(ih);
   if (single_field)
   {
+    iupcocoaTextFieldSetCaret(single_field, value, 0);
     iupcocoaTextFieldScrollTo(single_field, value, 0);
     return 0;
   }
@@ -4162,7 +4164,6 @@ static int cocoaTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   NSTextView* text_view = cocoaTextGetTextView(ih);
 
   NSRange cursor_range = NSMakeRange(iupcocoaStrCharToUnit([[text_view textStorage] string], pos), 0);
-  [text_view setSelectedRange:cursor_range];
   [text_view scrollRangeToVisible:cursor_range];
 
   return 0;

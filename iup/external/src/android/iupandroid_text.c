@@ -1058,6 +1058,7 @@ static int androidTextSetScrollToAttrib(Ihandle* ih, const char* value)
     iupStrToInt(value, &pos);
     if (pos < 1) pos = 1;
     pos--;
+    androidTextSetCaretPosImpl(ih, pos);
   }
   androidTextScrollToOffsetImpl(ih, pos);
   return 0;
@@ -1069,6 +1070,8 @@ static int androidTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   int pos = 0;
   iupStrToInt(value, &pos);
   if (pos < 0) pos = 0;
+  if (!ih->data->is_multiline)
+    androidTextSetCaretPosImpl(ih, pos);
   androidTextScrollToOffsetImpl(ih, pos);
   return 0;
 }

@@ -1222,6 +1222,26 @@ static char* qtTextGetCaretPosAttrib(Ihandle* ih)
   return iupStrReturnInt(iupqtStrUnitToChar(qtTextGetString(ih), pos));
 }
 
+static void qtTextScrollToUnit(IupQtTextEdit* text, int pos)
+{
+  QTextCursor cursor(text->document());
+  cursor.setPosition(pos);
+  QRect rect = text->cursorRect(cursor);
+  QRect view = text->viewport()->rect();
+
+  QScrollBar* vbar = text->verticalScrollBar();
+  if (rect.top() < view.top())
+    vbar->setValue(vbar->value() + rect.top() - view.top());
+  else if (rect.bottom() > view.bottom())
+    vbar->setValue(vbar->value() + rect.bottom() - view.bottom());
+
+  QScrollBar* hbar = text->horizontalScrollBar();
+  if (rect.left() < view.left())
+    hbar->setValue(hbar->value() + rect.left() - view.left());
+  else if (rect.right() > view.right())
+    hbar->setValue(hbar->value() + rect.right() - view.right());
+}
+
 static int qtTextSetScrollToAttrib(Ihandle* ih, const char* value)
 {
   QtTextSilent silent(ih);
@@ -1230,20 +1250,17 @@ static int qtTextSetScrollToAttrib(Ihandle* ih, const char* value)
   if (!value)
     return 0;
 
-  iupStrToIntInt(value, &lin, &col, ',');
+  if (ih->data->is_multiline)
+    iupStrToIntInt(value, &lin, &col, ',');
+  else
+    iupStrToInt(value, &col);
   if (lin < 1) lin = 1;
   if (col < 1) col = 1;
 
   qtTextLinColToUnit(ih, lin, col, &pos);
 
   if (ih->data->is_multiline)
-  {
-    auto* text = reinterpret_cast<IupQtTextEdit*>(ih->handle);
-    QTextCursor cursor = text->textCursor();
-    cursor.setPosition(pos);
-    text->setTextCursor(cursor);
-    text->ensureCursorVisible();
-  }
+    qtTextScrollToUnit(reinterpret_cast<IupQtTextEdit*>(ih->handle), pos);
   else
   {
     auto* edit = qtTextGetLineEdit(ih);
@@ -1266,13 +1283,7 @@ static int qtTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   pos = iupqtStrCharToUnit(qtTextGetString(ih), pos);
 
   if (ih->data->is_multiline)
-  {
-    auto* text = reinterpret_cast<IupQtTextEdit*>(ih->handle);
-    QTextCursor cursor = text->textCursor();
-    cursor.setPosition(pos);
-    text->setTextCursor(cursor);
-    text->ensureCursorVisible();
-  }
+    qtTextScrollToUnit(reinterpret_cast<IupQtTextEdit*>(ih->handle), pos);
   else
   {
     auto* edit = qtTextGetLineEdit(ih);

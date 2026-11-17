@@ -1516,7 +1516,9 @@ static int haikuTextSetScrollToAttrib(Ihandle* ih, const char* value)
     if (!iupStrToInt(value, &pos)) return 0;
     pos--;
     if (pos < 0) pos = 0;
-    tv->ScrollToOffset(haikuTextCharToByte(tv, pos));
+    int32 byte = haikuTextCharToByte(tv, pos);
+    tv->Select(byte, byte);
+    tv->ScrollToOffset(byte);
   }
   return 0;
 }
@@ -1528,7 +1530,10 @@ static int haikuTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
   int pos = 0;
   if (!iupStrToInt(value, &pos)) return 0;
   LooperLockGuard guard(haikuTextGetLooper(ih));
-  tv->ScrollToOffset(haikuTextCharToByte(tv, pos));
+  int32 byte = haikuTextCharToByte(tv, pos < 0 ? 0 : pos);
+  if (!ih->data->is_multiline)
+    tv->Select(byte, byte);
+  tv->ScrollToOffset(byte);
   return 0;
 }
 

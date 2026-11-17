@@ -132,6 +132,16 @@ func buildSteps() {
 	add(func() { multi.SetAttribute("SELECTION", "2,1:3,2") })
 	attrs("SELECTION lin,col selects across lines", &multi, "SELECTION=2,1:3,2", "SELECTIONPOS=2:6", "SELECTEDTEXT=bc\nd")
 
+	add(func() { multi.SetAttribute("CARET", "1,1"); multi.SetAttribute("SCROLLTO", "3,2") })
+	attrs("SCROLLTO keeps the caret of a multiline text", &multi, "CARET=1,1")
+	add(func() { multi.SetAttribute("SCROLLTOPOS", "6") })
+	attrs("SCROLLTOPOS keeps the caret of a multiline text", &multi, "CARET=1,1")
+
+	add(func() { line.SetAttribute("CARETPOS", "0"); line.SetAttribute("SCROLLTOPOS", "3") })
+	attrs("SCROLLTOPOS moves the caret of a single line text", &line, "CARETPOS=3")
+	add(func() { line.SetAttribute("SCROLLTO", "2") })
+	attrs("SCROLLTO moves the caret of a single line text", &line, "CARETPOS=1")
+
 	add(func() { masked.SetAttribute("MASK", iup.MASK_UINT); masked.SetAttribute("VALUEMASKED", "123") })
 	attrs("VALUEMASKED sets a value the MASK accepts", &masked, "VALUE=123")
 	add(func() { masked.SetAttribute("VALUEMASKED", "12a") })

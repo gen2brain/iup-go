@@ -180,9 +180,11 @@ In Windows, not supported when FORMATTING=NO.
 **SCROLLTO** (non-inheritable) (write-only): Scroll the text to make the given **character** position visible.
 It uses the same format and reference of the CARET attribute ("lin,col" or "col" starting at 1).
 In Windows, when FORMATTING=YES "col" is ignored.
+In a multiline text the caret does not move; in a single line text it moves to the position.
 
 **SCROLLTOPOS** (non-inheritable) (write-only): Scroll the text to make the given **character** position visible.
 It uses the same format and reference of the CARETPOS attribute ("pos" starting at 0).
+In a multiline text the caret does not move; in a single line text it moves to the position.
 
 **SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
