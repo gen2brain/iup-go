@@ -20,6 +20,9 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_class.h"
+#include "iup_classbase.h"
+#include "iup_drvdraw.h"
+#include "iup_draw.h"
 
 #include "iupwin_drv.h"
 #include "iupwin_handle.h"
@@ -57,6 +60,21 @@ static LRESULT CALLBACK winPopoverProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
         ReleaseDC(hwnd, hdc);
       }
       return 0;
+    }
+
+    case WM_ERASEBKGND:
+    {
+      Ihandle* ih = iupwinHandleGet(hwnd);
+      if (ih)
+      {
+        RECT rect;
+        long color = iupDrawStrToColor(iupBaseNativeParentGetBgColorAttrib(ih), 0);
+        GetClientRect(hwnd, &rect);
+        SetDCBrushColor((HDC)wp, RGB(iupDrawRed(color), iupDrawGreen(color), iupDrawBlue(color)));
+        FillRect((HDC)wp, &rect, (HBRUSH)GetStockObject(DC_BRUSH));
+        return 1;
+      }
+      break;
     }
 
     case WM_ACTIVATE:
