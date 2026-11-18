@@ -105,6 +105,25 @@ protected:
   }
 };
 
+static void qtPopoverSetActivePalette(QWidget* widget)
+{
+  QPalette pal = widget->palette();
+  for (int role = 0; role < QPalette::NColorRoles; role++)
+  {
+    auto color_role = static_cast<QPalette::ColorRole>(role);
+    pal.setBrush(QPalette::Inactive, color_role, pal.brush(QPalette::Active, color_role));
+  }
+  widget->setPalette(pal);
+}
+
+/* a Qt::Tool window is drawn inactive unless the style shares activation, so draw it like its active dialog */
+static void qtPopoverShareActivePalette(QWidget* popover)
+{
+  qtPopoverSetActivePalette(popover);
+  for (QWidget* child : popover->findChildren<QWidget*>())
+    qtPopoverSetActivePalette(child);
+}
+
 static int qtPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 {
   IupQtPopover* popover;
@@ -157,6 +176,8 @@ static int qtPopoverSetVisibleAttrib(Ihandle* ih, const char* value)
 
     popover->resize(ih->currentwidth, ih->currentheight);
     popover->move(x, y);
+    if (!popover->autohide_enabled)
+      qtPopoverShareActivePalette(popover);
     popover->show();
   }
   else
