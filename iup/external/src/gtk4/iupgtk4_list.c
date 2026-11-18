@@ -2102,7 +2102,7 @@ static void gtk4ListUpdateMinSize(Ihandle* ih)
             char* value = IupGetAttributeId(ih, "", i);
             if (value)
             {
-              int item_w = iupdrvFontGetStringWidth(ih, value);
+              int item_w = iupListGetItemWidth(ih, value);
               if (item_w > natural_w)
                 natural_w = item_w;
             }
@@ -2158,7 +2158,7 @@ static void gtk4ListUpdateMinSize(Ihandle* ih)
         char* value = IupGetAttributeId(ih, "", i);
         if (value)
         {
-          int item_w = iupdrvFontGetStringWidth(ih, value);
+          int item_w = iupListGetItemWidth(ih, value);
           if (item_w > natural_w)
             natural_w = item_w;
         }
@@ -2317,7 +2317,7 @@ static int gtk4ListMapMethod(Ihandle* ih)
           char* value = IupGetAttributeId(ih, "", i);
           if (value)
           {
-            int item_w = iupdrvFontGetStringWidth(ih, value);
+            int item_w = iupListGetItemWidth(ih, value);
             if (item_w > natural_w)
               natural_w = item_w;
           }

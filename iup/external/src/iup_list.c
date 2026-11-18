@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "iup.h"
 #include "iupcbs.h"
@@ -21,6 +22,7 @@
 #include "iup_mask.h"
 #include "iup_image.h"
 #include "iup_list.h"
+#include "iup_hashtable.h"
 
 
 void iupListSingleCallDblClickCb(Ihandle* ih, IFnis cb, int pos)
@@ -1010,6 +1012,54 @@ static void iListGetItemImageInfo(Ihandle* ih, int id, int* img_w, int* img_h)
   }
 }
 
+static void iListReleaseItemWidths(Ihandle* ih)
+{
+  if (ih->data->item_widths)
+  {
+    iupTableDestroy(ih->data->item_widths);
+    ih->data->item_widths = NULL;
+  }
+  free(ih->data->item_widths_font);
+  ih->data->item_widths_font = NULL;
+}
+
+IUP_SDK_API int iupListGetItemWidth(Ihandle* ih, const char* value)
+{
+  char* font = iupGetFontValue(ih);
+  int charwidth = 0, charheight = 0, width;
+  void* cached;
+
+  if (!value || !value[0])
+    return 0;
+
+  if (!font)
+    return iupdrvFontGetStringWidth(ih, value);
+
+  iupdrvFontGetCharSize(ih, &charwidth, &charheight);
+
+  if (ih->data->item_widths &&
+      (charwidth != ih->data->item_widths_charwidth || charheight != ih->data->item_widths_charheight ||
+       !iupStrEqual(font, ih->data->item_widths_font) ||
+       iupTableCount(ih->data->item_widths) > 2 * iListGetCount(ih) + 64))
+    iListReleaseItemWidths(ih);
+
+  if (!ih->data->item_widths)
+  {
+    ih->data->item_widths = iupTableCreate(IUPTABLE_STRINGINDEXED);
+    ih->data->item_widths_font = iupStrDup(font);
+    ih->data->item_widths_charwidth = charwidth;
+    ih->data->item_widths_charheight = charheight;
+  }
+
+  cached = iupTableGet(ih->data->item_widths, value);
+  if (cached)
+    return (int)((intptr_t)cached - 1);
+
+  width = iupdrvFontGetStringWidth(ih, value);
+  iupTableSet(ih->data->item_widths, value, (void*)(intptr_t)(width + 1), IUPTABLE_POINTER);
+  return width;
+}
+
 static void iListGetNaturalItemsSize(Ihandle* ih, int* w, int* h)
 {
   int visiblecolumns, i,
@@ -1043,7 +1093,7 @@ static void iListGetNaturalItemsSize(Ihandle* ih, int* w, int* h)
 
       value = IupGetAttributeId(ih, "", i);  /* must use IupGetAttribute to check the native system */
       if (value)
-        item_w = iupdrvFontGetStringWidth(ih, value);
+        item_w = iupListGetItemWidth(ih, value);
 
       if (item_w > *w)
         *w = item_w;
@@ -1198,6 +1248,7 @@ static void iListDestroyMethod(Ihandle* ih)
 {
   if (ih->data->mask)
     iupMaskDestroy(ih->data->mask);
+  iListReleaseItemWidths(ih);
 }
 
 /******************************************************************************/

@@ -63,12 +63,18 @@ struct _IcontrolData
       is_virtual,  /* virtual mode flag, can be changed only before map */
       item_count;  /* number of items in virtual mode */
   Imask* mask;
+  struct _Itable* item_widths;
+  char* item_widths_font;
+  int item_widths_charwidth, item_widths_charheight;
 };
 
 int iupListIsVirtual(Ihandle* ih);
 int iupListGetItemCount(Ihandle* ih);
 char* iupListGetItemValueCb(Ihandle* ih, int pos);
 char* iupListGetItemImageCb(Ihandle* ih, int pos);
+
+/* Width of an item text, cached per list while its font and character size do not change. */
+IUP_SDK_API int iupListGetItemWidth(Ihandle* ih, const char* value);
 
 
 #ifdef __cplusplus

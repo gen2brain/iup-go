@@ -194,7 +194,7 @@ static int cocoaListGetMaxWidth(Ihandle* ih)
     char* value;
     while ((value = iupAttribGetId(ih, "", count+1)) != NULL)
     {
-      int width = iupdrvFontGetStringWidth(ih, value);
+      int width = iupListGetItemWidth(ih, value);
       if (width > max_width)
         max_width = width;
       count++;
@@ -218,7 +218,7 @@ static int cocoaListGetMaxWidth(Ihandle* ih)
             if (title)
             {
               const char* c_str = [title UTF8String];
-              int width = iupdrvFontGetStringWidth(ih, c_str);
+              int width = iupListGetItemWidth(ih, c_str);
               if (width > max_width)
                 max_width = width;
             }
@@ -245,7 +245,7 @@ static int cocoaListGetMaxWidth(Ihandle* ih)
             if (str)
             {
               const char* c_str = [str UTF8String];
-              int width = iupdrvFontGetStringWidth(ih, c_str);
+              int width = iupListGetItemWidth(ih, c_str);
               if (width > max_width)
                 max_width = width;
             }
@@ -271,7 +271,7 @@ static int cocoaListGetMaxWidth(Ihandle* ih)
               if (str)
               {
                 const char* c_str = [str UTF8String];
-                int width = iupdrvFontGetStringWidth(ih, c_str);
+                int width = iupListGetItemWidth(ih, c_str);
                 if (width > max_width)
                   max_width = width;
               }
