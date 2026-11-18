@@ -76,11 +76,17 @@ func main() {
 		if i == 2 && j == 2 {
 			return 3
 		}
+		if i == 2 && (j == 3 || j == 4) {
+			return 0
+		}
 		return 1
 	}))
 	cells.SetCallback("VSPAN_CB", iup.VSpanFunc(func(ih iup.Ihandle, i, j int) int {
 		if i == 5 && j == 1 {
 			return 2
+		}
+		if i == 6 && j == 1 {
+			return 0
 		}
 		return 1
 	}))

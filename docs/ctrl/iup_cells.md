@@ -98,6 +98,7 @@ If the attribute CLIPPED is set (the default), all drawing primitives are clippe
 **line**, **column**: the line and column indexes (in grid coordinates)
 
 **Returns**: an integer that specifies the desired span. Default is 1 (no span).
+Return 0 for the cells covered by the span of another cell, so they are not drawn and do not receive mouse clicks.
 
 **MOUSECLICK_CB**: called when the mouse is clicked over a cell.
 
@@ -148,6 +149,7 @@ Same as the [MOTION_CB](../call/iup_motion_cb.md) IupCanvas callback with two ad
 **line**, **column**: the line and column indexes (in grid coordinates)
 
 **Returns**: an integer that specifies the desired span. Default is 1 (no span).
+Return 0 for the cells covered by the span of another cell, so they are not drawn and do not receive mouse clicks.
 
 **WIDTH_CB**: called when the control needs to know the column width.
 
@@ -194,11 +196,11 @@ These functions are faster than the traditional functions because they do not ne
 
 **Checkerboard Pattern**
 
-![](../images/iupcells_chess.jpg)
+![](../images/iupcells_chess.png)
 
 **Numbering Cells**
 
-![](../images/iupcells_num.jpg)
+![](../images/iupcells_num.png)
 
 ### See Also
 
