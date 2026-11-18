@@ -1,6 +1,6 @@
-//go:build (android && gl && egl) || (ios && gl && gles2)
+//go:build (android || ios || js) && gl
 
-// IupGLBackgroundBox on mobile (Android/iOS): native controls over a GLES 3.0 animated background.
+// IupGLBackgroundBox with OpenGL ES 3.0 (Android, iOS, WebAssembly): native controls over an animated background.
 package main
 
 import (
@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gen2brain/iup-go/iup"
-	gl "github.com/go-gl/gl/v3.0/gles2"
+	gl "github.com/gen2brain/gl/v3.0/gles2"
 )
 
 const vertexSrc = `

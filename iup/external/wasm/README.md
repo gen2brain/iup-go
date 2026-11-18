@@ -75,5 +75,5 @@ A `*.c`/`*.cpp` app is built together with IUP and run directly:
 
 * Blocking, value-returning modals (`IupAlarm`, custom `IupPopup`) show but do not pause the page, since a browser cannot block synchronously. `IupFileDlg` opens only from a real user gesture.
 * Go `os` file functions work on the same in-browser filesystem as IUP: the home directory (`CACHEDIR`, `DATADIR`, `CONFIGDIR`) is kept in IndexedDB, and `RESOURCEDIR` holds the `iupkg --data` files.
-* `IupGLCanvas` works over WebGL2 with `-T gl`. The standalone go-gl examples cannot target wasm; use `gl_web` instead.
+* `IupGLCanvas` works over WebGL2 with `-T gl`. The `gl_es*` examples use `github.com/gen2brain/gl/v3.0/gles2`, which runs on WebGL2 as well as on Android and iOS.
 * `IupAudio` plays through an `AudioWorklet` and `IupCamera` captures with `getUserMedia` (`-T media`). Both need a secure context; audio stays silent until the first click or key press when the page was not opened from a user gesture.

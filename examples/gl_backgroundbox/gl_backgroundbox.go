@@ -8,7 +8,7 @@ import (
 	"math"
 
 	"github.com/gen2brain/iup-go/iup"
-	"github.com/go-gl/gl/v3.2-compatibility/gl"
+	"github.com/gen2brain/gl/v3.2-compatibility/gl"
 )
 
 var (

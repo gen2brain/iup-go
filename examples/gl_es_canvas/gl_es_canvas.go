@@ -1,6 +1,6 @@
-//go:build (android && gl && egl) || (ios && gl && gles2)
+//go:build (android || ios || js) && gl
 
-// IupGLCanvas on mobile (Android/iOS): solid red quad drawn from ACTION on every layout.
+// IupGLCanvas with OpenGL ES 3.0 (Android, iOS, WebAssembly): solid red quad drawn from ACTION on every layout.
 package main
 
 import (
@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/gen2brain/iup-go/iup"
-	gl "github.com/go-gl/gl/v3.0/gles2"
+	gl "github.com/gen2brain/gl/v3.0/gles2"
 )
 
 const vertexSrc = `
@@ -46,6 +46,7 @@ func main() {
 	canvas.SetAttribute("BUFFER", "DOUBLE")
 	canvas.SetAttribute("CONTEXTVERSION", "3.0")
 	canvas.SetAttribute("EXPAND", "YES")
+	canvas.SetAttribute("RASTERSIZE", "400x300")
 
 	canvas.SetCallback("RESIZE_CB", iup.ResizeFunc(onResize))
 	canvas.SetCallback("ACTION", iup.ActionFunc(redraw))
