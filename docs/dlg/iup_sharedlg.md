@@ -46,6 +46,11 @@ Supported in Win32, WinUI, macOS, Android and iOS.
 
 [Browse for Example Files](../../examples/)
 
+|                                    |                                    |
+|------------------------------------|------------------------------------|
+| Win32                              | macOS                              |
+| ![](../images/iupsharedlg_win.png) | ![](../images/iupsharedlg_mac.png) |
+
 ### See Also
 
 [IupFileDlg](iup_filedlg.md), [IupPopup](../func/iup_popup.md)

@@ -106,6 +106,11 @@ In WebAssembly, the pages are drawn before the browser print dialog opens, on A4
 
     IupDestroy(dlg);
 
+|                                     |                                   |                                    |                                    |
+|-------------------------------------|-----------------------------------|------------------------------------|------------------------------------|
+| GTK                                 | Qt                                | Win32                              | macOS                              |
+| ![](../images/iupprintdlg_gtk3.png) | ![](../images/iupprintdlg_qt.png) | ![](../images/iupprintdlg_win.png) | ![](../images/iupprintdlg_mac.png) |
+
 ### See Also
 
 [IupDraw](../func/iup_draw.md), [IupFileDlg](iup_filedlg.md), [IupPopup](../func/iup_popup.md)

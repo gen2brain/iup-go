@@ -74,11 +74,7 @@ The Home key resets the circular dial to 0.
 
 [Browse for Example Files](../../examples/)
 
-![](../images/iupdial.png)\
-Regular
-
-![](../images/iupdial2.png)\
-Flat=YES and fgcolor
+![](../images/iupdial.png)
 
 ### See Also
 

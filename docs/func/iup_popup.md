@@ -78,6 +78,24 @@ When called for an already visible dialog (modal or not) it will update its posi
 If the already visible dialog is not modal, then it will become modal and processing will be interrupted as a regular **IupPopup**.
 If the already visible dialog is modal, then the function returns, and it will NOT interrupt processing, the dialog still will remain MODAL.
 
+### Examples
+
+    Ihandle* menu = IupMenu(
+      IupMenuItem("Cut"),
+      IupMenuItem("Copy"),
+      IupSetAttributes(IupMenuItem("Paste"), "ACTIVE=NO"),
+      IupMenuSeparator(),
+      IupMenuItem("Select All"),
+      NULL);
+
+    IupPopup(menu, IUP_MOUSEPOS, IUP_MOUSEPOS);
+    IupDestroy(menu);
+
+|                                  |                                |                                 |                                 |
+|----------------------------------|--------------------------------|---------------------------------|---------------------------------|
+| GTK                              | Qt                             | Win32                           | macOS                           |
+| ![](../images/iuppopup_gtk3.png) | ![](../images/iuppopup_qt.png) | ![](../images/iuppopup_win.png) | ![](../images/iuppopup_mac.png) |
+
 ### See Also
 
 [IupShowXY](iup_showxy.md), [IupShow](iup_show.md), [IupHide](iup_hide.md), [IupMap](iup_map.md), [IupDialog](../dlg/iup_dialog.md)

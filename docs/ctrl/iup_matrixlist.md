@@ -231,9 +231,7 @@ The same macros used for [BUTTON_CB](../call/iup_button_cb.md) can be used for t
 
 [Browse for Example Files](../../examples/)
 
-![](../images/iupmatrixlist1.png)
-
-![](../images/iupmatrixlist2.png)
+![](../images/iupmatrixlist.png)
 
 ### See Also
 

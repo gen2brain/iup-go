@@ -33,6 +33,8 @@ When consulted, behaves as the standard SIZE/RASTERSIZE attributes.
 
 [Browse for Example Files](../../examples/)
 
+![](../images/iupfill.png)
+
 ### See Also
 
 [IupHbox](iup_hbox.md), [IupVbox](iup_vbox.md).

@@ -82,6 +82,8 @@ The following case uses the internal normalizer in an Hbox:
         NULL);
     IupSetAttribute(button_box, "NORMALIZESIZE", "HORIZONTAL");
 
+![](../images/iupnormalizer.png)
+
 ### See Also
 
 [IupHbox](../elem/iup_hbox.md), [IupVbox](../elem/iup_vbox.md), [IupGridBox](../elem/iup_gridbox.md)

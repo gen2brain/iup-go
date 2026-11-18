@@ -63,6 +63,10 @@ The XAUTOHIDE and YAUTOHIDE are considered to be YES always.
 
 Also, all numeric attributes are integer numbers.
 
+### Examples
+
+![](../images/iupflatscrollbox.png)
+
 ### See Also
 
 [SCROLLBAR](../attrib/iup_scrollbar.md), [POSX](../attrib/iup_posx.md), [XMAX](../attrib/iup_xmax.md), [DX](../attrib/iup_dx.md), [POSY](../attrib/iup_posy.md), [YMAX](../attrib/iup_ymax.md), [DY](../attrib/iup_dy.md)
