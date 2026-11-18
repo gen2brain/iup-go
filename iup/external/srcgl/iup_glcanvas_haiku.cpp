@@ -82,6 +82,7 @@ public:
         BMessage m(IUPHAIKU_GL_REDRAW_MSG);
         m.AddRect("dirty", dirty);
         BMessage reply;
+        CallbackReleaseGuard release(nullptr);
         BMessenger(gldata->bridge).SendMessage(&m, &reply);
       }
     }
