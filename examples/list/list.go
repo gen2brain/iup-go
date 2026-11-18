@@ -33,7 +33,7 @@ func main() {
 	listMultiple := iup.List()
 	iup.SetAttributes(listMultiple, "1=\"100m dash\", 2=\"Long jump\", 3=\"Javelin throw\", 4=\"110m hurdlers\", 5=\"Hammer throw\",6=\"High jump\","+
 		"MULTIPLE=YES, VALUE=\"+--+--\", SIZE=EIGHTHxEIGHTH")
-	listMultiple.On(iup.ListActionCB, listMultipleCb)
+	iup.On(listMultiple, iup.ListActionCB, listMultipleCb)
 
 	frmSport := iup.Frame(listMultiple)
 	iup.SetAttribute(frmSport, "TITLE", "Competed in")
@@ -50,12 +50,12 @@ func main() {
 
 	listEdit := iup.List()
 	iup.SetAttributes(listEdit, "1=10, 2=25, 3=50, 4=100, DROPDOWN=YES, EDITBOX=YES, MASK=/d+, MASKNOEMPTY=YES, VALUE=25")
-	listEdit.On(iup.MaskFailCB, func(ih iup.Ihandle, value string) int {
+	iup.On(listEdit, iup.MaskFailCB, func(ih iup.Ihandle, value string) int {
 		fmt.Printf("MASKFAIL_CB %q\n", value)
 		return iup.DEFAULT
 	})
 	btnMasked := iup.Button("VALUEMASKED=7x")
-	btnMasked.On(iup.ActionCB, func(iup.Ihandle) int {
+	iup.On(btnMasked, iup.ActionCB, func(iup.Ihandle) int {
 		listEdit.SetAttribute("VALUEMASKED", "7x")
 		fmt.Println("VALUEMASKED=7x rejected, VALUE is", listEdit.GetAttribute("VALUE"))
 		listEdit.SetAttribute("VALUEMASKED", "75")

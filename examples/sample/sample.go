@@ -63,7 +63,7 @@ func main() {
 		).SetAttribute("ALIGNMENT", "ACENTER"),
 	).SetAttribute("TITLE", "Button")
 
-	iup.GetHandle("button1").On(iup.ActionCB, func(ih iup.Ihandle) int {
+	iup.On(iup.GetHandle("button1"), iup.ActionCB, func(ih iup.Ihandle) int {
 		filedlg := iup.FileDlg().SetAttributes(`DIALOGTYPE=SAVE, TITLE="File Save", FILTER="*.jpg", FILTERINFO="Jpeg Files"`)
 		defer filedlg.Destroy()
 
@@ -81,7 +81,7 @@ func main() {
 		return iup.DEFAULT
 	})
 
-	iup.GetHandle("button2").On(iup.ActionCB, func(ih iup.Ihandle) int {
+	iup.On(iup.GetHandle("button2"), iup.ActionCB, func(ih iup.Ihandle) int {
 		dlg := iup.ColorDlg().SetAttributes(map[string]interface{}{
 			"TITLE":          "ColorDlg",
 			"VALUE":          "128 0 255",
@@ -241,7 +241,7 @@ func main() {
 	}
 
 	canvas := iup.Canvas().SetAttributes(`BGCOLOR="255 255 255", BORDER=NO, XMIN=0, XMAX=99, POSX=0, DX=10`)
-	canvas.On(iup.ActionCB, func(ih iup.Ihandle) int {
+	iup.On(canvas, iup.ActionCB, func(ih iup.Ihandle) int {
 		iup.DrawBegin(ih)
 		defer iup.DrawEnd(ih)
 

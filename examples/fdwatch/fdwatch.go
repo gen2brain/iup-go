@@ -34,7 +34,7 @@ func main() {
 	if err == nil {
 		iup.SetAttribute(watch, "FD", int(fd))
 		iup.SetAttribute(watch, "MODE", "READ")
-		watch.On(iup.FdWatchActionCB, readCb)
+		iup.On(watch, iup.FdWatchActionCB, readCb)
 		iup.SetAttribute(watch, "RUN", "YES")
 	}
 

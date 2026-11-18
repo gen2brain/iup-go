@@ -13,7 +13,7 @@ Three build flows are supported:
 * Android SDK installed
 * Android NDK r30 (the Gradle build pins `ndkVersion` 30.0.14904198)
 * JDK 17+ (required by Android Gradle Plugin 9.x)
-* Go 1.21 or newer (for the Go flow)
+* Go 1.25 or newer (for the Go flow)
 
 ### Environment
 

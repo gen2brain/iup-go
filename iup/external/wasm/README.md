@@ -11,7 +11,7 @@ Two independent build flows are supported:
 ## Prerequisites
 
 * [Emscripten](https://emscripten.org/) (emsdk) at `/opt/emsdk`, or `EMSDK` exported. Activate once: `cd /opt/emsdk && ./emsdk activate latest && . ./emsdk_env.sh`.
-* Go 1.21+ (or TinyGo for a smaller binary, `-t`).
+* Go 1.25+ (or TinyGo for a smaller binary, `-t`).
 * For screenshots only: Node, `playwright-core` (global), and a system Chrome or Chromium (override with `IUP_BROWSER`).
 
 ## Go flow

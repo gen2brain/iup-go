@@ -21,7 +21,7 @@ Source tarballs of the C library and its documentation are attached to the [late
 
 ### Requirements
 
-Go 1.21 is the minimum required version.
+Go 1.25 is the minimum required version.
 
 #### Windows
 

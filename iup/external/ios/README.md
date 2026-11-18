@@ -14,7 +14,7 @@ Three build flows are supported:
 
 * Xcode 14+ (for iOS 15 deployment target)
 * Xcode Command Line Tools (`xcode-select --install`)
-* Go 1.21+
+* Go 1.25+
 
 ### Linux (cross-compile)
 

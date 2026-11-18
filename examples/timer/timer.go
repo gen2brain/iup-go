@@ -18,8 +18,8 @@ func main() {
 	dlg := iup.Dialog(iup.Vbox(text)).SetAttributes(`TITLE="Timer", SIZE=200x200`)
 	iup.ShowXY(dlg, iup.CENTER, iup.CENTER)
 
-	timer1 = iup.Timer().SetAttributes("TIME=1000, RUN=YES").On(iup.TimerActionCB, timerCb)
-	timer2 = iup.Timer().SetAttributes("TIME=4000, RUN=YES").On(iup.TimerActionCB, timerCb)
+	timer1 = iup.On(iup.Timer().SetAttributes("TIME=1000, RUN=YES"), iup.TimerActionCB, timerCb)
+	timer2 = iup.On(iup.Timer().SetAttributes("TIME=4000, RUN=YES"), iup.TimerActionCB, timerCb)
 
 	iup.MainLoop()
 

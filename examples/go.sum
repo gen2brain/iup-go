@@ -1,8 +1,8 @@
 github.com/ebitengine/purego v0.11.3 h1:OB+JLpdm7ioymhyA+6s5kbb/uOuYycAgL8NNTFc5MLg=
 github.com/ebitengine/purego v0.11.3/go.mod h1:DCHPP08djqhNSoTfImcnHYQRZmd0qhakvrozqaEYhGQ=
-github.com/gen2brain/folio v0.2.5 h1:sQz3sfloPSRTr9eTxkJ1+dp/r6ZcRc0m9w4UxIKDrrQ=
-github.com/gen2brain/folio v0.2.5/go.mod h1:4/PcXfaXIYmW1nwQ4bJeE+aG5ybG58Aw9xrwODXaXII=
-github.com/gen2brain/gl v0.1.1 h1:GBD6XT+y2q7cM3lJEWo22um3AU1BvrIlBSIcgKY+4J4=
-github.com/gen2brain/gl v0.1.1/go.mod h1:mOJ5MbDAH1G7FwIQw+iR83IawJWrNFZcP14P/Olsfgw=
+github.com/gen2brain/folio v0.3.1 h1:R6JEt3+h3F3jX/rUCL4UM+v9mx7/cwIgKkf6n3jOiU8=
+github.com/gen2brain/folio v0.3.1/go.mod h1:m8y2W5N5arjEiZ3O7UI27XaJnhELoPsjn1vWKYF3gms=
+github.com/gen2brain/gl v0.1.6 h1:TlB66yH2zJb3IGHQcvKMxZpoiwf+jgYIY9vAwqvknxU=
+github.com/gen2brain/gl v0.1.6/go.mod h1:mOJ5MbDAH1G7FwIQw+iR83IawJWrNFZcP14P/Olsfgw=
 golang.org/x/net v0.58.0 h1:ynWG7rqYi4ccpTEuPZ2QGWHktVEM9DMCj9yzDE0Q7To=
 golang.org/x/net v0.58.0/go.mod h1:YwCddHnFlT7eLQqVprV19OnhLGtc5xOKgE0RyqgfWAU=
