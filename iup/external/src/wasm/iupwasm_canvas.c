@@ -252,10 +252,10 @@ static int wasmCanvasMapMethod(Ihandle* ih)
   ih->data->sb = iupBaseGetScrollbar(ih);
 
   {
-    int is_gl = IupClassMatch(ih, "glcanvas");  /* GL must use the plain transferable canvas */
+    int is_gl = IupClassMatch(ih, "glcanvas");
     if (!is_gl && ih->iclass->childtype == IUP_CHILDNONE && !ih->firstchild && ih->data->sb != IUP_SB_NONE)
       id = iupwasmJsCreateScrollCanvas(ih->data->sb & IUP_SB_HORIZ, ih->data->sb & IUP_SB_VERT);
-    else if (!is_gl && (ih->iclass->childtype != IUP_CHILDNONE || ih->firstchild))
+    else if (ih->iclass->childtype != IUP_CHILDNONE || ih->firstchild)
       id = iupwasmJsCreateCanvasContainer();
     else
       id = iupwasmJsCreateCanvasEl(is_gl);

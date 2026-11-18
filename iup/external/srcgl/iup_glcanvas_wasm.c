@@ -34,7 +34,7 @@ EM_JS(int, iupwasmJsGLIsWorker, (void), { return (typeof document === 'undefined
 EM_JS(void, iupwasmJsGLSetId, (int id), {
   if (typeof document === 'undefined') return;
   var el = globalThis.__iup.els[id];
-  if (el) el.id = "iupglcanvas_" + id;
+  if (el) (el.__iupCanvas || el).id = "iupglcanvas_" + id;
 })
 
 /* writing width/height clears the buffer, so only write on a real change */
@@ -50,6 +50,7 @@ EM_JS(void, iupwasmJsGLSyncSize, (int id), {
   }
   var el = globalThis.__iup.els[id];
   if (!el) return;
+  if (el.__iupCanvas) el = el.__iupCanvas;
   var w = Math.max(1, el.clientWidth || el.width);
   var h = Math.max(1, el.clientHeight || el.height);
   if (el.width !== w) el.width = w;

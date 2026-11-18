@@ -16,7 +16,6 @@ func GLCanvasOpen() {
 }
 
 // GLCanvas creates an OpenGL canvas (drawing area for OpenGL). It inherits from Canvas.
-// Obtain the WebGL rendering context with GLCanvasElement and drive it through syscall/js.
 //
 // https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLCanvas() Ihandle {
@@ -32,10 +31,16 @@ func GLBackgroundBox(child Ihandle) Ihandle {
 
 // GLMakeCurrent activates the given canvas as the current OpenGL context.
 // The first call sets the global attributes GL_VERSION, GL_VENDOR and GL_RENDERER.
+// The WebGL2 rendering context is also stored in globalThis.goGL.
 //
 // https://gen2brain.github.io/iup-go/ctrl/iup_glcanvas.html
 func GLMakeCurrent(ih Ihandle) {
 	ccall("IupGLMakeCurrent", "", []interface{}{"number"}, []interface{}{int(ih)})
+	if c := GLCanvasElement(ih); c.Truthy() {
+		if ctx := c.Call("getContext", "webgl2"); ctx.Truthy() {
+			js.Global().Set("goGL", ctx)
+		}
+	}
 }
 
 // GLIsCurrent returns true if the given canvas is the current OpenGL context.
