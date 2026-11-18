@@ -198,7 +198,6 @@ template<typename T>
 inline void winuiStoreHandle(Ihandle* ih, T& widget)
 {
   ih->handle = reinterpret_cast<InativeHandle*>(winrt::detach_abi(widget));
-  iupwinuiProcessPendingMessages();
 }
 
 template<typename T>

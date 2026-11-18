@@ -374,6 +374,23 @@ static void winuiTreeUpdateImages(Ihandle* ih, int mode)
   }
 }
 
+static void winuiTreeUpdateBranchImage(Ihandle* ih, TreeViewNode const& node, int id)
+{
+  bool expanded = node.IsExpanded();
+  char* name = iupAttribGetId(ih, expanded ? "_IUPWINUI_TREE_IMGEXP" : "IMAGE", id);
+  void* imghandle = name ? iupImageGetImage(name, ih, 0, nullptr) : nullptr;
+  if (!imghandle)
+    imghandle = expanded ? ih->data->def_image_expanded : ih->data->def_image_collapsed;
+  if (imghandle)
+    winuiTreeSetNodeImage(ih, node, imghandle);
+}
+
+static void winuiTreeSetBranchExpanded(Ihandle* ih, TreeViewNode const& node, int id, bool expanded)
+{
+  node.IsExpanded(expanded);
+  winuiTreeUpdateBranchImage(ih, node, id);
+}
+
 /****************************************************************************
  * Event Handlers
  ****************************************************************************/
@@ -401,15 +418,7 @@ static void winuiTreeExpandingHandler(Ihandle* ih, TreeViewNode const& node)
     }
   }
 
-  char* expanded_img = iupAttribGetId(ih, "_IUPWINUI_TREE_IMGEXP", id);
-  if (expanded_img)
-  {
-    void* imghandle = iupImageGetImage(expanded_img, ih, 0, nullptr);
-    if (imghandle)
-      winuiTreeSetNodeImage(ih, node, imghandle);
-  }
-  else if (ih->data->def_image_expanded)
-    winuiTreeSetNodeImage(ih, node, ih->data->def_image_expanded);
+  winuiTreeUpdateBranchImage(ih, node, id);
 }
 
 static void winuiTreeCollapsedHandler(Ihandle* ih, TreeViewNode const& node)
@@ -425,8 +434,7 @@ static void winuiTreeCollapsedHandler(Ihandle* ih, TreeViewNode const& node)
   if (cb)
     cb(ih, id);
 
-  if (ih->data->def_image_collapsed)
-    winuiTreeSetNodeImage(ih, node, ih->data->def_image_collapsed);
+  winuiTreeUpdateBranchImage(ih, node, id);
 }
 
 static void winuiTreeItemInvokedHandler(Ihandle* ih, TreeViewNode const& node)
@@ -797,6 +805,13 @@ static int winuiTreeSetExpandAllAttrib(Ihandle* ih, const char* value)
     }
   }
 
+  for (int i = 0; i < ih->data->node_count; i++)
+  {
+    TreeViewNode node = winuiTreeGetNode(ih, i);
+    if (node && (node.HasChildren() || node.HasUnrealizedChildren()))
+      winuiTreeUpdateBranchImage(ih, node, i);
+  }
+
   return 0;
 }
 
@@ -817,7 +832,7 @@ static int winuiTreeSetTopItemAttrib(Ihandle* ih, const char* value)
   TreeViewNode parent = node.Parent();
   while (parent)
   {
-    parent.IsExpanded(true);
+    winuiTreeSetBranchExpanded(ih, parent, winuiTreeFindNodeId(ih, parent), true);
     parent = parent.Parent();
   }
 
@@ -1276,10 +1291,7 @@ static int winuiTreeSetStateAttrib(Ihandle* ih, int id, const char* value)
   TreeViewNode node = winuiTreeGetNode(ih, id);
   if (node && (node.HasChildren() || node.HasUnrealizedChildren()))
   {
-    if (iupStrEqualNoCase(value, "EXPANDED"))
-      node.IsExpanded(true);
-    else
-      node.IsExpanded(false);
+    winuiTreeSetBranchExpanded(ih, node, id, iupStrEqualNoCase(value, "EXPANDED") ? true : false);
   }
   return 0;
 }
@@ -2681,7 +2693,7 @@ extern "C" IUP_SDK_API void iupdrvTreeAddNode(Ihandle* ih, int id, int kind, con
     prevNode.Children().InsertAt(0, newNode);
     prevNode.HasUnrealizedChildren(false);
     if (ih->data->add_expanded)
-      prevNode.IsExpanded(true);
+      winuiTreeSetBranchExpanded(ih, prevNode, id, true);
   }
   else
   {
