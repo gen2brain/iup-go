@@ -873,9 +873,9 @@ static int iMatrixExSetShowDialogAttrib(Ihandle* ih, const char* value)
     iMatrixExItemSort_CB(ih);
   else if (!readonly && iupStrEqualNoCase(value, "COPYCOLTO_INTERVAL"))
   {
-    IupSetAttribute(ih, "COPYCOLTO", "INTERVAL");
+    iupAttribSet(ih, "COPYCOLTO", "INTERVAL");
     iMatrixExItemCopyColTo_CB(ih);
-    IupSetAttribute(ih, "COPYCOLTO", NULL);
+    iupAttribSet(ih, "COPYCOLTO", NULL);
   }
 
   IupSetAttribute(ih, "MENUCONTEXT_CELL", NULL);
