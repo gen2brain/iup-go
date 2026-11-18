@@ -182,24 +182,9 @@ Portal support is available in GTK 3, FLTK, Motif, EFL and QML.
 In GTK 4, the native GtkFileDialog already integrates with portals when running in a sandboxed environment.
 In Qt, QFileDialog automatically uses the XDG Desktop Portal through the Qt platform integration when running in a sandboxed environment.
 
-#### Native Implementations
+#### Android, iOS and WebAssembly
 
-The underlying native widget per driver:
-
-- **Win32**: GetOpenFileName / GetSaveFileName (and IFileDialog for DIALOGTYPE=DIR).
-- **WinUI**: IFileOpenDialog / IFileSaveDialog (COM).
-- **GTK 3**: GtkFileChooserDialog.
-- **GTK 4**: GtkFileDialog.
-- **Motif**: XmFileSelectionDialog.
-- **Cocoa**: NSOpenPanel / NSSavePanel.
-- **Cocoa Touch**: UIDocumentPickerViewController.
-- **Qt**: QFileDialog.
-- **QML**: FileDialog / FolderDialog.
-- **FLTK**: Fl_File_Chooser.
-- **EFL**: elm_fileselector.
-- **Android**: Storage Access Framework (`ACTION_OPEN_DOCUMENT` / `ACTION_CREATE_DOCUMENT`).
-- **Haiku**: BFilePanel.
-- **WebAssembly**: the browser file picker; OPEN reads one file, SAVE downloads. No directory selection or filesystem paths. EXTFILTER and FILTER are mapped to the picker extension list, `*.*` accepting everything.
+In WebAssembly, OPEN reads one file from the browser file picker and SAVE downloads the file. Directories and filesystem paths are not available. EXTFILTER and FILTER are mapped to the picker extension list, `*.*` accepting everything.
 
 In Android and iOS, VALUE is a copy of the selected file, named as the file, in the application cache (Android) or temporary directory (iOS). In SAVE mode VALUE is an empty file that is copied to the selected location when the dialog is destroyed. DIALOGTYPE=DIR is not supported.
 The picker uses one filter: the FILTERUSED group of EXTFILTER, or FILTER. All files are shown when a pattern is not `*.ext` or an extension has no known file type.

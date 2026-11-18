@@ -63,22 +63,6 @@ The **IupMessage** function creates and shows an **IupMessageDlg**.
 
 In Win32, each different DIALOGTYPE plays a different system beep, and PARENTDIALOG makes the dialog modal relative only to its parent.
 
-The underlying native widget per driver:
-
-- **Win32**: TaskDialogIndirect.
-- **WinUI**: ContentDialog hosted on the parent dialog's XamlRoot.
-- **GTK 3**: gtk_message_dialog (gtk_dialog_run).
-- **GTK 4**: GtkAlertDialog (4.10+).
-- **Motif**: XmCreateMessageDialog / XmCreateMessageBox.
-- **Cocoa**: NSAlert.
-- **Cocoa Touch**: custom UIView.
-- **Qt**: QMessageBox.
-- **QML**: MessageDialog.
-- **FLTK**: fl_message / fl_choice_n.
-- **EFL**: custom dialog window (efl_ui_win).
-- **Android**: MaterialAlertDialogBuilder.
-- **Haiku**: BAlert.
-
 The (x,y) position from IupPopup is ignored by the native widget on all drivers except Qt, which honors it only when there is no parent.
 
 ### Examples

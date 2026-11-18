@@ -121,14 +121,10 @@ IupNotify does not create a visible IUP element. It is a non-interactive control
 
 The notification is displayed asynchronously and callbacks are dispatched through the IUP event loop.
 
-The underlying native service per driver:
-
-- **Win32**: Shell Notification balloon (no action buttons).
-- **WinUI**: AppNotificationManager.
-- **Unix** (GTK, GTK 4, Qt, QML, FLTK, EFL, Motif): `org.freedesktop.Notifications` over D-Bus; supported features depend on the running notification daemon.
-- **Cocoa**, **Cocoa Touch**: UNUserNotificationCenter (requires permission and a valid bundle identifier).
-- **Android**: NotificationManager (requires `android.permission.POST_NOTIFICATIONS` on API 33+ for STYLE=NOTIFICATION).
-- **Haiku**: BNotification.
+In Win32, the notification has no action buttons.
+In Unix, the supported features depend on the running notification daemon.
+In macOS and iOS, the application needs the notification permission and a valid bundle identifier.
+In Android, STYLE=NOTIFICATION needs the `android.permission.POST_NOTIFICATIONS` permission on API 33 and newer.
 
 ### Examples
 
