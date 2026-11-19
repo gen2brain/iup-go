@@ -135,6 +135,18 @@ In Android, STYLE=NOTIFICATION needs the `android.permission.POST_NOTIFICATIONS`
 | GTK                               | WinUI                            | macOS                            |
 | ![](../images/iupnotify_gtk3.png) | ![](../images/iupnotify_win.png) | ![](../images/iupnotify_mac.png) |
 
+|                                      |                                  |
+|--------------------------------------|----------------------------------|
+| Android                              | iOS                              |
+| ![](../images/iupnotify_android.png) | ![](../images/iupnotify_ios.png) |
+
+STYLE=TOAST:
+
+|                                           |                                       |
+|-------------------------------------------|---------------------------------------|
+| Android                                   | iOS                                   |
+| ![](../images/iupnotifytoast_android.png) | ![](../images/iupnotifytoast_ios.png) |
+
 ### See Also
 
 [IupTimer](iup_timer.md)
