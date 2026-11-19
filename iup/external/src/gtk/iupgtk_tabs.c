@@ -396,12 +396,23 @@ static void gtkTabsPageReordered(GtkNotebook* notebook, GtkWidget* child_page, g
   (void)notebook;
 }
 
+static Ihandle* gtkTabsGetPageChild(Ihandle* ih, GtkWidget* page)
+{
+  Ihandle* child;
+  for (child = ih->firstchild; child; child = child->brother)
+  {
+    if ((GtkWidget*)iupAttribGet(child, "_IUPTAB_PAGE") == page)
+      return child;
+  }
+  return NULL;
+}
+
 static void gtkTabsSwitchPage(GtkNotebook* notebook, void* page, int pos, Ihandle* ih)
 {
   IFnnn cb = (IFnnn)IupGetCallback(ih, "TABCHANGE_CB");
   int prev_pos = iupdrvTabsGetCurrentTab(ih);
 
-  Ihandle* child = IupGetChild(ih, pos);
+  Ihandle* child = gtkTabsGetPageChild(ih, (GtkWidget*)page);
   Ihandle* prev_child = IupGetChild(ih, prev_pos);
 
   GtkWidget* tab_container = (GtkWidget*)iupAttribGet(child, "_IUPTAB_CONTAINER");

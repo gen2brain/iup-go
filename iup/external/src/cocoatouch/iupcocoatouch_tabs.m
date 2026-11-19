@@ -394,10 +394,18 @@ static void cocoaTouchTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int po
 	Iarray* visible_array = cocoaTouchTabsGetVisibleArray(ih);
 	int* visible_data = (int*)iupArrayGetData(visible_array);
 
+	int native_pos = visible_data[pos] ? cocoaTouchTabsPosFixToNative(ih, pos) : -1;
+	if (visible_data[pos])
+		iupTabsCheckCurrentTab(ih, pos, 1);
+
+	int cur_pos = iupdrvTabsGetCurrentTab(ih);
+	if (cur_pos == pos)
+		cur_pos = -1;
+	else if (cur_pos > pos)
+		cur_pos--;
+
 	if (visible_data[pos])
 	{
-		int native_pos = cocoaTouchTabsPosFixToNative(ih, pos);
-		iupTabsCheckCurrentTab(ih, pos, 1);
 		if (native_pos >= 0 && root)
 		{
 			iupAttribSet(ih, "_IUPCOCOATOUCH_IGNORE_CHANGE", "1");
@@ -414,6 +422,9 @@ static void cocoaTouchTabsChildRemovedMethod(Ihandle* ih, Ihandle* child, int po
 	}
 
 	iupArrayRemove(visible_array, pos, 1);
+
+	if (cur_pos >= 0)
+		iupdrvTabsSetCurrentTab(ih, cur_pos);
 
 	cocoaTouchTabsRebuildCloseButtons(ih);
 	if (root) [root setNeedsLayout];
