@@ -1,0 +1,4 @@
+{
+  "run": ["python3", "check.py"],
+  "windows": ["python", "check.py"]
+}

@@ -1,0 +1,22 @@
+{
+  "void": "void",
+  "int": "int",
+  "unsigned int": "unsigned int",
+  "long": "long",
+  "unsigned long": "unsigned long",
+  "float": "float",
+  "double": "double",
+  "unsigned char": "unsigned char",
+  "char*": "const char*",
+  "char**": "char**",
+  "unsigned char*": "unsigned char*",
+  "int*": "int*",
+  "float*": "float*",
+  "double*": "double*",
+  "void*": "void*",
+  "void**": "void**",
+  "Ihandle*": "Ihandle*",
+  "Ihandle**": "Ihandle**",
+  "Icallback": "Icallback",
+  "*": "void*"
+}

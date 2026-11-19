@@ -1,0 +1,18 @@
+{
+  "void": "None",
+  "int": "ctypes.c_int",
+  "unsigned int": "ctypes.c_uint",
+  "long": "ctypes.c_long",
+  "unsigned long": "ctypes.c_ulong",
+  "float": "ctypes.c_float",
+  "double": "ctypes.c_double",
+  "unsigned char": "ctypes.c_ubyte",
+  "char*": "ctypes.c_char_p",
+  "unsigned char*": "ctypes.c_void_p",
+  "int*": "ctypes.POINTER(ctypes.c_int)",
+  "float*": "ctypes.POINTER(ctypes.c_float)",
+  "double*": "ctypes.POINTER(ctypes.c_double)",
+  "void*": "ctypes.c_void_p",
+  "Ihandle*": "ctypes.c_void_p",
+  "*": "ctypes.c_void_p"
+}
