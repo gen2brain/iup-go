@@ -296,7 +296,7 @@ You can also point `PKG_CONFIG_LIBDIR` to some local directory with custom modif
 ### Packaging
 
 [iupkg](cmd/iupkg) builds and packages a program for distribution: a Windows `.exe` with icon, version info and manifest, or an `.msix`,
-a macOS `.app`, Linux `.tar.gz`/`.deb`/`.rpm`, an Android `.apk`, an iOS `.ipa`, a WebAssembly site or a Haiku `.hpkg`.
+a macOS `.app`, Linux `.tar.gz`/`.deb`/`.rpm`, an Android `.apk` or `.aab`, an iOS `.ipa`, a WebAssembly site or a Haiku `.hpkg`.
 Signing is built in: Authenticode, Apple code signing with notarization, APK signing and OpenPGP for the Linux packages, all without platform tools.
 
 ```
