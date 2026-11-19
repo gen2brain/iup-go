@@ -5,8 +5,6 @@ It is not a visual element. Each element should be destroyed using [IupDestroy](
 
 Samples are 16-bit signed integers, interleaved by channel.
 
-Not supported in Haiku.
-
 ### Initialization and Usage
 
 The **IupMediaOpen** function must be called after **IupOpen**.

@@ -10,6 +10,7 @@
 
 #include <BufferConsumer.h>
 #include <Buffer.h>
+#include <MediaAddOn.h>
 #include <MediaEventLooper.h>
 #include <MediaNode.h>
 #include <MediaRoster.h>
@@ -261,31 +262,37 @@ int iupdrvCameraIsAvailable(void)
   return 1;
 }
 
-int iupdrvCameraGetDeviceCount(void)
+#define IUPHAIKU_CAMERA_MAX 16
+
+static int haikuCameraList(dormant_node_info* list)
 {
   BMediaRoster* roster = BMediaRoster::Roster();
-  media_node node;
-  if (!roster || roster->GetVideoInput(&node) != B_OK)
+  media_format format;
+  int32 count = IUPHAIKU_CAMERA_MAX;
+
+  if (!roster)
     return 0;
-  roster->ReleaseNode(node);
-  return 1;
+  format.type = B_MEDIA_RAW_VIDEO;
+  format.u.raw_video = media_raw_video_format::wildcard;
+  if (roster->GetDormantNodes(list, &count, nullptr, &format, nullptr, B_BUFFER_PRODUCER | B_PHYSICAL_INPUT, 0) != B_OK)
+    return 0;
+  return static_cast<int>(count);
+}
+
+int iupdrvCameraGetDeviceCount(void)
+{
+  dormant_node_info list[IUPHAIKU_CAMERA_MAX];
+  return haikuCameraList(list);
 }
 
 char* iupdrvCameraGetDeviceName(int index)
 {
-  BMediaRoster* roster = BMediaRoster::Roster();
-  media_node node;
-  live_node_info info;
-  char* name;
+  dormant_node_info list[IUPHAIKU_CAMERA_MAX];
+  int count = haikuCameraList(list);
 
-  if (index != 0 || !roster || roster->GetVideoInput(&node) != B_OK)
+  if (index < 0 || index >= count)
     return nullptr;
-  if (roster->GetLiveNodeInfo(node, &info) == B_OK)
-    name = iupStrReturnStr(info.name);
-  else
-    name = iupStrReturnStr("Video Input");
-  roster->ReleaseNode(node);
-  return name;
+  return iupStrReturnStr(list[index].name);
 }
 
 char* iupdrvCameraGetPermission(Ihandle* ih)
@@ -320,7 +327,10 @@ int iupdrvCameraStart(Ihandle* ih, int device, int* width, int* height, int* fps
   BTimeSource* timesource;
   (void)fps;
 
-  if (device != 0)
+  dormant_node_info list[IUPHAIKU_CAMERA_MAX];
+  int device_count = haikuCameraList(list);
+
+  if (device < 0 || device >= device_count)
   {
     iupCameraError(ih, "Camera not found");
     return 0;
@@ -329,7 +339,7 @@ int iupdrvCameraStart(Ihandle* ih, int device, int* width, int* height, int* fps
   camera = static_cast<IhaikuCamera*>(calloc(1, sizeof(IhaikuCamera)));
   camera->producer = media_node::null;
   camera->roster = BMediaRoster::Roster();
-  if (!camera->roster || camera->roster->GetVideoInput(&camera->producer) != B_OK)
+  if (!camera->roster || camera->roster->InstantiateDormantNode(list[device], &camera->producer) != B_OK)
   {
     camera->producer = media_node::null;
     haikuCameraRelease(camera);

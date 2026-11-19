@@ -3,8 +3,6 @@
 Creates a canvas that shows the live picture of a camera.
 It inherits from [IupCanvas](../elem/iup_canvas.md). The element owns the ACTION callback and draws the frames itself, scaled to fit while keeping the aspect ratio.
 
-Not supported in Haiku.
-
 ### Initialization and Usage
 
 The **IupMediaOpen** function must be called after **IupOpen**.

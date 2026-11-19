@@ -34,40 +34,58 @@ typedef struct _IhaikuMicrophone
   int stopping;
 } IhaikuMicrophone;
 
-static int haikuMicrophoneInput(media_node* node)
+#define IUPHAIKU_MICROPHONE_MAX 16
+
+static int haikuMicrophoneList(live_node_info* list)
 {
   BMediaRoster* roster = BMediaRoster::Roster();
+  media_format format;
+  int32 count = IUPHAIKU_MICROPHONE_MAX;
+
   if (!roster)
     return 0;
-  return roster->GetAudioInput(node) == B_OK;
+  format.type = B_MEDIA_RAW_AUDIO;
+  format.u.raw_audio = media_raw_audio_format::wildcard;
+  if (roster->GetLiveNodes(list, &count, nullptr, &format, nullptr, B_BUFFER_PRODUCER | B_PHYSICAL_INPUT) != B_OK)
+    return 0;
+
+  media_node def;
+  if (roster->GetAudioInput(&def) == B_OK)
+  {
+    for (int32 i = 1; i < count; i++)
+    {
+      if (list[i].node.node == def.node)
+      {
+        live_node_info first = list[i];
+        memmove(&list[1], &list[0], i * sizeof(live_node_info));
+        list[0] = first;
+        break;
+      }
+    }
+    roster->ReleaseNode(def);
+  }
+  return static_cast<int>(count);
 }
 
 int iupdrvMicrophoneIsAvailable(void)
 {
-  media_node node;
-  if (!haikuMicrophoneInput(&node))
-    return 0;
-  BMediaRoster::Roster()->ReleaseNode(node);
-  return 1;
+  return iupdrvMicrophoneGetDeviceCount() > 0;
 }
 
 int iupdrvMicrophoneGetDeviceCount(void)
 {
-  return iupdrvMicrophoneIsAvailable();
+  live_node_info list[IUPHAIKU_MICROPHONE_MAX];
+  return haikuMicrophoneList(list);
 }
 
 char* iupdrvMicrophoneGetDeviceName(int index)
 {
-  media_node node;
-  live_node_info info;
-  char* name = nullptr;
+  live_node_info list[IUPHAIKU_MICROPHONE_MAX];
+  int count = haikuMicrophoneList(list);
 
-  if (index != 0 || !haikuMicrophoneInput(&node))
+  if (index < 0 || index >= count)
     return nullptr;
-  if (BMediaRoster::Roster()->GetLiveNodeInfo(node, &info) == B_OK)
-    name = iupStrReturnStr(info.name);
-  BMediaRoster::Roster()->ReleaseNode(node);
-  return name;
+  return iupStrReturnStr(list[index].name);
 }
 
 char* iupdrvMicrophoneGetPermission(Ihandle* ih)
@@ -145,12 +163,14 @@ static void haikuMicrophoneRelease(IhaikuMicrophone* mic)
 int iupdrvMicrophoneStart(Ihandle* ih, int device, int* channels, int* samplerate)
 {
   IhaikuMicrophone* mic;
+  live_node_info list[IUPHAIKU_MICROPHONE_MAX];
+  int device_count = haikuMicrophoneList(list);
   media_node input;
   media_output output;
   media_format format;
   int32 count = 0;
 
-  if (device != 0 || !haikuMicrophoneInput(&input))
+  if (device < 0 || device >= device_count || BMediaRoster::Roster()->GetNodeFor(list[device].node.node, &input) != B_OK)
   {
     iupMicrophoneError(ih, "Microphone not found");
     return 0;
