@@ -535,8 +535,7 @@ static int haikuToggleSetValueAttrib(Ihandle* ih, const char* value)
                iupAttribGetBoolean(ih, "3STATE") && dynamic_cast<BCheckBox*>(v));
 
   int32 want = B_CONTROL_OFF;
-  if (iupStrEqualNoCase(value, "ON"))           want = B_CONTROL_ON;
-  else if (iupStrEqualNoCase(value, "NOTDEF"))  want = B_CONTROL_PARTIALLY_ON;
+  if (iupStrEqualNoCase(value, "NOTDEF"))       want = B_CONTROL_PARTIALLY_ON;
   else if (iupStrEqualNoCase(value, "TOGGLE"))
   {
     if (three)
@@ -548,6 +547,8 @@ static int haikuToggleSetValueAttrib(Ihandle* ih, const char* value)
     else
       want = (haikuToggleNativeValue(v) == B_CONTROL_ON) ? B_CONTROL_OFF : B_CONTROL_ON;
   }
+  else if (iupStrBoolean(value))
+    want = B_CONTROL_ON;
 
   if (ih->data->is_radio && want != B_CONTROL_ON)
     return 0;
