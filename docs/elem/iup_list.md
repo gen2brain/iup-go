@@ -109,7 +109,7 @@ In Windows, if DROPEXPAND=YES then the horizontal scrollbar is never shown.
 
 **SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
-Supported in Windows, WinUI, Qt, QML, macOS, iOS and WebAssembly.
+Supported in Win32, WinUI, Qt, QML, macOS, iOS and WebAssembly.
 
 **SHOWDRAGDROP** (creation-only) (non-inheritable): enables the internal drag and drop of items in the same list, and enables the **DRAGDROP_CB** callback.
 Default: "NO". Works only if DROPDOWN=NO and MULTIPLE=NO.

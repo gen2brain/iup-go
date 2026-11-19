@@ -12,7 +12,7 @@ Default: NULL.
 
 Icon sizes are usually less than or equal to 32x32.
 In Windows, an icon with 16x16, 32x32 and 48x48 images of 32 bpp covers every place the system shows it.
-In Windows and WinUI, when not set, the first icon resource of the executable is used.
+In Win32 and WinUI, when not set, the first icon resource of the executable is used.
 
 In GTK 4, the value can also be the name of an icon in the icon theme, used when no IUP image has that name.
 

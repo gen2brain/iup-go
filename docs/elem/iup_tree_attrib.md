@@ -38,7 +38,7 @@ A column is the width of the digit "0" in the element font. Default: 20
 
 **SCROLLVISIBLE** (read-only): Returns which scrollbars are visible at the moment.
 Can be: YES (both), VERTICAL, HORIZONTAL, NO.
-Supported in Windows, WinUI, Qt, QML, macOS and WebAssembly.
+Supported in Win32, WinUI, Qt, QML, macOS and WebAssembly.
 
 **SPACING**: vertical internal padding for each node.
 The distance between nodes is 2x the spacing.

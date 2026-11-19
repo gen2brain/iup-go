@@ -16,7 +16,7 @@ The same macros used for [BUTTON_CB](../call/iup_button_cb.md) can be used for t
 ### Notes
 
 In GTK, GTK 4, Motif, FLTK, EFL and Haiku, delta is always 1 or -1.
-In Windows, WinUI, Qt and QML, delta is normalized in WHEEL_DELTA units (1 per notch typical, fractional or 2 and more on some devices).
+In Win32, WinUI, Qt and QML, delta is normalized in WHEEL_DELTA units (1 per notch typical, fractional or 2 and more on some devices).
 In macOS and iOS, delta can be fractional (precision or trackpad scrolling reports sub-notch values).
 In macOS, the sign follows the system scroll direction setting (natural scrolling).
 

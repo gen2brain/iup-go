@@ -34,7 +34,7 @@ In "WRITE" mode the callback is called while the descriptor accepts data, so sto
 
 ### Notes
 
-In Windows, WinUI, Haiku and GNUstep, an internal thread waits on the descriptor and the callback is called on the main thread through the POSTMESSAGE_CB of the element, so POSTMESSAGE_CB must not be set on a watch.
+In Win32, WinUI, Haiku and GNUstep, an internal thread waits on the descriptor and the callback is called on the main thread through the POSTMESSAGE_CB of the element, so POSTMESSAGE_CB must not be set on a watch.
 
 ### Examples
 

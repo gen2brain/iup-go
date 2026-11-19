@@ -18,7 +18,7 @@ In Android, touch does not move the focus to buttons, toggles and sliders; there
 The Up and Down arrows also navigate between buttons, flat buttons and toggles.
 When an **IupToggle** is inside an **IupRadio**, the "Tab" keys will navigate only to the selected toggle.
 
-In Windows and WinUI, the focus feedback only appears after the user presses a key (except for the **IupText** where the feedback is the caret).
+In Win32 and WinUI, the focus feedback only appears after the user presses a key (except for the **IupText** where the feedback is the caret).
 When a control is clicked before any key is pressed, the focus feedback will NOT be shown, although the control will be in focus.
 **IupMatrix** and other additional controls will always show their focus feedback.
 In GTK, GTK 4, Qt, Motif and EFL, the focus feedback is always shown for the control that has the focus.

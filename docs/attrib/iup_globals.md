@@ -381,7 +381,7 @@ Not available in WebAssembly.
 ### TOUCHREADY (read-only)
 
 Informs if a touch input device is available. Always returns YES or NO.
-In Windows and WinUI, it reflects the presence of a touch digitizer; in Android and iOS, it is always YES.
+In Win32 and WinUI, it reflects the presence of a touch digitizer; in Android and iOS, it is always YES.
 The other drivers do not detect touch and report NO.
 
 ### USERNAME (read-only)

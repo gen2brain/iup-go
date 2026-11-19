@@ -183,7 +183,7 @@ IUP uses the default locale in ANSI-C. This means that it does not adopt a speci
 IUP supports UTF-8 (ISO10646-1) encoding in all drivers.
 To specify a string in UTF-8 encoding set the global attribute "[UTF8MODE](iup_globals.md#utf8mode)" to "YES".
 In GTK, GTK 4, macOS, Cocoa Touch, Qt, QML, EFL, FLTK, Android, Haiku and WebAssembly, UTF-8 is the native encoding.
-In Windows, WinUI and Motif (with XFT), UTF-8 strings are converted to the native encoding as needed.
+In Win32, WinUI and Motif (with XFT), UTF-8 strings are converted to the native encoding as needed.
 
 #### ISO8859-1 and Windows-1252 Displayable Characters
 
