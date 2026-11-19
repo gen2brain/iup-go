@@ -470,6 +470,9 @@ static const char* haikuWebBrowserInitScript =
   "      iupDirtyFlag = true;"
   "    }"
   "  });"
+  "  document.addEventListener('selectionchange', function() {"
+  "    if (document.body.contentEditable == 'true') console.log('iup:update');"
+  "  });"
   "  window.iupGetDirtyFlag = function() {"
   "    return iupDirtyFlag;"
   "  };"
@@ -531,6 +534,16 @@ void IupHaikuWebHandler::MessageReceived(BMessage* msg)
         cb(fIhandle, const_cast<char*>(url.String()));
       else if (!url.IsEmpty())
         IupSetStrAttribute(fIhandle, "VALUE", url.String());
+      break;
+    }
+    case ADD_CONSOLE_MESSAGE:
+    {
+      const char* text = nullptr;
+      if (msg->FindString("string", &text) == B_OK && text && strcmp(text, "iup:update") == 0)
+      {
+        IFn cb = reinterpret_cast<IFn>(IupGetCallback(fIhandle, "UPDATE_CB"));
+        if (cb) cb(fIhandle);
+      }
       break;
     }
     case UPDATE_NAVIGATION_INTERFACE:
