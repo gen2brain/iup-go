@@ -62,6 +62,7 @@ extern "C" {
 #define IUPHAIKU_JS_TIMEOUT  5000000
 #define IUPHAIKU_EDIT_MSG    'IuED'  /* editor action hop to the WebPage looper */
 #define IUPHAIKU_WEB_MAP_MSG 'IuWM'  /* deferred bind of BWebView once the dialog window is up */
+#define IUPHAIKU_WEB_POPUP_MSG 'IuWP'  /* first navigation of a page opened by target or window.open */
 
 typedef enum {
   IUP_WEB_LOAD_LOADING,
@@ -78,8 +79,8 @@ struct _IcontrolData
 class IupHaikuWebHandler : public BHandler
 {
 public:
-  explicit IupHaikuWebHandler(Ihandle* ih, BWebView* popup = nullptr)
-    : BHandler("iup_webhandler"), fIhandle(ih), fPopup(popup), fStatus(IUP_WEB_LOAD_COMPLETED),
+  explicit IupHaikuWebHandler(Ihandle* ih)
+    : BHandler("iup_webhandler"), fIhandle(ih), fStatus(IUP_WEB_LOAD_COMPLETED),
       fCanBack(false), fCanForward(false)
   {
   }
@@ -92,14 +93,74 @@ public:
   void MessageReceived(BMessage* msg) override;
 
 private:
-  void PopupReceived(BMessage* msg);
-
   Ihandle* fIhandle;
-  BWebView* fPopup;
   IupHaikuWebLoadStatus fStatus;
   bool fCanBack;
   bool fCanForward;
 };
+
+class IupHaikuWebRelay : public BHandler
+{
+public:
+  IupHaikuWebRelay(const BMessenger& target, BWebView* popup = nullptr)
+    : BHandler("iup_webrelay"), fTarget(target), fPopup(popup)
+  {
+  }
+
+  void MessageReceived(BMessage* msg) override;
+
+private:
+  BMessenger fTarget;
+  BWebView* fPopup;
+};
+
+static BLooper* sRelayLooper = nullptr;
+
+static BLooper* haikuWebBrowserRelayLooper()
+{
+  if (!sRelayLooper)
+  {
+    sRelayLooper = new BLooper("iup_web_relay");
+    sRelayLooper->Run();
+  }
+  return sRelayLooper;
+}
+
+void IupHaikuWebRelay::MessageReceived(BMessage* msg)
+{
+  if (fPopup)
+  {
+    BString url;
+    if (msg->what != NAVIGATION_REQUESTED || msg->FindString("url", &url) != B_OK ||
+        url.IsEmpty() || url == "about:blank")
+      return;
+
+    BMessage popup(IUPHAIKU_WEB_POPUP_MSG);
+    popup.AddString("url", url);
+    fTarget.SendMessage(&popup);
+
+    fPopup->WebPage()->SetListener(BMessenger());
+    fPopup->Shutdown();
+    Looper()->RemoveHandler(this);
+    delete this;
+    return;
+  }
+
+  if (msg->what == NEW_PAGE_CREATED)
+  {
+    BWebView* view = nullptr;
+    if (msg->FindPointer("view", reinterpret_cast<void**>(&view)) == B_OK && view)
+    {
+      auto* relay = new IupHaikuWebRelay(fTarget, view);
+      Looper()->AddHandler(relay);
+      view->WebPage()->SetListener(BMessenger(relay));
+    }
+    msg->SendReply(B_OK);
+    return;
+  }
+
+  fTarget.SendMessage(msg);
+}
 
 static bool sWebKitInitialized = false;
 
@@ -237,7 +298,15 @@ static void haikuWebBrowserBindView(Ihandle* ih, BWebView* view)
     if (win) win->AddHandler(handler);
   }
   iupAttribSet(ih, "_IUPWEB_HANDLER", reinterpret_cast<char*>(handler));
-  view->WebPage()->SetListener(BMessenger(handler));
+
+  BLooper* relay_looper = haikuWebBrowserRelayLooper();
+  auto* relay = new IupHaikuWebRelay(BMessenger(handler));
+  {
+    LooperLockGuard relay_guard(relay_looper);
+    relay_looper->AddHandler(relay);
+  }
+  iupAttribSet(ih, "_IUPWEB_RELAY", reinterpret_cast<char*>(relay));
+  view->WebPage()->SetListener(BMessenger(relay));
   haikuWebBrowserJSExecMessenger(ih, view->WebPage());
 
   iupAttribSet(ih, "_IUPWEB_READY", "1");
@@ -274,16 +343,16 @@ static char* haikuWebBrowserPageCall(Ihandle* ih, BMessage& msg)
 
   /* the page thread needs this looper to reach the view, and we are about to
      block it */
-  BLooper* self_looper = BLooper::LooperForThread(find_thread(nullptr));
+  BLooper* self_looper = iuphaikuOwnLooper();
   auto* self_window = dynamic_cast<BWindow*>(self_looper);
-  int relock = 0;
 
   if (self_window) self_window->UpdateIfNeeded();
-  if (self_looper) while (self_looper->IsLocked()) { self_looper->Unlock(); relock++; }
 
-  status_t sent = msgr.SendMessage(&msg, &reply, IUPHAIKU_JS_TIMEOUT, IUPHAIKU_JS_TIMEOUT);
-
-  while (relock--) self_looper->Lock();
+  status_t sent;
+  {
+    CallbackReleaseGuard release(self_looper);
+    sent = msgr.SendMessage(&msg, &reply, IUPHAIKU_JS_TIMEOUT, IUPHAIKU_JS_TIMEOUT);
+  }
 
   if (sent != B_OK) return nullptr;
 
@@ -406,38 +475,8 @@ static const char* haikuWebBrowserInitScript =
   "  };"
   "})();";
 
-void IupHaikuWebHandler::PopupReceived(BMessage* msg)
-{
-  int opener = fIhandle && iupObjectCheck(fIhandle);
-  BString url;
-
-  if (opener)
-  {
-    if (msg->what != NAVIGATION_REQUESTED || msg->FindString("url", &url) != B_OK ||
-        url.IsEmpty() || url == "about:blank")
-      return;
-
-    IFns cb = reinterpret_cast<IFns>(IupGetCallback(fIhandle, "NEWWINDOW_CB"));
-    if (cb)
-      cb(fIhandle, const_cast<char*>(url.String()));
-    else
-      IupSetStrAttribute(fIhandle, "VALUE", url.String());
-  }
-
-  fPopup->WebPage()->SetListener(BMessenger());
-  fPopup->Shutdown();
-  Looper()->RemoveHandler(this);
-  delete this;
-}
-
 void IupHaikuWebHandler::MessageReceived(BMessage* msg)
 {
-  if (fPopup)
-  {
-    PopupReceived(msg);
-    return;
-  }
-
   if (!fIhandle || !iupObjectCheck(fIhandle))
   {
     BHandler::MessageReceived(msg);
@@ -482,16 +521,7 @@ void IupHaikuWebHandler::MessageReceived(BMessage* msg)
       if (cb) cb(fIhandle, const_cast<char*>(url.String()));
       break;
     }
-    case NEW_PAGE_CREATED:
-    {
-      BWebView* popup = nullptr;
-      if (msg->FindPointer("view", reinterpret_cast<void**>(&popup)) != B_OK || !popup)
-        break;
-      auto* handler = new IupHaikuWebHandler(fIhandle, popup);
-      Looper()->AddHandler(handler);
-      popup->WebPage()->SetListener(BMessenger(handler));
-      break;
-    }
+    case IUPHAIKU_WEB_POPUP_MSG:
     case NEW_WINDOW_REQUESTED:
     {
       BString url;
@@ -1107,6 +1137,14 @@ static void haikuWebBrowserUnMapMethod(Ihandle* ih)
       handler->SetIhandle(nullptr);
       if (view) view->WebPage()->SetListener(BMessenger());
       if (view) view->Shutdown();
+    }
+    auto* relay = reinterpret_cast<IupHaikuWebRelay*>(iupAttribGet(ih, "_IUPWEB_RELAY"));
+    if (relay)
+    {
+      LooperLockGuard guard(sRelayLooper);
+      sRelayLooper->RemoveHandler(relay);
+      delete relay;
+      iupAttribSet(ih, "_IUPWEB_RELAY", nullptr);
     }
     BLooper* looper = handler->Looper();
     if (looper)
