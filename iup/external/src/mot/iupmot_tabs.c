@@ -251,6 +251,29 @@ static void motTabsUpdateButtonsBgColor(Ihandle* ih, Pixel color)
     motTabsSetTabBgColor(child, color);
 }
 
+static void motTabsUpdateTabSize(Widget tab_button)
+{
+  int focused, hidden = 0;
+
+  if (!tab_button || !XtIsManaged(tab_button))
+    return;
+
+  if (XtIsRealized(tab_button))
+  {
+    XWindowAttributes wa;
+    XGetWindowAttributes(iupmot_display, XtWindow(tab_button), &wa);
+    hidden = (wa.map_state == IsUnmapped);
+  }
+
+  focused = (XmGetFocusWidget(tab_button) == tab_button);
+  XtUnmanageChild(tab_button);
+  XtManageChild(tab_button);
+  if (hidden)
+    XtUnmapWidget(tab_button);
+  if (focused)
+    XmProcessTraversal(tab_button, XmTRAVERSE_CURRENT);
+}
+
 static void motTabsUpdateButtonsPadding(Ihandle* ih)
 {
   Ihandle* child;
@@ -261,8 +284,11 @@ static void motTabsUpdateButtonsPadding(Ihandle* ih)
     Widget target = tab_label ? tab_label : tab_button;
 
     if (target)
+    {
       XtVaSetValues(target, XmNmarginHeight, ih->data->vert_padding,
                             XmNmarginWidth, ih->data->horiz_padding, NULL);
+      motTabsUpdateTabSize(tab_button);
+    }
   }
 }
 
@@ -282,7 +308,10 @@ static void motTabsUpdatePageFont(Ihandle* ih)
   XmFontList fontlist = (XmFontList)iupmotGetFontListAttrib(ih);
 
   for (child = ih->firstchild; child; child = child->brother)
+  {
     motTabsSetTabFont(child, fontlist);
+    motTabsUpdateTabSize((Widget)iupAttribGet(child, "_IUPMOT_TABBUTTON"));
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -417,6 +446,7 @@ static int motTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
       iupmotSetMnemonicTitle(ih, tab_label, pos, value);
     else if (tab_button)
       iupmotSetMnemonicTitle(ih, tab_button, pos, value);
+    motTabsUpdateTabSize(tab_button);
   }
 
   return 0;
@@ -443,6 +473,7 @@ static int motTabsSetTabImageAttrib(Ihandle* ih, int pos, const char* value)
     }
     else
       XtVaSetValues(target, XmNlabelPixmap, NULL, NULL);
+    motTabsUpdateTabSize(tab_button);
   }
   return 1;
 }

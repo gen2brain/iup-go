@@ -959,6 +959,7 @@ static int cocoaTabsSetTabTitleAttrib(Ihandle* ih, int pos, const char* value)
     if (stripped_str && stripped_str != value) free(stripped_str);
   }
   [tab_cell setTitle:tab_title];
+  [tab_cell setTitleAttributedString:nil];
 
   [tab_bar_view redraw];
   return 0;

@@ -1400,6 +1400,28 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
 @end
 
 
+#ifdef GNUSTEP
+static NSAttributedString* cocoaTabTruncatedTitle(NSAttributedString* title, CGFloat width)
+{
+  if (width <= 0 || [title length] == 0 || [title size].width <= width)
+    return title;
+
+  NSString* text = [title string];
+  NSDictionary* attrs = [title attributesAtIndex:0 effectiveRange:NULL];
+  NSUInteger lo = 0, hi = [text length];
+  while (lo < hi)
+  {
+    NSUInteger mid = (lo + hi + 1) / 2;
+    NSString* candidate = [[text substringToIndex:mid] stringByAppendingString:@"\u2026"];
+    if ([candidate sizeWithAttributes:attrs].width <= width)
+      lo = mid;
+    else
+      hi = mid - 1;
+  }
+  return [[[NSAttributedString alloc] initWithString:[[text substringToIndex:lo] stringByAppendingString:@"\u2026"] attributes:attrs] autorelease];
+}
+#endif
+
 @implementation IupCocoaTabCell
 
 @synthesize path;
@@ -1697,7 +1719,11 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
       drawRect.size.height = textHeight;
     }
 
+#ifdef GNUSTEP
+    [cocoaTabTruncatedTitle(self.titleAttributedString, drawRect.size.width) drawInRect:drawRect];
+#else
     [self.titleAttributedString drawInRect:drawRect];
+#endif
 
     [context restoreGraphicsState];
   }
@@ -1722,7 +1748,11 @@ static CGFloat cocoaTabBarEase(CGFloat from, CGFloat to, BOOL* done)
     titleRect.origin.x += leftInset;
     titleRect.size.width -= (leftInset + rightInset);
 
+#ifdef GNUSTEP
+    [cocoaTabTruncatedTitle(self.titleAttributedString, titleRect.size.width) drawInRect:titleRect];
+#else
     [self.titleAttributedString drawInRect:titleRect];
+#endif
   }
 
   if ([self hasCloseButton])
