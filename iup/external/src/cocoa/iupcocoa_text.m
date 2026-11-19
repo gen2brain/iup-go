@@ -20,6 +20,7 @@
 #include "iup_drvfont.h"
 #include "iup_array.h"
 #include "iup_text.h"
+#include "iup_globalattrib.h"
 
 #include "iupcocoa_drv.h"
 
@@ -2083,7 +2084,7 @@ static int cocoaTextSetFgColorAttrib(Ihandle* ih, const char* value)
         NSMutableDictionary* typing;
 
         NSColor* the_color = cocoaTextColorFromStr(value);
-        if (!the_color || iupStrEqualNoCase(value, IupGetGlobal("TXTFGCOLOR")))
+        if (!the_color || (!iupGlobalDefaultColorChanged("TXTFGCOLOR") && iupStrEqualNoCase(value, IupGetGlobal("TXTFGCOLOR"))))
           the_color = [NSColor textColor];
 
         NSUndoManager* undo_manager = [[text_view delegate] undoManagerForTextView:text_view];

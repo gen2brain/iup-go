@@ -1633,7 +1633,7 @@ static int cocoaDialogSetBgColorAttrib(Ihandle* ih, const char* value)
   if (!iupStrToRGB(value, &r, &g, &b))
     return 0;
 
-  if (iupStrEqual(value, IupGetGlobal("DLGBGCOLOR")))
+  if (!iupGlobalDefaultColorChanged("DLGBGCOLOR") && iupStrEqual(value, IupGetGlobal("DLGBGCOLOR")))
     [the_window setBackgroundColor:[NSColor windowBackgroundColor]];
   else
   {
