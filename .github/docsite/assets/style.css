@@ -197,6 +197,7 @@ a:hover { text-decoration: underline; }
 .content th { background: var(--bg-soft); text-align: left; }
 .content tr:nth-child(even) td { background: var(--bg-soft); }
 .content img { max-width: 100%; height: auto; }
+.content td img { max-height: 400px; width: auto; }
 .content img.zoomable { cursor: zoom-in; }
 .content hr { border: 0; border-top: 1px solid var(--border); margin: 2em 0; }
 .content blockquote { margin: 1em 0; padding: .2em 1em; color: var(--fg-muted); border-left: 3px solid var(--border); }
