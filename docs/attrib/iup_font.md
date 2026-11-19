@@ -8,7 +8,7 @@ Although it is an inheritable attribute, it is defined only on elements that hav
 Font description containing typeface, style and size. Default: the global attribute DEFAULTFONT.
 
 The common format definition is similar to the [Pango](http://www.pango.org/) library Font Description, used by GTK.
-It is defined as having 3 parts: "<font face>**,** <font styles> <font size>".
+It is defined as having 3 parts: `<font face>, <font styles> <font size>`.
 
 Font face is the font face name and can be any name.
 Although only names recognized by the system will be actually used.

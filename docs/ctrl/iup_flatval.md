@@ -89,7 +89,7 @@ When changed the display will not be updated until VALUE is set.
 When changed the display will not be updated until VALUE is set.
 
 **PAGESTEP**: Controls the increment for PgDn and PgUp keys. It is not the size of the increment.
-The increment size is "pagestep*(max-min)", so it must be 0<pagestep<1. Default: "0.1".
+The increment size is "pagestep*(max-min)", so it must be `0 < pagestep < 1`. Default: "0.1".
 
 [SIZE](../attrib/iup_size.md) (non-inheritable): The natural size is the height of one character in one direction and the width of 15 characters in the other.
 
@@ -108,7 +108,7 @@ Default: 5. Ignored when BACKIMAGE is used.
 Default: "0" (no rounding).
 
 **STEP** (non-inheritable): Controls the increment for keyboard control and the mouse wheel.
-It is not the size of the increment. The increment size is "step*(max-min)", so it must be 0<step<1.
+It is not the size of the increment. The increment size is "step*(max-min)", so it must be `0 < step < 1`.
 Default: "0.01".
 
 **ORIENTATION** (creation-only) (non-inheritable): Informs whether the valuator is "VERTICAL" or "HORIZONTAL".

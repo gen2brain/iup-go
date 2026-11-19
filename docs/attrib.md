@@ -105,7 +105,7 @@ For example, "TITLE3" will set the TITLE attribute for item 3.
 To set that kind of attribute **IupSetAttribute** can be used, but **IupSetAttributeId** can also be used especially if the id is a variable.
 
 Global attributes are set and retrieved with **IupSetGlobal** and **IupGetGlobal**, or with a NULL element in **IupSetAttribute** and **IupGetAttribute**.
-Some of them can also be set by IUP_<name> environment variables, see [Global Attributes](attrib/iup_globals.md).
+Some of them can also be set by `IUP_<name>` environment variables, see [Global Attributes](attrib/iup_globals.md).
 
 There are attributes common to all the elements.
 In some cases, common attributes behave differently in different elements, but in such cases, there are comments in the documentation of the element explaining the different behavior.

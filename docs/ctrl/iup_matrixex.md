@@ -58,7 +58,7 @@ In HTML and LaTeX formats the cell values and the caption are escaped for that f
 
 When using TXT format, the **TEXTSEPARATOR** attribute can be used to define a column separator (default is tab '\t') and line separator will be line feeds ('\n').\
 When using LaTeX format, the **LATEXLABEL** attribute can be used to define a label for the table.\
-When using HTML format, the attributes "HTML<TABLE>", "HTML<TR>", "HTML<TH>", "HTML<TD>", "HTML<CAPTION>" can be used to define a complement to be inserted in the respective tag definition, so a " style=.." or a " class=.." complements can be added.
+When using HTML format, the attributes `HTML<TABLE>`, `HTML<TR>`, `HTML<TH>`, `HTML<TD>`, `HTML<CAPTION>` can be used to define a complement to be inserted in the respective tag definition, so a " style=.." or a " class=.." complements can be added.
 The **HTMLADDFORMAT** can be used to add the attribute ALIGNMENT, BGCOLOR, FGCOLOR and FONT to the "style" complement of the "TD" tag.\
 For all formats use:\
 **SKIPLINES**: number of lines to skip at start when exporting the matrix to a file, not counting the title line if any.\
@@ -205,7 +205,7 @@ If not defined will try the [DEFAULTDECIMALSYMBOL](../attrib/iup_globals.md#defa
 If not defined the NUMERICFORMATDEF attribute will be used.
 Uses the same format specification of the **sprintf** function in C, but only one value will be processed, cannot contain other strings. (no redraw)
 
-**NUMERICFORMATPRECISIONid**: will set the **sprintf** "precision" field in the **NUMERICFORMATid** attribute string if the format "%.<precision>f".
+**NUMERICFORMATPRECISIONid**: will set the **sprintf** "precision" field in the **NUMERICFORMATid** attribute string if the format is `%.<precision>f`.
 If the **NUMERICFORMATid** attribute is not defined returns NULL.
 If id is not used it will affect the NUMERICFORMATDEF attribute. (no redraw)
 
@@ -356,7 +356,7 @@ Otherwise and if the callback does not exist, the matrix size is not changed, an
 **col**: column being sorted.\
 **lin1**, **lin2**: the line numbers of the two cells being compared.
 
-**Returns**: must return 0 if "col:lin1==col:lin2", -1 if "col:lin1<col:lin2", and 1 if "col:lin1>col:lin2".
+**Returns**: must return 0 if `col:lin1 == col:lin2`, -1 if `col:lin1 < col:lin2`, and 1 if `col:lin1 > col:lin2`.
 
 ### Notes
 

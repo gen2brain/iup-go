@@ -33,7 +33,7 @@ When changed the display will not be updated until VALUE is set.
 When changed the display will not be updated until VALUE is set.
 
 **PAGESTEP**: Controls the increment for PgDn and PgUp keys. It is not the size of the increment.
-The increment size is "pagestep*(max-min)", so it must be 0<pagestep<1. Default: "0.1".
+The increment size is "pagestep*(max-min)", so it must be `0 < pagestep < 1`. Default: "0.1".
 Not supported in Android.
 
 [SIZE](../attrib/iup_size.md) (non-inheritable): The natural size is 100 pixels along the orientation (84 in Qt, 80 in Haiku and WebAssembly, 180 in iOS, 200 in Android) and the native thickness across it.
@@ -45,7 +45,7 @@ In Win32 and Motif, it cannot be changed to 0 from a non-zero value, or vice ver
 Not supported in EFL.
 
 **STEP**: Controls the increment for keyboard control and the mouse wheel. It is not the size of the increment.
-The increment size is "step*(max-min)", so it must be 0<step<1. Default: "0.01".
+The increment size is "step*(max-min)", so it must be `0 < step < 1`. Default: "0.01".
 Not supported in Android.
 
 **TICKSPOS** (creation-only): Allows to position the ticks in both sides (BOTH) or in the reverse side (REVERSE).

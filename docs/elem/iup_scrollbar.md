@@ -23,7 +23,7 @@ Not supported in macOS and WinUI.
 
 **LINESTEP**: Controls the increment for keyboard arrows and single step clicks.
 It is not the size of the increment.
-The increment size is "linestep*(max-min)", so it must be 0<linestep<1.
+The increment size is "linestep*(max-min)", so it must be `0 < linestep < 1`.
 Default: "0.01".
 
 **MAX**: Contains the maximum scrollbar value. Default: "1".
@@ -40,7 +40,7 @@ Default: "0.1".
 
 **PAGESTEP**: Controls the increment for PgDn and PgUp keys and page step clicks.
 It is not the size of the increment.
-The increment size is "pagestep*(max-min)", so it must be 0<pagestep<1.
+The increment size is "pagestep*(max-min)", so it must be `0 < pagestep < 1`.
 Default: "0.1".
 In QML, a click on the trough moves the handle to the pointer instead of a page step.
 

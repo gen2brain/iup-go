@@ -78,10 +78,6 @@ When ORIENTATION=VERTICAL text is drawn in 90º.
 
 [MAP_CB](../call/iup_map_cb.md), [UNMAP_CB](../call/iup_unmap_cb.md), [DESTROY_CB](../call/iup_destroy_cb.md): common callbacks are supported.
 
-### Notes
-
-To replace an **IupProgressBar** by an **IupGauge**, set RASTERSIZE=200x30 and SHOWTEXT=NO.
-
 ### Examples
 
 [Browse for Example Files](../../examples/)

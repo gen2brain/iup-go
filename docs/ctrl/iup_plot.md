@@ -617,7 +617,7 @@ Default: LIN. If a logarithmic scale is set then the other axis position is set 
 **AXS_XTIPFORMAT**, **AXS_YTIPFORMAT**: format to numeric conversion when an automatic tip is shown.
 See TIPFORMAT attribute. Default: "%.2f".
 
-**AXS_XTIPFORMATPRECISION, AXS_YTIPFORMATPRECISION**: will set the **sprintf** "precision" field in the AXS_*TIPFORMAT attributes string if the format "%.<precision>f".
+**AXS_XTIPFORMATPRECISION, AXS_YTIPFORMATPRECISION**: will set the **sprintf** "precision" field in the AXS_*TIPFORMAT attributes string if the format is `%.<precision>f`.
 
 #### Axis Label Configuration 
 
@@ -672,7 +672,7 @@ Default: "YES".
 **AXS_XTICKFORMAT, AXS_YTICKFORMAT**: axis tick number C format string. If set, it will also set AXS_*TICKFORMATAUTO to NO.
 Default: "%.0f". The decimal symbol will follow the DEFAULTDECIMALSYMBOL global attribute definition if any.
 
-**AXS_XTICKFORMATPRECISION, AXS_YTICKFORMATPRECISION**: will set the **sprintf** "precision" field in the AXS_*TICKFORMAT attributes string if the format "%.<precision>f".
+**AXS_XTICKFORMATPRECISION, AXS_YTICKFORMATPRECISION**: will set the **sprintf** "precision" field in the AXS_*TICKFORMAT attributes string if the format is `%.<precision>f`.
 
 **AXS_XTICKFONTSIZE, AXS_YTICKFONTSIZE, AXS_XTICKFONTSTYLE, AXS_YTICKFONTSTYLE**: axis tick number font size and style.
 
