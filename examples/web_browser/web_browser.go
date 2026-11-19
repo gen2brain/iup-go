@@ -4,109 +4,112 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/gen2brain/iup-go/iup"
 )
 
-// historyCallback displays browser history
+const homePage = "https://en.wikipedia.org/wiki/Main_Page"
+
+var dlg, tabs, txt iup.Ihandle
+
+func currentWeb() iup.Ihandle {
+	return iup.Ihandle(tabs.GetPtr("VALUE_HANDLE"))
+}
+
+func pageTitle(web iup.Ihandle, addr string) string {
+	web.SetAttribute("JAVASCRIPT", "document.title")
+	if title := strings.TrimSpace(web.GetAttribute("JAVASCRIPT")); title != "" {
+		return title
+	}
+	if u, err := url.Parse(addr); err == nil && u.Host != "" {
+		return u.Host
+	}
+	return "New Tab"
+}
+
+func shortTitle(title string) string {
+	r := []rune(title)
+	if len(r) > 24 {
+		return string(r[:23]) + "…"
+	}
+	return title
+}
+
+func updateBar(web iup.Ihandle) {
+	txt.SetAttribute("VALUE", web.GetAttribute("VALUE"))
+	dlg.SetAttribute("TITLE", web.GetAttribute("PAGETITLE")+" - WebBrowser")
+}
+
 func historyCallback(ih iup.Ihandle) int {
-	back := ih.GetInt("BACKCOUNT")
-	fwrd := ih.GetInt("FORWARDCOUNT")
+	web := currentWeb()
+	back := web.GetInt("BACKCOUNT")
+	fwrd := web.GetInt("FORWARDCOUNT")
 
 	fmt.Println("HISTORY ITEMS")
 	for i := -back; i < 0; i++ {
-		attr := fmt.Sprintf("ITEMHISTORY%d", i)
-		fmt.Printf("Backward %02d: %s\n", i, ih.GetAttribute(attr))
+		fmt.Printf("Backward %02d: %s\n", i, web.GetAttribute(fmt.Sprintf("ITEMHISTORY%d", i)))
 	}
-
-	fmt.Printf("Current  %02d: %s\n", 0, ih.GetAttribute("ITEMHISTORY0"))
-
+	fmt.Printf("Current  %02d: %s\n", 0, web.GetAttribute("ITEMHISTORY0"))
 	for i := 1; i <= fwrd; i++ {
-		attr := fmt.Sprintf("ITEMHISTORY%d", i)
-		fmt.Printf("Forward  %02d: %s\n", i, ih.GetAttribute(attr))
+		fmt.Printf("Forward  %02d: %s\n", i, web.GetAttribute(fmt.Sprintf("ITEMHISTORY%d", i)))
 	}
-
 	return iup.DEFAULT
 }
 
-// navigateCallback is called when navigating to a URL
-func navigateCallback(ih iup.Ihandle, url string) int {
-	fmt.Printf("NAVIGATE_CB: %s\n", url)
-	if strings.Contains(url, "download") {
+func navigateCallback(ih iup.Ihandle, addr string) int {
+	fmt.Printf("NAVIGATE_CB: %s\n", addr)
+	if strings.Contains(addr, "download") {
 		return iup.IGNORE
 	}
 	return iup.DEFAULT
 }
 
-// errorCallback is called when an error occurs
-func errorCallback(ih iup.Ihandle, url string) int {
-	fmt.Printf("ERROR_CB: %s\n", url)
+func errorCallback(ih iup.Ihandle, addr string) int {
+	fmt.Printf("ERROR_CB: %s\n", addr)
 	return iup.DEFAULT
 }
 
-// completedCallback is called when a page load completes
-func completedCallback(ih iup.Ihandle, url string) int {
-	fmt.Printf("COMPLETED_CB: %s\n", url)
+func completedCallback(ih iup.Ihandle, addr string) int {
+	fmt.Printf("COMPLETED_CB: %s\n", addr)
+	title := pageTitle(ih, addr)
+	ih.SetAttribute("PAGETITLE", title)
+	pos := iup.GetChildPos(tabs, ih)
+	tabs.SetAttribute(fmt.Sprintf("TABTITLE%d", pos), shortTitle(title))
+	tabs.SetAttribute(fmt.Sprintf("TABTIP%d", pos), title)
+	if ih == currentWeb() {
+		updateBar(ih)
+	}
 	return iup.DEFAULT
 }
 
-// newWindowCallback is called when a new window is requested
-func newWindowCallback(ih iup.Ihandle, url string) int {
-	fmt.Printf("NEWWINDOW_CB: %s\n", url)
-	ih.SetAttribute("VALUE", url)
+func newWindowCallback(ih iup.Ihandle, addr string) int {
+	fmt.Printf("NEWWINDOW_CB: %s\n", addr)
+	openTab(addr)
 	return iup.DEFAULT
 }
 
-// backCallback handles the Back button
-func backCallback(ih iup.Ihandle) int {
-	web := ih.GetAttribute("MY_WEB")
-	webHandle := iup.GetHandle(web)
-	webHandle.SetAttribute("BACKFORWARD", "-1")
-	// fmt.Printf("zoom=%s\n", webHandle.GetAttribute("ZOOM"))
-	return iup.DEFAULT
+func newWeb(addr string) iup.Ihandle {
+	web := iup.WebBrowser()
+	web.SetAttribute("TABTITLE", "New Tab")
+	web.SetAttribute("PAGETITLE", "New Tab")
+	web.SetAttribute("VALUE", addr)
+
+	iup.On(web, iup.NavigateCB, navigateCallback)
+	iup.On(web, iup.ErrorCB, errorCallback)
+	iup.On(web, iup.CompletedCB, completedCallback)
+	iup.On(web, iup.NewWindowCB, newWindowCallback)
+	return web
 }
 
-// forwardCallback handles the Forward button
-func forwardCallback(ih iup.Ihandle) int {
-	web := ih.GetAttribute("MY_WEB")
-	webHandle := iup.GetHandle(web)
-	webHandle.SetAttribute("BACKFORWARD", "1")
-	// webHandle.SetAttribute("ZOOM", "200")
-	return iup.DEFAULT
-}
-
-// stopCallback handles the Stop button
-func stopCallback(ih iup.Ihandle) int {
-	web := ih.GetAttribute("MY_WEB")
-	webHandle := iup.GetHandle(web)
-	webHandle.SetAttribute("STOP", "")
-	return iup.DEFAULT
-}
-
-// reloadCallback handles the Reload button
-func reloadCallback(ih iup.Ihandle) int {
-	web := ih.GetAttribute("MY_WEB")
-	webHandle := iup.GetHandle(web)
-	webHandle.SetAttribute("RELOAD", "")
-
-	// fmt.Printf("STATUS=%s\n", webHandle.GetAttribute("STATUS"))
-	return iup.DEFAULT
-}
-
-// loadCallback handles the Load button
-func loadCallback(ih iup.Ihandle) int {
-	txt := ih.GetAttribute("MY_TEXT")
-	web := ih.GetAttribute("MY_WEB")
-	txtHandle := iup.GetHandle(txt)
-	webHandle := iup.GetHandle(web)
-	webHandle.SetAttribute("VALUE", txtHandle.GetAttribute("VALUE"))
-
-	// txtHandle.SetAttribute("VALUE", webHandle.GetAttribute("VALUE"))
-	// webHandle.SetAttribute("HTML", "<html><body><b>Hello</b>, World!</body></html>")
-	// webHandle.SetAttribute("VALUE", "http://www.microsoft.com")
-
-	return iup.DEFAULT
+func openTab(addr string) {
+	web := newWeb(addr)
+	iup.Append(tabs, web)
+	iup.Map(web)
+	iup.Refresh(tabs)
+	tabs.SetAttribute("VALUE_HANDLE", web)
+	updateBar(web)
 }
 
 func webBrowserTest() {
@@ -116,73 +119,89 @@ func webBrowserTest() {
 		fmt.Println("cannot find", iup.GetGlobal("IUP_WEBBROWSER_MISSING_LIB"))
 	}
 
-	// Create web browser control
-	web := iup.WebBrowser()
-
-	// Create UI elements
 	btBack := iup.Button("Back")
 	btForward := iup.Button("Forward")
-	txt := iup.Text()
-	btLoad := iup.Button("Load").SetHandle("btLoad")
 	btReload := iup.Button("Reload")
 	btStop := iup.Button("Stop")
+	btNewTab := iup.Button("New Tab")
+	btLoad := iup.Button("Load").SetHandle("btLoad")
+	txt = iup.Text().SetAttributes(`EXPAND=HORIZONTAL, VALUE="` + homePage + `"`)
 
-	// URL on its own row so it has full width on narrow (phone) layouts.
-	urlRow := iup.Hbox(txt)
-	var btnRow iup.Ihandle
-	if driver := iup.GetGlobal("DRIVER"); driver != "WASM" && driver != "Haiku" {
+	tabs = iup.Tabs(newWeb(homePage)).SetAttributes("SHOWCLOSE=YES, ALLOWREORDER=YES")
+
+	var rows iup.Ihandle
+	switch iup.GetGlobal("DRIVER") {
+	case "Android", "CocoaTouch":
+		rows = iup.Vbox(
+			iup.Hbox(btBack, btForward, btReload),
+			iup.Hbox(btStop, btNewTab),
+			iup.Hbox(txt, btLoad),
+		)
+	case "WASM", "Haiku":
+		rows = iup.Vbox(
+			iup.Hbox(btBack, btForward, btReload, btStop),
+			iup.Hbox(txt, btLoad, btNewTab),
+		)
+	default:
 		history := iup.Button("History")
-		btnRow = iup.Hbox(btBack, btForward, btLoad, btReload, btStop, history)
-		history.SetCallback("ACTION", historyCallback)
-	} else {
-		btnRow = iup.Hbox(btBack, btForward, btLoad, btReload, btStop)
+		iup.On(history, iup.ActionCB, historyCallback)
+		rows = iup.Vbox(
+			iup.Hbox(btBack, btForward, btReload, btStop, history),
+			iup.Hbox(txt, btLoad, btNewTab),
+		)
 	}
 
-	// Create dialog with vertical layout
-	vbox := iup.Vbox(btnRow, urlRow, web)
-	dlg := iup.Dialog(vbox)
+	rows.SetAttribute("MARGIN", "0x0")
 
-	// Set dialog attributes
-	dlg.SetAttribute("TITLE", "WebBrowser")
-	dlg.SetAttribute("RASTERSIZE", "800x600")
-	dlg.SetAttribute("MARGIN", "10x10")
-	dlg.SetAttribute("GAP", "10")
+	dlg = iup.Dialog(iup.Vbox(rows, tabs))
+	dlg.SetAttributes(map[string]string{
+		"TITLE":        "WebBrowser",
+		"RASTERSIZE":   "800x600",
+		"MARGIN":       "10x10",
+		"GAP":          "10",
+		"DEFAULTENTER": "btLoad",
+	})
 
-	// Store references to web and text controls
-	iup.SetHandle("MY_WEB_HANDLE", web)
-	iup.SetHandle("MY_TEXT_HANDLE", txt)
-	dlg.SetAttribute("MY_WEB", "MY_WEB_HANDLE")
-	dlg.SetAttribute("MY_TEXT", "MY_TEXT_HANDLE")
-	btBack.SetAttribute("MY_WEB", "MY_WEB_HANDLE")
-	btForward.SetAttribute("MY_WEB", "MY_WEB_HANDLE")
-	btStop.SetAttribute("MY_WEB", "MY_WEB_HANDLE")
-	btReload.SetAttribute("MY_WEB", "MY_WEB_HANDLE")
-	btLoad.SetAttribute("MY_TEXT", "MY_TEXT_HANDLE")
-	btLoad.SetAttribute("MY_WEB", "MY_WEB_HANDLE")
+	iup.On(btBack, iup.ActionCB, func(ih iup.Ihandle) int {
+		currentWeb().SetAttribute("BACKFORWARD", "-1")
+		return iup.DEFAULT
+	})
+	iup.On(btForward, iup.ActionCB, func(ih iup.Ihandle) int {
+		currentWeb().SetAttribute("BACKFORWARD", "1")
+		return iup.DEFAULT
+	})
+	iup.On(btReload, iup.ActionCB, func(ih iup.Ihandle) int {
+		currentWeb().SetAttribute("RELOAD", "")
+		return iup.DEFAULT
+	})
+	iup.On(btStop, iup.ActionCB, func(ih iup.Ihandle) int {
+		currentWeb().SetAttribute("STOP", "")
+		return iup.DEFAULT
+	})
+	iup.On(btLoad, iup.ActionCB, func(ih iup.Ihandle) int {
+		currentWeb().SetAttribute("VALUE", txt.GetAttribute("VALUE"))
+		return iup.DEFAULT
+	})
+	iup.On(btNewTab, iup.ActionCB, func(ih iup.Ihandle) int {
+		openTab(homePage)
+		return iup.DEFAULT
+	})
 
-	// Set initial URL
-	//web.SetAttribute("HTML", "<html><body><b>Hello</b>World!</body></html>")
-	txt.SetAttribute("VALUE", "https://en.wikipedia.org/wiki/Main_Page")
-	web.SetAttribute("VALUE", txt.GetAttribute("VALUE"))
-	dlg.SetAttribute("DEFAULTENTER", "btLoad")
+	iup.On(tabs, iup.TabChangeCB, func(ih, newTab, oldTab iup.Ihandle) int {
+		updateBar(newTab)
+		return iup.DEFAULT
+	})
+	iup.On(tabs, iup.TabCloseCB, func(ih iup.Ihandle, pos int) int {
+		if ih.GetInt("COUNT") == 1 {
+			iup.ExitLoop()
+			return iup.IGNORE
+		}
+		iup.Destroy(iup.GetChild(ih, pos))
+		iup.Refresh(ih)
+		updateBar(currentWeb())
+		return iup.IGNORE
+	})
 
-	// Configure text field
-	txt.SetAttribute("EXPAND", "HORIZONTAL")
-
-	// Set button callbacks
-	btLoad.SetCallback("ACTION", iup.ActionFunc(loadCallback))
-	btReload.SetCallback("ACTION", iup.ActionFunc(reloadCallback))
-	btBack.SetCallback("ACTION", iup.ActionFunc(backCallback))
-	btForward.SetCallback("ACTION", iup.ActionFunc(forwardCallback))
-	btStop.SetCallback("ACTION", iup.ActionFunc(stopCallback))
-
-	// Set web browser callbacks
-	web.SetCallback("NEWWINDOW_CB", iup.NewWindowFunc(newWindowCallback))
-	web.SetCallback("NAVIGATE_CB", iup.NavigateFunc(navigateCallback))
-	web.SetCallback("ERROR_CB", iup.ErrorFunc(errorCallback))
-	web.SetCallback("COMPLETED_CB", iup.CompletedFunc(completedCallback))
-
-	// Show dialog
 	iup.Show(dlg)
 }
 
