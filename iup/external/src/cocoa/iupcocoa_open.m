@@ -87,6 +87,9 @@
 @end
 
 static IupCocoaApplicationDelegate* cocoa_app_delegate = nil;
+#ifndef GNUSTEP
+static NSRunningApplication* cocoa_launcher_app = nil;
+#endif
 
 #ifdef GNUSTEP
 
@@ -353,6 +356,12 @@ static int cocoaOpen(void)
   }
 #endif
 
+#ifndef GNUSTEP
+  NSRunningApplication* front_app = [[NSWorkspace sharedWorkspace] frontmostApplication];
+  if (front_app && ![front_app isEqual:[NSRunningApplication currentApplication]])
+    cocoa_launcher_app = [front_app retain];
+#endif
+
   if ([NSApp activationPolicy] == NSApplicationActivationPolicyProhibited)
   {
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
@@ -475,4 +484,14 @@ IUP_SDK_API void iupdrvClose(void)
     [cocoa_app_delegate release];
     cocoa_app_delegate = nil;
   }
+
+#ifndef GNUSTEP
+  if (cocoa_launcher_app)
+  {
+    if ([NSApp isActive] && ![cocoa_launcher_app isTerminated])
+      [cocoa_launcher_app activateWithOptions:0];
+    [cocoa_launcher_app release];
+    cocoa_launcher_app = nil;
+  }
+#endif
 }
