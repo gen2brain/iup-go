@@ -74,9 +74,11 @@ public:
   bool HasBgColor() const { return fHasBgColor; }
   rgb_color BgColor() const { return fBgColor; }
 
-  void SetFont(const BFont& f) { fFont = f; fHasFont = true; }
+  void SetFont(const BFont& f, const char* name) { fFont = f; fFontName = name; fHasFont = true; }
+  void ClearFont() { fHasFont = false; fFontName = ""; }
   bool HasFont() const { return fHasFont; }
   const BFont& Font() const { return fFont; }
+  const char* FontName() const { return fFontName.String(); }
 
   void SetShowToggle(int m) { fShowToggle = m; }
   int ShowToggle() const { return fShowToggle; }
@@ -160,11 +162,17 @@ public:
     }
 
     owner->SetHighColor(IsEnabled() ? fg : tint_color(fg, B_DISABLED_LABEL_TINT));
-    if (fHasFont) owner->SetFont(&fFont);
+    BFont owner_font;
+    if (fHasFont)
+    {
+      owner->GetFont(&owner_font);
+      owner->SetFont(&fFont);
+    }
     font_height fh;
     owner->GetFontHeight(&fh);
     float ty = frame.top + ((frame.Height() - (fh.ascent + fh.descent)) / 2) + fh.ascent;
     owner->DrawString(fTitle.String(), BPoint(x, ty));
+    if (fHasFont) owner->SetFont(&owner_font);
 
     if (fFocused)
     {
@@ -190,6 +198,7 @@ public:
 private:
   int fKind;
   BString fTitle;
+  BString fFontName;
   BBitmap* fImage;
   BBitmap* fImageExpanded;
   rgb_color fFgColor;
@@ -893,7 +902,7 @@ static IupHaikuTreeItem* haikuTreeCopyItem(IupHaikuTreeView* dst_tv, IupHaikuTre
   nw->SetImageExpanded(src->ImageExpanded());
   if (src->HasFgColor()) nw->SetFgColor(src->FgColor());
   if (src->HasBgColor()) nw->SetBgColor(src->BgColor());
-  if (src->HasFont())    nw->SetFont(src->Font());
+  if (src->HasFont())    nw->SetFont(src->Font(), src->FontName());
   if (src->Kind() == ITREE_BRANCH) nw->SetExpanded(src->IsExpanded());
   dst_tv->AddItem(nw, flat_pos);
   return nw;
@@ -1165,6 +1174,32 @@ static int haikuTreeSetColorAttrib(Ihandle* ih, int id, const char* value)
   LooperLockGuard guard(tv->Looper());
   tv->InvalidateItem(tv->IndexOf(it));
   return 0;
+}
+
+static int haikuTreeSetTitleFontAttrib(Ihandle* ih, int id, const char* value)
+{
+  IupHaikuTreeView* tv = haikuTreeGetView(ih);
+  IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
+  if (!tv || !it) return 0;
+  if (!value || !*value)
+    it->ClearFont();
+  else
+  {
+    BFont* bf = iuphaikuGetBFont(value);
+    if (!bf) return 0;
+    it->SetFont(*bf, value);
+  }
+  LooperLockGuard guard(tv->Looper());
+  BFont f; tv->GetFont(&f); tv->SetFont(&f);
+  tv->Invalidate();
+  return 0;
+}
+
+static char* haikuTreeGetTitleFontAttrib(Ihandle* ih, int id)
+{
+  IupHaikuTreeItem* it = haikuTreeGetItem(ih, id);
+  if (!it || !it->HasFont()) return nullptr;
+  return iupStrReturnStr(it->FontName());
 }
 
 static char* haikuTreeGetToggleValueAttrib(Ihandle* ih, int id)
@@ -1644,6 +1679,7 @@ extern "C" IUP_SDK_API void iupdrvTreeInitClass(Iclass* ic)
   iupClassRegisterAttributeId(ic, "CHILDCOUNT", haikuTreeGetChildCountAttrib, nullptr, IUPAF_READONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "TITLE", haikuTreeGetTitleAttrib, haikuTreeSetTitleAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "COLOR", nullptr, haikuTreeSetColorAttrib, IUPAF_NO_INHERIT);
+  iupClassRegisterAttributeId(ic, "TITLEFONT", haikuTreeGetTitleFontAttrib, haikuTreeSetTitleFontAttrib, IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGE", nullptr, haikuTreeSetImageAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
   iupClassRegisterAttributeId(ic, "IMAGEEXPANDED", nullptr, haikuTreeSetImageExpandedAttrib, IUPAF_IHANDLENAME | IUPAF_NO_INHERIT);
 
