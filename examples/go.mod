@@ -1,13 +1,11 @@
-module examples
+module github.com/gen2brain/iup-go/examples
 
 go 1.25.0
-
-replace github.com/gen2brain/iup-go/iup => ../iup
 
 require (
 	github.com/gen2brain/folio v0.3.1
 	github.com/gen2brain/gl v0.1.6
-	github.com/gen2brain/iup-go/iup v0.0.0-00010101000000-000000000000
+	github.com/gen2brain/iup-go/iup v0.40.0
 )
 
 require (
