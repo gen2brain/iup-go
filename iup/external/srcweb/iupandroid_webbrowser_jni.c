@@ -69,10 +69,11 @@ JNIEXPORT void JNICALL Java_io_github_gen2brain_iupgo_IupWebBrowserHelper_dispat
   if (!ih || !iupObjectCheck(ih)) return;
 
   IFns cb = (IFns)IupGetCallback(ih, "NEWWINDOW_CB");
-  if (!cb) return;
-
   const char* url = j_url ? iupAndroid_JStringToUtf8(jni_env, j_url) : "";
-  cb(ih, (char*)url);
+  if (cb)
+    cb(ih, (char*)url);
+  else if (*url)
+    IupSetStrAttribute(ih, "VALUE", url);
   if (j_url) free((char*)url);
 }
 

@@ -124,13 +124,12 @@ typedef NS_ENUM(NSInteger, IupAppleWKWebViewLoadStatus)
 	if (!ih || !iupObjectCheck(ih)) return nil;
 
 	IFns cb = (IFns)IupGetCallback(ih, "NEWWINDOW_CB");
+	NSURL* ns_url = [[navigation_action request] URL];
+	const char* c_url = [[ns_url absoluteString] UTF8String];
 	if (cb)
-	{
-		NSURL* ns_url = [[navigation_action request] URL];
-		const char* c_url = [[ns_url absoluteString] UTF8String];
-
 		cb(ih, (char*)c_url);
-	}
+	else if (c_url && *c_url)
+		IupSetStrAttribute(ih, "VALUE", c_url);
 
 	return nil;
 }

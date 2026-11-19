@@ -177,10 +177,10 @@ EMSCRIPTEN_KEEPALIVE void iupwasmWebOnNewWindow(int id, const char* url)
     return;
 
   cb = (wasmWebUrlCb)IupGetCallback(ih, "NEWWINDOW_CB");
-  if (cb && cb(ih, (char*)url) == IUP_IGNORE)
-    return;
-
-  IupSetStrAttribute(ih, "VALUE", url);
+  if (cb)
+    cb(ih, (char*)url);
+  else
+    IupSetStrAttribute(ih, "VALUE", url);
 }
 
 static int wasmWebSetValueAttrib(Ihandle* ih, const char* value)

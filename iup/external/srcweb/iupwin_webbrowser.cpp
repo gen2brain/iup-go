@@ -306,6 +306,11 @@ const wchar_t* IupWebView2LoaderGetRuntimePath(void)
 /* ========================================================================== */
 
 static int g_comInitialized = 0;
+static int g_inWebViewEvent = 0;
+
+#define WM_IUPWEBEVENT (WM_APP + 200)
+
+enum { IUPWEB_EVENT_COMPLETED, IUPWEB_EVENT_ERROR, IUPWEB_EVENT_UPDATE, IUPWEB_EVENT_NEWWINDOW };
 
 #define IUPWIN_WEBVIEW_INIT_TIMEOUT 3000  /* 10ms slices */
 
@@ -347,9 +352,57 @@ static void winWebBrowserApplyBounds(Ihandle* ih)
   ih->data->webviewController->put_Bounds(bounds);
 }
 
+static void winWebBrowserCallEvent(Ihandle* ih, int event, char* url)
+{
+  if (event == IUPWEB_EVENT_NEWWINDOW)
+  {
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NEWWINDOW_CB"));
+    if (cb && url)
+      cb(ih, url);
+    return;
+  }
+
+  if (event != IUPWEB_EVENT_UPDATE)
+  {
+    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, event == IUPWEB_EVENT_ERROR ? "ERROR_CB" : "COMPLETED_CB"));
+    if (cb)
+      cb(ih, url ? url : const_cast<char*>("Unknown URI"));
+    if (!iupObjectCheck(ih))
+      return;
+  }
+
+  IFn update_cb = static_cast<IFn>(IupGetCallback(ih, "UPDATE_CB"));
+  if (update_cb)
+    update_cb(ih);
+}
+
+static void winWebBrowserPostEvent(Ihandle* ih, int event, LPWSTR uri)
+{
+  char* url = uri ? iupwinStrWide2Char(uri) : nullptr;
+
+  if (!ih->data->hwnd || !PostMessage(ih->data->hwnd, WM_IUPWEBEVENT, (WPARAM)event, (LPARAM)url))
+    free(url);
+}
+
+static void winWebBrowserDropEvents(HWND hwnd)
+{
+  MSG msg;
+  while (PeekMessage(&msg, hwnd, WM_IUPWEBEVENT, WM_IUPWEBEVENT, PM_REMOVE))
+    free(reinterpret_cast<char*>(msg.lParam));
+}
+
 static LRESULT CALLBACK WebBrowserWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
   auto* ih = static_cast<Ihandle*>(GetProp(hwnd, TEXT("IUP_WEBBROWSER_IH")));
+
+  if (msg == WM_IUPWEBEVENT)
+  {
+    char* url = reinterpret_cast<char*>(lParam);
+    if (ih && ih->data)
+      winWebBrowserCallEvent(ih, (int)wParam, url);
+    free(url);
+    return 0;
+  }
 
   if (msg == WM_SIZE && ih && ih->data)
     winWebBrowserApplyBounds(ih);
@@ -419,6 +472,9 @@ static void winWebBrowserWaitScript(WinScriptResult* async)
 {
   MSG msg;
   int loopCount = 0;
+
+  if (g_inWebViewEvent)
+    return;
 
   while (async->completed == 0 && loopCount < 1000)
   {
@@ -514,7 +570,9 @@ public:
       if (uri)
       {
         char* urlString = iupwinStrWide2Char(uri);
+        g_inWebViewEvent++;
         int ret = cb(ih, urlString);
+        g_inWebViewEvent--;
         free(urlString);
         CoTaskMemFree(uri);
 
@@ -541,18 +599,15 @@ public:
 
   HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2NewWindowRequestedEventArgs* args) noexcept override
   {
-    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NEWWINDOW_CB"));
-    if (cb)
+    LPWSTR uri = nullptr;
+    args->get_Uri(&uri);
+    if (uri)
     {
-      LPWSTR uri = nullptr;
-      args->get_Uri(&uri);
-      if (uri)
-      {
-        char* urlString = iupwinStrWide2Char(uri);
-        cb(ih, urlString);
-        free(urlString);
-        CoTaskMemFree(uri);
-      }
+      if (IupGetCallback(ih, "NEWWINDOW_CB"))
+        winWebBrowserPostEvent(ih, IUPWEB_EVENT_NEWWINDOW, uri);
+      else
+        sender->Navigate(uri);
+      CoTaskMemFree(uri);
     }
     args->put_Handled(TRUE);
     return S_OK;
@@ -585,9 +640,7 @@ public:
       }
       else if (wcscmp(message, L"update") == 0)
       {
-        IFn update_cb = static_cast<IFn>(IupGetCallback(ih, "UPDATE_CB"));
-        if (update_cb)
-          update_cb(ih);
+        winWebBrowserPostEvent(ih, IUPWEB_EVENT_UPDATE, nullptr);
       }
 
       CoTaskMemFree(message);
@@ -666,24 +719,6 @@ HRESULT NavigationCompletedHandler::Invoke(ICoreWebView2* sender, ICoreWebView2N
   {
     iupAttribSet(ih, "_IUPWEB_FAILED", "1");
     ih->data->loadStatus = WEBVIEW_STATUS_FAILED;
-
-    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "ERROR_CB"));
-    if (cb)
-    {
-      LPWSTR uri = nullptr;
-      sender->get_Source(&uri);
-      if (uri)
-      {
-        char* urlString = iupwinStrWide2Char(uri);
-        cb(ih, urlString);
-        free(urlString);
-        CoTaskMemFree(uri);
-      }
-      else
-      {
-        cb(ih, const_cast<char*>("Unknown URI"));
-      }
-    }
   }
   else
   {
@@ -697,31 +732,15 @@ HRESULT NavigationCompletedHandler::Invoke(ICoreWebView2* sender, ICoreWebView2N
     {
       sender->ExecuteScript(L"document.body.contentEditable = 'false';", nullptr);
     }
-
-    IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "COMPLETED_CB"));
-    if (cb)
-    {
-      LPWSTR uri = nullptr;
-      sender->get_Source(&uri);
-      if (uri)
-      {
-        char* urlString = iupwinStrWide2Char(uri);
-        cb(ih, urlString);
-        free(urlString);
-        CoTaskMemFree(uri);
-      }
-      else
-      {
-        cb(ih, const_cast<char*>("Unknown URI"));
-      }
-    }
   }
 
   winWebBrowserUpdateHistory(ih);
 
-  IFn update_cb = static_cast<IFn>(IupGetCallback(ih, "UPDATE_CB"));
-  if (update_cb)
-    update_cb(ih);
+  LPWSTR uri = nullptr;
+  sender->get_Source(&uri);
+  winWebBrowserPostEvent(ih, success ? IUPWEB_EVENT_COMPLETED : IUPWEB_EVENT_ERROR, uri);
+  if (uri)
+    CoTaskMemFree(uri);
 
   return S_OK;
 }
@@ -2223,6 +2242,9 @@ static void winWebBrowserUnMapMethod(Ihandle* ih)
     ih->data->webviewController->Release();
     ih->data->webviewController = nullptr;
   }
+
+  if (ih->data->hwnd)
+    winWebBrowserDropEvents(ih->data->hwnd);
 
   if (ih->data->hwnd && ih->data->oldWndProc)
   {

@@ -108,6 +108,8 @@ static char* qtWebBrowserEscapeJavaScript(const char* str)
   return result;
 }
 
+static int qt_web_in_navigation = 0;
+
 struct JavaScriptResult
 {
   QString result;
@@ -168,7 +170,7 @@ static char* qtWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
     });
 
   /* Manual event pumping instead of exec() to avoid "event loop already running" errors */
-  if (!async->completed)
+  if (!async->completed && !qt_web_in_navigation)
   {
     QElapsedTimer timeout_timer;
     timeout_timer.start();
@@ -319,7 +321,7 @@ static char* qtWebBrowserGetHTMLAttrib(Ihandle* ih)
     async->completed = true;
   });
 
-  if (!async->completed)
+  if (!async->completed && !qt_web_in_navigation)
   {
     QElapsedTimer timeout_timer;
     timeout_timer.start();
@@ -1432,7 +1434,13 @@ protected:
       if (opener_ih)
       {
         IFns cb = reinterpret_cast<IFns>(IupGetCallback(opener_ih, "NEWWINDOW_CB"));
-        if (!cb || cb(opener_ih, const_cast<char*>(url.toString().toUtf8().constData())) != IUP_IGNORE)
+        if (cb)
+        {
+          qt_web_in_navigation++;
+          cb(opener_ih, const_cast<char*>(url.toString().toUtf8().constData()));
+          qt_web_in_navigation--;
+        }
+        else
           opener->setUrl(url);
       }
       opener = nullptr;
@@ -1443,8 +1451,14 @@ protected:
     if (ih && isMainFrame && !iupAttribGet(ih, "_IUPWEB_IGNORE_NAVIGATE"))
     {
       IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NAVIGATE_CB"));
-      if (cb && cb(ih, const_cast<char*>(url.toString().toUtf8().constData())) == IUP_IGNORE)
-        return false;
+      if (cb)
+      {
+        qt_web_in_navigation++;
+        int ret = cb(ih, const_cast<char*>(url.toString().toUtf8().constData()));
+        qt_web_in_navigation--;
+        if (ret == IUP_IGNORE)
+          return false;
+      }
     }
 
     return QWebEnginePage::acceptNavigationRequest(url, type, isMainFrame);

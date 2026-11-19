@@ -2303,12 +2303,12 @@ static gboolean gtkWebBrowserNavigate_WK1(WebKitWebView* web_view, WebKitWebFram
 static WebKitWebView* gtkWebBrowserNewWindow_WK2(WebKitWebView* web_view, WebKitNavigationAction* navigation_action, Ihandle* ih)
 {
   IFns cb = (IFns)IupGetCallback(ih, "NEWWINDOW_CB");
+  WebKitURIRequest* request = webkit_navigation_action_get_request(navigation_action);
+  const gchar* uri = webkit_uri_request_get_uri(request);
   if (cb)
-  {
-    WebKitURIRequest* request = webkit_navigation_action_get_request(navigation_action);
-    const gchar* uri = webkit_uri_request_get_uri(request);
     cb(ih, (char*)uri);
-  }
+  else if (uri && *uri)
+    IupSetStrAttribute(ih, "VALUE", uri);
 
   (void)web_view;
   return NULL;

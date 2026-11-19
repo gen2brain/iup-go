@@ -84,6 +84,8 @@ Negative "id" value represents a backward item while positive "id" value represe
 The name of the content attribute is given by the attribute ATTRIBUTE_NAME.
 
 **JAVASCRIPT**: executes JavaScript code and returns the result as a string.
+In Windows, it returns NULL when queried inside NAVIGATE_CB.
+In Qt and QML with QtWebEngine, it returns NULL when queried inside NAVIGATE_CB or NEWWINDOW_CB.
 
 **PRINT** (write-only): shows the print dialog.
 Not supported in Haiku and QML.
@@ -204,6 +206,9 @@ Can be called multiple times when a frame set loads its frames, or when a page l
 
 **ih**: identifier of the element that activated the event.\
 **url**: the URL address that is opened in the new window.
+
+The browser does not open the address when the callback is defined; the application decides where to load it, for example with VALUE in a new IupWebBrowser.
+Without the callback, the address is loaded in the same browser.
 
 **UPDATE_CB**: action generated when the selection was changed and the editor interface needs an update.
 Used only when EDITABLE=YES.

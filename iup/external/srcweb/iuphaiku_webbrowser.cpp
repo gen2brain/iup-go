@@ -418,9 +418,10 @@ void IupHaikuWebHandler::PopupReceived(BMessage* msg)
       return;
 
     IFns cb = reinterpret_cast<IFns>(IupGetCallback(fIhandle, "NEWWINDOW_CB"));
-    BWebView* view = haikuWebBrowserView(fIhandle);
-    if ((!cb || cb(fIhandle, const_cast<char*>(url.String())) != IUP_IGNORE) && view)
-      view->LoadURL(url.String());
+    if (cb)
+      cb(fIhandle, const_cast<char*>(url.String()));
+    else
+      IupSetStrAttribute(fIhandle, "VALUE", url.String());
   }
 
   fPopup->WebPage()->SetListener(BMessenger());
@@ -496,7 +497,10 @@ void IupHaikuWebHandler::MessageReceived(BMessage* msg)
       BString url;
       msg->FindString("url", &url);
       IFns cb = reinterpret_cast<IFns>(IupGetCallback(fIhandle, "NEWWINDOW_CB"));
-      if (cb) cb(fIhandle, const_cast<char*>(url.String()));
+      if (cb)
+        cb(fIhandle, const_cast<char*>(url.String()));
+      else if (!url.IsEmpty())
+        IupSetStrAttribute(fIhandle, "VALUE", url.String());
       break;
     }
     case UPDATE_NAVIGATION_INTERFACE:

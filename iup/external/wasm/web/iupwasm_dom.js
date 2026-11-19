@@ -24,6 +24,12 @@
           if (el.__iupEdit) d.designMode = 'on';
           d.addEventListener('input', function () { if (d.designMode === 'on') el.__iupDirty = true; });
           w.open = function (url) { if (url) Dt('iupwasmWebOnNewWindow', ['number', 'string'], [id, new URL(url, w.location.href).href]); return null; };
+          d.addEventListener('click', function (e) {
+            var a = e.target && e.target.closest ? e.target.closest('a[target]') : null;
+            if (!a || !a.href || /^_(self|parent|top)$/i.test(a.target)) return;
+            e.preventDefault();
+            Dt('iupwasmWebOnNewWindow', ['number', 'string'], [id, a.href]);
+          }, true);
           if (w.navigation) w.navigation.addEventListener('navigate', function (e) {
             if (!e.cancelable || e.hashChange || e.navigationType === 'reload' || e.navigationType === 'traverse') return;
             var to = e.destination.url;
@@ -4104,7 +4110,7 @@ globalThis.__iupMediaPick = function (kind, index) {
         return (el && el.__iupDirty) ? 1 : 0;
       } break;
       case 'webeval': {
-        var es = ''; try { var r = el.contentWindow.eval(req.code); if (r !== undefined && r !== null) es = '' + r; } catch (e) { es = '' + e; }
+        var es = ''; try { var r = el.contentWindow.eval(req.code); if (r !== undefined && r !== null) es = '' + r; } catch (e) {}
         return es;
       } break;
       case 'webquery': {

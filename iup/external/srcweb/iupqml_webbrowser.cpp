@@ -60,7 +60,6 @@ static const char* qmlWebBrowserQml =
   "import QtQuick\n"
   "import QtWebEngine\n"
   "WebEngineView { id: web\n"
-  "  property bool iupOpenNewWindow: true\n"
   "  property bool iupAllowNavigate: true\n"
   "  signal iupLoading(int status, string url)\n"
   "  signal iupNewWindow(string url)\n"
@@ -79,7 +78,7 @@ static const char* qmlWebBrowserQml =
   "  }\n"
   "  onLoadingChanged: (info) => web.iupLoading(info.status === WebEngineView.LoadStartedStatus ? 0 : info.status === WebEngineView.LoadSucceededStatus ? 1 : info.status === WebEngineView.LoadFailedStatus ? 2 : 3, info.url.toString())\n"
   "  onNavigationRequested: (request) => { if (!request.isMainFrame) return; web.iupAllowNavigate = true; web.iupNavigate(request.url.toString()); if (!web.iupAllowNavigate) request.reject() }\n"
-  "  onNewWindowRequested: (request) => { web.iupOpenNewWindow = true; web.iupNewWindow(request.requestedUrl.toString()); if (web.iupOpenNewWindow) request.openIn(web) }\n"
+  "  onNewWindowRequested: (request) => web.iupNewWindow(request.requestedUrl.toString())\n"
   "}";
 
 static const char* qmlWebBrowserInitScript =
@@ -202,6 +201,8 @@ static void qmlWebBrowserRunJavaScript(Ihandle* ih, const char* format, ...)
   iupqmlCallMethod(data->view, "iupRun", -1, js);
 }
 
+static int qml_web_in_navigation = 0;
+
 static char* qmlWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
 {
   IupQmlWebData* data = qmlWebBrowserGetData(ih);
@@ -215,7 +216,7 @@ static char* qmlWebBrowserExecJavaScriptSync(Ihandle* ih, const char* js)
   QElapsedTimer timeout_timer;
   timeout_timer.start();
 
-  while (!data->results.contains(id) && timeout_timer.elapsed() < 5000)
+  while (!qml_web_in_navigation && !data->results.contains(id) && timeout_timer.elapsed() < 5000)
   {
     QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
     data = qmlWebBrowserGetData(ih);
@@ -1197,7 +1198,13 @@ static void qmlWebBrowserNavigate(Ihandle* ih, const QString& url)
     return;
 
   IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NAVIGATE_CB"));
-  if (cb && cb(ih, const_cast<char*>(url.toUtf8().constData())) == IUP_IGNORE)
+  if (!cb)
+    return;
+
+  qml_web_in_navigation++;
+  int ret = cb(ih, const_cast<char*>(url.toUtf8().constData()));
+  qml_web_in_navigation--;
+  if (ret == IUP_IGNORE)
     data->view->setProperty("iupAllowNavigate", false);
 }
 
@@ -1208,8 +1215,15 @@ static void qmlWebBrowserNewWindow(Ihandle* ih, const QString& url)
     return;
 
   IFns cb = reinterpret_cast<IFns>(IupGetCallback(ih, "NEWWINDOW_CB"));
-  if (cb && cb(ih, const_cast<char*>(url.toUtf8().constData())) == IUP_IGNORE)
-    data->view->setProperty("iupOpenNewWindow", false);
+  if (!cb)
+  {
+    IupSetStrAttribute(ih, "VALUE", url.toUtf8().constData());
+    return;
+  }
+
+  qml_web_in_navigation++;
+  cb(ih, const_cast<char*>(url.toUtf8().constData()));
+  qml_web_in_navigation--;
 }
 
 /****************************************************************************
