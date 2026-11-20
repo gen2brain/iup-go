@@ -48,30 +48,59 @@ static void winuiButtonClickHandler(Ihandle* ih)
   }
 }
 
+template <typename T>
+static T winuiButtonGetContent(Ihandle* ih)
+{
+  auto btn = winuiGetHandle<Button>(ih);
+  if (!btn)
+    return nullptr;
+
+  Border border = btn.Content().try_as<Border>();
+  if (!border)
+    return nullptr;
+
+  auto child = border.Child();
+  if (!child)
+    return nullptr;
+
+  T found = child.try_as<T>();
+  if (found)
+    return found;
+
+  StackPanel sp = child.try_as<StackPanel>();
+  if (sp)
+  {
+    for (uint32_t i = 0; i < sp.Children().Size(); i++)
+    {
+      found = sp.Children().GetAt(i).try_as<T>();
+      if (found)
+        return found;
+    }
+  }
+
+  return nullptr;
+}
+
 static int winuiButtonSetTitleAttrib(Ihandle* ih, const char* value)
 {
   auto btn = winuiGetHandle<Button>(ih);
   if (btn)
   {
-    Border border = btn.Content().try_as<Border>();
-    if (border)
+    TextBlock tb = winuiButtonGetContent<TextBlock>(ih);
+    if (tb)
     {
-      TextBlock tb = border.Child().try_as<TextBlock>();
-      if (tb)
+      if (iupAttribGetBoolean(ih, "MARKUP"))
       {
-        if (iupAttribGetBoolean(ih, "MARKUP"))
+        iupwinuiApplyMarkupToTextBlock(tb, value);
+      }
+      else
+      {
+        char c = 0;
+        iupwinuiSetMnemonicText(tb, value, &c);
+        if (c)
         {
-          iupwinuiApplyMarkupToTextBlock(tb, value);
-        }
-        else
-        {
-          char c = 0;
-          iupwinuiSetMnemonicText(tb, value, &c);
-          if (c)
-          {
-            auto wc = static_cast<wchar_t>(c);
-            btn.AccessKey(hstring(&wc, 1));
-          }
+          auto wc = static_cast<wchar_t>(c);
+          btn.AccessKey(hstring(&wc, 1));
         }
       }
     }
@@ -86,17 +115,9 @@ static char* winuiButtonGetTitleAttrib(Ihandle* ih)
   if (iupAttribGetBoolean(ih, "MARKUP"))
     return iupAttribGet(ih, "TITLE");
 
-  auto btn = winuiGetHandle<Button>(ih);
-  if (btn)
-  {
-    Border border = btn.Content().try_as<Border>();
-    if (border)
-    {
-      TextBlock tb = border.Child().try_as<TextBlock>();
-      if (tb)
-        return iupwinuiHStringToString(iupwinuiTextBlockText(tb));
-    }
-  }
+  TextBlock tb = winuiButtonGetContent<TextBlock>(ih);
+  if (tb)
+    return iupwinuiHStringToString(iupwinuiTextBlockText(tb));
   return nullptr;
 }
 
@@ -161,27 +182,14 @@ static void winuiButtonSetImage(Ihandle* ih, const char* name, int make_inactive
   if (!bitmap)
     return;
 
-  Border border = btn.Content().try_as<Border>();
-  if (border)
+  Image existingImage = winuiButtonGetContent<Image>(ih);
+  if (existingImage)
   {
-    auto child = border.Child();
-    if (child)
-    {
-      Image existingImage = child.try_as<Image>();
-      if (!existingImage)
-      {
-        StackPanel sp = child.try_as<StackPanel>();
-        if (sp && sp.Children().Size() > 0)
-          existingImage = sp.Children().GetAt(0).try_as<Image>();
-      }
-      if (existingImage)
-      {
-        winuiImageSetSource(ih, existingImage, bitmap);
-        return;
-      }
-    }
+    winuiImageSetSource(ih, existingImage, bitmap);
+    return;
   }
 
+  Border border = btn.Content().try_as<Border>();
   Image image;
   winuiImageSetSource(ih, image, bitmap);
 
@@ -264,38 +272,6 @@ static int winuiButtonSetImPressAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
-static TextBlock winuiButtonGetTextBlock(Ihandle* ih)
-{
-  auto btn = winuiGetHandle<Button>(ih);
-  if (!btn)
-    return nullptr;
-
-  Border border = btn.Content().try_as<Border>();
-  if (!border)
-    return nullptr;
-
-  auto child = border.Child();
-  if (!child)
-    return nullptr;
-
-  TextBlock tb = child.try_as<TextBlock>();
-  if (tb)
-    return tb;
-
-  StackPanel sp = child.try_as<StackPanel>();
-  if (sp)
-  {
-    for (uint32_t i = 0; i < sp.Children().Size(); i++)
-    {
-      tb = sp.Children().GetAt(i).try_as<TextBlock>();
-      if (tb)
-        return tb;
-    }
-  }
-
-  return nullptr;
-}
-
 static bool winuiButtonIsBorderless(Ihandle* ih)
 {
   char* impress = iupAttribGet(ih, "IMPRESS");
@@ -346,7 +322,7 @@ static int winuiButtonSetFgColorAttrib(Ihandle* ih, const char* value)
     btn.Resources().Insert(box_value(L"ButtonForegroundPressed"), brush);
   }
 
-  TextBlock tb = winuiButtonGetTextBlock(ih);
+  TextBlock tb = winuiButtonGetContent<TextBlock>(ih);
   if (tb)
     tb.Foreground(brush);
 

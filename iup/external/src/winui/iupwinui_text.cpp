@@ -1258,6 +1258,7 @@ static int winuiTextMapMethod(Ihandle* ih)
     if (iupAttribGetBoolean(ih, "WORDWRAP"))
     {
       reb.TextWrapping(TextWrapping::Wrap);
+      reb.HorizontalAlignment(HorizontalAlignment::Stretch);
       ih->data->sb &= ~IUP_SB_HORIZ;
     }
     else
@@ -1434,6 +1435,7 @@ static int winuiTextMapMethod(Ihandle* ih)
       if (iupAttribGetBoolean(ih, "WORDWRAP"))
       {
         tb.TextWrapping(TextWrapping::Wrap);
+        tb.HorizontalAlignment(HorizontalAlignment::Stretch);
         ih->data->sb &= ~IUP_SB_HORIZ;
       }
       else
@@ -4270,10 +4272,39 @@ static int winuiTextSetScrollToPosAttribSilent(Ihandle* ih, const char* value)
   return winuiTextSetSilent(ih, value, winuiTextSetScrollToPosAttrib);
 }
 
+/* with an explicit Width a wrapping text measures the natural size of the whole text on every layout */
+static void winuiTextLayoutUpdateMethod(Ihandle* ih)
+{
+  if (!ih || !ih->handle)
+    return;
+
+  auto reb = winuiGetHandle<RichEditBox>(ih);
+  auto tb = winuiGetHandle<TextBox>(ih);
+  bool wrap = (reb && reb.TextWrapping() == TextWrapping::Wrap) || (tb && tb.TextWrapping() == TextWrapping::Wrap);
+  if (!wrap)
+  {
+    iupdrvBaseLayoutUpdateMethod(ih);
+    return;
+  }
+
+  auto fe = winuiGetHandle<FrameworkElement>(ih);
+  double scale = iupwinuiGetScale(ih);
+  Canvas::SetLeft(fe, ih->x / scale);
+  Canvas::SetTop(fe, ih->y / scale);
+  if (ih->currentwidth > 0)
+  {
+    fe.MinWidth(ih->currentwidth / scale);
+    fe.MaxWidth(ih->currentwidth / scale);
+  }
+  if (ih->currentheight > 0)
+    fe.Height(ih->currentheight / scale);
+}
+
 extern "C" IUP_SDK_API void iupdrvTextInitClass(Iclass* ic)
 {
   ic->Map = winuiTextMapMethod;
   ic->UnMap = winuiTextUnMapMethod;
+  ic->LayoutUpdate = winuiTextLayoutUpdateMethod;
 
   iupClassRegisterAttribute(ic, "FONT", nullptr, winuiTextSetFontAttrib, IUPAF_SAMEASSYSTEM, "DEFAULTFONT", IUPAF_NOT_MAPPED);
 

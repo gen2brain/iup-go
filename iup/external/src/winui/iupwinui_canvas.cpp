@@ -1134,12 +1134,14 @@ static int winuiCanvasMapMethod(Ihandle* ih)
     }
   });
 
-  aux->gotFocusToken = canvas.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-    iupwinuiFocusInOutEvent(ih, 1);
+  aux->gotFocusToken = canvas.GotFocus([ih](IInspectable const& sender, RoutedEventArgs const& args) {
+    if (args.OriginalSource() == sender)
+      iupwinuiFocusInOutEvent(ih, 1);
   });
 
-  aux->lostFocusToken = canvas.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) {
-    iupwinuiFocusInOutEvent(ih, 0);
+  aux->lostFocusToken = canvas.LostFocus([ih](IInspectable const& sender, RoutedEventArgs const& args) {
+    if (args.OriginalSource() == sender)
+      iupwinuiFocusInOutEvent(ih, 0);
   });
 
   aux->sizeChangedToken = canvas.SizeChanged([ih](IInspectable const&, SizeChangedEventArgs const&) {

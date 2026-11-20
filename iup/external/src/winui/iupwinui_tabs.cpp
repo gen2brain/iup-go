@@ -69,6 +69,20 @@ static TabView winuiTabsGetTabView(Ihandle* ih)
   return winuiGetHandle<TabView>(ih);
 }
 
+static bool winuiTabsIsOwnSource(IInspectable const& sender, IInspectable const& source)
+{
+  DependencyObject self = sender.try_as<DependencyObject>();
+  DependencyObject src = source.try_as<DependencyObject>();
+  if (src == self)
+    return true;
+  for (DependencyObject d = src; d && d != self; d = VisualTreeHelper::GetParent(d))
+  {
+    if (d.try_as<TabViewItem>())
+      return true;
+  }
+  return false;
+}
+
 static void winuiTabsSelectionChanged(Ihandle* ih, IInspectable const& sender, SelectionChangedEventArgs const& args)
 {
   (void)sender;
@@ -455,18 +469,7 @@ static int winuiTabsMapMethod(Ihandle* ih)
   });
 
   aux->keyDownToken = tabView.PreviewKeyDown([ih](IInspectable const& sender, Input::KeyRoutedEventArgs const& args) {
-    DependencyObject self = sender.try_as<DependencyObject>();
-    DependencyObject src = args.OriginalSource().try_as<DependencyObject>();
-    bool forTabs = (src == self);
-    for (DependencyObject d = src; d && d != self; d = VisualTreeHelper::GetParent(d))
-    {
-      if (d.try_as<TabViewItem>())
-      {
-        forTabs = true;
-        break;
-      }
-    }
-    if (!forTabs)
+    if (!winuiTabsIsOwnSource(sender, args.OriginalSource()))
       return;
     if (!iupwinuiKeyEvent(ih, static_cast<int>(args.Key()), args.KeyStatus().IsExtendedKey? 1: 0, 1))
       args.Handled(true);
@@ -476,8 +479,14 @@ static int winuiTabsMapMethod(Ihandle* ih)
   if (parentCanvas)
     parentCanvas.Children().Append(tabView);
 
-  aux->gotFocusToken = tabView.GotFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 1); });
-  aux->lostFocusToken = tabView.LostFocus([ih](IInspectable const&, RoutedEventArgs const&) { iupwinuiFocusInOutEvent(ih, 0); });
+  aux->gotFocusToken = tabView.GotFocus([ih](IInspectable const& sender, RoutedEventArgs const& args) {
+    if (winuiTabsIsOwnSource(sender, args.OriginalSource()))
+      iupwinuiFocusInOutEvent(ih, 1);
+  });
+  aux->lostFocusToken = tabView.LostFocus([ih](IInspectable const& sender, RoutedEventArgs const& args) {
+    if (winuiTabsIsOwnSource(sender, args.OriginalSource()))
+      iupwinuiFocusInOutEvent(ih, 0);
+  });
 
   winuiSetAux(ih, IUPWINUI_TABS_AUX, aux);
   winuiStoreHandle(ih, tabView);
