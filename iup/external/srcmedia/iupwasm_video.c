@@ -316,7 +316,7 @@ char* iupdrvVideoReadSubtitle(const char* filename)
   return iupVideoReadSubtitleStream(fopen(filename, "rb"));
 }
 
-static const IvideoBackend wasmVideoBackend = {"NATIVE", wasmVideoAvailable, wasmVideoOpen, wasmVideoClose, wasmVideoPlay, wasmVideoSeek, wasmVideoVolume, wasmVideoPoll, wasmVideoLayout, wasmVideoSubtitleCount, wasmVideoSubtitleName, wasmVideoSubtitleSelect, wasmVideoSubtitleText, 0, wasmVideoAudioDevices, wasmVideoAudioDevice, wasmVideoAdjust};
+static const IvideoBackend wasmVideoBackend = {"NATIVE", wasmVideoAvailable, wasmVideoOpen, wasmVideoClose, wasmVideoPlay, wasmVideoSeek, wasmVideoVolume, wasmVideoPoll, wasmVideoLayout, wasmVideoSubtitleCount, wasmVideoSubtitleName, wasmVideoSubtitleSelect, wasmVideoSubtitleText, 0, wasmVideoAudioDevices, wasmVideoAudioDevice, wasmVideoAdjust, NULL};
 
 const IvideoBackend* iupdrvVideoBackend(int index)
 {

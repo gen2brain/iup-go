@@ -82,6 +82,9 @@ IUPGL_API void IupGLCanvasOpen(void)
     iupRegisterClass(iGlCanvasNewClass());
     iupRegisterClass(iGLBackgroundBoxNewClass());
 
+    IupSetGlobal("_IUP_GLCANVAS_MAKECURRENT", (char*)IupGLMakeCurrent);
+    IupSetGlobal("_IUP_GLCANVAS_SWAPBUFFERS", (char*)IupGLSwapBuffers);
+    IupSetGlobal("_IUP_GLCANVAS_GETPROCADDRESS", (char*)IupGLGetProcAddress);
     IupSetGlobal("_IUP_GLCANVAS_OPEN", "1");
   }
 }

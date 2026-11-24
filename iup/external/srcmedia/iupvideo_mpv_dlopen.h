@@ -102,6 +102,11 @@ enum mpv_render_param_type
 {
   MPV_RENDER_PARAM_INVALID = 0,
   MPV_RENDER_PARAM_API_TYPE = 1,
+  MPV_RENDER_PARAM_OPENGL_INIT_PARAMS = 2,
+  MPV_RENDER_PARAM_OPENGL_FBO = 3,
+  MPV_RENDER_PARAM_FLIP_Y = 4,
+  MPV_RENDER_PARAM_X11_DISPLAY = 8,
+  MPV_RENDER_PARAM_WL_DISPLAY = 9,
   MPV_RENDER_PARAM_SW_SIZE = 17,
   MPV_RENDER_PARAM_SW_FORMAT = 18,
   MPV_RENDER_PARAM_SW_STRIDE = 19,
@@ -114,7 +119,21 @@ typedef struct
   void* data;
 } mpv_render_param;
 
+typedef struct
+{
+  void* (*get_proc_address)(void* ctx, const char* name);
+  void* get_proc_address_ctx;
+} mpv_opengl_init_params;
+
+typedef struct
+{
+  int fbo;
+  int w, h;
+  int internal_format;
+} mpv_opengl_fbo;
+
 #define MPV_RENDER_API_TYPE_SW "sw"
+#define MPV_RENDER_API_TYPE_OPENGL "opengl"
 #define MPV_RENDER_UPDATE_FRAME 1
 
 typedef void (*mpv_render_update_fn)(void* data);

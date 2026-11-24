@@ -193,4 +193,4 @@ Otherwise the decoded frames are drawn on the canvas.
 
 ### See Also
 
-[IupCanvas](../elem/iup_canvas.md), [IupAudio](iup_audio.md), [IupCamera](iup_camera.md)
+[IupCanvas](../elem/iup_canvas.md), [IupGLVideo](iup_glvideo.md), [IupAudio](iup_audio.md), [IupCamera](iup_camera.md)

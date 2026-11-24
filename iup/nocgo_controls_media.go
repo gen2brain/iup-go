@@ -8,6 +8,7 @@ var (
 	iupMediaOpen  func() int32
 	iupAudio      func() uintptr
 	iupVideo      func() uintptr
+	iupGLVideo    func() uintptr
 	iupCamera     func() uintptr
 	iupMicrophone func() uintptr
 )
@@ -21,6 +22,7 @@ func init() {
 	purego.RegisterLibFunc(&iupMediaOpen, lib, "IupMediaOpen")
 	purego.RegisterLibFunc(&iupAudio, lib, "IupAudio")
 	purego.RegisterLibFunc(&iupVideo, lib, "IupVideo")
+	purego.RegisterLibFunc(&iupGLVideo, lib, "IupGLVideo")
 	purego.RegisterLibFunc(&iupCamera, lib, "IupCamera")
 	purego.RegisterLibFunc(&iupMicrophone, lib, "IupMicrophone")
 }
@@ -44,6 +46,14 @@ func Audio() Ihandle {
 // https://gen2brain.github.io/iup-go/ctrl/iup_video.html
 func Video() Ihandle {
 	return mkih(iupVideo())
+}
+
+// GLVideo creates a video player that presents on the GPU.
+// GLCanvasOpen and MediaOpen must be called first.
+//
+// https://gen2brain.github.io/iup-go/ctrl/iup_glvideo.html
+func GLVideo() Ihandle {
+	return mkih(iupGLVideo())
 }
 
 // Camera creates a canvas that shows the live picture of a camera.

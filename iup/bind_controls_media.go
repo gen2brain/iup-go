@@ -29,6 +29,14 @@ func Video() Ihandle {
 	return mkih(C.IupVideo())
 }
 
+// GLVideo creates a video player that presents on the GPU.
+// GLCanvasOpen and MediaOpen must be called first.
+//
+// https://gen2brain.github.io/iup-go/ctrl/iup_glvideo.html
+func GLVideo() Ihandle {
+	return mkih(C.IupGLVideo())
+}
+
 // Camera creates a canvas that shows the live picture of a camera.
 //
 // https://gen2brain.github.io/iup-go/ctrl/iup_camera.html

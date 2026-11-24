@@ -55,6 +55,8 @@ struct _IcontrolData
   unsigned char* frame;
   int frame_width, frame_height, image_stale;
   char image_name[48];
+  int gl;
+  IvideoGL glapi;
   char backend[16];
   char* source;
   char* audio;
@@ -721,6 +723,18 @@ void iupVideoFrame(IvideoSession* session, const unsigned char* pixels, int widt
   iupdrvMutexUnlock(session->mutex);
 }
 
+void iupVideoWake(IvideoSession* session)
+{
+  int post;
+  iupdrvMutexLock(session->mutex);
+  post = session->gl && !session->closing && !session->wake_pending;
+  if (post)
+    session->wake_pending = 1;
+  iupdrvMutexUnlock(session->mutex);
+  if (post)
+    IupPostMessage(session->gl->wake, NULL, 0, 0, NULL);
+}
+
 void iupVideoTargetSize(IvideoSession* session, int width, int height, int* target_width, int* target_height)
 {
   int tw, th;
@@ -777,6 +791,8 @@ static void iVideoClose(Ihandle* ih)
     iupdrvMutexLock(session->mutex);
     session->closing = 1;
     iupdrvMutexUnlock(session->mutex);
+    if (session->gl)
+      session->gl->make_current(session->gl->ih);
     session->backend->close(session);
     free(session->pending);
     free(session->subtitle_cue);
@@ -858,7 +874,7 @@ void iupVideoSplitOptions(const char* options, void (*func)(char* option, void* 
 static int iVideoBackendUsable(Ihandle* ih, const IvideoBackend* backend)
 {
   return (iupStrEqualNoCase(ih->data->backend, "AUTO") || iupStrEqualNoCase(ih->data->backend, backend->name)) &&
-         (!ih->data->audio || backend->audio) && backend->available();
+         (!ih->data->audio || backend->audio) && (!ih->data->gl || backend->gl_render) && backend->available();
 }
 
 static const IvideoBackend* iVideoFirstBackend(Ihandle* ih)
@@ -938,6 +954,8 @@ static void iVideoStart(Ihandle* ih)
     char* device;
     if (!iupStrEqualNoCase(ih->data->backend, "AUTO") && !iupStrEqualNoCase(ih->data->backend, backend->name))
       continue;
+    if (ih->data->gl && !backend->gl_render)
+      continue;
     if (!backend->available())
       continue;
     if (ih->data->audio && !backend->audio)
@@ -955,6 +973,13 @@ static void iVideoStart(Ihandle* ih)
     device = !ih->data->device_backend || ih->data->device_backend == backend ? iVideoAudioDeviceId(ih, backend, iupAttribGetInt(ih, "AUDIODEVICE")) : NULL;
     session->audio_device = device;
     session->info.state = IVIDEO_LOADING;
+    if (ih->data->gl)
+    {
+      session->gl = &ih->data->glapi;
+      session->canvas_width = ih->currentwidth;
+      session->canvas_height = ih->currentheight;
+      ih->data->glapi.make_current(ih);
+    }
     ih->data->session = session;
     if (backend->open(session, ih, ih->data->source, ih->data->url))
     {
@@ -1052,6 +1077,24 @@ static void iVideoTakeFrame(Ihandle* ih, IvideoSession* session)
     return;
   ih->data->image_stale = 1;
   IupUpdate(ih);
+}
+
+static int iVideoWakeMessage(Ihandle* timer, char* s, int i, double d, void* p)
+{
+  Ihandle* ih = (Ihandle*)iupAttribGet(timer, "_IUPVIDEO");
+  IvideoSession* session = ih->data->session;
+  (void)s;
+  (void)i;
+  (void)d;
+  (void)p;
+  if (!session || !session->gl)
+    return IUP_DEFAULT;
+  iupdrvMutexLock(session->mutex);
+  session->wake_pending = 0;
+  iupdrvMutexUnlock(session->mutex);
+  if (ih->handle)
+    session->backend->gl_render(session, 0);
+  return IUP_DEFAULT;
 }
 
 static int iVideoTick(Ihandle* timer)
@@ -1319,6 +1362,27 @@ static int iVideoRedraw(Ihandle* ih)
     IupDrawText(ih, text, -1, x, y, tw, th);
   }
   IupDrawEnd(ih);
+  return IUP_DEFAULT;
+}
+
+static int iVideoGLRedraw(Ihandle* ih)
+{
+  IvideoSession* session = ih->data->session;
+  const IvideoGL* gl = &ih->data->glapi;
+  unsigned char r = 0, g = 0, b = 0;
+  void (*clear_color)(float, float, float, float);
+  void (*clear)(unsigned);
+  if (session && session->backend->gl_render(session, 1))
+    return IUP_DEFAULT;
+  gl->make_current(ih);
+  *(void**)&clear_color = gl->get_proc_address("glClearColor");
+  *(void**)&clear = gl->get_proc_address("glClear");
+  if (!clear_color || !clear)
+    return IUP_DEFAULT;
+  iupStrToRGB(iupAttribGetStr(ih, "BGCOLOR"), &r, &g, &b);
+  clear_color(r / 255.0f, g / 255.0f, b / 255.0f, 1);
+  clear(0x4000);
+  gl->swap_buffers(ih);
   return IUP_DEFAULT;
 }
 
@@ -1824,7 +1888,20 @@ static int iVideoCreateMethod(Ihandle* ih, void** params)
   iupAttribSet(ih->data->timer, "_IUPVIDEO", (char*)ih);
   IupSetInt(ih->data->timer, "TIME", 16);
   IupSetCallback(ih->data->timer, "ACTION_CB", (Icallback)iVideoTick);
-  IupSetCallback(ih, "ACTION", (Icallback)iVideoRedraw);
+  if (IupClassMatch(ih, "glvideo"))
+  {
+    ih->data->gl = 1;
+    ih->data->glapi.ih = ih;
+    ih->data->glapi.wake = ih->data->timer;
+    *(void**)&ih->data->glapi.make_current = IupGetGlobal("_IUP_GLCANVAS_MAKECURRENT");
+    *(void**)&ih->data->glapi.swap_buffers = IupGetGlobal("_IUP_GLCANVAS_SWAPBUFFERS");
+    *(void**)&ih->data->glapi.get_proc_address = IupGetGlobal("_IUP_GLCANVAS_GETPROCADDRESS");
+    IupSetCallback(ih->data->timer, "POSTMESSAGE_CB", (Icallback)iVideoWakeMessage);
+    IupSetCallback(ih, "ACTION", (Icallback)iVideoGLRedraw);
+    iupAttribSet(ih, "BUFFER", "DOUBLE");
+  }
+  else
+    IupSetCallback(ih, "ACTION", (Icallback)iVideoRedraw);
   return IUP_NOERROR;
 }
 
@@ -1865,6 +1942,12 @@ static void iVideoLayoutUpdateMethod(Ihandle* ih)
   IvideoSession* session = ih->data->session;
   if (session && session->backend->layout)
     session->backend->layout(session, ih);
+  if (session && session->gl && (session->canvas_width != ih->currentwidth || session->canvas_height != ih->currentheight))
+  {
+    session->canvas_width = ih->currentwidth;
+    session->canvas_height = ih->currentheight;
+    ih->data->subtitle_scaled_size = 0;
+  }
   if (session && ih->handle && ih->data->subtitle_scaled_size != iVideoSubtitleCanvasSize(ih))
   {
     ih->data->subtitle_dirty = 1;
@@ -1886,18 +1969,26 @@ IUPMEDIA_API Ihandle* IupVideo(void)
   return IupCreate("video");
 }
 
-Iclass* iupVideoNewClass(void)
+IUPMEDIA_API Ihandle* IupGLVideo(void)
 {
-  Iclass* ic = iupClassNew(iupRegisterFindClass("canvas"));
+  if (!iupRegisterFindClass("glvideo"))
+  {
+    if (!iupRegisterFindClass("video") || !iupRegisterFindClass("glcanvas"))
+      return NULL;
+    iupRegisterClass(iupGLVideoNewClass());
+  }
+  return IupCreate("glvideo");
+}
+
+static Iclass* iVideoNewBaseClass(const char* parent)
+{
+  Iclass* ic = iupClassNew(iupRegisterFindClass(parent));
   int flags = IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT;
-  ic->name = "video";
-  ic->cons = "Video";
   ic->format = NULL;
   ic->nativetype = IUP_TYPECANVAS;
   ic->childtype = IUP_CHILDNONE;
   ic->is_interactive = 1;
   ic->has_attrib_id = 1;
-  ic->New = iupVideoNewClass;
   ic->Create = iVideoCreateMethod;
   ic->Map = iVideoMapMethod;
   ic->UnMap = iVideoUnMapMethod;
@@ -1956,5 +2047,23 @@ Iclass* iupVideoNewClass(void)
   iupClassRegisterAttribute(ic, "SUBTITLECOLOR", iVideoGetSubtitleColorAttrib, iVideoSetSubtitleColorAttrib, IUPAF_SAMEASSYSTEM, "255 255 255", flags);
   iupClassRegisterAttribute(ic, "SUBTITLETEXT", iVideoGetSubtitleTextAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);
   iupClassRegisterAttribute(ic, "SUBTITLEERROR", iVideoGetSubtitleErrorAttrib, NULL, NULL, NULL, flags | IUPAF_READONLY);
+  return ic;
+}
+
+Iclass* iupVideoNewClass(void)
+{
+  Iclass* ic = iVideoNewBaseClass("canvas");
+  ic->name = "video";
+  ic->cons = "Video";
+  ic->New = iupVideoNewClass;
+  return ic;
+}
+
+Iclass* iupGLVideoNewClass(void)
+{
+  Iclass* ic = iVideoNewBaseClass("glcanvas");
+  ic->name = "glvideo";
+  ic->cons = "GLVideo";
+  ic->New = iupGLVideoNewClass;
   return ic;
 }

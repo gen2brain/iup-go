@@ -860,4 +860,4 @@ static void iVideoVlcAudioDevice(IvideoSession* session, const char* id)
   }
 }
 
-const IvideoBackend iupVideoVlcBackend = {"VLC", iVideoVlcLoad, iVideoVlcOpen, iVideoVlcClose, iVideoVlcPlay, iVideoVlcSeek, iVideoVlcVolume, iVideoVlcPoll, NULL, iVideoVlcSubtitleCount, iVideoVlcSubtitleName, iVideoVlcSubtitleSelect, NULL, 1, iVideoVlcAudioDevices, iVideoVlcAudioDevice, iVideoVlcAdjust};
+const IvideoBackend iupVideoVlcBackend = {"VLC", iVideoVlcLoad, iVideoVlcOpen, iVideoVlcClose, iVideoVlcPlay, iVideoVlcSeek, iVideoVlcVolume, iVideoVlcPoll, NULL, iVideoVlcSubtitleCount, iVideoVlcSubtitleName, iVideoVlcSubtitleSelect, NULL, 1, iVideoVlcAudioDevices, iVideoVlcAudioDevice, iVideoVlcAdjust, NULL};

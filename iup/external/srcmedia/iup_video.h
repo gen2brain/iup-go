@@ -34,6 +34,15 @@ typedef struct _IvideoAudioDevice
   char* name;
 } IvideoAudioDevice;
 
+typedef struct _IvideoGL
+{
+  Ihandle* ih;
+  Ihandle* wake;
+  void (*make_current)(Ihandle* ih);
+  void (*swap_buffers)(Ihandle* ih);
+  void* (*get_proc_address)(const char* name);
+} IvideoGL;
+
 enum { IVIDEO_BRIGHTNESS, IVIDEO_CONTRAST, IVIDEO_SATURATION, IVIDEO_GAMMA, IVIDEO_ADJUST_COUNT };
 
 typedef struct _IvideoBackend
@@ -55,6 +64,7 @@ typedef struct _IvideoBackend
   int (*audio_devices)(IvideoAudioDevice** devices);
   void (*audio_device)(IvideoSession* session, const char* id);
   void (*adjust)(IvideoSession* session, const int* values);
+  int (*gl_render)(IvideoSession* session, int force);
 } IvideoBackend;
 
 struct _IvideoSession
@@ -69,15 +79,19 @@ struct _IvideoSession
   unsigned char* pending;
   int pending_width, pending_height, pending_ready;
   int target_width, target_height;
+  const IvideoGL* gl;
+  int canvas_width, canvas_height, wake_pending;
   char* subtitle_cue;
   char subtitle_error[512];
 };
 
 Iclass* iupVideoNewClass(void);
+Iclass* iupGLVideoNewClass(void);
 const IvideoBackend* iupdrvVideoBackend(int index);
 void iupVideoInfo(IvideoSession* session, const IvideoInfo* info);
 void iupVideoError(IvideoSession* session, const char* message);
 void iupVideoFrame(IvideoSession* session, const unsigned char* pixels, int width, int height, size_t stride);
+void iupVideoWake(IvideoSession* session);
 void iupVideoTargetSize(IvideoSession* session, int width, int height, int* target_width, int* target_height);
 void iupVideoSubtitleCue(IvideoSession* session, const char* text);
 void iupVideoSubtitleError(IvideoSession* session, const char* message);

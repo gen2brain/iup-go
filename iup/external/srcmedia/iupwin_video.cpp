@@ -1336,7 +1336,7 @@ extern "C" char* iupdrvVideoReadSubtitle(const char* filename)
   return iupVideoReadSubtitleStream(file);
 }
 
-static const IvideoBackend winVideoBackend = {"NATIVE", winVideoAvailable, winVideoOpen, winVideoClose, winVideoPlay, winVideoSeek, winVideoVolume, winVideoPoll, winVideoLayout, winVideoSubtitleCount, winVideoSubtitleName, winVideoSubtitleSelect, winVideoSubtitleText, 0, winVideoAudioDevices, winVideoAudioEndpoint, nullptr};
+static const IvideoBackend winVideoBackend = {"NATIVE", winVideoAvailable, winVideoOpen, winVideoClose, winVideoPlay, winVideoSeek, winVideoVolume, winVideoPoll, winVideoLayout, winVideoSubtitleCount, winVideoSubtitleName, winVideoSubtitleSelect, winVideoSubtitleText, 0, winVideoAudioDevices, winVideoAudioEndpoint, nullptr, nullptr};
 
 extern "C" const IvideoBackend iupVideoVlcBackend;
 extern "C" const IvideoBackend iupVideoGstreamerBackend;

@@ -668,4 +668,4 @@ static void iVideoGstAdjust(IvideoSession* session, const int* values)
     g_object_set(context->gamma, "gamma", pow(2, values[IVIDEO_GAMMA] / 50.0), NULL);
 }
 
-const IvideoBackend iupVideoGstreamerBackend = {"GSTREAMER", iVideoGstAvailable, iVideoGstOpen, iVideoGstClose, iVideoGstPlay, iVideoGstSeek, iVideoGstVolume, iVideoGstPoll, NULL, iVideoGstSubtitleCount, iVideoGstSubtitleName, iVideoGstSubtitleSelect, NULL, 0, iVideoGstAudioDevices, iVideoGstAudioDevice, iVideoGstAdjust};
+const IvideoBackend iupVideoGstreamerBackend = {"GSTREAMER", iVideoGstAvailable, iVideoGstOpen, iVideoGstClose, iVideoGstPlay, iVideoGstSeek, iVideoGstVolume, iVideoGstPoll, NULL, iVideoGstSubtitleCount, iVideoGstSubtitleName, iVideoGstSubtitleSelect, NULL, 0, iVideoGstAudioDevices, iVideoGstAudioDevice, iVideoGstAdjust, NULL};

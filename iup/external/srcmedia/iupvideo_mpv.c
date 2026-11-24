@@ -44,6 +44,8 @@ typedef struct
   ivideo_cond_t condition;
   int initialized, started, dirty, quit, width, height;
   int paused, buffering, idle, eof, rotate;
+  int display_width, display_height;
+  void (*get_integerv)(unsigned, int*);
   int adjust[IVIDEO_ADJUST_COUNT];
   char* audio;
   int64_t* subtitles;
@@ -127,6 +129,69 @@ IVIDEO_THREAD(iVideoMpvRender, opaque)
   IVIDEO_THREAD_END;
 }
 
+static void iVideoMpvWake(void* opaque)
+{
+  iupVideoWake(((IvideoMpv*)opaque)->session);
+}
+
+static void* iVideoMpvProcAddress(void* opaque, const char* name)
+{
+  return ((const IvideoGL*)opaque)->get_proc_address(name);
+}
+
+static int iVideoMpvGLRender(IvideoSession* session, int force)
+{
+  IvideoMpv* context = (IvideoMpv*)session->context;
+  const IvideoGL* gl = session->gl;
+  mpv_opengl_fbo target;
+  mpv_render_param params[3];
+  int viewport[4] = {0, 0, 0, 0}, fbo = 0, flip = 1;
+  if (!context || !context->renderer)
+    return 0;
+  if (!(mpv_render_context_update(context->renderer) & MPV_RENDER_UPDATE_FRAME) && !force)
+    return 0;
+  gl->make_current(gl->ih);
+  context->get_integerv(0x0BA2, viewport);
+  context->get_integerv(0x8CA6, &fbo);
+  if (viewport[2] <= 0 || viewport[3] <= 0)
+    return 0;
+  target.fbo = fbo;
+  target.w = viewport[2];
+  target.h = viewport[3];
+  target.internal_format = 0;
+  params[0] = (mpv_render_param){MPV_RENDER_PARAM_OPENGL_FBO, &target};
+  params[1] = (mpv_render_param){MPV_RENDER_PARAM_FLIP_Y, &flip};
+  params[2] = (mpv_render_param){MPV_RENDER_PARAM_INVALID, NULL};
+  if (mpv_render_context_render(context->renderer, params) < 0)
+    return 0;
+  gl->swap_buffers(gl->ih);
+  mpv_render_context_report_swap(context->renderer);
+  return 1;
+}
+
+static int iVideoMpvGLCreate(IvideoMpv* context, const IvideoGL* gl)
+{
+  mpv_opengl_init_params init = {iVideoMpvProcAddress, (void*)gl};
+  mpv_render_param params[4];
+  const char* windowing = IupGetGlobal("WINDOWING");
+  int count = 0;
+  gl->make_current(gl->ih);
+  *(void**)&context->get_integerv = gl->get_proc_address("glGetIntegerv");
+  if (!context->get_integerv)
+    return 0;
+  params[count++] = (mpv_render_param){MPV_RENDER_PARAM_API_TYPE, (void*)MPV_RENDER_API_TYPE_OPENGL};
+  params[count++] = (mpv_render_param){MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &init};
+  if (iupStrEqual(windowing, "X11") && IupGetGlobal("XDISPLAY"))
+    params[count++] = (mpv_render_param){MPV_RENDER_PARAM_X11_DISPLAY, IupGetGlobal("XDISPLAY")};
+  else if (iupStrEqual(windowing, "WAYLAND") && IupGetGlobal("WL_DISPLAY"))
+    params[count++] = (mpv_render_param){MPV_RENDER_PARAM_WL_DISPLAY, IupGetGlobal("WL_DISPLAY")};
+  params[count] = (mpv_render_param){MPV_RENDER_PARAM_INVALID, NULL};
+  if (mpv_render_context_create(&context->renderer, context->player, params) < 0)
+    return 0;
+  mpv_render_context_set_update_callback(context->renderer, iVideoMpvWake, context);
+  return 1;
+}
+
 static void iVideoMpvClose(IvideoSession* session)
 {
   IvideoMpv* context = (IvideoMpv*)session->context;
@@ -142,6 +207,8 @@ static void iVideoMpvClose(IvideoSession* session)
   }
   if (context->renderer)
   {
+    if (session->gl)
+      session->gl->make_current(session->gl->ih);
     mpv_render_context_set_update_callback(context->renderer, NULL, NULL);
     mpv_render_context_free(context->renderer);
   }
@@ -178,17 +245,17 @@ static void iVideoMpvOption(char* option, void* user)
     mpv_set_option_string(player, name, value);
 }
 
-static int iVideoMpvRequired(mpv_handle* player)
+static int iVideoMpvRequired(mpv_handle* player, int gl)
 {
   const char* enabled[] = {"pause", "keep-open", "idle"};
-  const char* disabled[] = {"terminal", "osc", "audio-display", "video-rotate", "sub-auto"};
-  unsigned i;
+  const char* disabled[] = {"terminal", "osc", "audio-display", "sub-auto", "video-rotate"};
+  unsigned i, count = sizeof(disabled) / sizeof(disabled[0]) - (gl ? 1 : 0);
   for (i = 0; i < sizeof(enabled) / sizeof(enabled[0]); i++)
   {
     if (mpv_set_option_string(player, enabled[i], "yes") < 0)
       return 0;
   }
-  for (i = 0; i < sizeof(disabled) / sizeof(disabled[0]); i++)
+  for (i = 0; i < count; i++)
   {
     int status = mpv_set_option_string(player, disabled[i], "no");
     if (status < 0 && status != MPV_ERROR_OPTION_NOT_FOUND)
@@ -238,12 +305,15 @@ static int iVideoMpvOpen(IvideoSession* session, Ihandle* ih, const char* source
   mpv_set_option_string(context->player, "config", config ? "yes" : "no");
   mpv_set_option_string(context->player, "load-scripts", "no");
   mpv_set_option_string(context->player, "ytdl", "no");
-  mpv_set_option_string(context->player, "sws-fast", "yes");
+  if (session->gl)
+    mpv_set_option_string(context->player, "hwdec", "auto");
+  else
+    mpv_set_option_string(context->player, "sws-fast", "yes");
   if (session->audio_device)
     mpv_set_option_string(context->player, "audio-device", session->audio_device);
   if (options)
     iupVideoSplitOptions(options, iVideoMpvOption, context->player);
-  if (!iVideoMpvRequired(context->player))
+  if (!iVideoMpvRequired(context->player, session->gl != NULL))
   {
     iupVideoError(session, "Cannot configure mpv player");
     return 0;
@@ -256,20 +326,31 @@ static int iVideoMpvOpen(IvideoSession* session, Ihandle* ih, const char* source
   context->initialized = 1;
   if (options)
     iupVideoSplitOptions(options, iVideoMpvOption, context->player);
-  if ((config || options) && !iVideoMpvRequired(context->player))
+  if ((config || options) && !iVideoMpvRequired(context->player, session->gl != NULL))
   {
     iupVideoError(session, "Cannot configure mpv player");
     return 0;
   }
-  if (mpv_render_context_create(&context->renderer, context->player, params) < 0)
+  if (session->gl)
   {
-    iupVideoError(session, "Cannot create mpv software renderer");
-    return 0;
+    if (!iVideoMpvGLCreate(context, session->gl))
+    {
+      iupVideoError(session, "Cannot create mpv OpenGL renderer");
+      return 0;
+    }
   }
-  mpv_render_context_set_update_callback(context->renderer, iVideoMpvUpdate, context);
-  if (!ivideoThreadStart(&context->thread, iVideoMpvRender, context))
-    return 0;
-  context->started = 1;
+  else
+  {
+    if (mpv_render_context_create(&context->renderer, context->player, params) < 0)
+    {
+      iupVideoError(session, "Cannot create mpv software renderer");
+      return 0;
+    }
+    mpv_render_context_set_update_callback(context->renderer, iVideoMpvUpdate, context);
+    if (!ivideoThreadStart(&context->thread, iVideoMpvRender, context))
+      return 0;
+    context->started = 1;
+  }
   mpv_observe_property(context->player, IMPV_TIME_POS, "time-pos", MPV_FORMAT_DOUBLE);
   mpv_observe_property(context->player, IMPV_DURATION, "duration", MPV_FORMAT_DOUBLE);
   mpv_observe_property(context->player, IMPV_PAUSE, "pause", MPV_FORMAT_FLAG);
@@ -353,6 +434,17 @@ static void iVideoMpvFilters(IvideoMpv* context)
   char filter[256] = "";
   const char* value = filter;
   const int* adjust = context->adjust;
+  if (context->session->gl)
+  {
+    const char* names[IVIDEO_ADJUST_COUNT] = {"brightness", "contrast", "saturation", "gamma"};
+    int i;
+    for (i = 0; i < IVIDEO_ADJUST_COUNT; i++)
+    {
+      int64_t level = adjust[i];
+      mpv_set_property_async(context->player, 0, names[i], MPV_FORMAT_INT64, &level);
+    }
+    return;
+  }
   if (context->rotate == 90)
     strcpy(filter, "lavfi=[transpose=clock]");
   else if (context->rotate == 180)
@@ -466,11 +558,11 @@ static void iVideoMpvProperty(IvideoMpv* context, uint64_t id, void* data)
     break;
   case IMPV_DWIDTH:
     if (*(int64_t*)data > 0 && *(int64_t*)data <= INT_MAX)
-      context->info.width = (int)*(int64_t*)data;
+      context->display_width = (int)*(int64_t*)data;
     break;
   case IMPV_DHEIGHT:
     if (*(int64_t*)data > 0 && *(int64_t*)data <= INT_MAX)
-      context->info.height = (int)*(int64_t*)data;
+      context->display_height = (int)*(int64_t*)data;
     break;
   case IMPV_VID:
     context->info.video = *(int64_t*)data > 0;
@@ -520,6 +612,16 @@ static void iVideoMpvPoll(IvideoSession* session)
       if (property->data)
         iVideoMpvProperty(context, event->reply_userdata, property->data);
     }
+  }
+  if (session->gl && (context->rotate == 90 || context->rotate == 270))
+  {
+    context->info.width = context->display_height;
+    context->info.height = context->display_width;
+  }
+  else
+  {
+    context->info.width = context->display_width;
+    context->info.height = context->display_height;
   }
   if (context->info.width > 0 && context->info.height > 0)
   {
@@ -608,6 +710,87 @@ static int iVideoMpvSubtitleSelect(IvideoSession* session, int index, double del
   return 1;
 }
 
+static void iVideoMpvOverlay(IvideoMpv* context, const char* data, int width, int height)
+{
+  mpv_node values[6], command;
+  char* keys[6] = {"name", "id", "format", "data", "res_x", "res_y"};
+  mpv_node_list list;
+  memset(values, 0, sizeof(values));
+  values[0].format = MPV_FORMAT_STRING;
+  values[0].u.string = (char*)"osd-overlay";
+  values[1].format = MPV_FORMAT_INT64;
+  values[1].u.int64 = 1;
+  values[2].format = MPV_FORMAT_STRING;
+  values[2].u.string = (char*)(data ? "ass-events" : "none");
+  values[3].format = MPV_FORMAT_STRING;
+  values[3].u.string = (char*)(data ? data : "");
+  values[4].format = MPV_FORMAT_INT64;
+  values[4].u.int64 = width;
+  values[5].format = MPV_FORMAT_INT64;
+  values[5].u.int64 = height;
+  list.num = 6;
+  list.values = values;
+  list.keys = keys;
+  command.format = MPV_FORMAT_NODE_MAP;
+  command.u.list = &list;
+  mpv_command_node_async(context->player, 0, &command);
+}
+
+static int iVideoMpvSubtitleText(IvideoSession* session, const char* text, int size, const char* color)
+{
+  IvideoMpv* context = (IvideoMpv*)session->context;
+  unsigned char r = 255, g = 255, b = 255;
+  int width = session->canvas_width, height = session->canvas_height;
+  int picture_height = height;
+  size_t length, used;
+  char* data;
+  if (!session->gl)
+    return 0;
+  if (!text || !text[0] || width <= 0 || height <= 0)
+  {
+    iVideoMpvOverlay(context, NULL, 0, 0);
+    return 1;
+  }
+  if (context->info.aspect > 0)
+  {
+    if (context->info.aspect * height > width)
+      picture_height = (int)(width / context->info.aspect);
+  }
+  iupStrToRGB(color, &r, &g, &b);
+  length = strlen(text);
+  data = (char*)malloc(length * 4 + 160);
+  if (!data)
+    return 1;
+  used = (size_t)snprintf(data, 160, "{\\an2\\pos(%d,%d)\\fnSans\\b1\\fs%d\\bord1\\shad0\\1c&H%02X%02X%02X&\\3c&H000000&}",
+                          width / 2, (height + picture_height) / 2 - 10, size * 36 / 25, b, g, r);
+  for (; *text; text++)
+  {
+    if (*text == '\n')
+    {
+      data[used++] = '\\';
+      data[used++] = 'N';
+    }
+    else if (*text == '{' || *text == '}')
+    {
+      data[used++] = '\\';
+      data[used++] = *text;
+    }
+    else if (*text == '\\')
+    {
+      data[used++] = '\\';
+      data[used++] = (char)0xE2;
+      data[used++] = (char)0x81;
+      data[used++] = (char)0xA0;
+    }
+    else
+      data[used++] = *text;
+  }
+  data[used] = 0;
+  iVideoMpvOverlay(context, data, width, height);
+  free(data);
+  return 1;
+}
+
 static int iVideoMpvAudioDevices(IvideoAudioDevice** devices)
 {
   mpv_handle* player;
@@ -659,4 +842,4 @@ static void iVideoMpvAdjust(IvideoSession* session, const int* values)
   iVideoMpvFilters(context);
 }
 
-const IvideoBackend iupVideoMpvBackend = {"MPV", iVideoMpvLoad, iVideoMpvOpen, iVideoMpvClose, iVideoMpvPlay, iVideoMpvSeek, iVideoMpvVolume, iVideoMpvPoll, NULL, iVideoMpvSubtitleCount, iVideoMpvSubtitleName, iVideoMpvSubtitleSelect, NULL, 1, iVideoMpvAudioDevices, iVideoMpvAudioDevice, iVideoMpvAdjust};
+const IvideoBackend iupVideoMpvBackend = {"MPV", iVideoMpvLoad, iVideoMpvOpen, iVideoMpvClose, iVideoMpvPlay, iVideoMpvSeek, iVideoMpvVolume, iVideoMpvPoll, NULL, iVideoMpvSubtitleCount, iVideoMpvSubtitleName, iVideoMpvSubtitleSelect, iVideoMpvSubtitleText, 1, iVideoMpvAudioDevices, iVideoMpvAudioDevice, iVideoMpvAdjust, iVideoMpvGLRender};

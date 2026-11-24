@@ -174,6 +174,7 @@ API reference for IUP (Portable User Interface).
 | [IupWebBrowser](ctrl/iup_web.md)                                                                                      | Embedded web browser view                               | iupweb (`web`)     |
 | [IupAudio](ctrl/iup_audio.md)                                                                                         | Audio file player                                       | iupmedia (`media`) |
 | [IupVideo](ctrl/iup_video.md)                                                                                         | Video player                                            | iupmedia (`media`) |
+| [IupGLVideo](ctrl/iup_glvideo.md)                                                                                     | Video player on an OpenGL canvas                        | iupmedia (`media`) |
 | [IupCamera](ctrl/iup_camera.md)                                                                                       | Live camera picture                                     | iupmedia (`media`) |
 | [IupMicrophone](ctrl/iup_microphone.md)                                                                               | Audio capture and WAV recording                         | iupmedia (`media`) |
 | [IupMatrix](ctrl/iup_matrix.md) ([Attributes](ctrl/iup_matrix_attrib.md), [Callbacks](ctrl/iup_matrix_cb.md))         | Custom-drawn matrix of alphanumeric cells               | iupctrl (`ctrl`)   |

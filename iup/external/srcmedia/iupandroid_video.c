@@ -379,7 +379,7 @@ char* iupdrvVideoReadSubtitle(const char* filename)
   return text;
 }
 
-static const IvideoBackend androidVideoBackend = {"NATIVE", androidVideoAvailable, androidVideoOpen, androidVideoClose, androidVideoPlay, androidVideoSeek, androidVideoVolume, androidVideoPoll, androidVideoLayout, androidVideoSubtitleCount, androidVideoSubtitleName, androidVideoSubtitleSelect, androidVideoSubtitleText, 1, androidVideoAudioDevices, androidVideoAudioDevice, NULL};
+static const IvideoBackend androidVideoBackend = {"NATIVE", androidVideoAvailable, androidVideoOpen, androidVideoClose, androidVideoPlay, androidVideoSeek, androidVideoVolume, androidVideoPoll, androidVideoLayout, androidVideoSubtitleCount, androidVideoSubtitleName, androidVideoSubtitleSelect, androidVideoSubtitleText, 1, androidVideoAudioDevices, androidVideoAudioDevice, NULL, NULL};
 
 const IvideoBackend* iupdrvVideoBackend(int index)
 {

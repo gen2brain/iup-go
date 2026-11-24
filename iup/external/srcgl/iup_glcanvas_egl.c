@@ -1227,6 +1227,10 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
   }
 
   iupEGLBackendPreSwapBuffers(ih, gldata);
+#ifdef IUP_EGL_HAS_WAYLAND
+  if (gldata->egl_window)
+    eglSwapInterval(gldata->display, 0);
+#endif
   eglSwapBuffers(gldata->display, gldata->surface);
   iupEGLBackendPostSwapBuffers(ih, gldata);
 }

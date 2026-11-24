@@ -795,7 +795,7 @@ static const IvideoBackend iappleVideoBackend = {"NATIVE", iappleVideoAvailable,
 #else
   iappleVideoAudioDevices, iappleVideoAudioDevice,
 #endif
-  iappleVideoAdjust};
+  iappleVideoAdjust, NULL};
 
 #if TARGET_OS_IPHONE
 const IvideoBackend* iupdrvVideoBackend(int index)
