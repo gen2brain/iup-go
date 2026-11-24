@@ -188,6 +188,7 @@ static void (*iupgst_g_object_set)(void*, const char*, ...);
 static void (*iupgst_g_object_get)(void*, const char*, ...);
 static void (*iupgst_g_object_unref)(void*);
 static void* (*iupgst_g_object_ref_sink)(void*);
+static unsigned long (*iupgst_g_signal_connect_data)(void*, const char*, void (*)(void), void*, void*, int);
 static void (*iupgst_g_error_free)(GError*);
 static void (*iupgst_g_free)(void*);
 static char* (*iupgst_g_canonicalize_filename)(const char*, const char*);
@@ -245,6 +246,7 @@ static unsigned (*iupgst_plugin_feature_get_rank)(GstPluginFeature*);
 #define g_object_get iupgst_g_object_get
 #define g_object_unref iupgst_g_object_unref
 #define g_object_ref_sink iupgst_g_object_ref_sink
+#define g_signal_connect_data iupgst_g_signal_connect_data
 #define g_error_free iupgst_g_error_free
 #define g_free iupgst_g_free
 #define g_canonicalize_filename iupgst_g_canonicalize_filename
@@ -386,6 +388,7 @@ static int iupGstOpen(void)
     *(void**)&iupgst_g_object_get = iupGstSymbol(handles[2], "g_object_get", &missing);
     *(void**)&iupgst_g_object_unref = iupGstSymbol(handles[2], "g_object_unref", &missing);
     *(void**)&iupgst_g_object_ref_sink = iupGstSymbol(handles[2], "g_object_ref_sink", &missing);
+    *(void**)&iupgst_g_signal_connect_data = iupGstSymbol(handles[2], "g_signal_connect_data", &missing);
     *(void**)&iupgst_g_error_free = iupGstSymbol(handles[3], "g_error_free", &missing);
     *(void**)&iupgst_g_free = iupGstSymbol(handles[3], "g_free", &missing);
     *(void**)&iupgst_g_canonicalize_filename = iupGstSymbol(handles[3], "g_canonicalize_filename", &missing);

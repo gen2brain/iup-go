@@ -24,6 +24,7 @@ typedef struct
   GstElement* gamma;
   GstElement* scaler;
   GstElement* size;
+  GstElement* channels;
   int size_width, size_height, size_format;
   GstBus* bus;
   int play, buffering, live;
@@ -198,6 +199,25 @@ static GstElement* iVideoGstAudioSink(const char* id)
   return sink;
 }
 
+static void iVideoGstElementSetup(GstElement* player, GstElement* element, void* opaque)
+{
+  IvideoGst* context = (IvideoGst*)opaque;
+  GstElementFactory* alsa = gst_element_factory_find("alsasink");
+  (void)player;
+  if (!alsa)
+    return;
+  if (gst_element_get_factory(element) == alsa)
+  {
+    GstCaps* caps = gst_caps_from_string("audio/x-raw,channels=(int)[1,2]");
+    if (caps)
+    {
+      g_object_set(context->channels, "caps", caps, NULL);
+      gst_mini_object_unref((GstMiniObject*)caps);
+    }
+  }
+  g_object_unref(alsa);
+}
+
 static void iVideoGstClose(IvideoSession* session)
 {
   IvideoGst* context = (IvideoGst*)session->context;
@@ -222,6 +242,8 @@ static void iVideoGstClose(IvideoSession* session)
     g_object_unref(context->scaler);
   if (context->size)
     g_object_unref(context->size);
+  if (context->channels)
+    g_object_unref(context->channels);
   if (context->player)
     g_object_unref(context->player);
   free(context);
@@ -232,6 +254,7 @@ static int iVideoGstOpen(IvideoSession* session, Ihandle* ih, const char* source
 {
   IvideoGst* context;
   GstElement* flip;
+  GstElement* downmix;
   GstAppSinkCallbacks callbacks;
   GstCaps* caps;
   GstStateChangeReturn result;
@@ -291,6 +314,14 @@ static int iVideoGstOpen(IvideoSession* session, Ihandle* ih, const char* source
       g_object_set(context->player, "audio-sink", audio, NULL);
       g_object_unref(audio);
     }
+  }
+  downmix = iVideoGstParseBin("audioconvert ! capsfilter name=channels");
+  if (downmix)
+  {
+    context->channels = gst_bin_get_by_name((GstBin*)downmix, "channels");
+    g_object_set(context->player, "audio-filter", downmix, NULL);
+    if (context->channels)
+      g_signal_connect_data(context->player, "element-setup", (void (*)(void))iVideoGstElementSetup, context, NULL, 0);
   }
   flip = NULL;
   if (iVideoGstHasElement("vapostproc"))
