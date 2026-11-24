@@ -74,6 +74,8 @@ To create an `.app` bundle, see [Packaging](#packaging).
 
 On Linux, you need a C/C++ compiler and the GTK or Qt development packages.
 
+For the `GLCanvas` control, libraries are loaded at runtime. You do not need to install `OpenGL` development packages.
+
 ##### GTK
 
 ###### GTK3 (default)
@@ -89,8 +91,6 @@ On Linux, you need a C/C++ compiler and the GTK or Qt development packages.
 You can also build for GTK2.
 
 For the `WebBrowser` control, libraries are loaded at runtime. You do not need to install `WebKitGTK` development packages.
-
-For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
 
 [<img src="examples/sample/sample_gtk3.png" width="700"/>](examples/sample/sample_gtk3.png)
 
@@ -115,8 +115,6 @@ For the `WebBrowser` control, install `qt6-webengine-dev` or `qt6-qtwebengine-de
 * Debian/Ubuntu: `apt-get install qt6-declarative-dev`
 * RedHat/Fedora: `dnf install qt6-qtdeclarative-devel`
 
-For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
-
 [<img src="examples/sample/sample_qml.png" width="700"/>](examples/sample/sample_qml.png)
 
 ##### FLTK
@@ -130,8 +128,6 @@ FLTK does not ship a pkg-config file. On Debian/Ubuntu pass the compiler flags f
 
     CGO_CXXFLAGS="$(fltk-config --cxxflags)" go build -tags fltk
 
-For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
-
 [<img src="examples/sample/sample_fltk.png" width="700"/>](examples/sample/sample_fltk.png)
 
 ##### EFL
@@ -141,8 +137,6 @@ For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
 
 EFL needs this [patch](https://gist.github.com/gen2brain/8ed03d6eef620cc25007b5d7a5cc5779) applied.
 You can still compile with distro packages, but you will not be able to open any modal window.
-
-For the `GLCanvas` control, install `libegl-dev libgl-dev` or `libglvnd-devel`.
 
 [<img src="examples/sample/sample_efl.png" width="700"/>](examples/sample/sample_efl.png)
 
@@ -158,8 +152,6 @@ You can also compile for a time-tested [Motif](https://en.wikipedia.org/wiki/Mot
 * RedHat/Fedora: `dnf install motif-devel libXpm-devel`
 
 To compile with [Xft](https://en.wikipedia.org/wiki/Xft) support, install `libxft-dev` or `libXft-devel`.
-
-For the `GLCanvas` control, install `libgl-dev` or `libglvnd-devel`.
 
 [<img src="examples/sample/sample_motif.png" width="700"/>](examples/sample/sample_motif.png)
 

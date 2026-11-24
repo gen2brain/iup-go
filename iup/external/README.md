@@ -188,8 +188,7 @@ emcc app.c build/wasm/libiup.a -Iinclude -sEMULATE_FUNCTION_POINTER_CASTS=1 -sAL
 This builds the static library only. To build and run a complete app (C or Go) in the browser, use `wasm/build-wasm.sh`; see [wasm/README.md](wasm/README.md).
 
 **OpenGL** (`IUP_BUILD_GL`):
-GTK3/GTK4/Qt/Qt Quick/EFL/FLTK use EGL on Linux: `libegl-dev libgl-dev` or `libglvnd-devel`.
-Motif/GTK2 use GLX: `libgl-dev` or `libglvnd-devel`.
+GTK3/GTK4/Qt/Qt Quick/EFL/FLTK use EGL and Motif/GTK2 use GLX on Linux, loaded at runtime (no extra deps).
 Windows uses WGL, macOS uses OpenGL framework (no extra deps).
 Android uses EGL + GLES v3 from the NDK (no extra deps).
 iOS uses EAGL + CAEAGLLayer from OpenGLES framework (no extra deps).
