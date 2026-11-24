@@ -44,7 +44,7 @@ Supported by "VLC", "MPV" and "NATIVE" in macOS, iOS and Android. "AUTO" skips t
 
 **MPVOPTIONS** (non-inheritable): Additional mpv options applied when "MPV" loads the source, after the configuration loaded by MPVCONFIG. Options are separated by spaces, each "name=value", "name" (same as "name=yes") or "no-name" (same as "name=no"), with an optional leading "--". Double quotes keep spaces in a value. Unknown options are ignored.
 The options IupVideo needs to render and control playback, such as "vo", "pause", "idle" and "keep-open", cannot be changed.
-IupVideo sets "sws-fast=yes" before MPVCONFIG and MPVOPTIONS apply, so both can change it.
+IupVideo sets "hwdec=auto" and "sws-fast=yes" before MPVCONFIG and MPVOPTIONS apply, so both can change them.
 
 **VLCCONFIG** (non-inheritable): Loads the user VLC configuration (vlcrc) when "VLC" loads the source. Can be "YES" or "NO". Default: "NO".
 VLC writes the configuration file again when the source is closed; options from VLCOPTIONS are not saved to it.
