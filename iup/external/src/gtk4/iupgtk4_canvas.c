@@ -237,44 +237,10 @@ static void gtk4CanvasButtonPressed(GtkGestureClick* gesture, int n_press, doubl
 
 static int gtk4CanvasSetBgColorAttrib(Ihandle* ih, const char* value);
 
-static void gtk4CanvasGLComposite(Ihandle* ih, cairo_t* cr, int width, int height)
-{
-  unsigned char* px = (unsigned char*)iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS");
-  int pw = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W");
-  int ph = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_H");
-  cairo_surface_t* s;
-
-  if (!px || pw <= 0 || ph <= 0)
-    return;
-
-  s = cairo_image_surface_create_for_data(px, CAIRO_FORMAT_ARGB32, pw, ph,
-                                          cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, pw));
-  cairo_save(cr);
-  if (pw != width || ph != height)
-    cairo_scale(cr, (double)width/pw, (double)height/ph);
-  cairo_set_source_surface(cr, s, 0, 0);
-  cairo_paint(cr);
-  cairo_restore(cr);
-  cairo_surface_destroy(s);
-}
-
 static void gtk4CanvasDraw(GtkDrawingArea* area, cairo_t* cr, int width, int height, Ihandle* ih)
 {
   IFn cb = (IFn)IupGetCallback(ih,"ACTION");
   cairo_surface_t* buffer;
-
-  if (iupAttribGet(ih, "_IUPGL_COMPOSITE"))
-  {
-    iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
-    iupAttribSet(ih, "_IUPGTK4_IN_DRAW", "1");
-    if (cb && !(ih->data->inside_resize))
-      cb(ih);
-    iupAttribSet(ih, "_IUPGTK4_IN_DRAW", NULL);
-    iupAttribSet(ih, "_IUPGL_IN_DRAW", NULL);
-    gtk4CanvasGLComposite(ih, cr, width, height);
-    (void)area;
-    return;
-  }
 
   buffer = (cairo_surface_t*)iupAttribGet(ih, "_IUPGTK4_CANVAS_BUFFER");
   if (buffer && !iupgtk4SurfaceMatches(buffer, GTK_WIDGET(area), width, height))
@@ -446,13 +412,65 @@ static int gtk4CanvasUpdateRetained(Ihandle* ih, iupGtk4Canvas* canvas, int widt
   return texture != NULL;
 }
 
+static void gtk4CanvasGLSnapshot(Ihandle* ih, GtkWidget* widget, GtkSnapshot* snapshot)
+{
+  IFn cb = (IFn)IupGetCallback(ih, "ACTION");
+  int width = gtk_widget_get_width(widget);
+  int height = gtk_widget_get_height(widget);
+  GdkTexture* texture;
+
+  if (width <= 0 || height <= 0)
+    return;
+
+  if (!iupAttribGet(ih, "_IUPGL_COMPOSITE_FRESH"))
+  {
+    iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
+    iupAttribSet(ih, "_IUPGTK4_IN_DRAW", "1");
+    if (cb && !(ih->data->inside_resize))
+      cb(ih);
+    iupAttribSet(ih, "_IUPGTK4_IN_DRAW", NULL);
+    iupAttribSet(ih, "_IUPGL_IN_DRAW", NULL);
+  }
+  iupAttribSet(ih, "_IUPGL_COMPOSITE_FRESH", NULL);
+
+  texture = (GdkTexture*)iupAttribGet(ih, "_IUPGL_COMPOSITE_TEXTURE");
+  if (texture)
+  {
+    gtk_snapshot_save(snapshot);
+    gtk_snapshot_translate(snapshot, &GRAPHENE_POINT_INIT(0, height));
+    gtk_snapshot_scale(snapshot, 1, -1);
+    gtk_snapshot_append_texture(snapshot, texture, &GRAPHENE_RECT_INIT(0, 0, width, height));
+    gtk_snapshot_restore(snapshot);
+  }
+  else
+  {
+    unsigned char* px = (unsigned char*)iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS");
+    int pw = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W");
+    int ph = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_H");
+    if (px && pw > 0 && ph > 0)
+    {
+      GBytes* bytes = g_bytes_new(px, (gsize)pw * ph * 4);
+      texture = gdk_memory_texture_new(pw, ph, GDK_MEMORY_B8G8R8A8_PREMULTIPLIED, bytes, (gsize)pw * 4);
+      g_bytes_unref(bytes);
+      gtk_snapshot_append_texture(snapshot, texture, &GRAPHENE_RECT_INIT(0, 0, width, height));
+      g_object_unref(texture);
+    }
+  }
+}
+
 static void iup_gtk4_canvas_snapshot(GtkWidget* widget, GtkSnapshot* snapshot)
 {
   iupGtk4Canvas* canvas = (iupGtk4Canvas*)widget;
   Ihandle* ih = canvas->ih;
   int width, height;
 
-  if (!ih || !iupAttribGet(ih, "_IUPGTK4_RETAIN") || iupAttribGet(ih, "_IUPGL_COMPOSITE"))
+  if (ih && iupAttribGet(ih, "_IUPGL_COMPOSITE"))
+  {
+    gtk4CanvasGLSnapshot(ih, widget, snapshot);
+    return;
+  }
+
+  if (!ih || !iupAttribGet(ih, "_IUPGTK4_RETAIN"))
   {
     GTK_WIDGET_CLASS(iup_gtk4_canvas_parent_class)->snapshot(widget, snapshot);
     return;

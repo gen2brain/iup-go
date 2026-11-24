@@ -9,6 +9,13 @@
 #include <QQuickWindow>
 #include <QSGSimpleTextureNode>
 #include <QSGTexture>
+#include <QSGRendererInterface>
+#include <QRunnable>
+#if QT_CONFIG(opengl)
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
+#include <QtQuick/qsgtexture_platform.h>
+#endif
 #include <QPainter>
 #include <QPixmap>
 #include <QImage>
@@ -76,9 +83,13 @@ public:
   bool buffer_dirty;
   bool mapped;
   bool resize_pending;
+  bool gl_texture;
   QImage image;
+  struct GLTexture { unsigned int id = 0; QSGTexture* texture = nullptr; QSize size; };
+  GLTexture gl_textures[2];
+  int gl_next = 0;
 
-  IupQmlCanvas(Ihandle* handle) : QQuickItem(), ih(handle), texture_dirty(true), needs_action(true), action_queued(false), buffer_dirty(false), mapped(false), resize_pending(false)
+  IupQmlCanvas(Ihandle* handle) : QQuickItem(), ih(handle), texture_dirty(true), needs_action(true), action_queued(false), buffer_dirty(false), mapped(false), resize_pending(false), gl_texture(false)
   {
     setFlag(ItemHasContents, true);
     setAcceptedMouseButtons(Qt::AllButtons);
@@ -145,11 +156,24 @@ public:
     if (iupAttribGet(ih, "_IUPGL_COMPOSITE"))
     {
       IFn cb = static_cast<IFn>(IupGetCallback(ih, "ACTION"));
-      iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
-      if (cb && !ih->data->inside_resize)
-        cb(ih);
-      iupAttribSet(ih, "_IUPGL_IN_DRAW", nullptr);
+      bool opengl = window() && window()->rendererInterface()->graphicsApi() == QSGRendererInterface::OpenGL;
+      iupAttribSet(ih, "_IUPQML_OPENGL", opengl ? "1" : nullptr);
+      if (!iupAttribGet(ih, "_IUPGL_COMPOSITE_FRESH"))
+      {
+        iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
+        if (cb && !ih->data->inside_resize)
+          cb(ih);
+        iupAttribSet(ih, "_IUPGL_IN_DRAW", nullptr);
+      }
+      iupAttribSet(ih, "_IUPGL_COMPOSITE_FRESH", nullptr);
       needs_action = false;
+
+      gl_texture = iupAttribGet(ih, "_IUPGL_COMPOSITE_DMABUF") != nullptr;
+      if (gl_texture)
+      {
+        update();
+        return;
+      }
 
       auto* px = reinterpret_cast<unsigned char*>(iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS"));
       int pw = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W");
@@ -216,14 +240,87 @@ protected:
     }
   }
 
+#if QT_CONFIG(opengl)
+  QSGTexture* importTexture()
+  {
+    typedef unsigned int (*ImportFunc)(Ihandle*);
+    auto import = reinterpret_cast<ImportFunc>(iupAttribGet(ih, "_IUPGL_COMPOSITE_IMPORT_CB"));
+    QSize size(iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W"), iupAttribGetInt(ih, "_IUPGL_COMPOSITE_H"));
+    unsigned int id = import ? import(ih) : 0;
+    if (!id)
+      return nullptr;
+
+    for (auto& entry : gl_textures)
+    {
+      if (entry.id == id && entry.size == size)
+        return entry.texture;
+    }
+
+    GLTexture& entry = gl_textures[gl_next];
+    gl_next = !gl_next;
+    delete entry.texture;
+    if (entry.id && entry.id != id && entry.id != gl_textures[gl_next].id)
+      QOpenGLContext::currentContext()->functions()->glDeleteTextures(1, &entry.id);
+    entry.id = id;
+    entry.size = size;
+    entry.texture = QNativeInterface::QSGOpenGLTexture::fromNative(id, window(), size, QQuickWindow::TextureIsOpaque);
+    return entry.texture;
+  }
+
+  void releaseResources() override
+  {
+    QQuickWindow* win = window();
+    GLTexture textures[2] = {gl_textures[0], gl_textures[1]};
+    gl_textures[0] = gl_textures[1] = GLTexture();
+    if (!win || (!textures[0].texture && !textures[1].texture))
+      return;
+    win->scheduleRenderJob(QRunnable::create([textures]() {
+      for (const auto& entry : textures)
+      {
+        delete entry.texture;
+        if (entry.id && QOpenGLContext::currentContext())
+          QOpenGLContext::currentContext()->functions()->glDeleteTextures(1, &entry.id);
+      }
+    }), QQuickWindow::BeforeSynchronizingStage);
+  }
+#endif
+
   QSGNode* updatePaintNode(QSGNode* old_node, UpdatePaintNodeData*) override
   {
     auto* node = static_cast<QSGSimpleTextureNode*>(old_node);
+
+#if QT_CONFIG(opengl)
+    if (gl_texture && ih)
+    {
+      QSGTexture* texture = importTexture();
+      if (texture)
+      {
+        if (node && node->ownsTexture())
+        {
+          delete node;
+          node = nullptr;
+        }
+        if (!node)
+          node = new QSGSimpleTextureNode();
+        node->setTexture(texture);
+        node->setTextureCoordinatesTransform(QSGSimpleTextureNode::MirrorVertically);
+        node->setRect(boundingRect());
+        node->markDirty(QSGNode::DirtyMaterial);
+        return node;
+      }
+    }
+#endif
 
     if (image.isNull())
     {
       delete node;
       return nullptr;
+    }
+
+    if (node && !node->ownsTexture())
+    {
+      delete node;
+      node = nullptr;
     }
 
     if (!node)

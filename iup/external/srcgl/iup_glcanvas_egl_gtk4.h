@@ -62,8 +62,7 @@ static void iupEGLBackendGetScaleAndSize(Ihandle* ih, IGlControlData* gldata, in
   }
   if (*scale < 1) *scale = 1;
 
-#ifdef GDK_WINDOWING_WAYLAND
-  if (gldata->subsurface)
+  if (gldata->subsurface || gldata->use_composite)
   {
     if (ih->handle && GTK_IS_WIDGET(ih->handle))
     {
@@ -77,7 +76,6 @@ static void iupEGLBackendGetScaleAndSize(Ihandle* ih, IGlControlData* gldata, in
     }
   }
   else
-#endif
   {
     if (gdk_surface && GDK_IS_SURFACE(gdk_surface))
     {
@@ -437,7 +435,12 @@ static void iupEGLBackendGetWaylandMaxPhysicalSize(Ihandle* ih, IGlControlData* 
 
 static void iupEGLBackendCleanup(Ihandle* ih, IGlControlData* gldata)
 {
-  (void)ih;
+  GdkTexture* texture = (GdkTexture*)iupAttribGet(ih, "_IUPGL_COMPOSITE_TEXTURE");
+  if (texture)
+  {
+    iupAttribSet(ih, "_IUPGL_COMPOSITE_TEXTURE", NULL);
+    g_object_unref(texture);
+  }
   gldata->backend_handle = NULL;
 }
 
@@ -466,7 +469,150 @@ static void iupEGLBackendQueueComposite(Ihandle* ih, IGlControlData* gldata)
 {
   (void)gldata;
   if (!iupAttribGet(ih, "_IUPGL_IN_DRAW") && ih->handle && GTK_IS_WIDGET(ih->handle))
+  {
+    iupAttribSet(ih, "_IUPGL_COMPOSITE_FRESH", "1");
     gtk_widget_queue_draw((GtkWidget*)ih->handle);
+  }
 }
+
+#if GTK_CHECK_VERSION(4, 14, 0)
+#define IUP_EGL_HAS_PRESENT_DMABUF
+
+#define IUP_DRM_FORMAT_ABGR8888 0x34324241
+#define IUP_DRM_FORMAT_XBGR8888 0x34324258
+#define IUP_DRM_FORMAT_ARGB8888 0x34325241
+#define IUP_DRM_FORMAT_XRGB8888 0x34325258
+
+typedef struct _IGtk4DmabufFds
+{
+  int count;
+  int fds[4];
+} IGtk4DmabufFds;
+
+static void eGLCanvasGtk4ReleaseDmabuf(gpointer data)
+{
+  IGtk4DmabufFds* fds = (IGtk4DmabufFds*)data;
+  int i;
+  for (i = 0; i < fds->count; i++)
+    close(fds->fds[i]);
+  g_free(fds);
+}
+
+static GdkTexture* eGLCanvasGtk4DmabufTexture(Ihandle* ih, const IGlDmabuf* dmabuf, int width, int height)
+{
+  GdkDisplay* display;
+  GdkDmabufFormats* formats;
+  GdkDmabufTextureBuilder* builder;
+  GdkTexture* texture;
+  IGtk4DmabufFds* fds;
+  guint32 fourcc = (guint32)dmabuf->fourcc;
+  int i;
+
+  if (!ih->handle || !GTK_IS_WIDGET(ih->handle))
+    return NULL;
+
+  display = gtk_widget_get_display((GtkWidget*)ih->handle);
+  formats = gdk_display_get_dmabuf_formats(display);
+
+  if (fourcc == IUP_DRM_FORMAT_ABGR8888 && gdk_dmabuf_formats_contains(formats, IUP_DRM_FORMAT_XBGR8888, dmabuf->modifier))
+    fourcc = IUP_DRM_FORMAT_XBGR8888;
+  else if (fourcc == IUP_DRM_FORMAT_ARGB8888 && gdk_dmabuf_formats_contains(formats, IUP_DRM_FORMAT_XRGB8888, dmabuf->modifier))
+    fourcc = IUP_DRM_FORMAT_XRGB8888;
+  if (!gdk_dmabuf_formats_contains(formats, fourcc, dmabuf->modifier))
+    return NULL;
+
+  fds = g_new0(IGtk4DmabufFds, 1);
+  builder = gdk_dmabuf_texture_builder_new();
+  gdk_dmabuf_texture_builder_set_display(builder, display);
+  gdk_dmabuf_texture_builder_set_width(builder, (unsigned)width);
+  gdk_dmabuf_texture_builder_set_height(builder, (unsigned)height);
+  gdk_dmabuf_texture_builder_set_fourcc(builder, fourcc);
+  gdk_dmabuf_texture_builder_set_modifier(builder, dmabuf->modifier);
+  gdk_dmabuf_texture_builder_set_n_planes(builder, (unsigned)dmabuf->planes);
+  for (i = 0; i < dmabuf->planes; i++)
+  {
+    int fd = dup(dmabuf->fds[i]);
+    if (fd < 0)
+      break;
+    fds->fds[fds->count++] = fd;
+    gdk_dmabuf_texture_builder_set_fd(builder, (unsigned)i, fd);
+    gdk_dmabuf_texture_builder_set_stride(builder, (unsigned)i, (unsigned)dmabuf->strides[i]);
+    gdk_dmabuf_texture_builder_set_offset(builder, (unsigned)i, (unsigned)dmabuf->offsets[i]);
+  }
+  if (fds->count != dmabuf->planes)
+  {
+    g_object_unref(builder);
+    eGLCanvasGtk4ReleaseDmabuf(fds);
+    return NULL;
+  }
+
+  texture = gdk_dmabuf_texture_builder_build(builder, eGLCanvasGtk4ReleaseDmabuf, fds, NULL);
+  g_object_unref(builder);
+  if (!texture)
+    eGLCanvasGtk4ReleaseDmabuf(fds);
+  return texture;
+}
+
+static int iupEGLBackendPresentDmabuf(Ihandle* ih, IGlControlData* gldata, const IGlDmabuf* dmabuf, int width, int height)
+{
+  GdkTexture* texture = dmabuf ? eGLCanvasGtk4DmabufTexture(ih, dmabuf, width, height) : NULL;
+  GdkTexture* old = (GdkTexture*)iupAttribGet(ih, "_IUPGL_COMPOSITE_TEXTURE");
+  iupAttribSet(ih, "_IUPGL_COMPOSITE_TEXTURE", (char*)texture);
+  if (old)
+    g_object_unref(old);
+  if (!texture)
+    return 0;
+
+  iupEGLBackendQueueComposite(ih, gldata);
+  return 1;
+}
+
+/* pixels: the same frame read back, BGRA, top row first. Returns 0 when the frame is one flat color and cannot tell. */
+static int iupEGLBackendCheckDmabuf(Ihandle* ih, const IGlDmabuf* dmabuf, int width, int height, const unsigned char* pixels)
+{
+  GdkTexture* texture;
+  unsigned char* data;
+  size_t stride = (size_t)width * 4;
+  int x, y, c, flat = 1, same = 1;
+  int step_x = width / 64 + 1, step_y = height / 64 + 1;
+
+  for (y = 0; y < height && flat; y += step_y)
+  {
+    for (x = 0; x < width && flat; x += step_x)
+      flat = memcmp(pixels + (size_t)y * stride + (size_t)x * 4, pixels, 3) == 0;
+  }
+  if (flat)
+    return 0;
+
+  texture = eGLCanvasGtk4DmabufTexture(ih, dmabuf, width, height);
+  if (!texture)
+    return -1;
+
+  data = (unsigned char*)calloc((size_t)height, stride);
+  if (!data)
+  {
+    g_object_unref(texture);
+    return -1;
+  }
+  gdk_texture_download(texture, data, stride);
+  g_object_unref(texture);
+
+  for (y = 0; y < height && same; y += step_y)
+  {
+    const unsigned char* row = data + (size_t)(height - 1 - y) * stride;
+    for (x = 0; x < width && same; x += step_x)
+    {
+      for (c = 0; c < 3; c++)
+      {
+        int d = row[x * 4 + c] - pixels[(size_t)y * stride + (size_t)x * 4 + c];
+        if (d < -2 || d > 2)
+          same = 0;
+      }
+    }
+  }
+  free(data);
+  return same ? 1 : -1;
+}
+#endif
 
 #endif

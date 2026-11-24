@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <GL/gl.h>
 #include <EGL/egl.h>
@@ -117,6 +118,14 @@ struct wl_subcompositor;
 struct wl_registry;
 struct wl_event_queue;
 
+typedef struct _IGlDmabuf
+{
+  int planes, fourcc;
+  int fds[4], strides[4], offsets[4];
+  unsigned long long modifier;
+  unsigned int serial;
+} IGlDmabuf;
+
 typedef struct _IGlControlData
 {
   EGLDisplay display;
@@ -131,8 +140,11 @@ typedef struct _IGlControlData
   int last_logical_height;
 
   int use_composite;
-  unsigned int fbo, color_tex, depth_rbo;
+  unsigned int fbo, color_tex[2], depth_rbo;
   int fbo_w, fbo_h;
+  int color_back, present;
+  IGlDmabuf dmabuf[2];
+  unsigned int import_tex[2], import_serial[2];
   unsigned char* composite_pixels;   /* BGRA, top-left */
   size_t composite_cap;
 
@@ -165,6 +177,9 @@ static void eGLCanvasGetActualSize(Ihandle* ih, IGlControlData* gldata, int* phy
 #endif
 #ifndef GL_BGRA
 #define GL_BGRA 0x80E1
+#endif
+#ifndef GL_TEXTURE_BINDING_2D
+#define GL_TEXTURE_BINDING_2D 0x8069
 #endif
 #ifndef GL_CLAMP_TO_EDGE
 #define GL_CLAMP_TO_EDGE 0x812F
@@ -209,6 +224,29 @@ static int eGLLoadFBOProcs(void)
   return eGLGenFramebuffers && eGLBindFramebuffer && eGLFramebufferTexture2D && eGLCheckFramebufferStatus && eGLGenRenderbuffers && eGLRenderbufferStorage && eGLFramebufferRenderbuffer;
 }
 
+static void eGLCompositeCloseDmabuf(IGlControlData* gldata, int index)
+{
+  IGlDmabuf* dmabuf = &gldata->dmabuf[index];
+  int i;
+  for (i = 0; i < dmabuf->planes; i++)
+    close(dmabuf->fds[i]);
+  dmabuf->planes = 0;
+}
+
+static void eGLCompositeTexture(IGlControlData* gldata, int index, int w, int h)
+{
+  if (!gldata->color_tex[index]) glGenTextures(1, &gldata->color_tex[index]);
+  eGLCompositeCloseDmabuf(gldata, index);
+
+  glBindTexture(GL_TEXTURE_2D, gldata->color_tex[index]);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 static int eGLCompositeEnsureFBO(IGlControlData* gldata, int w, int h)
 {
   if (w < 1) w = 1;
@@ -221,23 +259,18 @@ static int eGLCompositeEnsureFBO(IGlControlData* gldata, int w, int h)
     return 0;
 
   if (!gldata->fbo)       eGLGenFramebuffers(1, &gldata->fbo);
-  if (!gldata->color_tex) glGenTextures(1, &gldata->color_tex);
   if (!gldata->depth_rbo) eGLGenRenderbuffers(1, &gldata->depth_rbo);
 
-  glBindTexture(GL_TEXTURE_2D, gldata->color_tex);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glBindTexture(GL_TEXTURE_2D, 0);
+  eGLCompositeTexture(gldata, gldata->color_back, w, h);
+  if (gldata->color_tex[!gldata->color_back])
+    eGLCompositeTexture(gldata, !gldata->color_back, w, h);
 
   eGLBindRenderbuffer(GL_RENDERBUFFER, gldata->depth_rbo);
   eGLRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
   eGLBindRenderbuffer(GL_RENDERBUFFER, 0);
 
   eGLBindFramebuffer(GL_FRAMEBUFFER, gldata->fbo);
-  eGLFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gldata->color_tex, 0);
+  eGLFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gldata->color_tex[gldata->color_back], 0);
   eGLFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, gldata->depth_rbo);
 
   if (eGLCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -341,6 +374,8 @@ static void eGLCopyWaylandSubsurface(struct IGlWaylandSubsurface* ws, IGlControl
  *   iupEGLBackendPreSwapBuffers           - Pre-swap handling
  *   iupEGLBackendPostSwapBuffers          - Post-swap handling
  *   iupEGLBackendQueueComposite           - Queue a toolkit repaint of the FBO pixels
+ *   iupEGLBackendPresentDmabuf            - Hand the FBO texture to the toolkit as a dmabuf (IUP_EGL_HAS_PRESENT_DMABUF)
+ *   iupEGLBackendCheckDmabuf              - Compare the toolkit's view of that dmabuf with the pixels read back
  */
 #if defined(IUP_EGL_USE_GTK3)
   #include "iup_glcanvas_egl_gtk.h"
@@ -915,10 +950,17 @@ static void eGLCanvasUnMapMethod(Ihandle* ih)
   {
     eglMakeCurrent(gldata->display, gldata->surface, gldata->surface, gldata->context);
     if (gldata->fbo)       eGLDeleteFramebuffers(1, &gldata->fbo);
-    if (gldata->color_tex) glDeleteTextures(1, &gldata->color_tex);
+    if (gldata->color_tex[0]) glDeleteTextures(1, &gldata->color_tex[0]);
+    if (gldata->color_tex[1]) glDeleteTextures(1, &gldata->color_tex[1]);
     if (gldata->depth_rbo) eGLDeleteRenderbuffers(1, &gldata->depth_rbo);
-    gldata->fbo = gldata->color_tex = gldata->depth_rbo = 0;
+    gldata->fbo = gldata->color_tex[0] = gldata->color_tex[1] = gldata->depth_rbo = 0;
+    gldata->color_back = 0;
+    gldata->present = 0;
+    gldata->import_tex[0] = gldata->import_tex[1] = 0;
   }
+
+  eGLCompositeCloseDmabuf(gldata, 0);
+  eGLCompositeCloseDmabuf(gldata, 1);
 
   if (gldata->composite_pixels)
   {
@@ -1198,6 +1240,102 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
   }
 }
 
+#ifdef IUP_EGL_HAS_PRESENT_DMABUF
+static unsigned int eGLDmabufSerial = 0;
+
+static int eGLCompositeExport(IGlControlData* gldata, int index)
+{
+  IGlDmabuf* dmabuf = &gldata->dmabuf[index];
+  PFNEGLCREATEIMAGEKHRPROC create_image;
+  PFNEGLDESTROYIMAGEKHRPROC destroy_image;
+  PFNEGLEXPORTDMABUFIMAGEQUERYMESAPROC export_query;
+  PFNEGLEXPORTDMABUFIMAGEMESAPROC export_image;
+  const char* extensions;
+  EGLImageKHR image;
+  EGLuint64KHR modifier = 0;
+  int fourcc = 0, planes = 0, ok;
+
+  if (dmabuf->planes)
+    return 1;
+
+  extensions = eglQueryString(gldata->display, EGL_EXTENSIONS);
+  if (!extensions || !strstr(extensions, "EGL_MESA_image_dma_buf_export") || !strstr(extensions, "EGL_KHR_gl_texture_2D_image"))
+    return 0;
+
+  create_image = (PFNEGLCREATEIMAGEKHRPROC)eglGetProcAddress("eglCreateImageKHR");
+  destroy_image = (PFNEGLDESTROYIMAGEKHRPROC)eglGetProcAddress("eglDestroyImageKHR");
+  export_query = (PFNEGLEXPORTDMABUFIMAGEQUERYMESAPROC)eglGetProcAddress("eglExportDMABUFImageQueryMESA");
+  export_image = (PFNEGLEXPORTDMABUFIMAGEMESAPROC)eglGetProcAddress("eglExportDMABUFImageMESA");
+  if (!create_image || !destroy_image || !export_query || !export_image)
+    return 0;
+
+  image = create_image(gldata->display, gldata->context, EGL_GL_TEXTURE_2D_KHR, (EGLClientBuffer)(size_t)gldata->color_tex[index], NULL);
+  if (image == EGL_NO_IMAGE_KHR)
+    return 0;
+
+  ok = export_query(gldata->display, image, &fourcc, &planes, &modifier) && planes >= 1 && planes <= 4 &&
+       export_image(gldata->display, image, dmabuf->fds, dmabuf->strides, dmabuf->offsets);
+  destroy_image(gldata->display, image);
+  if (!ok)
+    return 0;
+
+  dmabuf->fourcc = fourcc;
+  dmabuf->modifier = modifier;
+  dmabuf->planes = planes;
+  dmabuf->serial = ++eGLDmabufSerial;
+  return 1;
+}
+
+static void eGLCompositeCheck(Ihandle* ih, IGlControlData* gldata)
+{
+  if (gldata->present != 0 || !gldata->fbo || !gldata->composite_pixels)
+    return;
+
+  if (!eGLCompositeExport(gldata, gldata->color_back))
+    gldata->present = -1;
+  else
+    gldata->present = iupEGLBackendCheckDmabuf(ih, &gldata->dmabuf[gldata->color_back], gldata->fbo_w, gldata->fbo_h, gldata->composite_pixels);
+}
+
+static int eGLCompositePresent(Ihandle* ih, IGlControlData* gldata)
+{
+  int front = gldata->color_back;
+
+  if (gldata->present <= 0 || !gldata->fbo)
+    return 0;
+
+  if (!eGLCompositeExport(gldata, front))
+  {
+    iupEGLBackendPresentDmabuf(ih, gldata, NULL, 0, 0);
+    gldata->present = -1;
+    return 0;
+  }
+
+  glFlush();
+
+  if (!iupEGLBackendPresentDmabuf(ih, gldata, &gldata->dmabuf[front], gldata->fbo_w, gldata->fbo_h))
+  {
+    gldata->present = -1;
+    return 0;
+  }
+
+  gldata->color_back = !front;
+  if (!gldata->color_tex[gldata->color_back])
+    eGLCompositeTexture(gldata, gldata->color_back, gldata->fbo_w, gldata->fbo_h);
+  eGLBindFramebuffer(GL_FRAMEBUFFER, gldata->fbo);
+  if (!iupStrEqualNoCase(iupAttribGetStr(ih, "BUFFER"), "DOUBLE"))
+  {
+    GLint previous = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous);
+    glBindTexture(GL_TEXTURE_2D, gldata->color_tex[gldata->color_back]);
+    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, gldata->fbo_w, gldata->fbo_h);
+    glBindTexture(GL_TEXTURE_2D, (GLuint)previous);
+  }
+  eGLFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gldata->color_tex[gldata->color_back], 0);
+  return 1;
+}
+#endif
+
 IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
 {
   IGlControlData* gldata;
@@ -1221,7 +1359,14 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
 
   if (gldata->use_composite)
   {
+#ifdef IUP_EGL_HAS_PRESENT_DMABUF
+    if (eGLCompositePresent(ih, gldata))
+      return;
+#endif
     eGLCompositeReadback(ih, gldata);
+#ifdef IUP_EGL_HAS_PRESENT_DMABUF
+    eGLCompositeCheck(ih, gldata);
+#endif
     iupEGLBackendQueueComposite(ih, gldata);
     return;
   }
