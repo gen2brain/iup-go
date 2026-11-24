@@ -2316,17 +2316,49 @@ static WebKitWebView* gtkWebBrowserNewWindow_WK2(WebKitWebView* web_view, WebKit
 #endif
 
 #if (defined(IUPWEB_USE_WEBKIT1) || defined(IUPWEB_USE_DLOPEN))
-static WebKitWebView* gtkWebBrowserNewWindow_WK1(WebKitWebView* web_view, WebKitWebFrame* frame, Ihandle* ih)
+static gboolean gtkWebBrowserNewWindowFree_WK1(gpointer new_view)
+{
+  gtk_widget_destroy((GtkWidget*)new_view);
+  g_object_unref(new_view);
+  return FALSE;
+}
+
+static gboolean gtkWebBrowserNewWindowNavigate_WK1(WebKitWebView* new_view, WebKitWebFrame* frame, WebKitNetworkRequest* request,
+                                 WebKitWebNavigationAction* navigation_action, WebKitWebPolicyDecision* policy_decision, Ihandle* ih)
 {
   IFns cb = (IFns)IupGetCallback(ih, "NEWWINDOW_CB");
+  const gchar* uri = webkit_network_request_get_uri(request);
+
+  webkit_web_policy_decision_ignore(policy_decision);
+  g_signal_handlers_disconnect_by_func(G_OBJECT(new_view), G_CALLBACK(gtkWebBrowserNewWindowNavigate_WK1), ih);
+  iupAttribSet(ih, "_IUPWEB_NEWWINDOW_VIEW", NULL);
+  g_idle_add(gtkWebBrowserNewWindowFree_WK1, new_view);
+
   if (cb)
-  {
-    cb(ih, (char*)webkit_web_frame_get_uri(frame));
-  }
+    cb(ih, (char*)uri);
+  else if (uri && *uri)
+    IupSetStrAttribute(ih, "VALUE", uri);
+
+  (void)frame;
+  (void)navigation_action;
+  return TRUE;
+}
+
+/* WebKit1 gives no address here, it comes with the first navigation of the returned view */
+static WebKitWebView* gtkWebBrowserNewWindow_WK1(WebKitWebView* web_view, WebKitWebFrame* frame, Ihandle* ih)
+{
+  WebKitWebView* new_view = (WebKitWebView*)iupAttribGet(ih, "_IUPWEB_NEWWINDOW_VIEW");
+  if (new_view)
+    gtkWebBrowserNewWindowFree_WK1(new_view);
+
+  new_view = (WebKitWebView*)webkit_web_view_new();
+  g_object_ref_sink(G_OBJECT(new_view));
+  g_signal_connect(G_OBJECT(new_view), "navigation-policy-decision-requested", G_CALLBACK(gtkWebBrowserNewWindowNavigate_WK1), ih);
+  iupAttribSet(ih, "_IUPWEB_NEWWINDOW_VIEW", (char*)new_view);
 
   (void)web_view;
   (void)frame;
-  return NULL;
+  return new_view;
 }
 #endif
 
@@ -2597,6 +2629,14 @@ static void gtkWebBrowserComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, i
 
 static void gtkWebBrowserUnMapMethod(Ihandle* ih)
 {
+#if (defined(IUPWEB_USE_WEBKIT1) || defined(IUPWEB_USE_DLOPEN))
+  if (iupAttribGet(ih, "_IUPWEB_NEWWINDOW_VIEW"))
+  {
+    gtkWebBrowserNewWindowFree_WK1(iupAttribGet(ih, "_IUPWEB_NEWWINDOW_VIEW"));
+    iupAttribSet(ih, "_IUPWEB_NEWWINDOW_VIEW", NULL);
+  }
+#endif
+
 #if (defined(IUPWEB_USE_WEBKIT2) || defined(IUPWEB_USE_WEBKIT6) || defined(IUPWEB_USE_DLOPEN))
   #ifdef IUPWEB_USE_DLOPEN
   if (s_use_webkit2 && ih->data->web_view)

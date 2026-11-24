@@ -19,6 +19,7 @@
 #include <memory.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <stdint.h>
 #include <time.h>
 
 #include "iup.h"
