@@ -267,7 +267,7 @@ static void iupEGLBackendUpdateSubsurfacePosition(Ihandle* ih, IGlControlData* g
       int subsurface_x = 0, subsurface_y = 0;
       gtk_widget_translate_coordinates(widget, gtk_widget_get_toplevel(widget), 0, 0, &subsurface_x, &subsurface_y);
 
-      wl_subsurface_set_position(gldata->subsurface, subsurface_x, subsurface_y);
+      iupwl_subsurface_set_position(gldata->subsurface, subsurface_x, subsurface_y);
     }
   }
 #else

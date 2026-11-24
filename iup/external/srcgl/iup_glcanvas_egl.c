@@ -9,9 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <GL/gl.h>
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
+#include "iup_glcanvas_egl_dlopen.h"
 
 #if defined(IUP_USE_GTK3)
   #define IUP_EGL_USE_GTK3
@@ -488,7 +486,7 @@ static int eGLCanvasDefaultResize(Ihandle* ih, int width, int height)
       if (resize_w < 1) resize_w = 1;
       if (resize_h < 1) resize_h = 1;
 
-      wl_egl_window_resize(gldata->egl_window, resize_w, resize_h, 0, 0);
+      iupwl_egl_window_resize(gldata->egl_window, resize_w, resize_h, 0, 0);
 
       gldata->egl_window_physical_width = resize_w;
       gldata->egl_window_physical_height = resize_h;
@@ -682,6 +680,12 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   char* requested_profile = NULL;
   int target_visual_id = 0;
 
+  if (!iupEGLOpen())
+  {
+    iupAttribSet(ih, "ERROR", "OpenGL library not found.");
+    return IUP_NOERROR;
+  }
+
   if (!iupEGLBackendMapInit(ih, gldata))
     return IUP_NOERROR;
 
@@ -763,7 +767,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
 #ifdef IUP_EGL_HAS_WAYLAND
             if (gldata->egl_window)
             {
-                wl_egl_window_destroy(gldata->egl_window);
+                iupwl_egl_window_destroy(gldata->egl_window);
                 gldata->egl_window = NULL;
             }
 #endif
@@ -907,7 +911,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
       }
 #ifdef IUP_EGL_HAS_WAYLAND
       if (gldata->egl_window) {
-          wl_egl_window_destroy(gldata->egl_window);
+          iupwl_egl_window_destroy(gldata->egl_window);
           gldata->egl_window = NULL;
       }
 #endif
@@ -988,43 +992,43 @@ static void eGLCanvasUnMapMethod(Ihandle* ih)
 #ifdef IUP_EGL_HAS_WAYLAND
   if (gldata->egl_window)
   {
-    wl_egl_window_destroy(gldata->egl_window);
+    iupwl_egl_window_destroy(gldata->egl_window);
     gldata->egl_window = NULL;
   }
 
   if (gldata->subsurface)
   {
-    wl_subsurface_destroy(gldata->subsurface);
+    iupwl_subsurface_destroy(gldata->subsurface);
     gldata->subsurface = NULL;
   }
 
   if (gldata->subsurface_wl)
   {
-    wl_surface_destroy(gldata->subsurface_wl);
+    iupwl_surface_destroy(gldata->subsurface_wl);
     gldata->subsurface_wl = NULL;
   }
 
   if (gldata->subcompositor)
   {
-    wl_subcompositor_destroy(gldata->subcompositor);
+    iupwl_subcompositor_destroy(gldata->subcompositor);
     gldata->subcompositor = NULL;
   }
 
   if (gldata->compositor)
   {
-    wl_compositor_destroy(gldata->compositor);
+    iupwl_compositor_destroy(gldata->compositor);
     gldata->compositor = NULL;
   }
 
   if (gldata->registry)
   {
-    wl_registry_destroy(gldata->registry);
+    iupwl_registry_destroy(gldata->registry);
     gldata->registry = NULL;
   }
 
   if (gldata->event_queue)
   {
-    wl_event_queue_destroy(gldata->event_queue);
+    iupwl_event_queue_destroy(gldata->event_queue);
     gldata->event_queue = NULL;
   }
 #endif
@@ -1052,6 +1056,9 @@ void iupGlCanvasInitClass(Iclass* ic)
   ic->UnMap = eGLCanvasUnMapMethod;
 
   iupClassRegisterAttribute(ic, "VISUAL", eGLCanvasGetVisualAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_STRING|IUPAF_NOT_MAPPED);
+
+  if (!iupEGLOpen())
+    IupSetGlobal("_IUP_GLCANVAS_UNAVAILABLE", "1");
 }
 
 IUPGL_API int IupGLIsCurrent(Ihandle* ih)
@@ -1124,7 +1131,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 #ifdef IUP_EGL_HAS_WAYLAND
         if (gldata->egl_window)
         {
-          wl_egl_window_destroy(gldata->egl_window);
+          iupwl_egl_window_destroy(gldata->egl_window);
           gldata->egl_window = NULL;
         }
 #endif
@@ -1202,7 +1209,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     if (physical_width != gldata->egl_window_physical_width ||
         physical_height != gldata->egl_window_physical_height)
     {
-      wl_egl_window_resize(gldata->egl_window, physical_width, physical_height, 0, 0);
+      iupwl_egl_window_resize(gldata->egl_window, physical_width, physical_height, 0, 0);
       gldata->egl_window_physical_width = physical_width;
       gldata->egl_window_physical_height = physical_height;
       performed_resize = 1;
@@ -1382,6 +1389,8 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
 
 IUPGL_API void* IupGLGetProcAddress(const char* name)
 {
+  if (!iupEGLOpen())
+    return NULL;
   return (void*)eglGetProcAddress(name);
 }
 
@@ -1404,6 +1413,8 @@ IUPGL_API void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
 
 IUPGL_API void IupGLWait(int gl)
 {
+  if (!iupEGLOpen())
+    return;
   if (gl)
     eglWaitClient();
   else

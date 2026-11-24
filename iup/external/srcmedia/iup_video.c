@@ -1973,7 +1973,7 @@ IUPMEDIA_API Ihandle* IupGLVideo(void)
 {
   if (!iupRegisterFindClass("glvideo"))
   {
-    if (!iupRegisterFindClass("video") || !iupRegisterFindClass("glcanvas"))
+    if (!iupRegisterFindClass("video") || !iupRegisterFindClass("glcanvas") || IupGetGlobal("_IUP_GLCANVAS_UNAVAILABLE"))
       return NULL;
     iupRegisterClass(iupGLVideoNewClass());
   }

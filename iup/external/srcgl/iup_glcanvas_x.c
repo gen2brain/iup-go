@@ -4,8 +4,7 @@
  * See Copyright Notice in "iup.h"
  */
 
-#include <X11/Xlib.h>
-#include <GL/glx.h>
+#include "iup_glcanvas_x_dlopen.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -405,6 +404,9 @@ static char* xGLCanvasGetVisualAttrib(Ihandle* ih)
 {
   IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
 
+  if (!iupGLXOpen())
+    return NULL;
+
   /* This must be available before mapping, because IupCanvas uses it during map in GTK and Motif. */
   if (gldata->vinfo)
     return (char*)gldata->vinfo->visual;
@@ -424,6 +426,12 @@ static int xGLCanvasMapMethod(Ihandle* ih)
   Ihandle* ih_shared;
 
   /* the IupCanvas is already mapped, just initialize the OpenGL context */
+
+  if (!iupGLXOpen())
+  {
+    iupAttribSet(ih, "ERROR", "OpenGL library not found.");
+    return IUP_NOERROR;
+  }
 
   if (!xGLCanvasGetVisualAttrib(ih))
     return IUP_NOERROR; /* do not abort mapping */
@@ -642,6 +650,9 @@ void iupGlCanvasInitClass(Iclass* ic)
   ic->UnMap = xGLCanvasUnMapMethod;
 
   iupClassRegisterAttribute(ic, "VISUAL", xGLCanvasGetVisualAttrib, NULL, NULL, NULL, IUPAF_READONLY|IUPAF_NO_STRING|IUPAF_NOT_MAPPED);
+
+  if (!iupGLXOpen())
+    IupSetGlobal("_IUP_GLCANVAS_UNAVAILABLE", "1");
 }
 
 /******************************************* Exported functions */
@@ -748,6 +759,8 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
 
 IUPGL_API void* IupGLGetProcAddress(const char* name)
 {
+  if (!iupGLXOpen())
+    return NULL;
   return (void*)glXGetProcAddressARB((const GLubyte*)name);
 }
 
@@ -849,6 +862,8 @@ IUPGL_API void IupGLUseFont(Ihandle* ih, int first, int count, int list_base)
 
 IUPGL_API void IupGLWait(int gl)
 {
+  if (!iupGLXOpen())
+    return;
   if (gl)
     glXWaitGL();
   else

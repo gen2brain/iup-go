@@ -35,8 +35,7 @@ elseif(IUP_BACKEND STREQUAL "gnustep")
 
 elseif(IUP_BACKEND STREQUAL "gtk2" OR IUP_BACKEND STREQUAL "motif")
   list(APPEND _GL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_x.c")
-  find_package(OpenGL REQUIRED)
-  set(_GL_LIBS OpenGL::GL)
+  set(_GL_LIBS ${CMAKE_DL_LIBS})
 
 elseif(IUP_BACKEND STREQUAL "android")
   list(APPEND _GL_SOURCES
@@ -57,14 +56,7 @@ else()
   # iup_glcanvas_egl.c is a unity file that #includes the correct backend .c
   list(APPEND _GL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/srcgl/iup_glcanvas_egl.c")
 
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(WAYLAND_EGL IMPORTED_TARGET wayland-egl)
-  find_package(OpenGL REQUIRED COMPONENTS EGL)
-
-  set(_GL_LIBS OpenGL::GL OpenGL::EGL)
-  if(WAYLAND_EGL_FOUND)
-    list(APPEND _GL_LIBS PkgConfig::WAYLAND_EGL)
-  endif()
+  set(_GL_LIBS ${CMAKE_DL_LIBS})
 endif()
 
 if(IUP_BUILD_FRAMEWORK)
@@ -115,17 +107,14 @@ elseif(APPLE AND IUP_BACKEND STREQUAL "cocoatouch")
   set(IUPGL_PC_LIBS_PRIVATE "-framework QuartzCore -framework OpenGLES")
 elseif(APPLE)
   set(IUPGL_PC_LIBS_PRIVATE "-framework OpenGL")
-elseif(IUP_BACKEND STREQUAL "gtk2" OR IUP_BACKEND STREQUAL "motif" OR IUP_BACKEND STREQUAL "gnustep")
+elseif(IUP_BACKEND STREQUAL "gnustep")
   set(IUPGL_PC_LIBS_PRIVATE "-lGL")
 elseif(IUP_BACKEND STREQUAL "android")
   set(IUPGL_PC_LIBS_PRIVATE "-lEGL -lGLESv3 -landroid")
 elseif(IUP_BACKEND STREQUAL "haiku")
   set(IUPGL_PC_LIBS_PRIVATE "-lGL")
-else()
-  set(IUPGL_PC_REQUIRES "egl gl")
-  if(WAYLAND_EGL_FOUND)
-    string(APPEND IUPGL_PC_REQUIRES " wayland-egl")
-  endif()
+elseif(CMAKE_DL_LIBS)
+  set(IUPGL_PC_LIBS_PRIVATE "-l${CMAKE_DL_LIBS}")
 endif()
 
 configure_file(

@@ -41,8 +41,6 @@ package iup
 #cgo !windows,!darwin,!android,!haiku,!motif,!qt6,!qt5,!qml,gtk2,!gtk4,!efl,!fltk,!gnustep,!nopkgconfig pkg-config: gtk+-2.0 gdk-2.0 x11
 #cgo !windows,!darwin,!android,!haiku,!motif,!qt6,!qt5,!qml,!efl,!fltk,!gnustep,web CFLAGS: -DIUPWEB_USE_DLOPEN
 
-#cgo !windows,!darwin,!android,!haiku,!motif,!gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: wayland-egl egl gl
-#cgo !windows,!darwin,!android,!haiku,!motif,!qt6,!qt5,!qml,gtk2,!efl,!fltk,!gnustep,gl,!nopkgconfig pkg-config: gl
 
 #cgo qt6,!nopkgconfig pkg-config: Qt6Core Qt6Gui Qt6Widgets Qt6PrintSupport
 #cgo qt5,!nopkgconfig pkg-config: Qt5Core Qt5Gui Qt5Widgets Qt5PrintSupport
@@ -59,7 +57,6 @@ package iup
 #cgo motif LDFLAGS: -lXm -lXmu -lXt -lXext -lXrender -lX11
 #cgo linux,!android,motif LDFLAGS: -lXpm
 #cgo darwin,motif LDFLAGS: -liconv
-#cgo motif,gl LDFLAGS: -lGL
 #cgo motif,xft CFLAGS: -DIUP_USE_XFT
 #cgo motif,xft,!nopkgconfig pkg-config: xft freetype2 fontconfig
 #cgo motif CFLAGS: -Iexternal/src/mot -DIUP_USE_MOTIF -DIUP_USE_ICONV
@@ -119,7 +116,6 @@ package iup
 #cgo efl,!windows,!darwin,!android,!nopkgconfig pkg-config: ecore-x ecore-wl2
 #cgo efl,windows,!nopkgconfig pkg-config: ecore-win32
 #cgo efl,darwin,!nopkgconfig pkg-config: ecore-cocoa
-#cgo efl,gl,!windows,!darwin,!android,!nopkgconfig pkg-config: wayland-egl egl gl
 
 #cgo fltk CFLAGS: -Iexternal/src/fltk -Iexternal/src/unix -DIUP_USE_FLTK
 #cgo fltk CXXFLAGS: -Iexternal/src/fltk -Iexternal/src/unix -DIUP_USE_FLTK -std=c++17
@@ -130,7 +126,6 @@ package iup
 #cgo windows,fltk,web CXXFLAGS: -DIUPWEB_HOSTED
 #cgo darwin,!ios,fltk,web LDFLAGS: -framework WebKit
 #cgo !windows,!darwin,!android,fltk,web CFLAGS: -DIUPWEB_USE_DLOPEN -DIUPWEB_HOSTED
-#cgo fltk,gl,!windows,!darwin,!android,!nopkgconfig pkg-config: wayland-egl egl gl
 
 #cgo gnustep CFLAGS: -Iexternal/src/cocoa -Iexternal/src/unix -x objective-c -DIUP_USE_COCOA -DGNUSTEP
 #cgo gnustep,web CFLAGS: -DIUPWEB_USE_DLOPEN -DIUPWEB_HOSTED

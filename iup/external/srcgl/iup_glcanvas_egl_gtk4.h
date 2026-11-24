@@ -394,7 +394,7 @@ static void iupEGLBackendUpdateSubsurfacePosition(Ihandle* ih, IGlControlData* g
   if (gldata->subsurface && ih->handle && GTK_IS_WIDGET(ih->handle)) {
     int subsurface_x = 0, subsurface_y = 0;
     eGLCanvasGtk4GetSubsurfacePosition(ih, &subsurface_x, &subsurface_y);
-    wl_subsurface_set_position(gldata->subsurface, subsurface_x, subsurface_y);
+    iupwl_subsurface_set_position(gldata->subsurface, subsurface_x, subsurface_y);
   }
 #else
   (void)ih; (void)gldata;

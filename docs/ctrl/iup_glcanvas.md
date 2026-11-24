@@ -20,8 +20,8 @@ The "iupgl.h" file must also be included in the source code.
 The program must be linked to the GL library (iupgl) and the OpenGL library.
 
 To link with the OpenGL libraries in Windows, add: opengl32.lib.
-In Unix with EGL (GTK3, GTK4, Qt, QML, EFL, FLTK), add: -lEGL -lGL.
-In Unix with GLX (Motif, GTK2, GNUstep), add: -lGL.
+In Unix with EGL (GTK3, GTK4, Qt, QML, EFL, FLTK) and with GLX (Motif, GTK2), no GL library is linked: libEGL, libGL and the Wayland libraries are loaded at runtime.
+In GNUstep, add: -lGL.
 In macOS, add: -framework OpenGL.
 In Haiku, add: -lGL.
 In WebAssembly, no GL library is linked.
@@ -179,6 +179,7 @@ Possible ERROR strings during **IupMap**:
     "No appropriate visual." - Failed to choose a Visual (GLX only)
     "No appropriate pixel format." - Failed to choose a Pixel Format (Windows only)
     "Could not create a rendering context." - Failed to create the OpenGL context (Windows and GLX)
+    "OpenGL library not found." - libEGL or libGL could not be loaded (EGL and GLX)
     "EGL display not initialized." - EGL display unavailable (EGL only)
     "No appropriate EGL config found." - Failed to choose an EGL configuration (EGL only)
     "Could not create EGL surface." - Failed to create EGL surface (EGL only)

@@ -281,8 +281,8 @@ static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* glda
       if (wl2_win)
         ecore_wl2_window_show(wl2_win);
 
-      if (wl_display)
-        wl_display_dispatch_pending(wl_display);
+      if (wl_display && iupWaylandOpen())
+        iupwl_display_dispatch_pending(wl_display);
 
       if (wl_display && parent_surface)
       {
@@ -405,7 +405,7 @@ static void iupEGLBackendUpdateSubsurfacePosition(Ihandle* ih, IGlControlData* g
   {
     int x = 0, y = 0;
     eGLCanvasEflGetSubsurfacePosition(gldata, &x, &y);
-    wl_subsurface_set_position(gldata->subsurface, x, y);
+    iupwl_subsurface_set_position(gldata->subsurface, x, y);
   }
 #endif
 

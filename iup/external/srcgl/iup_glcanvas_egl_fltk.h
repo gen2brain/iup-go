@@ -201,7 +201,7 @@ static void iupEGLBackendPostSurfaceCreation(Ihandle* ih, IGlControlData* gldata
 static void iupEGLBackendUpdateSubsurfacePosition(Ihandle* ih, IGlControlData* gldata)
 {
   if (gldata->subsurface)
-    wl_subsurface_set_position(gldata->subsurface, ih->x, ih->y);
+    iupwl_subsurface_set_position(gldata->subsurface, ih->x, ih->y);
 }
 
 static void iupEGLBackendGetWaylandMaxPhysicalSize(Ihandle* ih, IGlControlData* gldata, int* max_pw, int* max_ph)

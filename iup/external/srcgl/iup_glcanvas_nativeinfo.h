@@ -213,8 +213,6 @@ static void iupGLDestroyChildView(NSView* child)
 
 #if !defined(_WIN32) && !defined(__APPLE__) && !defined(IUP_GL_NO_WAYLAND)
 #define IUP_GL_HAS_WAYLAND
-#include <wayland-client.h>
-#include <wayland-egl.h>
 
 struct IGlWaylandSubsurface
 {
@@ -243,9 +241,9 @@ static void iupgl_wl_registry_global(void* data, struct wl_registry* registry, u
   (void)version;
 
   if (strcmp(interface, "wl_compositor") == 0)
-    d->compositor = (struct wl_compositor*)wl_registry_bind(registry, name, &wl_compositor_interface, 1);
+    d->compositor = (struct wl_compositor*)iupwl_registry_bind(registry, name, iupwl_compositor_interface, 1);
   else if (strcmp(interface, "wl_subcompositor") == 0)
-    d->subcompositor = (struct wl_subcompositor*)wl_registry_bind(registry, name, &wl_subcompositor_interface, 1);
+    d->subcompositor = (struct wl_subcompositor*)iupwl_registry_bind(registry, name, iupwl_subcompositor_interface, 1);
 }
 
 static void iupgl_wl_registry_global_remove(void* data, struct wl_registry* registry, uint32_t name)
@@ -253,7 +251,7 @@ static void iupgl_wl_registry_global_remove(void* data, struct wl_registry* regi
   (void)data; (void)registry; (void)name;
 }
 
-static const struct wl_registry_listener iupgl_wl_registry_listener = {
+static const struct iupwl_registry_listener iupgl_wl_registry_listener = {
   iupgl_wl_registry_global,
   iupgl_wl_registry_global_remove
 };
@@ -265,28 +263,28 @@ static int iupGLCreateWaylandSubsurface(struct wl_display* wl_display, struct wl
 
   memset(out, 0, sizeof(struct IGlWaylandSubsurface));
 
-  if (!wl_display || !parent_surface)
+  if (!wl_display || !parent_surface || !iupWaylandOpen())
     return 0;
 
-  out->event_queue = wl_display_create_queue(wl_display);
+  out->event_queue = iupwl_display_create_queue(wl_display);
   if (!out->event_queue)
     return 0;
 
-  out->registry = wl_display_get_registry(wl_display);
+  out->registry = iupwl_display_get_registry(wl_display);
   if (!out->registry)
   {
-    wl_event_queue_destroy(out->event_queue);
+    iupwl_event_queue_destroy(out->event_queue);
     out->event_queue = NULL;
     return 0;
   }
 
-  wl_proxy_set_queue((struct wl_proxy*)out->registry, out->event_queue);
-  wl_registry_add_listener(out->registry, &iupgl_wl_registry_listener, &reg_data);
+  iupwl_proxy_set_queue((struct wl_proxy*)out->registry, out->event_queue);
+  iupwl_registry_add_listener(out->registry, &iupgl_wl_registry_listener, &reg_data);
 
-  if (wl_display_roundtrip_queue(wl_display, out->event_queue) < 0)
+  if (iupwl_display_roundtrip_queue(wl_display, out->event_queue) < 0)
   {
-    wl_registry_destroy(out->registry);
-    wl_event_queue_destroy(out->event_queue);
+    iupwl_registry_destroy(out->registry);
+    iupwl_event_queue_destroy(out->event_queue);
     out->registry = NULL;
     out->event_queue = NULL;
     return 0;
@@ -297,27 +295,27 @@ static int iupGLCreateWaylandSubsurface(struct wl_display* wl_display, struct wl
 
   if (!out->compositor || !out->subcompositor)
   {
-    wl_registry_destroy(out->registry);
-    wl_event_queue_destroy(out->event_queue);
+    iupwl_registry_destroy(out->registry);
+    iupwl_event_queue_destroy(out->event_queue);
     out->registry = NULL;
     out->event_queue = NULL;
     return 0;
   }
 
-  out->surface = wl_compositor_create_surface(out->compositor);
+  out->surface = iupwl_compositor_create_surface(out->compositor);
   if (!out->surface)
     return 0;
 
-  out->subsurface = wl_subcompositor_get_subsurface(out->subcompositor, out->surface, parent_surface);
+  out->subsurface = iupwl_subcompositor_get_subsurface(out->subcompositor, out->surface, parent_surface);
   if (!out->subsurface)
   {
-    wl_surface_destroy(out->surface);
+    iupwl_surface_destroy(out->surface);
     out->surface = NULL;
     return 0;
   }
 
-  wl_subsurface_set_desync(out->subsurface);
-  wl_subsurface_set_position(out->subsurface, x, y);
+  iupwl_subsurface_set_desync(out->subsurface);
+  iupwl_subsurface_set_position(out->subsurface, x, y);
 
   if (scale < 1) scale = 1;
   out->physical_width = w * scale;
@@ -325,11 +323,11 @@ static int iupGLCreateWaylandSubsurface(struct wl_display* wl_display, struct wl
   if (out->physical_width < 1) out->physical_width = 1;
   if (out->physical_height < 1) out->physical_height = 1;
 
-  out->egl_window = wl_egl_window_create(out->surface, out->physical_width, out->physical_height);
+  out->egl_window = iupwl_egl_window_create(out->surface, out->physical_width, out->physical_height);
   if (!out->egl_window)
   {
-    wl_subsurface_destroy(out->subsurface);
-    wl_surface_destroy(out->surface);
+    iupwl_subsurface_destroy(out->subsurface);
+    iupwl_surface_destroy(out->surface);
     out->subsurface = NULL;
     out->surface = NULL;
     return 0;
@@ -341,7 +339,7 @@ static int iupGLCreateWaylandSubsurface(struct wl_display* wl_display, struct wl
 static void iupGLMoveWaylandSubsurface(struct IGlWaylandSubsurface* ws, int x, int y, int w, int h, int scale)
 {
   if (ws->subsurface)
-    wl_subsurface_set_position(ws->subsurface, x, y);
+    iupwl_subsurface_set_position(ws->subsurface, x, y);
 
   if (scale < 1) scale = 1;
 
@@ -354,7 +352,7 @@ static void iupGLMoveWaylandSubsurface(struct IGlWaylandSubsurface* ws, int x, i
 
     if (pw != ws->physical_width || ph != ws->physical_height)
     {
-      wl_egl_window_resize(ws->egl_window, pw, ph, 0, 0);
+      iupwl_egl_window_resize(ws->egl_window, pw, ph, 0, 0);
       ws->physical_width = pw;
       ws->physical_height = ph;
     }
@@ -365,27 +363,27 @@ static void iupGLDestroyWaylandSubsurface(struct IGlWaylandSubsurface* ws)
 {
   if (ws->egl_window)
   {
-    wl_egl_window_destroy(ws->egl_window);
+    iupwl_egl_window_destroy(ws->egl_window);
     ws->egl_window = NULL;
   }
   if (ws->subsurface)
   {
-    wl_subsurface_destroy(ws->subsurface);
+    iupwl_subsurface_destroy(ws->subsurface);
     ws->subsurface = NULL;
   }
   if (ws->surface)
   {
-    wl_surface_destroy(ws->surface);
+    iupwl_surface_destroy(ws->surface);
     ws->surface = NULL;
   }
   if (ws->registry)
   {
-    wl_registry_destroy(ws->registry);
+    iupwl_registry_destroy(ws->registry);
     ws->registry = NULL;
   }
   if (ws->event_queue)
   {
-    wl_event_queue_destroy(ws->event_queue);
+    iupwl_event_queue_destroy(ws->event_queue);
     ws->event_queue = NULL;
   }
 }

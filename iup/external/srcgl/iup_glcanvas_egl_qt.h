@@ -179,7 +179,7 @@ static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* glda
       if (pw < 1) pw = 1;
       if (ph < 1) ph = 1;
 
-      gldata->egl_window = wl_egl_window_create((struct wl_surface*)info.canvas_window, pw, ph);
+      gldata->egl_window = iupWaylandOpen() ? iupwl_egl_window_create((struct wl_surface*)info.canvas_window, pw, ph) : NULL;
       if (!gldata->egl_window)
         return 0;
 
@@ -235,7 +235,7 @@ static void iupEGLBackendUpdateSubsurfacePosition(Ihandle* ih, IGlControlData* g
   {
     IGlNativeInfo info;
     if (iupGLGetNativeInfo(ih, &info))
-      wl_subsurface_set_position(gldata->subsurface,
+      iupwl_subsurface_set_position(gldata->subsurface,
         info.x + info.surface_offset_x, info.y + info.surface_offset_y);
   }
 }
