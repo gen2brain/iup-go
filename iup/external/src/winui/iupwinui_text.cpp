@@ -692,6 +692,61 @@ static char* winuiTextGetValueAttrib(Ihandle* ih)
   return nullptr;
 }
 
+#define IUPWINUI_TEXT_SCROLLEND -2
+
+static void winuiTextScrollPending(IupWinUITextAux* aux, RichEditBox const& reb)
+{
+  int scroll = aux->pendingScroll;
+  if (scroll == -1 || aux->displayFrozen || !reb.IsLoaded())
+    return;
+
+  aux->pendingScroll = -1;
+  reb.UpdateLayout();
+
+  if (scroll == IUPWINUI_TEXT_SCROLLEND)
+  {
+    ScrollViewer sv = iupwinuiFindScrollViewer(reb);
+    if (sv)
+      sv.ChangeView(nullptr, sv.ScrollableHeight(), nullptr, true);
+  }
+  else
+    reb.Document().GetRange(scroll, scroll).ScrollIntoView(PointOptions::Start);
+}
+
+static void winuiTextThawDisplay(Ihandle* ih)
+{
+  auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+  if (!aux || !aux->displayFrozen)
+    return;
+
+  aux->displayFrozen = false;
+
+  auto reb = winuiGetHandle<RichEditBox>(ih);
+  if (!reb)
+    return;
+
+  reb.Document().ApplyDisplayUpdates();
+  winuiTextScrollPending(aux, reb);
+}
+
+/* a rendered RichEditBox updates its whole display on every text change; changes made in one pass of the main loop share one update */
+static void winuiTextFreezeDisplay(Ihandle* ih, IupWinUITextAux* aux, RichEditBox const& reb)
+{
+  if (aux->displayFrozen)
+    return;
+
+  Microsoft::UI::Dispatching::DispatcherQueue dq = Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread();
+  if (!dq)
+    return;
+
+  reb.Document().BatchDisplayUpdates();
+  aux->displayFrozen = true;
+  dq.TryEnqueue([ih]() {
+    if (iupObjectCheck(ih) && ih->handle)
+      winuiTextThawDisplay(ih);
+  });
+}
+
 static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
 {
   auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
@@ -722,20 +777,16 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
       if (wasReadOnly)
         reb.IsReadOnly(false);
 
-      auto doc = reb.Document();
-      hstring currentText;
-      doc.GetText(TextGetOptions::None, currentText);
+      winuiTextFreezeDisplay(ih, aux, reb);
 
-      uint32_t currentLen = currentText.size();
-      if (currentLen > 0 && currentText.c_str()[currentLen - 1] == L'\r')
-        currentLen--;
+      auto doc = reb.Document();
+      int32_t endPos = doc.GetRange(0, 0).StoryLength();
 
       std::wstring appendStr;
-      if (ih->data->append_newline && currentLen > 0)
+      if (ih->data->append_newline && endPos > 1)
         appendStr = L"\r";
       appendStr += winuiTextToControl(ih, value);
 
-      auto endPos = static_cast<int32_t>(currentText.size());
       auto range = doc.GetRange(endPos, endPos);
       range.SetText(TextSetOptions::None, hstring(appendStr));
       range.CharacterFormat().SetClone(doc.GetDefaultCharacterFormat());
@@ -749,10 +800,10 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
 
       if (ih->data->append_scroll)
       {
-        reb.UpdateLayout();
-        ScrollViewer sv = iupwinuiFindScrollViewer(reb);
-        if (sv)
-          sv.ChangeView(nullptr, sv.ScrollableHeight(), nullptr);
+        int32_t caret = doc.GetRange(0, 0).StoryLength() - 1;
+        doc.Selection().SetRange(caret, caret);
+        aux->pendingScroll = IUPWINUI_TEXT_SCROLLEND;
+        winuiTextScrollPending(aux, reb);
       }
     }
   }
@@ -772,10 +823,11 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
 
       if (aux->isMultiline && ih->data->append_scroll)
       {
+        tb.Select(static_cast<int32_t>(newText.size()), 0);
         tb.UpdateLayout();
         ScrollViewer sv = iupwinuiFindScrollViewer(tb);
         if (sv)
-          sv.ChangeView(nullptr, sv.ScrollableHeight(), nullptr);
+          sv.ChangeView(nullptr, sv.ScrollableHeight(), nullptr, true);
       }
     }
   }
@@ -1409,6 +1461,12 @@ static int winuiTextMapMethod(Ihandle* ih)
 
     reb.Loaded([ih](IInspectable const& sender, RoutedEventArgs const&) {
       winuiTextSetScrollBarArrowCursors(sender.as<DependencyObject>());
+      if (iupObjectCheck(ih))
+      {
+        auto* loaded_aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+        if (loaded_aux)
+          winuiTextScrollPending(loaded_aux, sender.as<RichEditBox>());
+      }
       Microsoft::UI::Dispatching::DispatcherQueue dq = Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread();
       if (dq)
         dq.TryEnqueue(Microsoft::UI::Dispatching::DispatcherQueuePriority::Low, [ih]() {
@@ -2412,7 +2470,7 @@ static int winuiTextHasRtfCharAttribs(Ihandle* formattag)
   return iupAttribGet(formattag, "RISE") != nullptr;
 }
 
-static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITextSelection const& sel)
+static void winuiTextApplyCharFormatViaRtf(Ihandle* ih, Ihandle* formattag, ITextRange const& sel)
 {
   hstring plainText;
   sel.GetText(TextGetOptions::None, plainText);
@@ -2614,10 +2672,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
     iupAttribSet(formattag, "FONTSIZE", iupGetFontSizeAttrib(ih));
 
   auto doc = reb.Document();
-  auto sel = doc.Selection();
-
-  int save_start = sel.StartPosition();
-  int save_end = sel.EndPosition();
+  ITextRange target = doc.Selection().as<ITextRange>();
 
   int start_pos = -1, end_pos = -1;
 
@@ -2663,7 +2718,7 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
   }
 
   if (start_pos >= 0 && end_pos >= 0)
-    sel.SetRange(start_pos, end_pos);
+    target = doc.GetRange(start_pos, end_pos);
 
   {
     char* image_name = iupAttribGet(formattag, "IMAGE");
@@ -2692,24 +2747,25 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
         if (pngStream)
         {
           double scale = iupwinuiGetScale(ih);
-          sel.InsertImage(static_cast<int>(new_w / scale + 0.5), static_cast<int>(new_h / scale + 0.5), 0, VerticalCharacterAlignment::Baseline, iupwinuiStringToHString(image_name), pngStream);
+          target.InsertImage(static_cast<int>(new_w / scale + 0.5), static_cast<int>(new_h / scale + 0.5), 0, VerticalCharacterAlignment::Baseline, iupwinuiStringToHString(image_name), pngStream);
         }
       }
 
-      sel.SetRange(save_start, save_end);
+      if (wasReadOnly)
+        reb.IsReadOnly(true);
       return;
     }
   }
 
   {
-    int range_start = sel.StartPosition();
-    int range_end = sel.EndPosition();
-    ITextRange selRange = sel.as<ITextRange>();
+    int range_start = target.StartPosition();
+    int range_end = target.EndPosition();
+    ITextRange selRange = target;
 
     if (winuiTextHasRtfCharAttribs(formattag))
     {
-      winuiTextApplyCharFormatViaRtf(ih, formattag, sel);
-      sel.SetRange(range_start, range_end);
+      winuiTextApplyCharFormatViaRtf(ih, formattag, target);
+      target.SetRange(range_start, range_end);
 
       if (iupAttribGet(formattag, "LINK"))
         winuiTextParseCharacterFormat(formattag, selRange);
@@ -2748,8 +2804,6 @@ extern "C" IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formatt
       }
     }
   }
-
-  sel.SetRange(save_start, save_end);
 
   if (wasReadOnly)
     reb.IsReadOnly(true);
@@ -3646,8 +3700,8 @@ static int winuiTextSetScrollToAttrib(Ihandle* ih, const char* value)
       if (reb)
       {
         int pos = winuiTextLinColToPos(reb.Document(), lin, col);
-        auto range = reb.Document().GetRange(pos, pos);
-        range.ScrollIntoView(PointOptions::Start);
+        aux->pendingScroll = pos;
+        winuiTextScrollPending(aux, reb);
       }
     }
     else
@@ -3700,8 +3754,8 @@ static int winuiTextSetScrollToPosAttrib(Ihandle* ih, const char* value)
       auto reb = winuiGetHandle<RichEditBox>(ih);
       if (reb)
       {
-        auto range = reb.Document().GetRange(pos, pos);
-        range.ScrollIntoView(PointOptions::Start);
+        aux->pendingScroll = pos;
+        winuiTextScrollPending(aux, reb);
       }
     }
     else

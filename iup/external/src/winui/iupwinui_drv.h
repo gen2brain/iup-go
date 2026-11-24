@@ -405,11 +405,13 @@ struct IupWinUITextAux
   double spinActualMin;
   double spinStep;
   int programTextChanges;
+  bool displayFrozen;
+  int pendingScroll;
 
   IupWinUITextAux() : beforeTextChangingToken{}, textChangingToken{}, textChangedToken{}, gotFocusToken{}, lostFocusToken{},
                        valueChangedToken{}, keyDownToken{}, tappedToken{}, selectionChangedToken{},
                        isPassword(false), isMultiline(false), isSpin(false), isFormatted(false), spinauto(true),
-                       spinActualMin(0), spinStep(0), programTextChanges(0) {}
+                       spinActualMin(0), spinStep(0), programTextChanges(0), displayFrozen(false), pendingScroll(-1) {}
 };
 
 struct IupWinUIFrameAux
