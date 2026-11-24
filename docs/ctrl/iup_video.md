@@ -26,11 +26,11 @@ NULL unloads the source.
 
 **URL** (non-inheritable): URI of the source to play, such as an "http", "https" or "file" URL. Same behavior as FILE, and setting it clears FILE.
 
-**BACKEND** (non-inheritable): Playback engine. Can be "AUTO", "NATIVE", "MPV", "VLC" or "GSTREAMER". Default: "AUTO".
+**BACKEND** (non-inheritable): Playback engine. Can be "AUTO", "NATIVE", "MPV", "GSTREAMER" or "VLC". Default: "AUTO".
 Ignored while a source is open.
 "NATIVE" is the system player: Media Foundation in Windows, AVFoundation in macOS and iOS, MediaPlayer in Android and the HTML video element in WebAssembly.
 In Windows, "NATIVE" requires Windows 8 or newer.
-"MPV" (libmpv 2), "VLC" (libVLC 3 or 4) and "GSTREAMER" (GStreamer 1.x) are available in Windows, macOS, Linux, FreeBSD and Haiku, loaded at runtime when installed. "AUTO" tries them in that order, after "NATIVE" in Windows and macOS.
+"MPV" (libmpv 2), "GSTREAMER" (GStreamer 1.x) and "VLC" (libVLC 3 or 4) are available in Windows, macOS, Linux, FreeBSD and Haiku, loaded at runtime when installed. "AUTO" tries them in that order, after "NATIVE" in Windows and macOS.
 In Linux, FreeBSD and Haiku, libVLC 4 is used when both versions are installed.
 In Windows, libmpv-2.dll is loaded from the application folder or PATH, libvlc.dll from the application folder, PATH or the VLC installation, and GStreamer from PATH or the GSTREAMER_1_0_ROOT_MSVC_X86_64, GSTREAMER_1_0_ROOT_MSVC_ARM64, GSTREAMER_1_0_ROOT_MINGW_X86_64 or GSTREAMER_1_0_ROOT_X86_64 installation.
 In macOS, libmpv and GStreamer are loaded from the library search path, Homebrew (/opt/homebrew/lib or /usr/local/lib) or GStreamer.framework, and libVLC from the library search path or VLC.app in /Applications or ~/Applications.

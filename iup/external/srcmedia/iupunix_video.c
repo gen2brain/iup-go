@@ -20,7 +20,7 @@ char* iupdrvVideoReadSubtitle(const char* filename)
 
 const IvideoBackend* iupdrvVideoBackend(int index)
 {
-  static const IvideoBackend* backends[] = {&iupVideoMpvBackend, &iupVideoVlcBackend, &iupVideoGstreamerBackend};
+  static const IvideoBackend* backends[] = {&iupVideoMpvBackend, &iupVideoGstreamerBackend, &iupVideoVlcBackend};
   if (index < 0 || index >= (int)(sizeof(backends) / sizeof(backends[0])))
     return NULL;
   return backends[index];

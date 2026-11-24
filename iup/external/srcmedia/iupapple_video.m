@@ -809,7 +809,7 @@ extern const IvideoBackend iupVideoGstreamerBackend;
 
 const IvideoBackend* iupdrvVideoBackend(int index)
 {
-  static const IvideoBackend* backends[] = {&iappleVideoBackend, &iupVideoMpvBackend, &iupVideoVlcBackend, &iupVideoGstreamerBackend};
+  static const IvideoBackend* backends[] = {&iappleVideoBackend, &iupVideoMpvBackend, &iupVideoGstreamerBackend, &iupVideoVlcBackend};
   if (index < 0 || index >= (int)(sizeof(backends) / sizeof(backends[0])))
     return NULL;
   return backends[index];

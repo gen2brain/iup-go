@@ -1344,7 +1344,7 @@ extern "C" const IvideoBackend iupVideoMpvBackend;
 
 extern "C" const IvideoBackend* iupdrvVideoBackend(int index)
 {
-  static const IvideoBackend* backends[] = {&winVideoBackend, &iupVideoMpvBackend, &iupVideoVlcBackend, &iupVideoGstreamerBackend};
+  static const IvideoBackend* backends[] = {&winVideoBackend, &iupVideoMpvBackend, &iupVideoGstreamerBackend, &iupVideoVlcBackend};
   if (index < 0 || index >= (int)(sizeof(backends) / sizeof(backends[0])))
     return nullptr;
   return backends[index];
