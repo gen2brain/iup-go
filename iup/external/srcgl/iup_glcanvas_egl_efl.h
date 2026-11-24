@@ -125,7 +125,7 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
 
   if (!evas_obj)
   {
-    iupAttribSet(ih, "ERROR", "Could not obtain Evas_Object handle.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Could not obtain Evas_Object handle.");
     return 0;
   }
 
@@ -139,7 +139,7 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
 
   if (!gldata->backend_handle2)
   {
-    iupAttribSet(ih, "ERROR", "Could not obtain Ecore_Evas handle.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Could not obtain Ecore_Evas handle.");
     return 0;
   }
 
@@ -302,7 +302,7 @@ static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* glda
         }
       }
 
-      iupAttribSet(ih, "ERROR", "Failed to create Wayland subsurface during lazy initialization");
+      iupAttribSet(ih, "_IUPGL_ERROR", "Failed to create Wayland subsurface during lazy initialization");
       return -1;
     }
   }

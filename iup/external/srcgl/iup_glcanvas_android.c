@@ -144,12 +144,12 @@ static int androidGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata)
     };
     if (!eglChooseConfig(gldata->display, fb, &gldata->config, 1, &num_config) || num_config == 0)
     {
-      iupAttribSetStrf(ih, "ERROR", "No appropriate EGL config found. Error: 0x%X", eglGetError());
+      iupAttribSetStrf(ih, "_IUPGL_ERROR", "No appropriate EGL config found. Error: 0x%X", eglGetError());
       return 0;
     }
   }
 
-  iupAttribSet(ih, "ERROR", NULL);
+  iupAttribSet(ih, "_IUPGL_ERROR", NULL);
   return 1;
 }
 
@@ -245,7 +245,7 @@ static int androidGLCanvasMapMethod(Ihandle* ih)
   gldata->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
   if (gldata->display == EGL_NO_DISPLAY)
   {
-    iupAttribSet(ih, "ERROR", "Could not get EGL display.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Could not get EGL display.");
     return IUP_NOERROR;
   }
 
@@ -253,7 +253,7 @@ static int androidGLCanvasMapMethod(Ihandle* ih)
     EGLint maj, min;
     if (!eglInitialize(gldata->display, &maj, &min))
     {
-      iupAttribSetStrf(ih, "ERROR", "Could not initialize EGL. Error: 0x%X", eglGetError());
+      iupAttribSetStrf(ih, "_IUPGL_ERROR", "Could not initialize EGL. Error: 0x%X", eglGetError());
       gldata->display = EGL_NO_DISPLAY;
       return IUP_NOERROR;
     }
@@ -261,7 +261,7 @@ static int androidGLCanvasMapMethod(Ihandle* ih)
 
   if (eglBindAPI(EGL_OPENGL_ES_API) == EGL_FALSE)
   {
-    iupAttribSetStrf(ih, "ERROR", "Failed to bind EGL_OPENGL_ES_API. Error: 0x%X", eglGetError());
+    iupAttribSetStrf(ih, "_IUPGL_ERROR", "Failed to bind EGL_OPENGL_ES_API. Error: 0x%X", eglGetError());
     return IUP_NOERROR;
   }
 
@@ -340,7 +340,7 @@ void iupAndroidGLCanvas_handleSurfaceCreated(Ihandle* ih, ANativeWindow* window)
     gldata->surface = androidGLCanvasCreateSurface(ih, gldata);
     if (gldata->surface == EGL_NO_SURFACE)
     {
-      iupAttribSetStrf(ih, "ERROR", "Could not create EGL surface. Error: 0x%X", eglGetError());
+      iupAttribSetStrf(ih, "_IUPGL_ERROR", "Could not create EGL surface. Error: 0x%X", eglGetError());
       return;
     }
   }
@@ -350,7 +350,7 @@ void iupAndroidGLCanvas_handleSurfaceCreated(Ihandle* ih, ANativeWindow* window)
     gldata->context = androidGLCanvasCreateContext(ih, gldata);
     if (gldata->context == EGL_NO_CONTEXT)
     {
-      iupAttribSetStrf(ih, "ERROR", "Could not create EGL context. Error: 0x%X", eglGetError());
+      iupAttribSetStrf(ih, "_IUPGL_ERROR", "Could not create EGL context. Error: 0x%X", eglGetError());
       return;
     }
     iupAttribSet(ih, "CONTEXT", (char*)gldata->context);
@@ -446,11 +446,11 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 
   if (eglMakeCurrent(gldata->display, gldata->surface, gldata->surface, gldata->context) == EGL_FALSE)
   {
-    iupAttribSetStrf(ih, "ERROR", "Failed to make current. Error: 0x%X", eglGetError());
+    iupAttribSetStrf(ih, "_IUPGL_ERROR", "Failed to make current. Error: 0x%X", eglGetError());
     return;
   }
 
-  iupAttribSet(ih, "ERROR", NULL);
+  iupAttribSet(ih, "_IUPGL_ERROR", NULL);
 
   if (!IupGetGlobal("GL_VERSION"))
   {

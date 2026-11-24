@@ -419,7 +419,7 @@ static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata)
     pixelFormat = ChoosePixelFormat(gldata->device, &pfd);
   if (pixelFormat == 0)
   {
-    iupAttribSet(ih, "ERROR", "No appropriate pixel format.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "No appropriate pixel format.");
     iupAttribSetStr(ih, "LASTERROR", IupGetGlobal("LASTERROR"));
     return IUP_NOERROR;
   }
@@ -507,7 +507,7 @@ static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata)
         else
           iupAttribSetStr(ih, "LASTERROR", IupGetGlobal("LASTERROR"));
 
-        iupAttribSet(ih, "ERROR", "Could not create a rendering context.");
+        iupAttribSet(ih, "_IUPGL_ERROR", "Could not create a rendering context.");
 
         wglMakeCurrent(oldDC, oldContext);
         wglDeleteContext(tempContext);
@@ -530,7 +530,7 @@ static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata)
 
   if (!gldata->context)
   {
-    iupAttribSet(ih, "ERROR", "Could not create a rendering context.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Could not create a rendering context.");
     iupAttribSetStr(ih, "LASTERROR", IupGetGlobal("LASTERROR"));
     return IUP_NOERROR;
   }
@@ -562,7 +562,7 @@ static int wGLCreateContext(Ihandle* ih, IGlControlData* gldata)
     return IUP_NOERROR;
   }
 
-  iupAttribSet(ih, "ERROR", NULL);
+  iupAttribSet(ih, "_IUPGL_ERROR", NULL);
   return IUP_NOERROR;
 }
 
@@ -798,12 +798,12 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 
   if (wglMakeCurrent(gldata->device, gldata->context)==FALSE)
   {
-    iupAttribSet(ih, "ERROR", "Failed to set new current context.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Failed to set new current context.");
     iupAttribSetStr(ih, "LASTERROR", IupGetGlobal("LASTERROR"));
   }
   else
   {
-    iupAttribSet(ih, "ERROR", NULL);
+    iupAttribSet(ih, "_IUPGL_ERROR", NULL);
     iupAttribSet(ih, "LASTERROR", NULL);
 
     if (iupAttribGet(ih, "_IUPGL_COMPOSITE_CB"))

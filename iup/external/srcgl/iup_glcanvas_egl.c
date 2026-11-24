@@ -539,7 +539,7 @@ static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata, int visual
 
   if (gldata->display == EGL_NO_DISPLAY)
   {
-    iupAttribSet(ih, "ERROR", "EGL display not initialized.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "EGL display not initialized.");
     return 0;
   }
 
@@ -627,7 +627,7 @@ static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata, int visual
 
     if (!eglChooseConfig(gldata->display, fallback_alist, &gldata->config, 1, &num_config) || num_config == 0)
     {
-        iupAttribSetStrf(ih, "ERROR", "No appropriate EGL config found (including fallback). Error: 0x%X", eglGetError());
+        iupAttribSetStrf(ih, "_IUPGL_ERROR", "No appropriate EGL config found (including fallback). Error: 0x%X", eglGetError());
         return 0;
     }
   }
@@ -660,7 +660,7 @@ static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata, int visual
       }
   }
 
-  iupAttribSet(ih, "ERROR", NULL);
+  iupAttribSet(ih, "_IUPGL_ERROR", NULL);
   return 1;
 }
 
@@ -682,7 +682,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
 
   if (!iupEGLOpen())
   {
-    iupAttribSet(ih, "ERROR", "OpenGL library not found.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "OpenGL library not found.");
     return IUP_NOERROR;
   }
 
@@ -700,7 +700,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   }
 
   if (gldata->display == EGL_NO_DISPLAY) {
-      iupAttribSet(ih, "ERROR", "Could not get EGL display (Platform specific, native handle, and default failed).");
+      iupAttribSet(ih, "_IUPGL_ERROR", "Could not get EGL display (Platform specific, native handle, and default failed).");
       return IUP_NOERROR;
   }
 
@@ -708,7 +708,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
     EGLint major, minor;
     if (!eglInitialize(gldata->display, &major, &minor)) {
         EGLint error = eglGetError();
-        iupAttribSetStrf(ih, "ERROR", "Could not initialize EGL. Error: 0x%X", error);
+        iupAttribSetStrf(ih, "_IUPGL_ERROR", "Could not initialize EGL. Error: 0x%X", error);
         gldata->display = EGL_NO_DISPLAY;
         return IUP_NOERROR;
     }
@@ -717,7 +717,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   if (eglBindAPI(EGL_OPENGL_API) == EGL_FALSE)
   {
       EGLint error = eglGetError();
-      iupAttribSetStrf(ih, "ERROR", "Failed to bind EGL_OPENGL_API (Desktop OpenGL). Check if OpenGL (not ES) is supported. Error: 0x%X", error);
+      iupAttribSetStrf(ih, "_IUPGL_ERROR", "Failed to bind EGL_OPENGL_API (Desktop OpenGL). Check if OpenGL (not ES) is supported. Error: 0x%X", error);
 
       return IUP_NOERROR;
   }
@@ -735,7 +735,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
   }
 
   if (native_window == (EGLNativeWindowType)NULL && !iupAttribGet(ih, "_IUP_EGL_LAZY_INIT") && !gldata->use_composite) {
-      iupAttribSet(ih, "ERROR", "Could not create/obtain native window handle (Wayland EGL window or X11 Window ID). Check backend.");
+      iupAttribSet(ih, "_IUPGL_ERROR", "Could not create/obtain native window handle (Wayland EGL window or X11 Window ID). Check backend.");
       return IUP_NOERROR;
   }
 
@@ -745,7 +745,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
     gldata->surface = eglCreatePbufferSurface(gldata->display, gldata->config, pbuffer_attribs);
     if (gldata->surface == EGL_NO_SURFACE)
     {
-        iupAttribSetStrf(ih, "ERROR", "Could not create EGL pbuffer surface. Error: 0x%X", eglGetError());
+        iupAttribSetStrf(ih, "_IUPGL_ERROR", "Could not create EGL pbuffer surface. Error: 0x%X", eglGetError());
         return IUP_NOERROR;
     }
   }
@@ -763,7 +763,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
         if (gldata->surface == EGL_NO_SURFACE)
         {
             EGLint egl_error = eglGetError();
-            iupAttribSetStrf(ih, "ERROR", "Could not create EGL surface. Error: 0x%X", egl_error);
+            iupAttribSetStrf(ih, "_IUPGL_ERROR", "Could not create EGL surface. Error: 0x%X", egl_error);
 #ifdef IUP_EGL_HAS_WAYLAND
             if (gldata->egl_window)
             {
@@ -898,7 +898,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
 
           if (gldata->context == EGL_NO_CONTEXT)
           {
-              iupAttribSetStrf(ih, "ERROR", "Could not create EGL context (including fallback). Error: 0x%X", eglGetError());
+              iupAttribSetStrf(ih, "_IUPGL_ERROR", "Could not create EGL context (including fallback). Error: 0x%X", eglGetError());
           }
       }
     }
@@ -930,7 +930,7 @@ static int eGLCanvasMapMethod(Ihandle* ih)
       eGLCanvasDefaultResize(ih, gldata->last_logical_width, gldata->last_logical_height);
   }
 
-  iupAttribSet(ih, "ERROR", NULL);
+  iupAttribSet(ih, "_IUPGL_ERROR", NULL);
   return IUP_NOERROR;
 }
 
@@ -1127,7 +1127,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
       if (gldata->surface == EGL_NO_SURFACE)
       {
         EGLint egl_error = eglGetError();
-        iupAttribSetStrf(ih, "ERROR", "Could not create EGL surface during lazy init. Error: 0x%X", egl_error);
+        iupAttribSetStrf(ih, "_IUPGL_ERROR", "Could not create EGL surface during lazy init. Error: 0x%X", egl_error);
 #ifdef IUP_EGL_HAS_WAYLAND
         if (gldata->egl_window)
         {
@@ -1153,7 +1153,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
       if (gldata->context == EGL_NO_CONTEXT)
       {
         EGLint egl_error = eglGetError();
-        iupAttribSetStrf(ih, "ERROR", "Could not create EGL context during lazy init. Error: 0x%X", egl_error);
+        iupAttribSetStrf(ih, "_IUPGL_ERROR", "Could not create EGL context during lazy init. Error: 0x%X", egl_error);
         return;
       }
     }
@@ -1183,7 +1183,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
       if (gldata->surface == EGL_NO_SURFACE)
       {
         EGLint egl_error = eglGetError();
-        iupAttribSetStrf(ih, "ERROR", "Could not recreate EGL surface. Error: 0x%X", egl_error);
+        iupAttribSetStrf(ih, "_IUPGL_ERROR", "Could not recreate EGL surface. Error: 0x%X", egl_error);
         return;
       }
     }
@@ -1219,7 +1219,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 
   if (eglMakeCurrent(gldata->display, gldata->surface, gldata->surface, gldata->context) == EGL_FALSE)
   {
-    iupAttribSetStrf(ih, "ERROR", "Failed to set new current context. Error: 0x%X", eglGetError());
+    iupAttribSetStrf(ih, "_IUPGL_ERROR", "Failed to set new current context. Error: 0x%X", eglGetError());
   }
   else
   {
@@ -1236,7 +1236,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
         eGLBindFramebuffer(GL_FRAMEBUFFER, gldata->fbo);
     }
 
-    iupAttribSet(ih, "ERROR", NULL);
+    iupAttribSet(ih, "_IUPGL_ERROR", NULL);
 
     if (!IupGetGlobal("GL_VERSION"))
     {

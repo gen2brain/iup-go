@@ -11,11 +11,17 @@
 #include "iupgl.h"
 
 #include "iup_object.h"
+#include "iup_attrib.h"
 #include "iup_register.h"
 #include "iup_stdcontrols.h"
 
 
 void iupGlCanvasInitClass(Iclass* ic);
+
+static char* iGlCanvasGetErrorAttrib(Ihandle* ih)
+{
+  return iupAttribGet(ih, "_IUPGL_ERROR");
+}
 
 static Iclass* iGlCanvasNewClass(void)
 {
@@ -34,7 +40,7 @@ static Iclass* iGlCanvasNewClass(void)
 
   iupClassRegisterAttribute(ic, "BUFFER", NULL, NULL, IUPAF_SAMEASSYSTEM, "SINGLE", IUPAF_DEFAULT);
   iupClassRegisterAttribute(ic, "COLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "RGBA", IUPAF_DEFAULT);
-  iupClassRegisterAttribute(ic, "ERROR", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "ERROR", iGlCanvasGetErrorAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttribute(ic, "CONTEXT", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_STRING);
   iupClassRegisterAttribute(ic, "COLORMAP", NULL, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_STRING);

@@ -194,7 +194,7 @@ static void cocoaTouchGLEnsureFramebuffer(Ihandle* ih, IGlControlData* gldata)
 	glBindRenderbuffer(GL_RENDERBUFFER, gldata->color_renderbuffer);
 	if (![gldata->context renderbufferStorage:GL_RENDERBUFFER fromDrawable:layer])
 	{
-		iupAttribSet(ih, "ERROR", "Failed to bind color renderbuffer to layer.");
+		iupAttribSet(ih, "_IUPGL_ERROR", "Failed to bind color renderbuffer to layer.");
 		cocoaTouchGLDeleteFramebuffer(gldata);
 		return;
 	}
@@ -255,7 +255,7 @@ static void cocoaTouchGLEnsureFramebuffer(Ihandle* ih, IGlControlData* gldata)
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		iupAttribSet(ih, "ERROR", "OpenGL ES framebuffer is incomplete.");
+		iupAttribSet(ih, "_IUPGL_ERROR", "OpenGL ES framebuffer is incomplete.");
 		cocoaTouchGLDeleteFramebuffer(gldata);
 		return;
 	}
@@ -265,7 +265,7 @@ static void cocoaTouchGLEnsureFramebuffer(Ihandle* ih, IGlControlData* gldata)
 		glBindFramebuffer(GL_FRAMEBUFFER, gldata->framebuffer);
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
-			iupAttribSet(ih, "ERROR", "OpenGL ES framebuffer is incomplete.");
+			iupAttribSet(ih, "_IUPGL_ERROR", "OpenGL ES framebuffer is incomplete.");
 			cocoaTouchGLDeleteFramebuffer(gldata);
 			return;
 		}
@@ -282,7 +282,7 @@ static int cocoaTouchGLCanvasMapMethod(Ihandle* ih)
 	IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
 	if (!gldata) return IUP_ERROR;
 
-	iupAttribSet(ih, "ERROR", NULL);
+	iupAttribSet(ih, "_IUPGL_ERROR", NULL);
 
 	EAGLRenderingAPI api = cocoaTouchGLChooseAPI(ih);
 	gldata->context = [[EAGLContext alloc] initWithAPI:api];
@@ -290,7 +290,7 @@ static int cocoaTouchGLCanvasMapMethod(Ihandle* ih)
 		gldata->context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
 	if (!gldata->context)
 	{
-		iupAttribSet(ih, "ERROR", "Could not create OpenGL ES context.");
+		iupAttribSet(ih, "_IUPGL_ERROR", "Could not create OpenGL ES context.");
 		return IUP_NOERROR;
 	}
 
@@ -371,13 +371,13 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 	IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
 	if (!gldata || !gldata->context)
 	{
-		iupAttribSet(ih, "ERROR", "Context not available: canvas not mapped or context creation failed.");
+		iupAttribSet(ih, "_IUPGL_ERROR", "Context not available: canvas not mapped or context creation failed.");
 		return;
 	}
 
 	if (![EAGLContext setCurrentContext:gldata->context])
 	{
-		iupAttribSet(ih, "ERROR", "Failed to make OpenGL ES context current.");
+		iupAttribSet(ih, "_IUPGL_ERROR", "Failed to make OpenGL ES context current.");
 		return;
 	}
 
@@ -398,7 +398,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 		if (version)  IupSetStrGlobal("GL_VERSION",  version);
 	}
 
-	iupAttribSet(ih, "ERROR", NULL);
+	iupAttribSet(ih, "_IUPGL_ERROR", NULL);
 }
 
 IUPGL_API void IupGLSwapBuffers(Ihandle* ih)

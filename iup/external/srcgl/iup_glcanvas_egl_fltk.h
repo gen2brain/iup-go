@@ -44,7 +44,7 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
 
   if (!iupGLGetNativeInfo(ih, &info))
   {
-    iupAttribSet(ih, "ERROR", "Could not obtain native window handle.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Could not obtain native window handle.");
     return 0;
   }
 
@@ -153,7 +153,7 @@ static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* glda
       }
     }
 
-    iupAttribSet(ih, "ERROR", "Failed to create Wayland subsurface during lazy initialization");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Failed to create Wayland subsurface during lazy initialization");
     return -1;
   }
 

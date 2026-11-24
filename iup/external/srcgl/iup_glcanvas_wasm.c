@@ -118,7 +118,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
   id = iupwasmIdOf(ih);
   if (!gldata || !id)
   {
-    iupAttribSet(ih, "ERROR", "Context not available: canvas not mapped.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Context not available: canvas not mapped.");
     return;
   }
 
@@ -164,7 +164,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 
     if (gldata->context <= 0)
     {
-      iupAttribSet(ih, "ERROR", "Could not create WebGL context.");
+      iupAttribSet(ih, "_IUPGL_ERROR", "Could not create WebGL context.");
       gldata->context = 0;
       gldata->target[0] = 0;
       return;
@@ -174,7 +174,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 
   if (emscripten_webgl_make_context_current(gldata->context) != EMSCRIPTEN_RESULT_SUCCESS)
   {
-    iupAttribSet(ih, "ERROR", "Failed to make WebGL context current.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Failed to make WebGL context current.");
     return;
   }
 
@@ -190,7 +190,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     if (version)  IupSetStrGlobal("GL_VERSION",  version);
   }
 
-  iupAttribSet(ih, "ERROR", NULL);
+  iupAttribSet(ih, "_IUPGL_ERROR", NULL);
 }
 
 IUPGL_API int IupGLIsCurrent(Ihandle* ih)

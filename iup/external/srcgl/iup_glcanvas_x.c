@@ -211,6 +211,8 @@ static void xGLCompositeSize(IGlControlData* gldata, int* w, int* h)
 
 static int xGLCanvasDefaultResize(Ihandle* ih, int width, int height)
 {
+  if (!iupGLXOpen())
+    return IUP_DEFAULT;
   IupGLMakeCurrent(ih);
   glViewport(0,0,width,height);
   return IUP_DEFAULT;
@@ -356,7 +358,7 @@ static void xGLCanvasGetVisual(Ihandle* ih, IGlControlData* gldata)
   /* check out X extension */
   if (!glXQueryExtension(gldata->display, &erb, &evb))
   {
-    iupAttribSet(ih, "ERROR", "X server has no OpenGL GLX extension.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "X server has no OpenGL GLX extension.");
     return;
   }
 
@@ -393,11 +395,11 @@ static void xGLCanvasGetVisual(Ihandle* ih, IGlControlData* gldata)
 
   if (!gldata->vinfo)
   {
-    iupAttribSet(ih, "ERROR", "No appropriate visual.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "No appropriate visual.");
     return;
   }
 
-  iupAttribSet(ih, "ERROR", NULL);
+  iupAttribSet(ih, "_IUPGL_ERROR", NULL);
 }
 
 static char* xGLCanvasGetVisualAttrib(Ihandle* ih)
@@ -429,7 +431,7 @@ static int xGLCanvasMapMethod(Ihandle* ih)
 
   if (!iupGLXOpen())
   {
-    iupAttribSet(ih, "ERROR", "OpenGL library not found.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "OpenGL library not found.");
     return IUP_NOERROR;
   }
 
@@ -492,7 +494,7 @@ static int xGLCanvasMapMethod(Ihandle* ih)
 
       if (!matching_config)
       {
-        iupAttribSet(ih, "ERROR", "Could not find a GLXFBConfig matching the chosen XVisualInfo.");
+        iupAttribSet(ih, "_IUPGL_ERROR", "Could not find a GLXFBConfig matching the chosen XVisualInfo.");
         glXMakeCurrent(oldDisplay, oldDrawable, oldContext);
         glXDestroyContext(gldata->display, tempContext);
         return IUP_NOERROR;
@@ -564,7 +566,7 @@ static int xGLCanvasMapMethod(Ihandle* ih)
 
   if (!gldata->context)
   {
-    iupAttribSet(ih, "ERROR", "Could not create a rendering context.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Could not create a rendering context.");
     return IUP_NOERROR;
   }
 
@@ -581,7 +583,7 @@ static int xGLCanvasMapMethod(Ihandle* ih)
   if (gldata->colormap != None)
     IupGLPalette(ih,0,1,1,1);  /* set first color as white */
 
-  iupAttribSet(ih, "ERROR", NULL);
+  iupAttribSet(ih, "_IUPGL_ERROR", NULL);
   return IUP_NOERROR;
 }
 
@@ -700,10 +702,10 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     return;
 
   if (glXMakeCurrent(gldata->display, gldata->window, gldata->context)==False)
-    iupAttribSet(ih, "ERROR", "Failed to set new current context.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Failed to set new current context.");
   else
   {
-    iupAttribSet(ih, "ERROR", NULL);
+    iupAttribSet(ih, "_IUPGL_ERROR", NULL);
     glXWaitX();
 
     if (gldata->use_composite)

@@ -101,7 +101,7 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
 
   if (!window || !GDK_IS_WINDOW(window))
   {
-    iupAttribSet(ih, "ERROR", "Could not obtain valid GdkWindow handle.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Could not obtain valid GdkWindow handle.");
     gldata->backend_handle = NULL;
     return 0;
   }
@@ -235,7 +235,7 @@ static int iupEGLBackendCreateLazyNativeWindow(Ihandle* ih, IGlControlData* glda
         }
       }
 
-      iupAttribSet(ih, "ERROR", "Failed to create Wayland subsurface during lazy initialization");
+      iupAttribSet(ih, "_IUPGL_ERROR", "Failed to create Wayland subsurface during lazy initialization");
       return -1;
     }
   }

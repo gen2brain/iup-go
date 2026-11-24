@@ -219,7 +219,7 @@ static void buildSoftwareAttributes(Ihandle* ih, NSOpenGLPixelFormatAttribute* a
 #endif
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "COLOR"), "INDEX"))
   {
-    iupAttribSet(ih, "ERROR", "WARNING: Indexed color mode not supported on macOS. Using RGBA instead.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "WARNING: Indexed color mode not supported on macOS. Using RGBA instead.");
   }
 
   attrs[n++] = NSOpenGLPFAColorSize;
@@ -295,9 +295,9 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormatSoftware(Ihandle* ih)
     buildSoftwareAttributes(ih, attrs, &n, YES, 0);
     pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     if (pixelFormat) return pixelFormat;
-    if (!iupAttribGet(ih, "ERROR"))
+    if (!iupAttribGet(ih, "_IUPGL_ERROR"))
     {
-      iupAttribSet(ih, "ERROR", "Failed to create Core software OpenGL context.");
+      iupAttribSet(ih, "_IUPGL_ERROR", "Failed to create Core software OpenGL context.");
     }
     return nil;
   }
@@ -317,9 +317,9 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormatSoftware(Ihandle* ih)
     pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
     if (pixelFormat) return pixelFormat;
   }
-  if (!iupAttribGet(ih, "ERROR"))
+  if (!iupAttribGet(ih, "_IUPGL_ERROR"))
   {
-    iupAttribSet(ih, "ERROR", "Failed to create Legacy software OpenGL context.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Failed to create Legacy software OpenGL context.");
   }
   return nil;
 }
@@ -392,7 +392,7 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
     attrs[n++] = NSOpenGLPFAStereo;
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "COLOR"), "INDEX"))
   {
-    iupAttribSet(ih, "ERROR", "WARNING: Indexed color mode not supported on macOS. Using RGBA instead.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "WARNING: Indexed color mode not supported on macOS. Using RGBA instead.");
   }
   attrs[n++] = NSOpenGLPFAColorSize;
   number = 24;
@@ -502,12 +502,12 @@ static NSOpenGLPixelFormat* cocoaGLCreatePixelFormat(Ihandle* ih)
     pixelFormat = cocoaGLCreatePixelFormatSoftware(ih);
   }
 
-  if (!pixelFormat && !iupAttribGet(ih, "ERROR"))
+  if (!pixelFormat && !iupAttribGet(ih, "_IUPGL_ERROR"))
   {
     if (request_core)
-      iupAttribSet(ih, "ERROR", "Failed to create OpenGL Core profile context.");
+      iupAttribSet(ih, "_IUPGL_ERROR", "Failed to create OpenGL Core profile context.");
     else
-      iupAttribSet(ih, "ERROR", "Failed to create OpenGL Legacy profile context.");
+      iupAttribSet(ih, "_IUPGL_ERROR", "Failed to create OpenGL Legacy profile context.");
   }
 
   return pixelFormat;
@@ -518,7 +518,7 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
   IGlControlData* gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
   NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 
-  iupAttribSet(ih, "ERROR", NULL);
+  iupAttribSet(ih, "_IUPGL_ERROR", NULL);
 
   /* children map before the dialog, so the view may not exist yet; the context is attached to it later */
   {
@@ -554,9 +554,9 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
 
   if (!gldata->pixel_format)
   {
-    if (!iupAttribGet(ih, "ERROR"))
+    if (!iupAttribGet(ih, "_IUPGL_ERROR"))
     {
-      iupAttribSet(ih, "ERROR", "No appropriate pixel format found.");
+      iupAttribSet(ih, "_IUPGL_ERROR", "No appropriate pixel format found.");
     }
     [pool drain];
     return IUP_NOERROR;
@@ -565,7 +565,7 @@ static int cocoaGLCanvasMapMethod(Ihandle* ih)
 
   if (!gldata->context)
   {
-    iupAttribSet(ih, "ERROR", "Could not create OpenGL context.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Could not create OpenGL context.");
     [gldata->pixel_format release];
     gldata->pixel_format = nil;
     [pool drain];
@@ -693,7 +693,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
   gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
   if (!gldata || !gldata->context)
   {
-    iupAttribSet(ih, "ERROR", "Context not available: canvas not mapped or context creation failed.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Context not available: canvas not mapped or context creation failed.");
     return;
   }
 
@@ -740,9 +740,9 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 #ifdef GNUSTEP
     /* until the view has a size there is no X sub-window, the context is made current without a drawable */
     if (glXMakeContextCurrent(cocoaGLDisplay(), None, None, cocoaGLXContext(gldata)))
-      iupAttribSet(ih, "ERROR", NULL);
+      iupAttribSet(ih, "_IUPGL_ERROR", NULL);
     else
-      iupAttribSet(ih, "ERROR", "Failed to make context current.");
+      iupAttribSet(ih, "_IUPGL_ERROR", "Failed to make context current.");
 #endif
     return;
   }
@@ -755,7 +755,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
 
   if ([NSOpenGLContext currentContext] == gldata->context)
   {
-      iupAttribSet(ih, "ERROR", NULL);
+      iupAttribSet(ih, "_IUPGL_ERROR", NULL);
 
       if (!IupGetGlobal("GL_VERSION"))
       {
@@ -772,7 +772,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
   }
   else
   {
-    iupAttribSet(ih, "ERROR", "Failed to make context current.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Failed to make context current.");
   }
 
   [pool drain];

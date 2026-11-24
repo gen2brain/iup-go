@@ -248,7 +248,7 @@ static ulong haikuGLBuildOptions(Ihandle* ih)
   ulong opts = BGL_RGB;
 
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "COLOR"), "INDEX"))
-    iupAttribSet(ih, "ERROR", "WARNING: Indexed color mode not supported on Haiku. Using RGBA instead.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "WARNING: Indexed color mode not supported on Haiku. Using RGBA instead.");
 
   if (iupStrEqualNoCase(iupAttribGetStr(ih, "BUFFER"), "DOUBLE"))
     opts |= BGL_DOUBLE;
@@ -279,7 +279,7 @@ static int haikuGLCanvasMapMethod(Ihandle* ih)
 {
   auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(ih, "_IUP_GLCONTROLDATA"));
 
-  iupAttribSet(ih, "ERROR", nullptr);
+  iupAttribSet(ih, "_IUPGL_ERROR", nullptr);
 
   /* Parent (canvas) Map ran first; replace its BView with a BGLView. */
   auto* canvas_view = reinterpret_cast<BView*>(ih->handle);
@@ -395,7 +395,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
   auto* gldata = reinterpret_cast<IGlControlData*>(iupAttribGet(ih, "_IUP_GLCONTROLDATA"));
   if (!gldata || !gldata->view)
   {
-    iupAttribSet(ih, "ERROR", "Context not available: canvas not mapped.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "Context not available: canvas not mapped.");
     return;
   }
 
@@ -409,13 +409,13 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     if (s_current_gl && s_current_gl != gldata)
       haikuGLReleaseLock(s_current_gl);
     s_current_gl = gldata;
-    iupAttribSet(ih, "ERROR", nullptr);
+    iupAttribSet(ih, "_IUPGL_ERROR", nullptr);
     return;
   }
 
   if (gldata->locker != -1)
   {
-    iupAttribSet(ih, "ERROR", "GL context locked by another thread.");
+    iupAttribSet(ih, "_IUPGL_ERROR", "GL context locked by another thread.");
     return;
   }
 
@@ -426,7 +426,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
   gldata->locker = me;
   s_current_gl = gldata;
 
-  iupAttribSet(ih, "ERROR", nullptr);
+  iupAttribSet(ih, "_IUPGL_ERROR", nullptr);
 
   if (!IupGetGlobal("GL_VERSION"))
   {

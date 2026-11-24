@@ -62,7 +62,7 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
     IGlNativeInfo info;
     if (!iupGLGetNativeInfo(ih, &info))
     {
-      iupAttribSet(ih, "ERROR", "Could not obtain native window handle.");
+      iupAttribSet(ih, "_IUPGL_ERROR", "Could not obtain native window handle.");
       return 0;
     }
 
