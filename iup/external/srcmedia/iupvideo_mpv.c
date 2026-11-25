@@ -306,7 +306,9 @@ static int iVideoMpvOpen(IvideoSession* session, Ihandle* ih, const char* source
   mpv_set_option_string(context->player, "load-scripts", "no");
   mpv_set_option_string(context->player, "ytdl", "no");
   mpv_set_option_string(context->player, "hwdec", "auto");
-  if (!session->gl)
+  if (session->gl)
+    mpv_set_option_string(context->player, "video-timing-offset", "0");
+  else
     mpv_set_option_string(context->player, "sws-fast", "yes");
   if (session->audio_device)
     mpv_set_option_string(context->player, "audio-device", session->audio_device);

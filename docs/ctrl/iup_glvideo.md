@@ -28,7 +28,7 @@ All attributes of the [IupVideo](iup_video.md) are supported, with these differe
 
 **AVAILABLE** (read-only): Returns "YES" if libmpv can be loaded, "NO" otherwise.
 
-**MPVOPTIONS** (non-inheritable): IupGLVideo sets only "hwdec=auto" before MPVCONFIG and MPVOPTIONS apply.
+**MPVOPTIONS** (non-inheritable): IupGLVideo sets only "hwdec=auto" and "video-timing-offset=0" before MPVCONFIG and MPVOPTIONS apply.
 
 **BUFFER**: Default: "DOUBLE".
 
