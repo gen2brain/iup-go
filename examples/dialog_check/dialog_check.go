@@ -224,6 +224,34 @@ func buildSteps() {
 		} else {
 			check("FULLSCREEN=NO restores the size", w == normal[2] && h == normal[3], state(subject))
 		}
+		x, y := pair(subject, "SCREENPOSITION")
+		if noPosition() {
+			skip("FULLSCREEN=NO position", "the windowing system places dialogs")
+		} else {
+			check("FULLSCREEN=NO restores the position", near(x, normal[0]) && near(y, normal[1]), fmt.Sprintf("%d,%d, was %d,%d", x, y, normal[0], normal[1]))
+		}
+	})
+
+	var fs, fsCanvas, fsLabel iup.Ihandle
+	add(func() {
+		fsCanvas = iup.Canvas().SetAttributes(`RASTERSIZE=300x200, BORDER=NO`)
+		fsLabel = label("Below the canvas")
+		fs = iup.Dialog(iup.Vbox(fsCanvas, fsLabel)).SetAttribute("TITLE", "Fullscreen with refresh")
+		iup.ShowXY(fs, iup.CENTER, iup.CENTER)
+	})
+	add(func() { fs.SetAttribute("FULLSCREEN", "YES") })
+	add(func() {
+		fs.SetAttribute("FULLSCREEN", "NO")
+		iup.Refresh(fs)
+	})
+	add(func() {
+		cw, ch := pair(fs, "CLIENTSIZE")
+		w, h := pair(fsCanvas, "RASTERSIZE")
+		_, ly := pair(fsLabel, "POSITION")
+		_, lh := pair(fsLabel, "RASTERSIZE")
+		check("FULLSCREEN=NO with IupRefresh: content inside the client", w == cw && ly+lh <= ch,
+			fmt.Sprintf("canvas %dx%d, label at %d height %d, CLIENTSIZE %dx%d", w, h, ly, lh, cw, ch))
+		fs.Destroy()
 	})
 
 	add(childAt("ShowXY 200,150", 200, 150, func(c iup.Ihandle) {

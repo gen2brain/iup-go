@@ -588,8 +588,12 @@ static gboolean gtkDialogConfigureEvent(GtkWidget* widget, GdkEventConfigure* ev
     if (!cb || cb(ih, client_width, client_height - menu) != IUP_IGNORE)
     {
       ih->data->ignore_resize = 1;
-      if (ih->currentwidth != laid_out_width || ih->currentheight != laid_out_height)
+      if (ih->currentwidth != laid_out_width || ih->currentheight != laid_out_height ||
+          (iupAttribGet(ih, "_IUPGTK_OLD_CAPTION") &&
+           (border != iupAttribGetInt(ih, "_IUPGTK_OLD_BORDER") || caption != iupAttribGetInt(ih, "_IUPGTK_OLD_CAPTION"))))
         IupRefresh(ih);
+      iupAttribSetInt(ih, "_IUPGTK_OLD_BORDER", border);
+      iupAttribSetInt(ih, "_IUPGTK_OLD_CAPTION", caption);
 
       /* GetDecoration returns estimates on the first ConfigureEvent after gtk_widget_show */
       {
