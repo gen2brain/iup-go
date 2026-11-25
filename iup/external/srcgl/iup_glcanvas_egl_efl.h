@@ -506,6 +506,12 @@ static void iupEGLBackendQueueComposite(Ihandle* ih, IGlControlData* gldata)
   if (!img || !evas_obj || !px || pw < 1 || ph < 1)
     return;
 
+  if (!evas_object_smart_parent_get(img) && evas_object_smart_parent_get(evas_obj))
+  {
+    evas_object_smart_member_add(img, evas_object_smart_parent_get(evas_obj));
+    evas_object_stack_above(img, evas_obj);
+  }
+
   geom = efl_gfx_entity_geometry_get(evas_obj);
   evas_object_move(img, geom.x, geom.y);
   evas_object_resize(img, geom.w, geom.h);
