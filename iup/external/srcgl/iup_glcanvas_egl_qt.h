@@ -55,6 +55,11 @@ static int iupEGLBackendMapInit(Ihandle* ih, IGlControlData* gldata)
   {
     if (!IupGetGlobal("WL_DISPLAY"))
       return 0;
+    if (!IupGetAttribute(IupGetDialog(ih), "WL_SURFACE"))
+    {
+      gldata->use_composite = 1;
+      iupAttribSet(ih, "_IUPGL_COMPOSITE", "1");
+    }
     return 1;
   }
 
@@ -294,7 +299,10 @@ static void iupEGLBackendQueueComposite(Ihandle* ih, IGlControlData* gldata)
 {
   (void)gldata;
   if (!iupAttribGet(ih, "_IUPGL_IN_DRAW"))
+  {
+    iupAttribSet(ih, "_IUPGL_COMPOSITE_FRESH", "1");
     iupdrvPostRedraw(ih);
+  }
 }
 
 #endif

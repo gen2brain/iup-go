@@ -142,10 +142,14 @@ protected:
 
       if (iupAttribGet(ih, "_IUPGL_COMPOSITE"))
       {
-        iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
-        if (cb && !(ih->data->inside_resize))
-          cb(ih);
-        iupAttribSet(ih, "_IUPGL_IN_DRAW", nullptr);
+        if (!iupAttribGet(ih, "_IUPGL_COMPOSITE_FRESH"))
+        {
+          iupAttribSet(ih, "_IUPGL_IN_DRAW", "1");
+          if (cb && !(ih->data->inside_resize))
+            cb(ih);
+          iupAttribSet(ih, "_IUPGL_IN_DRAW", nullptr);
+        }
+        iupAttribSet(ih, "_IUPGL_COMPOSITE_FRESH", nullptr);
 
         auto* px = reinterpret_cast<unsigned char*>(iupAttribGet(ih, "_IUPGL_COMPOSITE_PIXELS"));
         int pw = iupAttribGetInt(ih, "_IUPGL_COMPOSITE_W");
