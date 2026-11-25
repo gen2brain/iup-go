@@ -241,6 +241,10 @@ func buildSteps() {
 	})
 	add(func() { fs.SetAttribute("FULLSCREEN", "YES") })
 	add(func() {
+		_, ch := pair(fs, "CLIENTSIZE")
+		_, h := pair(fsCanvas, "RASTERSIZE")
+		_, lh := pair(fsLabel, "RASTERSIZE")
+		check("FULLSCREEN=YES: content fills the client", near(h+lh, ch), fmt.Sprintf("canvas height %d, label height %d, %s", h, lh, state(fs)))
 		fs.SetAttribute("FULLSCREEN", "NO")
 		iup.Refresh(fs)
 	})

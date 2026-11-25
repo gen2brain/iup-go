@@ -309,6 +309,15 @@ IUP_SDK_API void iupdrvDialogGetDecoration(Ihandle* ih, int* border, int* captio
   if (has_csd && ih->handle && iupdrvIsVisible(ih))
   {
     int win_border = 0, win_caption = 0;
+    GdkWindow* window = iupgtkGetWindow(ih->handle);
+
+    if (window && (gdk_window_get_state(window) & GDK_WINDOW_STATE_FULLSCREEN))
+    {
+      *border = 0;
+      *caption = 0;
+      return;
+    }
+
     gtkDialogGetWindowDecor(ih, &win_border, &win_caption);
 
     if (win_caption > 0)
