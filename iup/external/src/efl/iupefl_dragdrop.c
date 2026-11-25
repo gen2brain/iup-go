@@ -277,6 +277,12 @@ static void eflDropDataFreeCb(Eo* obj, void* data, const Eina_Future* dead_futur
   free(req);
 }
 
+/* a text/uri-list comment line, EFL 1.29 passes it on X11 with its own prefix */
+static int eflDropIsUriComment(const char* line)
+{
+  return line[0] == '#' || strncmp(line, " //..//", 7) == 0;
+}
+
 static Eina_Value eflDropFilesSelectionCb(Eo* obj, void* data, const Eina_Value value)
 {
   eflDropRequest* dfd = (eflDropRequest*)data;
@@ -316,16 +322,15 @@ static Eina_Value eflDropFilesSelectionCb(Eo* obj, void* data, const Eina_Value 
   dataCopy[slice.len] = '\0';
 
   {
-    const char* p = (const char*)slice.mem;
-    const char* end = p + slice.len;
-    while (p < end)
+    const char* p = dataCopy;
+    while (*p)
     {
-      if (*p == '\n')
+      size_t len = strcspn(p, "\r\n");
+      if (len > 0 && !eflDropIsUriComment(p))
         count++;
-      p++;
+      p += len;
+      p += strspn(p, "\r\n");
     }
-    if (slice.len > 0 && ((const char*)slice.mem)[slice.len - 1] != '\n')
-      count++;
   }
 
   savePtr = NULL;
@@ -336,13 +341,16 @@ static Eina_Value eflDropFilesSelectionCb(Eo* obj, void* data, const Eina_Value 
   {
     char* filename = line;
 
-    if (strncmp(filename, "file://", 7) == 0)
-      filename += 7;
+    if (!eflDropIsUriComment(line))
+    {
+      if (strncmp(filename, "file://", 7) == 0)
+        filename += 7;
 
-    if (cbDropFiles(ih, filename, remaining, drop_x, drop_y) == IUP_IGNORE)
-      break;
+      if (cbDropFiles(ih, filename, remaining, drop_x, drop_y) == IUP_IGNORE)
+        break;
 
-    remaining--;
+      remaining--;
+    }
     line = strtok_r(NULL, "\r\n", &savePtr);
   }
 
@@ -481,7 +489,39 @@ static Eo* eflDropGetWidget(Ihandle* ih)
     return widget;
   if (ih->iclass->nativetype == IUP_TYPECANVAS)
     return iupeflCanvasGetOverlayWidget(ih);
+  if (ih->iclass->nativetype == IUP_TYPEDIALOG && iupAttribGet(ih, "_IUP_EFL_INNER"))
+    return (Eo*)iupAttribGet(ih, "_IUP_EFL_INNER");
   return iupeflGetWidget(ih);
+}
+
+static void eflDropAreaResizeCb(void* data, const Efl_Event* ev)
+{
+  efl_gfx_entity_geometry_set((Eo*)data, efl_gfx_entity_geometry_get(ev->object));
+}
+
+/* EFL finds the drop target from the object under the pointer, an empty dialog area has none of its own */
+static void eflDropUpdateDialogArea(Ihandle* ih, Eo* widget, int wanted)
+{
+  Eo* area = (Eo*)iupAttribGet(ih, "_IUPEFL_DROP_AREA");
+
+  if (wanted && !area)
+  {
+    area = efl_add(EFL_CANVAS_RECTANGLE_CLASS, widget);
+    efl_gfx_color_set(area, 0, 0, 0, 0);
+    efl_canvas_object_repeat_events_set(area, EINA_TRUE);
+    evas_object_smart_member_add(area, widget);
+    efl_gfx_stack_lower_to_bottom(area);
+    efl_gfx_entity_geometry_set(area, efl_gfx_entity_geometry_get(widget));
+    efl_gfx_entity_visible_set(area, EINA_TRUE);
+    efl_event_callback_add(widget, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflDropAreaResizeCb, area);
+    iupAttribSet(ih, "_IUPEFL_DROP_AREA", (char*)area);
+  }
+  else if (!wanted && area)
+  {
+    efl_event_callback_del(widget, EFL_GFX_ENTITY_EVENT_SIZE_CHANGED, eflDropAreaResizeCb, area);
+    efl_del(area);
+    iupAttribSet(ih, "_IUPEFL_DROP_AREA", NULL);
+  }
 }
 
 static void eflDropUpdateCallbacks(Ihandle* ih)
@@ -495,12 +535,16 @@ static void eflDropUpdateCallbacks(Ihandle* ih)
     efl_event_callback_add(widget, EFL_UI_DND_EVENT_DROP_POSITION_CHANGED, eflDropPositionChangedCb, ih);
     efl_event_callback_add(widget, EFL_UI_DND_EVENT_DROP_DROPPED, eflDropDroppedCb, ih);
     iupAttribSet(ih, "_IUPEFL_DROP_WIDGET", (char*)widget);
+    if (ih->iclass->nativetype == IUP_TYPEDIALOG)
+      eflDropUpdateDialogArea(ih, widget, 1);
   }
   else if (!wanted && added)
   {
     efl_event_callback_del(added, EFL_UI_DND_EVENT_DROP_POSITION_CHANGED, eflDropPositionChangedCb, ih);
     efl_event_callback_del(added, EFL_UI_DND_EVENT_DROP_DROPPED, eflDropDroppedCb, ih);
     iupAttribSet(ih, "_IUPEFL_DROP_WIDGET", NULL);
+    if (ih->iclass->nativetype == IUP_TYPEDIALOG)
+      eflDropUpdateDialogArea(ih, added, 0);
   }
 }
 
