@@ -138,6 +138,7 @@ typedef struct _IGlControlData
   int last_logical_height;
 
   int use_composite;
+  int surfaceless;
   unsigned int fbo, color_tex[2], depth_rbo;
   int fbo_w, fbo_h;
   int color_back, present;
@@ -544,7 +545,7 @@ static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata, int visual
   }
 
   alist[n++] = EGL_SURFACE_TYPE;
-  alist[n++] = gldata->use_composite ? EGL_PBUFFER_BIT : EGL_WINDOW_BIT;
+  alist[n++] = (gldata->use_composite && !gldata->surfaceless) ? EGL_PBUFFER_BIT : EGL_WINDOW_BIT;
 
   alist[n++] = EGL_RENDERABLE_TYPE;
   alist[n++] = EGL_OPENGL_BIT;
@@ -616,7 +617,7 @@ static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata, int visual
   if (!eglChooseConfig(gldata->display, alist, &gldata->config, 1, &num_config) || num_config == 0)
   {
     EGLint fallback_alist[] = {
-        EGL_SURFACE_TYPE, gldata->use_composite ? EGL_PBUFFER_BIT : EGL_WINDOW_BIT,
+        EGL_SURFACE_TYPE, (gldata->use_composite && !gldata->surfaceless) ? EGL_PBUFFER_BIT : EGL_WINDOW_BIT,
         EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
         EGL_RED_SIZE, 8,
         EGL_GREEN_SIZE, 8,
@@ -627,6 +628,13 @@ static int eGLCanvasChooseConfig(Ihandle* ih, IGlControlData* gldata, int visual
 
     if (!eglChooseConfig(gldata->display, fallback_alist, &gldata->config, 1, &num_config) || num_config == 0)
     {
+        const char* extensions = eglQueryString(gldata->display, EGL_EXTENSIONS);
+        if (gldata->use_composite && !gldata->surfaceless && extensions && strstr(extensions, "EGL_KHR_surfaceless_context"))
+        {
+          gldata->surfaceless = 1;
+          return eGLCanvasChooseConfig(ih, gldata, visual_id);
+        }
+
         iupAttribSetStrf(ih, "_IUPGL_ERROR", "No appropriate EGL config found (including fallback). Error: 0x%X", eglGetError());
         return 0;
     }
@@ -741,12 +749,15 @@ static int eGLCanvasMapMethod(Ihandle* ih)
 
   if (gldata->use_composite)
   {
-    EGLint pbuffer_attribs[] = { EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE };
-    gldata->surface = eglCreatePbufferSurface(gldata->display, gldata->config, pbuffer_attribs);
-    if (gldata->surface == EGL_NO_SURFACE)
+    if (!gldata->surfaceless)
     {
+      EGLint pbuffer_attribs[] = { EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE };
+      gldata->surface = eglCreatePbufferSurface(gldata->display, gldata->config, pbuffer_attribs);
+      if (gldata->surface == EGL_NO_SURFACE)
+      {
         iupAttribSetStrf(ih, "_IUPGL_ERROR", "Could not create EGL pbuffer surface. Error: 0x%X", eglGetError());
         return IUP_NOERROR;
+      }
     }
   }
   else
@@ -950,7 +961,7 @@ static void eGLCanvasUnMapMethod(Ihandle* ih)
     return;
   }
 
-  if (gldata->use_composite && gldata->context != EGL_NO_CONTEXT && gldata->surface != EGL_NO_SURFACE)
+  if (gldata->use_composite && gldata->context != EGL_NO_CONTEXT && (gldata->surfaceless || gldata->surface != EGL_NO_SURFACE))
   {
     eglMakeCurrent(gldata->display, gldata->surface, gldata->surface, gldata->context);
     if (gldata->fbo)       eGLDeleteFramebuffers(1, &gldata->fbo);
@@ -1189,7 +1200,7 @@ IUPGL_API void IupGLMakeCurrent(Ihandle* ih)
     }
   }
 
-  if (gldata->context == EGL_NO_CONTEXT || gldata->surface == EGL_NO_SURFACE)
+  if (gldata->context == EGL_NO_CONTEXT || (!gldata->surfaceless && gldata->surface == EGL_NO_SURFACE))
   {
     return;
   }
@@ -1357,7 +1368,7 @@ IUPGL_API void IupGLSwapBuffers(Ihandle* ih)
     return;
 
   gldata = (IGlControlData*)iupAttribGet(ih, "_IUP_GLCONTROLDATA");
-  if (!gldata || gldata->display == EGL_NO_DISPLAY || gldata->surface == EGL_NO_SURFACE)
+  if (!gldata || gldata->display == EGL_NO_DISPLAY || (!gldata->surfaceless && gldata->surface == EGL_NO_SURFACE))
     return;
 
   cb = IupGetCallback(ih, "SWAPBUFFERS_CB");
