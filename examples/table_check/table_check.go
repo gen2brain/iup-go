@@ -202,6 +202,23 @@ func buildSteps() {
 			deferred.GetAttribute("FGCOLOR", 90, 0), deferred.GetAttribute("FONT", 100, 1))
 		check("NUMLIN shrink drops the attributes of the removed lines only", got == `10:2="255 0 0" 60:2="" 90:0="" 100:1=""`, got)
 	})
+	add(func() {
+		deferred.SetAttributeId2("BGCOLOR", 0, 3, "0 255 0")
+		deferred.SetAttributeId2("BGCOLOR", 0, 5, "1 2 3")
+		deferred.SetAttributeId2("FGCOLOR", 20, 0, "0 0 255")
+		deferred.SetAttribute("ADDLIN", "5")
+		deferred.SetAttribute("ADDLIN", "5")
+		deferred.SetAttribute("DELLIN", "15")
+		deferred.SetAttribute("ADDCOL", "1")
+		deferred.SetAttribute("DELCOL", "4")
+		get := func(name string, lin, col int) string {
+			return fmt.Sprintf("%s%d:%d=%q", name, lin, col, deferred.GetAttribute(name, lin, col))
+		}
+		got := strings.Join([]string{get("BGCOLOR", 12, 3), get("BGCOLOR", 10, 2), get("FGCOLOR", 21, 0), get("FGCOLOR", 20, 0),
+			get("BGCOLOR", 0, 5), get("BGCOLOR", 0, 4), get("BGCOLOR", 0, 3)}, " ")
+		check("ADDLIN, DELLIN, ADDCOL and DELCOL move the line and column attributes",
+			got == `BGCOLOR12:3="255 0 0" BGCOLOR10:2="" FGCOLOR21:0="0 0 255" FGCOLOR20:0="" BGCOLOR0:5="1 2 3" BGCOLOR0:4="" BGCOLOR0:3=""`, got)
+	})
 	add(func() { iup.GetDialog(deferred).Destroy() })
 
 	if input {

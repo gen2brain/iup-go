@@ -46,28 +46,6 @@ int iupTableMoveColPos(int col, int from_col, int to_col)
   return col;
 }
 
-static void iTableShiftAttribId2(Ihandle* ih, const char* name, int lin, int from_col, int to_col)
-{
-  char* value = iupAttribGetId2(ih, name, lin, from_col);
-  char* saved = value ? iupStrDup(value) : NULL;
-  int c;
-
-  if (from_col < to_col)
-  {
-    for (c = from_col; c < to_col; c++)
-      iupAttribSetStrId2(ih, name, lin, c, iupAttribGetId2(ih, name, lin, c + 1));
-  }
-  else
-  {
-    for (c = from_col; c > to_col; c--)
-      iupAttribSetStrId2(ih, name, lin, c, iupAttribGetId2(ih, name, lin, c - 1));
-  }
-
-  iupAttribSetStrId2(ih, name, lin, to_col, saved);
-  if (saved)
-    free(saved);
-}
-
 static void iTableShiftAttribId(Ihandle* ih, const char* name, int from_col, int to_col)
 {
   char* value = iupAttribGetId(ih, name, from_col);
@@ -94,9 +72,117 @@ static const char* iTableColIdAttribs[6] = { "TITLE", "WIDTH", "RASTERWIDTH", "A
 static const char* iTableColId2Attribs[5] = { "", "BGCOLOR", "FGCOLOR", "FONT", "IMAGE" };
 static const char* iTableLinAttribs[3] = { "BGCOLOR", "FGCOLOR", "FONT" };
 
+typedef struct _ITableRemap
+{
+  int from, to;
+  const int* inv;
+  int by_col, clear;
+} ITableRemap;
+
+static int iTableParseKey(const char* key, const char** names, int count, int* name_len, int* lin, int* col)
+{
+  int a;
+  for (a = 0; a < count; a++)
+  {
+    size_t len = strlen(names[a]);
+    if (strncmp(key, names[a], len) == 0)
+    {
+      if (sscanf(key + len, "%d:%d", lin, col) == 2 && *lin >= 0 && *col >= 0)
+      {
+        char buf[50];
+        snprintf(buf, sizeof(buf), "%d:%d", *lin, *col);
+        if (strcmp(key + len, buf) == 0)
+        {
+          *name_len = (int)len;
+          return 1;
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+static void iTableRemapAttribs(Ihandle* ih, const char** names, int count, int max_lin, int max_col, const ITableRemap* r)
+{
+  int total = iupTableCount(ih->attrib);
+  char** old_keys;
+  char** new_keys;
+  char** values;
+  char* key;
+  int n = 0, i;
+
+  if (total == 0)
+    return;
+
+  old_keys = (char**)malloc(total * sizeof(char*));
+  new_keys = (char**)malloc(total * sizeof(char*));
+  values = (char**)malloc(total * sizeof(char*));
+
+  for (key = iupTableFirst(ih->attrib); key; key = iupTableNext(ih->attrib))
+  {
+    int name_len, lin, col, pos, new_pos;
+
+    if (!iTableParseKey(key, names, count, &name_len, &lin, &col) || lin > max_lin || col > max_col)
+      continue;
+
+    pos = r->by_col ? col : lin;
+    if (r->clear)
+    {
+      if (pos < r->from || pos > r->to)
+        continue;
+      new_pos = 0;
+    }
+    else if (r->inv)
+    {
+      if (pos < 1 || pos > max_lin)
+        continue;
+      new_pos = r->inv[pos - 1];
+    }
+    else
+      new_pos = iupTableMoveColPos(pos, r->from, r->to);
+
+    if (!r->clear && new_pos == pos)
+      continue;
+
+    old_keys[n] = iupStrDup(key);
+    if (r->clear)
+    {
+      new_keys[n] = NULL;
+      values[n] = NULL;
+    }
+    else
+    {
+      char buf[100];
+      snprintf(buf, sizeof(buf), "%.*s%d:%d", name_len, key, r->by_col ? lin : new_pos, r->by_col ? new_pos : col);
+      new_keys[n] = iupStrDup(buf);
+      values[n] = iupStrDup((char*)iupTableGetCurr(ih->attrib));
+    }
+    n++;
+  }
+
+  for (i = 0; i < n; i++)
+    iupAttribSet(ih, old_keys[i], NULL);
+
+  for (i = 0; i < n; i++)
+  {
+    if (new_keys[i])
+      iupAttribSetStr(ih, new_keys[i], values[i]);
+    free(old_keys[i]);
+    if (new_keys[i])
+      free(new_keys[i]);
+    if (values[i])
+      free(values[i]);
+  }
+
+  free(old_keys);
+  free(new_keys);
+  free(values);
+}
+
 void iupTableMoveColAttribs(Ihandle* ih, int from_col, int to_col)
 {
-  int a, lin;
+  ITableRemap r = { from_col, to_col, NULL, 1, 0 };
+  int a;
 
   if (from_col == to_col)
     return;
@@ -104,78 +190,36 @@ void iupTableMoveColAttribs(Ihandle* ih, int from_col, int to_col)
   for (a = 0; a < 6; a++)
     iTableShiftAttribId(ih, iTableColIdAttribs[a], from_col, to_col);
 
-  for (a = 0; a < 5; a++)
-  {
-    for (lin = 0; lin <= ih->data->num_lin; lin++)  /* lin 0 is the per-column (0:C) entry */
-      iTableShiftAttribId2(ih, iTableColId2Attribs[a], lin, from_col, to_col);
-  }
+  iTableRemapAttribs(ih, iTableColId2Attribs, 5, ih->data->num_lin, from_col > to_col ? from_col : to_col, &r);
 }
 
 void iupTableMoveLinAttribs(Ihandle* ih, int from_lin, int to_lin)
 {
-  int a, col;
+  ITableRemap r = { from_lin, to_lin, NULL, 0, 0 };
 
   if (from_lin == to_lin)
     return;
 
-  for (a = 0; a < 3; a++)
-  {
-    const char* name = iTableLinAttribs[a];
-    for (col = 0; col <= ih->data->num_col; col++)  /* col 0 is the per-row (L:*) entry */
-    {
-      char* value = iupAttribGetId2(ih, name, from_lin, col);
-      char* saved = value ? iupStrDup(value) : NULL;
-      int l;
-
-      if (from_lin < to_lin)
-      {
-        for (l = from_lin; l < to_lin; l++)
-          iupAttribSetStrId2(ih, name, l, col, iupAttribGetId2(ih, name, l + 1, col));
-      }
-      else
-      {
-        for (l = from_lin; l > to_lin; l--)
-          iupAttribSetStrId2(ih, name, l, col, iupAttribGetId2(ih, name, l - 1, col));
-      }
-
-      iupAttribSetStrId2(ih, name, to_lin, col, saved);
-      if (saved)
-        free(saved);
-    }
-  }
+  iTableRemapAttribs(ih, iTableLinAttribs, 3, from_lin > to_lin ? from_lin : to_lin, ih->data->num_col, &r);
 }
 
 void iupTableSortLinAttribs(Ihandle* ih, const int* order)
 {
   int num_lin = ih->data->num_lin;
-  char** saved;
-  int a, col, lin;
+  ITableRemap r = { 0, 0, NULL, 0, 0 };
+  int* inv;
+  int lin;
 
   if (num_lin < 2)
     return;
 
-  saved = (char**)malloc(num_lin * sizeof(char*));
+  inv = (int*)malloc(num_lin * sizeof(int));
+  for (lin = 1; lin <= num_lin; lin++)
+    inv[order[lin - 1] - 1] = lin;
 
-  for (a = 0; a < 3; a++)
-  {
-    const char* name = iTableLinAttribs[a];
-    for (col = 0; col <= ih->data->num_col; col++)
-    {
-      for (lin = 1; lin <= num_lin; lin++)
-        saved[lin - 1] = iupStrDup(iupAttribGetId2(ih, name, lin, col));
-
-      for (lin = 1; lin <= num_lin; lin++)
-        iupAttribSetStrId2(ih, name, lin, col, saved[order[lin - 1] - 1]);
-
-      for (lin = 0; lin < num_lin; lin++)
-      {
-        if (saved[lin])
-          free(saved[lin]);
-      }
-    }
-  }
-
-  free(saved);
+  r.inv = inv;
+  iTableRemapAttribs(ih, iTableLinAttribs, 3, num_lin, ih->data->num_col, &r);
+  free(inv);
 }
 
 static void iTableClearLinAttribs(Ihandle* ih, int lin)
@@ -188,66 +232,25 @@ static void iTableClearLinAttribs(Ihandle* ih, int lin)
   }
 }
 
-static int iTableLinAttribLine(const char* key, int num_col)
-{
-  int a;
-  for (a = 0; a < 3; a++)
-  {
-    size_t len = strlen(iTableLinAttribs[a]);
-    if (strncmp(key, iTableLinAttribs[a], len) == 0)
-    {
-      int lin, col, end = 0;
-      if (sscanf(key + len, "%d:%d%n", &lin, &col, &end) == 2 && key[len + end] == 0 && col >= 0 && col <= num_col)
-        return lin;
-    }
-  }
-  return 0;
-}
-
 static void iTableClearLinAttribsFrom(Ihandle* ih, int first_lin)
 {
-  int last_lin = ih->data->num_lin;
-  int count = iupTableCount(ih->attrib);
-  char** keys;
-  char* key;
-  int n = 0, i, lin;
+  ITableRemap r = { first_lin, ih->data->num_lin, NULL, 0, 1 };
 
-  if (last_lin < first_lin)
+  if (ih->data->num_lin < first_lin)
     return;
 
-  if ((double)(last_lin - first_lin + 1) * 3 * (ih->data->num_col + 1) <= count)
-  {
-    for (lin = first_lin; lin <= last_lin; lin++)
-      iTableClearLinAttribs(ih, lin);
-    return;
-  }
-
-  keys = (char**)malloc((count + 1) * sizeof(char*));
-  for (key = iupTableFirst(ih->attrib); key; key = iupTableNext(ih->attrib))
-  {
-    lin = iTableLinAttribLine(key, ih->data->num_col);
-    if (lin >= first_lin && lin <= last_lin)
-      keys[n++] = iupStrDup(key);
-  }
-
-  for (i = 0; i < n; i++)
-  {
-    iupAttribSet(ih, keys[i], NULL);
-    free(keys[i]);
-  }
-  free(keys);
+  iTableRemapAttribs(ih, iTableLinAttribs, 3, ih->data->num_lin, ih->data->num_col, &r);
 }
 
 static void iTableClearColAttribs(Ihandle* ih, int col)
 {
-  int a, lin;
+  ITableRemap r = { col, col, NULL, 1, 1 };
+  int a;
+
   for (a = 0; a < 6; a++)
     iupAttribSetId(ih, iTableColIdAttribs[a], col, NULL);
-  for (a = 0; a < 5; a++)
-  {
-    for (lin = 0; lin <= ih->data->num_lin; lin++)
-      iupAttribSetId2(ih, iTableColId2Attribs[a], lin, col, NULL);
-  }
+
+  iTableRemapAttribs(ih, iTableColId2Attribs, 5, ih->data->num_lin, col, &r);
 }
 
 static int iTableTakeSortSign(Ihandle* ih, int* sign)
