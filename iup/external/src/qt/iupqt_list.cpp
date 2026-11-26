@@ -748,12 +748,12 @@ extern "C" IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
   }
 }
 
-static QListWidget* qtListGetListWidget(Ihandle* ih)
+static QListView* qtListGetListView(Ihandle* ih)
 {
   if (ih->data->has_editbox && !ih->data->is_dropdown)
     return reinterpret_cast<QListWidget*>(iupAttribGet(ih, "_IUPQT_LIST"));
   else if (!ih->data->is_dropdown)
-    return reinterpret_cast<QListWidget*>(ih->handle);
+    return reinterpret_cast<QListView*>(ih->handle);
   return nullptr;
 }
 
@@ -771,6 +771,8 @@ extern "C" IUP_SDK_API int iupdrvListGetCount(Ihandle* ih)
       return list->count();
     return 0;
   }
+  else if (ih->data->is_virtual)
+    return ih->data->item_count;
   else
   {
     auto* list = reinterpret_cast<QListWidget*>(ih->handle);
@@ -926,7 +928,7 @@ extern "C" IUP_SDK_API int iupdrvListSetImageHandle(Ihandle* ih, int id, void* h
     else
       combo->setItemData(id, QVariant(), Qt::UserRole + 1);
   }
-  else
+  else if (!ih->data->is_virtual)
   {
     auto* list = reinterpret_cast<QListWidget*>(ih->handle);
     if (ih->data->has_editbox)
@@ -966,6 +968,11 @@ extern "C" IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
       auto* pixmap = img_var.value<QPixmap*>();
       return reinterpret_cast<void*>(pixmap);
     }
+  }
+  else if (ih->data->is_virtual)
+  {
+    char* name = (id >= 1 && id <= ih->data->item_count) ? iupListGetItemImageCb(ih, id) : nullptr;
+    return name ? iupImageGetImage(name, ih, 0, nullptr) : nullptr;
   }
   else
   {
@@ -1293,7 +1300,7 @@ static int qtListSetValueAttrib(Ihandle* ih, const char* value)
 static int qtListSetImageAttrib(Ihandle* ih, int id, const char* value)
 {
   int pos = iupListGetPosAttrib(ih, id);
-  if (pos < 0)
+  if (pos < 0 || ih->data->is_virtual)
     return 0;
 
   auto* pixmap = static_cast<QPixmap*>(iupImageGetImage(value, ih, 0, nullptr));
@@ -1635,7 +1642,7 @@ static char* qtListGetScrollVisibleAttrib(Ihandle* ih)
   if (ih->data->is_dropdown)
     return nullptr;
 
-  QListWidget* list = qtListGetListWidget(ih);
+  QListView* list = qtListGetListView(ih);
   if (!list)
     return nullptr;
 
@@ -1720,7 +1727,7 @@ static int qtListSetSpacingAttrib(Ihandle* ih, const char* value)
     {
       if (!ih->data->is_dropdown)
       {
-        QListWidget* list = qtListGetListWidget(ih);
+        QListView* list = qtListGetListView(ih);
         if (list)
         {
           QAbstractItemDelegate* old_delegate = list->itemDelegate();
@@ -1748,7 +1755,7 @@ static int qtListSetPaddingAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      QListWidget* list = qtListGetListWidget(ih);
+      QListView* list = qtListGetListView(ih);
       if (list)
         list->setContentsMargins(ih->data->horiz_padding, ih->data->vert_padding,
                                  ih->data->horiz_padding, ih->data->vert_padding);
@@ -1810,7 +1817,7 @@ static int qtListSetBgColorAttrib(Ihandle* ih, const char* value)
     return 0;
 
   int is_default = iupClassObjectIsGlobalDefaultColor(ih, "BGCOLOR", value);
-  QWidget* widget = ih->data->is_dropdown? reinterpret_cast<QWidget*>(ih->handle): qtListGetListWidget(ih);
+  QWidget* widget = ih->data->is_dropdown? reinterpret_cast<QWidget*>(ih->handle): qtListGetListView(ih);
   if (widget)
   {
     QPalette palette = widget->palette();
@@ -1832,7 +1839,7 @@ static int qtListSetFgColorAttrib(Ihandle* ih, const char* value)
     return 0;
 
   int is_default = iupClassObjectIsGlobalDefaultColor(ih, "FGCOLOR", value);
-  QWidget* widget = ih->data->is_dropdown? reinterpret_cast<QWidget*>(ih->handle): qtListGetListWidget(ih);
+  QWidget* widget = ih->data->is_dropdown? reinterpret_cast<QWidget*>(ih->handle): qtListGetListView(ih);
   if (widget)
   {
     QPalette palette = widget->palette();
@@ -1860,7 +1867,7 @@ static int qtListSetFontAttrib(Ihandle* ih, const char* value)
     }
     else
     {
-      QListWidget* list = qtListGetListWidget(ih);
+      QListView* list = qtListGetListView(ih);
       if (list)
         iupqtUpdateWidgetFont(ih, list);
     }
@@ -1961,15 +1968,12 @@ static int qtListConvertXYToPos(Ihandle* ih, int x, int y)
 {
   if (!ih->data->is_dropdown)
   {
-    QListWidget* list = qtListGetListWidget(ih);
+    QListView* list = qtListGetListView(ih);
     if (list)
     {
-      QListWidgetItem* item = list->itemAt(QPoint(x, y));
-      if (item)
-      {
-        int pos = list->row(item) + 1;  /* IUP starts at 1 */
-        return pos;
-      }
+      QModelIndex index = list->indexAt(QPoint(x, y));
+      if (index.isValid())
+        return index.row() + 1;
     }
   }
 

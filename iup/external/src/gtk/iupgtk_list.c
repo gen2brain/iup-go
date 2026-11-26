@@ -1473,7 +1473,7 @@ static int gtkListSetImageAttrib(Ihandle* ih, int id, const char* value)
   GtkTreeIter iter;
   int pos = iupListGetPosAttrib(ih, id);
 
-  if (!ih->data->show_image || !gtk_tree_model_iter_nth_child(model, &iter, NULL, pos))
+  if (!ih->data->show_image || ih->data->is_virtual || !gtk_tree_model_iter_nth_child(model, &iter, NULL, pos))
     return 0;
 
   if (pixImage)

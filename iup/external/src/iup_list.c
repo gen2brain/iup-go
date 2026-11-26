@@ -276,6 +276,8 @@ static int iListSetAppendItemAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle)  /* do not do the action before map, and ignore the call */
     return 0;
+  if (ih->data->is_virtual)
+    return 0;
   if (value)
     iupdrvListAppendItem(ih, value);
   return 0;
@@ -284,6 +286,8 @@ static int iListSetAppendItemAttrib(Ihandle* ih, const char* value)
 static int iListSetInsertItemAttrib(Ihandle* ih, int id, const char* value)
 {
   if (!ih->handle)  /* do not do the action before map, and ignore the call */
+    return 0;
+  if (ih->data->is_virtual)
     return 0;
   if (value)
   {
@@ -299,6 +303,8 @@ static int iListSetInsertItemAttrib(Ihandle* ih, int id, const char* value)
 static int iListSetRemoveItemAttrib(Ihandle* ih, const char* value)
 {
   if (!ih->handle)  /* do not do the action before map, and ignore the call */
+    return 0;
+  if (ih->data->is_virtual)
     return 0;
   if (!value || iupStrEqualNoCase(value, "ALL"))
   {

@@ -29,7 +29,7 @@ After map, there are a few rules:
 - Items after "count+1" are ignored.
 
 **APPENDITEM** (write-only): inserts an item after the last item.
-Ignored if set before map.
+Ignored if set before map, and when VIRTUALMODE=YES.
 
 **AUTOHIDE**: scrollbars are shown only if they are necessary. Default: "YES".
 Not supported in Android and iOS.
@@ -88,13 +88,13 @@ Not supported in Motif.
 
 **INSERTITEMid** (write-only): inserts an item before the given id position. id starts at 1.
 If id=COUNT+1 then it will append after the last item. Ignored if out of bounds.
-Ignored if set before map.
+Ignored if set before map, and when VIRTUALMODE=YES.
 
 **MULTIPLE** (creation-only): Allows selecting several items simultaneously (multiple list).
 Default: "NO". Only valid when EDITBOX=NO and DROPDOWN=NO.
 
 **REMOVEITEM** (write-only): removes the given value. value starts at 1.
-If value is NULL or "ALL" removes all the items. Ignored if set before map.
+If value is NULL or "ALL" removes all the items. Ignored if set before map, and when VIRTUALMODE=YES.
 
 **SCROLLBAR** (creation-only): Associates automatic scrollbars to the list when DROPDOWN=NO.
 Can be: "YES" or "NO" (none). Default: "YES".

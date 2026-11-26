@@ -2643,6 +2643,12 @@ IUP_SDK_API void* iupdrvListGetImageHandle(Ihandle* ih, int id)
   IupCocoaListSubType sub_type = cocoaListGetSubType(ih);
   int pos = id - 1;
 
+  if (ih->data->is_virtual)
+  {
+    char* name = (id >= 1 && id <= ih->data->item_count) ? iupListGetItemImageCb(ih, id) : NULL;
+    return name ? iupImageGetImage(name, ih, 0, NULL) : NULL;
+  }
+
   if (sub_type == IUPCOCOALISTSUBTYPE_DROPDOWN)
   {
     NSPopUpButton* popup_button = (NSPopUpButton*)cocoaListGetBaseWidget(ih);
@@ -2788,7 +2794,7 @@ static char* cocoaListGetIdValueAttrib(Ihandle* ih, int id_value)
 static int cocoaListSetImageAttrib(Ihandle* ih, int id, const char* value)
 {
   int pos = iupListGetPosAttrib(ih, id);
-  if (pos < 0 || !ih->data->show_image)
+  if (pos < 0 || !ih->data->show_image || ih->data->is_virtual)
     return 0;
 
   NSImage* image = (NSImage*)iupImageGetImage(value, ih, 0, NULL);

@@ -152,6 +152,17 @@ func buildSteps() {
 
 	equal("COUNT returns ITEMCOUNT in virtual mode", &virtual, "COUNT", "1000")
 	equal("item text comes from VALUE_CB in virtual mode", &virtual, "5", "Item 5")
+	add(func() {
+		virtual.SetAttribute("APPENDITEM", "x")
+		virtual.SetAttribute("INSERTITEM2", "x")
+		virtual.SetAttribute("REMOVEITEM", "3")
+		virtual.SetAttribute("REMOVEITEM", "ALL")
+	})
+	add(func() {
+		check("APPENDITEM, INSERTITEM and REMOVEITEM are ignored in virtual mode",
+			virtual.GetAttribute("COUNT") == "1000" && virtual.GetAttribute("3") == "Item 3",
+			fmt.Sprintf("COUNT=%s, 3=%s", virtual.GetAttribute("COUNT"), virtual.GetAttribute("3")))
+	})
 	add(func() { virtual.SetAttribute("VALUE", "500") })
 	equal("VALUE selects an item in virtual mode", &virtual, "VALUE", "500")
 
