@@ -167,12 +167,13 @@ A column is the width of the digit "0" in the element font.
 Set this attribute to speed **Natural Size** computation for very large lists.
 
 **VISIBLELINES**: When DROPDOWN=NO defines the number of visible lines for the **Natural Size**, this means that will act also as minimum number of visible lines.
+When VIRTUALMODE=YES and VISIBLELINES is not defined, the **Natural Size** has at most 5 lines.
 
 **VIRTUALMODE** (creation-only): enables virtual mode for the list.
 In virtual mode, items are not stored internally, and the list queries the application for item text and images using callbacks.
 Set ITEMCOUNT to define the number of items, and use the list callbacks to provide item data.
 Can be "YES" or "NO". Default: "NO".
-In Motif and FLTK, VALUE_CB is called for every item when ITEMCOUNT is set.
+In Motif, VALUE_CB is called for every item when ITEMCOUNT is set.
 
 **ITEMCOUNT** (non-inheritable): number of items in the list when VIRTUALMODE=YES.
 Must be set after VIRTUALMODE is enabled.

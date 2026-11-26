@@ -1191,6 +1191,8 @@ static void iListGetNaturalItemsSize(Ihandle* ih, int* w, int* h)
     *w += 2*ih->data->spacing;  /* include also horizontal spacing */
 
     num_lines = count;
+    if (ih->data->is_virtual && num_lines > 5)
+      num_lines = 5;
     if (num_lines == 0) num_lines = 1;
 
     visiblelines = iupAttribGetInt(ih, "VISIBLELINES");

@@ -72,6 +72,12 @@ func equal(name string, ih *iup.Ihandle, attr, want string) {
 	})
 }
 
+func sizeOf(v string) (int, int) {
+	var w, h int
+	fmt.Sscanf(strings.Replace(v, "x", " ", 1), "%d %d", &w, &h)
+	return w, h
+}
+
 func counted(name string, l iup.Ihandle) iup.Ihandle {
 	l.SetCallback("ACTION", iup.ListActionFunc(func(ih iup.Ihandle, text string, item, state int) int {
 		actions++
@@ -152,6 +158,20 @@ func buildSteps() {
 
 	equal("COUNT returns ITEMCOUNT in virtual mode", &virtual, "COUNT", "1000")
 	equal("item text comes from VALUE_CB in virtual mode", &virtual, "5", "Item 5")
+	add(func() {
+		var natural [2]string
+		for i, count := range []string{"1000", "5"} {
+			l := iup.List().SetAttributes("VIRTUALMODE=YES, ITEMCOUNT=" + count)
+			d := iup.Dialog(l)
+			iup.Map(d)
+			natural[i] = l.GetAttribute("NATURALSIZE")
+			d.Destroy()
+		}
+		_, h0 := sizeOf(natural[0])
+		_, h5 := sizeOf(natural[1])
+		check("a virtual list without VISIBLELINES is 5 lines high", h0 == h5 && h5 > 0,
+			fmt.Sprintf("NATURALSIZE with 1000 items %s, with 5 items %s", natural[0], natural[1]))
+	})
 	add(func() {
 		virtual.SetAttribute("APPENDITEM", "x")
 		virtual.SetAttribute("INSERTITEM2", "x")
