@@ -529,7 +529,8 @@ IUP_SDK_API int iupdrvDialogSetPlacement(Ihandle* ih)
     if (old_state == IUP_MAXIMIZE || old_state == IUP_MINIMIZE)
       ih->data->show_state = IUP_RESTORE;
 
-    gtk_window_unmaximize((GtkWindow*)ih->handle);
+    if (gtk_window_is_maximized((GtkWindow*)ih->handle))
+      gtk_window_unmaximize((GtkWindow*)ih->handle);
     gtk_window_unminimize((GtkWindow*)ih->handle);
 
 #ifdef GDK_WINDOWING_X11
