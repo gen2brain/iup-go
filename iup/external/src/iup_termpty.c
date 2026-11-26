@@ -398,6 +398,11 @@ long iupTermPtyGetPid(ItermPty* pty)
   return (long)pty->pid;
 }
 
+int iupTermPtyFd(ItermPty* pty)
+{
+  return pty ? pty->fd : -1;
+}
+
 void iupTermPtyKill(ItermPty* pty, int force)
 {
   if (!pty || pty->exited)
@@ -435,6 +440,8 @@ void iupTermPtyClose(ItermPty* pty)
 }
 
 #elif defined(ITERM_PTY_WIN)
+
+#define ITERM_PTY_PIPE_SIZE (256*1024)
 
 #include <windows.h>
 
@@ -535,7 +542,7 @@ ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int 
   if (!term_name || !term_name[0])
     term_name = "xterm-256color";
 
-  if (!CreatePipe(&in_read, &in_write, NULL, 0) || !CreatePipe(&out_read, &out_write, NULL, 0))
+  if (!CreatePipe(&in_read, &in_write, NULL, 0) || !CreatePipe(&out_read, &out_write, NULL, ITERM_PTY_PIPE_SIZE))
   {
     itermPtySetError(error, error_size, "cannot create pipes");
     goto fail;
@@ -697,6 +704,12 @@ long iupTermPtyGetPid(ItermPty* pty)
   return (long)pty->pid;
 }
 
+int iupTermPtyFd(ItermPty* pty)
+{
+  (void)pty;
+  return -1;
+}
+
 void iupTermPtyKill(ItermPty* pty, int force)
 {
   (void)force;
@@ -759,6 +772,7 @@ int iupTermPtyWrite(ItermPty* pty, const char* buf, int len) { (void)pty; (void)
 void iupTermPtyResize(ItermPty* pty, int cols, int rows) { (void)pty; (void)cols; (void)rows; }
 int iupTermPtyCheckExit(ItermPty* pty, int* status) { (void)pty; if (status) *status = 0; return 1; }
 long iupTermPtyGetPid(ItermPty* pty) { (void)pty; return -1; }
+int iupTermPtyFd(ItermPty* pty) { (void)pty; return -1; }
 void iupTermPtyKill(ItermPty* pty, int force) { (void)pty; (void)force; }
 void iupTermPtyClose(ItermPty* pty) { (void)pty; }
 

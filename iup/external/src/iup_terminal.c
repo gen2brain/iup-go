@@ -49,6 +49,8 @@ struct _IcontrolData
   int has_focus;
   int blink_on;
   Ihandle* blink_timer;
+  Ihandle* sync_timer;
+  int mouse_col, mouse_row;
 
   /* selection anchored to monotonic line ids so it survives scrolling */
   int sel_valid, sel_dragging, sel_mode;
@@ -63,7 +65,9 @@ struct _IcontrolData
 
   ItermPty* pty;
   Ihandle* pty_timer;
+  Ihandle* pty_watch;
   int pty_eof;
+  unsigned int last_paint;
 };
 
 static unsigned int itermPackColor(const char* value, unsigned int def)
@@ -102,7 +106,7 @@ static void itermUpdateScrollbar(Ihandle* ih)
 
 static void itermRedraw(Ihandle* ih)
 {
-  if (ih->handle)
+  if (ih->handle && !(ih->data->term.modes & ITERM_MODE_SYNC))
     IupUpdate(ih);
 }
 
@@ -544,13 +548,61 @@ static ItermLine* itermVisibleLine(Ihandle* ih, int vr)
   return iupTermScreenLine(t, g - t->sb_count);
 }
 
+static void itermDrawDecorations(Ihandle* ih, IdrawCanvas* dc, ItermCell* cell, int x, int y, int w, unsigned int fg)
+{
+  int th = ih->data->ch_h / 16 > 1 ? ih->data->ch_h / 16 : 1;
+  int yl = y + ih->data->ch_h - 1 - th;
+  int style = (cell->flags & ITERM_FL_ULSTYLE) >> ITERM_FL_ULSTYLE_SHIFT;
+  long color = itermDrawColor((cell->ul & ITERM_UL_COLOR_SET) ? (cell->ul & 0xFFFFFF) : fg);
+
+  if (cell->flags & ITERM_FL_STRIKE)
+  {
+    int ys = y + (ih->data->ch_h * 11) / 20;
+    iupdrvDrawRectangle(dc, x, ys, x + w - 1, ys + th - 1, itermDrawColor(fg), IUP_DRAW_FILL, 1);
+  }
+
+  if (!(cell->flags & ITERM_FL_UNDERLINE))
+    return;
+
+  switch (style)
+  {
+  case ITERM_UL_DOUBLE:
+    iupdrvDrawRectangle(dc, x, yl - 2 * th, x + w - 1, yl - th - 1, color, IUP_DRAW_FILL, 1);
+    iupdrvDrawRectangle(dc, x, yl, x + w - 1, yl + th - 1, color, IUP_DRAW_FILL, 1);
+    break;
+  case ITERM_UL_DOTTED:
+    iupdrvDrawLine(dc, x, yl, x + w - 1, yl, color, IUP_DRAW_STROKE_DOT, th);
+    break;
+  case ITERM_UL_DASHED:
+    iupdrvDrawLine(dc, x, yl, x + w - 1, yl, color, IUP_DRAW_STROKE_DASH, th);
+    break;
+  case ITERM_UL_CURLY:
+    {
+      int amp = th + 1, step = ih->data->ch_w / 2 > 2 ? ih->data->ch_w / 2 : 2;
+      int n = w / step + 2, i;
+      int* points = (int*)malloc(2 * n * sizeof(int));
+      if (!points)
+        break;
+      for (i = 0; i < n; i++)
+      {
+        points[2 * i] = x + i * step < x + w - 1 ? x + i * step : x + w - 1;
+        points[2 * i + 1] = (i % 2) ? yl - amp : yl;
+      }
+      iupdrvDrawPolygon(dc, points, n, color, IUP_DRAW_STROKE, th);
+      free(points);
+    }
+    break;
+  default:
+    iupdrvDrawRectangle(dc, x, yl, x + w - 1, yl + th - 1, color, IUP_DRAW_FILL, 1);
+    break;
+  }
+}
+
 static void itermRunFont(Ihandle* ih, unsigned short flags, char* font)
 {
-  sprintf(font, "%s, %s%s%s%s%d", ih->data->font_face,
+  sprintf(font, "%s, %s%s%d", ih->data->font_face,
           (flags & ITERM_FL_BOLD) ? "Bold " : "",
           (flags & ITERM_FL_ITALIC) ? "Italic " : "",
-          (flags & ITERM_FL_UNDERLINE) ? "Underline " : "",
-          (flags & ITERM_FL_STRIKE) ? "Strikeout " : "",
           ih->data->font_size);
 }
 
@@ -610,6 +662,7 @@ static void itermDrawCursor(Ihandle* ih, IdrawCanvas* dc)
         iupdrvDrawText(dc, text, len, x, y, w, ih->data->ch_h,
                        itermDrawColor(bg), font, IUP_DRAW_LEFT, 0);
       }
+      itermDrawDecorations(ih, dc, cell, x, y, w, bg);
     }
     break;
   }
@@ -623,6 +676,8 @@ static int itermRedraw_CB(Ihandle* ih)
   char* text;
   char font[128];
   int restore_utf8mode = 0;
+
+  ih->data->last_paint = iupdrvGetTickCount();
 
   /* cell text is always UTF-8 */
   if (!IupGetInt(NULL, "UTF8MODE"))
@@ -674,7 +729,7 @@ static int itermRedraw_CB(Ihandle* ih)
         /* a non-ASCII glyph may come from a fallback font with another advance, keep it on its own cell */
         if (c > start && !(rc->flags & ITERM_FL_WIDECONT) && (solo || rc->cp >= 0x80 || rc->combo))
           break;
-        if ((unsigned short)(rc->flags & ITERM_FL_STYLEMASK) != style)
+        if ((unsigned short)(rc->flags & ITERM_FL_STYLEMASK) != style || rc->ul != cell->ul)
           break;
         itermCellColors(ih, rc, &rfg, &rbg);
         if (itermCellSelected(ih, line_id, c))
@@ -698,22 +753,17 @@ static int itermRedraw_CB(Ihandle* ih)
                             y + ih->data->ch_h - 1, itermDrawColor(bg), IUP_DRAW_FILL, 1);
 
       if (!cell->combo && itermIsBoxChar(cell->cp))
-      {
         itermDrawBoxChar(dc, cell->cp, x, y, run_cells * ih->data->ch_w, ih->data->ch_h, fg, bg);
-        if (style & (ITERM_FL_UNDERLINE | ITERM_FL_STRIKE))
-        {
-          itermRunFont(ih, style, font);
-          iupdrvDrawText(dc, " ", 1, x, y, run_cells * ih->data->ch_w, ih->data->ch_h,
-                         itermDrawColor(fg), font, IUP_DRAW_LEFT, 0);
-        }
-      }
-      else if (has_glyph || (style & (ITERM_FL_UNDERLINE | ITERM_FL_STRIKE)))
+      else if (has_glyph)
       {
         text[len] = 0;
         itermRunFont(ih, style, font);
         iupdrvDrawText(dc, text, len, x, y, run_cells * ih->data->ch_w, ih->data->ch_h,
                        itermDrawColor(fg), font, IUP_DRAW_LEFT, 0);
       }
+
+      if (style & (ITERM_FL_UNDERLINE | ITERM_FL_STRIKE))
+        itermDrawDecorations(ih, dc, cell, x, y, run_cells * ih->data->ch_w, fg);
     }
   }
 
@@ -743,8 +793,8 @@ static void itermSendInput(Ihandle* ih, const char* bytes, int len)
   }
 
   cb = (IFnsi)IupGetCallback(ih, "INPUT_CB");
-  if (cb)
-    cb(ih, (char*)bytes, len);
+  if (cb && cb(ih, (char*)bytes, len) == IUP_CLOSE)
+    IupExitLoop();
 }
 
 static void itermXY2Cell(Ihandle* ih, int x, int y, int* col, int* vr)
@@ -795,8 +845,8 @@ static void itermModelBell(void* user)
 {
   Ihandle* ih = (Ihandle*)user;
   Icallback cb = IupGetCallback(ih, "BELL_CB");
-  if (cb)
-    cb(ih);
+  if (cb && cb(ih) == IUP_CLOSE)
+    IupExitLoop();
 }
 
 /* OSC 52 lets whatever is running in the terminal write the system clipboard, so it stays opt-in */
@@ -820,13 +870,16 @@ static void itermModelTitle(void* user, const char* title)
 {
   Ihandle* ih = (Ihandle*)user;
   IFns cb = (IFns)IupGetCallback(ih, "TITLECHANGED_CB");
-  if (cb)
-    cb(ih, (char*)title);
+  if (cb && cb(ih, (char*)title) == IUP_CLOSE)
+    IupExitLoop();
 }
 
 static void itermAfterOutput(Ihandle* ih)
 {
   Iterm* t = &ih->data->term;
+
+  if (ih->data->sync_timer && ((t->modes & ITERM_MODE_SYNC) != 0) != IupGetInt(ih->data->sync_timer, "RUN"))
+    IupSetAttribute(ih->data->sync_timer, "RUN", (t->modes & ITERM_MODE_SYNC) ? "YES" : "NO");
 
   if (ih->data->view_offset != 0 && iupAttribGetBoolean(ih, "SCROLLONOUTPUT"))
     ih->data->view_offset = 0;
@@ -863,8 +916,8 @@ static void itermUpdateGrid(Ihandle* ih)
     if (ih->data->pty)
       iupTermPtyResize(ih->data->pty, cols, rows);
     cb = (IFnii)IupGetCallback(ih, "TERMSIZE_CB");
-    if (cb)
-      cb(ih, cols, rows);
+    if (cb && cb(ih, cols, rows) == IUP_CLOSE)
+      IupExitLoop();
   }
 }
 
@@ -894,11 +947,21 @@ static int itermScroll_CB(Ihandle* ih, int op, float posx, float posy)
 
 static int itermFocus_CB(Ihandle* ih, int focus)
 {
+  if (ih->data->term.modes & ITERM_MODE_FOCUS)
+    itermSendInput(ih, focus ? "\033[I" : "\033[O", 3);
   ih->data->has_focus = focus;
   ih->data->blink_on = 1;
   if (ih->data->blink_timer)
     IupSetAttribute(ih->data->blink_timer, "RUN", focus ? "YES" : "NO");
   itermRedraw(ih);
+  return IUP_DEFAULT;
+}
+
+static int itermSyncTimer_CB(Ihandle* timer)
+{
+  Ihandle* ih = (Ihandle*)iupAttribGet(timer, "_IUPTERM_IH");
+  ih->data->term.modes &= ~ITERM_MODE_SYNC;
+  itermAfterOutput(ih);
   return IUP_DEFAULT;
 }
 
@@ -970,7 +1033,11 @@ static int itermButton_CB(Ihandle* ih, int button, int pressed, int x, int y, ch
   if (itermMouseReporting(ih) && !shift)
   {
     if (button >= IUP_BUTTON1 && button <= IUP_BUTTON3)
+    {
       itermSendMouse(ih, button - IUP_BUTTON1, pressed, col, vr);
+      ih->data->mouse_col = col;
+      ih->data->mouse_row = vr;
+    }
     return IUP_DEFAULT;
   }
 
@@ -1036,8 +1103,15 @@ static int itermMotion_CB(Ihandle* ih, int x, int y, char* status)
 
   if (itermMouseReporting(ih) && !iup_isshift(status))
   {
-    if ((ih->data->term.modes & ITERM_MODE_MOUSE_DRAG) && iup_isbutton1(status))
-      itermSendMouse(ih, 32, 1, col, vr);
+    unsigned int modes = ih->data->term.modes;
+    int btn = iup_isbutton1(status) ? 0 : iup_isbutton2(status) ? 1 : iup_isbutton3(status) ? 2 : 3;
+    if (((btn < 3 && (modes & ITERM_MODE_MOUSE_DRAG)) || (btn == 3 && (modes & ITERM_MODE_MOUSE_ANY))) &&
+        (col != ih->data->mouse_col || vr != ih->data->mouse_row))
+    {
+      ih->data->mouse_col = col;
+      ih->data->mouse_row = vr;
+      itermSendMouse(ih, 32 + btn, 1, col, vr);
+    }
     return IUP_DEFAULT;
   }
 
@@ -1522,6 +1596,8 @@ static void itermPtyDetach(Ihandle* ih)
 {
   if (ih->data->pty_timer)
     IupSetAttribute(ih->data->pty_timer, "RUN", "NO");
+  if (ih->data->pty_watch)
+    IupSetAttribute(ih->data->pty_watch, "RUN", "NO");
 
   if (ih->data->pty)
   {
@@ -1531,14 +1607,10 @@ static void itermPtyDetach(Ihandle* ih)
   ih->data->pty_eof = 0;
 }
 
-static int itermPtyTimer_CB(Ihandle* timer)
+static int itermPtyReadAvailable(Ihandle* ih)
 {
-  Ihandle* ih = (Ihandle*)iupAttribGet(timer, "_IUPTERM_IH");
   char buf[ITERM_PTY_CHUNK];
   int total = 0;
-
-  if (!ih || !ih->data->pty)
-    return IUP_DEFAULT;
 
   while (!ih->data->pty_eof)
   {
@@ -1558,6 +1630,17 @@ static int itermPtyTimer_CB(Ihandle* timer)
 
   if (total)
     itermAfterOutput(ih);
+  return total;
+}
+
+static int itermPtyTimer_CB(Ihandle* timer)
+{
+  Ihandle* ih = (Ihandle*)iupAttribGet(timer, "_IUPTERM_IH");
+
+  if (!ih || !ih->data->pty)
+    return IUP_DEFAULT;
+
+  itermPtyReadAvailable(ih);
 
   /* the child can still be running after it closed the terminal, so keep polling for its status */
   if (ih->data->pty_eof)
@@ -1568,11 +1651,42 @@ static int itermPtyTimer_CB(Ihandle* timer)
       IFni cb;
       itermPtyDetach(ih);
       cb = (IFni)IupGetCallback(ih, "EXECEXIT_CB");
-      if (cb)
-        cb(ih, status);
+      if (cb && cb(ih, status) == IUP_CLOSE)
+        IupExitLoop();
     }
   }
 
+  return IUP_DEFAULT;
+}
+
+static void itermPtyStartTimer(Ihandle* ih)
+{
+  if (!ih->data->pty_timer)
+  {
+    ih->data->pty_timer = IupTimer();
+    IupSetInt(ih->data->pty_timer, "TIME", ITERM_PTY_RATE);
+    iupAttribSet(ih->data->pty_timer, "_IUPTERM_IH", (char*)ih);
+    IupSetCallback(ih->data->pty_timer, "ACTION_CB", (Icallback)itermPtyTimer_CB);
+  }
+  IupSetAttribute(ih->data->pty_timer, "RUN", "YES");
+}
+
+static int itermPtyWatch_CB(Ihandle* watch)
+{
+  Ihandle* ih = (Ihandle*)iupAttribGet(watch, "_IUPTERM_IH");
+
+  if (!ih || !ih->data->pty)
+    return IUP_DEFAULT;
+
+  if (itermPtyReadAvailable(ih) && ih->handle && !(ih->data->term.modes & ITERM_MODE_SYNC) &&
+      iupdrvGetTickCount() - ih->data->last_paint >= ITERM_PTY_RATE)
+    IupRedraw(ih, 0);
+
+  if (ih->data->pty_eof)
+  {
+    IupSetAttribute(watch, "RUN", "NO");
+    itermPtyStartTimer(ih);
+  }
   return IUP_DEFAULT;
 }
 
@@ -1594,15 +1708,21 @@ static int itermSetExecAttrib(Ihandle* ih, const char* value)
 
   ih->data->pty = pty;
 
-  if (!ih->data->pty_timer)
+  if (iupTermPtyFd(pty) >= 0)
   {
-    ih->data->pty_timer = IupTimer();
-    IupSetInt(ih->data->pty_timer, "TIME", ITERM_PTY_RATE);
-    iupAttribSet(ih->data->pty_timer, "_IUPTERM_IH", (char*)ih);
-    IupSetCallback(ih->data->pty_timer, "ACTION_CB", (Icallback)itermPtyTimer_CB);
+    if (!ih->data->pty_watch)
+    {
+      ih->data->pty_watch = IupFdWatch();
+      iupAttribSet(ih->data->pty_watch, "_IUPTERM_IH", (char*)ih);
+      IupSetCallback(ih->data->pty_watch, "ACTION_CB", (Icallback)itermPtyWatch_CB);
+    }
+    IupSetInt(ih->data->pty_watch, "FD", iupTermPtyFd(pty));
+    IupSetAttribute(ih->data->pty_watch, "RUN", "YES");
+    if (IupGetInt(ih->data->pty_watch, "RUN"))
+      return 0;
   }
-  IupSetAttribute(ih->data->pty_timer, "RUN", "YES");
 
+  itermPtyStartTimer(ih);
   return 0;
 }
 
@@ -1638,6 +1758,11 @@ static int itermMapMethod(Ihandle* ih)
   iupAttribSet(ih->data->blink_timer, "_IUPTERM_IH", (char*)ih);
   IupSetCallback(ih->data->blink_timer, "ACTION_CB", itermBlinkTimer_CB);
 
+  ih->data->sync_timer = IupTimer();
+  IupSetAttribute(ih->data->sync_timer, "TIME", "1000");
+  iupAttribSet(ih->data->sync_timer, "_IUPTERM_IH", (char*)ih);
+  IupSetCallback(ih->data->sync_timer, "ACTION_CB", itermSyncTimer_CB);
+
   itermUpdateScrollbar(ih);
   return IUP_NOERROR;
 }
@@ -1647,8 +1772,12 @@ static void itermDestroyMethod(Ihandle* ih)
   itermPtyDetach(ih);
   if (ih->data->pty_timer)
     IupDestroy(ih->data->pty_timer);
+  if (ih->data->pty_watch)
+    IupDestroy(ih->data->pty_watch);
   if (ih->data->blink_timer)
     IupDestroy(ih->data->blink_timer);
+  if (ih->data->sync_timer)
+    IupDestroy(ih->data->sync_timer);
   iupTermScreenRelease(&ih->data->term);
 }
 
@@ -1691,6 +1820,8 @@ static int itermCreateMethod(Ihandle* ih, void** params)
   t->cb_user = ih;
 
   ih->data->blink_on = 1;
+  ih->data->mouse_col = -1;
+  ih->data->mouse_row = -1;
   strcpy(ih->data->font_face, "Courier");
   ih->data->font_size = 10;
   ih->data->ch_w = 8;

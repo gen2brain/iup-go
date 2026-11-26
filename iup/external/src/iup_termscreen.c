@@ -109,6 +109,7 @@ static void itermBlankCell(Iterm* t, ItermCell* cell)
 {
   cell->cp = 0;
   cell->combo = 0;
+  cell->ul = 0;
   cell->fg = t->pen.fg;
   cell->bg = t->pen.bg;
   cell->flags = (unsigned short)(t->pen.flags & (ITERM_FL_FG_DEFAULT|ITERM_FL_BG_DEFAULT));
@@ -312,6 +313,7 @@ void iupTermScreenPutChar(Iterm* t, unsigned int cp)
   cell->cp = cp;
   cell->fg = t->pen.fg;
   cell->bg = t->pen.bg;
+  cell->ul = t->pen.ul;
   cell->flags = (unsigned short)(t->pen.flags & ITERM_FL_STYLEMASK);
   if (width == 2)
   {
@@ -764,6 +766,7 @@ void iupTermScreenReset(Iterm* t)
 
   t->pen.fg = t->def_fg;
   t->pen.bg = t->def_bg;
+  t->pen.ul = 0;
   t->pen.flags = ITERM_FL_FG_DEFAULT | ITERM_FL_BG_DEFAULT;
 
   iupTermScreenSetAltScreen(t, 0, 0, 0);

@@ -24,10 +24,20 @@ extern "C" {
 #define ITERM_FL_WIDECONT   0x0100
 #define ITERM_FL_FG_DEFAULT 0x0200
 #define ITERM_FL_BG_DEFAULT 0x0400
+#define ITERM_FL_ULSTYLE    0x3800
+#define ITERM_FL_ULSTYLE_SHIFT 11
+
+#define ITERM_UL_SINGLE 0
+#define ITERM_UL_DOUBLE 1
+#define ITERM_UL_CURLY  2
+#define ITERM_UL_DOTTED 3
+#define ITERM_UL_DASHED 4
+
+#define ITERM_UL_COLOR_SET 0x01000000
 
 #define ITERM_FL_STYLEMASK (ITERM_FL_BOLD|ITERM_FL_DIM|ITERM_FL_ITALIC|ITERM_FL_UNDERLINE|\
                             ITERM_FL_INVERSE|ITERM_FL_STRIKE|ITERM_FL_HIDDEN|\
-                            ITERM_FL_FG_DEFAULT|ITERM_FL_BG_DEFAULT)
+                            ITERM_FL_FG_DEFAULT|ITERM_FL_BG_DEFAULT|ITERM_FL_ULSTYLE)
 
 #define ITERM_MODE_CKM       0x0001
 #define ITERM_MODE_ORIGIN    0x0002
@@ -39,6 +49,9 @@ extern "C" {
 #define ITERM_MODE_MOUSE_DRAG 0x0080
 #define ITERM_MODE_MOUSE_SGR 0x0100
 #define ITERM_MODE_BRACKPASTE 0x0200
+#define ITERM_MODE_MOUSE_ANY 0x0400
+#define ITERM_MODE_FOCUS     0x0800
+#define ITERM_MODE_SYNC      0x1000
 
 #define ITERM_CURSOR_BLOCK     0
 #define ITERM_CURSOR_UNDERLINE 1
@@ -54,6 +67,7 @@ typedef struct _ItermCell
   unsigned int fg, bg;
   unsigned short flags;
   unsigned short combo;
+  unsigned int ul;
 } ItermCell;
 
 #define ITERM_MAX_COMBINING 4
@@ -77,6 +91,7 @@ typedef struct _ItermPen
 {
   unsigned int fg, bg;
   unsigned short flags;
+  unsigned int ul;
 } ItermPen;
 
 typedef struct _ItermCallbacks
@@ -197,6 +212,7 @@ int  iupTermPtyAvailable(void);
 ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int rows, char* error, int error_size);
 void iupTermPtyClose(ItermPty* pty);
 int  iupTermPtyRead(ItermPty* pty, char* buf, int max);
+int  iupTermPtyFd(ItermPty* pty);
 int  iupTermPtyWrite(ItermPty* pty, const char* buf, int len);
 void iupTermPtyResize(ItermPty* pty, int cols, int rows);
 int  iupTermPtyCheckExit(ItermPty* pty, int* status);

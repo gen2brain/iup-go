@@ -21,7 +21,7 @@
 #include "iupandroid_jnimacros.h"
 
 
-IUPJNI_DECLARE_CLASS_STATIC(IupTimerHelper);
+IUPJNI_DECLARE_CLASS_EXTERN(IupTimerHelper);
 
 static int androidTimerNextSerial(void)
 {

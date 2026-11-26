@@ -44,6 +44,7 @@ IUPJNI_DECLARE_CLASS_STATIC(IupApplication);
 IUPJNI_DECLARE_CLASS_STATIC(IupPostMessage);
 /* Global so iupandroid_font.c's iupdrvGetSystemFont hits a populated cache. */
 IUPJNI_DECLARE_CLASS_GLOBAL(IupFontHelper);
+IUPJNI_DECLARE_CLASS_GLOBAL(IupTimerHelper);
 
 static void iupAndroid_ThreadDestroyed(void* user_data)
 {
@@ -76,6 +77,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* java_vm, void* reserved)
   tmp = IUPJNI_FindClass(IupCommon, jni_env, "io/github/gen2brain/iupgo/IupCommon");
   (*jni_env)->DeleteLocalRef(jni_env, tmp);
   tmp = IUPJNI_FindClass(IupFontHelper, jni_env, "io/github/gen2brain/iupgo/IupFontHelper");
+  (*jni_env)->DeleteLocalRef(jni_env, tmp);
+  tmp = IUPJNI_FindClass(IupTimerHelper, jni_env, "io/github/gen2brain/iupgo/IupTimerHelper");
   (*jni_env)->DeleteLocalRef(jni_env, tmp);
 
   iupAndroid_OpenInit();

@@ -98,9 +98,41 @@ static void itermDecMode(Iterm* t, int mode, int set)
     itermSetMode(t, ITERM_MODE_MOUSE_CLK, set);
     itermSetMode(t, ITERM_MODE_MOUSE_DRAG, set);
     break;
+  case 1003:
+    itermSetMode(t, ITERM_MODE_MOUSE_CLK, set);
+    itermSetMode(t, ITERM_MODE_MOUSE_DRAG, set);
+    itermSetMode(t, ITERM_MODE_MOUSE_ANY, set);
+    break;
+  case 1004: itermSetMode(t, ITERM_MODE_FOCUS, set); break;
   case 1006: itermSetMode(t, ITERM_MODE_MOUSE_SGR, set); break;
   case 2004: itermSetMode(t, ITERM_MODE_BRACKPASTE, set); break;
+  case 2026: itermSetMode(t, ITERM_MODE_SYNC, set); break;
   }
+}
+
+static int itermDecModeState(Iterm* t, int mode)
+{
+  unsigned int flag;
+  switch (mode)
+  {
+  case 1: flag = ITERM_MODE_CKM; break;
+  case 6: flag = ITERM_MODE_ORIGIN; break;
+  case 7: flag = ITERM_MODE_AUTOWRAP; break;
+  case 12: flag = ITERM_MODE_CURSORBLK; break;
+  case 25: flag = ITERM_MODE_CURSORVIS; break;
+  case 47:
+  case 1047:
+  case 1049: flag = ITERM_MODE_ALTSCREEN; break;
+  case 1000: flag = ITERM_MODE_MOUSE_CLK; break;
+  case 1002: flag = ITERM_MODE_MOUSE_DRAG; break;
+  case 1003: flag = ITERM_MODE_MOUSE_ANY; break;
+  case 1004: flag = ITERM_MODE_FOCUS; break;
+  case 1006: flag = ITERM_MODE_MOUSE_SGR; break;
+  case 2004: flag = ITERM_MODE_BRACKPASTE; break;
+  case 2026: flag = ITERM_MODE_SYNC; break;
+  default: return 0;
+  }
+  return (t->modes & flag) ? 1 : 2;
 }
 
 static unsigned int iterm256Color(Iterm* t, int n)
@@ -128,6 +160,9 @@ static unsigned int iterm256Color(Iterm* t, int n)
 static int itermSgrExtColor(Iterm* t, int i, unsigned int* color)
 {
   int kind = itermCsiArg(t, i + 1, 0);
+  int subs = 0, j;
+  for (j = i; j < t->csi_argc && t->csi_colon[j]; j++)
+    subs++;
   if (kind == 5)
   {
     *color = iterm256Color(t, itermCsiArg(t, i + 2, 0));
@@ -135,13 +170,19 @@ static int itermSgrExtColor(Iterm* t, int i, unsigned int* color)
   }
   if (kind == 2)
   {
-    unsigned int r = (unsigned int)itermCsiArg(t, i + 2, 0) & 0xFF;
-    unsigned int g = (unsigned int)itermCsiArg(t, i + 3, 0) & 0xFF;
-    unsigned int b = (unsigned int)itermCsiArg(t, i + 4, 0) & 0xFF;
+    int k = (subs >= 5) ? i + 3 : i + 2;
+    unsigned int r = (unsigned int)itermCsiArg(t, k, 0) & 0xFF;
+    unsigned int g = (unsigned int)itermCsiArg(t, k + 1, 0) & 0xFF;
+    unsigned int b = (unsigned int)itermCsiArg(t, k + 2, 0) & 0xFF;
     *color = (r << 16) | (g << 8) | b;
-    return 4;
+    return k + 2 - i;
   }
   return 0;
+}
+
+static void itermSgrUnderline(Iterm* t, int style)
+{
+  t->pen.flags = (unsigned short)((t->pen.flags & ~ITERM_FL_ULSTYLE) | ITERM_FL_UNDERLINE | (style << ITERM_FL_ULSTYLE_SHIFT));
 }
 
 static void itermSgr(Iterm* t)
@@ -151,6 +192,7 @@ static void itermSgr(Iterm* t)
   {
     t->pen.fg = t->def_fg;
     t->pen.bg = t->def_bg;
+    t->pen.ul = 0;
     t->pen.flags = ITERM_FL_FG_DEFAULT | ITERM_FL_BG_DEFAULT;
     return;
   }
@@ -163,30 +205,40 @@ static void itermSgr(Iterm* t)
     case 0:
       t->pen.fg = t->def_fg;
       t->pen.bg = t->def_bg;
+      t->pen.ul = 0;
       t->pen.flags = ITERM_FL_FG_DEFAULT | ITERM_FL_BG_DEFAULT;
       break;
     case 1: t->pen.flags |= ITERM_FL_BOLD; break;
     case 2: t->pen.flags |= ITERM_FL_DIM; break;
     case 3: t->pen.flags |= ITERM_FL_ITALIC; break;
     case 4:
-      if (t->csi_colon[i] && itermCsiArg(t, i + 1, 1) == 0)
+      if (t->csi_colon[i])
       {
-        t->pen.flags &= ~ITERM_FL_UNDERLINE;
+        int style = itermCsiArg(t, i + 1, 1);
         i++;
+        if (style == 0)
+          t->pen.flags &= ~(ITERM_FL_UNDERLINE | ITERM_FL_ULSTYLE);
+        else if (style == 2)
+          itermSgrUnderline(t, ITERM_UL_DOUBLE);
+        else if (style == 3)
+          itermSgrUnderline(t, ITERM_UL_CURLY);
+        else if (style == 4)
+          itermSgrUnderline(t, ITERM_UL_DOTTED);
+        else if (style == 5)
+          itermSgrUnderline(t, ITERM_UL_DASHED);
+        else
+          itermSgrUnderline(t, ITERM_UL_SINGLE);
       }
       else
-      {
-        t->pen.flags |= ITERM_FL_UNDERLINE;
-        if (t->csi_colon[i]) i++;
-      }
+        itermSgrUnderline(t, ITERM_UL_SINGLE);
       break;
     case 7: t->pen.flags |= ITERM_FL_INVERSE; break;
     case 8: t->pen.flags |= ITERM_FL_HIDDEN; break;
     case 9: t->pen.flags |= ITERM_FL_STRIKE; break;
-    case 21: t->pen.flags |= ITERM_FL_UNDERLINE; break;
+    case 21: itermSgrUnderline(t, ITERM_UL_DOUBLE); break;
     case 22: t->pen.flags &= ~(ITERM_FL_BOLD | ITERM_FL_DIM); break;
     case 23: t->pen.flags &= ~ITERM_FL_ITALIC; break;
-    case 24: t->pen.flags &= ~ITERM_FL_UNDERLINE; break;
+    case 24: t->pen.flags &= ~(ITERM_FL_UNDERLINE | ITERM_FL_ULSTYLE); break;
     case 27: t->pen.flags &= ~ITERM_FL_INVERSE; break;
     case 28: t->pen.flags &= ~ITERM_FL_HIDDEN; break;
     case 29: t->pen.flags &= ~ITERM_FL_STRIKE; break;
@@ -206,6 +258,16 @@ static void itermSgr(Iterm* t)
       t->pen.bg = t->def_bg;
       t->pen.flags |= ITERM_FL_BG_DEFAULT;
       break;
+    case 58:
+      {
+        unsigned int c = 0;
+        int used = itermSgrExtColor(t, i, &c);
+        if (used)
+          t->pen.ul = ITERM_UL_COLOR_SET | c;
+        i += used;
+      }
+      break;
+    case 59: t->pen.ul = 0; break;
     default:
       if (n >= 30 && n <= 37)
       {
@@ -244,10 +306,30 @@ static void itermCsiDispatch(Iterm* t, char final)
       for (i = 0; i < t->csi_argc; i++)
         itermDecMode(t, itermCsiArg(t, i, 0), final == 'h');
     }
+    else if (final == 'p' && t->csi_intermed == '$')
+    {
+      n = itermCsiArg(t, 0, 0);
+      sprintf(buf, "\033[?%d;%d$y", n, itermDecModeState(t, n));
+      itermRespond(t, buf);
+    }
+    return;
+  }
+  if (t->csi_leader == '>')
+  {
+    if (final == 'c' && itermCsiArg(t, 0, 0) == 0)
+      itermRespond(t, "\033[>1;10;0c");
+    else if (final == 'q' && itermCsiArg(t, 0, 0) == 0)
+      itermRespond(t, "\033P>|IupTerminal\033\\");
     return;
   }
   if (t->csi_leader)
     return;
+  if (final == 'p' && t->csi_intermed == '$')
+  {
+    sprintf(buf, "\033[%d;0$y", itermCsiArg(t, 0, 0));
+    itermRespond(t, buf);
+    return;
+  }
 
   switch (final)
   {
