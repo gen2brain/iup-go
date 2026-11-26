@@ -69,6 +69,7 @@ typedef struct _IcocoaTableData {
 } IcocoaTableData;
 
 #define ICOCOA_TABLE_DATA(ih) ((IcocoaTableData*)((ih)->data->native_data))
+#define COCOA_TABLE_AUTOSIZE_ROWS 100
 
 /* ========================================================================= */
 /* Custom NSTableCellView with Focus Rectangle                              */
@@ -489,7 +490,7 @@ static void cocoaTableFitRowToImage(Ihandle* ih, NSImage* image)
 static CGFloat cocoaTableCalculateColumnWidth(Ihandle* ih, int col_index, NSFont* font)
 {
   CGFloat max_width = 0.0;
-  int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;
+  int max_rows_to_check = (ih->data->num_lin > COCOA_TABLE_AUTOSIZE_ROWS) ? COCOA_TABLE_AUTOSIZE_ROWS : ih->data->num_lin;
 
   NSTableView* tableView = cocoaTableGetTableView(ih);
   if (tableView)
@@ -2598,7 +2599,13 @@ static int cocoaTableSetNumLinAttrib(Ihandle* ih, const char* value)
     ih->data->num_lin = num_lin;
 
     NSTableView* tableView = cocoaTableGetTableView(ih);
-    iupcocoaReloadTableView(tableView);
+#ifdef GNUSTEP
+    if (num_lin < [tableView numberOfRows])
+      iupcocoaReloadTableView(tableView);
+    else
+#endif
+    if (num_lin != [tableView numberOfRows])
+      [tableView noteNumberOfRowsChanged];
     return 1;
   }
 
@@ -2775,9 +2782,12 @@ static void cocoaTableResizeLins(Ihandle* ih, int num_lin, int pos, int delta)
   IcocoaTableData* table_data = cocoaTableGetData(ih);
   NSTableView* tableView = cocoaTableGetTableView(ih);
   NSMutableIndexSet* selection = nil;
+  int first_changed;
 
   if (num_lin < 0)
     num_lin = 0;
+
+  first_changed = delta ? pos : (num_lin < ih->data->num_lin ? num_lin : ih->data->num_lin) + 1;
 
   if (tableView)
     selection = [[[tableView selectedRowIndexes] mutableCopy] autorelease];
@@ -2785,7 +2795,11 @@ static void cocoaTableResizeLins(Ihandle* ih, int num_lin, int pos, int delta)
   ih->data->num_lin = num_lin;
 
   if (ih->handle)
+  {
     cocoaTableSetNumLinAttrib(ih, iupStrReturnInt(num_lin));
+    if (delta)
+      iupcocoaReloadTableView(tableView);
+  }
 
   if (selection)
   {
@@ -2803,7 +2817,8 @@ static void cocoaTableResizeLins(Ihandle* ih, int num_lin, int pos, int delta)
     if (tableView)
       [tableView setNeedsDisplay:YES];
 
-    cocoaTableQueueAutoSize(ih);
+    if (first_changed <= COCOA_TABLE_AUTOSIZE_ROWS)
+      cocoaTableQueueAutoSize(ih);
   }
 }
 

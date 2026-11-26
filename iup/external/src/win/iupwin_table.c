@@ -49,6 +49,7 @@ static COLORREF winTableFocusRectColor(COLORREF bg_color)
 
 #define WIN_TABLE_AUTOSIZE (WM_APP + 1)
 #define WIN_TABLE_MULTISEL (WM_APP + 2)
+#define WIN_TABLE_AUTOSIZE_ROWS 100
 
 typedef struct _IwinTableData {
   HWND list_view;
@@ -157,6 +158,12 @@ static void winTableQueueAutoSize(Ihandle* ih)
   }
 }
 
+static void winTableQueueAutoSizeFrom(Ihandle* ih, int lin)
+{
+  if (lin <= WIN_TABLE_AUTOSIZE_ROWS)
+    winTableQueueAutoSize(ih);
+}
+
 static void winTableAutoSizeColumns(Ihandle* ih)
 {
   IwinTableData* data = IWIN_TABLE_DATA(ih);
@@ -166,7 +173,7 @@ static void winTableAutoSizeColumns(Ihandle* ih)
     return;
 
   int num_col = ih->data->num_col;
-  int max_rows_to_check = (ih->data->num_lin > 100) ? 100 : ih->data->num_lin;
+  int max_rows_to_check = (ih->data->num_lin > WIN_TABLE_AUTOSIZE_ROWS) ? WIN_TABLE_AUTOSIZE_ROWS : ih->data->num_lin;
   int charheight = 0;
   int image_extra = 0;
 
@@ -830,7 +837,7 @@ IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const ch
   item.iSubItem = col;  /* Dummy column at 0, real columns at 1..num_col */
   item.pszText = iupwinStrToSystem(value ? value : "");
   ListView_SetItem(list_view, &item);
-  winTableQueueAutoSize(ih);
+  winTableQueueAutoSizeFrom(ih, lin);
 }
 
 IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
@@ -934,7 +941,7 @@ IUP_SDK_API void iupdrvTableSetCellImage(Ihandle* ih, int lin, int col, const ch
     winTableFitRowToImage(ih, list_view, (HBITMAP)iupImageGetImage(image, ih, 0, NULL));
   if (list_view)
     InvalidateRect(list_view, NULL, FALSE);
-  winTableQueueAutoSize(ih);
+  winTableQueueAutoSizeFrom(ih, lin);
 }
 
 /****************************************************************************
@@ -1293,7 +1300,7 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 {
   HWND list_view = winTableGetListView(ih);
   if (list_view)
-    InvalidateRect(list_view, NULL, TRUE);
+    InvalidateRect(list_view, NULL, FALSE);
   winTableQueueAutoSize(ih);
 }
 
@@ -1561,7 +1568,7 @@ IUP_SDK_API void iupdrvTableSetNumLin(Ihandle* ih, int num_lin)
   ih->data->num_lin = num_lin;
   winTableFollowLins(ih, list_view, selected, sel_count, num_lin + 1, 0);
 
-  winTableQueueAutoSize(ih);
+  winTableQueueAutoSizeFrom(ih, (num_lin < old_num_lin ? num_lin : old_num_lin) + 1);
 }
 
 IUP_SDK_API void iupdrvTableSetNumCol(Ihandle* ih, int num_col)
@@ -1725,7 +1732,7 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 
   ih->data->num_lin++;
   winTableFollowLins(ih, list_view, selected, sel_count, pos + 1, 1);
-  winTableQueueAutoSize(ih);
+  winTableQueueAutoSizeFrom(ih, pos);
 }
 
 IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
@@ -1784,7 +1791,7 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 
   ih->data->num_lin--;
   winTableFollowLins(ih, list_view, selected, sel_count, pos, -1);
-  winTableQueueAutoSize(ih);
+  winTableQueueAutoSizeFrom(ih, pos);
 }
 
 IUP_SDK_API void iupdrvTableAddCol(Ihandle* ih, int pos)
@@ -3165,7 +3172,7 @@ static int winTableMapMethod(Ihandle* ih)
   ListView_SetTextColor(data->list_view, winTableDefaultColor("TXTFGCOLOR", COLOR_WINDOWTEXT));
 
   /* no LVS_EX_GRIDLINES, the grid is custom drawn */
-  DWORD exStyle = LVS_EX_FULLROWSELECT;
+  DWORD exStyle = LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER;
   ListView_SetExtendedListViewStyle(data->list_view, exStyle);
 
   if (ih->data->show_image)

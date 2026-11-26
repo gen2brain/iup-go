@@ -679,6 +679,7 @@ static void winuiTablePopulateVirtualContainer(Ihandle* ih, int lin, Primitives:
   winuiTableApplyColumnWidthsToRowGrid(ih, rowGrid, aux, num_col);
 
   winuiTablePopulateVirtualRow(ih, lin, rowGrid);
+  rowGrid.Tag(box_value(aux->data_gen));
 
   for (int j = 0; j < num_col; j++)
   {
@@ -727,6 +728,28 @@ static void winuiTableRefreshVirtualRows(Ihandle* ih, ListView listView)
   {
     auto container = listView.ContainerFromIndex(i).try_as<Primitives::SelectorItem>();
     if (!container)
+      continue;
+    winuiTablePopulateVirtualContainer(ih, i + 1, container);
+    winuiTableSetRowAutomationName(ih, i + 1, container);
+  }
+}
+
+static void winuiTableRefreshStaleVisibleRows(Ihandle* ih, ListView listView)
+{
+  IupWinUITableAux* aux = winuiTableGetAux(ih);
+  ItemsStackPanel panel = listView.ItemsPanelRoot().try_as<ItemsStackPanel>();
+  if (!aux || !panel || panel.FirstVisibleIndex() < 0)
+    return;
+
+  int last = panel.LastVisibleIndex();
+  for (int i = panel.FirstVisibleIndex(); i <= last && i < ih->data->num_lin; i++)
+  {
+    auto container = listView.ContainerFromIndex(i).try_as<Primitives::SelectorItem>();
+    if (!container)
+      continue;
+    auto presenter = container.ContentTemplateRoot().try_as<ContentPresenter>();
+    Grid rowGrid = presenter ? presenter.Content().try_as<Grid>() : nullptr;
+    if (rowGrid && rowGrid.Tag() && unbox_value<int>(rowGrid.Tag()) == aux->data_gen)
       continue;
     winuiTablePopulateVirtualContainer(ih, i + 1, container);
     winuiTableSetRowAutomationName(ih, i + 1, container);
@@ -2134,6 +2157,12 @@ static void winuiTableAttachScrollViewer(Ihandle* ih)
     if (!a || !a->scrollViewer)
       return;
     winuiTableSyncHeader(ih, a->scrollViewer.HorizontalOffset());
+    if (a->isVirtual)
+    {
+      ListView lv = winuiTableGetListView(ih);
+      if (lv)
+        winuiTableRefreshStaleVisibleRows(ih, lv);
+    }
     if (!args.IsIntermediate() && iupAttribGet(ih, "_IUPTABLE_SCROLL_PENDING"))
       iupTableScrollDone(ih);
     else
@@ -2375,8 +2404,9 @@ extern "C" IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
 
   if (aux->isVirtual)
   {
-    winuiTableRebuildListViewItems(ih);
-    winuiTableUpdateLayout(ih, listView);
+    aux->data_gen++;
+    winuiTableSetVirtualItems(listView, ih->data->num_lin);
+    winuiTableRefreshStaleVisibleRows(ih, listView);
     return;
   }
 

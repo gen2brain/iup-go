@@ -431,6 +431,22 @@ public:
       Q_EMIT model()->dataChanged(model()->index(firstRow, firstCol), model()->index(fillLastRow, fillLastCol));
   }
 
+  void updateVirtualCells()
+  {
+    QRect visibleRect = viewport()->rect();
+    int firstRow = rowAt(visibleRect.top());
+    int lastRow = rowAt(visibleRect.bottom());
+    int firstCol = columnAt(visibleRect.left());
+    int lastCol = columnAt(visibleRect.right());
+
+    if (firstRow < 0) firstRow = 0;
+    if (lastRow < 0) lastRow = rowCount() - 1;
+    if (firstCol < 0) firstCol = 0;
+    if (lastCol < 0) lastCol = columnCount() - 1;
+
+    populateVirtualCells(firstRow, lastRow, firstCol, lastCol);
+  }
+
   QSize sizeHint() const override
   {
     QFontMetrics fm(font());
@@ -844,22 +860,6 @@ protected:
     }
 
     event->acceptProposedAction();
-  }
-
-  void updateVirtualCells()
-  {
-    QRect visibleRect = viewport()->rect();
-    int firstRow = rowAt(visibleRect.top());
-    int lastRow = rowAt(visibleRect.bottom());
-    int firstCol = columnAt(visibleRect.left());
-    int lastCol = columnAt(visibleRect.right());
-
-    if (firstRow < 0) firstRow = 0;
-    if (lastRow < 0) lastRow = rowCount() - 1;
-    if (firstCol < 0) firstCol = 0;
-    if (lastCol < 0) lastCol = columnCount() - 1;
-
-    populateVirtualCells(firstRow, lastRow, firstCol, lastCol);
   }
 
   void copySelection()
@@ -2053,36 +2053,10 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   QTableWidget* table = qtTableGetWidget(ih);
   if (table)
   {
-    char* virtualmode = iupAttribGet(ih, "VIRTUALMODE");
-    if (iupStrBoolean(virtualmode))
-    {
-      auto value_cb = reinterpret_cast<sIFnii>(IupGetCallback(ih, "VALUE_CB"));
-      if (value_cb)
-      {
-        bool wasBlocked = table->signalsBlocked();
-        table->blockSignals(true);
-
-        for (int row = 0; row < table->rowCount(); row++)
-        {
-          for (int col = 0; col < table->columnCount(); col++)
-          {
-            QTableWidgetItem* existingItem = table->item(row, col);
-            if (existingItem)
-            {
-              char* value = value_cb(ih, row + 1, col + 1);
-              if (value)
-                existingItem->setText(QString::fromUtf8(value));
-              else
-                existingItem->setText(QString());
-            }
-          }
-        }
-
-        table->blockSignals(wasBlocked);
-      }
-    }
-
-    qtTableReapplyAllColors(ih);
+    if (iupStrBoolean(iupAttribGet(ih, "VIRTUALMODE")))
+      static_cast<IupQtTableWidget*>(table)->updateVirtualCells();
+    else
+      qtTableReapplyAllColors(ih);
 
     table->viewport()->update();
   }

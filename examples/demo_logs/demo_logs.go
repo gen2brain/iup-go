@@ -146,7 +146,7 @@ func apply() {
 			matches = append(matches, i)
 		}
 	}
-	refresh()
+	refresh(true)
 }
 
 func keep(l record) bool {
@@ -159,10 +159,12 @@ func keep(l record) bool {
 	return strings.Contains(strings.ToLower(l.source+" "+l.message+" "+l.level), query)
 }
 
-func refresh() {
+func refresh(changed bool) {
 	table := iup.GetHandle("log_table")
 	table.SetAttribute("NUMLIN", len(matches))
-	table.SetAttribute("REDRAW", "YES")
+	if changed {
+		table.SetAttribute("REDRAW", "YES")
+	}
 	if follow {
 		tail()
 	}
@@ -223,7 +225,7 @@ func arrive(iup.Ihandle) int {
 			matches = append(matches, len(lines)-1)
 		}
 	}
-	refresh()
+	refresh(false)
 	return iup.DEFAULT
 }
 

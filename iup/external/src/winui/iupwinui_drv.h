@@ -523,6 +523,7 @@ struct IupWinUITableAux
   int edit_row, edit_col;
   bool editing;
   bool isVirtual;
+  int data_gen;
   bool show_grid;
   bool suppress_callbacks;
   bool click_ignored;
