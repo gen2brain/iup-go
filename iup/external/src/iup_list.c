@@ -793,14 +793,15 @@ static int iListSetShowDragDropAttrib(Ihandle* ih, const char* value)
 
 static int iListDropData_CB(Ihandle* ih, char* type, void* data, int len, int x, int y)
 {
-  int pos = IupConvertXYToPos(ih, x, y);
+  int pos;
   int is_ctrl = 0;
   char key[5];
 
   /* Data is not the pointer, it contains the pointer */
   Ihandle* ih_source;
-  if (len != sizeof(Ihandle*))
+  if (len != sizeof(Ihandle*) || ih->data->is_virtual)
     return IUP_DEFAULT;
+  pos = IupConvertXYToPos(ih, x, y);
   memcpy((void*)&ih_source, data, len);  /* but ih_source can be IupList or IupFlatList, can NOT use ih_source->data here */
 
   if (!IupClassMatch(ih_source, "list") && !IupClassMatch(ih_source, "flatlist"))

@@ -56,6 +56,7 @@ Before mapping, it counts the number of non-NULL items before the first NULL ite
 
 **DRAGDROPLIST** (non-inheritable): prepare the [Drag & Drop](../attrib/iup_dragdrop.md) callbacks to support drag and drop of items between lists (IupList or IupFlatList), in the same IUP application.
 [Drag & Drop](../attrib/iup_dragdrop.md) attributes must still be set to activate drag and drop and to define if this list is a source and/or target.
+A list with VIRTUALMODE=YES ignores the drop; to accept items, handle DROPDATA_CB and update ITEMCOUNT.
 Default: NO.
 
 **DROPFILESTARGET** (non-inheritable): Enable or disable the drop of files.
