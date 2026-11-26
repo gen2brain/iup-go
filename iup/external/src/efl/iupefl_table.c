@@ -1649,6 +1649,7 @@ static void eflTableStartCellEdit(Ihandle* ih, int lin, int col)
 
   efl_text_interactive_selection_allowed_set(entry, EINA_TRUE);
   efl_text_interactive_editable_set(entry, EINA_TRUE);
+  elm_object_tree_focus_allow_set(data->table, EINA_TRUE);
   elm_object_focus_set(entry, EINA_TRUE);
   efl_text_interactive_all_select(entry);
 
@@ -1730,6 +1731,7 @@ static void eflTableEndCellEdit(Ihandle* ih, int apply)
 
   efl_text_interactive_editable_set(entry, EINA_FALSE);
   efl_text_interactive_selection_allowed_set(entry, EINA_FALSE);
+  elm_object_tree_focus_allow_set(data->table, EINA_FALSE);
 
   data->editing_lin = 0;
   data->editing_col = 0;
@@ -1989,7 +1991,7 @@ static Evas_Object* eflTableCreateCellWidget(Ihandle* ih, Evas_Object* parent, c
   return entry;
 }
 
-static void eflTableClearCells(Ihandle* ih)
+static void eflTableDeleteCells(Ihandle* ih)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int alloc_col, alloc_lin;
@@ -2096,7 +2098,19 @@ static void eflTableClearCells(Ihandle* ih)
   data->alloc_num_lin = 0;
 }
 
-static void eflTableRebuildCells(Ihandle* ih)
+static void eflTableClearCells(Ihandle* ih)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  Evas* evas = (data && data->table) ? evas_object_evas_get(data->table) : NULL;
+
+  if (evas)
+    evas_event_freeze(evas);
+  eflTableDeleteCells(ih);
+  if (evas)
+    evas_event_thaw(evas);
+}
+
+static void eflTableBuildCells(Ihandle* ih)
 {
   IeflTableData* data = IEFL_TABLE_DATA(ih);
   int num_col = ih->data->num_col;
@@ -2320,6 +2334,18 @@ static void eflTableRebuildCells(Ihandle* ih)
       }
     }
   }
+}
+
+static void eflTableRebuildCells(Ihandle* ih)
+{
+  IeflTableData* data = IEFL_TABLE_DATA(ih);
+  Evas* evas = (data && data->table) ? evas_object_evas_get(data->table) : NULL;
+
+  if (evas)
+    evas_event_freeze(evas);
+  eflTableBuildCells(ih);
+  if (evas)
+    evas_event_thaw(evas);
 }
 
 /****************************************************************************
@@ -3982,6 +4008,7 @@ static int eflTableMapMethod(Ihandle* ih)
     efl_gfx_entity_visible_set(table, EINA_TRUE);
 
     data->table = table;
+    elm_object_tree_focus_allow_set(table, EINA_FALSE);
 
     elm_object_content_set(scroller, table);
 
@@ -4062,6 +4089,7 @@ static int eflTableMapMethod(Ihandle* ih)
     efl_gfx_entity_visible_set(table, EINA_TRUE);
 
     data->table = table;
+    elm_object_tree_focus_allow_set(table, EINA_FALSE);
 
     elm_object_content_set(scroller, table);
 
