@@ -5,6 +5,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdint.h>
 
@@ -806,9 +807,32 @@ static void androidTableReplayStoredColumns(Ihandle* ih)
   }
 }
 
+static int androidTableParseCellKey(const char* key, const char** name, int* lin, int* col)
+{
+  static const char* names[5] = { "BGCOLOR", "FGCOLOR", "FONT", "IMAGE", "" };
+  int i;
+  for (i = 0; i < 5; i++)
+  {
+    size_t len = strlen(names[i]);
+    if (strncmp(key, names[i], len) == 0)
+    {
+      int end = 0;
+      if (sscanf(key + len, "%d:%d%n", lin, col, &end) == 2 && key[len + end] == 0)
+      {
+        *name = names[i];
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
 static void androidTableReplayStoredCells(Ihandle* ih)
 {
-  int l, c;
+  int l, c, i, pass, count, n = 0;
+  const char* name;
+  char** keys;
+  char* key;
   char* v;
 
   for (c = 1; c <= ih->data->num_col; c++)
@@ -821,41 +845,42 @@ static void androidTableReplayStoredCells(Ihandle* ih)
     if (v) androidTableApplyFont(ih, 0, c, v);
   }
 
-  for (l = 1; l <= ih->data->num_lin; l++)
+  count = iupTableCount(ih->attrib);
+  keys = (char**)malloc((count + 1) * sizeof(char*));
+  for (key = iupTableFirst(ih->attrib); key; key = iupTableNext(ih->attrib))
   {
-    v = iupAttribGetId2(ih, "BGCOLOR", l, 0);
-    if (v) androidTableApplyBgColor(ih, l, 0, v);
-    v = iupAttribGetId2(ih, "FGCOLOR", l, 0);
-    if (v) androidTableApplyFgColor(ih, l, 0, v);
-    v = iupAttribGetId2(ih, "FONT", l, 0);
-    if (v) androidTableApplyFont(ih, l, 0, v);
+    if (androidTableParseCellKey(key, &name, &l, &c) && l >= 1 && l <= ih->data->num_lin && c >= 0 && c <= ih->data->num_col)
+      keys[n++] = iupStrDup(key);
   }
 
-  for (l = 1; l <= ih->data->num_lin; l++)
+  for (pass = 0; pass < 2; pass++)
   {
-    for (c = 1; c <= ih->data->num_col; c++)
+    for (i = 0; i < n; i++)
     {
-      v = iupAttribGetId2(ih, "", l, c);
-      if (v) iupdrvTableSetCellValue(ih, l, c, v);
-
-      v = iupAttribGetId2(ih, "BGCOLOR", l, c);
-      if (v) androidTableApplyBgColor(ih, l, c, v);
-
-      v = iupAttribGetId2(ih, "FGCOLOR", l, c);
-      if (v) androidTableApplyFgColor(ih, l, c, v);
-
-      v = iupAttribGetId2(ih, "FONT", l, c);
-      if (v) androidTableApplyFont(ih, l, c, v);
-
-      if (ih->data->show_image)
+      androidTableParseCellKey(keys[i], &name, &l, &c);
+      if ((c == 0) != (pass == 0))
+        continue;
+      v = iupAttribGet(ih, keys[i]);
+      if (!v)
+        continue;
+      if (name[0] == 0)
       {
-        char name[64];
-        snprintf(name, sizeof(name), "IMAGE%d:%d", l, c);
-        v = iupAttribGet(ih, name);
-        if (v) iupdrvTableSetCellImage(ih, l, c, v);
+        if (c > 0) iupdrvTableSetCellValue(ih, l, c, v);
       }
+      else if (name[0] == 'B')
+        androidTableApplyBgColor(ih, l, c, v);
+      else if (name[0] == 'F' && name[1] == 'G')
+        androidTableApplyFgColor(ih, l, c, v);
+      else if (name[0] == 'F')
+        androidTableApplyFont(ih, l, c, v);
+      else if (c > 0 && ih->data->show_image)
+        iupdrvTableSetCellImage(ih, l, c, v);
     }
   }
+
+  for (i = 0; i < n; i++)
+    free(keys[i]);
+  free(keys);
 }
 
 static int androidTableMapMethod(Ihandle* ih)
@@ -873,6 +898,7 @@ static int androidTableMapMethod(Ihandle* ih)
 
   int num_col = ih->data->num_col;
   int num_lin = ih->data->num_lin;
+  if (iupAttribGetBoolean(ih, "VIRTUALMODE")) androidTableCallBool(ih, "setVirtualMode", 1);
   if (num_col > 0) iupdrvTableSetNumCol(ih, num_col);
   if (num_lin > 0) iupdrvTableSetNumLin(ih, num_lin);
   androidTableReplayStoredColumns(ih);
@@ -889,7 +915,6 @@ static int androidTableMapMethod(Ihandle* ih)
   if (ih->data->user_resize) androidTableCallBool(ih, "setUserResize", 1);
   if (ih->data->allow_reorder) androidTableCallBool(ih, "setAllowReorder", 1);
   if (ih->data->show_dragdrop) androidTableCallBool(ih, "setShowDragDrop", 1);
-  if (iupAttribGetBoolean(ih, "VIRTUALMODE")) androidTableCallBool(ih, "setVirtualMode", 1);
   v = iupAttribGet(ih, "FOCUSFEEDBACK");
   if (v) androidTableCallBool(ih, "setFocusRect", iupStrBoolean(v));
   androidTableCallBool(ih, "setStretchLast", ih->data->stretch_last);

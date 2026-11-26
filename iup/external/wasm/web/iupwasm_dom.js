@@ -288,6 +288,165 @@
       if (el.__iupDropRow) { el.__iupDropRow.style.boxShadow = ''; el.__iupDropRow = null; }
     }
 
+    var IUP_VMAXH = 10000000;
+    function vsGeom(V) {
+      V.th = V.count * V.rowH; V.h = Math.min(V.th, IUP_VMAXH);
+      V.ph = V.h / 100; V.n = V.th > V.h ? Math.floor(V.th / V.ph) : 1; V.cj = V.n > 1 ? (V.th - V.h) / (V.n - 1) : 0;
+    }
+    function vsPageOff(V, v) { return V.n > 1 ? Math.round(Math.min(V.n - 1, Math.floor(v / V.ph)) * V.cj) : 0; }
+    function vsTo(V, el, v, vh) {
+      v = Math.max(0, Math.min(v, V.th - vh));
+      V.off = vsPageOff(V, v); el.scrollTop = v - V.off; V.s = el.scrollTop;
+    }
+    function vsScroll(V, el, vh, s) {
+      var v, off;
+      if (V.n > 1 && (s <= 0 || s >= V.h - vh - 1)) {
+        v = s <= 0 ? 0 : V.th - vh; off = vsPageOff(V, v);
+      } else if (V.n === 1 || !el.__iupVBar || Math.abs(s - V.s) < vh) {
+        v = s + V.off; off = vsPageOff(V, v);
+        if (off !== V.off) { el.scrollTop = v - off; s = el.scrollTop; }
+      } else {
+        off = vsPageOff(V, s * ((V.th - vh) / (V.h - vh))); v = s + off;
+      }
+      V.off = off; V.s = s;
+      return v;
+    }
+    var vsBarEl = null;
+    function vsWatchBar(el) {
+      el.addEventListener('pointerdown', function (e) { if (e.target === el) { el.__iupVBar = true; vsBarEl = el; } });
+      el.addEventListener('pointermove', function (e) { if (!e.buttons) el.__iupVBar = false; });
+    }
+    document.addEventListener('pointerup', function () { if (vsBarEl) { vsBarEl.__iupVBar = false; vsBarEl = null; } }, true);
+    function tableRow(el, lin) { return el.__iupVirtual ? (el.__iupVMap[lin] || null) : (el.__iupBody.children[lin - 1] || null); }
+    function tableRowSelect(tr, select) {
+      tr.__iupSelected = !!select;
+      if (select) { tr.style.background = 'Highlight'; tr.style.color = 'HighlightText'; }
+      else { tr.style.background = tr.__iupStripeBg || ''; tr.style.color = ''; }
+      for (var k = 0; k < tr.children.length; k++) {
+        var td = tr.children[k];
+        if (select) { if (td.__iupCellBg === undefined) { td.__iupCellBg = td.style.background; td.__iupCellFg = td.style.color; } td.style.background = ''; td.style.color = ''; }
+        else if (td.__iupCellBg !== undefined) { td.style.background = td.__iupCellBg; td.style.color = td.__iupCellFg; td.__iupCellBg = undefined; td.__iupCellFg = undefined; }
+      }
+    }
+    function tableFocusApply(el, c) {
+      var prev = el.__iupFocusTd; if (prev) prev.style.outline = '';
+      el.__iupFocusTd = null;
+      var tr = el.__iupRowOf(c.lin), td = tr ? tr.children[c.col - 1] : null;
+      if (td && c.focusrect) { td.style.outline = '1px dotted ' + (c.select ? 'HighlightText' : 'var(--iup-accent)'); td.style.outlineOffset = '-1px'; el.__iupFocusTd = td; }
+      return td;
+    }
+    function tableVRecycle(el, lin) {
+      var tr = el.__iupVMap[lin];
+      if (el.__iupEditInp && tr.contains(el.__iupEditInp)) el.__iupEditInp.blur();
+      if (el.__iupFocusTd && el.__iupFocusTd.parentNode === tr) el.__iupFocusTd = null;
+      delete el.__iupVMap[lin]; el.__iupBody.removeChild(tr); el.__iupVPool.push(tr);
+    }
+    function tableVFill(el, tr, lin, c, k) {
+      var V = el.__iupV, n = c.numCol, base = k * n, tds = tr.children, st = c.styles, j, td;
+      while (tds.length > n) tr.removeChild(tr.lastChild);
+      while (tds.length < n) { td = document.createElement('td'); td.style.padding = '2px 6px'; td.style.whiteSpace = 'nowrap'; tr.appendChild(td); }
+      tr.style.height = V.rowH + 'px';
+      tr.__iupStripeBg = el.__iupAlt ? ((lin % 2) ? el.__iupOdd : el.__iupEven) : '';
+      tr.__iupSelected = false; tr.style.background = tr.__iupStripeBg; tr.style.color = '';
+      for (j = 0; j < n; j++) {
+        td = tds[j];
+        td.dataset.lin = lin; td.dataset.col = j + 1;
+        if (td.__iupEditing) continue;
+        td.style.border = el.__iupGrid ? '1px solid var(--iup-bd-faint)' : 'none';
+        if (!td.__iupVText || td.__iupVText.parentNode !== td) { td.textContent = ''; td.__iupVImg = null; td.__iupVText = document.createTextNode(''); td.appendChild(td.__iupVText); }
+        var imgId = c.img[base + j], im = imgId ? (globalThis.__iupImg && globalThis.__iupImg.map[imgId]) : null, ie = td.__iupVImg;
+        if (im) {
+          if (!ie) { ie = document.createElement('img'); ie.style.verticalAlign = 'top'; ie.style.marginRight = '4px'; td.insertBefore(ie, td.__iupVText); td.__iupVImg = ie; }
+          if (ie.__iupId !== imgId) { ie.src = im.url; ie.width = im.w; ie.height = im.h; ie.__iupId = imgId; }
+          var fit = el.__iupFitImage && el.__iupImgMaxH;
+          if (fit) { ie.style.maxHeight = el.__iupImgMaxH + 'px'; ie.style.width = 'auto'; } else { ie.style.maxHeight = ''; ie.style.width = ''; }
+          ie.style.marginTop = Math.max(0, Math.floor((V.rowH - 5 - (fit ? Math.min(im.h, el.__iupImgMaxH) : im.h)) / 2)) + 'px';
+        } else if (ie) { td.removeChild(ie); td.__iupVImg = null; }
+        if (td.__iupVText.nodeValue !== c.str[base + j]) td.__iupVText.nodeValue = c.str[base + j];
+        td.__iupCellBg = undefined; td.__iupCellFg = undefined;
+        td.style.background = st ? st.bg[base + j] : ''; td.style.color = st ? st.fg[base + j] : ''; td.style.font = st ? st.font[base + j] : ''; td.style.lineHeight = (V.rowH - 5) + 'px';
+        td.style.textAlign = (el.__iupAligns && el.__iupAligns[j + 1]) || '';
+        td.style.outline = '';
+      }
+      if (c.sel[k]) tableRowSelect(tr, true);
+      if (el.__iupFocusC && el.__iupFocusC.lin === lin) tableFocusApply(el, el.__iupFocusC);
+    }
+    function tableVInsert(el, lin, c, k, ref) {
+      var tr = el.__iupVPool.pop() || document.createElement('tr');
+      el.__iupBody.insertBefore(tr, ref); el.__iupVMap[lin] = tr;
+      tableVFill(el, tr, lin, c, k);
+    }
+    function tableVSpacers(el) {
+      var V = el.__iupV, lo = el.__iupVLo, hi = el.__iupVHi, n = el.__iupHead.children.length || 1, top = V.h, bot = 0;
+      if (hi >= lo) { top = Math.max(0, (lo - 1) * V.rowH - V.off); bot = Math.max(0, V.h - top - (hi - lo + 1) * V.rowH); }
+      var ttd = el.__iupTopSpacer.firstChild, btd = el.__iupBotSpacer.firstChild;
+      if (ttd.__iupH !== top) { ttd.style.height = top + 'px'; ttd.__iupH = top; }
+      if (btd.__iupH !== bot) { btd.style.height = bot + 'px'; btd.__iupH = bot; }
+      if (ttd.colSpan !== n) { ttd.colSpan = n; btd.colSpan = n; }
+    }
+    function tableVUpdate(el, reply) {
+      var V = el.__iupV, l;
+      if (!el.__iupVirtual || !V.rowH || !el.style.height) return;
+      if (!reply) el.__iupVView = Math.max(0, el.clientHeight - el.__iupHead.offsetHeight);
+      var vh = el.__iupVView, v = vsScroll(V, el, vh, reply ? V.s : el.scrollTop);
+      var a = Math.floor(v / V.rowH) + 1, b = Math.min(V.count, Math.ceil((v + vh) / V.rowH));
+      var ov = Math.max(b - a + 1, 1);
+      var w0 = Math.max(1, a - ov, Math.ceil(V.off / V.rowH) + 1), w1 = Math.min(V.count, b + ov, Math.floor((V.h + V.off) / V.rowH));
+      var lo = el.__iupVLo, hi = el.__iupVHi;
+      if (hi >= lo && (hi < a - 1 || lo > b + 1)) { for (l = lo; l <= hi; l++) tableVRecycle(el, l); hi = lo - 1; }
+      while (hi >= lo && lo < w0) tableVRecycle(el, lo++);
+      while (hi >= lo && hi > w1) tableVRecycle(el, hi--);
+      if (hi < lo) { lo = 1; hi = 0; }
+      el.__iupVLo = lo; el.__iupVHi = hi; el.__iupVWin = [w0, w1];
+      tableVSpacers(el);
+      if (el.__iupVBusy || b < a) return;
+      var from, to;
+      if (hi < lo || el.__iupVStale) { from = a; to = b; }
+      else if (lo > a) { from = a; to = lo - 1; }
+      else if (hi < b) { from = hi + 1; to = b; }
+      else if (lo > w0) { from = w0; to = lo - 1; }
+      else if (hi < w1) { from = hi + 1; to = w1; }
+      else return;
+      el.__iupVBusy = true;
+      D('iupwasmTableVRows', +el.dataset.iupId, from, to, el.__iupVGen);
+    }
+
+    function vlistNewRow(el) {
+      var vd = document.createElement('div'), vih = el.__iupV.rowH;
+      vd.style.position = 'absolute'; vd.style.left = '0'; vd.style.right = '0'; vd.style.height = vih + 'px';
+      vd.style.display = 'flex'; vd.style.alignItems = 'center'; vd.style.padding = '0 4px'; vd.style.boxSizing = 'border-box';
+      vd.style.cursor = 'pointer'; vd.style.whiteSpace = 'nowrap'; vd.style.overflow = 'hidden';
+      var vimg = document.createElement('img'); vimg.style.marginRight = '4px'; vimg.style.display = 'none';
+      if (el.__iupFitImage) vimg.style.height = (vih - 4) + 'px';
+      var vsp = document.createElement('span');
+      vd.appendChild(vimg); vd.appendChild(vsp); vd.__iupImg = vimg; vd.__iupSpan = vsp;
+      vd.addEventListener('click', function () { D('iupwasmListVClick', +el.dataset.iupId, this.__iupPos); });
+      el.__iupVInner.appendChild(vd); el.__iupVAll.push(vd);
+      return vd;
+    }
+    function vlistUpdate(el, reply) {
+      var V = el.__iupV, map = el.__iupVMap, p;
+      if (!V.rowH) return;
+      if (!reply) el.__iupVView = el.clientHeight;
+      var vh = el.__iupVView, v = vsScroll(V, el, vh, reply ? V.s : el.scrollTop);
+      var a = Math.floor(v / V.rowH) + 1, b = Math.min(V.count, Math.ceil((v + vh) / V.rowH));
+      var ov = Math.max(b - a + 1, 1), w0 = Math.max(1, a - ov), w1 = Math.min(V.count, b + ov);
+      var moved = V.off !== el.__iupVPosOff;
+      for (p in map) {
+        if (+p < w0 || +p > w1) { map[p].style.display = 'none'; el.__iupVPool.push(map[p]); delete map[p]; }
+        else if (moved) map[p].style.top = ((+p - 1) * V.rowH - V.off) + 'px';
+      }
+      el.__iupVPosOff = V.off; el.__iupVWin = [w0, w1];
+      if (el.__iupVBusy) return;
+      var from = 0, lim = b;
+      for (p = a; p <= b; p++) if (!map[p]) { from = p; break; }
+      if (!from) { lim = w1; for (p = w0; p <= w1; p++) if (!map[p]) { from = p; break; } }
+      if (!from) return;
+      var to = from;
+      while (to < lim && !map[to + 1]) to++;
+      el.__iupVBusy = true;
+      D('iupwasmListVRows', +el.dataset.iupId, from, to, el.__iupVGen);
+    }
     function treeNodeIcon(row) {
       var tree = row.parentNode, icon = row.__iupIcon;
       if (!icon) return;
@@ -2000,56 +2159,57 @@
         var vw = document.createElement('div');
         vw.style.position = 'absolute'; vw.style.boxSizing = 'border-box'; vw.style.overflow = 'auto';
         vw.style.border = '1px solid var(--iup-bd)'; vw.style.background = 'var(--iup-txtbg)'; vw.style.height = '100px';
-        var vinner = document.createElement('div'); vinner.style.position = 'relative';
+        var vinner = document.createElement('div'); vinner.style.position = 'relative'; vinner.style.overflow = 'hidden';
         vw.appendChild(vinner);
-        vw.__iupVInner = vinner; vw.__iupVRows = []; vw.__iupVSel = -1; vw.__iupFitImage = true;
+        vw.__iupVInner = vinner; vw.__iupV = { count: 0, rowH: 0, off: 0, s: 0 }; vsGeom(vw.__iupV);
+        vw.__iupVMap = {}; vw.__iupVPool = []; vw.__iupVAll = []; vw.__iupVWin = [1, 0]; vw.__iupVGen = 0; vw.__iupVBusy = false; vw.__iupVPosOff = 0;
+        vw.__iupVSel = -1; vw.__iupFitImage = true;
         els[c.id] = vw; vw.dataset.iupId = c.id;
       } break;
       case 'vlistinit': {
         if (el) {
-          var vid = c.id; el.__iupItemH = c.itemH;
-          var vpending = false;
-          el.addEventListener('scroll', function () { if (vpending) return; vpending = true; requestAnimationFrame(function () { vpending = false; D('iupwasmListVScroll', vid); }); });
-          if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { D('iupwasmListVScroll', vid); }).observe(el);
+          el.__iupV.rowH = c.itemH;
+          el.addEventListener('scroll', function () { vlistUpdate(el); });
+          vsWatchBar(el);
+          if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { vlistUpdate(el); }).observe(el);
         }
       } break;
       case 'vlistcount': {
-        if (el) { el.__iupCount = c.count; el.__iupVInner.style.height = (c.count * el.__iupItemH) + 'px'; }
-      } break;
-      case 'vlistfit': {
-        if (el) { el.__iupFitImage = !!c.fit; var vfr = el.__iupVRows; for (var i = 0; i < vfr.length; i++) vfr[i].__iupImg.style.height = c.fit ? ((el.__iupItemH - 4) + 'px') : ''; }
-      } break;
-      case 'vlistwindow': {
         if (el) {
-          var vwid = c.id, vinner2 = el.__iupVInner, vrows = el.__iupVRows, vih = el.__iupItemH;
-          while (vrows.length < c.count) {
-            var vd = document.createElement('div');
-            vd.style.position = 'absolute'; vd.style.left = '0'; vd.style.right = '0'; vd.style.height = vih + 'px';
-            vd.style.display = 'flex'; vd.style.alignItems = 'center'; vd.style.padding = '0 4px'; vd.style.boxSizing = 'border-box';
-            vd.style.cursor = 'pointer'; vd.style.whiteSpace = 'nowrap'; vd.style.overflow = 'hidden';
-            var vimg = document.createElement('img'); vimg.style.marginRight = '4px'; vimg.style.display = 'none';
-            if (el.__iupFitImage) vimg.style.height = (vih - 4) + 'px';
-            var vsp = document.createElement('span');
-            vd.appendChild(vimg); vd.appendChild(vsp); vd.__iupImg = vimg; vd.__iupSpan = vsp;
-            vd.addEventListener('click', function () { D('iupwasmListVClick', vwid, this.__iupPos); });
-            vinner2.appendChild(vd); vrows.push(vd);
-          }
-          while (vrows.length > c.count) vinner2.removeChild(vrows.pop());
+          var vcV = el.__iupV, vcv = vcV.s + vcV.off;
+          vcV.count = c.count; vsGeom(vcV); el.__iupVInner.style.height = vcV.h + 'px';
+          vsTo(vcV, el, vcv, el.clientHeight);
+          el.__iupVGen++;
+          for (var vck in el.__iupVMap) { el.__iupVMap[vck].style.display = 'none'; el.__iupVPool.push(el.__iupVMap[vck]); }
+          el.__iupVMap = {};
+          vlistUpdate(el);
         }
       } break;
-      case 'vlistcell': {
+      case 'vlistfit': {
+        if (el) { el.__iupFitImage = !!c.fit; var vfr = el.__iupVAll; for (var i = 0; i < vfr.length; i++) vfr[i].__iupImg.style.height = c.fit ? ((el.__iupV.rowH - 4) + 'px') : ''; }
+      } break;
+      case 'vlistrows': {
         if (el) {
-          var vcd = el.__iupVRows[c.rowIdx];
-          if (vcd) {
-            vcd.__iupPos = c.pos; vcd.style.top = ((c.pos - 1) * el.__iupItemH) + 'px'; vcd.__iupSpan.textContent = c.text;
-            var vcim = c.imgId ? (globalThis.__iupImg && globalThis.__iupImg.map[c.imgId]) : null;
-            if (vcim) { vcd.__iupImg.src = vcim.url; vcd.__iupImg.width = vcim.w; vcd.__iupImg.height = vcim.h; vcd.__iupImg.style.display = ''; } else vcd.__iupImg.style.display = 'none';
-            vcd.style.background = (c.pos === el.__iupVSel) ? 'var(--iup-accent-bg)' : '';
+          el.__iupVBusy = false;
+          if (c.gen === el.__iupVGen) {
+            var vrV = el.__iupV, vrmap = el.__iupVMap, vrwin = el.__iupVWin;
+            for (var i = 0; i < c.texts.length; i++) {
+              var vrpos = c.from + i;
+              if (vrpos < vrwin[0] || vrpos > vrwin[1] || vrmap[vrpos]) continue;
+              var vrd = el.__iupVPool.pop() || vlistNewRow(el);
+              vrd.__iupPos = vrpos; vrd.style.top = ((vrpos - 1) * vrV.rowH - vrV.off) + 'px'; vrd.__iupSpan.textContent = c.texts[i];
+              var vrim = c.imgs[i] ? (globalThis.__iupImg && globalThis.__iupImg.map[c.imgs[i]]) : null;
+              if (vrim) { if (vrd.__iupImgId !== c.imgs[i]) { vrd.__iupImg.src = vrim.url; vrd.__iupImg.width = vrim.w; vrd.__iupImg.height = vrim.h; } vrd.__iupImg.style.display = ''; } else vrd.__iupImg.style.display = 'none';
+              vrd.__iupImgId = vrim ? c.imgs[i] : 0;
+              vrd.style.background = (vrpos === el.__iupVSel) ? 'var(--iup-accent-bg)' : '';
+              vrd.style.display = 'flex'; vrmap[vrpos] = vrd;
+            }
           }
+          if (c.gen !== el.__iupVGen || c.texts.length) vlistUpdate(el, true);
         }
       } break;
       case 'vlistselect': {
-        if (el) { el.__iupVSel = c.pos; var vsr = el.__iupVRows; for (var i = 0; i < vsr.length; i++) vsr[i].style.background = (vsr[i].__iupPos === c.pos) ? 'var(--iup-accent-bg)' : ''; }
+        if (el) { el.__iupVSel = c.pos; var vsr = el.__iupVMap; for (var vsk in vsr) vsr[vsk].style.background = (vsr[vsk].__iupPos === c.pos) ? 'var(--iup-accent-bg)' : ''; }
       } break;
       case 'createlist': {
         var lwrap = document.createElement('div');
@@ -2142,7 +2302,7 @@
         if (el && el.__iupOpts) { var lti = el.__iupOpts.children[c.pos]; if (lti) el.__iupOpts.scrollTop = lti.offsetTop; }
       } break;
       case 'vlistsettop': {
-        if (el) el.scrollTop = c.top;
+        if (el) { vsTo(el.__iupV, el, (c.pos - 1) * el.__iupV.rowH, el.clientHeight); vlistUpdate(el); }
       } break;
       case 'listspacing': {
         if (el && el.__iupOpts) {
@@ -2286,13 +2446,12 @@
         els[c.id] = twr; twr.dataset.iupId = c.id;
         var tcid = c.id;
         twr.__iupRowAt = function (lin, rowH) {
-          if (twr.__iupVirtual) { var vh = twr.__iupRowH || rowH; return [tthead.offsetHeight + (lin - 1) * vh, vh]; }
           var tr = ttbody.children[lin - 1]; return tr ? [tr.offsetTop, tr.offsetHeight] : null;
         };
         twr.__iupColAt = function (col) { var th = thr.children[col - 1]; return th ? [th.offsetLeft, th.offsetWidth] : null; };
         twr.__iupOrigin = function (rowH) {
           var lin = 1, col = 1, ths = thr.children, i;
-          if (twr.__iupVirtual) lin = Math.floor(twr.scrollTop / (twr.__iupRowH || rowH)) + 1;
+          if (twr.__iupVirtual) lin = twr.__iupV.rowH ? Math.floor((twr.__iupV.s + twr.__iupV.off) / twr.__iupV.rowH) + 1 : 1;
           else {
             var rows = ttbody.children, top = twr.scrollTop + tthead.offsetHeight, lo = 0, hi = rows.length - 1;
             while (lo < hi) { var mid = (lo + hi) >> 1, r = rows[mid]; if (r.offsetTop + r.offsetHeight > top) hi = mid; else lo = mid + 1; }
@@ -2300,11 +2459,19 @@
           }
           col = ths.length;
           for (i = 0; i < ths.length; i++) if (ths[i].offsetLeft + ths[i].offsetWidth > twr.scrollLeft) { col = i + 1; break; }
-          return lin * 65536 + col;
+          return [lin, col];
         };
         twr.__iupShow = function (lin, col, rowH, origin) {
           var headH = tthead.offsetHeight, x = twr.scrollLeft, y = twr.scrollTop;
-          var r = lin ? twr.__iupRowAt(lin, rowH) : null, cg = col ? twr.__iupColAt(col) : null;
+          var cg = col ? twr.__iupColAt(col) : null;
+          if (twr.__iupVirtual) {
+            var V = twr.__iupV, vvh = twr.clientHeight - headH, vy = V.s + V.off, ry = (lin - 1) * V.rowH;
+            if (cg) { if (origin || cg[0] < x) x = cg[0]; else if (cg[0] + cg[1] > x + twr.clientWidth) x = Math.min(cg[0], cg[0] + cg[1] - twr.clientWidth); }
+            if (lin) { if (origin || ry < vy) vy = ry; else if (ry + V.rowH > vy + vvh) vy = ry + V.rowH - vvh; vsTo(V, twr, vy, vvh); }
+            twr.scrollLeft = x; tableVUpdate(twr);
+            return;
+          }
+          var r = lin ? twr.__iupRowAt(lin, rowH) : null;
           if (origin) { if (r) y = r[0] - headH; if (cg) x = cg[0]; }
           else {
             if (r) { if (r[0] - headH < y) y = r[0] - headH; else if (r[0] + r[1] > y + twr.clientHeight) y = r[0] + r[1] - twr.clientHeight; }
@@ -2313,7 +2480,14 @@
           twr.scrollTop = y; twr.scrollLeft = x;
         };
         var tscrollpending = false;
-        twr.addEventListener('scroll', function () { if (tscrollpending) return; tscrollpending = true; requestAnimationFrame(function () { tscrollpending = false; D('iupwasmTableScrolled', tcid); }); });
+        twr.addEventListener('scroll', function () {
+          if (tscrollpending) return; tscrollpending = true;
+          requestAnimationFrame(function () {
+            tscrollpending = false;
+            var o = twr.__iupOrigin(0);
+            if (o[0] !== twr.__iupOriginLin || o[1] !== twr.__iupOriginCol) { twr.__iupOriginLin = o[0]; twr.__iupOriginCol = o[1]; D('iupwasmTableScrolled', tcid, o[0], o[1]); }
+          });
+        });
         if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { if (twr.clientHeight > 0) D('iupwasmTableResized', tcid); }).observe(twr);
         ttable.addEventListener('click', function (e) {
           var th = e.target.closest('th'); if (th && th.dataset.col) { D('iupwasmTableHeaderClick', tcid, +th.dataset.col); return; }
@@ -2343,7 +2517,7 @@
         if (el) { el.__iupReorder = !!c.reorder; el.__iupResize = !!c.resize; el.__iupRowDnd = !!c.dragdrop; }
       } break;
       case 'tablegrid': {
-        if (el) { el.__iupGrid = c.show; var tgc = el.querySelectorAll('td, th'); for (var i = 0; i < tgc.length; i++) tgc[i].style.border = c.show ? '1px solid var(--iup-bd-faint)' : 'none'; }
+        if (el) { el.__iupGrid = c.show; var tgc = el.querySelectorAll('td[data-lin], th'); for (var i = 0; i < tgc.length; i++) tgc[i].style.border = c.show ? '1px solid var(--iup-bd-faint)' : 'none'; }
       } break;
       case 'tablebuild': {
         if (el) {
@@ -2381,7 +2555,7 @@
               tbth.appendChild(trh);
             }
           }
-          while (tbb.children.length > c.numlin) tbb.removeChild(tbb.lastChild);
+          while (!el.__iupVirtual && tbb.children.length > c.numlin) tbb.removeChild(tbb.lastChild);
           for (var l = 0; l < c.numlin; l++) {
             var tbtr = tbb.children[l];
             if (!tbtr) {
@@ -2420,17 +2594,17 @@
       } break;
       case 'tableeditopen': {
         if (el) {
-          var etr = el.__iupBody.children[c.lin - 1];
+          var etr = tableRow(el, c.lin);
           var etd = etr ? etr.children[c.col - 1] : null;
           if (etd && !etd.__iupEditing) {
             var etid = c.id, elin = c.lin, ecol = c.col;
             var inp = document.createElement('input');
             inp.value = c.text; inp.style.width = '100%'; inp.style.boxSizing = 'border-box'; inp.style.font = 'inherit';
-            etd.__iupEditing = true; etd.textContent = ''; etd.appendChild(inp); inp.focus(); inp.select();
+            etd.__iupEditing = true; etd.textContent = ''; etd.appendChild(inp); el.__iupEditInp = inp; inp.focus(); inp.select();
             var endEdit = function (ap) {
               if (!etd.__iupEditing) return;
               if (inp.__iupPending) { inp.__iupEndAfter = ap; return; }
-              etd.__iupEditing = false;
+              etd.__iupEditing = false; if (el.__iupEditInp === inp) el.__iupEditInp = null;
               Dt('iupwasmTableEditEnd', ['number', 'number', 'number', 'string', 'number'], [etid, elin, ecol, inp.value, ap]);
             };
             inp.__iupLast = inp.value; inp.__iupQ = []; inp.__iupPending = 0;
@@ -2489,7 +2663,7 @@
       } break;
       case 'tableeditdone': {
         if (el) {
-          var edr = el.__iupBody.children[c.lin - 1];
+          var edr = tableRow(el, c.lin);
           var edtd = edr ? edr.children[c.col - 1] : null;
           var edinp = edtd ? edtd.querySelector('input') : null;
           if (edinp && edinp.__iupDone) edinp.__iupDone(c.ok);
@@ -2519,7 +2693,7 @@
       } break;
       case 'tablerender': {
         if (el) {
-          var trr = el.__iupBody.children[c.lin - 1];
+          var trr = tableRow(el, c.lin);
           if (trr) {
             var trtd = trr.children[c.col - 1];
             if (trtd) {
@@ -2534,7 +2708,7 @@
         }
       } break;
       case 'tablesetcell': {
-        if (el) { var tscr = el.__iupBody.children[c.lin - 1]; if (tscr) { var tsctd = tscr.children[c.col - 1]; if (tsctd) { tsctd.__iupText = c.value; apply({ op: 'tablerender', id: c.id, lin: c.lin, col: c.col }); } } }
+        if (el) { var tscr = tableRow(el, c.lin); if (tscr) { var tsctd = tscr.children[c.col - 1]; if (tsctd) { tsctd.__iupText = c.value; apply({ op: 'tablerender', id: c.id, lin: c.lin, col: c.col }); } } }
       } break;
       case 'tablefitimage': {
         if (el) {
@@ -2544,13 +2718,16 @@
         }
       } break;
       case 'tablecellimage': {
-        if (el) { var tcir = el.__iupBody.children[c.lin - 1]; if (tcir) { var tcitd = tcir.children[c.col - 1]; if (tcitd) { tcitd.__iupImg = c.imgId; apply({ op: 'tablerender', id: c.id, lin: c.lin, col: c.col }); } } }
+        if (el) { var tcir = tableRow(el, c.lin); if (tcir) { var tcitd = tcir.children[c.col - 1]; if (tcitd) { tcitd.__iupImg = c.imgId; apply({ op: 'tablerender', id: c.id, lin: c.lin, col: c.col }); } } }
       } break;
       case 'tablestripe': {
         if (el) {
-          var tsrows = el.__iupBody.children;
-          for (var i = 0; i < tsrows.length; i++) { var tsbg = c.alt ? ((i % 2) ? c.even : c.odd) : ''; tsrows[i].__iupStripeBg = tsbg; if (!tsrows[i].__iupSelected) tsrows[i].style.background = tsbg; }
           el.__iupEven = c.even; el.__iupOdd = c.odd; el.__iupAlt = c.alt;
+          if (el.__iupVirtual) { for (var tsl in el.__iupVMap) { var tsvr = el.__iupVMap[tsl]; tsvr.__iupStripeBg = c.alt ? ((+tsl % 2) ? c.odd : c.even) : ''; if (!tsvr.__iupSelected) tsvr.style.background = tsvr.__iupStripeBg; } }
+          else {
+            var tsrows = el.__iupBody.children;
+            for (var i = 0; i < tsrows.length; i++) { var tsbg = c.alt ? ((i % 2) ? c.even : c.odd) : ''; tsrows[i].__iupStripeBg = tsbg; if (!tsrows[i].__iupSelected) tsrows[i].style.background = tsbg; }
+          }
         }
       } break;
       case 'tablecolalign': {
@@ -2563,67 +2740,70 @@
         }
       } break;
       case 'tablecellstyle': {
-        if (el) { var tccr = el.__iupBody.children[c.lin - 1]; if (tccr) { var tcctd = tccr.children[c.col - 1]; if (tcctd) { if (tcctd.__iupCellBg !== undefined) { tcctd.__iupCellBg = c.bg; tcctd.__iupCellFg = c.fg; } else { tcctd.style.background = c.bg; tcctd.style.color = c.fg; } tcctd.style.font = c.font; } } }
+        if (el) { var tccr = tableRow(el, c.lin); if (tccr) { var tcctd = tccr.children[c.col - 1]; if (tcctd) { if (tcctd.__iupCellBg !== undefined) { tcctd.__iupCellBg = c.bg; tcctd.__iupCellFg = c.fg; } else { tcctd.style.background = c.bg; tcctd.style.color = c.fg; } tcctd.style.font = c.font; } } }
       } break;
       case 'tablevirtualinit': {
         if (el) {
-          var tvid = c.id, tvbody = el.__iupBody;
+          var tvbody = el.__iupBody;
           var tvspacer = function () { var tr = document.createElement('tr'); var td = document.createElement('td'); td.style.padding = '0'; td.style.border = '0'; tr.appendChild(td); return tr; };
           el.__iupTopSpacer = tvspacer(); el.__iupBotSpacer = tvspacer();
           tvbody.appendChild(el.__iupTopSpacer); tvbody.appendChild(el.__iupBotSpacer);
-          el.__iupVRows = []; el.__iupVirtual = true; el.style.overflowAnchor = 'none';
-          el.__iupRowOf = function (lin) { var rows = el.__iupVRows; for (var r = 0; r < rows.length; r++) { var td0 = rows[r].firstChild; if (td0 && +td0.dataset.lin === lin) return rows[r]; } return null; };
-          var tvpending = false;
-          el.addEventListener('scroll', function () { if (tvpending) return; tvpending = true; requestAnimationFrame(function () { tvpending = false; D('iupwasmTableVScroll', tvid); }); });
-          if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { D('iupwasmTableVScroll', tvid); }).observe(el);
+          el.__iupV = { count: 0, rowH: 0, off: 0, s: 0 }; vsGeom(el.__iupV);
+          el.__iupVMap = {}; el.__iupVPool = []; el.__iupVLo = 1; el.__iupVHi = 0; el.__iupVWin = [1, 0]; el.__iupVGen = 0; el.__iupVBusy = false; el.__iupVStale = false;
+          el.__iupVirtual = true; el.style.overflowAnchor = 'none';
+          el.__iupRowOf = function (lin) { return el.__iupVMap[lin] || null; };
+          el.addEventListener('scroll', function () { tableVUpdate(el); });
+          vsWatchBar(el);
+          if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { tableVUpdate(el); }).observe(el);
         }
       } break;
-      case 'tablevwindow': {
+      case 'tablevsetup': {
         if (el && el.__iupVirtual) {
-          var tvwbody = el.__iupBody, tvwrows = el.__iupVRows, tvwgrid = el.__iupGrid;
-          el.__iupTopSpacer.firstChild.style.height = c.top + 'px'; el.__iupTopSpacer.firstChild.colSpan = c.numCol;
-          el.__iupBotSpacer.firstChild.style.height = c.bot + 'px'; el.__iupBotSpacer.firstChild.colSpan = c.numCol;
-          el.__iupRowH = c.rowH;
-          var tvmk = function () { var td = document.createElement('td'); td.style.padding = '2px 6px'; td.style.whiteSpace = 'nowrap'; td.style.border = tvwgrid ? '1px solid var(--iup-bd-faint)' : 'none'; return td; };
-          while (tvwrows.length < c.count) { var tvtr = document.createElement('tr'); for (var cc = 0; cc < c.numCol; cc++) tvtr.appendChild(tvmk()); tvwbody.insertBefore(tvtr, el.__iupBotSpacer); tvwrows.push(tvtr); }
-          while (tvwrows.length > c.count) tvwbody.removeChild(tvwrows.pop());
-          for (var i = 0; i < tvwrows.length; i++) { var tvr = tvwrows[i]; tvr.style.height = c.rowH + 'px'; while (tvr.children.length > c.numCol) tvr.removeChild(tvr.lastChild); while (tvr.children.length < c.numCol) tvr.appendChild(tvmk()); }
+          var tsV = el.__iupV, tstop = tsV.rowH ? (tsV.s + tsV.off) / tsV.rowH : 0;
+          tsV.count = c.count; tsV.rowH = c.rowH; vsGeom(tsV);
+          el.__iupVGen++; el.__iupVStale = true;
+          tableVSpacers(el);
+          vsTo(tsV, el, tstop * tsV.rowH, Math.max(0, el.clientHeight - el.__iupHead.offsetHeight));
+          tableVUpdate(el);
         }
       } break;
-      case 'tablevcell': {
-        if (el) { var tvctr = el.__iupVRows[c.rowIdx]; if (tvctr) { var tvctd = tvctr.children[c.col]; if (tvctd) {
-          tvctd.textContent = '';
-          var tvcim = c.imgId ? (globalThis.__iupImg && globalThis.__iupImg.map[c.imgId]) : null;
-          if (tvcim) { var tvcimg = document.createElement('img'); tvcimg.src = tvcim.url; tvcimg.width = tvcim.w; tvcimg.height = tvcim.h; tvcimg.style.verticalAlign = 'middle'; tvcimg.style.marginRight = '4px'; if (el.__iupFitImage && el.__iupImgMaxH) { tvcimg.style.maxHeight = el.__iupImgMaxH + 'px'; tvcimg.style.width = 'auto'; } tvctd.appendChild(tvcimg); }
-          tvctd.appendChild(document.createTextNode(c.str || ''));
-          tvctd.__iupCellBg = undefined; tvctd.__iupCellFg = undefined; tvctd.style.background = c.bg; tvctd.style.color = c.fg; tvctd.style.font = c.font; tvctd.dataset.lin = c.lin; tvctd.dataset.col = c.col + 1; if (el.__iupAligns && el.__iupAligns[c.col + 1]) tvctd.style.textAlign = el.__iupAligns[c.col + 1]; } } }
-      } break;
-      case 'tablevstripe': {
-        if (el) { var tvstr = el.__iupVRows[c.rowIdx]; if (tvstr) { tvstr.__iupStripeBg = el.__iupAlt ? ((c.lin % 2) ? el.__iupOdd : el.__iupEven) : ''; tvstr.style.background = tvstr.__iupStripeBg; } }
+      case 'tablevrows': {
+        if (el && el.__iupVirtual) {
+          el.__iupVBusy = false;
+          if (c.gen === el.__iupVGen) {
+            var trmap = el.__iupVMap, trfrom = c.from, trto = c.from + c.count - 1, trlo, trhi, trl;
+            if (el.__iupVStale) {
+              el.__iupVStale = false;
+              for (trl = el.__iupVLo; trl <= el.__iupVHi; trl++) if (trl < trfrom || trl > trto) tableVRecycle(el, trl);
+              trlo = Math.max(el.__iupVLo, trfrom); trhi = Math.min(el.__iupVHi, trto);
+              if (trhi < trlo) { trlo = 1; trhi = 0; }
+              el.__iupVLo = trlo; el.__iupVHi = trhi;
+            }
+            trlo = el.__iupVLo; trhi = el.__iupVHi;
+            var trf = Math.max(trfrom, el.__iupVWin[0]), trt = Math.min(trto, el.__iupVWin[1]);
+            if (trf <= trt && (trhi < trlo || (trf <= trhi + 1 && trt >= trlo - 1))) {
+              for (trl = trf; trl <= trt; trl++) if (trmap[trl]) tableVFill(el, trmap[trl], trl, c, trl - trfrom);
+              if (trhi < trlo) { for (trl = trf; trl <= trt; trl++) tableVInsert(el, trl, c, trl - trfrom, el.__iupBotSpacer); trlo = trf; trhi = trt; }
+              else {
+                for (trl = trlo - 1; trl >= trf; trl--) tableVInsert(el, trl, c, trl - trfrom, trmap[trl + 1]);
+                for (trl = trhi + 1; trl <= trt; trl++) tableVInsert(el, trl, c, trl - trfrom, el.__iupBotSpacer);
+                trlo = Math.min(trlo, trf); trhi = Math.max(trhi, trt);
+              }
+              el.__iupVLo = trlo; el.__iupVHi = trhi;
+            }
+          }
+          if (c.gen !== el.__iupVGen || c.count) tableVUpdate(el, true);
+        }
       } break;
       case 'tablefocus': {
         if (el) {
-          var tfprev = el.__iupFocusTd; if (tfprev) tfprev.style.outline = '';
-          el.__iupFocusTd = null;
-          var tftr = el.__iupRowOf(c.lin);
-          var tftd = tftr ? tftr.children[c.col - 1] : null;
-          if (tftd) { if (c.focusrect) { tftd.style.outline = '1px dotted ' + (c.select ? 'HighlightText' : 'var(--iup-accent)'); tftd.style.outlineOffset = '-1px'; } el.__iupFocusTd = c.focusrect ? tftd : null; if (c.show) el.__iupShow(c.lin, c.col, 0, 0); }
+          if (el.__iupVirtual) el.__iupFocusC = c;
+          var tftd = tableFocusApply(el, c);
+          if (tftd && c.show) el.__iupShow(c.lin, c.col, 0, 0);
         }
       } break;
       case 'tableselect': {
-        if (el) {
-          var tsltr = el.__iupRowOf(c.lin);
-          if (tsltr) {
-            tsltr.__iupSelected = !!c.select;
-            if (c.select) { tsltr.style.background = 'Highlight'; tsltr.style.color = 'HighlightText'; }
-            else { tsltr.style.background = tsltr.__iupStripeBg || ''; tsltr.style.color = ''; }
-            for (var tsk = 0; tsk < tsltr.children.length; tsk++) {
-              var tsltd = tsltr.children[tsk];
-              if (c.select) { if (tsltd.__iupCellBg === undefined) { tsltd.__iupCellBg = tsltd.style.background; tsltd.__iupCellFg = tsltd.style.color; } tsltd.style.background = ''; tsltd.style.color = ''; }
-              else if (tsltd.__iupCellBg !== undefined) { tsltd.style.background = tsltd.__iupCellBg; tsltd.style.color = tsltd.__iupCellFg; tsltd.__iupCellBg = undefined; tsltd.__iupCellFg = undefined; }
-            }
-          }
-        }
+        if (el) { var tsltr = el.__iupRowOf(c.lin); if (tsltr) tableRowSelect(tsltr, c.select); }
       } break;
       case 'tablescrollto': {
         if (el && el.__iupShow) el.__iupShow(c.lin, c.col, c.rowH, c.origin);
@@ -4006,12 +4186,6 @@ globalThis.__iupMediaPick = function (kind, index) {
         var lv = el.value.split('\n'); var li = el.value.slice(0, el.selectionStart || 0).split('\n').length - 1;
         return lv[li] || '';
       } break;
-      case 'vlistscrolltop': {
-        return el ? (el.scrollTop | 0) : 0;
-      } break;
-      case 'vlistclienth': {
-        return el ? (el.clientHeight | 0) : 0;
-      } break;
       case 'listcount': {
         return el ? el.__iupOpts.children.length : 0;
       } break;
@@ -4049,11 +4223,8 @@ globalThis.__iupMediaPick = function (kind, index) {
         var tgr = el.__iupBody.children[req.lin - 1]; if (!tgr) return '';
         var tgtd = tgr.children[req.col - 1]; return tgtd ? (tgtd.__iupText || '') : '';
       } break;
-      case 'tablevscrolltop': {
-        return el ? (el.scrollTop | 0) : 0;
-      } break;
       case 'tableorigin': {
-        return el && el.__iupOrigin ? el.__iupOrigin(req.rowH) : 0;
+        return el && el.__iupOrigin ? el.__iupOrigin(req.rowH) : [0, 0];
       } break;
       case 'canvasclientw': {
         return el ? (el.clientWidth || el.width || 0) : 0;

@@ -3088,11 +3088,73 @@ IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
   gtk_widget_queue_draw(gtk_data->tree_view);
 }
 
+#if !GTK_CHECK_VERSION(3, 0, 0)
+/* GTK 2 strokes each vertical grid line over the whole tree height on every expose */
+static gboolean gtkTableVerticalGridExpose(GtkWidget* widget, GdkEventExpose* event, Ihandle* ih)
+{
+  GtkTreeView* tree_view = GTK_TREE_VIEW(widget);
+  GList* columns, *list;
+  gint line_width = 1, x = 0, n = 0, i = 0;
+  gchar* pattern = NULL;
+  cairo_t* cr;
+
+  if (!iupAttribGet(ih, "_IUPGTK_TABLE_VGRID") || event->window != gtk_tree_view_get_bin_window(tree_view))
+    return FALSE;
+
+  gtk_widget_style_get(widget, "grid-line-width", &line_width, "grid-line-pattern", &pattern, NULL);
+
+  cr = gdk_cairo_create(event->window);
+  cairo_set_source_rgb(cr, 0, 0, 0);
+  cairo_set_line_width(cr, line_width);
+  if (pattern && pattern[0])
+  {
+    double dashes[2];
+    dashes[0] = pattern[0];
+    dashes[1] = pattern[1];
+    cairo_set_dash(cr, dashes, 2, 0.5 + event->area.y);
+  }
+  g_free(pattern);
+
+  columns = gtk_tree_view_get_columns(tree_view);
+  for (list = columns; list; list = list->next)
+  {
+    if (gtk_tree_view_column_get_visible(GTK_TREE_VIEW_COLUMN(list->data)))
+      n++;
+  }
+  for (list = columns; list && i < n - 1; list = list->next)
+  {
+    GtkTreeViewColumn* column = GTK_TREE_VIEW_COLUMN(list->data);
+    if (!gtk_tree_view_column_get_visible(column))
+      continue;
+    i++;
+    x += gtk_tree_view_column_get_width(column);
+    cairo_move_to(cr, x - 1 + 0.5, event->area.y + 0.5);
+    cairo_line_to(cr, x - 1 + 0.5, event->area.y + event->area.height + 0.5);
+  }
+  g_list_free(columns);
+
+  cairo_stroke(cr);
+  cairo_destroy(cr);
+  return FALSE;
+}
+#endif
+
 IUP_SDK_API void iupdrvTableSetShowGrid(Ihandle* ih, int show)
 {
   IgtkTableData* gtk_data = IGTK_TABLE_DATA(ih);
 
+#if GTK_CHECK_VERSION(3, 0, 0)
   gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(gtk_data->tree_view), show ? GTK_TREE_VIEW_GRID_LINES_BOTH : GTK_TREE_VIEW_GRID_LINES_NONE);
+#else
+  if (!iupAttribGet(ih, "_IUPGTK_TABLE_VGRID_CB"))
+  {
+    g_signal_connect_after(G_OBJECT(gtk_data->tree_view), "expose-event", G_CALLBACK(gtkTableVerticalGridExpose), ih);
+    iupAttribSet(ih, "_IUPGTK_TABLE_VGRID_CB", "1");
+  }
+  iupAttribSet(ih, "_IUPGTK_TABLE_VGRID", show ? "1" : NULL);
+  gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(gtk_data->tree_view), show ? GTK_TREE_VIEW_GRID_LINES_HORIZONTAL : GTK_TREE_VIEW_GRID_LINES_NONE);
+  gtk_widget_queue_draw(gtk_data->tree_view);
+#endif
 }
 
 static int gtk3_table_row_height_nogrid = -1;

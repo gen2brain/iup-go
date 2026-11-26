@@ -190,6 +190,18 @@ func buildSteps() {
 		o := deferred.GetAttribute("ORIGIN")
 		return o == "40:3", "ORIGIN=" + o
 	})
+	add(func() {
+		deferred.SetAttributeId2("BGCOLOR", 10, 2, "255 0 0")
+		deferred.SetAttributeId2("BGCOLOR", 60, 2, "0 255 0")
+		deferred.SetAttributeId2("FGCOLOR", 90, 0, "0 0 255")
+		deferred.SetAttributeId2("FONT", 100, 1, "Helvetica, Bold 12")
+		deferred.SetAttribute("NUMLIN", "99")
+		deferred.SetAttribute("NUMLIN", "50")
+		deferred.SetAttribute("NUMLIN", "100")
+		got := fmt.Sprintf("10:2=%q 60:2=%q 90:0=%q 100:1=%q", deferred.GetAttribute("BGCOLOR", 10, 2), deferred.GetAttribute("BGCOLOR", 60, 2),
+			deferred.GetAttribute("FGCOLOR", 90, 0), deferred.GetAttribute("FONT", 100, 1))
+		check("NUMLIN shrink drops the attributes of the removed lines only", got == `10:2="255 0 0" 60:2="" 90:0="" 100:1=""`, got)
+	})
 	add(func() { iup.GetDialog(deferred).Destroy() })
 
 	if input {

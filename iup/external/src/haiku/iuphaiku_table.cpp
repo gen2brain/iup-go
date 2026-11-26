@@ -561,8 +561,11 @@ public:
     bool cells_mode = iupTableCellsMode(fIhandle);
 
     int n = static_cast<int>(CountRows(nullptr));
-    float line = -scroll_y;
-    for (int i = 0; i < n; i++)
+    float pitch = haikuTableRowHeight(this) + 1.0f;
+    int first_row = static_cast<int>(scroll_y / pitch);
+    if (first_row < 0) first_row = 0;
+    float line = first_row * pitch - scroll_y;
+    for (int i = first_row; i < n; i++)
     {
       const BRow* row = RowAt(i, nullptr);
       if (!row) { line += 0; continue; }

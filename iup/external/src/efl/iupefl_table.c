@@ -2637,8 +2637,12 @@ static void eflTableRebuildVirtualCells(Ihandle* ih)
 
   if (num_lin > visible_rows)
   {
-    int spacer_height = (num_lin - visible_rows) * row_height;
-    Evas_Object* spacer = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
+    Evas_Coord pad_h = 0, pad_v = 0;
+    int spacer_height;
+    Evas_Object* spacer;
+    elm_table_padding_get(table, &pad_h, &pad_v);
+    spacer_height = (num_lin - visible_rows) * (row_height + pad_v);
+    spacer = efl_add(EFL_CANVAS_RECTANGLE_CLASS, evas_object_evas_get(table));
     efl_gfx_color_set(spacer, 0, 0, 0, 0);
     efl_gfx_hint_size_min_set(spacer, EINA_SIZE2D(1, spacer_height));
     efl_gfx_entity_visible_set(spacer, EINA_TRUE);
@@ -3323,6 +3327,17 @@ static int eflTableRowStep(Ihandle* ih, IeflTableData* data, int* ref_lin, int* 
 
   if (!a)
     return 0;
+
+  if (data->is_virtual)
+  {
+    Evas_Coord pad_h = 0, pad_v = 0;
+    elm_table_padding_get(data->table, &pad_h, &pad_v);
+    *ref_lin = 1;
+    *ref_top = pad_v;
+    if (data->top_spacer)
+      *ref_top += efl_gfx_entity_geometry_get(data->top_spacer).y - tg.y;
+    return (data->row_height > 0 ? data->row_height : DEFAULT_ROW_HEIGHT) + pad_v;
+  }
 
   ga = efl_gfx_entity_geometry_get(a);
   *ref_lin = first;

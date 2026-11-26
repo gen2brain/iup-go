@@ -1435,9 +1435,10 @@ public final class IupTableHelper
         int old = table.numLin;
         table.numLin = numLin;
 
-        while (table.rows.size() < numLin)
+        int stored = table.virtualMode ? 0 : numLin;
+        while (table.rows.size() < stored)
             table.rows.add(new String[table.numCol]);
-        while (table.rows.size() > numLin)
+        while (table.rows.size() > stored)
             table.rows.remove(table.rows.size() - 1);
 
         if (numLin > old)
@@ -1452,7 +1453,8 @@ public final class IupTableHelper
     {
         if (!(v instanceof IupTableView table)) return;
         int idx = Math.max(0, Math.min(pos - 1, table.numLin));
-        table.rows.add(idx, new String[table.numCol]);
+        if (!table.virtualMode)
+            table.rows.add(idx, new String[table.numCol]);
         table.numLin++;
         table.adapter.notifyItemInserted(idx);
         followLins(table, idx + 1, 1);
@@ -1464,7 +1466,8 @@ public final class IupTableHelper
         if (!(v instanceof IupTableView table)) return;
         int idx = pos - 1;
         if (idx < 0 || idx >= table.numLin) return;
-        table.rows.remove(idx);
+        if (!table.virtualMode)
+            table.rows.remove(idx);
         table.numLin--;
         table.adapter.notifyItemRemoved(idx);
         followLins(table, idx + 1, -1);
@@ -1552,6 +1555,7 @@ public final class IupTableHelper
         if (!(v instanceof IupTableView table)) return;
         int li = lin - 1, ci = col - 1;
         if (li < 0 || li >= table.numLin || ci < 0 || ci >= table.numCol) return;
+        if (li >= table.rows.size()) return;
 
         String[] row = table.rows.get(li);
         if (row == null || row.length != table.numCol)
@@ -1569,6 +1573,7 @@ public final class IupTableHelper
         if (!(v instanceof IupTableView table)) return null;
         int li = lin - 1, ci = col - 1;
         if (li < 0 || li >= table.numLin || ci < 0 || ci >= table.numCol) return null;
+        if (li >= table.rows.size()) return null;
         String[] row = table.rows.get(li);
         return (row != null && ci < row.length) ? row[ci] : null;
     }
@@ -2143,6 +2148,13 @@ public final class IupTableHelper
     {
         if (!(v instanceof IupTableView t)) return;
         t.virtualMode = on;
+        if (on)
+            t.rows.clear();
+        else
+        {
+            while (t.rows.size() < t.numLin)
+                t.rows.add(new String[t.numCol]);
+        }
         t.adapter.notifyDataSetChanged();
     }
 

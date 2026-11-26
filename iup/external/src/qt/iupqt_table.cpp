@@ -361,6 +361,8 @@ public:
 
     bool wasBlocked = signalsBlocked();
     blockSignals(true);
+    bool modelBlocked = model()->blockSignals(true);
+    int fillLastRow = -1, fillLastCol = -1;
 
     for (int row = firstRow; row <= lastRow && row < rowCount(); row++)
     {
@@ -417,10 +419,16 @@ public:
         }
 
         qtTableConfigureItem(ih, existingItem, row + 1, col + 1);
+        fillLastRow = row;
+        fillLastCol = col;
       }
     }
 
+    model()->blockSignals(modelBlocked);
     blockSignals(wasBlocked);
+
+    if (fillLastRow >= 0 && !modelBlocked)
+      Q_EMIT model()->dataChanged(model()->index(firstRow, firstCol), model()->index(fillLastRow, fillLastCol));
   }
 
   QSize sizeHint() const override

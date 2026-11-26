@@ -188,6 +188,56 @@ static void iTableClearLinAttribs(Ihandle* ih, int lin)
   }
 }
 
+static int iTableLinAttribLine(const char* key, int num_col)
+{
+  int a;
+  for (a = 0; a < 3; a++)
+  {
+    size_t len = strlen(iTableLinAttribs[a]);
+    if (strncmp(key, iTableLinAttribs[a], len) == 0)
+    {
+      int lin, col, end = 0;
+      if (sscanf(key + len, "%d:%d%n", &lin, &col, &end) == 2 && key[len + end] == 0 && col >= 0 && col <= num_col)
+        return lin;
+    }
+  }
+  return 0;
+}
+
+static void iTableClearLinAttribsFrom(Ihandle* ih, int first_lin)
+{
+  int last_lin = ih->data->num_lin;
+  int count = iupTableCount(ih->attrib);
+  char** keys;
+  char* key;
+  int n = 0, i, lin;
+
+  if (last_lin < first_lin)
+    return;
+
+  if ((double)(last_lin - first_lin + 1) * 3 * (ih->data->num_col + 1) <= count)
+  {
+    for (lin = first_lin; lin <= last_lin; lin++)
+      iTableClearLinAttribs(ih, lin);
+    return;
+  }
+
+  keys = (char**)malloc((count + 1) * sizeof(char*));
+  for (key = iupTableFirst(ih->attrib); key; key = iupTableNext(ih->attrib))
+  {
+    lin = iTableLinAttribLine(key, ih->data->num_col);
+    if (lin >= first_lin && lin <= last_lin)
+      keys[n++] = iupStrDup(key);
+  }
+
+  for (i = 0; i < n; i++)
+  {
+    iupAttribSet(ih, keys[i], NULL);
+    free(keys[i]);
+  }
+  free(keys);
+}
+
 static void iTableClearColAttribs(Ihandle* ih, int col)
 {
   int a, lin;
@@ -241,9 +291,7 @@ static int iTableSetNumLinAttrib(Ihandle* ih, const char* value)
 
     if (ih->handle)
     {
-      int lin;
-      for (lin = num_lin + 1; lin <= ih->data->num_lin; lin++)
-        iTableClearLinAttribs(ih, lin);
+      iTableClearLinAttribsFrom(ih, num_lin + 1);
       iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", "1");
       iupdrvTableSetNumLin(ih, num_lin);
       iupAttribSet(ih, "_IUPTABLE_IGNORE_SELECTION_CB", NULL);

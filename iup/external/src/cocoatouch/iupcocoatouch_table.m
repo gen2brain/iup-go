@@ -218,6 +218,7 @@ static char kIupTableEditCancelKey;
 @property(nonatomic, retain) NSMutableArray<NSMutableArray<NSString*>*>* images;
 @property(nonatomic, retain) NSMutableArray<NSString*>* headers;
 @property(nonatomic, retain) NSMutableArray<NSNumber*>* colWidths;
+@property(nonatomic, assign) NSInteger virtualLines;
 @property(nonatomic, assign) NSInteger focusLin;
 @property(nonatomic, assign) NSInteger focusCol;
 @property(nonatomic, retain) NSMutableIndexSet* selectedLins;
@@ -231,6 +232,7 @@ static char kIupTableEditCancelKey;
 @property(nonatomic, assign) BOOL sortAscending;
 
 - (NSInteger)numberOfLines;
+- (BOOL)isVirtual;
 - (NSInteger)numberOfColumns;
 - (CGFloat)widthForCol:(NSInteger)col container:(CGFloat)container_w;
 - (CGFloat)totalWidthFor:(CGFloat)container_w;
@@ -321,7 +323,8 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 	[super dealloc];
 }
 
-- (NSInteger)numberOfLines   { return (NSInteger)[_cells count]; }
+- (BOOL)isVirtual           { return _ihandle && iupAttribGetBoolean(_ihandle, "VIRTUALMODE"); }
+- (NSInteger)numberOfLines   { return [self isVirtual] ? _virtualLines : (NSInteger)[_cells count]; }
 - (NSInteger)numberOfColumns
 {
 	NSInteger n = (NSInteger)[_headers count];
@@ -455,6 +458,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 - (void)setCell:(NSString*)value atLin:(NSInteger)lin col:(NSInteger)col
 {
 	if (lin < 1 || col < 1) return;
+	if ([self isVirtual]) return;
 	while ((NSInteger)[_cells count] < lin)
 		[_cells addObject:[NSMutableArray array]];
 	NSMutableArray* row = [_cells objectAtIndex:(NSUInteger)(lin - 1)];
@@ -465,6 +469,7 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 - (void)setImage:(NSString*)name atLin:(NSInteger)lin col:(NSInteger)col
 {
 	if (lin < 1 || col < 1) return;
+	if ([self isVirtual]) return;
 	while ((NSInteger)[_images count] < lin)
 		[_images addObject:[NSMutableArray array]];
 	NSMutableArray* row = [_images objectAtIndex:(NSUInteger)(lin - 1)];
@@ -512,6 +517,11 @@ static UICollectionViewLayout* cocoaTouchTableMakeLayout(IupCocoaTouchTableContr
 
 - (void)resizeToLines:(NSInteger)num_lin cols:(NSInteger)num_col
 {
+	if ([self isVirtual])
+	{
+		_virtualLines = num_lin;
+		num_lin = 0;
+	}
 	while ((NSInteger)[_cells count] > num_lin) [_cells removeLastObject];
 	while ((NSInteger)[_cells count] < num_lin)
 	{
@@ -1032,12 +1042,17 @@ IUP_SDK_API void iupdrvTableAddLin(Ihandle* ih, int pos)
 	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
 	if (!ctrl) return;
 	NSUInteger index = (NSUInteger)(pos - 1);
-	if (index > [ctrl.cells count]) index = [ctrl.cells count];
-	NSMutableArray<NSString*>* row = [NSMutableArray arrayWithCapacity:(NSUInteger)[ctrl numberOfColumns]];
-	for (NSInteger c = 0; c < [ctrl numberOfColumns]; c++) [row addObject:@""];
-	[ctrl.cells insertObject:row atIndex:index];
+	if (index > (NSUInteger)[ctrl numberOfLines]) index = (NSUInteger)[ctrl numberOfLines];
+	if ([ctrl isVirtual])
+		ctrl.virtualLines++;
+	else
+	{
+		NSMutableArray<NSString*>* row = [NSMutableArray arrayWithCapacity:(NSUInteger)[ctrl numberOfColumns]];
+		for (NSInteger c = 0; c < [ctrl numberOfColumns]; c++) [row addObject:@""];
+		[ctrl.cells insertObject:row atIndex:index];
+	}
 	[ctrl.selectedLins shiftIndexesStartingAtIndex:(index + 1) by:1];
-	ih->data->num_lin = (int)[ctrl.cells count];
+	ih->data->num_lin = (int)[ctrl numberOfLines];
 	ctrl.focusLin = cocoaTouchTableFollowPos(ctrl.focusLin, (NSInteger)index + 1, 1, ih->data->num_lin);
 	[cocoaTouchTableGet(ih) reloadData];
 }
@@ -1047,11 +1062,14 @@ IUP_SDK_API void iupdrvTableDelLin(Ihandle* ih, int pos)
 	IupCocoaTouchTableController* ctrl = cocoaTouchTableGetController(ih);
 	if (!ctrl) return;
 	NSUInteger index = (NSUInteger)(pos - 1);
-	if (index >= [ctrl.cells count]) return;
-	[ctrl.cells removeObjectAtIndex:index];
+	if (index >= (NSUInteger)[ctrl numberOfLines]) return;
+	if ([ctrl isVirtual])
+		ctrl.virtualLines--;
+	else
+		[ctrl.cells removeObjectAtIndex:index];
 	[ctrl.selectedLins removeIndex:(index + 1)];
 	[ctrl.selectedLins shiftIndexesStartingAtIndex:(index + 2) by:-1];
-	ih->data->num_lin = (int)[ctrl.cells count];
+	ih->data->num_lin = (int)[ctrl numberOfLines];
 	ctrl.focusLin = cocoaTouchTableFollowPos(ctrl.focusLin, (NSInteger)index + 1, -1, ih->data->num_lin);
 	[cocoaTouchTableGet(ih) reloadData];
 }

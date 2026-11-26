@@ -320,6 +320,12 @@ public:
 
   void ensureStorage()
   {
+    if (isVirtual())
+    {
+      cells.clear();
+      images.clear();
+      return;
+    }
     while (cells.size() < num_lin)
     {
       cells.append(QStringList());
@@ -337,7 +343,8 @@ public:
   void setCell(int lin, int col, const QString& value)
   {
     ensureStorage();
-    cells[lin - 1][col - 1] = value;
+    if (!isVirtual())
+      cells[lin - 1][col - 1] = value;
     QModelIndex index = this->index(lin - 1, col - 1);
     emit dataChanged(index, index);
   }
@@ -345,7 +352,8 @@ public:
   void setImage(int lin, int col, QPixmap* pixmap)
   {
     ensureStorage();
-    images[lin - 1][col - 1] = pixmap;
+    if (!isVirtual())
+      images[lin - 1][col - 1] = pixmap;
     QModelIndex index = this->index(lin - 1, col - 1);
     emit dataChanged(index, index);
   }
@@ -418,8 +426,11 @@ public:
       row.append(QString());
       row_images.append(nullptr);
     }
-    cells.insert(pos, row);
-    images.insert(pos, row_images);
+    if (!isVirtual())
+    {
+      cells.insert(pos, row);
+      images.insert(pos, row_images);
+    }
     num_lin++;
     endInsertRows();
   }
@@ -428,8 +439,11 @@ public:
   {
     ensureStorage();
     beginRemoveRows(QModelIndex(), pos, pos);
-    cells.removeAt(pos);
-    images.removeAt(pos);
+    if (!isVirtual())
+    {
+      cells.removeAt(pos);
+      images.removeAt(pos);
+    }
     num_lin--;
     endRemoveRows();
   }
@@ -475,8 +489,11 @@ public:
       return;
     if (!beginMoveRows(QModelIndex(), from, from, QModelIndex(), to > from ? to + 1 : to))
       return;
-    cells.move(from, to);
-    images.move(from, to);
+    if (!isVirtual())
+    {
+      cells.move(from, to);
+      images.move(from, to);
+    }
     endMoveRows();
   }
 
@@ -501,6 +518,12 @@ public:
   void reorderRows(const std::vector<int>& order)
   {
     ensureStorage();
+    if (isVirtual())
+    {
+      beginResetModel();
+      endResetModel();
+      return;
+    }
     QList<QStringList> new_cells;
     QList<QList<QPixmap*> > new_images;
     for (int pos : order)

@@ -114,25 +114,33 @@ EM_JS(void, iupwasmJsTableCellStyle, (int id, int lin, int col, const char* bg, 
   globalThis.__iupApply({ op: 'tablecellstyle', id: id, lin: lin, col: col, bg: UTF8ToString(bg), fg: UTF8ToString(fg), font: UTF8ToString(font) });
 })
 
-EM_JS(int, iupwasmJsTableVScrollTop, (int id), {
-  if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'tablevscrolltop', id: id });
-  var w = globalThis.__iup.els[id]; return w ? (w.scrollTop | 0) : 0;
-})
-
 EM_JS(void, iupwasmJsTableVirtualInit, (int id), {
   globalThis.__iupApply({ op: 'tablevirtualinit', id: id });
 })
 
-EM_JS(void, iupwasmJsTableVWindow, (int id, int count, int numCol, int top, int bot, int rowH), {
-  globalThis.__iupApply({ op: 'tablevwindow', id: id, count: count, numCol: numCol, top: top, bot: bot, rowH: rowH });
+EM_JS(void, iupwasmJsTableVSetup, (int id, int count, int rowH), {
+  globalThis.__iupApply({ op: 'tablevsetup', id: id, count: count, rowH: rowH });
 })
 
-EM_JS(void, iupwasmJsTableVCell, (int id, int rowIdx, int col, int lin, const char* str, int imgId, const char* bg, const char* fg, const char* font), {
-  globalThis.__iupApply({ op: 'tablevcell', id: id, rowIdx: rowIdx, col: col, lin: lin, str: UTF8ToString(str), imgId: imgId, bg: UTF8ToString(bg), fg: UTF8ToString(fg), font: UTF8ToString(font) });
+EM_JS(void, iupwasmJsTableVRowsBegin, (void), {
+  globalThis.__iupVTableRows = { str: [], img: [], sel: [], bg: [], fg: [], font: [], styled: false };
 })
 
-EM_JS(void, iupwasmJsTableVStripe, (int id, int rowIdx, int lin), {
-  globalThis.__iupApply({ op: 'tablevstripe', id: id, rowIdx: rowIdx, lin: lin });
+EM_JS(void, iupwasmJsTableVRowsCell, (const char* str, int imgId, const char* bg, const char* fg, const char* font), {
+  var r = globalThis.__iupVTableRows;
+  r.str.push(UTF8ToString(str)); r.img.push(imgId);
+  r.bg.push(UTF8ToString(bg)); r.fg.push(UTF8ToString(fg)); r.font.push(UTF8ToString(font));
+  if (HEAPU8[bg] || HEAPU8[fg] || HEAPU8[font]) r.styled = true;
+})
+
+EM_JS(void, iupwasmJsTableVRowsRow, (int selected), {
+  globalThis.__iupVTableRows.sel.push(selected);
+})
+
+EM_JS(void, iupwasmJsTableVRowsEnd, (int id, int gen, int from, int numCol), {
+  var r = globalThis.__iupVTableRows; globalThis.__iupVTableRows = null;
+  globalThis.__iupApply({ op: 'tablevrows', id: id, gen: gen, from: from, count: r.sel.length, numCol: numCol, str: r.str, img: r.img, sel: r.sel,
+                          styles: r.styled ? { bg: r.bg, fg: r.fg, font: r.font } : null });
 })
 
 EM_JS(void, iupwasmJsTableFocus, (int id, int lin, int col, int select, int focusrect, int show), {
@@ -147,9 +155,11 @@ EM_JS(void, iupwasmJsTableScrollTo, (int id, int lin, int col, int rowH, int ori
   globalThis.__iupApply({ op: 'tablescrollto', id: id, lin: lin, col: col, rowH: rowH, origin: origin });
 })
 
-EM_JS(int, iupwasmJsTableOrigin, (int id, int rowH), {
-  if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'tableorigin', id: id, rowH: rowH });
-  var w = globalThis.__iup.els[id]; return w && w.__iupOrigin ? w.__iupOrigin(rowH) : 0;
+EM_JS(void, iupwasmJsTableOrigin, (int id, int rowH, int* lin, int* col), {
+  var r;
+  if (typeof document === 'undefined') r = globalThis.__iupReadSync({ op: 'tableorigin', id: id, rowH: rowH });
+  else { var w = globalThis.__iup.els[id]; r = w && w.__iupOrigin ? w.__iupOrigin(rowH) : [0, 0]; }
+  HEAP32[lin >> 2] = r[0]; HEAP32[col >> 2] = r[1];
 })
 
 static void wasmTableStripeCss(const char* value, char* css)
@@ -229,65 +239,51 @@ static void wasmTableApplyCellStyles(Ihandle* ih)
     }
 }
 
-static void wasmTableVirtualRender(Ihandle* ih)
+static void wasmTableVirtualUpdate(Ihandle* ih)
 {
   int id = iupwasmIdOf(ih);
-  int rowH, numLin, numCol, first, count, i, c, showImage;
+  if (id && iupAttribGetBoolean(ih, "VIRTUALMODE"))
+    iupwasmJsTableVSetup(id, ih->data->num_lin, iupdrvTableGetRowHeight(ih));
+}
+
+EMSCRIPTEN_KEEPALIVE void iupwasmTableVRows(int id, int from, int to, int gen)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  int lin, col, numCol, showImage;
   char bgcss[20], fgcss[20], fontcss[256];
   sIFnii value_cb, image_cb;
 
-  if (!id || !iupAttribGetBoolean(ih, "VIRTUALMODE"))
+  if (!ih || !iupAttribGetBoolean(ih, "VIRTUALMODE"))
     return;
 
-  rowH = iupdrvTableGetRowHeight(ih);
-  numLin = ih->data->num_lin;
   numCol = ih->data->num_col;
-
-  first = iupwasmJsTableVScrollTop(id) / rowH - 4;
-  if (first < 0) first = 0;
-  count = ih->currentheight / rowH + 9;
-  if (first + count > numLin) count = numLin - first;
-  if (count < 0) count = 0;
-
-  iupwasmJsTableVWindow(id, count, numCol, first * rowH, (numLin - first - count) * rowH, rowH);
+  if (to > ih->data->num_lin)
+    to = ih->data->num_lin;
 
   value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
   image_cb = (sIFnii)IupGetCallback(ih, "IMAGE_CB");
   showImage = ih->data->show_image;
-  for (i = 0; i < count; i++)
+
+  iupwasmJsTableVRowsBegin();
+  for (lin = from; lin <= to; lin++)
   {
-    int lin = first + i + 1;
-    for (c = 1; c <= numCol; c++)
+    for (col = 1; col <= numCol; col++)
     {
       char* v;
       int imgId = 0;
       if (showImage && image_cb)
       {
-        char* name = image_cb(ih, lin, c);
+        char* name = image_cb(ih, lin, col);
         if (name && name[0])
           imgId = (int)(intptr_t)iupImageGetImage(name, ih, 0, NULL);
       }
-      wasmTableCellCss(ih, lin, c, bgcss, fgcss, fontcss);
-      v = value_cb ? value_cb(ih, lin, c) : NULL;  /* must be the last string dispatch before use: result lives in a single recycled slot */
-      iupwasmJsTableVCell(id, i, c - 1, lin, v ? v : "", imgId, bgcss, fgcss, fontcss);
+      wasmTableCellCss(ih, lin, col, bgcss, fgcss, fontcss);
+      v = value_cb ? value_cb(ih, lin, col) : NULL;  /* must be the last string dispatch before use: result lives in a single recycled slot */
+      iupwasmJsTableVRowsCell(v ? v : "", imgId, bgcss, fgcss, fontcss);
     }
-    iupwasmJsTableVStripe(id, i, lin);
-    iupwasmJsTableSelect(id, lin, iupAttribGetId(ih, "_IUPWASM_TABLESEL", lin) != NULL);
+    iupwasmJsTableVRowsRow(iupAttribGetId(ih, "_IUPWASM_TABLESEL", lin) != NULL);
   }
-
-  {
-    int flin = iupAttribGetInt(ih, "_IUPWASM_FOCUSLIN");
-    int fcol = iupAttribGetInt(ih, "_IUPWASM_FOCUSCOL");
-    int select = !iupStrEqualNoCase(IupGetAttribute(ih, "SELECTIONMODE"), "NONE") && !iupTableCellsMode(ih);
-    iupwasmJsTableFocus(id, flin, fcol, select, iupAttribGetBoolean(ih, "FOCUSFEEDBACK"), 0);
-  }
-}
-
-EMSCRIPTEN_KEEPALIVE void iupwasmTableVScroll(int id)
-{
-  Ihandle* ih = iupwasmHandleFromId(id);
-  if (ih)
-    wasmTableVirtualRender(ih);
+  iupwasmJsTableVRowsEnd(id, gen, from, numCol);
 }
 
 static void wasmTableSortIndicator(Ihandle* ih, int col, int ascending)
@@ -457,7 +453,7 @@ static void wasmTableUpdateFocus(Ihandle* ih, int lin, int col)
 }
 
 /* the selected rows are kept as per-row attributes, the bounds keep a virtual table off a full scan */
-static void wasmTableSelectRow(Ihandle* ih, int lin, int select)
+static void wasmTableMarkRow(Ihandle* ih, int lin, int select, int update)
 {
   int id = iupwasmIdOf(ih);
 
@@ -477,8 +473,28 @@ static void wasmTableSelectRow(Ihandle* ih, int lin, int select)
       iupAttribSetInt(ih, "_IUPWASM_TABLESELLAST", lin);
   }
 
-  if (id)
+  if (id && update)
     iupwasmJsTableSelect(id, lin, select);
+}
+
+static void wasmTableSelectRow(Ihandle* ih, int lin, int select)
+{
+  wasmTableMarkRow(ih, lin, select, 1);
+}
+
+static void wasmTableSelectRows(Ihandle* ih, int from, int to, int select)
+{
+  int batch = to > from && iupAttribGetBoolean(ih, "VIRTUALMODE");
+  int l;
+
+  for (l = from; l <= to; l++)
+  {
+    if (select || iupAttribGetId(ih, "_IUPWASM_TABLESEL", l))
+      wasmTableMarkRow(ih, l, select, !batch);
+  }
+
+  if (batch)
+    wasmTableVirtualUpdate(ih);
 }
 
 static void wasmTableSelectedRange(Ihandle* ih, int* first, int* last)
@@ -494,15 +510,14 @@ static void wasmTableSelectedRange(Ihandle* ih, int* first, int* last)
 
 static void wasmTableSelectOnly(Ihandle* ih, int lin)
 {
-  int l, first, last;
+  int first, last;
 
   wasmTableSelectedRange(ih, &first, &last);
 
-  for (l = first; l <= last; l++)
-  {
-    if (l != lin && iupAttribGetId(ih, "_IUPWASM_TABLESEL", l))
-      wasmTableSelectRow(ih, l, 0);
-  }
+  if (first == last && first == lin && iupAttribGetId(ih, "_IUPWASM_TABLESEL", lin))
+    return;
+
+  wasmTableSelectRows(ih, first, last, 0);
 
   iupAttribSetInt(ih, "_IUPWASM_TABLESELFIRST", 0);
   iupAttribSetInt(ih, "_IUPWASM_TABLESELLAST", 0);
@@ -525,7 +540,7 @@ static void wasmTableRebuild(Ihandle* ih, int columns)
   {
     if (columns)
       iupwasmJsTableBuild(id, 0, ih->data->num_col);
-    wasmTableVirtualRender(ih);
+    wasmTableVirtualUpdate(ih);
     return;
   }
   iupwasmJsTableBuild(id, ih->data->num_lin, ih->data->num_col);
@@ -687,8 +702,30 @@ IUP_SDK_API void iupdrvTableDelCol(Ihandle* ih, int pos)
 IUP_SDK_API void iupdrvTableSetCellValue(Ihandle* ih, int lin, int col, const char* value)
 {
   int id = iupwasmIdOf(ih);
-  if (id)
+  if (!id)
+    return;
+  if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
+    wasmTableVirtualUpdate(ih);
+  else
     iupwasmJsTableSetCell(id, lin, col, value ? value : "");
+}
+
+static void wasmTableRenderCell(Ihandle* ih, int lin, int col)
+{
+  if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
+    wasmTableVirtualUpdate(ih);
+  else
+    iupwasmJsTableRender(iupwasmIdOf(ih), lin, col);
+}
+
+static char* wasmTableCellText(Ihandle* ih, int lin, int col)
+{
+  if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
+  {
+    sIFnii value_cb = (sIFnii)IupGetCallback(ih, "VALUE_CB");
+    return value_cb ? value_cb(ih, lin, col) : NULL;
+  }
+  return iupdrvTableGetCellValue(ih, lin, col);
 }
 
 IUP_SDK_API char* iupdrvTableGetCellValue(Ihandle* ih, int lin, int col)
@@ -853,16 +890,15 @@ IUP_SDK_API void iupdrvTableSetOrigin(Ihandle* ih, int lin, int col)
 
 IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
 {
-  int id = iupwasmIdOf(ih), v;
+  int id = iupwasmIdOf(ih);
 
   *lin = 0;
   *col = 0;
   if (!id || ih->data->num_lin < 1 || ih->data->num_col < 1)
     return;
 
-  v = iupwasmJsTableOrigin(id, iupdrvTableGetRowHeight(ih));
-  *lin = v >> 16;
-  *col = v & 0xFFFF;
+  if (iupStrToIntInt(iupAttribGet(ih, "_IUPWASM_TABLE_SCROLLED"), lin, col, ':') != 2)
+    iupwasmJsTableOrigin(id, iupdrvTableGetRowHeight(ih), lin, col);
   if (*lin > ih->data->num_lin)
     *lin = ih->data->num_lin;
   if (*lin < 1)
@@ -871,11 +907,14 @@ IUP_SDK_API void iupdrvTableGetOrigin(Ihandle* ih, int* lin, int* col)
     *col = ih->data->num_col;
 }
 
-EMSCRIPTEN_KEEPALIVE void iupwasmTableScrolled(int id)
+EMSCRIPTEN_KEEPALIVE void iupwasmTableScrolled(int id, int lin, int col)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
-  if (ih)
-    iupTableNotifyScroll(ih);
+  if (!ih)
+    return;
+  iupAttribSetStrf(ih, "_IUPWASM_TABLE_SCROLLED", "%d:%d", lin, col);
+  iupTableNotifyScroll(ih);
+  iupAttribSet(ih, "_IUPWASM_TABLE_SCROLLED", NULL);
 }
 
 EMSCRIPTEN_KEEPALIVE void iupwasmTableResized(int id)
@@ -886,7 +925,6 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableResized(int id)
   if (!ih || (!iupAttribGet(ih, "_IUPWASM_TABLE_SHOW") && !iupAttribGet(ih, "_IUPWASM_TABLE_ORIGIN")))
     return;
 
-  wasmTableVirtualRender(ih);
   if (iupStrToIntInt(iupAttribGet(ih, "_IUPWASM_TABLE_SHOW"), &lin, &col, ':') == 2)
     iupwasmJsTableScrollTo(id, lin, col, iupdrvTableGetRowHeight(ih), 0);
   if (iupStrToIntInt(iupAttribGet(ih, "_IUPWASM_TABLE_ORIGIN"), &lin, &col, ':') == 2)
@@ -902,7 +940,7 @@ IUP_SDK_API void iupdrvTableRedraw(Ihandle* ih)
   wasmTableApplyColors(ih);
   wasmTableApplyCellStyles(ih);
   if (iupAttribGetBoolean(ih, "VIRTUALMODE"))
-    wasmTableVirtualRender(ih);
+    wasmTableVirtualUpdate(ih);
 }
 
 IUP_SDK_API void iupdrvTableUpdateCellStyle(Ihandle* ih, int lin, int col)
@@ -1046,18 +1084,15 @@ static void wasmTableCellClick(Ihandle* ih, int lin, int col, int mods)
       {
         int from = anchor < lin ? anchor : lin;
         int to = anchor < lin ? lin : anchor;
-        int l, first, last;
+        int first, last;
 
         wasmTableSelectedRange(ih, &first, &last);
-
-        for (l = first; l <= last; l++)
-          wasmTableSelectRow(ih, l, 0);
+        wasmTableSelectRows(ih, first, last, 0);
 
         iupAttribSetInt(ih, "_IUPWASM_TABLESELFIRST", 0);
         iupAttribSetInt(ih, "_IUPWASM_TABLESELLAST", 0);
 
-        for (l = from; l <= to; l++)
-          wasmTableSelectRow(ih, l, 1);
+        wasmTableSelectRows(ih, from, to, 1);
       }
       else if (iupStrEqualNoCase(selmode, "MULTIPLE") && (mods & 2))
       {
@@ -1131,7 +1166,7 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableEditBegin(int id, int lin, int col)
   if (cb && cb(ih, lin, col) == IUP_IGNORE)
     return;
 
-  text = iupdrvTableGetCellValue(ih, lin, col);
+  text = wasmTableCellText(ih, lin, col);
   iupwasmJsTableEditOpen(id, lin, col, text ? text : "");
 }
 
@@ -1170,13 +1205,13 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableEditEnd(int id, int lin, int col, const ch
   editend_cb = (IFniisi)IupGetCallback(ih, "EDITEND_CB");
   if (editend_cb && editend_cb(ih, lin, col, (char*)text, apply) == IUP_IGNORE)
   {
-    iupwasmJsTableRender(id, lin, col);
+    wasmTableRenderCell(ih, lin, col);
     return;
   }
 
   if (!apply)
   {
-    iupwasmJsTableRender(id, lin, col);
+    wasmTableRenderCell(ih, lin, col);
     return;
   }
 
@@ -1239,7 +1274,7 @@ int iupwasmTableKeyNav(Ihandle* ih, int code)
     case K_cC:
     case iup_XkeyCtrl(K_c):
     {
-      char* value = iupdrvTableGetCellValue(ih, lin, col);
+      char* value = wasmTableCellText(ih, lin, col);
       if (value && *value)
         IupStoreGlobal("CLIPBOARD", value);
       return 1;
@@ -1362,6 +1397,7 @@ static int wasmTableMapMethod(Ihandle* ih)
     iupwasmJsTableBuild(id, 0, ih->data->num_col);  /* header only; rows are windowed on scroll */
     wasmTableApplyColors(ih);
     iupwasmJsTableVirtualInit(id);
+    wasmTableVirtualUpdate(ih);
   }
   else
     iupwasmJsTableBuild(id, ih->data->num_lin, ih->data->num_col);

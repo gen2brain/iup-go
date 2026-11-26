@@ -1377,6 +1377,14 @@ static int qtListSetTopItemAttrib(Ihandle* ih, const char* value)
     if (iupStrToInt(value, &pos) && pos > 0)
     {
       QListWidget* list;
+      if (ih->data->is_virtual)
+      {
+        auto* view = reinterpret_cast<QListView*>(ih->handle);
+        QModelIndex index = view->model()->index(pos - 1, 0);
+        if (index.isValid())
+          view->scrollTo(index, QAbstractItemView::PositionAtTop);
+        return 0;
+      }
       if (ih->data->has_editbox)
         list = reinterpret_cast<QListWidget*>(iupAttribGet(ih, "_IUPQT_LIST"));
       else

@@ -49,21 +49,17 @@ EM_JS(void, iupwasmJsVListSetFit, (int id, int fit), {
   globalThis.__iupApply({ op: 'vlistfit', id: id, fit: fit });
 })
 
-EM_JS(int, iupwasmJsVListScrollTop, (int id), {
-  if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'vlistscrolltop', id: id });
-  var w = globalThis.__iup.els[id]; return w ? (w.scrollTop | 0) : 0;
-})
-EM_JS(int, iupwasmJsVListClientH, (int id), {
-  if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'vlistclienth', id: id });
-  var w = globalThis.__iup.els[id]; return w ? (w.clientHeight | 0) : 0;
+EM_JS(void, iupwasmJsVListRowsBegin, (void), {
+  globalThis.__iupVListRows = { texts: [], imgs: [] };
 })
 
-EM_JS(void, iupwasmJsVListWindow, (int id, int count), {
-  globalThis.__iupApply({ op: 'vlistwindow', id: id, count: count });
+EM_JS(void, iupwasmJsVListRowsAdd, (const char* text, int imgId), {
+  globalThis.__iupVListRows.texts.push(UTF8ToString(text)); globalThis.__iupVListRows.imgs.push(imgId);
 })
 
-EM_JS(void, iupwasmJsVListCell, (int id, int rowIdx, int pos, const char* text, int imgId), {
-  globalThis.__iupApply({ op: 'vlistcell', id: id, rowIdx: rowIdx, pos: pos, text: UTF8ToString(text), imgId: imgId });
+EM_JS(void, iupwasmJsVListRowsEnd, (int id, int gen, int from), {
+  var r = globalThis.__iupVListRows; globalThis.__iupVListRows = null;
+  globalThis.__iupApply({ op: 'vlistrows', id: id, gen: gen, from: from, texts: r.texts, imgs: r.imgs });
 })
 
 EM_JS(void, iupwasmJsVListSelect, (int id, int pos), {
@@ -151,7 +147,7 @@ EM_JS(int, iupwasmJsListGetItemImage, (int id, int pos), {
   return opt ? (opt.__iupImgId || 0) : 0;
 })
 EM_JS(void, iupwasmJsListTopItem, (int id, int pos), { globalThis.__iupApply({ op: 'listtopitem', id: id, pos: pos }); })
-EM_JS(void, iupwasmJsVListSetTop, (int id, int top), { globalThis.__iupApply({ op: 'vlistsettop', id: id, top: top }); })
+EM_JS(void, iupwasmJsVListSetTop, (int id, int pos), { globalThis.__iupApply({ op: 'vlistsettop', id: id, pos: pos }); })
 EM_JS(void, iupwasmJsListSpacing, (int id, int s), { globalThis.__iupApply({ op: 'listspacing', id: id, s: s }); })
 EM_JS(void, iupwasmJsListPadding, (int id, int h, int v), { globalThis.__iupApply({ op: 'listpadding', id: id, h: h, v: v }); })
 EM_JS(void, iupwasmJsListShowDropdown, (int id, int on), { globalThis.__iupApply({ op: 'listshowdropdown', id: id, on: on }); })
@@ -515,50 +511,36 @@ static int wasmListIsVirtual(Ihandle* ih)
   return ih->data->is_virtual && !ih->data->is_dropdown && !ih->data->has_editbox;
 }
 
-static void wasmListVirtualRender(Ihandle* ih)
+EMSCRIPTEN_KEEPALIVE void iupwasmListVRows(int id, int from, int to, int gen)
 {
-  int id = iupwasmIdOf(ih);
-  int itemH, count, first, n, i, showimage;
+  Ihandle* ih = iupwasmHandleFromId(id);
   sIFni value_cb, image_cb;
+  int pos, count;
 
-  if (!id || !wasmListIsVirtual(ih))
+  if (!ih || !wasmListIsVirtual(ih))
     return;
 
-  itemH = IUPWASM_VLIST_ITEMH;
   count = iupListGetItemCount(ih);
-  first = iupwasmJsVListScrollTop(id) / itemH - 2;
-  if (first < 0) first = 0;
-  n = iupwasmJsVListClientH(id) / itemH + 5;
-  if (n > 500) n = 500;  /* cap the windowed row request */
-  if (first + n > count) n = count - first;
-  if (n < 0) n = 0;
+  if (to > count) to = count;
 
-  iupwasmJsVListWindow(id, n);
   value_cb = (sIFni)IupGetCallback(ih, "VALUE_CB");
-  image_cb = (sIFni)IupGetCallback(ih, "IMAGE_CB");
-  showimage = ih->data->show_image;
+  image_cb = ih->data->show_image ? (sIFni)IupGetCallback(ih, "IMAGE_CB") : NULL;
 
-  for (i = 0; i < n; i++)
+  iupwasmJsVListRowsBegin();
+  for (pos = from; pos <= to; pos++)
   {
-    int pos = first + i + 1;
     int imgId = 0;
     char* text;
-    if (showimage && image_cb)
+    if (image_cb)
     {
       char* name = image_cb(ih, pos);
       if (name && name[0])
         imgId = (int)(intptr_t)iupImageGetImage(name, ih, 0, NULL);
     }
     text = value_cb ? value_cb(ih, pos) : NULL;
-    iupwasmJsVListCell(id, i, pos, text ? text : "", imgId);
+    iupwasmJsVListRowsAdd(text ? text : "", imgId);
   }
-}
-
-EMSCRIPTEN_KEEPALIVE void iupwasmListVScroll(int id)
-{
-  Ihandle* ih = iupwasmHandleFromId(id);
-  if (ih)
-    wasmListVirtualRender(ih);
+  iupwasmJsVListRowsEnd(id, gen, from);
 }
 
 EMSCRIPTEN_KEEPALIVE void iupwasmListVClick(int id, int pos)
@@ -592,7 +574,6 @@ static int wasmListMapMethod(Ihandle* ih)
     iupwasmJsVListSetFit(id, ih->data->fit_image);
     iupwasmAddToParent(ih);
     iupwasmJsVListSetCount(id, iupListGetItemCount(ih));  /* ITEMCOUNT setter returns 0 (not replayed), seed it here */
-    wasmListVirtualRender(ih);
     return IUP_NOERROR;
   }
 
@@ -709,7 +690,6 @@ IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
   if (!id || !wasmListIsVirtual(ih))
     return;
   iupwasmJsVListSetCount(id, count);
-  wasmListVirtualRender(ih);
 }
 
 IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
@@ -853,7 +833,7 @@ static int wasmListSetTopItemAttrib(Ihandle* ih, const char* value)
   if (id && !ih->data->is_dropdown && iupStrToInt(value, &pos))
   {
     if (wasmListIsVirtual(ih))
-      iupwasmJsVListSetTop(id, (pos - 1) * IUPWASM_VLIST_ITEMH);
+      iupwasmJsVListSetTop(id, pos);
     else
       iupwasmJsListTopItem(id, pos - 1);
   }
