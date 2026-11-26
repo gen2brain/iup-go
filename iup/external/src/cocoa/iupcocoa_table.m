@@ -844,6 +844,9 @@ static void cocoaTableBeginEdit(NSTableView* tableView, NSInteger col, NSInteger
   if (!is_local)
     return NSDragOperationCopy;
 
+  if (ih->data->show_dragdrop)
+    return NSDragOperationMove | NSDragOperationCopy;
+
   return iupAttribGetBoolean(ih, "DRAGSOURCEMOVE") ? (NSDragOperationMove | NSDragOperationCopy) : NSDragOperationCopy;
 }
 
@@ -1506,7 +1509,11 @@ static void cocoaTableMoveColumn(Ihandle* ih, NSTableView* tableView, int from_c
 - (BOOL)tableView:(NSTableView*)tableView writeRowsWithIndexes:(NSIndexSet*)rows toPasteboard:(NSPasteboard*)pboard
 {
   if (ih->data->show_dragdrop)
-    return NO;
+  {
+    [pboard declareTypes:[NSArray arrayWithObject:kIupTableRowPasteboardType] owner:nil];
+    [pboard setString:[NSString stringWithFormat:@"%ld", (long)[rows firstIndex]] forType:kIupTableRowPasteboardType];
+    return YES;
+  }
 
   NSRect row_rect = [tableView rectOfRow:[rows firstIndex]];
   return cocoaSourceDragAppWritePasteboard(ih, pboard, (int)NSMinX(row_rect), (int)NSMinY(row_rect)) ? YES : NO;

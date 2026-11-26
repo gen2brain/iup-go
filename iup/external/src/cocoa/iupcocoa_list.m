@@ -641,6 +641,9 @@ static void cocoaListFieldSelectionChanged(NSTextField* field)
   if (!is_local || !ih)
     return NSDragOperationCopy;
 
+  if ((ih->data->show_dragdrop && cocoaListGetSubType(ih) == IUPCOCOALISTSUBTYPE_SINGLELIST) || iupAttribGetBoolean(ih, "DRAGDROPLIST"))
+    return NSDragOperationMove | NSDragOperationCopy;
+
   return iupAttribGetBoolean(ih, "DRAGSOURCEMOVE") ? (NSDragOperationMove | NSDragOperationCopy) : NSDragOperationCopy;
 }
 
@@ -1789,7 +1792,25 @@ static void cocoaListFieldSelectionChanged(NSTextField* field)
     return NO;
 
   if (ih->data->show_dragdrop || iupAttribGetBoolean(ih, "DRAGDROPLIST"))
-    return NO;
+  {
+    BOOL internal = ih->data->show_dragdrop && (cocoaListGetSubType(ih) == IUPCOCOALISTSUBTYPE_SINGLELIST);
+    BOOL crosslist = iupAttribGetBoolean(ih, "DRAGDROPLIST");
+    NSMutableArray* types = [NSMutableArray array];
+
+    if (internal)
+      [types addObject:IupListPasteboardType];
+    if (crosslist)
+      [types addObject:IupInternalDndType];
+    if ([types count] == 0)
+      return NO;
+
+    [pboard declareTypes:types owner:nil];
+    if (internal)
+      [pboard setString:[NSString stringWithFormat:@"%ld", (long)[rows firstIndex]] forType:IupListPasteboardType];
+    if (crosslist)
+      [pboard setData:[NSData dataWithBytes:&ih length:sizeof(Ihandle*)] forType:IupInternalDndType];
+    return YES;
+  }
 
   NSRect row_rect = [tableView rectOfRow:[rows firstIndex]];
   return cocoaSourceDragAppWritePasteboard(ih, pboard, (int)NSMinX(row_rect), (int)NSMinY(row_rect)) ? YES : NO;

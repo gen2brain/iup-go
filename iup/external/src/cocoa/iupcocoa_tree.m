@@ -441,6 +441,9 @@ static void cocoaTreeSetFocus(Ihandle* ih, int id);
   if (!is_local || !self.ih)
     return NSDragOperationCopy;
 
+  if (self.ih->data->show_dragdrop || iupAttribGetBoolean(self.ih, "DRAGDROPTREE"))
+    return NSDragOperationMove | NSDragOperationCopy;
+
   return iupAttribGetBoolean(self.ih, "DRAGSOURCEMOVE") ? (NSDragOperationMove | NSDragOperationCopy) : NSDragOperationCopy;
 }
 
@@ -1963,7 +1966,16 @@ static NSData* helperDataWithValue(NSValue* the_value)
     return NO;
 
   if(ih->data->show_dragdrop || iupAttribGetBoolean(ih, "DRAGDROPTREE"))
-    return NO;
+  {
+    id the_item = [items objectAtIndex:0];
+    if(![the_item isKindOfClass:[IupCocoaTreeItem class]])
+      return NO;
+
+    [self setItemBeingDragged:([items count] == 1) ? the_item : nil];
+    [pboard declareTypes:[NSArray arrayWithObject:IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE] owner:nil];
+    [pboard setData:helperDataWithValue([NSValue valueWithPointer:the_item]) forType:IUPCOCOA_OUTLINEVIEW_DRAGANDDROP_TYPE];
+    return YES;
+  }
 
   NSRect row_rect = [outlineView rectOfRow:[outlineView rowForItem:[items objectAtIndex:0]]];
   return cocoaSourceDragAppWritePasteboard(ih, pboard, (int)NSMinX(row_rect), (int)NSMinY(row_rect)) ? YES : NO;
