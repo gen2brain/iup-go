@@ -516,8 +516,8 @@ jobs:
     - name: Setup MSYS2
       uses: msys2/setup-msys2@v2
       with:
-        msystem: MINGW64
-        install: mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config mingw-w64-x86_64-gtk3
+        msystem: UCRT64
+        install: mingw-w64-ucrt-x86_64-go mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-pkg-config mingw-w64-ucrt-x86_64-gtk3
     - name: Checkout code
       uses: actions/checkout@v4
     - name: Build
@@ -533,8 +533,8 @@ jobs:
     - name: Setup MSYS2
       uses: msys2/setup-msys2@v2
       with:
-        msystem: MINGW64
-        install: mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config mingw-w64-x86_64-gtk4
+        msystem: UCRT64
+        install: mingw-w64-ucrt-x86_64-go mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-pkg-config mingw-w64-ucrt-x86_64-gtk4
     - name: Checkout code
       uses: actions/checkout@v4
     - name: Build
@@ -553,8 +553,8 @@ jobs:
     - name: Setup MSYS2
       uses: msys2/setup-msys2@v2
       with:
-        msystem: MINGW64
-        install: mingw-w64-x86_64-go mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config mingw-w64-x86_64-qt6-base
+        msystem: UCRT64
+        install: mingw-w64-ucrt-x86_64-go mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-pkg-config mingw-w64-ucrt-x86_64-qt6-base
     - name: Checkout code
       uses: actions/checkout@v4
     - name: Build
@@ -570,8 +570,8 @@ jobs:
     - name: Setup MSYS2
       uses: msys2/setup-msys2@v2
       with:
-        msystem: MINGW64
-        install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja
+        msystem: UCRT64
+        install: mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
     - name: Checkout code
       uses: actions/checkout@v4
     - name: CMake Win32

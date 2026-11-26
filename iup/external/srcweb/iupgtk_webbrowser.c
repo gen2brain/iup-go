@@ -2318,7 +2318,9 @@ static WebKitWebView* gtkWebBrowserNewWindow_WK2(WebKitWebView* web_view, WebKit
 #if (defined(IUPWEB_USE_WEBKIT1) || defined(IUPWEB_USE_DLOPEN))
 static gboolean gtkWebBrowserNewWindowFree_WK1(gpointer new_view)
 {
+#if !GTK_CHECK_VERSION(4, 0, 0)
   gtk_widget_destroy((GtkWidget*)new_view);
+#endif
   g_object_unref(new_view);
   return FALSE;
 }
