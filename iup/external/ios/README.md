@@ -6,7 +6,7 @@ Three build flows are supported:
 
 * **Packaging with iupkg** - one command from the Go program to a signed `.ipa`, see [cmd/iupkg](../../../cmd/iupkg).
 * **Go flow on macOS (native)** - Apple's clang + codesign, no third-party tooling.
-* **Go flow on Linux (cross-compile)** - osxcross + zsign + go-ios.
+* **Go flow on Linux (cross-compile)** - osxcross + iupkg + go-ios.
 
 ## Prerequisites
 
@@ -20,7 +20,7 @@ Three build flows are supported:
 
 * osxcross with iPhoneOS.sdk and iPhoneSimulator.sdk under `/opt/osxcross/target/SDK/`
 * `arm64-apple-ios-clang` and `x86_64-apple-ios-simulator-clang` [wrapper scripts](https://gist.github.com/gen2brain/490dec4a39e57aa0fd59c108f3120023) on PATH (under `/opt/osxcross/target/bin/`)
-* `zsign` for signing in the script flow (iupkg signs by itself)
+* `iupkg` for signing
 * `go-ios` for install/launch/log capture
 
 iOS 17+ requires a one-time persistent tunnel daemon for go-ios's developer services:
@@ -115,11 +115,11 @@ xcrun simctl install booted Payload/myapp.app
 xcrun simctl launch booted com.example.myapp
 ```
 
-**Linux** uses `zsign` + `go-ios`:
+**Linux** uses `iupkg` + `go-ios`:
 
 ```sh
-zsign -k ~/dev.p12 -m ~/dev.mobileprovision \
-  -b com.example.myapp -o myapp.ipa Payload/myapp.app
+iupkg sign --sign ~/dev.p12 --profile ~/dev.mobileprovision Payload/myapp.app
+zip -qry myapp.ipa Payload
 go-ios install --path=myapp.ipa
 go-ios launch com.example.myapp --kill-existing
 ```
@@ -146,7 +146,7 @@ Signing env (skip these and the scripts produce an unsigned `.ipa` for inspectio
 export IOS_PROFILE=~/dev.mobileprovision   # path to .mobileprovision
 export IOS_ENTITLEMENTS=...                # optional entitlements override
 
-# Linux only (zsign reads the cert from a .p12):
+# Linux only (iupkg reads the cert from a .p12):
 export IOS_CERT_P12=~/dev.p12
 export IOS_CERT_PASS=...                   # empty if no password
 

@@ -186,28 +186,19 @@ if [ "$CAPTURE_ONLY" -eq 0 ]; then
 		echo "    on Mac: unzip + xcrun simctl install booted ${EXEC_NAME}.app"
 	else
 		if [ -n "${IOS_CERT_P12:-}" ] && [ -n "${IOS_PROFILE:-}" ]; then
-			echo ">>> signing with zsign"
-			# Resolve user-supplied paths before the cd so they stay valid.
-			ZS_P12="$(realpath "$IOS_CERT_P12")"
-			ZS_PROFILE="$(realpath "$IOS_PROFILE")"
+			echo ">>> signing with iupkg"
 			ENT_FLAG=()
-			[ -n "${IOS_ENTITLEMENTS:-}" ] && ENT_FLAG=(-e "$(realpath "$IOS_ENTITLEMENTS")")
-			(
-				cd "$PKG_DIR"
-				zsign -f \
-					-k "$ZS_P12" \
-					${IOS_CERT_PASS:+-p "$IOS_CERT_PASS"} \
-					-m "$ZS_PROFILE" \
-					-b "$BUNDLE_ID" \
-					"${ENT_FLAG[@]}" \
-					"Payload/${EXEC_NAME}.app"
-			)
+			[ -n "${IOS_ENTITLEMENTS:-}" ] && ENT_FLAG=(--entitlements "$(realpath "$IOS_ENTITLEMENTS")")
+			IUPKG_P12_PASSWORD="${IOS_CERT_PASS:-}" iupkg sign \
+				--sign "$(realpath "$IOS_CERT_P12")" \
+				--profile "$(realpath "$IOS_PROFILE")" \
+				"${ENT_FLAG[@]}" \
+				"$PKG_DIR/Payload/${EXEC_NAME}.app"
 		else
 			echo ">>> IOS_CERT_P12/IOS_PROFILE unset; skipping sign + install"
 			INSTALL=0
 		fi
 
-		# zsign -o archives its whole working directory, not just the bundle
 		( cd "$PKG_DIR" && rm -f "$IPA" && zip -qry "$IPA" Payload )
 
 		IPA_BYTES=$(stat -c %s "$IPA")

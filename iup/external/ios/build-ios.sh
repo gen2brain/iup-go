@@ -6,7 +6,7 @@
 # a Go program for arm64 iOS device or x86_64/arm64 iOS Simulator, sign it,
 # package it, and optionally install/launch on the device or Simulator.
 #
-# Linux cross-compile uses build-ios-cross.sh (osxcross + zsign + go-ios).
+# Linux cross-compile uses build-ios-cross.sh (osxcross + iupkg + go-ios).
 # This script intentionally has no third-party dependencies on macOS.
 #
 # Usage:
