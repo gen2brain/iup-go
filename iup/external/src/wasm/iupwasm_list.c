@@ -26,10 +26,6 @@
 #include "iupwasm_drv.h"
 
 
-#define IUPWASM_VLIST_ITEMH 20
-
-static int wasmListIsVirtual(Ihandle* ih);
-
 EM_JS(int, iupwasmJsCreateVList, (void), {
   if (!globalThis.__iup) globalThis.__iup = { els: {}, next: 1 };
   var id = globalThis.__iup.next++;
@@ -39,6 +35,10 @@ EM_JS(int, iupwasmJsCreateVList, (void), {
 
 EM_JS(void, iupwasmJsVListInit, (int id, int itemH), {
   globalThis.__iupApply({ op: 'vlistinit', id: id, itemH: itemH });
+})
+
+EM_JS(void, iupwasmJsVListRowHeight, (int id, int itemH), {
+  globalThis.__iupApply({ op: 'vlistrowh', id: id, itemH: itemH });
 })
 
 EM_JS(void, iupwasmJsVListSetCount, (int id, int count), {
@@ -62,8 +62,17 @@ EM_JS(void, iupwasmJsVListRowsEnd, (int id, int gen, int from), {
   globalThis.__iupApply({ op: 'vlistrows', id: id, gen: gen, from: from, texts: r.texts, imgs: r.imgs });
 })
 
-EM_JS(void, iupwasmJsVListSelect, (int id, int pos), {
-  globalThis.__iupApply({ op: 'vlistselect', id: id, pos: pos });
+EM_JS(void, iupwasmJsVListMarksBegin, (void), {
+  globalThis.__iupVListMarks = [];
+})
+
+EM_JS(void, iupwasmJsVListMarksAdd, (int first, int last), {
+  globalThis.__iupVListMarks.push(first, last);
+})
+
+EM_JS(void, iupwasmJsVListMarksEnd, (int id, int focus, int show), {
+  var r = globalThis.__iupVListMarks; globalThis.__iupVListMarks = null;
+  globalThis.__iupApply({ op: 'vlistmarks', id: id, ranges: r, focus: focus, show: show });
 })
 
 EM_JS(int, iupwasmJsCreateList, (int dropdown, int editbox, int multiple, int size), {
@@ -426,6 +435,209 @@ EMSCRIPTEN_KEEPALIVE void iupwasmDispatchListMulti(int id, const char* sel, int 
   free(pos);
 }
 
+static int wasmListIsVirtual(Ihandle* ih)
+{
+  return ih->data->is_virtual && !ih->data->is_dropdown && !ih->data->has_editbox;
+}
+
+static int wasmVListRowHeight(Ihandle* ih)
+{
+  int h = 0;
+  iupdrvFontGetCharSize(ih, NULL, &h);
+  if (ih->data->show_image)
+  {
+    int avail = h + 2 * ih->data->spacing, img_w = 16, img_h = 16;
+    char* name = iupListGetItemImageCb(ih, 1);
+    if (name)
+    {
+      iupImageGetInfo(name, &img_w, &img_h, NULL);
+      if (ih->data->fit_image && img_h > avail)
+        img_h = avail;
+    }
+    if (img_h > h)
+      h = img_h;
+  }
+  iupdrvListAddItemSpace(ih, &h);
+  return h + 2 * ih->data->spacing;
+}
+
+static unsigned char* wasmVListMarks(Ihandle* ih)
+{
+  unsigned char* marks = (unsigned char*)iupAttribGet(ih, "_IUPWASM_VLISTMARKS");
+  int n = iupAttribGetInt(ih, "_IUPWASM_VLISTMARKN");
+  int count = iupListGetItemCount(ih);
+  if (!marks || n != count)
+  {
+    unsigned char* m = (unsigned char*)realloc(marks, count > 0 ? count : 1);
+    if (!m)
+      return NULL;
+    if (count > n)
+      memset(m + n, 0, count - n);
+    iupAttribSet(ih, "_IUPWASM_VLISTMARKS", (char*)m);
+    iupAttribSetInt(ih, "_IUPWASM_VLISTMARKN", count);
+    marks = m;
+  }
+  return marks;
+}
+
+static void wasmVListSync(Ihandle* ih, int show)
+{
+  int id = iupwasmIdOf(ih);
+  if (!id)
+    return;
+  iupwasmJsVListMarksBegin();
+  if (ih->data->is_multiple)
+  {
+    unsigned char* marks = wasmVListMarks(ih);
+    int count = iupListGetItemCount(ih), i = 0;
+    while (marks && i < count)
+    {
+      int first;
+      while (i < count && !marks[i])
+        i++;
+      if (i >= count)
+        break;
+      first = i;
+      while (i < count && marks[i])
+        i++;
+      iupwasmJsVListMarksAdd(first + 1, i);
+    }
+  }
+  else
+  {
+    int sel = iupAttribGetInt(ih, "_IUPWASM_VLISTSEL");
+    if (sel > 0)
+      iupwasmJsVListMarksAdd(sel, sel);
+  }
+  iupwasmJsVListMarksEnd(id, iupAttribGetInt(ih, "_IUPWASM_VLISTFOCUS"), show);
+}
+
+static void wasmVListNotify(Ihandle* ih)
+{
+  IFnsii cb = (IFnsii)IupGetCallback(ih, "ACTION");
+  if (ih->data->is_multiple)
+  {
+    IFns multi_cb = (IFns)IupGetCallback(ih, "MULTISELECT_CB");
+    unsigned char* marks = wasmVListMarks(ih);
+    int count = iupListGetItemCount(ih), i, n = 0;
+    int* pos;
+    if ((!cb && !multi_cb) || !marks)
+      return;
+    pos = (int*)malloc(sizeof(int) * (count > 0 ? count : 1));
+    if (!pos)
+      return;
+    for (i = 0; i < count; i++)
+      if (marks[i])
+        pos[n++] = i;
+    iupListMultipleCallActionCb(ih, cb, multi_cb, pos, n);
+    free(pos);
+  }
+  else
+  {
+    int sel = iupAttribGetInt(ih, "_IUPWASM_VLISTSEL");
+    if (cb && sel > 0)
+      iupListSingleCallActionCb(ih, cb, sel);
+  }
+}
+
+static char* wasmVListGetValue(Ihandle* ih)
+{
+  if (ih->data->is_multiple)
+  {
+    unsigned char* marks = wasmVListMarks(ih);
+    int count = iupListGetItemCount(ih), i;
+    char* str;
+    if (!marks)
+      return NULL;
+    str = iupStrGetMemory(count + 1);
+    for (i = 0; i < count; i++)
+      str[i] = marks[i] ? '+' : '-';
+    str[count] = 0;
+    return str;
+  }
+  return iupStrReturnInt(iupAttribGetInt(ih, "_IUPWASM_VLISTSEL"));
+}
+
+static void wasmVListSetValue(Ihandle* ih, const char* value)
+{
+  if (ih->data->is_multiple)
+  {
+    unsigned char* marks = wasmVListMarks(ih);
+    int count = iupListGetItemCount(ih), i, len = value ? (int)strlen(value) : 0;
+    if (!marks)
+      return;
+    for (i = 0; i < count; i++)
+      marks[i] = (i < len && value[i] == '+') ? 1 : 0;
+    iupAttribSetStr(ih, "_IUPLIST_OLDVALUE", wasmVListGetValue(ih));
+  }
+  else
+  {
+    int pos = 0;
+    iupStrToInt(value, &pos);
+    if (pos < 0 || pos > iupListGetItemCount(ih))
+      pos = 0;
+    iupAttribSetInt(ih, "_IUPWASM_VLISTSEL", pos);
+    if (pos > 0)
+    {
+      iupAttribSetInt(ih, "_IUPWASM_VLISTFOCUS", pos);
+      iupAttribSetInt(ih, "_IUPLIST_OLDVALUE", pos);
+    }
+    else
+      iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
+  }
+  wasmVListSync(ih, 0);
+}
+
+static void wasmVListSelectAt(Ihandle* ih, int pos, int shift, int ctrl, int move_only)
+{
+  int count = iupListGetItemCount(ih);
+  if (count < 1)
+    return;
+  if (pos < 1)
+    pos = 1;
+  if (pos > count)
+    pos = count;
+
+  iupAttribSetInt(ih, "_IUPWASM_VLISTFOCUS", pos);
+
+  if (ih->data->is_multiple)
+  {
+    unsigned char* marks = wasmVListMarks(ih);
+    int anchor = iupAttribGetInt(ih, "_IUPWASM_VLISTANCHOR");
+    if (!marks)
+      return;
+    if (move_only)
+    {
+      wasmVListSync(ih, 1);
+      return;
+    }
+    if (shift && anchor > 0 && anchor <= count)
+    {
+      int a = anchor < pos ? anchor : pos, b = anchor < pos ? pos : anchor, i;
+      if (!ctrl)
+        memset(marks, 0, count);
+      for (i = a; i <= b; i++)
+        marks[i - 1] = 1;
+    }
+    else if (ctrl)
+    {
+      marks[pos - 1] = !marks[pos - 1];
+      iupAttribSetInt(ih, "_IUPWASM_VLISTANCHOR", pos);
+    }
+    else
+    {
+      memset(marks, 0, count);
+      marks[pos - 1] = 1;
+      iupAttribSetInt(ih, "_IUPWASM_VLISTANCHOR", pos);
+    }
+  }
+  else
+    iupAttribSetInt(ih, "_IUPWASM_VLISTSEL", pos);
+
+  wasmVListSync(ih, 1);
+  wasmVListNotify(ih);
+}
+
 static char* wasmListGetValueAttrib(Ihandle* ih);
 
 static int wasmListSetValueAttrib(Ihandle* ih, const char* value)
@@ -435,10 +647,7 @@ static int wasmListSetValueAttrib(Ihandle* ih, const char* value)
     return 0;
   if (wasmListIsVirtual(ih))
   {
-    int pos = 0;
-    iupStrToInt(value, &pos);
-    iupAttribSetInt(ih, "_IUPWASM_VLISTSEL", pos);
-    iupwasmJsVListSelect(id, pos);
+    wasmVListSetValue(ih, value);
     return 0;
   }
   if (ih->data->has_editbox)
@@ -467,7 +676,7 @@ static char* wasmListGetValueAttrib(Ihandle* ih)
   if (!id)
     return NULL;
   if (wasmListIsVirtual(ih))
-    return iupStrReturnInt(iupAttribGetInt(ih, "_IUPWASM_VLISTSEL"));
+    return wasmVListGetValue(ih);
   if (ih->data->has_editbox)
   {
     char* p;
@@ -506,11 +715,6 @@ static char* wasmListGetIdValueAttrib(Ihandle* ih, int id)
   return r;
 }
 
-static int wasmListIsVirtual(Ihandle* ih)
-{
-  return ih->data->is_virtual && !ih->data->is_dropdown && !ih->data->has_editbox;
-}
-
 EMSCRIPTEN_KEEPALIVE void iupwasmListVRows(int id, int from, int to, int gen)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
@@ -543,21 +747,60 @@ EMSCRIPTEN_KEEPALIVE void iupwasmListVRows(int id, int from, int to, int gen)
   iupwasmJsVListRowsEnd(id, gen, from);
 }
 
-EMSCRIPTEN_KEEPALIVE void iupwasmListVClick(int id, int pos)
+EMSCRIPTEN_KEEPALIVE void iupwasmListVClick(int id, int pos, int mods)
 {
   Ihandle* ih = iupwasmHandleFromId(id);
-  IFnsii action_cb;
-  sIFni value_cb;
-  char* text;
-  if (!ih)
+  if (!ih || !wasmListIsVirtual(ih))
     return;
-  iupwasmJsVListSelect(id, pos);
-  iupAttribSetInt(ih, "_IUPWASM_VLISTSEL", pos);
-  value_cb = (sIFni)IupGetCallback(ih, "VALUE_CB");
-  text = value_cb ? value_cb(ih, pos) : NULL;
-  action_cb = (IFnsii)IupGetCallback(ih, "ACTION");
-  if (action_cb && action_cb(ih, text ? text : (char*)"", pos, 1) == IUP_CLOSE)
+  wasmVListSelectAt(ih, pos, mods & 1, mods & 2, 0);
+}
+
+EMSCRIPTEN_KEEPALIVE void iupwasmListVDblClick(int id, int pos)
+{
+  Ihandle* ih = iupwasmHandleFromId(id);
+  IFnis cb;
+  if (!ih || !wasmListIsVirtual(ih))
+    return;
+  cb = (IFnis)IupGetCallback(ih, "DBLCLICK_CB");
+  if (cb && cb(ih, pos, iupListGetItemValueCb(ih, pos)) == IUP_CLOSE)
     IupExitLoop();
+}
+
+int iupwasmListVKeyNav(Ihandle* ih, int code)
+{
+  int focus, page, count, pos;
+  int shift = ih->data->is_multiple && iup_isShiftXkey(code);
+  int ctrl = ih->data->is_multiple && iup_isCtrlXkey(code);
+  if (!wasmListIsVirtual(ih) || iup_isAltXkey(code))
+    return 0;
+  count = iupListGetItemCount(ih);
+  if (count < 1)
+    return 0;
+  focus = iupAttribGetInt(ih, "_IUPWASM_VLISTFOCUS");
+  if (focus < 1 && !ih->data->is_multiple)
+    focus = iupAttribGetInt(ih, "_IUPWASM_VLISTSEL");
+  page = iupAttribGetInt(ih, "_IUPWASM_VLISTROWH");
+  page = page > 0 ? (ih->currentheight - 2) / page : 1;
+  page = page > 1 ? page - 1 : 1;
+
+  switch (iup_XkeyBase(code))
+  {
+    case K_UP:    pos = focus - 1; break;
+    case K_DOWN:  pos = focus + 1; break;
+    case K_PGUP:  pos = focus - page; break;
+    case K_PGDN:  pos = focus + page; break;
+    case K_HOME:  pos = 1; break;
+    case K_END:   pos = count; break;
+    case K_SP:
+      if (!ih->data->is_multiple || focus < 1)
+        return 0;
+      wasmVListSelectAt(ih, focus, 0, 1, 0);
+      return 1;
+    default:
+      return 0;
+  }
+  wasmVListSelectAt(ih, pos, shift, 0, ctrl && !shift);
+  return 1;
 }
 
 static int wasmListMapMethod(Ihandle* ih)
@@ -570,7 +813,8 @@ static int wasmListMapMethod(Ihandle* ih)
     id = iupwasmJsCreateVList();
     ih->handle = (InativeHandle*)(intptr_t)id;
     iupwasmRegisterHandle(id, ih);
-    iupwasmJsVListInit(id, IUPWASM_VLIST_ITEMH);
+    iupAttribSetInt(ih, "_IUPWASM_VLISTROWH", wasmVListRowHeight(ih));
+    iupwasmJsVListInit(id, iupAttribGetInt(ih, "_IUPWASM_VLISTROWH"));
     iupwasmJsVListSetFit(id, ih->data->fit_image);
     iupwasmAddToParent(ih);
     iupwasmJsVListSetCount(id, iupListGetItemCount(ih));  /* ITEMCOUNT setter returns 0 (not replayed), seed it here */
@@ -690,6 +934,18 @@ IUP_SDK_API void iupdrvListSetItemCount(Ihandle* ih, int count)
   if (!id || !wasmListIsVirtual(ih))
     return;
   iupwasmJsVListSetCount(id, count);
+  if (iupAttribGetInt(ih, "_IUPWASM_VLISTSEL") > count)
+  {
+    iupAttribSetInt(ih, "_IUPWASM_VLISTSEL", 0);
+    iupAttribSet(ih, "_IUPLIST_OLDVALUE", NULL);
+  }
+  if (iupAttribGetInt(ih, "_IUPWASM_VLISTFOCUS") > count)
+    iupAttribSetInt(ih, "_IUPWASM_VLISTFOCUS", count);
+  if (iupAttribGetInt(ih, "_IUPWASM_VLISTANCHOR") > count)
+    iupAttribSet(ih, "_IUPWASM_VLISTANCHOR", NULL);
+  if (ih->data->is_multiple && iupAttribGet(ih, "_IUPLIST_OLDVALUE"))
+    iupAttribSetStr(ih, "_IUPLIST_OLDVALUE", wasmVListGetValue(ih));
+  wasmVListSync(ih, 0);
 }
 
 IUP_SDK_API void iupdrvListAddBorders(Ihandle* ih, int* w, int* h)
@@ -1005,11 +1261,37 @@ static int wasmListSetScrollToPosEditAttribSilent(Ihandle* ih, const char* value
   return wasmListSetSilent(ih, value, wasmListSetScrollToPosEditAttrib);
 }
 
+static void wasmListUnMapMethod(Ihandle* ih)
+{
+  unsigned char* marks = (unsigned char*)iupAttribGet(ih, "_IUPWASM_VLISTMARKS");
+  if (marks)
+  {
+    free(marks);
+    iupAttribSet(ih, "_IUPWASM_VLISTMARKS", NULL);
+    iupAttribSet(ih, "_IUPWASM_VLISTMARKN", NULL);
+  }
+  iupdrvBaseUnMapMethod(ih);
+}
+
+static void wasmListLayoutUpdateMethod(Ihandle* ih)
+{
+  iupdrvBaseLayoutUpdateMethod(ih);
+  if (wasmListIsVirtual(ih))
+  {
+    int h = wasmVListRowHeight(ih);
+    if (h != iupAttribGetInt(ih, "_IUPWASM_VLISTROWH"))
+    {
+      iupAttribSetInt(ih, "_IUPWASM_VLISTROWH", h);
+      iupwasmJsVListRowHeight(iupwasmIdOf(ih), h);
+    }
+  }
+}
+
 IUP_SDK_API void iupdrvListInitClass(Iclass* ic)
 {
   ic->Map = wasmListMapMethod;
-  ic->UnMap = iupdrvBaseUnMapMethod;
-  ic->LayoutUpdate = iupdrvBaseLayoutUpdateMethod;
+  ic->UnMap = wasmListUnMapMethod;
+  ic->LayoutUpdate = wasmListLayoutUpdateMethod;
 
   iupClassRegisterAttribute(ic, "READONLY", NULL, wasmListSetReadOnlyAttrib, NULL, NULL, IUPAF_NO_DEFAULTVALUE | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SCROLLVISIBLE", iupwasmGetScrollVisibleAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);

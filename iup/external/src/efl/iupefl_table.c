@@ -3378,6 +3378,19 @@ static int eflTableRowStep(Ihandle* ih, IeflTableData* data, int* ref_lin, int* 
   return ga.h;
 }
 
+static int eflTablePageStep(Ihandle* ih, IeflTableData* data)
+{
+  int ref_lin = 0, ref_top = 0, rh = 0, lines;
+  int step = eflTableRowStep(ih, data, &ref_lin, &ref_top);
+
+  if (step <= 0 || !data->scroller)
+    return 1;
+
+  elm_scroller_region_get(data->scroller, NULL, NULL, NULL, &rh);
+  lines = rh / step;
+  return lines > 1 ? lines - 1 : 1;
+}
+
 static int eflTableColLeft(Ihandle* ih, IeflTableData* data, int col, int* width)
 {
   int num_col = ih->data->num_col;
@@ -3809,13 +3822,21 @@ static void eflTableKeyDownCallback(void* data, const Efl_Event* ev)
   {
     key = K_PGUP;
     if (!is_editing)
-      new_lin = 1;
+    {
+      new_lin = lin - eflTablePageStep(ih, table_data);
+      if (new_lin < 1)
+        new_lin = 1;
+    }
   }
   else if (!strcmp(keyname, "Next"))
   {
     key = K_PGDN;
     if (!is_editing)
-      new_lin = ih->data->num_lin;
+    {
+      new_lin = lin + eflTablePageStep(ih, table_data);
+      if (new_lin > ih->data->num_lin)
+        new_lin = ih->data->num_lin;
+    }
   }
   else if ((!strcmp(keyname, "c") || !strcmp(keyname, "C")) &&
            efl_input_modifier_enabled_get(key_ev, EFL_INPUT_MODIFIER_CONTROL, NULL))

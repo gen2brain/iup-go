@@ -18,6 +18,7 @@
 #include "iup_attrib.h"
 #include "iup_str.h"
 #include "iup_class.h"
+#include "iup_drv.h"
 #include "iup_drvfont.h"
 #include "iup_image.h"
 #include "iup_table.h"
@@ -160,6 +161,12 @@ EM_JS(void, iupwasmJsTableOrigin, (int id, int rowH, int* lin, int* col), {
   if (typeof document === 'undefined') r = globalThis.__iupReadSync({ op: 'tableorigin', id: id, rowH: rowH });
   else { var w = globalThis.__iup.els[id]; r = w && w.__iupOrigin ? w.__iupOrigin(rowH) : [0, 0]; }
   HEAP32[lin >> 2] = r[0]; HEAP32[col >> 2] = r[1];
+})
+
+EM_JS(int, iupwasmJsTablePageLines, (int id, int rowH), {
+  if (typeof document === 'undefined') return globalThis.__iupReadSync({ op: 'tablepage', id: id, rowH: rowH });
+  var w = globalThis.__iup.els[id];
+  return w && w.__iupPage ? w.__iupPage(rowH) : 1;
 })
 
 static void wasmTableStripeCss(const char* value, char* css)
@@ -992,9 +999,16 @@ IUP_SDK_API int iupdrvTableGetHeaderHeight(Ihandle* ih)
 
 IUP_SDK_API void iupdrvTableAddBorders(Ihandle* ih, int* w, int* h)
 {
-  (void)ih;
-  if (w) *w += 2;
-  if (h) *h += 2;
+  int sb_size = iupdrvGetScrollbarSize();
+  int visiblecolumns = iupAttribGetInt(ih, "VISIBLECOLUMNS");
+
+  if (w) *w += 2 + sb_size;
+  if (h)
+  {
+    *h += 2;
+    if (visiblecolumns > 0 && ih->data->num_col > visiblecolumns)
+      *h += sb_size;
+  }
 }
 
 static void wasmTableLayoutUpdate(Ihandle* ih)
@@ -1222,6 +1236,12 @@ EMSCRIPTEN_KEEPALIVE void iupwasmTableEditEnd(int id, int lin, int col, const ch
     vc_cb(ih, lin, col);
 }
 
+static int wasmTablePageStep(Ihandle* ih, int id)
+{
+  int lines = iupwasmJsTablePageLines(id, iupdrvTableGetRowHeight(ih));
+  return lines > 1 ? lines - 1 : 1;
+}
+
 int iupwasmTableKeyNav(Ihandle* ih, int code)
 {
   int id = iupwasmIdOf(ih);
@@ -1264,8 +1284,8 @@ int iupwasmTableKeyNav(Ihandle* ih, int code)
     case K_RIGHT: new_col = col + 1; break;
     case K_HOME:  new_col = 1; break;
     case K_END:   new_col = ih->data->num_col; break;
-    case K_PGUP:  new_lin = 1; break;
-    case K_PGDN:  new_lin = ih->data->num_lin; break;
+    case K_PGUP:  new_lin = lin - wasmTablePageStep(ih, id); break;
+    case K_PGDN:  new_lin = lin + wasmTablePageStep(ih, id); break;
     case K_CR:
     case K_F2:
       if (wasmTableCellEditable(ih, col))

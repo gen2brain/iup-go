@@ -393,6 +393,9 @@ EMSCRIPTEN_KEEPALIVE int iupwasmDispatchKey(int id, int code)
   if (iupStrEqual(IupGetClassName(ih), "table") && iupwasmTableKeyNav(ih, code))
     return 1;
 
+  if (iupStrEqual(IupGetClassName(ih), "list") && iupwasmListVKeyNav(ih, code))
+    return 1;
+
   if (iupKeyProcessNavigation(ih, code, 0))
     return 1;
 

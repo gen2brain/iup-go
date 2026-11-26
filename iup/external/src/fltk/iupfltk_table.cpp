@@ -360,6 +360,13 @@ public:
   }
 
 protected:
+  int pageStep(int row)
+  {
+    int rh = row_height(row);
+    int lines = rh > 0 ? tih / rh : 1;
+    return lines > 1 ? lines - 1 : 1;
+  }
+
   void draw_cell(TableContext context, int R, int C, int X, int Y, int W, int H) override
   {
     const bool inactive = !active_r();
@@ -971,8 +978,8 @@ protected:
           else if (key == FL_Right && new_col < num_col - 1) new_col++;
           else if (key == FL_Home) { new_lin = 0; new_col = 0; }
           else if (key == FL_End) { new_lin = num_lin - 1; new_col = num_col - 1; }
-          else if (key == FL_Page_Up) { new_lin -= rows() - 1; if (new_lin < 0) new_lin = 0; }
-          else if (key == FL_Page_Down) { new_lin += rows() - 1; if (new_lin >= num_lin) new_lin = num_lin - 1; }
+          else if (key == FL_Page_Up) { new_lin -= pageStep(new_lin); if (new_lin < 0) new_lin = 0; }
+          else if (key == FL_Page_Down) { new_lin += pageStep(new_lin); if (new_lin >= num_lin) new_lin = num_lin - 1; }
           else break;
 
           if (new_lin != focus_lin || new_col != focus_col)
