@@ -36,7 +36,6 @@ Default: "24".
 
 **SCROLLBACKLINES** (non-inheritable): maximum number of history lines kept off screen.
 Setting it discards the existing history. "0" disables scrollback. Default: "5000".
-History lines are not reflowed when the terminal is resized.
 
 **CURSORSTYLE** (non-inheritable): cursor shape. Can be "BLOCK", "BAR" or "UNDERLINE".
 Also changed by the DECSCUSR escape sequence. Default: "BLOCK".
@@ -221,6 +220,9 @@ Holding Ctrl (Cmd in macOS) over a link underlines it.
 When the application enables mouse reporting the mouse belongs to the application and the terminal stops selecting. Hold Shift to select anyway.
 
 The EXEC command is terminated when the control is destroyed. Resizing the control resizes the pseudo-terminal and the command receives SIGWINCH.
+
+When the terminal is resized, lines wrapped by the terminal are wrapped again at the new width, the history included, and the cursor keeps its place in the text.
+A taller terminal brings lines back from the history. The alternate screen is not reflowed.
 
 ### Examples
 

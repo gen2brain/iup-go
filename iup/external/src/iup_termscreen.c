@@ -493,27 +493,34 @@ void iupTermScreenRestoreCursor(Iterm* t)
   itermClampCursor(t);
 }
 
-void iupTermScreenEraseDisplay(Iterm* t, int mode)
+static void itermEraseRows(Iterm* t, int from, int to)
 {
   int i;
+  for (i = from; i <= to; i++)
+  {
+    ItermLine* line = iupTermScreenLine(t, i);
+    itermLineClear(t, line, 0, t->cols - 1);
+    line->wrapped = 0;
+  }
+}
+
+void iupTermScreenEraseDisplay(Iterm* t, int mode)
+{
   t->pending_wrap = 0;
   switch (mode)
   {
   case 0:
     iupTermScreenEraseLine(t, 0);
-    for (i = t->cy + 1; i < t->rows; i++)
-      itermLineClear(t, iupTermScreenLine(t, i), 0, t->cols - 1);
+    itermEraseRows(t, t->cy + 1, t->rows - 1);
     itermDamageRange(t, t->cy, t->rows - 1);
     break;
   case 1:
     iupTermScreenEraseLine(t, 1);
-    for (i = 0; i < t->cy; i++)
-      itermLineClear(t, iupTermScreenLine(t, i), 0, t->cols - 1);
+    itermEraseRows(t, 0, t->cy - 1);
     itermDamageRange(t, 0, t->cy);
     break;
   case 2:
-    for (i = 0; i < t->rows; i++)
-      itermLineClear(t, iupTermScreenLine(t, i), 0, t->cols - 1);
+    itermEraseRows(t, 0, t->rows - 1);
     iupTermScreenDamageAll(t);
     break;
   }
@@ -675,10 +682,270 @@ void iupTermScreenClearScrollback(Iterm* t)
   t->sb_head = 0;
 }
 
+typedef struct _ItermReflowPoint
+{
+  int row, col, pending;
+  int offset, found, here, index, new_col, new_pending;
+} ItermReflowPoint;
+
+typedef struct _ItermLineList
+{
+  ItermLine* lines;
+  int count, alloc;
+} ItermLineList;
+
+static void itermLineListAdd(Iterm* t, ItermLineList* list, int cols)
+{
+  if (list->count == list->alloc)
+  {
+    list->alloc = list->alloc ? 2 * list->alloc : 256;
+    list->lines = (ItermLine*)realloc(list->lines, list->alloc * sizeof(ItermLine));
+  }
+  itermLineAlloc(t, &list->lines[list->count++], cols);
+}
+
+static int itermCellUnused(ItermCell* cell)
+{
+  return !cell->cp && !cell->combo && !cell->link &&
+         !(cell->flags & ITERM_FL_WIDECONT) && (cell->flags & ITERM_FL_BG_DEFAULT);
+}
+
+static int itermLineUsed(ItermLine* line)
+{
+  int c;
+  for (c = 0; c < line->ncells; c++)
+  {
+    if (!itermCellUnused(&line->cells[c]))
+      return 1;
+  }
+  return 0;
+}
+
+static void itermReflowPointInit(ItermReflowPoint* pt, int row, int col, int pending)
+{
+  memset(pt, 0, sizeof(ItermReflowPoint));
+  pt->row = row;
+  pt->col = col;
+  pt->pending = pending;
+}
+
+static void itermReflowSplit(Iterm* t, ItermLineList* out, ItermCell* cells, int len, int cols,
+                             ItermReflowPoint* pts, int npts, int logical)
+{
+  int pos = 0, c = 0, i;
+
+  itermLineListAdd(t, out, cols);
+  while (pos < len)
+  {
+    ItermCell* cell = &cells[pos];
+    int wide = (cell->flags & ITERM_FL_WIDE) != 0;
+    ItermLine* line;
+
+    if (c + (wide ? 2 : 1) > cols)
+    {
+      out->lines[out->count - 1].wrapped = 1;
+      itermLineListAdd(t, out, cols);
+      c = 0;
+    }
+    line = &out->lines[out->count - 1];
+
+    for (i = 0; i < npts; i++)
+    {
+      if (pts[i].found == logical && pts[i].offset == pos)
+      {
+        pts[i].index = out->count - 1;
+        pts[i].new_col = c;
+        pts[i].found = -1;
+      }
+    }
+
+    line->cells[c] = *cell;
+    if (wide)
+    {
+      if (pos + 1 < len && (cells[pos + 1].flags & ITERM_FL_WIDECONT))
+        line->cells[c + 1] = cells[++pos];
+      else
+      {
+        line->cells[c + 1] = *cell;
+        line->cells[c + 1].cp = 0;
+        line->cells[c + 1].combo = 0;
+        line->cells[c + 1].flags = (unsigned short)((cell->flags & ~ITERM_FL_WIDE) | ITERM_FL_WIDECONT);
+      }
+      c++;
+    }
+    c++;
+    pos++;
+  }
+
+  for (i = 0; i < npts; i++)
+  {
+    if (pts[i].found == logical)
+    {
+      int col = c + pts[i].offset - len;
+      pts[i].index = out->count - 1;
+      pts[i].found = -1;
+      if (col >= cols)
+      {
+        pts[i].new_pending = (pts[i].offset == len && c == cols);
+        col = cols - 1;
+      }
+      pts[i].new_col = col;
+    }
+  }
+}
+
+static void itermReflowMain(Iterm* t, int cols, int rows)
+{
+  ItermReflowPoint pts[2];
+  ItermLineList out;
+  ItermCell* cells = NULL;
+  int cells_alloc = 0, npts, end, total, k, i, first, hist, logical = 0;
+  int alt = (t->modes & ITERM_MODE_ALTSCREEN) != 0;
+
+  if (alt)
+  {
+    itermReflowPointInit(&pts[0], t->saved_cy, t->saved_cx, 0);
+    npts = 1;
+  }
+  else
+  {
+    itermReflowPointInit(&pts[0], t->cy, t->cx, t->pending_wrap);
+    itermReflowPointInit(&pts[1], t->saved_cy, t->saved_cx, 0);
+    npts = 2;
+  }
+
+  end = -1;
+  for (i = 0; i < t->rows; i++)
+  {
+    if (itermLineUsed(&t->lines[i]))
+      end = i;
+  }
+  for (i = 0; i < npts; i++)
+  {
+    if (pts[i].row > end)
+      end = pts[i].row;
+  }
+  while (end >= 0 && end < t->rows - 1 && t->lines[end].wrapped)
+    end++;
+  total = t->sb_count + end + 1;
+
+  memset(&out, 0, sizeof(ItermLineList));
+  k = 0;
+  while (k < total)
+  {
+    int len = 0;
+    logical++;
+    for (;;)
+    {
+      ItermLine* line = k < t->sb_count ? iupTermScreenHistoryLine(t, k) : &t->lines[k - t->sb_count];
+      int n = line->ncells;
+      int last = !line->wrapped || k == total - 1;
+
+      while (n > 0 && itermCellUnused(&line->cells[n - 1]))
+        n--;
+      if (len + n > cells_alloc)
+      {
+        cells_alloc = 2 * (len + n) + 256;
+        cells = (ItermCell*)realloc(cells, cells_alloc * sizeof(ItermCell));
+      }
+      memcpy(cells + len, line->cells, n * sizeof(ItermCell));
+
+      for (i = 0; i < npts; i++)
+      {
+        if (k == t->sb_count + pts[i].row)
+        {
+          pts[i].offset = len + pts[i].col;
+          pts[i].found = logical;
+        }
+      }
+
+      len += n;
+      free(line->cells);
+      line->cells = NULL;
+      line->ncells = 0;
+      k++;
+      if (last)
+        break;
+    }
+
+    for (i = 0; i < npts; i++)
+      pts[i].here = (pts[i].found == logical);
+    itermReflowSplit(t, &out, cells, len, cols, pts, npts, logical);
+    for (i = 0; i < npts; i++)
+    {
+      if (pts[i].here && pts[i].pending && !pts[i].new_pending)
+      {
+        pts[i].pending = 0;
+        if (pts[i].new_col + 1 >= cols)
+          pts[i].new_pending = 1;
+        else
+          pts[i].new_col++;
+      }
+    }
+  }
+  free(cells);
+
+  for (i = end + 1; i < t->rows; i++)
+    itermLineFree(t, &t->lines[i]);
+  free(t->lines);
+
+  first = out.count > rows ? out.count - rows : 0;
+  if (pts[0].index < first)
+    first = pts[0].index;
+
+  hist = first;
+  if (t->sb_max <= 0)
+    hist = 0;
+  else if (hist > t->sb_max)
+    hist = t->sb_max;
+  for (i = 0; i < first - hist; i++)
+    itermLineFree(t, &out.lines[i]);
+  for (i = 0; i < hist; i++)
+    t->sb[i] = out.lines[first - hist + i];
+  t->sb_count = hist;
+  t->sb_head = t->sb_max > 0 ? hist % t->sb_max : 0;
+  t->sb_pushed += hist;
+
+  t->lines = (ItermLine*)malloc(rows * sizeof(ItermLine));
+  for (i = 0; i < rows; i++)
+  {
+    if (first + i < out.count)
+      t->lines[i] = out.lines[first + i];
+    else
+      itermLineAlloc(t, &t->lines[i], cols);
+  }
+  for (i = first + rows; i < out.count; i++)
+    itermLineFree(t, &out.lines[i]);
+  free(out.lines);
+
+  for (i = 0; i < npts; i++)
+  {
+    int row = pts[i].index - first;
+    if (row < 0) row = 0;
+    if (row > rows - 1) row = rows - 1;
+    pts[i].row = row;
+  }
+  if (alt)
+  {
+    t->saved_cy = pts[0].row;
+    t->saved_cx = pts[0].new_col;
+  }
+  else
+  {
+    t->cy = pts[0].row;
+    t->cx = pts[0].new_col;
+    t->pending_wrap = pts[0].new_pending;
+    t->saved_cy = pts[1].row;
+    t->saved_cx = pts[1].new_col;
+  }
+}
+
 void iupTermScreenResize(Iterm* t, int cols, int rows)
 {
   int i;
   ItermPen save_pen = t->pen;
+  int alt = (t->modes & ITERM_MODE_ALTSCREEN) != 0;
+  int pending = 0;
 
   if (cols < 2) cols = 2;
   if (rows < 1) rows = 1;
@@ -687,61 +954,38 @@ void iupTermScreenResize(Iterm* t, int cols, int rows)
 
   t->pen.flags = ITERM_FL_FG_DEFAULT | ITERM_FL_BG_DEFAULT;
 
-  if (rows < t->rows && !(t->modes & ITERM_MODE_ALTSCREEN))
-  {
-    int excess = t->rows - rows;
-    int below = t->rows - 1 - t->cy;
-    int push = excess - below;
-    if (push > 0)
-    {
-      for (i = 0; i < push; i++)
-        itermPushScrollback(t, &t->lines[i]);
-      memmove(&t->lines[0], &t->lines[push], (t->rows - push) * sizeof(ItermLine));
-      /* the scrollback owns the pushed cells, the vacated slots need lines of their own */
-      for (i = t->rows - push; i < t->rows; i++)
-        itermLineAlloc(t, &t->lines[i], t->cols);
-      t->cy -= push;
-    }
-  }
+  itermReflowMain(t, cols, rows);
+  if (!alt)
+    pending = t->pending_wrap;
 
+  if (t->alt_lines)
   {
-    ItermLine* screens[2];
-    screens[0] = t->lines;
-    screens[1] = t->alt_lines;
-    for (i = 0; i < 2; i++)
+    ItermLine* old = t->alt_lines;
+    int r;
+    t->alt_lines = (ItermLine*)malloc(rows * sizeof(ItermLine));
+    for (r = 0; r < rows; r++)
     {
-      ItermLine* old = screens[i];
-      ItermLine* new_lines;
-      int r;
-      if (!old)
-        continue;
-      new_lines = (ItermLine*)malloc(rows * sizeof(ItermLine));
-      for (r = 0; r < rows; r++)
+      if (r < t->rows)
       {
-        if (r < t->rows)
+        ItermLine* ol = &old[r];
+        t->alt_lines[r] = *ol;
+        if (cols != ol->ncells)
         {
-          ItermLine* ol = &old[r];
-          new_lines[r] = *ol;
-          if (cols != ol->ncells)
-          {
-            int c;
-            if (cols < ol->ncells)
-              itermCellsRelease(t, &ol->cells[cols], ol->ncells - cols);
-            new_lines[r].cells = (ItermCell*)realloc(ol->cells, cols * sizeof(ItermCell));
-            for (c = ol->ncells; c < cols; c++)
-              itermBlankCell(t, &new_lines[r].cells[c]);
-            new_lines[r].ncells = (short)cols;
-          }
+          int c;
+          if (cols < ol->ncells)
+            itermCellsRelease(t, &ol->cells[cols], ol->ncells - cols);
+          t->alt_lines[r].cells = (ItermCell*)realloc(ol->cells, cols * sizeof(ItermCell));
+          for (c = ol->ncells; c < cols; c++)
+            itermBlankCell(t, &t->alt_lines[r].cells[c]);
+          t->alt_lines[r].ncells = (short)cols;
         }
-        else
-          itermLineAlloc(t, &new_lines[r], cols);
       }
-      for (r = rows; r < t->rows; r++)
-        itermLineFree(t, &old[r]);
-      free(old);
-      if (i == 0) t->lines = new_lines;
-      else t->alt_lines = new_lines;
+      else
+        itermLineAlloc(t, &t->alt_lines[r], cols);
     }
+    for (r = rows; r < t->rows; r++)
+      itermLineFree(t, &old[r]);
+    free(old);
   }
 
   t->cols = cols;
@@ -759,7 +1003,9 @@ void iupTermScreenResize(Iterm* t, int cols, int rows)
 
   if (t->cx > cols - 1) t->cx = cols - 1;
   if (t->cy > rows - 1) t->cy = rows - 1;
-  t->pending_wrap = 0;
+  if (t->saved_cx > cols - 1) t->saved_cx = cols - 1;
+  if (t->saved_cy > rows - 1) t->saved_cy = rows - 1;
+  t->pending_wrap = pending;
 }
 
 void iupTermScreenReset(Iterm* t)

@@ -1264,6 +1264,8 @@ static void itermUpdateGrid(Ihandle* ih)
   {
     IFnii cb;
     iupTermScreenResize(t, cols, rows);
+    ih->data->sel_valid = 0;
+    itermSetHover(ih, 0, 0, 0);
     itermUpdateScrollbar(ih);
     if (ih->data->pty)
       iupTermPtyResize(ih->data->pty, cols, rows);
