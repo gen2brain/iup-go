@@ -51,6 +51,8 @@ struct _IcontrolData
   int blink_on;
   Ihandle* blink_timer;
   Ihandle* sync_timer;
+  Ihandle* paint_timer;
+  int output_pending;
   int mouse_col, mouse_row;
 
   /* selection anchored to monotonic line ids so it survives scrolling */
@@ -1315,6 +1317,18 @@ static int itermSyncTimer_CB(Ihandle* timer)
   return IUP_DEFAULT;
 }
 
+static int itermPaintTimer_CB(Ihandle* timer)
+{
+  Ihandle* ih = (Ihandle*)iupAttribGet(timer, "_IUPTERM_IH");
+  IupSetAttribute(timer, "RUN", "NO");
+  if (ih->data->output_pending)
+  {
+    ih->data->output_pending = 0;
+    itermAfterOutput(ih);
+  }
+  return IUP_DEFAULT;
+}
+
 static int itermBlinkTimer_CB(Ihandle* timer)
 {
   Ihandle* ih = (Ihandle*)iupAttribGet(timer, "_IUPTERM_IH");
@@ -2150,7 +2164,19 @@ static int itermPtyReadAvailable(Ihandle* ih)
   }
 
   if (total)
-    itermAfterOutput(ih);
+  {
+    if (iupdrvGetTickCount() - ih->data->last_paint >= ITERM_PTY_RATE)
+    {
+      ih->data->output_pending = 0;
+      itermAfterOutput(ih);
+    }
+    else
+    {
+      ih->data->output_pending = 1;
+      if (ih->data->paint_timer && !IupGetInt(ih->data->paint_timer, "RUN"))
+        IupSetAttribute(ih->data->paint_timer, "RUN", "YES");
+    }
+  }
   return total;
 }
 
@@ -2284,6 +2310,11 @@ static int itermMapMethod(Ihandle* ih)
   iupAttribSet(ih->data->sync_timer, "_IUPTERM_IH", (char*)ih);
   IupSetCallback(ih->data->sync_timer, "ACTION_CB", itermSyncTimer_CB);
 
+  ih->data->paint_timer = IupTimer();
+  IupSetInt(ih->data->paint_timer, "TIME", ITERM_PTY_RATE);
+  iupAttribSet(ih->data->paint_timer, "_IUPTERM_IH", (char*)ih);
+  IupSetCallback(ih->data->paint_timer, "ACTION_CB", itermPaintTimer_CB);
+
   itermUpdateScrollbar(ih);
   return IUP_NOERROR;
 }
@@ -2299,6 +2330,8 @@ static void itermDestroyMethod(Ihandle* ih)
     IupDestroy(ih->data->blink_timer);
   if (ih->data->sync_timer)
     IupDestroy(ih->data->sync_timer);
+  if (ih->data->paint_timer)
+    IupDestroy(ih->data->paint_timer);
   iupTermScreenRelease(&ih->data->term);
 }
 
