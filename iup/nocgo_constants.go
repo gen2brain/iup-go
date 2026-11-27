@@ -6,9 +6,9 @@ const (
 	NAME           = "IUP - Portable User Interface"
 	DESCRIPTION    = "Multi-platform Toolkit for Building Graphical User Interfaces"
 	COPYRIGHT      = "Copyright (C) 1994-2025 Tecgraf/PUC-Rio, 2022-2026 gen2brain"
-	VERSION        = "4.0.0"
-	VERSION_NUMBER = 400000
-	VERSION_DATE   = "2026/11/19"
+	VERSION        = "4.1.0"
+	VERSION_NUMBER = 401000
+	VERSION_DATE   = "2026/11/27"
 )
 
 const (
