@@ -107,6 +107,7 @@ static void itermDecMode(Iterm* t, int mode, int set)
   case 1006: itermSetMode(t, ITERM_MODE_MOUSE_SGR, set); break;
   case 2004: itermSetMode(t, ITERM_MODE_BRACKPASTE, set); break;
   case 2026: itermSetMode(t, ITERM_MODE_SYNC, set); break;
+  case 2027: itermSetMode(t, ITERM_MODE_GRAPHEME, set); t->gc_valid = 0; break;
   }
 }
 
@@ -130,6 +131,7 @@ static int itermDecModeState(Iterm* t, int mode)
   case 1006: flag = ITERM_MODE_MOUSE_SGR; break;
   case 2004: flag = ITERM_MODE_BRACKPASTE; break;
   case 2026: flag = ITERM_MODE_SYNC; break;
+  case 2027: flag = ITERM_MODE_GRAPHEME; break;
   default: return 0;
   }
   return (t->modes & flag) ? 1 : 2;
@@ -648,11 +650,13 @@ static void itermByte(Iterm* t, unsigned char c)
     if (c == 0x1B)
     {
       t->utf8_more = 0;
+      t->gc_valid = 0;
       t->pstate = IPSTATE_ESC;
     }
     else if (c < 0x20)
     {
       t->utf8_more = 0;
+      t->gc_valid = 0;
       itermControl(t, c);
     }
     else if (c < 0x80)

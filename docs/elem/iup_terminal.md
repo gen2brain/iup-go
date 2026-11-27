@@ -204,13 +204,19 @@ VPA, HPR, VPR), erase (ED, EL, ECH), editing (ICH, DCH, IL, DL, REP), scrolling 
 DECSTBM), tabs (HTS, TBC, CHT, CBT), SGR text attributes with 16/256/truecolor, underline styles
 (SGR 4:1 to 4:5, 21) and underline color (SGR 58, 59), save/restore
 cursor (DECSC, DECRC, SCOSC, SCORC), DEC private modes 1, 6, 7, 12, 25, 47, 1047, 1048, 1049,
-1000, 1002, 1003, 1004, 1006, 2004, 2026, cursor style (DECSCUSR), DEC Special Graphics charset, OSC 0/2 title,
+1000, 1002, 1003, 1004, 1006, 2004, 2026, 2027, cursor style (DECSCUSR), DEC Special Graphics charset, OSC 0/2 title,
 OSC 4 palette, OSC 8 hyperlinks, OSC 10/11 default colors, OSC 52 clipboard (see ALLOWOSC52), OSC 104 palette reset,
 and the reports DSR, CPR, DA1, DA2, XTVERSION, DECRQM and XTWINOPS 18. Unknown sequences are consumed and ignored.
 
 While the application holds synchronized output (mode 2026) the screen is not redrawn, for at most one second.
 
 Text with the blink attribute (SGR 5) is not drawn blinking.
+
+Characters are grouped into grapheme clusters (Unicode 17), so emoji sequences joined with ZWJ, emoji with a
+skin tone, flags and Hangul syllables occupy a single cell or a single double-width cell. A cluster takes
+the width of its first character; the emoji variation selector U+FE0F makes it double-width and U+FE0E
+single-width, and a flag is double-width. Clustering is DEC private mode 2027, set by default; resetting
+it places each character in its own cell, with combining marks joined to the previous one.
 
 Tab is consumed by the terminal and sent to the application; it does not move the focus to the next control.
 

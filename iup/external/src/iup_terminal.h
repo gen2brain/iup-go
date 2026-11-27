@@ -52,6 +52,7 @@ extern "C" {
 #define ITERM_MODE_MOUSE_ANY 0x0400
 #define ITERM_MODE_FOCUS     0x0800
 #define ITERM_MODE_SYNC      0x1000
+#define ITERM_MODE_GRAPHEME  0x2000
 
 #define ITERM_CURSOR_BLOCK     0
 #define ITERM_CURSOR_UNDERLINE 1
@@ -71,7 +72,7 @@ typedef struct _ItermCell
   unsigned int link;
 } ItermCell;
 
-#define ITERM_MAX_COMBINING 4
+#define ITERM_MAX_COMBINING 15
 #define ITERM_CELL_TEXT_MAX (4 * (1 + ITERM_MAX_COMBINING))
 
 typedef struct _ItermCombo
@@ -145,6 +146,8 @@ typedef struct _Iterm
   unsigned int modes;
   int cursor_style;
   unsigned int last_cp;
+
+  int gc_valid, gc_prev, gc_emoji, gc_ri;
 
   unsigned int palette[16];
   unsigned int def_fg, def_bg;
