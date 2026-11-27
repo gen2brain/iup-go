@@ -32,6 +32,7 @@
 #define ITERM_PTY_MAXREAD (256*1024)
 #define ITERM_MEASURE_RUN 16
 #define ITERM_ARC_STEPS 8
+#define ITERM_LINK_MAXLINES 16
 #define ITERM_DEF_FGCOLOR "229 229 229"
 #define ITERM_DEF_BGCOLOR "0 0 0"
 
@@ -59,6 +60,11 @@ struct _IcontrolData
   int sel_end_line, sel_end_col;
   int last_click_count;
   int drag_x, drag_y;
+
+  int hover_valid, hover_vr, hover_col;
+  unsigned int hover_link;
+  int hover_l0, hover_c0, hover_l1, hover_c1;
+  int link_click;
 
   char font_face[64];
   int font_size;
@@ -405,12 +411,8 @@ static void itermSelBounds(Ihandle* ih, int* l0, int* c0, int* l1, int* c1)
   }
 }
 
-static int itermCellSelected(Ihandle* ih, int line_id, int col)
+static int itermInRange(int l0, int c0, int l1, int c1, int line_id, int col)
 {
-  int l0, c0, l1, c1;
-  if (!ih->data->sel_valid)
-    return 0;
-  itermSelBounds(ih, &l0, &c0, &l1, &c1);
   if (line_id < l0 || line_id > l1)
     return 0;
   if (line_id == l0 && col < c0)
@@ -418,6 +420,15 @@ static int itermCellSelected(Ihandle* ih, int line_id, int col)
   if (line_id == l1 && col >= c1)
     return 0;
   return 1;
+}
+
+static int itermCellSelected(Ihandle* ih, int line_id, int col)
+{
+  int l0, c0, l1, c1;
+  if (!ih->data->sel_valid)
+    return 0;
+  itermSelBounds(ih, &l0, &c0, &l1, &c1);
+  return itermInRange(l0, c0, l1, c1, line_id, col);
 }
 
 static int itermIsWordChar(unsigned int cp)
@@ -548,7 +559,284 @@ static ItermLine* itermVisibleLine(Ihandle* ih, int vr)
   return iupTermScreenLine(t, g - t->sb_count);
 }
 
-static void itermDrawDecorations(Ihandle* ih, IdrawCanvas* dc, ItermCell* cell, int x, int y, int w, unsigned int fg)
+typedef struct _ItermTextChar
+{
+  unsigned int cp;
+  int line_id, col, width;
+} ItermTextChar;
+
+typedef struct _ItermText
+{
+  ItermTextChar* chars;
+  int count, alloc;
+  int last_id;
+} ItermText;
+
+static int itermFirstLineId(Ihandle* ih)
+{
+  Iterm* t = &ih->data->term;
+  if (t->modes & ITERM_MODE_ALTSCREEN)
+    return t->sb_pushed;
+  return t->sb_pushed - t->sb_count;
+}
+
+static int itermLastLineId(Ihandle* ih)
+{
+  return ih->data->term.sb_pushed + ih->data->term.rows - 1;
+}
+
+static int itermLogicalStart(Ihandle* ih, int line_id, int max_lines)
+{
+  int first = itermFirstLineId(ih);
+  while (line_id > first && max_lines-- > 0)
+  {
+    ItermLine* prev = itermLineById(ih, line_id - 1);
+    if (!prev || !prev->wrapped)
+      break;
+    line_id--;
+  }
+  return line_id;
+}
+
+static int itermTextAppend(ItermText* tx, unsigned int cp, int line_id, int col, int width)
+{
+  if (tx->count == tx->alloc)
+  {
+    int alloc = tx->alloc ? 2 * tx->alloc : 256;
+    ItermTextChar* chars = (ItermTextChar*)realloc(tx->chars, alloc * sizeof(ItermTextChar));
+    if (!chars)
+      return 0;
+    tx->chars = chars;
+    tx->alloc = alloc;
+  }
+  tx->chars[tx->count].cp = cp;
+  tx->chars[tx->count].line_id = line_id;
+  tx->chars[tx->count].col = col;
+  tx->chars[tx->count].width = width;
+  tx->count++;
+  return 1;
+}
+
+static void itermTextBuild(Ihandle* ih, ItermText* tx, int line_id, int max_lines)
+{
+  int last = itermLastLineId(ih);
+  tx->count = 0;
+  tx->last_id = line_id;
+  for (;;)
+  {
+    ItermLine* line = itermLineById(ih, line_id);
+    int c, n;
+    if (!line)
+      break;
+    n = line->ncells;
+    while (n > 0 && line->cells[n - 1].cp == 0)
+      n--;
+    for (c = 0; c < n; c++)
+    {
+      ItermCell* cell = &line->cells[c];
+      if (cell->flags & ITERM_FL_WIDECONT)
+        continue;
+      if (!itermTextAppend(tx, cell->cp ? cell->cp : ' ', line_id, c, (cell->flags & ITERM_FL_WIDE) ? 2 : 1))
+        return;
+    }
+    tx->last_id = line_id;
+    if (!line->wrapped || line_id >= last || --max_lines <= 0)
+      break;
+    line_id++;
+  }
+}
+
+static char* itermTextString(ItermText* tx, int from, int to)
+{
+  char* out = (char*)malloc((to - from) * 4 + 1);
+  int i, len = 0;
+  if (!out)
+    return NULL;
+  for (i = from; i < to; i++)
+    len += iupTermUtf8Encode(tx->chars[i].cp, out + len);
+  out[len] = 0;
+  return out;
+}
+
+static unsigned int itermFoldCase(unsigned int cp)
+{
+  if (cp >= 'A' && cp <= 'Z')
+    return cp + 32;
+  if (cp < 0xC0)
+    return cp;
+  if (cp <= 0xDE)
+    return cp == 0xD7 ? cp : cp + 32;
+  if (cp >= 0x100 && cp <= 0x17F)
+  {
+    if (cp == 0x138 || cp == 0x149 || cp == 0x17F)
+      return cp;
+    if (cp == 0x178)
+      return 0xFF;
+    if ((cp >= 0x139 && cp <= 0x148) || (cp >= 0x179 && cp <= 0x17E))
+      return (cp & 1) ? cp + 1 : cp;
+    return cp | 1;
+  }
+  if (cp >= 0x391 && cp <= 0x3A9 && cp != 0x3A2)
+    return cp + 32;
+  if (cp >= 0x400 && cp <= 0x40F)
+    return cp + 80;
+  if (cp >= 0x410 && cp <= 0x42F)
+    return cp + 32;
+  return cp;
+}
+
+static int itermUtf8Decode(const char* str, unsigned int* out)
+{
+  const unsigned char* p = (const unsigned char*)str;
+  int n = 0;
+  while (*p)
+  {
+    unsigned int cp = *p++;
+    int more = 0;
+    if (cp >= 0xF0) { cp &= 0x07; more = 3; }
+    else if (cp >= 0xE0) { cp &= 0x0F; more = 2; }
+    else if (cp >= 0xC0) { cp &= 0x1F; more = 1; }
+    while (more > 0 && (*p & 0xC0) == 0x80)
+    {
+      cp = (cp << 6) | (*p++ & 0x3F);
+      more--;
+    }
+    out[n++] = cp;
+  }
+  return n;
+}
+
+static const char* iterm_url_schemes[] = { "https://", "http://", "ftp://", "file://", "mailto:" };
+
+static int itermIsUrlChar(unsigned int cp)
+{
+  if (cp >= 0x80)
+    return 1;
+  if (cp <= ' ' || cp == 0x7F)
+    return 0;
+  return strchr("\"'<>`", (int)cp) == NULL;
+}
+
+static int itermTextUrlEnd(ItermText* tx, int i)
+{
+  int s, k = 0, j, depth, m;
+
+  for (s = 0; s < (int)(sizeof(iterm_url_schemes) / sizeof(iterm_url_schemes[0])); s++)
+  {
+    const char* scheme = iterm_url_schemes[s];
+    for (k = 0; scheme[k]; k++)
+    {
+      if (i + k >= tx->count || itermFoldCase(tx->chars[i + k].cp) != (unsigned char)scheme[k])
+        break;
+    }
+    if (!scheme[k])
+      break;
+  }
+  if (s == (int)(sizeof(iterm_url_schemes) / sizeof(iterm_url_schemes[0])))
+    return 0;
+
+  j = i + k;
+  while (j < tx->count && itermIsUrlChar(tx->chars[j].cp))
+    j++;
+
+  while (j > i + k)
+  {
+    unsigned int cp = tx->chars[j - 1].cp;
+    if (cp == ')' || cp == ']')
+    {
+      unsigned int open = (cp == ')') ? '(' : '[';
+      depth = 0;
+      for (m = i + k; m < j; m++)
+      {
+        if (tx->chars[m].cp == open) depth++;
+        else if (tx->chars[m].cp == cp) depth--;
+      }
+      if (depth >= 0)
+        break;
+    }
+    else if (cp >= 0x80 || !strchr(".,;:!?", (int)cp))
+      break;
+    j--;
+  }
+
+  return j > i + k ? j : 0;
+}
+
+static char* itermLinkAt(Ihandle* ih, int line_id, int col, unsigned int* link, int* range)
+{
+  Iterm* t = &ih->data->term;
+  ItermLine* line = itermLineById(ih, line_id);
+  ItermText tx;
+  char* uri = NULL;
+  int i, pos = -1;
+
+  if (!line || col < 0 || col >= line->ncells)
+    return NULL;
+  if ((line->cells[col].flags & ITERM_FL_WIDECONT) && col > 0)
+    col--;
+
+  if (line->cells[col].link)
+  {
+    const char* link_uri = iupTermLinkUri(t, line->cells[col].link);
+    if (link_uri)
+    {
+      *link = line->cells[col].link;
+      return iupStrDup(link_uri);
+    }
+  }
+
+  if (!iupAttribGetBoolean(ih, "DETECTLINKS"))
+    return NULL;
+
+  memset(&tx, 0, sizeof(ItermText));
+  itermTextBuild(ih, &tx, itermLogicalStart(ih, line_id, ITERM_LINK_MAXLINES), 2 * ITERM_LINK_MAXLINES + 1);
+  for (i = 0; i < tx.count; i++)
+  {
+    if (tx.chars[i].line_id == line_id && tx.chars[i].col == col)
+    {
+      pos = i;
+      break;
+    }
+  }
+
+  i = 0;
+  while (pos >= 0 && i <= pos)
+  {
+    int end = (i == 0 || !itermIsWordChar(tx.chars[i - 1].cp)) ? itermTextUrlEnd(&tx, i) : 0;
+    if (!end)
+    {
+      i++;
+      continue;
+    }
+    if (pos < end)
+    {
+      *link = 0;
+      range[0] = tx.chars[i].line_id;
+      range[1] = tx.chars[i].col;
+      range[2] = tx.chars[end - 1].line_id;
+      range[3] = tx.chars[end - 1].col + tx.chars[end - 1].width;
+      uri = itermTextString(&tx, i, end);
+      break;
+    }
+    i = end;
+  }
+
+  free(tx.chars);
+  return uri;
+}
+
+static int itermCellHovered(Ihandle* ih, ItermCell* cell, int line_id, int col)
+{
+  if (!ih->data->hover_valid)
+    return 0;
+  if (ih->data->hover_link)
+    return cell->link == ih->data->hover_link;
+  if (!cell->cp && !(cell->flags & ITERM_FL_WIDECONT))
+    return 0;
+  return itermInRange(ih->data->hover_l0, ih->data->hover_c0, ih->data->hover_l1, ih->data->hover_c1, line_id, col);
+}
+
+static void itermDrawDecorations(Ihandle* ih, IdrawCanvas* dc, ItermCell* cell, int x, int y, int w, unsigned int fg, int hover)
 {
   int th = ih->data->ch_h / 16 > 1 ? ih->data->ch_h / 16 : 1;
   int yl = y + ih->data->ch_h - 1 - th;
@@ -562,7 +850,12 @@ static void itermDrawDecorations(Ihandle* ih, IdrawCanvas* dc, ItermCell* cell, 
   }
 
   if (!(cell->flags & ITERM_FL_UNDERLINE))
-    return;
+  {
+    if (!hover)
+      return;
+    style = ITERM_UL_SINGLE;
+    color = itermDrawColor(fg);
+  }
 
   switch (style)
   {
@@ -662,7 +955,7 @@ static void itermDrawCursor(Ihandle* ih, IdrawCanvas* dc)
         iupdrvDrawText(dc, text, len, x, y, w, ih->data->ch_h,
                        itermDrawColor(bg), font, IUP_DRAW_LEFT, 0);
       }
-      itermDrawDecorations(ih, dc, cell, x, y, w, bg);
+      itermDrawDecorations(ih, dc, cell, x, y, w, bg, 0);
     }
     break;
   }
@@ -715,6 +1008,7 @@ static int itermRedraw_CB(Ihandle* ih)
       int start = c, len = 0, run_cells, has_glyph = 0;
       int x = ITERM_PADDING + c * ih->data->ch_w;
       int solo = (cell->cp >= 0x80 || cell->combo);
+      int hover = itermCellHovered(ih, cell, line_id, c);
 
       itermCellColors(ih, cell, &fg, &bg);
       if (itermCellSelected(ih, line_id, c))
@@ -729,7 +1023,8 @@ static int itermRedraw_CB(Ihandle* ih)
         /* a non-ASCII glyph may come from a fallback font with another advance, keep it on its own cell */
         if (c > start && !(rc->flags & ITERM_FL_WIDECONT) && (solo || rc->cp >= 0x80 || rc->combo))
           break;
-        if ((unsigned short)(rc->flags & ITERM_FL_STYLEMASK) != style || rc->ul != cell->ul)
+        if ((unsigned short)(rc->flags & ITERM_FL_STYLEMASK) != style || rc->ul != cell->ul ||
+            itermCellHovered(ih, rc, line_id, c) != hover)
           break;
         itermCellColors(ih, rc, &rfg, &rbg);
         if (itermCellSelected(ih, line_id, c))
@@ -762,8 +1057,8 @@ static int itermRedraw_CB(Ihandle* ih)
                        itermDrawColor(fg), font, IUP_DRAW_LEFT, 0);
       }
 
-      if (style & (ITERM_FL_UNDERLINE | ITERM_FL_STRIKE))
-        itermDrawDecorations(ih, dc, cell, x, y, run_cells * ih->data->ch_w, fg);
+      if ((style & (ITERM_FL_UNDERLINE | ITERM_FL_STRIKE)) || hover)
+        itermDrawDecorations(ih, dc, cell, x, y, run_cells * ih->data->ch_w, fg, hover);
     }
   }
 
@@ -836,6 +1131,59 @@ static void itermSendMouse(Ihandle* ih, int btn, int press, int col, int vr)
   itermSendInput(ih, buf, len);
 }
 
+static int itermLinkModifier(Ihandle* ih, const char* status)
+{
+  return (iup_iscontrol(status) || iup_issys(status)) && (!itermMouseReporting(ih) || iup_isshift(status));
+}
+
+static void itermSetHover(Ihandle* ih, int vr, int col, int on)
+{
+  unsigned int link = 0;
+  int range[4] = {0, 0, 0, 0};
+  char* uri = on ? itermLinkAt(ih, itermVisibleLineId(ih, vr), col, &link, range) : NULL;
+
+  if (!uri)
+  {
+    if (!ih->data->hover_valid)
+      return;
+    ih->data->hover_valid = 0;
+    IupSetStrAttribute(ih, "CURSOR", iupAttribGet(ih, "_IUPTERM_CURSOR"));
+    itermRedraw(ih);
+    return;
+  }
+  free(uri);
+
+  ih->data->hover_vr = vr;
+  ih->data->hover_col = col;
+  if (ih->data->hover_valid && link == ih->data->hover_link &&
+      (link || (range[0] == ih->data->hover_l0 && range[1] == ih->data->hover_c0 &&
+                range[2] == ih->data->hover_l1 && range[3] == ih->data->hover_c1)))
+    return;
+
+  if (!ih->data->hover_valid)
+  {
+    iupAttribSetStr(ih, "_IUPTERM_CURSOR", iupAttribGetStr(ih, "CURSOR"));
+    IupSetAttribute(ih, "CURSOR", "HAND");
+  }
+  ih->data->hover_valid = 1;
+  ih->data->hover_link = link;
+  ih->data->hover_l0 = range[0];
+  ih->data->hover_c0 = range[1];
+  ih->data->hover_l1 = range[2];
+  ih->data->hover_c1 = range[3];
+  itermRedraw(ih);
+}
+
+static void itermOpenLink(Ihandle* ih, const char* uri)
+{
+  IFns cb = (IFns)IupGetCallback(ih, "LINK_CB");
+  int ret = cb ? cb(ih, (char*)uri) : IUP_DEFAULT;
+  if (ret == IUP_CLOSE)
+    IupExitLoop();
+  else if (ret == IUP_DEFAULT)
+    IupHelp(uri);
+}
+
 static void itermModelResponse(void* user, const char* bytes, int len)
 {
   itermSendInput((Ihandle*)user, bytes, len);
@@ -885,6 +1233,8 @@ static void itermAfterOutput(Ihandle* ih)
     ih->data->view_offset = 0;
 
   itermUpdateScrollbar(ih);
+  if (ih->data->hover_valid)
+    itermSetHover(ih, ih->data->hover_vr, ih->data->hover_col, 1);
   itermRedraw(ih);
 
   if (t->sb_count == 0 && ih->data->view_offset > 0)
@@ -1018,6 +1368,25 @@ static int itermButton_CB(Ihandle* ih, int button, int pressed, int x, int y, ch
   itermXY2Cell(ih, x, y, &col, &vr);
   line_id = itermVisibleLineId(ih, vr);
 
+  if (button == IUP_BUTTON1 && pressed && itermLinkModifier(ih, status))
+  {
+    unsigned int link = 0;
+    int range[4];
+    char* uri = itermLinkAt(ih, line_id, col, &link, range);
+    if (uri)
+    {
+      ih->data->link_click = 1;
+      itermOpenLink(ih, uri);
+      free(uri);
+      return IUP_DEFAULT;
+    }
+  }
+  if (button == IUP_BUTTON1 && !pressed && ih->data->link_click)
+  {
+    ih->data->link_click = 0;
+    return IUP_DEFAULT;
+  }
+
   if (button == IUP_BUTTON2 && pressed && !itermMouseReporting(ih))
   {
     char* text = itermGetClipboard();
@@ -1101,6 +1470,9 @@ static int itermMotion_CB(Ihandle* ih, int x, int y, char* status)
 
   itermXY2Cell(ih, x, y, &col, &vr);
 
+  if (!ih->data->sel_dragging)
+    itermSetHover(ih, vr, col, itermLinkModifier(ih, status));
+
   if (itermMouseReporting(ih) && !iup_isshift(status))
   {
     unsigned int modes = ih->data->term.modes;
@@ -1125,6 +1497,12 @@ static int itermMotion_CB(Ihandle* ih, int x, int y, char* status)
   ih->data->sel_start_line = ih->data->sel_anchor_line;
   ih->data->sel_start_col = ih->data->sel_anchor_col;
   itermRedraw(ih);
+  return IUP_DEFAULT;
+}
+
+static int itermLeaveWindow_CB(Ihandle* ih)
+{
+  itermSetHover(ih, 0, 0, 0);
   return IUP_DEFAULT;
 }
 
@@ -1553,6 +1931,149 @@ static int itermSetSelectionAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void itermShowLine(Ihandle* ih, int line_id)
+{
+  Iterm* t = &ih->data->term;
+  int g = line_id - (t->sb_pushed - t->sb_count);
+  int top = t->sb_count - ih->data->view_offset;
+
+  if (t->modes & ITERM_MODE_ALTSCREEN)
+    return;
+  if (g < top)
+    ih->data->view_offset = t->sb_count - g;
+  else if (g > top + t->rows - 1)
+    ih->data->view_offset = t->sb_count - g + t->rows - 1;
+  if (ih->data->view_offset < 0) ih->data->view_offset = 0;
+  if (ih->data->view_offset > t->sb_count) ih->data->view_offset = t->sb_count;
+  itermUpdateScrollbar(ih);
+}
+
+static int itermPosCompare(int l0, int c0, int l1, int c1)
+{
+  if (l0 != l1)
+    return l0 < l1 ? -1 : 1;
+  if (c0 != c1)
+    return c0 < c1 ? -1 : 1;
+  return 0;
+}
+
+static int itermTextMatch(ItermText* tx, int i, const unsigned int* pat, int n, int matchcase)
+{
+  int k;
+  for (k = 0; k < n; k++)
+  {
+    unsigned int cp = tx->chars[i + k].cp;
+    if (!matchcase)
+      cp = itermFoldCase(cp);
+    if (cp != pat[k])
+      return 0;
+  }
+  return 1;
+}
+
+static void itermFind(Ihandle* ih, const char* value)
+{
+  int up = !iupStrEqualNoCase(iupAttribGetStr(ih, "FINDDIRECTION"), "DOWN");
+  int matchcase = iupAttribGetBoolean(ih, "FINDMATCHCASE");
+  int first = itermFirstLineId(ih), last = itermLastLineId(ih);
+  int max_lines = last - first + 1;
+  int has_start = 0, start_line = 0, start_col = 0;
+  int line_id, start_logical, phase = 0, found = -1, guard = max_lines + 2;
+  unsigned int* pat;
+  int n, k;
+  ItermText tx;
+
+  pat = (unsigned int*)malloc((strlen(value) + 1) * sizeof(unsigned int));
+  if (!pat)
+    return;
+  n = itermUtf8Decode(value, pat);
+  if (!matchcase)
+  {
+    for (k = 0; k < n; k++)
+      pat[k] = itermFoldCase(pat[k]);
+  }
+
+  if (ih->data->sel_valid)
+  {
+    int l1, c1;
+    itermSelBounds(ih, &start_line, &start_col, &l1, &c1);
+    has_start = (start_line >= first && start_line <= last);
+  }
+
+  if (has_start)
+    line_id = itermLogicalStart(ih, start_line, max_lines);
+  else
+    line_id = up ? itermLogicalStart(ih, last, max_lines) : first;
+  start_logical = line_id;
+
+  memset(&tx, 0, sizeof(ItermText));
+  while (n > 0 && guard-- > 0)
+  {
+    int i;
+    itermTextBuild(ih, &tx, line_id, max_lines);
+
+    for (i = up ? tx.count - n : 0; i >= 0 && i + n <= tx.count; i += up ? -1 : 1)
+    {
+      if (has_start && phase != 1)
+      {
+        int cmp = itermPosCompare(tx.chars[i].line_id, tx.chars[i].col, start_line, start_col);
+        if (phase == 0 && (up ? cmp >= 0 : cmp <= 0))
+          continue;
+        if (phase == 2 && (up ? cmp < 0 : cmp > 0))
+          break;
+      }
+      if (itermTextMatch(&tx, i, pat, n, matchcase))
+      {
+        found = i;
+        break;
+      }
+    }
+    if (found >= 0)
+      break;
+
+    if (up)
+      line_id = itermLogicalStart(ih, line_id <= first ? last : line_id - 1, max_lines);
+    else
+      line_id = tx.last_id + 1 > last ? first : tx.last_id + 1;
+
+    if (line_id == start_logical)
+    {
+      if (!has_start || phase == 2)
+        break;
+      phase = 2;
+    }
+    else
+      phase = 1;
+  }
+
+  if (found >= 0)
+  {
+    ItermTextChar* end = &tx.chars[found + n - 1];
+    ih->data->sel_valid = 1;
+    ih->data->sel_dragging = 0;
+    ih->data->sel_mode = ITERM_SEL_CHAR;
+    ih->data->sel_anchor_line = ih->data->sel_start_line = tx.chars[found].line_id;
+    ih->data->sel_anchor_col = ih->data->sel_start_col = tx.chars[found].col;
+    ih->data->sel_end_line = end->line_id;
+    ih->data->sel_end_col = end->col + end->width;
+    itermShowLine(ih, tx.chars[found].line_id);
+  }
+  else
+    ih->data->sel_valid = 0;
+
+  free(tx.chars);
+  free(pat);
+  itermRedraw(ih);
+}
+
+static int itermSetFindAttrib(Ihandle* ih, const char* value)
+{
+  if (!value || !value[0])
+    return 0;
+  itermFind(ih, value);
+  return 1;
+}
+
 static int itermSetResetAttrib(Ihandle* ih, const char* value)
 {
   Iterm* t = &ih->data->term;
@@ -1837,6 +2358,7 @@ static int itermCreateMethod(Ihandle* ih, void** params)
   IupSetCallback(ih, "BUTTON_CB", (Icallback)itermButton_CB);
   IupSetCallback(ih, "MOTION_CB", (Icallback)itermMotion_CB);
   IupSetCallback(ih, "WHEEL_CB", (Icallback)itermWheel_CB);
+  IupSetCallback(ih, "LEAVEWINDOW_CB", (Icallback)itermLeaveWindow_CB);
   IupSetCallback(ih, "K_ANY", (Icallback)itermKAny_CB);
   IupSetCallback(ih, "TEXTINPUT_CB", (Icallback)itermTextInput_CB);
 
@@ -1864,6 +2386,7 @@ Iclass* iupTerminalNewClass(void)
   iupClassRegisterCallback(ic, "BELL_CB", "");
   iupClassRegisterCallback(ic, "TERMSIZE_CB", "ii");
   iupClassRegisterCallback(ic, "EXECEXIT_CB", "i");
+  iupClassRegisterCallback(ic, "LINK_CB", "s");
 
   iupClassRegisterReplaceAttribDef(ic, "BORDER", "NO", NULL);
   iupClassRegisterReplaceAttribFlags(ic, "BORDER", IUPAF_READONLY | IUPAF_NO_INHERIT);
@@ -1894,6 +2417,10 @@ Iclass* iupTerminalNewClass(void)
   iupClassRegisterAttribute(ic, "CLIPBOARD", NULL, itermSetClipboardAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "INSERT", NULL, itermSetInsertAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AUTOCOPY", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "DETECTLINKS", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FIND", NULL, itermSetFindAttrib, NULL, NULL, IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FINDDIRECTION", NULL, NULL, IUPAF_SAMEASSYSTEM, "UP", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FINDMATCHCASE", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "COLOR", itermGetColorAttrib, itermSetColorAttrib, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 

@@ -559,6 +559,31 @@ static void itermOscDispatch(Iterm* t)
       }
     }
     break;
+  case 8:
+    {
+      char* uri = strchr(t->osc_buf, ';');
+      if (!uri)
+        break;
+      *uri++ = 0;
+      if (!uri[0])
+        t->pen.link = 0;
+      else
+      {
+        char* id = NULL;
+        char* p = t->osc_buf;
+        while (p && *p)
+        {
+          char* next = strchr(p, ':');
+          if (next)
+            *next++ = 0;
+          if (strncmp(p, "id=", 3) == 0 && p[3])
+            id = p + 3;
+          p = next;
+        }
+        t->pen.link = iupTermLinkAdd(t, uri, id);
+      }
+    }
+    break;
   case 104:
     iupTermScreenResetPalette(t, t->osc_len ? atoi(t->osc_buf) : -1);
     break;

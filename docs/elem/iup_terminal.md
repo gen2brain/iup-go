@@ -80,6 +80,20 @@ released. Can be YES or NO. Default: "NO".
 **INSERT** (write-only) (non-inheritable): sends the text to the application as if it were pasted.
 When the application enabled bracketed paste, pasted and inserted text is wrapped in the paste markers.
 
+**DETECTLINKS** (non-inheritable): detects URLs (http, https, ftp, file and mailto) in the text and
+makes them links, like OSC 8 hyperlinks. Can be YES or NO. Default: "YES".
+
+**FIND** (non-inheritable): searches for the given text, in UTF-8, in the screen and the history. The search
+starts after the current selection in the FINDDIRECTION direction and wraps around. When found, the
+text becomes the selection and is scrolled into view; when not found, the selection is cleared.
+Lines wrapped by the terminal are searched as one line. Returns the last text searched.
+
+**FINDDIRECTION** (non-inheritable): direction of the find. Can be "UP" (towards the history) or
+"DOWN". Default: "UP".
+
+**FINDMATCHCASE** (non-inheritable): defines if the text comparison is case-sensitive when using
+FIND. Can be YES or NO. Default: "NO".
+
 **RESET** (write-only) (non-inheritable): fully resets the terminal and clears the history.
 
 **CLEARSCREEN** (write-only) (non-inheritable): clears the visible screen.
@@ -161,6 +175,17 @@ a signal.
 
 **Returns**: IUP_CLOSE will be processed.
 
+**LINK_CB**: Action generated when a link is clicked with Ctrl pressed (Cmd in macOS). When the
+application uses mouse reporting, Shift must also be pressed.
+
+    int function(Ihandle *ih, const char *url);
+
+**ih**: identifier of the element that activated the event.\
+**url**: the link URI.
+
+**Returns**: IUP_DEFAULT opens the URL with [IupHelp](../func/iup_help.md), which is also what
+happens when the callback is not defined. IUP_IGNORE leaves the URL alone. IUP_CLOSE will be processed.
+
 > 
 >
 > ------------------------------------------------------------------------
@@ -175,7 +200,7 @@ DECSTBM), tabs (HTS, TBC, CHT, CBT), SGR text attributes with 16/256/truecolor, 
 (SGR 4:1 to 4:5, 21) and underline color (SGR 58, 59), save/restore
 cursor (DECSC, DECRC, SCOSC, SCORC), DEC private modes 1, 6, 7, 12, 25, 47, 1047, 1048, 1049,
 1000, 1002, 1003, 1004, 1006, 2004, 2026, cursor style (DECSCUSR), DEC Special Graphics charset, OSC 0/2 title,
-OSC 4 palette, OSC 10/11 default colors, OSC 52 clipboard (see ALLOWOSC52), OSC 104 palette reset,
+OSC 4 palette, OSC 8 hyperlinks, OSC 10/11 default colors, OSC 52 clipboard (see ALLOWOSC52), OSC 104 palette reset,
 and the reports DSR, CPR, DA1, DA2, XTVERSION, DECRQM and XTWINOPS 18. Unknown sequences are consumed and ignored.
 
 While the application holds synchronized output (mode 2026) the screen is not redrawn, for at most one second.
@@ -190,6 +215,8 @@ or key input (see SCROLLONOUTPUT and SCROLLONKEY). The alternate screen has no h
 Selection: drag with the left button selects characters, a double click selects a word, a second
 double click on the same word selects the line, and Shift with the left button extends the current
 selection. The middle button pastes. Ctrl+Shift+C copies and Ctrl+Shift+V pastes.
+
+Holding Ctrl (Cmd in macOS) over a link underlines it.
 
 When the application enables mouse reporting the mouse belongs to the application and the terminal stops selecting. Hold Shift to select anyway.
 

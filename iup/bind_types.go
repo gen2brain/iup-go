@@ -391,8 +391,8 @@ type SwitchFunc func(ih Ihandle, primCell, secCell int) int
 // LinkActionFunc for Link ACTION callback.
 type LinkActionFunc func(ih Ihandle, url string) int
 
-// TextLinkFunc for LINK_CB callback on multiline text controls.
-// Action generated when a hyperlink in formatted text is clicked.
+// TextLinkFunc for LINK_CB callback on multiline text and terminal controls.
+// Action generated when a hyperlink is clicked.
 type TextLinkFunc func(ih Ihandle, url string) int
 
 // MaskFailFunc for MASKFAIL_CB callback.

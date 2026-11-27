@@ -110,6 +110,7 @@ static void itermBlankCell(Iterm* t, ItermCell* cell)
   cell->cp = 0;
   cell->combo = 0;
   cell->ul = 0;
+  cell->link = 0;
   cell->fg = t->pen.fg;
   cell->bg = t->pen.bg;
   cell->flags = (unsigned short)(t->pen.flags & (ITERM_FL_FG_DEFAULT|ITERM_FL_BG_DEFAULT));
@@ -314,6 +315,7 @@ void iupTermScreenPutChar(Iterm* t, unsigned int cp)
   cell->fg = t->pen.fg;
   cell->bg = t->pen.bg;
   cell->ul = t->pen.ul;
+  cell->link = t->pen.link;
   cell->flags = (unsigned short)(t->pen.flags & ITERM_FL_STYLEMASK);
   if (width == 2)
   {
@@ -767,6 +769,7 @@ void iupTermScreenReset(Iterm* t)
   t->pen.fg = t->def_fg;
   t->pen.bg = t->def_bg;
   t->pen.ul = 0;
+  t->pen.link = 0;
   t->pen.flags = ITERM_FL_FG_DEFAULT | ITERM_FL_BG_DEFAULT;
 
   iupTermScreenSetAltScreen(t, 0, 0, 0);
@@ -816,6 +819,7 @@ int iupTermScreenInit(Iterm* t, int cols, int rows, int sb_max)
   t->sb_max = sb_max;
   t->def_fg = 0xE5E5E5;
   t->def_bg = 0x000000;
+  t->links_gc_at = 64;
 
   t->pen.flags = ITERM_FL_FG_DEFAULT | ITERM_FL_BG_DEFAULT;
 
@@ -833,6 +837,119 @@ int iupTermScreenInit(Iterm* t, int cols, int rows, int sb_max)
   return 1;
 }
 
+static void itermLinkMarkLines(ItermLine* lines, int count, unsigned char* used, int max)
+{
+  int i, c;
+  for (i = 0; i < count; i++)
+  {
+    for (c = 0; c < lines[i].ncells; c++)
+    {
+      unsigned int link = lines[i].cells[c].link;
+      if (link && (int)link <= max)
+        used[link - 1] = 1;
+    }
+  }
+}
+
+static void itermLinkCollect(Iterm* t)
+{
+  unsigned char* used;
+  int i, live = 0;
+
+  if (t->links_alloc <= 0)
+    return;
+  used = (unsigned char*)calloc((size_t)t->links_alloc, 1);
+  if (!used)
+    return;
+
+  itermLinkMarkLines(t->lines, t->rows, used, t->links_alloc);
+  if (t->alt_lines)
+    itermLinkMarkLines(t->alt_lines, t->rows, used, t->links_alloc);
+  for (i = 0; i < t->sb_count; i++)
+    itermLinkMarkLines(iupTermScreenHistoryLine(t, i), 1, used, t->links_alloc);
+  if (t->pen.link) used[t->pen.link - 1] = 1;
+  if (t->saved_pen.link) used[t->saved_pen.link - 1] = 1;
+  if (t->alt_saved_pen.link) used[t->alt_saved_pen.link - 1] = 1;
+
+  for (i = 0; i < t->links_alloc; i++)
+  {
+    if (used[i])
+      live++;
+    else if (t->links[i].uri)
+    {
+      free(t->links[i].uri);
+      free(t->links[i].id);
+      t->links[i].uri = NULL;
+      t->links[i].id = NULL;
+    }
+  }
+  free(used);
+  t->links_gc_at = 2 * live > 64 ? 2 * live : 64;
+}
+
+static char* itermStrDup(const char* s)
+{
+  size_t len = strlen(s) + 1;
+  char* d = (char*)malloc(len);
+  if (d)
+    memcpy(d, s, len);
+  return d;
+}
+
+unsigned int iupTermLinkAdd(Iterm* t, const char* uri, const char* id)
+{
+  int i, free_slot = -1, count = 0;
+
+  for (i = 0; i < t->links_alloc; i++)
+  {
+    ItermLink* link = &t->links[i];
+    if (!link->uri)
+    {
+      if (free_slot < 0)
+        free_slot = i;
+      continue;
+    }
+    count++;
+    if (strcmp(link->uri, uri) == 0 &&
+        ((!id && !link->id) || (id && link->id && strcmp(link->id, id) == 0)))
+      return (unsigned int)(i + 1);
+  }
+
+  if (count >= t->links_gc_at)
+  {
+    itermLinkCollect(t);
+    for (free_slot = 0; free_slot < t->links_alloc && t->links[free_slot].uri; free_slot++)
+      ;
+    if (free_slot == t->links_alloc)
+      free_slot = -1;
+  }
+
+  if (free_slot < 0)
+  {
+    int alloc = t->links_alloc ? 2 * t->links_alloc : 64;
+    ItermLink* links = (ItermLink*)realloc(t->links, alloc * sizeof(ItermLink));
+    if (!links)
+      return 0;
+    memset(links + t->links_alloc, 0, (alloc - t->links_alloc) * sizeof(ItermLink));
+    free_slot = t->links_alloc;
+    t->links = links;
+    t->links_alloc = alloc;
+  }
+
+  t->links[free_slot].uri = itermStrDup(uri);
+  t->links[free_slot].id = id ? itermStrDup(id) : NULL;
+  if (!t->links[free_slot].uri)
+    return 0;
+  return (unsigned int)(free_slot + 1);
+}
+
+const char* iupTermLinkUri(Iterm* t, unsigned int link)
+{
+  if (!link || (int)link > t->links_alloc)
+    return NULL;
+  return t->links[link - 1].uri;
+}
+
 void iupTermScreenRelease(Iterm* t)
 {
   int i;
@@ -846,6 +963,12 @@ void iupTermScreenRelease(Iterm* t)
       itermLineFree(t, &t->alt_lines[i]);
     free(t->alt_lines);
   }
+  for (i = 0; i < t->links_alloc; i++)
+  {
+    free(t->links[i].uri);
+    free(t->links[i].id);
+  }
+  free(t->links);
   free(t->combos);
   free(t->sb);
   free(t->tabs);

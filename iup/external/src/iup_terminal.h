@@ -68,6 +68,7 @@ typedef struct _ItermCell
   unsigned short flags;
   unsigned short combo;
   unsigned int ul;
+  unsigned int link;
 } ItermCell;
 
 #define ITERM_MAX_COMBINING 4
@@ -92,7 +93,14 @@ typedef struct _ItermPen
   unsigned int fg, bg;
   unsigned short flags;
   unsigned int ul;
+  unsigned int link;
 } ItermPen;
+
+typedef struct _ItermLink
+{
+  char* uri;
+  char* id;
+} ItermLink;
 
 typedef struct _ItermCallbacks
 {
@@ -118,6 +126,10 @@ typedef struct _Iterm
   int combos_count;
   int combos_alloc;
   int combos_free;
+
+  ItermLink* links;
+  int links_alloc;
+  int links_gc_at;
 
   int cx, cy;
   int pending_wrap;
@@ -200,6 +212,8 @@ void iupTermScreenClearScrollback(Iterm* t);
 void iupTermScreenResetPalette(Iterm* t, int index);
 void iupTermScreenDamageAll(Iterm* t);
 int  iupTermCharWidth(unsigned int cp);
+unsigned int iupTermLinkAdd(Iterm* t, const char* uri, const char* id);
+const char* iupTermLinkUri(Iterm* t, unsigned int link);
 
 /* iup_termparse.c */
 void iupTermParseInit(Iterm* t);
