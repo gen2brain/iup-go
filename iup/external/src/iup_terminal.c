@@ -68,6 +68,9 @@ struct _IcontrolData
   int hover_l0, hover_c0, hover_l1, hover_c1;
   int link_click;
 
+  unsigned int* find_pat;
+  int find_len, find_case;
+
   char font_face[64];
   int font_size;
 
@@ -708,6 +711,70 @@ static int itermUtf8Decode(const char* str, unsigned int* out)
   return n;
 }
 
+static int itermTextMatch(ItermText* tx, int i, const unsigned int* pat, int n, int matchcase)
+{
+  int k;
+  for (k = 0; k < n; k++)
+  {
+    unsigned int cp = tx->chars[i + k].cp;
+    if (!matchcase)
+      cp = itermFoldCase(cp);
+    if (cp != pat[k])
+      return 0;
+  }
+  return 1;
+}
+
+static unsigned char* itermFindMarks(Ihandle* ih)
+{
+  Iterm* t = &ih->data->term;
+  int n = ih->data->find_len;
+  int top, bottom, last, line_id;
+  unsigned char* marks;
+  ItermText tx;
+
+  if (n <= 0)
+    return NULL;
+  marks = (unsigned char*)calloc((size_t)(t->rows * t->cols), 1);
+  if (!marks)
+    return NULL;
+
+  top = itermVisibleLineId(ih, 0);
+  bottom = top + t->rows - 1;
+  last = itermLastLineId(ih);
+  line_id = itermLogicalStart(ih, top, t->rows);
+
+  memset(&tx, 0, sizeof(ItermText));
+  while (line_id <= bottom && line_id <= last)
+  {
+    int i = 0;
+    itermTextBuild(ih, &tx, line_id, bottom - line_id + 1 + t->rows);
+    while (i + n <= tx.count)
+    {
+      int k;
+      if (!itermTextMatch(&tx, i, ih->data->find_pat, n, ih->data->find_case))
+      {
+        i++;
+        continue;
+      }
+      for (k = i; k < i + n; k++)
+      {
+        ItermTextChar* ch = &tx.chars[k];
+        int w;
+        if (ch->line_id < top || ch->line_id > bottom)
+          continue;
+        for (w = 0; w < ch->width && ch->col + w < t->cols; w++)
+          marks[(ch->line_id - top) * t->cols + ch->col + w] = 1;
+      }
+      i += n;
+    }
+    line_id = tx.last_id + 1;
+  }
+
+  free(tx.chars);
+  return marks;
+}
+
 static const char* iterm_url_schemes[] = { "https://", "http://", "ftp://", "file://", "mailto:" };
 
 static int itermIsUrlChar(unsigned int cp)
@@ -836,6 +903,22 @@ static int itermCellHovered(Ihandle* ih, ItermCell* cell, int line_id, int col)
   if (!cell->cp && !(cell->flags & ITERM_FL_WIDECONT))
     return 0;
   return itermInRange(ih->data->hover_l0, ih->data->hover_c0, ih->data->hover_l1, ih->data->hover_c1, line_id, col);
+}
+
+static void itermCellDrawColors(Ihandle* ih, ItermCell* cell, int line_id, int c, const unsigned char* marks,
+                                unsigned int hl, unsigned int* fg, unsigned int* bg)
+{
+  itermCellColors(ih, cell, fg, bg);
+  if (itermCellSelected(ih, line_id, c))
+  {
+    unsigned int sw = *fg; *fg = *bg; *bg = sw;
+  }
+  else if (marks && marks[c])
+  {
+    unsigned int lum = (299 * ((hl >> 16) & 0xFF) + 587 * ((hl >> 8) & 0xFF) + 114 * (hl & 0xFF)) / 1000;
+    *bg = hl;
+    *fg = lum > 128 ? 0x000000 : 0xFFFFFF;
+  }
 }
 
 static void itermDrawDecorations(Ihandle* ih, IdrawCanvas* dc, ItermCell* cell, int x, int y, int w, unsigned int fg, int hover)
@@ -971,6 +1054,8 @@ static int itermRedraw_CB(Ihandle* ih)
   char* text;
   char font[128];
   int restore_utf8mode = 0;
+  unsigned char* marks;
+  unsigned int hl = 0;
 
   ih->data->last_paint = iupdrvGetTickCount();
 
@@ -990,6 +1075,9 @@ static int itermRedraw_CB(Ihandle* ih)
     iupdrvDrawKillCanvas(dc);
     return IUP_DEFAULT;
   }
+  marks = itermFindMarks(ih);
+  if (marks)
+    hl = itermPackColor(iupAttribGetStr(ih, "FINDHLCOLOR"), 0xFFC83C);
 
   for (vr = 0; vr < t->rows; vr++)
   {
@@ -997,6 +1085,7 @@ static int itermRedraw_CB(Ihandle* ih)
     int line_id = itermVisibleLineId(ih, vr);
     int y = ITERM_PADDING + vr * ih->data->ch_h;
     int c = 0, ncells;
+    unsigned char* row_marks = marks ? marks + vr * t->cols : NULL;
 
     if (!line)
       continue;
@@ -1012,11 +1101,7 @@ static int itermRedraw_CB(Ihandle* ih)
       int solo = (cell->cp >= 0x80 || cell->combo);
       int hover = itermCellHovered(ih, cell, line_id, c);
 
-      itermCellColors(ih, cell, &fg, &bg);
-      if (itermCellSelected(ih, line_id, c))
-      {
-        unsigned int sw = fg; fg = bg; bg = sw;
-      }
+      itermCellDrawColors(ih, cell, line_id, c, row_marks, hl, &fg, &bg);
 
       while (c < ncells)
       {
@@ -1028,11 +1113,7 @@ static int itermRedraw_CB(Ihandle* ih)
         if ((unsigned short)(rc->flags & ITERM_FL_STYLEMASK) != style || rc->ul != cell->ul ||
             itermCellHovered(ih, rc, line_id, c) != hover)
           break;
-        itermCellColors(ih, rc, &rfg, &rbg);
-        if (itermCellSelected(ih, line_id, c))
-        {
-          unsigned int sw = rfg; rfg = rbg; rbg = sw;
-        }
+        itermCellDrawColors(ih, rc, line_id, c, row_marks, hl, &rfg, &rbg);
         if (rfg != fg || rbg != bg)
           break;
         if (!(rc->flags & ITERM_FL_WIDECONT))
@@ -1065,6 +1146,7 @@ static int itermRedraw_CB(Ihandle* ih)
   }
 
   free(text);
+  free(marks);
 
   itermDrawCursor(ih, dc);
 
@@ -1973,41 +2055,17 @@ static int itermPosCompare(int l0, int c0, int l1, int c1)
   return 0;
 }
 
-static int itermTextMatch(ItermText* tx, int i, const unsigned int* pat, int n, int matchcase)
-{
-  int k;
-  for (k = 0; k < n; k++)
-  {
-    unsigned int cp = tx->chars[i + k].cp;
-    if (!matchcase)
-      cp = itermFoldCase(cp);
-    if (cp != pat[k])
-      return 0;
-  }
-  return 1;
-}
-
-static void itermFind(Ihandle* ih, const char* value)
+static void itermFind(Ihandle* ih)
 {
   int up = !iupStrEqualNoCase(iupAttribGetStr(ih, "FINDDIRECTION"), "DOWN");
-  int matchcase = iupAttribGetBoolean(ih, "FINDMATCHCASE");
+  int matchcase = ih->data->find_case;
   int first = itermFirstLineId(ih), last = itermLastLineId(ih);
   int max_lines = last - first + 1;
   int has_start = 0, start_line = 0, start_col = 0;
   int line_id, start_logical, phase = 0, found = -1, guard = max_lines + 2;
-  unsigned int* pat;
-  int n, k;
+  unsigned int* pat = ih->data->find_pat;
+  int n = ih->data->find_len;
   ItermText tx;
-
-  pat = (unsigned int*)malloc((strlen(value) + 1) * sizeof(unsigned int));
-  if (!pat)
-    return;
-  n = itermUtf8Decode(value, pat);
-  if (!matchcase)
-  {
-    for (k = 0; k < n; k++)
-      pat[k] = itermFoldCase(pat[k]);
-  }
 
   if (ih->data->sel_valid)
   {
@@ -2078,16 +2136,67 @@ static void itermFind(Ihandle* ih, const char* value)
     ih->data->sel_valid = 0;
 
   free(tx.chars);
-  free(pat);
   itermRedraw(ih);
 }
 
 static int itermSetFindAttrib(Ihandle* ih, const char* value)
 {
+  int k;
+
+  free(ih->data->find_pat);
+  ih->data->find_pat = NULL;
+  ih->data->find_len = 0;
+
   if (!value || !value[0])
+  {
+    iupAttribSet(ih, "FIND", NULL);
+    itermRedraw(ih);
     return 0;
-  itermFind(ih, value);
+  }
+
+  ih->data->find_pat = (unsigned int*)malloc((strlen(value) + 1) * sizeof(unsigned int));
+  if (!ih->data->find_pat)
+    return 0;
+  ih->data->find_len = itermUtf8Decode(value, ih->data->find_pat);
+  ih->data->find_case = iupAttribGetBoolean(ih, "FINDMATCHCASE");
+  if (!ih->data->find_case)
+  {
+    for (k = 0; k < ih->data->find_len; k++)
+      ih->data->find_pat[k] = itermFoldCase(ih->data->find_pat[k]);
+  }
+
+  itermFind(ih);
   return 1;
+}
+
+static char* itermGetFindCountAttrib(Ihandle* ih)
+{
+  int first = itermFirstLineId(ih), last = itermLastLineId(ih);
+  int n = ih->data->find_len, count = 0, line_id = first;
+  ItermText tx;
+
+  if (n <= 0)
+    return iupStrReturnInt(0);
+
+  memset(&tx, 0, sizeof(ItermText));
+  while (line_id <= last)
+  {
+    int i = 0;
+    itermTextBuild(ih, &tx, line_id, last - line_id + 1);
+    while (i + n <= tx.count)
+    {
+      if (itermTextMatch(&tx, i, ih->data->find_pat, n, ih->data->find_case))
+      {
+        count++;
+        i += n;
+      }
+      else
+        i++;
+    }
+    line_id = tx.last_id + 1;
+  }
+  free(tx.chars);
+  return iupStrReturnInt(count);
 }
 
 static int itermSetResetAttrib(Ihandle* ih, const char* value)
@@ -2335,6 +2444,7 @@ static void itermDestroyMethod(Ihandle* ih)
   if (ih->data->paint_timer)
     IupDestroy(ih->data->paint_timer);
   iupTermScreenRelease(&ih->data->term);
+  free(ih->data->find_pat);
 }
 
 static void itermComputeNaturalSizeMethod(Ihandle* ih, int* w, int* h, int* children_expand)
@@ -2456,6 +2566,8 @@ Iclass* iupTerminalNewClass(void)
   iupClassRegisterAttribute(ic, "FIND", NULL, itermSetFindAttrib, NULL, NULL, IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FINDDIRECTION", NULL, NULL, IUPAF_SAMEASSYSTEM, "UP", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "FINDMATCHCASE", NULL, NULL, IUPAF_SAMEASSYSTEM, "NO", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FINDCOUNT", itermGetFindCountAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "FINDHLCOLOR", NULL, NULL, IUPAF_SAMEASSYSTEM, "255 200 60", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 
   iupClassRegisterAttributeId(ic, "COLOR", itermGetColorAttrib, itermSetColorAttrib, IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
 

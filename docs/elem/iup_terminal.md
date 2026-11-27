@@ -85,13 +85,19 @@ makes them links, like OSC 8 hyperlinks. Can be YES or NO. Default: "YES".
 **FIND** (non-inheritable): searches for the given text, in UTF-8, in the screen and the history. The search
 starts after the current selection in the FINDDIRECTION direction and wraps around. When found, the
 text becomes the selection and is scrolled into view; when not found, the selection is cleared.
-Lines wrapped by the terminal are searched as one line. Returns the last text searched.
+Lines wrapped by the terminal are searched as one line. The other occurrences on the screen are
+highlighted with FINDHLCOLOR until FIND is set to NULL or an empty string. Returns the last text searched.
 
 **FINDDIRECTION** (non-inheritable): direction of the find. Can be "UP" (towards the history) or
 "DOWN". Default: "UP".
 
 **FINDMATCHCASE** (non-inheritable): defines if the text comparison is case-sensitive when using
 FIND. Can be YES or NO. Default: "NO".
+
+**FINDCOUNT** (read-only) (non-inheritable): number of occurrences of the FIND text in the screen and the history.
+
+**FINDHLCOLOR** (non-inheritable): background color of the highlighted FIND occurrences. The text is drawn
+in black or white, whichever contrasts more. Default: "255 200 60".
 
 **RESET** (write-only) (non-inheritable): fully resets the terminal and clears the history.
 
