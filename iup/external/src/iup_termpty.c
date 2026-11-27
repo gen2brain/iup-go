@@ -39,6 +39,21 @@ static void itermPtySetError(char* error, int error_size, const char* text)
   }
 }
 
+static int itermPtySameHost(const char* host, const char* local)
+{
+  int n;
+  if (!host[0] || iupStrEqualNoCase(host, "localhost"))
+    return 1;
+  if (!local)
+    return 0;
+  for (n = 0; host[n] && host[n] != '.' && local[n] && local[n] != '.'; n++)
+  {
+    if (iup_tolower(host[n]) != iup_tolower(local[n]))
+      return 0;
+  }
+  return (!host[n] || host[n] == '.') && (!local[n] || local[n] == '.');
+}
+
 #ifdef ITERM_PTY_POSIX
 
 #include <errno.h>
@@ -124,7 +139,100 @@ struct _ItermPty
   pid_t pid;
   int exited;
   int status;
+  char* shell_dir;
 };
+
+static const char* iterm_bash_rc =
+  "[ -r \"$HOME/.bashrc\" ] && . \"$HOME/.bashrc\"\n"
+  "__iupterm_prompt() {\n"
+  "  local s=$?\n"
+  "  printf '\\033]133;D;%s\\007\\033]7;file://%s%s\\007\\033]133;A\\007' \"$s\" \"$HOSTNAME\" \"${PWD//\\%/%25}\"\n"
+  "  return $s\n"
+  "}\n"
+  "PROMPT_COMMAND=\"__iupterm_prompt${PROMPT_COMMAND:+;$PROMPT_COMMAND}\"\n"
+  "PS0=\"\\[\\033]133;C\\007\\]$PS0\"\n";
+
+static const char* iterm_zsh_env =
+  "if [[ -n \"$IUPTERM_ZDOTDIR\" ]]; then ZDOTDIR=\"$IUPTERM_ZDOTDIR\"; else unset ZDOTDIR; fi\n"
+  "unset IUPTERM_ZDOTDIR\n"
+  "[[ -r \"${ZDOTDIR:-$HOME}/.zshenv\" ]] && source \"${ZDOTDIR:-$HOME}/.zshenv\"\n"
+  "if [[ -o interactive ]]; then\n"
+  "  __iupterm_precmd() {\n"
+  "    local s=$?\n"
+  "    printf '\\033]133;D;%s\\007\\033]7;file://%s%s\\007\\033]133;A\\007' \"$s\" \"$HOST\" \"${PWD//\\%/%25}\"\n"
+  "  }\n"
+  "  __iupterm_preexec() { printf '\\033]133;C\\007'; }\n"
+  "  autoload -Uz add-zsh-hook\n"
+  "  add-zsh-hook precmd __iupterm_precmd\n"
+  "  add-zsh-hook preexec __iupterm_preexec\n"
+  "fi\n";
+
+static const char* itermPtyBaseName(const char* path)
+{
+  const char* slash = strrchr(path, '/');
+  return slash ? slash + 1 : path;
+}
+
+static char* itermPtyShellFile(const char* dir, const char* name)
+{
+  char* path = (char*)malloc(strlen(dir) + strlen(name) + 2);
+  if (path)
+    sprintf(path, "%s/%s", dir, name);
+  return path;
+}
+
+static void itermPtyShellRemove(char* dir)
+{
+  static const char* files[] = { "bashrc", ".zshenv" };
+  int i;
+  if (!dir)
+    return;
+  for (i = 0; i < 2; i++)
+  {
+    char* path = itermPtyShellFile(dir, files[i]);
+    if (path)
+    {
+      unlink(path);
+      free(path);
+    }
+  }
+  rmdir(dir);
+  free(dir);
+}
+
+static char* itermPtyShellSetup(const char* shell)
+{
+  const char* tmp = getenv("TMPDIR");
+  const char* name = strcmp(shell, "bash") == 0 ? "bashrc" : ".zshenv";
+  const char* text = strcmp(shell, "bash") == 0 ? iterm_bash_rc : iterm_zsh_env;
+  char* dir;
+  char* path;
+  FILE* file;
+
+  if (!tmp || !tmp[0])
+    tmp = "/tmp";
+  dir = (char*)malloc(strlen(tmp) + 32);
+  if (!dir)
+    return NULL;
+  sprintf(dir, "%s/iupterm-XXXXXX", tmp);
+  if (!mkdtemp(dir))
+  {
+    free(dir);
+    return NULL;
+  }
+
+  path = itermPtyShellFile(dir, name);
+  file = path ? fopen(path, "w") : NULL;
+  free(path);
+  if (!file)
+  {
+    itermPtyShellRemove(dir);
+    return NULL;
+  }
+  fputs(text, file);
+  fclose(file);
+  return dir;
+}
 
 int iupTermPtyAvailable(void)
 {
@@ -158,7 +266,7 @@ static void itermPtyChildSetup(int slave, const char* term_name)
   unsetenv("COLUMNS");
 }
 
-ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int rows, char* error, int error_size)
+ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int rows, int shell_integration, char* error, int error_size)
 {
   ItermPty* pty;
   char** argv;
@@ -167,6 +275,9 @@ ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int 
   int master, slave, errpipe[2];
   char* name;
   pid_t pid;
+  char* shell_dir = NULL;
+  const char* shell = NULL;
+  char* bash_argv[4] = { NULL, NULL, NULL, NULL };
 
   if (!cmd || !cmd[0])
   {
@@ -233,6 +344,20 @@ ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int 
   }
   fcntl(errpipe[1], F_SETFD, FD_CLOEXEC);
 
+  if (shell_integration && argv[0] && !argv[1])
+  {
+    shell = itermPtyBaseName(argv[0]);
+    if (strcmp(shell, "bash") == 0 || strcmp(shell, "zsh") == 0)
+      shell_dir = itermPtyShellSetup(shell);
+    if (shell_dir && strcmp(shell, "bash") == 0)
+    {
+      bash_argv[0] = argv[0];
+      bash_argv[1] = (char*)"--rcfile";
+      bash_argv[2] = itermPtyShellFile(shell_dir, "bashrc");
+      bash_argv[3] = NULL;
+    }
+  }
+
   pid = fork();
   if (pid < 0)
   {
@@ -242,6 +367,8 @@ ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int 
     close(slave);
     close(master);
     itermPtyFreeArgs(argv, argv_copy);
+    itermPtyShellRemove(shell_dir);
+    free(bash_argv[2]);
     return NULL;
   }
 
@@ -251,6 +378,15 @@ ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int 
     close(errpipe[0]);
     close(master);
     itermPtyChildSetup(slave, term_name);
+    if (shell_dir && strcmp(shell, "bash") == 0)
+      argv = bash_argv;
+    else if (shell_dir)
+    {
+      const char* zdotdir = getenv("ZDOTDIR");
+      if (zdotdir)
+        setenv("IUPTERM_ZDOTDIR", zdotdir, 1);
+      setenv("ZDOTDIR", shell_dir, 1);
+    }
     execvp(argv[0], argv);
     err = errno;
     if (write(errpipe[1], &err, sizeof(err)) < 0)
@@ -260,6 +396,7 @@ ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int 
 
   close(errpipe[1]);
   close(slave);
+  free(bash_argv[2]);
 
   {
     int child_errno = 0;
@@ -271,6 +408,7 @@ ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int 
       waitpid(pid, &status, 0);
       itermPtySetError(error, error_size, strerror(child_errno));
       itermPtyFreeArgs(argv, argv_copy);
+      itermPtyShellRemove(shell_dir);
       return NULL;
     }
     close(errpipe[0]);
@@ -288,12 +426,14 @@ ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int 
     close(master);
     kill(pid, SIGKILL);
     waitpid(pid, NULL, 0);
+    itermPtyShellRemove(shell_dir);
     return NULL;
   }
 
   pty->fd = master;
   pty->pid = pid;
   pty->status = 0;
+  pty->shell_dir = shell_dir;
   return pty;
 }
 
@@ -398,6 +538,15 @@ long iupTermPtyGetPid(ItermPty* pty)
   return (long)pty->pid;
 }
 
+int iupTermPtyHostIsLocal(const char* host)
+{
+  char local[256];
+  if (gethostname(local, sizeof(local)) != 0)
+    return itermPtySameHost(host, NULL);
+  local[sizeof(local) - 1] = 0;
+  return itermPtySameHost(host, local);
+}
+
 int iupTermPtyFd(ItermPty* pty)
 {
   return pty ? pty->fd : -1;
@@ -436,6 +585,7 @@ void iupTermPtyClose(ItermPty* pty)
 
   if (pty->fd >= 0)
     close(pty->fd);
+  itermPtyShellRemove(pty->shell_dir);
   free(pty);
 }
 
@@ -511,7 +661,7 @@ static void itermPtyStdHandlesRestore(HANDLE* saved)
     SetStdHandle(iterm_std_ids[i], saved[i]);
 }
 
-ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int rows, char* error, int error_size)
+ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int rows, int shell_integration, char* error, int error_size)
 {
   ItermPty* pty;
   STARTUPINFOEXA si;
@@ -526,6 +676,7 @@ ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int 
   HANDLE std_handle[3];
   BOOL started;
 
+  (void)shell_integration;
   if (!itermPtyLoadConPty())
   {
     itermPtySetError(error, error_size, "ConPTY not available (needs Windows 10 1809 or later)");
@@ -704,6 +855,15 @@ long iupTermPtyGetPid(ItermPty* pty)
   return (long)pty->pid;
 }
 
+int iupTermPtyHostIsLocal(const char* host)
+{
+  char local[MAX_COMPUTERNAME_LENGTH + 1];
+  DWORD size = sizeof(local);
+  if (!GetComputerNameA(local, &size))
+    return itermPtySameHost(host, NULL);
+  return itermPtySameHost(host, local);
+}
+
 int iupTermPtyFd(ItermPty* pty)
 {
   (void)pty;
@@ -760,9 +920,9 @@ int iupTermPtyAvailable(void)
   return 0;
 }
 
-ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int rows, char* error, int error_size)
+ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int rows, int shell_integration, char* error, int error_size)
 {
-  (void)cmd; (void)term_name; (void)cols; (void)rows;
+  (void)cmd; (void)term_name; (void)cols; (void)rows; (void)shell_integration;
   itermPtySetError(error, error_size, "no pseudo-terminal support on this platform");
   return NULL;
 }
@@ -772,6 +932,7 @@ int iupTermPtyWrite(ItermPty* pty, const char* buf, int len) { (void)pty; (void)
 void iupTermPtyResize(ItermPty* pty, int cols, int rows) { (void)pty; (void)cols; (void)rows; }
 int iupTermPtyCheckExit(ItermPty* pty, int* status) { (void)pty; if (status) *status = 0; return 1; }
 long iupTermPtyGetPid(ItermPty* pty) { (void)pty; return -1; }
+int iupTermPtyHostIsLocal(const char* host) { return itermPtySameHost(host, NULL); }
 int iupTermPtyFd(ItermPty* pty) { (void)pty; return -1; }
 void iupTermPtyKill(ItermPty* pty, int force) { (void)pty; (void)force; }
 void iupTermPtyClose(ItermPty* pty) { (void)pty; }

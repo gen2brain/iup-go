@@ -1298,6 +1298,32 @@ static void itermModelClipboard(void* user, const char* text)
   IupDestroy(clip);
 }
 
+static void itermModelCommand(void* user, int status)
+{
+  Ihandle* ih = (Ihandle*)user;
+  IFni cb = (IFni)IupGetCallback(ih, "COMMANDEXIT_CB");
+  if (cb && cb(ih, status) == IUP_CLOSE)
+    IupExitLoop();
+}
+
+static void itermModelCwd(void* user, const char* host, const char* path)
+{
+  Ihandle* ih = (Ihandle*)user;
+  IFns cb;
+
+  if (!iupTermPtyHostIsLocal(host))
+    return;
+  if (path[0] == '/' && path[1] && path[2] == ':')
+    path++;
+  if (iupStrEqual(iupAttribGet(ih, "_IUPTERM_CURRENTDIR"), path))
+    return;
+
+  iupAttribSetStr(ih, "_IUPTERM_CURRENTDIR", path);
+  cb = (IFns)IupGetCallback(ih, "DIRCHANGED_CB");
+  if (cb && cb(ih, (char*)path) == IUP_CLOSE)
+    IupExitLoop();
+}
+
 static void itermModelTitle(void* user, const char* title)
 {
   Ihandle* ih = (Ihandle*)user;
@@ -2008,27 +2034,6 @@ static int itermSetInsertAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
-static int itermSetSelectionAttrib(Ihandle* ih, const char* value)
-{
-  if (iupStrEqualNoCase(value, "ALL"))
-  {
-    Iterm* t = &ih->data->term;
-    ih->data->sel_valid = 1;
-    ih->data->sel_mode = ITERM_SEL_LINE;
-    ih->data->sel_start_line = t->sb_pushed - t->sb_count;
-    ih->data->sel_start_col = 0;
-    ih->data->sel_end_line = t->sb_pushed + t->rows - 1;
-    ih->data->sel_end_col = t->cols;
-  }
-  else if (iupStrEqualNoCase(value, "NONE"))
-    ih->data->sel_valid = 0;
-  else
-    return 0;
-
-  itermRedraw(ih);
-  return 0;
-}
-
 static void itermShowLine(Ihandle* ih, int line_id)
 {
   Iterm* t = &ih->data->term;
@@ -2044,6 +2049,93 @@ static void itermShowLine(Ihandle* ih, int line_id)
   if (ih->data->view_offset < 0) ih->data->view_offset = 0;
   if (ih->data->view_offset > t->sb_count) ih->data->view_offset = t->sb_count;
   itermUpdateScrollbar(ih);
+}
+
+static void itermSelectLastOutput(Ihandle* ih)
+{
+  int first = itermFirstLineId(ih), last = itermLastLineId(ih);
+  int start, end;
+
+  ih->data->sel_valid = 0;
+  for (start = last; start >= first; start--)
+  {
+    if (itermLineById(ih, start)->mark & ITERM_MARK_OUTPUT)
+      break;
+  }
+  if (start < first)
+    return;
+
+  for (end = start; end <= last; end++)
+  {
+    ItermLine* line = itermLineById(ih, end);
+    if ((line->mark & ITERM_MARK_DONE) || (end > start && (line->mark & ITERM_MARK_PROMPT)))
+      break;
+  }
+  if (end <= start)
+    return;
+
+  ih->data->sel_valid = 1;
+  ih->data->sel_dragging = 0;
+  ih->data->sel_mode = ITERM_SEL_LINE;
+  ih->data->sel_anchor_line = ih->data->sel_start_line = start;
+  ih->data->sel_anchor_col = ih->data->sel_start_col = 0;
+  ih->data->sel_end_line = end - 1;
+  ih->data->sel_end_col = ih->data->term.cols;
+  itermShowLine(ih, start);
+}
+
+static int itermSetSelectionAttrib(Ihandle* ih, const char* value)
+{
+  if (iupStrEqualNoCase(value, "ALL"))
+  {
+    Iterm* t = &ih->data->term;
+    ih->data->sel_valid = 1;
+    ih->data->sel_mode = ITERM_SEL_LINE;
+    ih->data->sel_start_line = t->sb_pushed - t->sb_count;
+    ih->data->sel_start_col = 0;
+    ih->data->sel_end_line = t->sb_pushed + t->rows - 1;
+    ih->data->sel_end_col = t->cols;
+  }
+  else if (iupStrEqualNoCase(value, "NONE"))
+    ih->data->sel_valid = 0;
+  else if (iupStrEqualNoCase(value, "LASTOUTPUT"))
+    itermSelectLastOutput(ih);
+  else
+    return 0;
+
+  itermRedraw(ih);
+  return 0;
+}
+
+static int itermSetScrollToPromptAttrib(Ihandle* ih, const char* value)
+{
+  Iterm* t = &ih->data->term;
+  int first = itermFirstLineId(ih), last = itermLastLineId(ih);
+  int top = itermVisibleLineId(ih, 0);
+  int next = iupStrEqualNoCase(value, "NEXT");
+  int id;
+
+  if ((t->modes & ITERM_MODE_ALTSCREEN) || (!next && !iupStrEqualNoCase(value, "PREVIOUS")))
+    return 0;
+
+  for (id = next ? top + 1 : top - 1; id >= first && id <= last; id += next ? 1 : -1)
+  {
+    if (itermLineById(ih, id)->mark & ITERM_MARK_PROMPT)
+    {
+      ih->data->view_offset = t->sb_count - (id - (t->sb_pushed - t->sb_count));
+      if (ih->data->view_offset < 0) ih->data->view_offset = 0;
+      if (ih->data->view_offset > t->sb_count) ih->data->view_offset = t->sb_count;
+      itermUpdateScrollbar(ih);
+      itermRedraw(ih);
+      break;
+    }
+  }
+  return 0;
+}
+
+static char* itermGetCurrentDirAttrib(Ihandle* ih)
+{
+  return iupAttribGet(ih, "_IUPTERM_CURRENTDIR");
 }
 
 static int itermPosCompare(int l0, int c0, int l1, int c1)
@@ -2356,8 +2448,8 @@ static int itermSetExecAttrib(Ihandle* ih, const char* value)
   itermPtyDetach(ih);
   iupAttribSet(ih, "_IUPTERM_PTYERROR", NULL);
 
-  pty = iupTermPtyStart(value, IupGetAttribute(ih, "TERMNAME"),
-                        ih->data->term.cols, ih->data->term.rows, error, sizeof(error));
+  pty = iupTermPtyStart(value, IupGetAttribute(ih, "TERMNAME"), ih->data->term.cols, ih->data->term.rows,
+                        iupAttribGetBoolean(ih, "SHELLINTEGRATION"), error, sizeof(error));
   if (!pty)
   {
     iupAttribSetStr(ih, "_IUPTERM_PTYERROR", error);
@@ -2483,6 +2575,8 @@ static int itermCreateMethod(Ihandle* ih, void** params)
   t->cb.bell = itermModelBell;
   t->cb.title = itermModelTitle;
   t->cb.clipboard = itermModelClipboard;
+  t->cb.command = itermModelCommand;
+  t->cb.cwd = itermModelCwd;
   t->cb_user = ih;
 
   ih->data->blink_on = 1;
@@ -2532,6 +2626,8 @@ Iclass* iupTerminalNewClass(void)
   iupClassRegisterCallback(ic, "TERMSIZE_CB", "ii");
   iupClassRegisterCallback(ic, "EXECEXIT_CB", "i");
   iupClassRegisterCallback(ic, "LINK_CB", "s");
+  iupClassRegisterCallback(ic, "COMMANDEXIT_CB", "i");
+  iupClassRegisterCallback(ic, "DIRCHANGED_CB", "s");
 
   iupClassRegisterReplaceAttribDef(ic, "BORDER", "NO", NULL);
   iupClassRegisterReplaceAttribFlags(ic, "BORDER", IUPAF_READONLY | IUPAF_NO_INHERIT);
@@ -2556,6 +2652,9 @@ Iclass* iupTerminalNewClass(void)
   iupClassRegisterAttribute(ic, "PTYPID", itermGetPtyPidAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "PTYERROR", itermGetPtyErrorAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "AVAILABLE", itermGetAvailableAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SHELLINTEGRATION", NULL, NULL, IUPAF_SAMEASSYSTEM, "YES", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "CURRENTDIR", itermGetCurrentDirAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_SAVE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
+  iupClassRegisterAttribute(ic, "SCROLLTOPROMPT", NULL, itermSetScrollToPromptAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "TERMNAME", NULL, NULL, IUPAF_SAMEASSYSTEM, "xterm-256color", IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTEDTEXT", itermGetSelectedTextAttrib, NULL, NULL, NULL, IUPAF_READONLY | IUPAF_NO_SAVE | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);
   iupClassRegisterAttribute(ic, "SELECTION", NULL, itermSetSelectionAttrib, NULL, NULL, IUPAF_WRITEONLY | IUPAF_NOT_MAPPED | IUPAF_NO_INHERIT);

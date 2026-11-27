@@ -190,6 +190,8 @@ static int wasmCbTerminalTitleChanged(Ihandle* ih, char* title) { return iupwasm
 static int wasmCbTerminalBell(Ihandle* ih) { return iupwasmGoDispatch(ih, "BELL_CB", 0, 0, 0, 0, 0); }
 static int wasmCbTerminalSize(Ihandle* ih, int cols, int lines) { return iupwasmGoDispatch(ih, "TERMSIZE_CB", cols, lines, 0, 0, 0); }
 static int wasmCbTerminalExecExit(Ihandle* ih, int status) { return iupwasmGoDispatch(ih, "EXECEXIT_CB", status, 0, 0, 0, 0); }
+static int wasmCbTerminalCommandExit(Ihandle* ih, int status) { return iupwasmGoDispatch(ih, "COMMANDEXIT_CB", status, 0, 0, 0, 0); }
+static int wasmCbTerminalDirChanged(Ihandle* ih, char* path) { return iupwasmGoDispatch(ih, "DIRCHANGED_CB", 0, 0, 0, 0, path); }
 static int wasmCbTextInput(Ihandle* ih, char* text) { return iupwasmGoDispatch(ih, "TEXTINPUT_CB", 0, 0, 0, 0, text); }
 static int wasmCbPlayEnd(Ihandle* ih) { return iupwasmGoDispatch(ih, "PLAYEND_CB", 0, 0, 0, 0, 0); }
 static int wasmCbReady(Ihandle* ih) { return iupwasmGoDispatch(ih, "READY_CB", 0, 0, 0, 0, 0); }
@@ -537,6 +539,10 @@ EMSCRIPTEN_KEEPALIVE void iupwasmGoSetCallback(Ihandle* ih, const char* name)
     IupSetCallback(ih, name, (Icallback)wasmCbTerminalSize);
   else if (strcmp(name, "EXECEXIT_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbTerminalExecExit);
+  else if (strcmp(name, "COMMANDEXIT_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTerminalCommandExit);
+  else if (strcmp(name, "DIRCHANGED_CB") == 0)
+    IupSetCallback(ih, name, (Icallback)wasmCbTerminalDirChanged);
   else if (strcmp(name, "TEXTINPUT_CB") == 0)
     IupSetCallback(ih, name, (Icallback)wasmCbTextInput);
   else if (strcmp(name, "PLAYEND_CB") == 0)

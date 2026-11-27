@@ -82,11 +82,16 @@ typedef struct _ItermCombo
   int next_free;
 } ItermCombo;
 
+#define ITERM_MARK_PROMPT 0x01
+#define ITERM_MARK_OUTPUT 0x02
+#define ITERM_MARK_DONE   0x04
+
 typedef struct _ItermLine
 {
   ItermCell* cells;
   short ncells;
   unsigned char wrapped;
+  unsigned char mark;
 } ItermLine;
 
 typedef struct _ItermPen
@@ -110,6 +115,8 @@ typedef struct _ItermCallbacks
   void (*title)(void* user, const char* title);
   void (*palette)(void* user, int index, unsigned int rgb);
   void (*clipboard)(void* user, const char* text);
+  void (*command)(void* user, int status);
+  void (*cwd)(void* user, const char* host, const char* path);
 } ItermCallbacks;
 
 typedef struct _Iterm
@@ -148,6 +155,7 @@ typedef struct _Iterm
   unsigned int last_cp;
 
   int gc_valid, gc_prev, gc_emoji, gc_ri;
+  int cmd_running;
 
   unsigned int palette[16];
   unsigned int def_fg, def_bg;
@@ -186,6 +194,7 @@ void iupTermScreenReset(Iterm* t);
 ItermLine* iupTermScreenLine(Iterm* t, int row);
 ItermLine* iupTermScreenHistoryLine(Iterm* t, int index);
 void iupTermScreenPutChar(Iterm* t, unsigned int cp);
+void iupTermScreenMark(Iterm* t, unsigned char mark);
 int  iupTermUtf8Encode(unsigned int cp, char* out);
 int  iupTermCellText(Iterm* t, ItermCell* cell, char* out);
 void iupTermScreenLineFeed(Iterm* t);
@@ -226,7 +235,7 @@ void iupTermParseBytes(Iterm* t, const char* buf, int len);
 typedef struct _ItermPty ItermPty;
 
 int  iupTermPtyAvailable(void);
-ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int rows, char* error, int error_size);
+ItermPty* iupTermPtyStart(const char* cmd, const char* term_name, int cols, int rows, int shell_integration, char* error, int error_size);
 void iupTermPtyClose(ItermPty* pty);
 int  iupTermPtyRead(ItermPty* pty, char* buf, int max);
 int  iupTermPtyFd(ItermPty* pty);
@@ -234,6 +243,7 @@ int  iupTermPtyWrite(ItermPty* pty, const char* buf, int len);
 void iupTermPtyResize(ItermPty* pty, int cols, int rows);
 int  iupTermPtyCheckExit(ItermPty* pty, int* status);
 long iupTermPtyGetPid(ItermPty* pty);
+int  iupTermPtyHostIsLocal(const char* host);
 void iupTermPtyKill(ItermPty* pty, int force);
 
 #ifdef __cplusplus

@@ -192,6 +192,10 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setTerminalSizeFunc(ih, fn.(TerminalSizeFunc))
 	case "EXECEXIT_CB":
 		setTerminalExecExitFunc(ih, fn.(TerminalExecExitFunc))
+	case "COMMANDEXIT_CB":
+		setTerminalCommandExitFunc(ih, fn.(TerminalCommandExitFunc))
+	case "DIRCHANGED_CB":
+		setTerminalDirChangedFunc(ih, fn.(TerminalDirChangedFunc))
 	case "TEXTINPUT_CB":
 		setTextInputFunc(ih, fn.(TextInputFunc))
 	case "CARET_CB":

@@ -124,8 +124,14 @@ static void itermLineAlloc(Iterm* t, ItermLine* line, int cols)
   line->cells = (ItermCell*)malloc(cols * sizeof(ItermCell));
   line->ncells = (short)cols;
   line->wrapped = 0;
+  line->mark = 0;
   for (i = 0; i < cols; i++)
     itermBlankCell(t, &line->cells[i]);
+}
+
+void iupTermScreenMark(Iterm* t, unsigned char mark)
+{
+  iupTermScreenLine(t, t->cy)->mark |= mark;
 }
 
 static void itermLineClear(Iterm* t, ItermLine* line, int from, int to)
@@ -1120,6 +1126,7 @@ static void itermEraseRows(Iterm* t, int from, int to)
     ItermLine* line = iupTermScreenLine(t, i);
     itermLineClear(t, line, 0, t->cols - 1);
     line->wrapped = 0;
+    line->mark = 0;
   }
 }
 
@@ -1452,13 +1459,15 @@ static void itermReflowMain(Iterm* t, int cols, int rows)
   k = 0;
   while (k < total)
   {
-    int len = 0;
+    int len = 0, first_out;
+    unsigned char mark = 0;
     logical++;
     for (;;)
     {
       ItermLine* line = k < t->sb_count ? iupTermScreenHistoryLine(t, k) : &t->lines[k - t->sb_count];
       int n = line->ncells;
       int last = !line->wrapped || k == total - 1;
+      mark |= line->mark;
 
       while (n > 0 && itermCellUnused(&line->cells[n - 1]))
         n--;
@@ -1489,7 +1498,9 @@ static void itermReflowMain(Iterm* t, int cols, int rows)
 
     for (i = 0; i < npts; i++)
       pts[i].here = (pts[i].found == logical);
+    first_out = out.count;
     itermReflowSplit(t, &out, cells, len, cols, pts, npts, logical);
+    out.lines[first_out].mark = mark;
     for (i = 0; i < npts; i++)
     {
       if (pts[i].here && pts[i].pending && !pts[i].new_pending)

@@ -445,6 +445,14 @@ static unsigned int itermParseColorSpec(const char* spec)
   return 0xFFFFFFFF;
 }
 
+static int itermHexDigit(char c)
+{
+  if (c >= '0' && c <= '9') return c - '0';
+  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+  return -1;
+}
+
 static int itermBase64Decode(const char* in, char* out, int out_max)
 {
   static const char* chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -584,6 +592,58 @@ static void itermOscDispatch(Iterm* t)
         }
         t->pen.link = iupTermLinkAdd(t, uri, id);
       }
+    }
+    break;
+  case 133:
+    switch (t->osc_buf[0])
+    {
+    case 'A':
+      iupTermScreenMark(t, ITERM_MARK_PROMPT);
+      t->cmd_running = 0;
+      break;
+    case 'C':
+      iupTermScreenMark(t, ITERM_MARK_OUTPUT);
+      t->cmd_running = 1;
+      break;
+    case 'D':
+      if (t->cmd_running)
+      {
+        iupTermScreenMark(t, ITERM_MARK_DONE);
+        t->cmd_running = 0;
+        if (t->cb.command)
+          t->cb.command(t->cb_user, t->osc_buf[1] == ';' ? atoi(t->osc_buf + 2) : 0);
+      }
+      break;
+    }
+    break;
+  case 7:
+    if (strncmp(t->osc_buf, "file://", 7) == 0 && t->cb.cwd)
+    {
+      char host[256];
+      char* path = strchr(t->osc_buf + 7, '/');
+      char* src;
+      char* dst;
+      int host_len;
+      if (!path)
+        break;
+      host_len = (int)(path - (t->osc_buf + 7));
+      if (host_len >= (int)sizeof(host))
+        break;
+      memcpy(host, t->osc_buf + 7, host_len);
+      host[host_len] = 0;
+      for (src = dst = path; *src; src++)
+      {
+        int hi, lo;
+        if (*src == '%' && (hi = itermHexDigit(src[1])) >= 0 && (lo = itermHexDigit(src[2])) >= 0)
+        {
+          *dst++ = (char)(hi * 16 + lo);
+          src += 2;
+        }
+        else
+          *dst++ = *src;
+      }
+      *dst = 0;
+      t->cb.cwd(t->cb_user, host, path);
     }
     break;
   case 104:

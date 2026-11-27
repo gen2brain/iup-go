@@ -420,6 +420,10 @@ func dispatch(ih Ihandle, name string, i1, i2, i3, i4 int, sarg string) int {
 		ret = f(ih, i1, i2)
 	case TerminalExecExitFunc:
 		ret = f(ih, i1)
+	case TerminalCommandExitFunc:
+		ret = f(ih, i1)
+	case TerminalDirChangedFunc:
+		ret = f(ih, sarg)
 	case TextInputFunc:
 		ret = f(ih, sarg)
 	case MotionFunc:

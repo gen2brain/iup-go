@@ -171,6 +171,16 @@ static void goIupSetTerminalExecExitFunc(Ihandle *ih) {
 	IupSetCallback(ih, "EXECEXIT_CB", (Icallback) goIupTerminalExecExitCB);
 }
 
+CGO_EXPORT extern int goIupTerminalCommandExitCB(void *, int status);
+static void goIupSetTerminalCommandExitFunc(Ihandle *ih) {
+	IupSetCallback(ih, "COMMANDEXIT_CB", (Icallback) goIupTerminalCommandExitCB);
+}
+
+CGO_EXPORT extern int goIupTerminalDirChangedCB(void *, void *path);
+static void goIupSetTerminalDirChangedFunc(Ihandle *ih) {
+	IupSetCallback(ih, "DIRCHANGED_CB", (Icallback) goIupTerminalDirChangedCB);
+}
+
 CGO_EXPORT extern int goIupTextInputCB(void *, void *text);
 static void goIupSetTextInputFunc(Ihandle *ih) {
 	IupSetCallback(ih, "TEXTINPUT_CB", (Icallback) goIupTextInputCB);

@@ -69,7 +69,8 @@ Box drawing characters (U+2500 to U+257F) and block elements (U+2580 to U+259F) 
 **SELECTEDTEXT** (read-only) (non-inheritable): the currently selected text, in UTF-8, or NULL when there is
 no selection. Lines are separated by "\n"; a line wrapped by the terminal is joined without a separator.
 
-**SELECTION** (write-only) (non-inheritable): "ALL" selects the whole buffer, including the history; "NONE" clears the selection.
+**SELECTION** (write-only) (non-inheritable): "ALL" selects the whole buffer, including the history; "NONE" clears the selection;
+"LASTOUTPUT" selects the output of the last command, when the shell reports its commands (see the Notes).
 
 **AUTOCOPY** (non-inheritable): copy the selection to the clipboard when the mouse button is
 released. Can be YES or NO. Default: "NO".
@@ -112,6 +113,16 @@ When NULL or empty it runs the SHELL environment variable, or "/bin/sh" ("/syste
 The command starts when the control is mapped, so it can be set before the dialog is shown.
 On failure PTYERROR is set. Use KILL to terminate the command.
 Not supported in iOS and WebAssembly.
+
+**SHELLINTEGRATION** (non-inheritable): when EXEC runs bash or zsh without arguments, the shell loads a script after
+the user's own startup files that reports the prompts, the commands and the current directory (see the Notes).
+Can be YES or NO. Default: "YES". Not supported in Windows.
+
+**CURRENTDIR** (read-only) (non-inheritable): current directory reported by the shell (OSC 7), or NULL. Only a
+directory on the local computer is reported.
+
+**SCROLLTOPROMPT** (write-only) (non-inheritable): scrolls the history so the previous or the next prompt is at the
+top. Can be "PREVIOUS" or "NEXT". Needs a shell that reports its prompts.
 
 **KILL** (write-only) (non-inheritable): terminates the EXEC command.
 "FORCE" kills it immediately, any other value requests a hang up.
@@ -180,6 +191,25 @@ a signal.
 
 **Returns**: IUP_CLOSE will be processed.
 
+**COMMANDEXIT_CB**: action generated when a command run from the shell prompt finishes, reported by the shell
+with OSC 133.
+
+    int function(Ihandle *ih, int status);
+
+**ih**: identifier of the element that activated the event.\
+**status**: exit status of the command.
+
+**Returns**: IUP_CLOSE will be processed.
+
+**DIRCHANGED_CB**: action generated when the current directory reported by the shell (OSC 7) changes.
+
+    int function(Ihandle *ih, const char *path);
+
+**ih**: identifier of the element that activated the event.\
+**path**: the new current directory.
+
+**Returns**: IUP_CLOSE will be processed.
+
 **LINK_CB**: Action generated when a link is clicked with Ctrl pressed (Cmd in macOS). When the
 application uses mouse reporting, Shift must also be pressed.
 
@@ -205,7 +235,7 @@ DECSTBM), tabs (HTS, TBC, CHT, CBT), SGR text attributes with 16/256/truecolor, 
 (SGR 4:1 to 4:5, 21) and underline color (SGR 58, 59), save/restore
 cursor (DECSC, DECRC, SCOSC, SCORC), DEC private modes 1, 6, 7, 12, 25, 47, 1047, 1048, 1049,
 1000, 1002, 1003, 1004, 1006, 2004, 2026, 2027, cursor style (DECSCUSR), DEC Special Graphics charset, OSC 0/2 title,
-OSC 4 palette, OSC 8 hyperlinks, OSC 10/11 default colors, OSC 52 clipboard (see ALLOWOSC52), OSC 104 palette reset,
+OSC 4 palette, OSC 7 current directory, OSC 8 hyperlinks, OSC 10/11 default colors, OSC 52 clipboard (see ALLOWOSC52), OSC 104 palette reset, OSC 133 prompt marks,
 and the reports DSR, CPR, DA1, DA2, XTVERSION, DECRQM and XTWINOPS 18. Unknown sequences are consumed and ignored.
 
 While the application holds synchronized output (mode 2026) the screen is not redrawn, for at most one second.
@@ -232,6 +262,11 @@ Holding Ctrl (Cmd in macOS) over a link underlines it.
 When the application enables mouse reporting the mouse belongs to the application and the terminal stops selecting. Hold Shift to select anyway.
 
 The EXEC command is terminated when the control is destroyed. Resizing the control resizes the pseudo-terminal and the command receives SIGWINCH.
+
+Shell integration: a shell that marks its prompts and commands with OSC 133 and reports its directory with OSC 7
+enables SCROLLTOPROMPT, SELECTION=LASTOUTPUT, COMMANDEXIT_CB, CURRENTDIR and DIRCHANGED_CB. For bash and zsh started
+by EXEC the terminal adds this itself (see SHELLINTEGRATION); in bash, COMMANDEXIT_CB and LASTOUTPUT need bash 4.4 or
+later. Other shells that already emit these sequences work as well.
 
 When the terminal is resized, lines wrapped by the terminal are wrapped again at the new width, the history included, and the cursor keeps its place in the text.
 A taller terminal brings lines back from the history. The alternate screen is not reflowed.

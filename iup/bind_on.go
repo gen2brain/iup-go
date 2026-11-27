@@ -263,6 +263,8 @@ var (
 	TableValueCB                  = newCallback[TableValueFunc]("VALUE_CB")
 	TableValueChangedCB           = newCallback[TableValueChangedFunc]("VALUECHANGED_CB")
 	TerminalBellCB                = newCallback[TerminalBellFunc]("BELL_CB")
+	TerminalCommandExitCB         = newCallback[TerminalCommandExitFunc]("COMMANDEXIT_CB")
+	TerminalDirChangedCB          = newCallback[TerminalDirChangedFunc]("DIRCHANGED_CB")
 	TerminalExecExitCB            = newCallback[TerminalExecExitFunc]("EXECEXIT_CB")
 	TerminalInputCB               = newCallback[TerminalInputFunc]("INPUT_CB")
 	TerminalSizeCB                = newCallback[TerminalSizeFunc]("TERMSIZE_CB")

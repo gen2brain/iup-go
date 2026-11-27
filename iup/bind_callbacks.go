@@ -576,6 +576,32 @@ func setTerminalExecExitFunc(ih Ihandle, f TerminalExecExitFunc) {
 
 //--------------------
 
+//export goIupTerminalCommandExitCB
+func goIupTerminalCommandExitCB(ih unsafe.Pointer, status C.int) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_COMMANDEXIT_CB").Value().(TerminalCommandExitFunc)
+	return C.int(f((Ihandle)(ih), int(status)))
+}
+
+func setTerminalCommandExitFunc(ih Ihandle, f TerminalCommandExitFunc) {
+	storeCallback(ih, "_IUPGO_COMMANDEXIT_CB", f)
+	C.goIupSetTerminalCommandExitFunc(ih.ptr())
+}
+
+//--------------------
+
+//export goIupTerminalDirChangedCB
+func goIupTerminalDirChangedCB(ih, path unsafe.Pointer) C.int {
+	f := loadCallback((Ihandle)(ih), "_IUPGO_DIRCHANGED_CB").Value().(TerminalDirChangedFunc)
+	return C.int(f((Ihandle)(ih), C.GoString((*C.char)(path))))
+}
+
+func setTerminalDirChangedFunc(ih Ihandle, f TerminalDirChangedFunc) {
+	storeCallback(ih, "_IUPGO_DIRCHANGED_CB", f)
+	C.goIupSetTerminalDirChangedFunc(ih.ptr())
+}
+
+//--------------------
+
 //export goIupTextInputCB
 func goIupTextInputCB(ih, text unsafe.Pointer) C.int {
 	f := loadCallback((Ihandle)(ih), "_IUPGO_TEXTINPUT").Value().(TextInputFunc)

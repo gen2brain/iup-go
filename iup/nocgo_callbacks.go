@@ -347,6 +347,10 @@ func SetCallback(ih Ihandle, name string, fn interface{}) {
 		setTerminalSizeFunc(ih, fn.(TerminalSizeFunc))
 	case "EXECEXIT_CB":
 		setTerminalExecExitFunc(ih, fn.(TerminalExecExitFunc))
+	case "COMMANDEXIT_CB":
+		setTerminalCommandExitFunc(ih, fn.(TerminalCommandExitFunc))
+	case "DIRCHANGED_CB":
+		setTerminalDirChangedFunc(ih, fn.(TerminalDirChangedFunc))
 	case "TEXTINPUT_CB":
 		setTextInputFunc(ih, fn.(TextInputFunc))
 	case "SCROLL_CB":
@@ -1162,6 +1166,30 @@ var terminalExecExitCB = purego.NewCallback(func(ih uintptr, status int32) int {
 func setTerminalExecExitFunc(ih Ihandle, f TerminalExecExitFunc) {
 	storeCallback(ih, "_IUPGO_EXECEXIT_CB", f)
 	iupSetCallback(uintptr(ih), "EXECEXIT_CB", terminalExecExitCB)
+}
+
+var terminalCommandExitCB = purego.NewCallback(func(ih uintptr, status int32) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_COMMANDEXIT_CB").(TerminalCommandExitFunc); ok {
+		return f(Ihandle(ih), int(status))
+	}
+	return 0
+})
+
+func setTerminalCommandExitFunc(ih Ihandle, f TerminalCommandExitFunc) {
+	storeCallback(ih, "_IUPGO_COMMANDEXIT_CB", f)
+	iupSetCallback(uintptr(ih), "COMMANDEXIT_CB", terminalCommandExitCB)
+}
+
+var terminalDirChangedCB = purego.NewCallback(func(ih, path uintptr) int {
+	if f, ok := loadCallback(Ihandle(ih), "_IUPGO_DIRCHANGED_CB").(TerminalDirChangedFunc); ok {
+		return f(Ihandle(ih), goString(path))
+	}
+	return 0
+})
+
+func setTerminalDirChangedFunc(ih Ihandle, f TerminalDirChangedFunc) {
+	storeCallback(ih, "_IUPGO_DIRCHANGED_CB", f)
+	iupSetCallback(uintptr(ih), "DIRCHANGED_CB", terminalDirChangedCB)
 }
 
 var textInputCB = purego.NewCallback(func(ih, text uintptr) int {

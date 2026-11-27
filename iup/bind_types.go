@@ -186,6 +186,12 @@ type TerminalSizeFunc func(ih Ihandle, cols, lines int) int
 // TerminalExecExitFunc for Terminal EXECEXIT_CB callback.
 type TerminalExecExitFunc func(ih Ihandle, status int) int
 
+// TerminalCommandExitFunc for Terminal COMMANDEXIT_CB callback.
+type TerminalCommandExitFunc func(ih Ihandle, status int) int
+
+// TerminalDirChangedFunc for Terminal DIRCHANGED_CB callback.
+type TerminalDirChangedFunc func(ih Ihandle, path string) int
+
 // TextInputFunc for TEXTINPUT_CB callback.
 type TextInputFunc func(ih Ihandle, text string) int
 
