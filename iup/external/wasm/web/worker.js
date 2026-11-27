@@ -37,7 +37,8 @@ function dispatchEvent(name, args, types) {
 }
 
 // post the request, block until main writes a result. result tag in i32[1]: 0 int (i32[2]),
-// 1 int array (len i32[2] from i32[3]), 2 utf8 (len i32[2] from byte 16), 3 null.
+// 1 int array (len i32[2] from i32[3]), 2 utf8 (len i32[2] from byte 16), 3 null,
+// 4 utf8 longer than the SAB (len i32[2], read with resultchunk).
 globalThis.__iupReadSync = function (req) {
   Atomics.store(i32, 0, 0);
   self.postMessage({ __iupRead: 1, req: req });
@@ -46,6 +47,12 @@ globalThis.__iupReadSync = function (req) {
   if (tag === 0) return i32[2];
   if (tag === 1) { var n = i32[2], a = []; for (var k = 0; k < n; k++) a.push(i32[3 + k]); return a; }
   if (tag === 3) return null;
+  if (tag === 4) {
+    var total = i32[2], cap = u8.length - 16 - 8, all = new Uint8Array(total);
+    for (var off = 0; off < total; off += cap)
+      globalThis.__iupReadBytes({ op: 'resultchunk', off: off, len: Math.min(cap, total - off) }, all, off);
+    return new TextDecoder().decode(all);
+  }
   return new TextDecoder().decode(u8.slice(16, 16 + i32[2]));
 };
 

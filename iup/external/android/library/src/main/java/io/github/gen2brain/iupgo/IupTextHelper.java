@@ -14,6 +14,7 @@ import android.text.InputType;
 import android.text.Layout;
 import android.text.Spanned;
 import android.text.TextPaint;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.KeyListener;
 import android.text.method.LinkMovementMethod;
@@ -159,6 +160,10 @@ public final class IupTextHelper
         /* FILTER mode: 0=none, 1=LOWERCASE, 2=UPPERCASE, 3=NUMBER. */
         int filterMode;
         boolean overwrite;
+        /* WORDWRAP=NO lays out at the widest line: horizontal scrolling or an UNSPECIFIED width make TextView redo the layout on every pass */
+        boolean cacheWidth;
+        float contentWidth = -1, widthTextSize, widthLetterSpacing, widthScaleX;
+        Typeface widthTypeface;
 
         public IupEditText(Context ctx, long ih)
         {
@@ -179,18 +184,64 @@ public final class IupTextHelper
             return super.dispatchKeyEvent(event);
         }
 
+        void invalidateContentWidth()
+        {
+            if (!cacheWidth) return;
+            contentWidth = -1;
+            requestLayout();
+        }
+
+        void textEdited(CharSequence s, int start, int end)
+        {
+            if (contentWidth < 0) return;
+            int len = s.length();
+            if (start == 0 && end >= len)
+            {
+                contentWidth = -1;
+                return;
+            }
+            while (start > 0 && s.charAt(start - 1) != '\n') start--;
+            while (end < len && s.charAt(end) != '\n') end++;
+            contentWidth = Math.max(contentWidth, Layout.getDesiredWidth(s, start, end, getPaint()));
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
+        {
+            if (!cacheWidth || MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.UNSPECIFIED)
+            {
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                return;
+            }
+            TextPaint p = getPaint();
+            if (contentWidth < 0 || p.getTextSize() != widthTextSize || p.getTypeface() != widthTypeface
+                || p.getLetterSpacing() != widthLetterSpacing || p.getTextScaleX() != widthScaleX)
+            {
+                CharSequence t = getText();
+                CharSequence hint = getHint();
+                contentWidth = t == null ? 0 : Layout.getDesiredWidth(t, p);
+                if (hint != null) contentWidth = Math.max(contentWidth, Layout.getDesiredWidth(hint, p));
+                widthTextSize = p.getTextSize();
+                widthTypeface = p.getTypeface();
+                widthLetterSpacing = p.getLetterSpacing();
+                widthScaleX = p.getTextScaleX();
+            }
+            int w = (int)Math.ceil(contentWidth) + getCompoundPaddingLeft() + getCompoundPaddingRight();
+            w = Math.max(Math.max(w, getSuggestedMinimumWidth()), MeasureSpec.getSize(widthMeasureSpec));
+            super.onMeasure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), heightMeasureSpec);
+        }
+
         @Override
         protected void onSelectionChanged(int selStart, int selEnd)
         {
             super.onSelectionChanged(selStart, selEnd);
-            int pos = unitToChar(getText(), selStart);
-            if (suppressVC || pos == lastCaret)
+            if (suppressVC || selStart == lastCaret)
             {
-                lastCaret = pos;
+                lastCaret = selStart;
                 return;
             }
-            lastCaret = pos;
-            dispatchCaret(ihandlePtr, pos);
+            lastCaret = selStart;
+            dispatchCaret(ihandlePtr, unitToChar(getText(), selStart));
         }
     }
 
@@ -249,7 +300,7 @@ public final class IupTextHelper
             | InputType.TYPE_TEXT_FLAG_MULTI_LINE
             | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         tv.setSingleLine(false);
-        tv.setHorizontallyScrolling(!wordWrap);
+        tv.setEmojiCompatEnabled(false);
         /* TIET inherits M3 bodyLarge metrics through the appcompat editTextStyle chain; reset to classic. */
         tv.setLineSpacing(0f, 1.0f);
         tv.setIncludeFontPadding(false);
@@ -277,6 +328,21 @@ public final class IupTextHelper
         }
         else
         {
+            tv.cacheWidth = true;
+            tv.addTextChangedListener(new TextWatcher()
+            {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count)
+                {
+                    tv.textEdited(s, start, start + count);
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
             HorizontalScrollView hsv = new HorizontalScrollView(tv.getContext());
             hsv.setFillViewport(true);
             hsv.setHorizontalScrollBarEnabled(true);
@@ -449,23 +515,69 @@ public final class IupTextHelper
     }
 
 
+    private static final int CHUNK = 8192;
+
+    private static int codePoints(CharSequence s, int from, int to)
+    {
+        char[] buf = new char[CHUNK];
+        int count = to - from;
+        boolean prevHigh = false;
+        for (int start = from; start < to; start += CHUNK)
+        {
+            int n = Math.min(CHUNK, to - start);
+            TextUtils.getChars(s, start, start + n, buf, 0);
+            for (int i = 0; i < n; i++)
+            {
+                char c = buf[i];
+                if (prevHigh && Character.isLowSurrogate(c)) { count--; prevHigh = false; }
+                else prevHigh = Character.isHighSurrogate(c);
+            }
+        }
+        return count;
+    }
+
     static int unitToChar(CharSequence s, int unit)
     {
         if (s == null || unit <= 0) return 0;
         if (unit > s.length()) unit = s.length();
-        return Character.codePointCount(s, 0, unit);
+        return codePoints(s, 0, unit);
     }
 
+    /* reads one unit past the chunk so a surrogate pair split by the chunk is seen whole */
     static int charToUnit(CharSequence s, int pos)
     {
         if (s == null || pos <= 0) return 0;
         int len = s.length(), unit = 0;
+        char[] buf = new char[CHUNK + 1];
         while (pos > 0 && unit < len)
         {
-            unit += Character.charCount(Character.codePointAt(s, unit));
-            pos--;
+            int n = Math.min(CHUNK + 1, len - unit);
+            TextUtils.getChars(s, unit, unit + n, buf, 0);
+            int limit = Math.min(n, CHUNK), i = 0;
+            while (pos > 0 && i < limit)
+            {
+                i += (Character.isHighSurrogate(buf[i]) && i + 1 < n && Character.isLowSurrogate(buf[i + 1])) ? 2 : 1;
+                pos--;
+            }
+            unit += i;
         }
         return Math.min(unit, len);
+    }
+
+    /* Unit offset where line lin starts, len when there is no such line. */
+    private static int lineStart(CharSequence s, int lin)
+    {
+        if (lin <= 1) return 0;
+        int len = s.length(), line = 1;
+        char[] buf = new char[CHUNK];
+        for (int start = 0; start < len; start += CHUNK)
+        {
+            int n = Math.min(CHUNK, len - start);
+            TextUtils.getChars(s, start, start + n, buf, 0);
+            for (int i = 0; i < n; i++)
+                if (buf[i] == '\n' && ++line == lin) return start + i + 1;
+        }
+        return len;
     }
 
     @Keep
@@ -667,7 +779,7 @@ public final class IupTextHelper
         IupEditText tv = resolve(v);
         if (tv == null) return 0;
         Editable e = tv.getText();
-        return e == null ? 0 : Character.codePointCount(e, 0, e.length());
+        return e == null ? 0 : codePoints(e, 0, e.length());
     }
 
     /* Logical line count: number of '\n' + 1. */
@@ -679,7 +791,13 @@ public final class IupTextHelper
         Editable e = tv.getText();
         if (e == null) return 1;
         int count = 1, len = e.length();
-        for (int i = 0; i < len; i++) if (e.charAt(i) == '\n') count++;
+        char[] buf = new char[CHUNK];
+        for (int start = 0; start < len; start += CHUNK)
+        {
+            int n = Math.min(CHUNK, len - start);
+            TextUtils.getChars(e, start, start + n, buf, 0);
+            for (int i = 0; i < n; i++) if (buf[i] == '\n') count++;
+        }
         return count;
     }
 
@@ -820,12 +938,16 @@ public final class IupTextHelper
         Editable buf = tv.getText();
         if (buf == null) return oneOne;
         pos = charToUnit(buf, pos);
-        int line = 1, col = 1;
-        for (int i = 0; i < pos; i += Character.charCount(Character.codePointAt(buf, i)))
+        int line = 1, line_start = 0;
+        char[] chunk = new char[CHUNK];
+        for (int start = 0; start < pos; start += CHUNK)
         {
-            if (buf.charAt(i) == '\n') { line++; col = 1; }
-            else col++;
+            int n = Math.min(CHUNK, pos - start);
+            TextUtils.getChars(buf, start, start + n, chunk, 0);
+            for (int i = 0; i < n; i++)
+                if (chunk[i] == '\n') { line++; line_start = start + i + 1; }
         }
+        int col = codePoints(buf, line_start, pos) + 1;
         return ((long)line << 32) | (col & 0xFFFFFFFFL);
     }
 
@@ -839,8 +961,7 @@ public final class IupTextHelper
         InputFilter[] filters = tv.getFilters();
         tv.setFilters(new InputFilter[0]);
         tv.suppressVC = true;
-        if (multilineNewline && buf.length() > 0) buf.append('\n');
-        buf.append(text);
+        buf.append(multilineNewline && buf.length() > 0 ? "\n" + text : text);
         if (scrollEnd) tv.setSelection(buf.length());
         tv.suppressVC = false;
         tv.setFilters(filters);
@@ -859,7 +980,9 @@ public final class IupTextHelper
     public static void setCueBanner(final long ihandlePtr, View v, String text)
     {
         IupEditText tv = resolve(v);
-        if (tv != null) tv.setHint(text);
+        if (tv == null) return;
+        tv.setHint(text);
+        tv.invalidateContentWidth();
     }
 
 
@@ -1242,6 +1365,7 @@ public final class IupTextHelper
     {
         IupEditText tv = resolve(v);
         if (tv == null) return;
+        tv.invalidateContentWidth();
         Editable buf = tv.getText();
         if (buf == null) return;
 
@@ -1265,8 +1389,6 @@ public final class IupTextHelper
             int pend = end;
             int len = buf.length();
             while (pend < len && buf.charAt(pend - 1) != '\n') pend++;
-            /* centering needs a bounded layout width; horizontal scrolling makes it unbounded */
-            if (alignment == 1 || alignment == 2) tv.setHorizontallyScrolling(false);
             applyParaSpans(buf, pstart, pend, alignment, indent, lineSpacing);
         }
 
@@ -1399,12 +1521,7 @@ public final class IupTextHelper
 
     private static int linColToPos(CharSequence s, int lin, int col)
     {
-        int line = 1, pos = 0, len = s.length();
-        while (pos < len && line < lin)
-        {
-            if (s.charAt(pos) == '\n') line++;
-            pos++;
-        }
+        int pos = lineStart(s, lin), len = s.length();
         int c = 1;
         while (pos < len && c < col && s.charAt(pos) != '\n')
         {
@@ -1560,6 +1677,7 @@ public final class IupTextHelper
     {
         IupEditText tv = resolve(v);
         if (tv == null || bitmap == null) return;
+        tv.invalidateContentWidth();
         Editable buf = tv.getText();
         if (buf == null) return;
 
@@ -1590,6 +1708,7 @@ public final class IupTextHelper
     {
         IupEditText tv = resolve(v);
         if (tv == null) return;
+        tv.invalidateContentWidth();
         Editable buf = tv.getText();
         if (buf == null) return;
         Object[] spans = buf.getSpans(0, buf.length(), Object.class);

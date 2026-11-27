@@ -747,6 +747,31 @@ static void winuiTextFreezeDisplay(Ihandle* ih, IupWinUITextAux* aux, RichEditBo
   });
 }
 
+static void winuiTextQueueScrollEnd(Ihandle* ih, IupWinUITextAux* aux)
+{
+  if (aux->scrollEndQueued)
+    return;
+
+  Microsoft::UI::Dispatching::DispatcherQueue dq = Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread();
+  if (!dq)
+    return;
+
+  aux->scrollEndQueued = true;
+  dq.TryEnqueue(Microsoft::UI::Dispatching::DispatcherQueuePriority::Low, [ih]() {
+    if (!iupObjectCheck(ih) || !ih->handle)
+      return;
+    auto* a = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
+    auto tb = winuiGetHandle<TextBox>(ih);
+    if (!a || !tb)
+      return;
+    a->scrollEndQueued = false;
+    tb.UpdateLayout();
+    ScrollViewer sv = iupwinuiFindScrollViewer(tb);
+    if (sv)
+      sv.ChangeView(nullptr, sv.ScrollableHeight(), nullptr, true);
+  });
+}
+
 static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
 {
   auto* aux = winuiGetAux<IupWinUITextAux>(ih, IUPWINUI_TEXT_AUX);
@@ -812,23 +837,34 @@ static int winuiTextSetAppendAttrib(Ihandle* ih, const char* value)
     auto tb = winuiGetHandle<TextBox>(ih);
     if (tb)
     {
-      std::wstring newText(tb.Text().c_str());
+      int32_t len = static_cast<int32_t>(tb.Text().size());
+      int32_t selStart = tb.SelectionStart(), selLength = tb.SelectionLength();
+      bool wasReadOnly = tb.IsReadOnly();
+      std::wstring add;
 
-      if (aux->isMultiline && ih->data->append_newline && !newText.empty())
-        newText += L"\r";
+      if (aux->isMultiline && ih->data->append_newline && len > 0)
+        add = L"\r";
+      add += winuiTextToControl(ih, value);
 
-      newText += winuiTextToControl(ih, value);
-      tb.Text(hstring(newText));
-      aux->savedText = newText;
+      if (wasReadOnly)
+        tb.IsReadOnly(false);
+      tb.Select(len, 0);
+      tb.SelectedText(hstring(add));
+      if (wasReadOnly)
+        tb.IsReadOnly(true);
+
+      if (aux->savedText.size() == static_cast<size_t>(len))
+        aux->savedText += add;
+      else
+        aux->savedText = std::wstring(tb.Text().c_str());
 
       if (aux->isMultiline && ih->data->append_scroll)
       {
-        tb.Select(static_cast<int32_t>(newText.size()), 0);
-        tb.UpdateLayout();
-        ScrollViewer sv = iupwinuiFindScrollViewer(tb);
-        if (sv)
-          sv.ChangeView(nullptr, sv.ScrollableHeight(), nullptr, true);
+        tb.Select(len + static_cast<int32_t>(add.size()), 0);
+        winuiTextQueueScrollEnd(ih, aux);
       }
+      else
+        tb.Select(selStart, selLength);
     }
   }
 
@@ -4266,7 +4302,7 @@ static int winuiTextSetSilent(Ihandle* ih, const char* value, IattribSetFunc set
   ih->data->disable_callbacks = 1;
   ret = set(ih, value);
   ih->data->disable_callbacks = saved;
-  if (ih->handle)
+  if (ih->handle && IupGetCallback(ih, "CARET_CB"))
     ih->data->last_caret_pos = winuiTextUnitToChar(ih, winuiTextCaretUnit(ih));
   return ret;
 }

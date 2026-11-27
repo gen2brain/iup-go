@@ -573,6 +573,11 @@ IUPCOCOA_TEXTFIELD_MOUSE_METHODS
 
 @implementation IupCocoaTextView
 
+- (void)scrollToEnd
+{
+  [self scrollRangeToVisible:NSMakeRange([[self string] length], 0)];
+}
+
 - (void)mouseDown:(NSEvent*)event
 {
   Ihandle* ih = (Ihandle*)objc_getAssociatedObject(self, IHANDLE_ASSOCIATED_OBJ_KEY);
@@ -2143,10 +2148,63 @@ static int cocoaTextSetFgColorAttrib(Ihandle* ih, const char* value)
   return 1;
 }
 
+#define COCOA_TEXT_CHUNK 4096
+
+/* index after the n-th newline from "from"; stops at the last line, *skipped says how many were found */
+static NSUInteger cocoaTextSkipLines(NSString* text, NSUInteger from, NSUInteger n, NSUInteger* skipped)
+{
+  NSUInteger length = [text length], line_start = from;
+  unichar buf[COCOA_TEXT_CHUNK];
+
+  *skipped = 0;
+  while (*skipped < n && from < length)
+  {
+    NSUInteger k = length - from < COCOA_TEXT_CHUNK ? length - from : COCOA_TEXT_CHUNK, i;
+    [text getCharacters:buf range:NSMakeRange(from, k)];
+    for (i = 0; i < k && *skipped < n; i++)
+    {
+      if (buf[i] == '\n')
+      {
+        (*skipped)++;
+        line_start = from + i + 1;
+      }
+    }
+    from += k;
+  }
+  return line_start;
+}
+
+/* newlines in [from, to); *line_start is set after the last one */
+static NSUInteger cocoaTextCountLines(NSString* text, NSUInteger from, NSUInteger to, NSUInteger* line_start)
+{
+  NSUInteger count = 0;
+  unichar buf[COCOA_TEXT_CHUNK];
+
+  while (from < to)
+  {
+    NSUInteger k = to - from < COCOA_TEXT_CHUNK ? to - from : COCOA_TEXT_CHUNK, i;
+    [text getCharacters:buf range:NSMakeRange(from, k)];
+    for (i = 0; i < k; i++)
+    {
+      if (buf[i] == '\n')
+      {
+        count++;
+        *line_start = from + i + 1;
+      }
+    }
+    from += k;
+  }
+  return count;
+}
+
 static bool cocoaTextComputeRangeFromLineColumnForTextView(NSTextView* text_view, NSUInteger start_line, NSUInteger start_column, NSUInteger end_line, NSUInteger end_column, NSRange* out_range)
 {
   *out_range = NSMakeRange(0, 0);
 
+  if(start_line < 1)
+    start_line = 1;
+  if(end_line < 1)
+    end_line = 1;
   if(end_line < start_line)
     return false;
   if((end_line == start_line) && (end_column < start_column))
@@ -2163,46 +2221,21 @@ static bool cocoaTextComputeRangeFromLineColumnForTextView(NSTextView* text_view
   }
 
   /* lines are logical paragraphs delimited by newlines, not wrapped display lines */
-  NSUInteger current_line = 1;
-  NSUInteger line_start = 0;
-  NSUInteger i;
-
-  for(i = 0; i < text_length && current_line < start_line; i++)
-  {
-    if([text characterAtIndex:i] == '\n')
-    {
-      current_line++;
-      line_start = i + 1;
-    }
-  }
-
-  if(current_line < start_line)
+  NSUInteger skipped;
+  NSUInteger line_start = cocoaTextSkipLines(text, 0, start_line - 1, &skipped);
+  if(skipped < start_line - 1)
     return false;
 
   NSUInteger start_pos = iupcocoaStrAdvanceChars(text, line_start, start_column - 1);
 
   NSUInteger end_line_start = line_start;
-  if(end_line > current_line)
-  {
-    for(; i < text_length && current_line < end_line; i++)
-    {
-      if([text characterAtIndex:i] == '\n')
-      {
-        current_line++;
-        end_line_start = i + 1;
-      }
-    }
-  }
+  if(end_line > start_line)
+    end_line_start = cocoaTextSkipLines(text, line_start, end_line - start_line, &skipped);
 
-  NSUInteger end_line_end = text_length;
-  for(NSUInteger j = end_line_start; j < text_length; j++)
-  {
-    if([text characterAtIndex:j] == '\n')
-    {
-      end_line_end = j + 1;
-      break;
-    }
-  }
+  NSUInteger end_line_end = cocoaTextSkipLines(text, end_line_start, 1, &skipped);
+  if(skipped == 0)
+    end_line_end = text_length;
+
   NSUInteger end_pos = iupcocoaStrAdvanceChars(text, end_line_start, end_column - 1);
   if(end_pos > end_line_end)
     end_pos = end_line_end;
@@ -2230,30 +2263,16 @@ static bool cocoaTextComputeLineColumnFromRangeForTextView(NSTextView* text_view
 
   NSUInteger start_pos = native_selection_range.location;
   NSUInteger end_pos = start_pos + native_selection_range.length;
+  if(start_pos > text_length) start_pos = text_length;
+  if(end_pos > text_length) end_pos = text_length;
 
-  NSUInteger line = 1;
   NSUInteger line_start = 0;
-
-  for(NSUInteger i = 0; i < text_length && i < start_pos; i++)
-  {
-    if([text characterAtIndex:i] == '\n')
-    {
-      line++;
-      line_start = i + 1;
-    }
-  }
+  NSUInteger line = 1 + cocoaTextCountLines(text, 0, start_pos, &line_start);
 
   *out_start_line = line;
   *out_start_column = iupcocoaStrCountChars(text, line_start, start_pos) + 1;
 
-  for(NSUInteger i = start_pos; i < text_length && i < end_pos; i++)
-  {
-    if([text characterAtIndex:i] == '\n')
-    {
-      line++;
-      line_start = i + 1;
-    }
-  }
+  line += cocoaTextCountLines(text, start_pos, end_pos, &line_start);
 
   *out_end_line = line;
   *out_end_column = iupcocoaStrCountChars(text, line_start, end_pos) + 1;
@@ -4530,8 +4549,8 @@ static int cocoaTextSetAppendAttrib(Ihandle* ih, const char* value)
 
     if (ih->data->append_scroll)
     {
-      NSRange end_range = NSMakeRange([[text_view string] length], 0);
-      [text_view scrollRangeToVisible:end_range];
+      [NSObject cancelPreviousPerformRequestsWithTarget:text_view selector:@selector(scrollToEnd) object:nil];
+      [text_view performSelector:@selector(scrollToEnd) withObject:nil afterDelay:0];
     }
   }
   else
@@ -4913,16 +4932,9 @@ static char* cocoaTextGetLineCountAttrib(Ihandle* ih)
 
   NSTextView* text_view = cocoaTextGetTextView(ih);
   NSString* text = [[text_view textStorage] string];
-  NSUInteger text_length = [text length];
+  NSUInteger line_start = 0;
 
-  NSUInteger number_of_lines = 1;
-  for(NSUInteger i = 0; i < text_length; i++)
-  {
-    if([text characterAtIndex:i] == '\n')
-      number_of_lines++;
-  }
-
-  return iupStrReturnInt((int)number_of_lines);
+  return iupStrReturnInt((int)(1 + cocoaTextCountLines(text, 0, [text length], &line_start)));
 }
 
 /************************************** Begin SPIN *****************************************************/
@@ -5397,6 +5409,7 @@ static void cocoaTextUnMapMethod(Ihandle* ih)
     NSTextView* text_view = [scroll_view documentView];
     if (text_view)
     {
+      [NSObject cancelPreviousPerformRequestsWithTarget:text_view];
       id view_delegate = [text_view delegate];
       if (view_delegate)
       {
@@ -5641,7 +5654,7 @@ static int cocoaTextSetSilent(Ihandle* ih, const char* value, IattribSetFunc set
   ret = set(ih, value);
   iupAttribSet(ih, "_IUPCOCOA_DISABLE_TEXT_CB", saved);
 
-  if (ih->handle)
+  if (ih->handle && IupGetCallback(ih, "CARET_CB"))
     ih->data->last_caret_pos = cocoaTextCaretChar(ih);
   return ret;
 }

@@ -214,6 +214,23 @@ static void qmlTextEnsureVisible(Ihandle* ih, int pos)
     flick->setProperty("contentX", rect.right() - w);
 }
 
+static void qmlTextQueueScrollEnd(Ihandle* ih)
+{
+  QQuickItem* edit = qmlTextGetEdit(ih);
+  if (!edit || iupAttribGet(ih, "_IUPQML_SCROLLEND_QUEUED"))
+    return;
+
+  iupAttribSet(ih, "_IUPQML_SCROLLEND_QUEUED", "1");
+  QMetaObject::invokeMethod(edit, [ih]() {
+    if (!iupObjectCheck(ih))
+      return;
+    iupAttribSet(ih, "_IUPQML_SCROLLEND_QUEUED", nullptr);
+    QTextDocument* doc = qmlTextGetDocument(ih);
+    if (doc)
+      qmlTextEnsureVisible(ih, doc->characterCount() - 1);
+  }, Qt::QueuedConnection);
+}
+
 /****************************************************************************
  * Size
  ****************************************************************************/
@@ -290,7 +307,7 @@ static void qmlTextLinColToUnit(Ihandle* ih, int lin, int col, int* pos)
     lin--;
     col--;
 
-    QTextBlock block = doc->findBlockByLineNumber(lin);
+    QTextBlock block = doc->findBlockByNumber(lin);
     if (block.isValid())
     {
       col = iupqmlStrCharToUnit(block.text(), col);
@@ -416,7 +433,8 @@ static void qmlTextCursorPositionChanged(Ihandle* ih)
 
   if (ih->data->disable_callbacks)
   {
-    ih->data->last_caret_pos = iupqmlStrUnitToChar(qmlTextGetText(ih), qmlTextGetCursor(ih));
+    if (IupGetCallback(ih, "CARET_CB"))
+      ih->data->last_caret_pos = iupqmlStrUnitToChar(qmlTextGetText(ih), qmlTextGetCursor(ih));
     return;
   }
 
@@ -897,13 +915,13 @@ static int qmlTextSetAppendAttrib(Ihandle* ih, const char* value)
   ih->data->disable_callbacks = 1;
 
   QString to_insert = QString::fromUtf8(value ? value : "");
-  int len = static_cast<int>(qmlTextGetText(ih).length());
+  QTextDocument* doc = ih->data->is_multiline ? qmlTextGetDocument(ih) : nullptr;
+  int len = doc ? doc->characterCount() - 1 : static_cast<int>(qmlTextGetText(ih).length());
 
   if (ih->data->is_multiline && ih->data->append_newline && len > 0)
     to_insert.prepend('\n');
 
   int cursor = qmlTextGetCursor(ih);
-  QTextDocument* doc = ih->data->is_multiline ? qmlTextGetDocument(ih) : nullptr;
   if (doc)
     qmlTextAppendPlain(doc, to_insert);
   else
@@ -911,9 +929,8 @@ static int qmlTextSetAppendAttrib(Ihandle* ih, const char* value)
 
   if (ih->data->is_multiline && ih->data->append_scroll)
   {
-    int end = len + static_cast<int>(to_insert.length());
-    qmlTextSetCursor(ih, end);
-    qmlTextEnsureVisible(ih, end);
+    qmlTextSetCursor(ih, len + static_cast<int>(to_insert.length()));
+    qmlTextQueueScrollEnd(ih);
   }
   else
     qmlTextSetCursor(ih, cursor);

@@ -178,17 +178,21 @@ static int fltkBufSkipChars(Fl_Text_Buffer* buf, int from, int count)
 {
   int len = buf->length();
   while (count-- > 0 && from < len)
-    from = buf->next_char(from);
+  {
+    from++;
+    while (from < len && (*buf->address(from) & 0xC0) == 0x80)
+      from++;
+  }
   return from;
 }
 
 static int fltkBufCharsBetween(Fl_Text_Buffer* buf, int from, int to)
 {
   int count = 0;
-  while (from < to)
+  for (; from < to; from++)
   {
-    from = buf->next_char(from);
-    count++;
+    if ((*buf->address(from) & 0xC0) != 0x80)
+      count++;
   }
   return count;
 }
@@ -492,7 +496,7 @@ public:
   IupFltkTextEditor(int x, int y, int w, int h, Ihandle* ih)
     : Fl_Text_Editor(x, y, w, h), iup_handle(ih), is_readonly(0)
   {
-    text_buffer = new Fl_Text_Buffer();
+    text_buffer = new Fl_Text_Buffer(0, 65536);
     buffer(text_buffer);
   }
 
@@ -1521,15 +1525,7 @@ static char* fltkTextGetCountAttrib(Ihandle* ih)
   {
     Fl_Text_Buffer* buf = fltkTextGetBuffer(ih);
     if (buf)
-    {
-      int count = 0, pos = 0, len = buf->length();
-      while (pos < len)
-      {
-        pos = buf->next_char(pos);
-        count++;
-      }
-      return iupStrReturnInt(count);
-    }
+      return iupStrReturnInt(fltkBufCharsBetween(buf, 0, buf->length()));
   }
   else
   {

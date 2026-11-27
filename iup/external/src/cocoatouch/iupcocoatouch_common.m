@@ -767,35 +767,58 @@ IUP_DRV_API NSString* iupCocoaTouchStrToNSStringLen(const char* str, size_t len)
 	return ns_string ? ns_string : @"";
 }
 
-static NSUInteger cocoaTouchStrUnitSize(NSString* str, NSUInteger i)
+#define IUPCOCOATOUCH_STR_CHUNK 4096
+
+/* the units are read a chunk at a time, one more than consumed so a surrogate pair split by the chunk is seen whole */
+IUP_DRV_API NSUInteger iupCocoaTouchStrAdvanceChars(NSString* str, NSUInteger from, NSUInteger count)
 {
-	if (i + 1 < str.length && CFStringIsSurrogateHighCharacter([str characterAtIndex:i]) && CFStringIsSurrogateLowCharacter([str characterAtIndex:i + 1]))
-		return 2;
-	return 1;
+	NSUInteger len = str.length;
+	unichar buf[IUPCOCOATOUCH_STR_CHUNK + 1];
+	while (count > 0 && from < len)
+	{
+		NSUInteger n = len - from, limit, i = 0;
+		if (n > IUPCOCOATOUCH_STR_CHUNK + 1) n = IUPCOCOATOUCH_STR_CHUNK + 1;
+		limit = n > IUPCOCOATOUCH_STR_CHUNK ? IUPCOCOATOUCH_STR_CHUNK : n;
+		[str getCharacters:buf range:NSMakeRange(from, n)];
+		while (count > 0 && i < limit)
+		{
+			i += (CFStringIsSurrogateHighCharacter(buf[i]) && i + 1 < n && CFStringIsSurrogateLowCharacter(buf[i + 1])) ? 2 : 1;
+			count--;
+		}
+		from += i;
+	}
+	return from;
+}
+
+IUP_DRV_API NSUInteger iupCocoaTouchStrCountChars(NSString* str, NSUInteger from, NSUInteger to)
+{
+	NSUInteger len = str.length, count = 0;
+	unichar buf[IUPCOCOATOUCH_STR_CHUNK + 1];
+	if (to > len) to = len;
+	while (from < to)
+	{
+		NSUInteger n = len - from, limit, i = 0;
+		if (n > IUPCOCOATOUCH_STR_CHUNK + 1) n = IUPCOCOATOUCH_STR_CHUNK + 1;
+		limit = to - from < IUPCOCOATOUCH_STR_CHUNK ? to - from : IUPCOCOATOUCH_STR_CHUNK;
+		[str getCharacters:buf range:NSMakeRange(from, n)];
+		while (i < limit)
+		{
+			i += (CFStringIsSurrogateHighCharacter(buf[i]) && i + 1 < n && CFStringIsSurrogateLowCharacter(buf[i + 1])) ? 2 : 1;
+			count++;
+		}
+		from += i;
+	}
+	return count;
 }
 
 IUP_DRV_API NSUInteger iupCocoaTouchStrCharToUnit(NSString* str, int pos)
 {
-	NSUInteger i = 0, len = str.length;
-	while (pos > 0 && i < len)
-	{
-		i += cocoaTouchStrUnitSize(str, i);
-		pos--;
-	}
-	return i;
+	return iupCocoaTouchStrAdvanceChars(str, 0, pos > 0 ? (NSUInteger)pos : 0);
 }
 
 IUP_DRV_API int iupCocoaTouchStrUnitToChar(NSString* str, NSUInteger unit)
 {
-	NSUInteger i = 0;
-	int n = 0;
-	if (unit > str.length) unit = str.length;
-	while (i < unit)
-	{
-		i += cocoaTouchStrUnitSize(str, i);
-		n++;
-	}
-	return n;
+	return (int)iupCocoaTouchStrCountChars(str, 0, unit);
 }
 
 IUP_DRV_API NSString* iupCocoaTouchStrToNSString(const char* str)

@@ -609,6 +609,26 @@ static int winTextCharToUnit(Ihandle* ih, int pos)
   return wpos;
 }
 
+static WCHAR* winTextGetNativeLine(Ihandle* ih, int lin, int lineindex, int* len)
+{
+  int n = (int)SendMessage(ih->handle, EM_LINELENGTH, (WPARAM)lineindex, 0L);
+  WCHAR* text;
+
+  if (n >= 0xFFFF)
+    return winTextGetNativeText(ih, len);
+
+  text = (WCHAR*)malloc((n + 2) * sizeof(WCHAR));
+  *(WORD*)text = (WORD)(n + 1);
+  *len = (int)SendMessageW(ih->handle, EM_GETLINE, (WPARAM)lin, (LPARAM)text);
+  text[*len] = 0;
+  return text;
+}
+
+static int winTextLineIsWhole(Ihandle* ih, int lineindex)
+{
+  return (int)SendMessage(ih->handle, EM_LINELENGTH, (WPARAM)lineindex, 0L) < 0xFFFF;
+}
+
 static int winTextSetLinColToPosition(Ihandle* ih, int lin, int col)
 {
   int linmax, colmax, lineindex, wpos;
@@ -626,8 +646,11 @@ static int winTextSetLinColToPosition(Ihandle* ih, int lin, int col)
 
   {
     int len;
-    WCHAR* text = winTextGetNativeText(ih, &len);
-    wpos = winTextAdvanceChars(ih, text, len, lineindex, col);
+    WCHAR* text = winTextGetNativeLine(ih, lin, lineindex, &len);
+    if (winTextLineIsWhole(ih, lineindex))
+      wpos = lineindex + winTextAdvanceChars(ih, text, len, 0, col);
+    else
+      wpos = winTextAdvanceChars(ih, text, len, lineindex, col);
     free(text);
   }
   if (wpos > lineindex + colmax)
@@ -665,10 +688,16 @@ static void winTextGetLinColFromPosition(Ihandle* ih, int wpos, int* lin, int* c
     *lin = (int)SendMessage(ih->handle, EM_LINEFROMCHAR, (WPARAM)wpos, (LPARAM)0L);
 
   lineindex = (int)SendMessage(ih->handle, EM_LINEINDEX, (WPARAM)(*lin), (LPARAM)0L);
+  if (wpos <= lineindex)
+    *col = 0;
+  else
   {
     int len;
-    WCHAR* text = winTextGetNativeText(ih, &len);
-    *col = winTextCountChars(ih, text, len, lineindex, wpos);  /* lineindex is at the first character of the line */
+    WCHAR* text = winTextGetNativeLine(ih, *lin, lineindex, &len);
+    if (winTextLineIsWhole(ih, lineindex))
+      *col = winTextCountChars(ih, text, len, 0, wpos - lineindex);
+    else
+      *col = winTextCountChars(ih, text, len, lineindex, wpos);  /* lineindex is at the first character of the line */
     free(text);
   }
 
@@ -1146,18 +1175,44 @@ static int winTextSetInsertAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static int winTextBeginUpdate(Ihandle* ih)
+{
+  int redraw = iupAttribGetBoolean(ih, "AUTOREDRAW");
+  if (redraw)
+    SendMessage(ih->handle, WM_SETREDRAW, FALSE, 0);
+  return redraw;
+}
+
+static void winTextEndUpdate(Ihandle* ih, int redraw)
+{
+  if (redraw)
+  {
+    SendMessage(ih->handle, WM_SETREDRAW, TRUE, 0);
+    RedrawWindow(ih->handle, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME);
+  }
+}
+
 static int winTextSetAppendAttrib(Ihandle* ih, const char* value)
 {
   int wpos;
   TCHAR* str;
+  char* joined = NULL;
+  int redraw;
 
   if (!ih->handle)  /* do not do the action before map */
     return 0;
 
   if (!value) value = "";
-  str = winTextStrConvertToSystem(ih, value);
-
   wpos = GetWindowTextLength(ih->handle)+1;
+
+  if (ih->data->is_multiline && ih->data->append_newline && wpos != 1)
+  {
+    joined = (char*)malloc(strlen(value) + 2);
+    joined[0] = '\n';
+    strcpy(joined + 1, value);
+    value = joined;
+  }
+  str = winTextStrConvertToSystem(ih, value);
 
   /* APPENDSCROLL=NO: snapshot caret/selection + first visible line; restore after the insert. */
   int saved_start = 0, saved_end = 0, saved_first_line = 0;
@@ -1168,18 +1223,14 @@ static int winTextSetAppendAttrib(Ihandle* ih, const char* value)
     saved_first_line = (int)SendMessage(ih->handle, EM_GETFIRSTVISIBLELINE, 0, 0);
   }
 
+  redraw = winTextBeginUpdate(ih);
+
   SendMessage(ih->handle, EM_SETSEL, (WPARAM)wpos, (LPARAM)wpos);
 
   ih->data->disable_callbacks = 1;
 
-  if (ih->data->is_multiline && ih->data->append_newline && wpos != 1)
-  {
-    if (ih->data->has_formatting)
-      SendMessage(ih->handle, EM_REPLACESEL, (WPARAM)FALSE, (LPARAM)TEXT("\r"));
-    else
-      SendMessage(ih->handle, EM_REPLACESEL, (WPARAM)FALSE, (LPARAM)TEXT("\r\n"));
-  }
   SendMessage(ih->handle, EM_REPLACESEL, (WPARAM)TRUE, (LPARAM)str);
+  free(joined);
 
   if (restore_view)
   {
@@ -1188,6 +1239,8 @@ static int winTextSetAppendAttrib(Ihandle* ih, const char* value)
     if (delta != 0)
       SendMessage(ih->handle, EM_LINESCROLL, 0, (LPARAM)delta);
   }
+
+  winTextEndUpdate(ih, redraw);
 
   ih->data->disable_callbacks = 0;
 
@@ -1253,7 +1306,10 @@ static int winTextSetCaretAttrib(Ihandle* ih, const char* value)
 static char* winTextGetCaretAttrib(Ihandle* ih)
 {
   int col, lin;
-  winTextGetCaret(ih, &lin, &col);
+  if (ih->data->is_multiline)
+    winTextGetLinColFromPosition(ih, winTextGetCaretPosition(ih), &lin, &col);
+  else
+    winTextGetCaret(ih, &lin, &col);
 
   if (ih->data->is_multiline)
     return iupStrReturnIntInt(lin, col, ',');
@@ -1287,6 +1343,7 @@ static char* winTextGetCaretPosAttrib(Ihandle* ih)
 static void winTextScrollTo(Ihandle* ih, int lin, int col)
 {
   DWORD old_lin = (DWORD)SendMessage(ih->handle, EM_GETFIRSTVISIBLELINE, 0, 0);
+  int redraw = winTextBeginUpdate(ih);
   if (ih->data->has_formatting)
   {
     SendMessage(ih->handle, EM_LINESCROLL, 0, (LPARAM)(lin - old_lin - 1));
@@ -1294,6 +1351,7 @@ static void winTextScrollTo(Ihandle* ih, int lin, int col)
   }
   else  /* How to get the current horizontal position?????  */
     SendMessage(ih->handle, EM_LINESCROLL, (WPARAM)col, (LPARAM)(lin-old_lin));
+  winTextEndUpdate(ih, redraw);
 }
 
 static int winTextSetScrollToAttrib(Ihandle* ih, const char* value)
@@ -2927,7 +2985,7 @@ static int winTextSetSilent(Ihandle* ih, const char* value, IattribSetFunc set)
   ih->data->disable_callbacks = 1;
   ret = set(ih, value);
   ih->data->disable_callbacks = saved;
-  if (ih->handle)
+  if (ih->handle && IupGetCallback(ih, "CARET_CB"))
   {
     int lin, col;
     ih->data->last_caret_pos = winTextGetCaret(ih, &lin, &col);

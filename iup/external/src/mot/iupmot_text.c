@@ -5,6 +5,7 @@
  */
 
 #include <Xm/Xm.h>
+#include <Xm/TextP.h>
 #include <Xm/TextF.h>
 #include <Xm/Text.h>
 #include <Xm/ScrolledW.h>
@@ -83,76 +84,152 @@ IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
   (void)ih;
 }
 
-static void motTextGetLinColFromPosition(const char* str, int pos, int* lin, int* col )
+static int motTextLineTableReady(Ihandle* ih, int* wrap)
 {
-  int i;
+  XmTextWidget tw = (XmTextWidget)ih->handle;
+  Boolean word_wrap = False;
 
-  *lin = 0;
-  *col = 0;
+  XtVaGetValues(ih->handle, XmNwordWrap, &word_wrap, NULL);
+  *wrap = word_wrap ? 1 : 0;
+  return tw->text.line_table && tw->text.total_lines > 0 && (!word_wrap || XtIsRealized(ih->handle));
+}
 
-  for (i=0; i<pos; i++)
+static void motTextWcsPosToLinCol(Ihandle* ih, XmTextPosition pos, int* lin, int* col)
+{
+  wchar_t* str = XmTextGetStringWcs(ih->handle);
+  wchar_t* p = str;
+  XmTextPosition i;
+
+  *lin = 1;
+  *col = 1;
+  for (i = 0; p && *p && i < pos; i++, p++)
   {
-    if (*str == '\n')
+    if (*p == L'\n')
     {
       (*lin)++;
-      *col = 0;
+      *col = 1;
     }
     else
       (*col)++;
-
-    str++;
   }
-
-  (*lin)++; /* IUP starts at 1 */
-  (*col)++;
+  XtFree((char*)str);
 }
 
-static int motTextSetLinColToPosition(const char* str, int lin, int col)
+static XmTextPosition motTextWcsLinColToPos(Ihandle* ih, int lin, int col)
 {
-  int pos=0, cur_lin, cur_col;
+  wchar_t* str = XmTextGetStringWcs(ih->handle);
+  wchar_t* p = str;
+  XmTextPosition pos = 0;
 
-  lin--; /* IUP starts at 1 */
-  col--;
-
-  /* find the line */
-  cur_lin=0;
-  while (*str && cur_lin<lin)
+  while (p && *p && lin > 1)
   {
-    if (*str == '\n')
-      cur_lin++;
-
-    str++;
+    if (*p == L'\n')
+      lin--;
+    p++;
     pos++;
   }
-
-  /* find the column */
-  cur_col=0;
-  while (*str && cur_col<col)
+  while (p && *p && *p != L'\n' && col > 1)
   {
-    if (*str == '\n')
-      break;
-
-    cur_col++;
-
-    str++;
+    col--;
+    p++;
     pos++;
   }
-
+  XtFree((char*)str);
   return pos;
+}
+
+/* Motif positions count characters; the text keeps the start of every line, plus wrapped continuations marked virt_line */
+static XmTextPosition motTextLinColToPos(Ihandle* ih, int lin, int col)
+{
+  XmTextWidget tw = (XmTextWidget)ih->handle;
+  XmTextLineTable table = tw->text.line_table;
+  unsigned int n, idx, next;
+  XmTextPosition start, end, pos;
+  int wrap;
+
+  if (lin < 1) lin = 1;
+  if (col < 1) col = 1;
+  if (!motTextLineTableReady(ih, &wrap))
+    return motTextWcsLinColToPos(ih, lin, col);
+
+  n = tw->text.total_lines;
+  if (!wrap)
+    idx = (unsigned int)(lin - 1);
+  else
+  {
+    int left = lin - 1;
+    for (idx = 0; idx < n; idx++)
+    {
+      if (!table[idx].virt_line)
+      {
+        if (left == 0)
+          break;
+        left--;
+      }
+    }
+  }
+  if (idx >= n)
+    return XmTextGetLastPosition(ih->handle);
+
+  next = idx + 1;
+  while (next < n && table[next].virt_line)
+    next++;
+
+  start = (XmTextPosition)table[idx].start_pos;
+  end = next < n ? (XmTextPosition)table[next].start_pos - 1 : XmTextGetLastPosition(ih->handle);
+  pos = start + (col - 1);
+  return pos > end ? end : pos;
+}
+
+static void motTextPosToLinCol(Ihandle* ih, XmTextPosition pos, int* lin, int* col)
+{
+  XmTextWidget tw = (XmTextWidget)ih->handle;
+  XmTextLineTable table = tw->text.line_table;
+  unsigned int lo, hi, idx, i;
+  int wrap;
+
+  if (!motTextLineTableReady(ih, &wrap))
+  {
+    motTextWcsPosToLinCol(ih, pos, lin, col);
+    return;
+  }
+
+  lo = 0;
+  hi = tw->text.total_lines - 1;
+  while (lo < hi)
+  {
+    unsigned int mid = (lo + hi + 1) / 2;
+    if ((XmTextPosition)table[mid].start_pos <= pos)
+      lo = mid;
+    else
+      hi = mid - 1;
+  }
+  idx = lo;
+  while (idx > 0 && table[idx].virt_line)
+    idx--;
+
+  if (!wrap)
+    *lin = (int)idx + 1;
+  else
+  {
+    *lin = 1;
+    for (i = 1; i <= idx; i++)
+    {
+      if (!table[i].virt_line)
+        (*lin)++;
+    }
+  }
+  *col = (int)(pos - (XmTextPosition)table[idx].start_pos) + 1;
 }
 
 IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
-  char* str = XmTextGetString(ih->handle);
-  *pos = motTextSetLinColToPosition(str, lin, col);
-  XtFree(str);
+  *pos = (int)motTextLinColToPos(ih, lin, col);
 }
 
 IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, int* col)
 {
-  char* str = XmTextGetString(ih->handle);
-  motTextGetLinColFromPosition(str, pos, lin, col);
-  XtFree(str);
+  motTextPosToLinCol(ih, (XmTextPosition)pos, lin, col);
 }
 
 static int motTextConvertXYToPos(Ihandle* ih, int x, int y)
@@ -314,15 +391,12 @@ static int motTextSetSelectionAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     int lin_start=1, col_start=1, lin_end=1, col_end=1;
-    char* str;
 
     if (!iupStrToLinColRange(value, &lin_start, &col_start, &lin_end, &col_end)) return 0;
     if (lin_start<1 || col_start<1 || lin_end<1 || col_end<1) return 0;
 
-    str = XmTextGetString(ih->handle);
-    start = motTextSetLinColToPosition(str, lin_start, col_start);
-    end = motTextSetLinColToPosition(str, lin_end, col_end);
-    XtFree(str);
+    start = motTextLinColToPos(ih, lin_start, col_start);
+    end = motTextLinColToPos(ih, lin_end, col_end);
   }
   else
   {
@@ -352,10 +426,8 @@ static char* motTextGetSelectionAttrib(Ihandle* ih)
   {
     int start_col, start_lin, end_col, end_lin;
 
-    char* value = XmTextGetString(ih->handle);
-    motTextGetLinColFromPosition(value, start, &start_lin, &start_col);
-    motTextGetLinColFromPosition(value, end,   &end_lin,   &end_col);
-    XtFree(value);
+    motTextPosToLinCol(ih, start, &start_lin, &start_col);
+    motTextPosToLinCol(ih, end,   &end_lin,   &end_col);
 
     return iupStrReturnStrf("%d,%d:%d,%d", start_lin, start_col, end_lin, end_col);
   }
@@ -414,13 +486,10 @@ static int motTextSetCaretAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     int lin = 1, col = 1;
-    char* str;
 
     iupStrToIntInt(value, &lin, &col, ',');
 
-    str = XmTextGetString(ih->handle);
-    pos = motTextSetLinColToPosition(str, lin, col);
-    XtFree(str);
+    pos = (int)motTextLinColToPos(ih, lin, col);
   }
   else
   {
@@ -442,9 +511,7 @@ static char* motTextGetCaretAttrib(Ihandle* ih)
   {
     int col, lin;
 
-    char* value = XmTextGetString(ih->handle);
-    motTextGetLinColFromPosition(value, pos, &lin, &col);
-    XtFree(value);
+    motTextPosToLinCol(ih, pos, &lin, &col);
 
     return iupStrReturnIntInt(lin, col, ',');
   }
@@ -487,15 +554,12 @@ static int motTextSetScrollToAttrib(Ihandle* ih, const char* value)
   if (ih->data->is_multiline)
   {
     int lin = 1, col = 1;
-    char* str;
 
     iupStrToIntInt(value, &lin, &col, ',');
     if (lin < 1) lin = 1;
     if (col < 1) col = 1;
 
-    str = XmTextGetString(ih->handle);
-    pos = motTextSetLinColToPosition(str, lin, col);
-    XtFree(str);
+    pos = (int)motTextLinColToPos(ih, lin, col);
   }
   else
   {
@@ -790,12 +854,10 @@ static char* motTextGetLineValueAttrib(Ihandle* ih)
   {
     int lin, col, start, end;
     char* str = iupStrGetMemory(200);
-    char* value = XmTextGetString(ih->handle);
     XmTextPosition pos = XmTextGetInsertionPosition(ih->handle);
-    motTextGetLinColFromPosition(value, pos, &lin, &col);
-    start = motTextSetLinColToPosition(value, lin, 1);
-    end = motTextSetLinColToPosition(value, lin, 20000);
-    XtFree(value);
+    motTextPosToLinCol(ih, pos, &lin, &col);
+    start = (int)motTextLinColToPos(ih, lin, 1);
+    end = (int)motTextLinColToPos(ih, lin, 20000);
     XmTextGetSubstring(ih->handle, start, end-start, 200, str);  /* do not include the EOL */
     return str;
   }
@@ -878,13 +940,9 @@ static void motTextModifyVerifyCallback(Widget w, Ihandle* ih, XmTextVerifyPtr t
     XmTextPosition last = XmTextGetLastPosition(ih->handle);
     if ((XmTextPosition)text->startPos < last)
     {
-      char* full = XmTextGetString(ih->handle);
-      if (full)
-      {
-        if (full[text->startPos] != '\n')
-          text->endPos = text->startPos + 1;
-        XtFree(full);
-      }
+      char next[16] = "";
+      if (XmTextGetSubstring(ih->handle, text->startPos, 1, sizeof(next), next) == XmCOPY_SUCCEEDED && next[0] != '\n')
+        text->endPos = text->startPos + 1;
     }
   }
 
@@ -997,11 +1055,7 @@ static void motTextCaretTimeout(XtPointer client_data, XtIntervalId* id)
     return;
 
   if (ih->data->is_multiline)
-  {
-    char* value = XmTextGetString(ih->handle);
-    motTextGetLinColFromPosition(value, pos, &lin, &col);
-    XtFree(value);
-  }
+    motTextPosToLinCol(ih, pos, &lin, &col);
   else
   {
     col = pos + 1; /* IUP starts at 1 */

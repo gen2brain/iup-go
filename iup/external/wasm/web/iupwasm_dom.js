@@ -2097,11 +2097,15 @@
           if (el.__iupRender) {
             if (el.__iupText.length > 0) el.__iupText += '\n';
             el.__iupText += c.value; el.__iupRender();
+            el.scrollTop = el.scrollHeight;
           } else {
-            if (c.multiline && el.value.length > 0) el.value += '\n';
-            el.value += c.value;
+            var n = c.multiline ? el.textLength : el.value.length;
+            el.setRangeText((c.multiline && n > 0 ? '\n' : '') + c.value, n, n, 'end');
+            if (!el.__iupScrollQueued) {
+              el.__iupScrollQueued = true;
+              requestAnimationFrame(function () { el.__iupScrollQueued = false; el.scrollTop = el.scrollHeight; });
+            }
           }
-          el.scrollTop = el.scrollHeight;
         }
       } break;
       case 'textreadonly': {

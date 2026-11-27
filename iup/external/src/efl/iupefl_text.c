@@ -835,6 +835,24 @@ static int eflTextSetSelectedTextAttrib(Ihandle* ih, const char* value)
   return 0;
 }
 
+static void eflTextScrollEndJob(void* data)
+{
+  Ihandle* ih = (Ihandle*)data;
+  Eo* entry = iupeflGetWidget(ih);
+  Efl_Text_Cursor_Object* cur;
+
+  iupAttribSet(ih, "_IUP_EFL_SCROLL_JOB", NULL);
+  if (!entry)
+    return;
+
+  cur = efl_text_interactive_main_cursor_get(entry);
+  if (cur)
+  {
+    Eina_Rect rect = efl_text_cursor_object_cursor_geometry_get(cur, EFL_TEXT_CURSOR_TYPE_BEFORE);
+    efl_ui_scrollable_scroll(entry, rect, EINA_FALSE);
+  }
+}
+
 static int eflTextSetAppendAttrib(Ihandle* ih, const char* value)
 {
   Eo* entry = iupeflGetWidget(ih);
@@ -853,17 +871,18 @@ static int eflTextSetAppendAttrib(Ihandle* ih, const char* value)
     pos = efl_text_cursor_object_position_get(cur);
 
     if (ih->data->is_multiline && ih->data->append_newline && pos != 0)
-      efl_text_cursor_object_text_insert(cur, "\n");
-
-    if (value)
+    {
+      char* joined = (char*)malloc(strlen(value ? value : "") + 2);
+      joined[0] = '\n';
+      strcpy(joined + 1, value ? value : "");
+      efl_text_cursor_object_text_insert(cur, joined);
+      free(joined);
+    }
+    else if (value)
       efl_text_cursor_object_text_insert(cur, value);
 
-    if (ih->data->is_multiline && ih->data->append_scroll)
-    {
-      efl_text_cursor_object_move(cur, EFL_TEXT_CURSOR_MOVE_TYPE_LAST);
-      Eina_Rect rect = efl_text_cursor_object_cursor_geometry_get(cur, EFL_TEXT_CURSOR_TYPE_BEFORE);
-      efl_ui_scrollable_scroll(entry, rect, EINA_FALSE);
-    }
+    if (ih->data->is_multiline && ih->data->append_scroll && !iupAttribGet(ih, "_IUP_EFL_SCROLL_JOB"))
+      iupAttribSet(ih, "_IUP_EFL_SCROLL_JOB", (char*)ecore_job_add(eflTextScrollEndJob, ih));
   }
 
   ih->data->disable_callbacks = 0;
@@ -1772,6 +1791,13 @@ static int eflTextMapMethod(Ihandle* ih)
 static void eflTextUnMapMethod(Ihandle* ih)
 {
   Eo* entry = iupeflGetWidget(ih);
+  Ecore_Job* job = (Ecore_Job*)iupAttribGet(ih, "_IUP_EFL_SCROLL_JOB");
+
+  if (job)
+  {
+    ecore_job_del(job);
+    iupAttribSet(ih, "_IUP_EFL_SCROLL_JOB", NULL);
+  }
 
   eflTextDestroyImageOverlays(ih);
 

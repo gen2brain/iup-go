@@ -137,6 +137,11 @@ func buildSteps() {
 	add(func() { multi.SetAttribute("SCROLLTOPOS", "6") })
 	attrs("SCROLLTOPOS keeps the caret of a multiline text", &multi, "CARET=1,1")
 
+	add(func() { multi.SetAttribute("VALUE", "č😀x\nab😀cd"); multi.SetAttribute("CARET", "2,4") })
+	attrs("CARET lin,col counts characters on a line with non-ASCII text", &multi, "CARET=2,4", "CARETPOS=7", "LINEVALUE=ab😀cd")
+	add(func() { multi.SetAttribute("SELECTION", "1,2:2,4") })
+	attrs("SELECTION lin,col counts characters on lines with non-ASCII text", &multi, "SELECTION=1,2:2,4", "SELECTIONPOS=1:7", "SELECTEDTEXT=😀x\nab😀")
+
 	add(func() { line.SetAttribute("CARETPOS", "0"); line.SetAttribute("SCROLLTOPOS", "3") })
 	attrs("SCROLLTOPOS moves the caret of a single line text", &line, "CARETPOS=3")
 	add(func() { line.SetAttribute("SCROLLTO", "2") })

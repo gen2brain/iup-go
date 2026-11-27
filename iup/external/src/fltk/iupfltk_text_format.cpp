@@ -690,7 +690,7 @@ void iupfltkFormatInit(Ihandle* ih)
 
   auto* fdata = static_cast<FltkFormatData*>(calloc(1, sizeof(FltkFormatData)));
 
-  fdata->style_buffer = new Fl_Text_Buffer();
+  fdata->style_buffer = new Fl_Text_Buffer(0, 65536);
   fdata->style_buffer->canUndo(0);
 
   fdata->style_table[0].font = editor->textfont();

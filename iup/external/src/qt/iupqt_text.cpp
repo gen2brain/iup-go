@@ -517,7 +517,7 @@ static void qtTextLinColToUnit(Ihandle* ih, int lin, int col, int* pos)
     lin--; /* IUP starts at 1 */
     col--;
 
-    QTextBlock block = doc->findBlockByLineNumber(lin);
+    QTextBlock block = doc->findBlockByNumber(lin);
     if (block.isValid())
     {
       col = iupqtStrCharToUnit(block.text(), col);
@@ -1342,7 +1342,7 @@ static int qtTextSetAppendAttrib(Ihandle* ih, const char* value)
   {
     auto* text = reinterpret_cast<IupQtTextEdit*>(ih->handle);
     QString to_insert = QString::fromUtf8(value);
-    if (ih->data->append_newline && !text->toPlainText().isEmpty())
+    if (ih->data->append_newline && !text->document()->isEmpty())
       to_insert.prepend('\n');
 
     if (ih->data->append_scroll)
@@ -2218,7 +2218,7 @@ static bool qtTextParseSelection(Ihandle* ih, const char* value, int* start, int
   {
     auto* text = reinterpret_cast<QTextEdit*>(ih->handle);
     *start = 0;
-    *end = text->toPlainText().length();
+    *end = text->document()->characterCount() - 1;
     return true;
   }
 

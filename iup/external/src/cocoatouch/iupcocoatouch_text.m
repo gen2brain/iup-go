@@ -5,6 +5,7 @@
  */
 
 #import <UIKit/UIKit.h>
+#import <CoreText/CoreText.h>
 #import <objc/runtime.h>
 
 #include <string.h>
@@ -29,6 +30,7 @@
 
 
 static const void* IUPCOCOATOUCH_TEXT_DELEGATE_KEY = "IUPCOCOATOUCH_TEXT_DELEGATE";
+static const void* IUPCOCOATOUCH_LAYOUT_DELEGATE_KEY = "IUPCOCOATOUCH_LAYOUT_DELEGATE";
 
 @interface IupCocoaTouchTextField : UITextField
 @property(nonatomic, assign) Ihandle* ihandle;
@@ -99,6 +101,84 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 @end
 
 
+static NSString* const IUPCOCOATOUCH_DOUBLE_UNDERLINE = @"IupCocoaTouchDoubleUnderline";
+
+/* TextKit 2 draws the first line of NSUnderlineStyleDouble on the baseline */
+API_AVAILABLE(ios(15.0))
+@interface IupCocoaTouchTextLayoutFragment : NSTextLayoutFragment
+@end
+
+@implementation IupCocoaTouchTextLayoutFragment
+
+- (void)drawAtPoint:(CGPoint)point inContext:(CGContextRef)context
+{
+	[super drawAtPoint:point inContext:context];
+	for (NSTextLineFragment* line in self.textLineFragments)
+	{
+		NSAttributedString* s = line.attributedString;
+		[s enumerateAttribute:IUPCOCOATOUCH_DOUBLE_UNDERLINE inRange:line.characterRange options:0
+			usingBlock:^(id value, NSRange r, BOOL* stop) {
+				(void)stop;
+				if (![value boolValue]) return;
+				NSUInteger end = NSMaxRange(r);
+				while (end > r.location && [[s string] characterAtIndex:end - 1] == '\n') end--;
+				if (end <= r.location) return;
+				UIFont* font = [s attribute:NSFontAttributeName atIndex:r.location effectiveRange:NULL];
+				UIColor* color = [s attribute:NSForegroundColorAttributeName atIndex:r.location effectiveRange:NULL];
+				if (!font) font = [UIFont systemFontOfSize:[UIFont systemFontSize]];
+				if (!color) color = [UIColor labelColor];
+				CGFloat thick = MAX(1.0, CTFontGetUnderlineThickness((CTFontRef)font));
+				CGFloat x = point.x + line.typographicBounds.origin.x;
+				CGFloat x1 = x + [line locationForCharacterAtIndex:(NSInteger)r.location].x;
+				CGFloat x2 = x + [line locationForCharacterAtIndex:(NSInteger)end].x;
+				CGFloat y = point.y + line.typographicBounds.origin.y + line.glyphOrigin.y - CTFontGetUnderlinePosition((CTFontRef)font);
+				CGContextSaveGState(context);
+				CGContextSetFillColorWithColor(context, color.CGColor);
+				CGContextFillRect(context, CGRectMake(x1, y, x2 - x1, thick));
+				CGContextFillRect(context, CGRectMake(x1, y + 2 * thick, x2 - x1, thick));
+				CGContextRestoreGState(context);
+			}];
+	}
+}
+
+@end
+
+/* creates the fragments and passes every other call on to the delegate UIKit installed */
+API_AVAILABLE(ios(15.0))
+@interface IupCocoaTouchTextLayoutDelegate : NSObject <NSTextLayoutManagerDelegate>
+{
+	id<NSTextLayoutManagerDelegate> _inner;
+}
+- (instancetype)initWithInner:(id<NSTextLayoutManagerDelegate>)inner;
+@end
+
+@implementation IupCocoaTouchTextLayoutDelegate
+
+- (instancetype)initWithInner:(id<NSTextLayoutManagerDelegate>)inner
+{
+	self = [super init];
+	if (self) _inner = inner;
+	return self;
+}
+
+- (NSTextLayoutFragment*)textLayoutManager:(NSTextLayoutManager*)textLayoutManager textLayoutFragmentForLocation:(id<NSTextLocation>)location inTextElement:(NSTextElement*)textElement
+{
+	(void)textLayoutManager; (void)location;
+	return [[[IupCocoaTouchTextLayoutFragment alloc] initWithTextElement:textElement range:textElement.elementRange] autorelease];
+}
+
+- (BOOL)respondsToSelector:(SEL)selector
+{
+	return [super respondsToSelector:selector] || [_inner respondsToSelector:selector];
+}
+
+- (id)forwardingTargetForSelector:(SEL)selector
+{
+	return [_inner respondsToSelector:selector] ? _inner : nil;
+}
+
+@end
+
 @interface IupCocoaTouchTextView : UITextView
 @property(nonatomic, assign) Ihandle* ihandle;
 @property(nonatomic, assign) BOOL unwrapped;
@@ -107,29 +187,19 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 @end
 
 @implementation IupCocoaTouchTextView
-{
-	NSTextStorage* _storage;
-}
 
-/* TextKit 1 stack: TextKit 2 draws a double underline on the baseline */
 - (instancetype)initWithFrame:(CGRect)frame
 {
-	NSTextStorage* storage = [[NSTextStorage alloc] init];
-	NSLayoutManager* layout = [[NSLayoutManager alloc] init];
-	layout.allowsNonContiguousLayout = YES;
-	NSTextContainer* container = [[NSTextContainer alloc] initWithSize:CGSizeMake(frame.size.width, CGFLOAT_MAX)];
-	container.widthTracksTextView = YES;
-	[layout addTextContainer:container];
-	[storage addLayoutManager:layout];
-	[layout release];
-	self = [super initWithFrame:frame textContainer:container];
-	[container release];
+	self = [super initWithFrame:frame];
 	if (!self)
-	{
-		[storage release];
 		return nil;
+	if (@available(iOS 16.0, *))
+	{
+		IupCocoaTouchTextLayoutDelegate* d = [[IupCocoaTouchTextLayoutDelegate alloc] initWithInner:self.textLayoutManager.delegate];
+		self.textLayoutManager.delegate = d;
+		objc_setAssociatedObject(self, IUPCOCOATOUCH_LAYOUT_DELEGATE_KEY, d, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+		[d release];
 	}
-	_storage = storage;
 	self.autocapitalizationType = UITextAutocapitalizationTypeNone;
 	self.autocorrectionType = UITextAutocorrectionTypeNo;
 	self.smartQuotesType = UITextSmartQuotesTypeNo;
@@ -143,11 +213,9 @@ static BOOL cocoaTouchTextIsReturnPress(UIPress* press)
 
 - (void)dealloc
 {
-	NSTextStorage* storage = _storage;
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
 	[_defaultColor release];
 	[super dealloc];
-	[storage release];
 }
 
 - (void)textStorageEdited:(NSNotification*)note
@@ -397,23 +465,15 @@ static UITextView* cocoaTouchTextView(Ihandle* ih)
 
 static void cocoaTouchTextScrollLineToVisible(UITextView* v, NSUInteger index)
 {
-	NSLayoutManager* lm = v.layoutManager;
-	[lm ensureLayoutForTextContainer:v.textContainer];
 	[v layoutIfNeeded];
 
-	CGRect line;
-	if (index < [v.textStorage length])
-		line = [lm lineFragmentRectForGlyphAtIndex:[lm glyphIndexForCharacterAtIndex:index] effectiveRange:NULL];
-	else if (!CGRectIsEmpty(lm.extraLineFragmentRect))
-		line = lm.extraLineFragmentRect;
-	else if ([lm numberOfGlyphs] > 0)
-		line = [lm lineFragmentRectForGlyphAtIndex:[lm numberOfGlyphs] - 1 effectiveRange:NULL];
-	else
-		return;
+	UITextPosition* pos = [v positionFromPosition:v.beginningOfDocument offset:(NSInteger)MIN(index, v.textStorage.length)];
+	if (!pos) return;
+	CGRect line = [v caretRectForPosition:pos];
 
 	UIEdgeInsets inset = v.textContainerInset;
 	CGFloat view_h = v.bounds.size.height;
-	CGFloat top = line.origin.y, bottom = CGRectGetMaxY(line) + inset.top + inset.bottom;
+	CGFloat top = line.origin.y - inset.top, bottom = CGRectGetMaxY(line) + inset.bottom;
 	CGFloat y = v.contentOffset.y;
 	if (top < y)
 		y = top;
@@ -445,7 +505,7 @@ static NSString* cocoaTouchTextGetString(Ihandle* ih)
 	UITextField* f = cocoaTouchTextField(ih);
 	if (f) return [f text] ? [f text] : @"";
 	UITextView* v = cocoaTouchTextView(ih);
-	if (v) return [v text] ? [v text] : @"";
+	if (v) return v.textStorage.string;
 	return @"";
 }
 
@@ -515,6 +575,45 @@ static void cocoaTouchTextSetCharSelection(Ihandle* ih, int start, int end)
 	cocoaTouchTextSetSelection(ih, iupCocoaTouchStrCharToUnit(s, start), iupCocoaTouchStrCharToUnit(s, end));
 }
 
+#define COCOATOUCH_TEXT_CHUNK 4096
+
+/* unit index where line lin starts, the length when there is no such line */
+static NSUInteger cocoaTouchTextLineStart(NSString* s, int lin)
+{
+	NSUInteger len = s.length, from = 0;
+	unichar buf[COCOATOUCH_TEXT_CHUNK];
+	int cur = 1;
+	if (lin <= 1) return 0;
+	while (from < len)
+	{
+		NSUInteger n = MIN(len - from, (NSUInteger)COCOATOUCH_TEXT_CHUNK), i;
+		[s getCharacters:buf range:NSMakeRange(from, n)];
+		for (i = 0; i < n; i++)
+			if (buf[i] == '\n' && ++cur == lin) return from + i + 1;
+		from += n;
+	}
+	return len;
+}
+
+/* newlines in [0, to); *line_start is set after the last one */
+static int cocoaTouchTextCountLines(NSString* s, NSUInteger to, NSUInteger* line_start)
+{
+	NSUInteger from = 0;
+	unichar buf[COCOATOUCH_TEXT_CHUNK];
+	int count = 0;
+	*line_start = 0;
+	if (to > s.length) to = s.length;
+	while (from < to)
+	{
+		NSUInteger n = MIN(to - from, (NSUInteger)COCOATOUCH_TEXT_CHUNK), i;
+		[s getCharacters:buf range:NSMakeRange(from, n)];
+		for (i = 0; i < n; i++)
+			if (buf[i] == '\n') { count++; *line_start = from + i + 1; }
+		from += n;
+	}
+	return count;
+}
+
 IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int* pos)
 {
 	if (!pos) return;
@@ -524,23 +623,14 @@ IUP_SDK_API void iupdrvTextConvertLinColToPos(Ihandle* ih, int lin, int col, int
 
 	if (lin < 1) lin = 1;
 	if (col < 1) col = 1;
-	int cur_lin = 1, cur_col = 1, n = 0;
-	NSUInteger len = [s length], i = 0;
-	while (i < len)
+	NSUInteger len = s.length, start = cocoaTouchTextLineStart(s, lin), i = start;
+	int n = (int)iupCocoaTouchStrCountChars(s, 0, start), c = 1;
+	while (i < len && c < col)
 	{
-		if (cur_lin == lin && cur_col == col)
-		{
-			*pos = n;
-			return;
-		}
-		unichar c = [s characterAtIndex:i];
-		if (c == '\n')
-		{
-			if (cur_lin == lin) { *pos = n; return; }
-			cur_lin++; cur_col = 1;
-		}
-		else cur_col++;
-		i += (i + 1 < len && CFStringIsSurrogateHighCharacter(c)) ? 2 : 1;
+		unichar ch = [s characterAtIndex:i];
+		if (ch == '\n') break;
+		i += (i + 1 < len && CFStringIsSurrogateHighCharacter(ch)) ? 2 : 1;
+		c++;
 		n++;
 	}
 	*pos = n;
@@ -552,17 +642,10 @@ IUP_SDK_API void iupdrvTextConvertPosToLinCol(Ihandle* ih, int pos, int* lin, in
 	if (col) *col = 1;
 	NSString* s = cocoaTouchTextGetString(ih);
 	if (!s || pos <= 0) return;
-	NSUInteger end = iupCocoaTouchStrCharToUnit(s, pos), i = 0;
-	int l = 1, c = 1;
-	while (i < end)
-	{
-		unichar ch = [s characterAtIndex:i];
-		if (ch == '\n') { l++; c = 1; }
-		else             c++;
-		i += (i + 1 < end && CFStringIsSurrogateHighCharacter(ch)) ? 2 : 1;
-	}
+	NSUInteger end = iupCocoaTouchStrCharToUnit(s, pos), line_start;
+	int l = cocoaTouchTextCountLines(s, end, &line_start) + 1;
 	if (lin) *lin = l;
-	if (col) *col = c;
+	if (col) *col = (int)iupCocoaTouchStrCountChars(s, line_start, end) + 1;
 }
 
 IUP_SDK_API void iupdrvTextAddExtraPadding(Ihandle* ih, int* w, int* h)
@@ -853,7 +936,7 @@ static CGFloat cocoaTouchTextFontScaleFactor(const char* scale)
 	return 1.0;
 }
 
-static void cocoaTouchTextApplyTagToAttributes(Ihandle* tag, NSMutableDictionary* attrs)
+static void cocoaTouchTextApplyTagToAttributes(Ihandle* tag, NSMutableDictionary* attrs, BOOL draw_double)
 {
 	UIFont* base = attrs[NSFontAttributeName];
 	if (!base) base = [UIFont systemFontOfSize:[UIFont systemFontSize]];
@@ -919,7 +1002,9 @@ static void cocoaTouchTextApplyTagToAttributes(Ihandle* tag, NSMutableDictionary
 		else if (iupStrEqualNoCase(under, "DOTTED") || iupStrEqualNoCase(under, "DOT"))
 			style = NSUnderlineStyleSingle | NSUnderlinePatternDot;
 		else if (iupStrBoolean(under))               style = NSUnderlineStyleSingle;
-		attrs[NSUnderlineStyleAttributeName] = @(style);
+		BOOL own_double = draw_double && style == NSUnderlineStyleDouble;
+		attrs[NSUnderlineStyleAttributeName] = @(own_double ? NSUnderlineStyleNone : style);
+		attrs[IUPCOCOATOUCH_DOUBLE_UNDERLINE] = @(own_double);
 	}
 
 	const char* strike = iupAttribGet(tag, "STRIKEOUT");
@@ -1003,6 +1088,9 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
 {
 	UITextView* tv = cocoaTouchTextView(ih);
 	if (!tv) return;
+	BOOL draw_double = NO;
+	if (@available(iOS 16.0, *))
+		draw_double = tv.textLayoutManager != nil;
 
 	NSMutableAttributedString* attr_string = (NSMutableAttributedString*)iupAttribGet(ih, "_IUPCOCOATOUCH_BULK_ATTR");
 	BOOL is_bulk_path = (bulk && attr_string);
@@ -1048,7 +1136,7 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
 	if (sub_ranges.count == 0)
 	{
 		NSMutableDictionary* patch = [NSMutableDictionary dictionary];
-		cocoaTouchTextApplyTagToAttributes(formattag, patch);
+		cocoaTouchTextApplyTagToAttributes(formattag, patch, draw_double);
 		[attr_string addAttributes:patch range:range];
 	}
 	else
@@ -1058,7 +1146,7 @@ IUP_SDK_API void iupdrvTextAddFormatTag(Ihandle* ih, Ihandle* formattag, int bul
 			NSMutableDictionary* patch = [NSMutableDictionary dictionary];
 			id sub_font = [sub_fonts objectAtIndex:k];
 			if (sub_font != [NSNull null]) patch[NSFontAttributeName] = sub_font;
-			cocoaTouchTextApplyTagToAttributes(formattag, patch);
+			cocoaTouchTextApplyTagToAttributes(formattag, patch, draw_double);
 			[attr_string addAttributes:patch range:[[sub_ranges objectAtIndex:k] rangeValue]];
 		}
 	}
@@ -1182,6 +1270,8 @@ static int cocoaTouchTextTypedKey(NSRange range, NSString* replacement)
 
 static void cocoaTouchTextCallCaretCb(Ihandle* ih, NSString* text, NSUInteger unit)
 {
+	IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
+	if (!cb) return;
 	int pos = iupCocoaTouchStrUnitToChar(text ? text : @"", unit);
 	if (ih->data->disable_callbacks)
 	{
@@ -1190,8 +1280,6 @@ static void cocoaTouchTextCallCaretCb(Ihandle* ih, NSString* text, NSUInteger un
 	}
 	if (iupAttribGet(ih, "_IUPCOCOATOUCH_USER_EDIT") || pos == ih->data->last_caret_pos) return;
 	ih->data->last_caret_pos = pos;
-	IFniii cb = (IFniii)IupGetCallback(ih, "CARET_CB");
-	if (!cb) return;
 	int lin, col;
 	iupdrvTextConvertPosToLinCol(ih, pos, &lin, &col);
 	if (cb(ih, lin, col, pos) == IUP_CLOSE) IupExitLoop();
@@ -1294,7 +1382,7 @@ static void cocoaTouchTextEditDone(Ihandle* ih, NSString* text, NSUInteger unit)
 	if (!_ihandle) return YES;
 	if (iupCocoaTouchKeyText(_ihandle, textView, cocoaTouchTextTypedKey(range, replacement))) return NO;
 	if (!iupObjectCheck(_ihandle)) return NO;
-	NSString* current = textView.text ? textView.text : @"";
+	NSString* current = textView.textStorage.string;
 	NSRange effective = cocoaTouchOverwriteRange(_ihandle, current, range, replacement);
 	NSString* applied = cocoaTouchTextValidateEdit(_ihandle, current, effective, replacement);
 	if (!applied) return NO;
@@ -1324,7 +1412,7 @@ static void cocoaTouchTextEditDone(Ihandle* ih, NSString* text, NSUInteger unit)
 		textView.text = new_text;
 		[textView setSelectedRange:NSMakeRange(effective.location + applied.length, 0)];
 		_ihandle->data->disable_callbacks = 0;
-		cocoaTouchTextEditDone(_ihandle, textView.text, textView.selectedRange.location);
+		cocoaTouchTextEditDone(_ihandle, textView.textStorage.string, textView.selectedRange.location);
 		return NO;
 	}
 	iupAttribSet(_ihandle, "_IUPCOCOATOUCH_USER_EDIT", "1");
@@ -1348,7 +1436,7 @@ static void cocoaTouchTextEditDone(Ihandle* ih, NSString* text, NSUInteger unit)
 - (void)textViewDidChange:(UITextView*)textView
 {
 	if (!_ihandle || _ihandle->data->disable_callbacks) return;
-	cocoaTouchTextEditDone(_ihandle, textView.text, textView.selectedRange.location);
+	cocoaTouchTextEditDone(_ihandle, textView.textStorage.string, textView.selectedRange.location);
 }
 
 - (void)textViewDidChangeSelection:(UITextView*)textView
@@ -1356,7 +1444,7 @@ static void cocoaTouchTextEditDone(Ihandle* ih, NSString* text, NSUInteger unit)
 	if ([textView.superview isKindOfClass:[IupCocoaTouchTextScroll class]])
 		[(IupCocoaTouchTextScroll*)textView.superview revealRange:textView.selectedRange];
 	if (!_ihandle) return;
-	cocoaTouchTextCallCaretCb(_ihandle, textView.text, textView.selectedRange.location);
+	cocoaTouchTextCallCaretCb(_ihandle, textView.textStorage.string, textView.selectedRange.location);
 }
 
 - (void)onStepperChanged:(UIStepper*)stepper
@@ -1376,11 +1464,8 @@ static void cocoaTouchTextEditDone(Ihandle* ih, NSString* text, NSUInteger unit)
 
 - (BOOL)textView:(UITextView*)textView shouldInteractWithURL:(NSURL*)url inRange:(NSRange)range interaction:(UITextItemInteraction)interaction
 {
-	(void)textView; (void)range; (void)interaction;
-	if (!_ihandle) return YES;
-	IFns cb = (IFns)IupGetCallback(_ihandle, "LINK_CB");
-	if (cb && cb(_ihandle, (char*)[url.absoluteString UTF8String]) == IUP_CLOSE) IupExitLoop();
-	return NO;
+	(void)textView; (void)url; (void)range; (void)interaction;
+	return _ihandle ? NO : YES;
 }
 
 /* editable UITextView eats taps for caret placement; tap gesture fires LINK_CB on link ranges */
@@ -1388,12 +1473,9 @@ static void cocoaTouchTextEditDone(Ihandle* ih, NSString* text, NSUInteger unit)
 {
 	if (!_ihandle) return;
 	UITextView* tv = (UITextView*)gr.view;
-	CGPoint pt = [gr locationInView:tv];
-	pt.x -= tv.textContainerInset.left;
-	pt.y -= tv.textContainerInset.top;
-	NSUInteger idx = [tv.layoutManager characterIndexForPoint:pt
-	                                          inTextContainer:tv.textContainer
-	                 fractionOfDistanceBetweenInsertionPoints:NULL];
+	UITextPosition* pos = [tv closestPositionToPoint:[gr locationInView:tv]];
+	if (!pos) return;
+	NSUInteger idx = (NSUInteger)[tv offsetFromPosition:tv.beginningOfDocument toPosition:pos];
 	if (idx >= tv.attributedText.length) return;
 	NSURL* url = [tv.attributedText attribute:NSLinkAttributeName atIndex:idx effectiveRange:NULL];
 	if (!url) return;
@@ -1639,13 +1721,8 @@ static char* cocoaTouchTextGetLineCountAttrib(Ihandle* ih)
 {
 	if (!ih->data->is_multiline) return "1";
 	NSString* s = cocoaTouchTextGetString(ih);
-	NSUInteger len = s.length;
-	int count = 1;
-	for (NSUInteger i = 0; i < len; i++)
-	{
-		if ([s characterAtIndex:i] == '\n') count++;
-	}
-	return iupStrReturnInt(count);
+	NSUInteger line_start;
+	return iupStrReturnInt(cocoaTouchTextCountLines(s, s.length, &line_start) + 1);
 }
 
 static char* cocoaTouchTextGetLineValueAttrib(Ihandle* ih)
@@ -1853,7 +1930,7 @@ static int cocoaTouchTextSetAppendAttrib(Ihandle* ih, const char* value)
 	if (tv)
 	{
 		NSString* sep = @"";
-		if (tv.text.length > 0 && ih->data->is_multiline && ih->data->append_newline)
+		if (tv.textStorage.length > 0 && ih->data->is_multiline && ih->data->append_newline)
 			sep = @"\n";
 		NSDictionary* attrs = @{
 			NSFontAttributeName: tv.font ? tv.font : [UIFont systemFontOfSize:[UIFont systemFontSize]],
@@ -1863,8 +1940,16 @@ static int cocoaTouchTextSetAppendAttrib(Ihandle* ih, const char* value)
 			attributes:attrs];
 		[tv.textStorage appendAttributedString:tail];
 		[tail release];
-		if (ih->data->append_scroll)
-			cocoaTouchTextScrollRangeToVisible(tv, NSMakeRange(tv.textStorage.length, 0));
+		if (ih->data->append_scroll && !iupAttribGet(ih, "_IUPCOCOATOUCH_SCROLLEND_QUEUED"))
+		{
+			iupAttribSet(ih, "_IUPCOCOATOUCH_SCROLLEND_QUEUED", "1");
+			iupCocoaTouchRunLater(^{
+				if (!iupObjectCheck(ih)) return;
+				iupAttribSet(ih, "_IUPCOCOATOUCH_SCROLLEND_QUEUED", NULL);
+				UITextView* v = cocoaTouchTextView(ih);
+				if (v) cocoaTouchTextScrollRangeToVisible(v, NSMakeRange(v.textStorage.length, 0));
+			});
+		}
 		return 0;
 	}
 
@@ -2216,7 +2301,7 @@ static int cocoaTouchTextSetSilent(Ihandle* ih, const char* value, IattribSetFun
 	ih->data->disable_callbacks = 1;
 	ret = set(ih, value);
 	ih->data->disable_callbacks = saved;
-	if (ih->handle) ih->data->last_caret_pos = IupGetInt(ih, "CARETPOS");
+	if (ih->handle && IupGetCallback(ih, "CARET_CB")) ih->data->last_caret_pos = IupGetInt(ih, "CARETPOS");
 	return ret;
 }
 

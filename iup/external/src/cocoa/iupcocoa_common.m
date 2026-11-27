@@ -520,29 +520,57 @@ static int cocoaUtf8SequenceLength(const unsigned char* s)
   return len;
 }
 
+#define IUPCOCOA_STR_CHUNK 4096
+
+/* the units are read a chunk at a time, one more than consumed so a surrogate pair split by the chunk is seen whole */
 IUP_DRV_API NSUInteger iupcocoaStrAdvanceChars(NSString* text, NSUInteger from, NSUInteger count)
 {
   NSUInteger length = [text length];
+  unichar buf[IUPCOCOA_STR_CHUNK + 1];
+
   while (count > 0 && from < length)
   {
-    if (CFStringIsSurrogateHighCharacter([text characterAtIndex:from]) && from + 1 < length && CFStringIsSurrogateLowCharacter([text characterAtIndex:from + 1]))
-      from += 2;
-    else
-      from++;
-    count--;
+    NSUInteger n = length - from, limit, i = 0;
+    if (n > IUPCOCOA_STR_CHUNK + 1)
+      n = IUPCOCOA_STR_CHUNK + 1;
+    limit = n > IUPCOCOA_STR_CHUNK ? IUPCOCOA_STR_CHUNK : n;
+    [text getCharacters:buf range:NSMakeRange(from, n)];
+    while (count > 0 && i < limit)
+    {
+      if (CFStringIsSurrogateHighCharacter(buf[i]) && i + 1 < n && CFStringIsSurrogateLowCharacter(buf[i + 1]))
+        i += 2;
+      else
+        i++;
+      count--;
+    }
+    from += i;
   }
   return from;
 }
 
 IUP_DRV_API NSUInteger iupcocoaStrCountChars(NSString* text, NSUInteger from, NSUInteger to)
 {
-  NSUInteger count = 0;
-  if (to > [text length])
-    to = [text length];
+  NSUInteger length = [text length], count = 0;
+  unichar buf[IUPCOCOA_STR_CHUNK + 1];
+
+  if (to > length)
+    to = length;
   while (from < to)
   {
-    from = iupcocoaStrAdvanceChars(text, from, 1);
-    count++;
+    NSUInteger n = length - from, limit, i = 0;
+    if (n > IUPCOCOA_STR_CHUNK + 1)
+      n = IUPCOCOA_STR_CHUNK + 1;
+    limit = to - from < IUPCOCOA_STR_CHUNK ? to - from : IUPCOCOA_STR_CHUNK;
+    [text getCharacters:buf range:NSMakeRange(from, n)];
+    while (i < limit)
+    {
+      if (CFStringIsSurrogateHighCharacter(buf[i]) && i + 1 < n && CFStringIsSurrogateLowCharacter(buf[i + 1]))
+        i += 2;
+      else
+        i++;
+      count++;
+    }
+    from += i;
   }
   return count;
 }

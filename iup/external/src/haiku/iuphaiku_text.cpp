@@ -497,14 +497,7 @@ public:
       fIhandle(ih), fSuppress(false), fOverwrite(false),
       fLinkCursor(B_CURSOR_ID_FOLLOW_LINK)
   {
-  }
-
-  void FrameResized(float w, float h) override
-  {
-    BTextView::FrameResized(w, h);
-    BRect b = Bounds();
-    BRect tr(b.left + 2, b.top + 2, b.right - 2, b.bottom - 2);
-    if (tr.IsValid() && tr != TextRect()) SetTextRect(tr);
+    SetInsets(2, 2, 2, 2);
   }
 
   void MessageReceived(BMessage* msg) override
@@ -893,6 +886,9 @@ static void haikuTextFireCaretCb(Ihandle* ih, BTextView* tv)
   if (!ih || !tv) return;
   if (ih->data->disable_callbacks) return;
 
+  auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
+  if (!cb) return;
+
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
   int pos = iupStrUtf8ByteToChar(tv->Text(), s);
@@ -900,9 +896,6 @@ static void haikuTextFireCaretCb(Ihandle* ih, BTextView* tv)
   int last = iupAttribGetInt(ih, "_IUPHAIKU_LAST_CARET");
   if (last == pos + 1) return;
   iupAttribSetInt(ih, "_IUPHAIKU_LAST_CARET", pos + 1);
-
-  auto cb = reinterpret_cast<IFniii>(IupGetCallback(ih, "CARET_CB"));
-  if (!cb) return;
 
   int32 ln = tv->LineAt(s);
   int lin = ln + 1;
@@ -912,6 +905,8 @@ static void haikuTextFireCaretCb(Ihandle* ih, BTextView* tv)
 
 static void haikuTextRecordCaret(Ihandle* ih, BTextView* tv)
 {
+  if (!IupGetCallback(ih, "CARET_CB"))
+    return;
   int32 s = 0, e = 0;
   tv->GetSelection(&s, &e);
   iupAttribSetInt(ih, "_IUPHAIKU_LAST_CARET", iupStrUtf8ByteToChar(tv->Text(), s) + 1);
@@ -1063,6 +1058,41 @@ static int32 haikuTextCharToByte(BTextView* tv, int char_pos)
 static int haikuTextByteToChar(BTextView* tv, int32 byte_pos)
 {
   return iupStrUtf8ByteToChar(tv->Text(), static_cast<int>(byte_pos));
+}
+
+static int32 haikuTextLinColToByte(BTextView* tv, int lin, int col)
+{
+  int32 lines = tv->CountLines();
+  int32 start, end, b;
+
+  if (lin < 1) lin = 1;
+  if (lin > lines) lin = lines;
+  start = tv->OffsetAt(lin - 1);
+  end = lin < lines ? tv->OffsetAt(lin) : tv->TextLength();
+  if (end > start && tv->ByteAt(end - 1) == '\n')
+    end--;
+
+  for (b = start; col > 1 && b < end; col--)
+  {
+    b++;
+    while (b < end && (tv->ByteAt(b) & 0xC0) == 0x80)
+      b++;
+  }
+  return b;
+}
+
+static void haikuTextByteToLinCol(BTextView* tv, int32 byte_pos, int* lin, int* col)
+{
+  int32 ln = tv->LineAt(byte_pos);
+  int32 b;
+
+  *lin = ln + 1;
+  *col = 1;
+  for (b = tv->OffsetAt(ln); b < byte_pos; b++)
+  {
+    if ((tv->ByteAt(b) & 0xC0) != 0x80)
+      (*col)++;
+  }
 }
 
 static int haikuTextParseRange(BTextView* tv, const char* sel, bool one_based, int32* start, int32* end, int char_offset = 0)
@@ -1297,10 +1327,8 @@ static int haikuTextSetSelectionAttrib(Ihandle* ih, const char* value)
     int lin1 = 1, col1 = 1, lin2 = 1, col2 = 1;
     if (!iupStrToLinColRange(value, &lin1, &col1, &lin2, &col2))
       return 0;
-    int ps = 0, pe = 0;
-    iupdrvTextConvertLinColToPos(ih, lin1, col1, &ps);
-    iupdrvTextConvertLinColToPos(ih, lin2, col2, &pe);
-    s = haikuTextCharToByte(tv, ps); e = haikuTextCharToByte(tv, pe);
+    s = haikuTextLinColToByte(tv, lin1, col1);
+    e = haikuTextLinColToByte(tv, lin2, col2);
     tv->Select(s, e);
     return 0;
   }
@@ -1343,8 +1371,8 @@ static char* haikuTextGetSelectionAttrib(Ihandle* ih)
   if (ih->data->is_multiline)
   {
     int lin1, col1, lin2, col2;
-    iupdrvTextConvertPosToLinCol(ih, haikuTextByteToChar(tv, s), &lin1, &col1);
-    iupdrvTextConvertPosToLinCol(ih, haikuTextByteToChar(tv, e), &lin2, &col2);
+    haikuTextByteToLinCol(tv, s, &lin1, &col1);
+    haikuTextByteToLinCol(tv, e, &lin2, &col2);
     return iupStrReturnStrf("%d,%d:%d,%d", lin1, col1, lin2, col2);
   }
   return iupStrReturnStrf("%d:%d", haikuTextByteToChar(tv, s) + 1, haikuTextByteToChar(tv, e) + 1);
@@ -1424,9 +1452,13 @@ static int haikuTextSetCaretAttrib(Ihandle* ih, const char* value)
   }
   int lin = 1, col = 1;
   if (iupStrToIntInt(value, &lin, &col, ',') != 2) return 0;
-  int pos = 0;
-  iupdrvTextConvertLinColToPos(ih, lin, col, &pos);
-  return haikuTextSetCaretPosAttrib(ih, iupStrReturnInt(pos));
+  BTextView* tv = haikuTextGetEditor(ih);
+  if (!tv) return 0;
+  LooperLockGuard guard(haikuTextGetLooper(ih));
+  int32 byte = haikuTextLinColToByte(tv, lin, col);
+  tv->Select(byte, byte);
+  tv->ScrollToOffset(byte);
+  return 0;
 }
 
 static char* haikuTextGetCaretAttrib(Ihandle* ih)
@@ -1437,7 +1469,7 @@ static char* haikuTextGetCaretAttrib(Ihandle* ih)
   tv->GetSelection(&s, &e);
   if (!ih->data->is_multiline) return iupStrReturnInt(haikuTextByteToChar(tv, s) + 1);
   int lin = 1, col = 1;
-  iupdrvTextConvertPosToLinCol(ih, haikuTextByteToChar(tv, s), &lin, &col);
+  haikuTextByteToLinCol(tv, s, &lin, &col);
   return iupStrReturnIntInt(lin, col, ',');
 }
 
@@ -1506,9 +1538,7 @@ static int haikuTextSetScrollToAttrib(Ihandle* ih, const char* value)
   {
     int lin = 1, col = 1;
     if (iupStrToIntInt(value, &lin, &col, ',') < 1) return 0;
-    int pos = 0;
-    iupdrvTextConvertLinColToPos(ih, lin, col, &pos);
-    tv->ScrollToOffset(haikuTextCharToByte(tv, pos));
+    tv->ScrollToOffset(haikuTextLinColToByte(tv, lin, col));
   }
   else
   {
