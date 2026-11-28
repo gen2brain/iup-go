@@ -260,8 +260,8 @@ bool iuphaikuDnDMessageReceived(Ihandle* ih, BView* view, BMessage* msg)
     IFni cbEnd = reinterpret_cast<IFni>(IupGetCallback(ih, "DRAGEND_CB"));
     if (cbEnd)
     {
-      int action = -1;
-      msg->FindInt32("action", static_cast<int32*>(&action));
+      int32 action = -1;
+      msg->FindInt32("action", &action);
       cbEnd(ih, action);
     }
     return true;

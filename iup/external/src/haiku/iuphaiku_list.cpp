@@ -525,8 +525,8 @@ public:
   {
     if (msg && msg->what == IUPHAIKU_LIST_DROP_MSG && fIhandle)
     {
-      int pos = -1;
-      msg->FindInt32("pos", static_cast<int32*>(&pos));
+      int32 pos = -1;
+      msg->FindInt32("pos", &pos);
       if (pos < 0) { BHandler::MessageReceived(msg); return; }
 
       auto* field = reinterpret_cast<BMenuField*>(fIhandle->handle);
