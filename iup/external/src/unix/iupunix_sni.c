@@ -328,6 +328,37 @@ static int sniAddMenuItem(IupUnixSNI* sni, Ihandle* item)
   return id;
 }
 
+static int sniMenuItemId(IupUnixSNI* sni, Ihandle* item)
+{
+  int i;
+  for (i = 0; i < sni->menu_item_count; i++)
+  {
+    if (sni->menu_items[i].ih == item)
+      return sni->menu_items[i].id;
+  }
+  return -1;
+}
+
+static void sniAssignMenuIds(IupUnixSNI* sni, Ihandle* menu)
+{
+  Ihandle* child;
+
+  if (!menu)
+    return;
+
+  for (child = menu->firstchild; child; child = child->brother)
+  {
+    char* class_name = IupGetClassName(child);
+    if (iupStrEqual(class_name, "submenu"))
+    {
+      sniAddMenuItem(sni, child);
+      sniAssignMenuIds(sni, child->firstchild);
+    }
+    else if (iupStrEqual(class_name, "menuitem") || iupStrEqual(class_name, "menuseparator"))
+      sniAddMenuItem(sni, child);
+  }
+}
+
 static Ihandle* sniFindMenuItemById(IupUnixSNI* sni, int id)
 {
   int i;
@@ -452,8 +483,6 @@ static void sniAppendMenuItemProperties(DBusMessageIter* dict_iter, Ihandle* ite
   }
 }
 
-static void sniAppendMenuLayout(DBusMessageIter* parent_iter, IupUnixSNI* sni, Ihandle* menu, int parent_id, int depth);
-
 static void sniAppendMenuChildren(DBusMessageIter* children_iter, IupUnixSNI* sni, Ihandle* menu, int depth)
 {
   Ihandle* child;
@@ -469,7 +498,7 @@ static void sniAppendMenuChildren(DBusMessageIter* children_iter, IupUnixSNI* sn
     if (iupStrEqual(class_name, "submenu"))
     {
       Ihandle* submenu = child->firstchild;
-      int item_id = sniAddMenuItem(sni, child);
+      int item_id = sniMenuItemId(sni, child);
       if (item_id < 0) continue;
 
       dbus_message_iter_open_container(children_iter, DBUS_TYPE_VARIANT, "(ia{sv}av)", &variant_iter);
@@ -497,7 +526,7 @@ static void sniAppendMenuChildren(DBusMessageIter* children_iter, IupUnixSNI* sn
     }
     else if (iupStrEqual(class_name, "menuitem") || iupStrEqual(class_name, "menuseparator"))
     {
-      int item_id = sniAddMenuItem(sni, child);
+      int item_id = sniMenuItemId(sni, child);
       if (item_id < 0) continue;
 
       dbus_message_iter_open_container(children_iter, DBUS_TYPE_VARIANT, "(ia{sv}av)", &variant_iter);
@@ -524,7 +553,7 @@ static void sniAppendMenuChildren(DBusMessageIter* children_iter, IupUnixSNI* sn
   }
 }
 
-static void sniAppendMenuLayout(DBusMessageIter* parent_iter, IupUnixSNI* sni, Ihandle* menu, int parent_id, int depth)
+static void sniAppendMenuLayout(DBusMessageIter* parent_iter, IupUnixSNI* sni, Ihandle* item, Ihandle* menu, int parent_id, int depth)
 {
   DBusMessageIter struct_iter, props_iter, children_iter;
 
@@ -533,7 +562,9 @@ static void sniAppendMenuLayout(DBusMessageIter* parent_iter, IupUnixSNI* sni, I
   dbus_message_iter_append_basic(&struct_iter, DBUS_TYPE_INT32, &parent_id);
 
   dbus_message_iter_open_container(&struct_iter, DBUS_TYPE_ARRAY, "{sv}", &props_iter);
-  if (parent_id == 0 && menu)
+  if (item)
+    sniAppendMenuItemProperties(&props_iter, item, iupStrEqual(IupGetClassName(item), "submenu"));
+  else if (menu)
   {
     const char* prop_name = "children-display";
     const char* value = "submenu";
@@ -588,6 +619,7 @@ static DBusHandlerResult sniDBusMenuHandler(DBusConnection* connection, DBusMess
     dbus_message_get_args(message, NULL, DBUS_TYPE_INT32, &parent_id, DBUS_TYPE_INT32, &recursion_depth, DBUS_TYPE_INVALID);
 
     sniClearMenuItems(sni);
+    sniAssignMenuIds(sni, sni->menu_ih);
 
     reply = dbus_message_new_method_return(message);
     dbus_message_iter_init_append(reply, &iter);
@@ -598,7 +630,16 @@ static DBusHandlerResult sniDBusMenuHandler(DBusConnection* connection, DBusMess
     if (recursion_depth < 0)
       recursion_depth = 10;
 
-    sniAppendMenuLayout(&iter, sni, sni->menu_ih, parent_id, recursion_depth);
+    {
+      Ihandle* item = NULL;
+      Ihandle* menu = sni->menu_ih;
+      if (parent_id != 0)
+      {
+        item = sniFindMenuItemById(sni, parent_id);
+        menu = (item && iupStrEqual(IupGetClassName(item), "submenu")) ? item->firstchild : NULL;
+      }
+      sniAppendMenuLayout(&iter, sni, item, menu, parent_id, recursion_depth);
+    }
 
     dbus_connection_send(connection, reply, NULL);
     dbus_message_unref(reply);
