@@ -738,6 +738,32 @@ extern "C" IUP_SDK_API int iupdrvDialogIsVisible(Ihandle* ih)
   return win->IsHidden() ? 0 : 1;
 }
 
+IUP_DRV_API void iuphaikuDialogShowDeferred(Ihandle* ih)
+{
+  if (!iupObjectCheck(ih) || !iupAttribGet(ih, "_IUPHAIKU_DEFERRED_SHOW")) return;
+  iupAttribSet(ih, "_IUPHAIKU_DEFERRED_SHOW", nullptr);
+
+  auto* win = reinterpret_cast<BWindow*>(ih->handle);
+  if (win && win->Lock())
+  {
+    if (win->IsHidden()) win->Show();
+    win->Unlock();
+  }
+}
+
+IUP_DRV_API void iuphaikuDialogShowAllDeferred(void)
+{
+  Ihandle* pending[64];
+  int count = 0;
+  for (Ihandle* dlg = iupDlgListFirst(); dlg && count < 64; dlg = iupDlgListNext())
+  {
+    if (iupAttribGet(dlg, "_IUPHAIKU_DEFERRED_SHOW"))
+      pending[count++] = dlg;
+  }
+  for (int i = 0; i < count; i++)
+    iuphaikuDialogShowDeferred(pending[i]);
+}
+
 extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
 {
   auto* win = reinterpret_cast<IupHaikuWindow*>(ih->handle);
@@ -772,8 +798,9 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
       bool defer = be_app && be_app->IsLaunching() && IupGetCallback(ih, "SHOW_CB");
       if (defer)
       {
+        iupAttribSet(ih, "_IUPHAIKU_DEFERRED_SHOW", "1");
         BMessage post(IUPHAIKU_APP_SHOW_WIN);
-        post.AddPointer("win", win);
+        post.AddPointer("ih", ih);
         BMessenger(be_app).SendMessage(&post);
       }
       else
@@ -782,6 +809,7 @@ extern "C" IUP_SDK_API void iupdrvDialogSetVisible(Ihandle* ih, int visible)
   }
   else
   {
+    iupAttribSet(ih, "_IUPHAIKU_DEFERRED_SHOW", nullptr);
     {
       LooperLockGuard guard(win);
       if (!win->IsHidden()) win->Hide();

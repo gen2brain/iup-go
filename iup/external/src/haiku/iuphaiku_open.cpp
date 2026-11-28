@@ -83,15 +83,9 @@ public:
         return;
       }
       case IUPHAIKU_APP_SHOW_WIN: {
-        BWindow* win = nullptr;
-        if (msg->FindPointer("win", reinterpret_cast<void**>(&win)) == B_OK && win)
-        {
-          if (win->Lock())
-          {
-            if (win->IsHidden()) win->Show();
-            win->Unlock();
-          }
-        }
+        Ihandle* ih = nullptr;
+        if (msg->FindPointer("ih", reinterpret_cast<void**>(&ih)) == B_OK)
+          iuphaikuDialogShowDeferred(ih);
         return;
       }
       case IUPHAIKU_MENU_ITEM_MSG: {

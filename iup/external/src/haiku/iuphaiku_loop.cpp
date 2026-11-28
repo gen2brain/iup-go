@@ -21,6 +21,7 @@ extern "C" {
 #include "iupcbs.h"
 #include "iup_loop.h"
 #include "iup_str.h"
+#include "iup_attrib.h"
 #include "iup_object.h"
 #include "iup_dlglist.h"
 #include "iup_thread.h"
@@ -31,6 +32,7 @@ extern "C" {
 
 static IFidle haiku_idle_cb = nullptr;
 static int haiku_main_loop_level = 0;
+static bool haiku_app_running = false;
 static volatile bool haiku_loop_exit_flag[10] = { false };
 
 /* Nested-level wake sem; top level uses be_app's port. */
@@ -123,7 +125,7 @@ extern "C" IUP_API void IupPostMessage(Ihandle* ih, const char* s, int i, double
   if (dlg && dlg->handle && dlg->handle != reinterpret_cast<InativeHandle*>(-1))
   {
     auto* win = dynamic_cast<BWindow*>(reinterpret_cast<BLooper*>(dlg->handle));
-    if (win)
+    if (win && win->Thread() >= B_OK)
     {
       BMessage msg(IUPHAIKU_POST_MSG);
       msg.AddPointer("ih", ih);
@@ -349,7 +351,7 @@ extern "C" IUP_API void IupExitLoop(void)
     else if (haiku_main_loop_level == 1 && !haiku_loop_exit_flag[0])
     {
       haiku_loop_exit_flag[0] = true;
-      if (be_app)
+      if (be_app && haiku_app_running)
       {
         BMessenger msgr(be_app);
         msgr.SendMessage(B_QUIT_REQUESTED);
@@ -359,6 +361,16 @@ extern "C" IUP_API void IupExitLoop(void)
     else if (haiku_main_loop_level == 0)
       haiku_loop_exit_requested = true;
   }
+}
+
+static bool haikuPopupPending()
+{
+  for (Ihandle* dlg = iupDlgListFirst(); dlg; dlg = iupDlgListNext())
+  {
+    if (iupStrBoolean(iupAttribGet(dlg, "MODAL")))
+      return true;
+  }
+  return false;
 }
 
 extern "C" IUP_API int IupMainLoopLevel(void)
@@ -385,25 +397,29 @@ extern "C" IUP_API int IupMainLoop(void)
   haiku_loop_exit_flag[current_level] = false;
   haiku_loop_exit_requested = false;
 
-  if (current_level == 0)
+  if (current_level == 0 && !haikuPopupPending())
   {
     /* Top level: lock already held from BApplication ctor. */
     if (be_app && iupDlgListVisibleCount() > 0)
     {
       CallbackReleaseGuard release(nullptr);
+      haiku_app_running = true;
       be_app->Run();
+      haiku_app_running = false;
     }
   }
   else
   {
-    /* Nested: Run() is single-shot, so spin a private pump. */
+    /* Nested, or a popup before IupMainLoop: Run() is single-shot, so spin a private pump. */
     iuphaikuModalBegin();
+    if (!haiku_app_running) iuphaikuDialogShowAllDeferred();
     BLooper* self_looper = BLooper::LooperForThread(find_thread(nullptr));
     auto* self_window = dynamic_cast<BWindow*>(self_looper);
     sem_id sem = haikuWakeSem();
     while (!haiku_loop_exit_flag[current_level])
     {
       haikuDrainPostQueue();
+      if (!haiku_app_running) iuphaikuTimerRunDue();
 
       if (haiku_idle_cb)
       {
@@ -416,6 +432,11 @@ extern "C" IUP_API int IupMainLoop(void)
       if (self_window) self_window->UpdateIfNeeded();
 
       bigtime_t timeout = haiku_idle_cb ? 0 : 100000;
+      if (!haiku_app_running)
+      {
+        bigtime_t next = iuphaikuTimerNextWait();
+        if (next >= 0 && next < timeout) timeout = next;
+      }
       CallbackReleaseGuard release(iuphaikuOwnLooper());
       acquire_sem_etc(sem, 1, B_RELATIVE_TIMEOUT, timeout);
     }
