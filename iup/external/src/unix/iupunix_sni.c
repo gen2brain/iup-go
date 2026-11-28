@@ -621,7 +621,7 @@ static DBusHandlerResult sniDBusMenuHandler(DBusConnection* connection, DBusMess
     if (strcmp(event_id, "clicked") == 0)
     {
       Ihandle* item = sniFindMenuItemById(sni, id);
-      if (item)
+      if (item && iupObjectCheck(item))
       {
         sniInvokeCallback(sni, 3, 1, 0, 0);
 
@@ -1244,6 +1244,21 @@ static void sniEmitSignal(IupUnixSNI* sni, const char* signal_name)
   }
 }
 
+static void sniEmitLayoutUpdated(IupUnixSNI* sni)
+{
+  DBusMessage* signal = dbus_message_new_signal(DBUSMENU_OBJECT_PATH, DBUSMENU_INTERFACE, "LayoutUpdated");
+
+  if (signal)
+  {
+    dbus_uint32_t revision = (dbus_uint32_t)sni->menu_revision;
+    dbus_int32_t parent = 0;
+    dbus_message_append_args(signal, DBUS_TYPE_UINT32, &revision, DBUS_TYPE_INT32, &parent, DBUS_TYPE_INVALID);
+    dbus_connection_send(sni->connection, signal, NULL);
+    dbus_connection_flush(sni->connection);
+    dbus_message_unref(signal);
+  }
+}
+
 static void sniEmitNewStatus(IupUnixSNI* sni)
 {
   DBusMessage* signal = dbus_message_new_signal(SNI_ITEM_OBJECT_PATH, SNI_ITEM_INTERFACE, "NewStatus");
@@ -1631,14 +1646,13 @@ IUP_SDK_API int iupdrvTraySetMenu(Ihandle* ih, Ihandle* menu)
     return 0;
 
   if (menu && iupObjectCheck(menu))
-  {
     sni->menu_ih = menu;
-    sni->menu_revision++;
-  }
   else
-  {
     sni->menu_ih = NULL;
-  }
+
+  sni->menu_revision++;
+  sniClearMenuItems(sni);
+  sniEmitLayoutUpdated(sni);
 
   return 1;
 }
